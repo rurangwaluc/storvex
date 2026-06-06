@@ -16,8 +16,8 @@ function cx(...classes: Array<string | false | null | undefined>) {
 export default function PlatformLoginPage() {
   const router = useRouter();
 
-  const [email, setEmail] = useState("luc@storvex.io");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("luc@storvex.rw");
+  const [password, setPassword] = useState("Owner@12345");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
