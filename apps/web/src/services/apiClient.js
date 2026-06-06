@@ -17,9 +17,7 @@ function normalizeApiBaseUrl(value) {
 }
 
 export const API_BASE_URL = normalizeApiBaseUrl(
-  import.meta.env.VITE_API_BASE_URL ||
-    import.meta.env.VITE_API_URL ||
-    DEFAULT_API_BASE_URL,
+  process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL,
 );
 
 const ACTIVE_BRANCH_KEYS = [

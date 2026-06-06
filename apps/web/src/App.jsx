@@ -1,92 +1,92 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 
-import AuditLogs from "./pages/audit/AuditLogs";
-import ConfirmSignup from "./pages/auth/ConfirmSignup";
-import Login from "./pages/auth/Login";
-import LandingPage from "./pages/public/LandingPage";
+import AuditLogs from "./legacy-pages/audit/AuditLogs";
+import ConfirmSignup from "./legacy-pages/auth/ConfirmSignup";
+import Login from "./legacy-pages/auth/Login";
+import LandingPage from "./legacy-pages/public/LandingPage";
 
-import Dashboard from "./pages/dashboard/Dashboard";
-import Employees from "./pages/employees/EmployeesList";
-import InterStoreDeals from "./pages/interstore/InterStoreDeals";
-import InterStoreDetail from "./pages/interstore/InterStoreDetail";
+import Dashboard from "./legacy-pages/dashboard/Dashboard";
+import Employees from "./legacy-pages/employees/EmployeesList";
+import InterStoreDeals from "./legacy-pages/interstore/InterStoreDeals";
+import InterStoreDetail from "./legacy-pages/interstore/InterStoreDetail";
 
-import InventoryCreate from "./pages/inventory/InventoryCreate";
-import InventoryEdit from "./pages/inventory/InventoryEdit";
-import InventoryList from "./pages/inventory/InventoryList";
-import InventoryDetail from "./pages/inventory/InventoryDetail";
-import StockAdjustments from "./pages/inventory/StockAdjustments";
-import Reorder from "./pages/inventory/Reorder";
+import InventoryCreate from "./legacy-pages/inventory/InventoryCreate";
+import InventoryEdit from "./legacy-pages/inventory/InventoryEdit";
+import InventoryList from "./legacy-pages/inventory/InventoryList";
+import InventoryDetail from "./legacy-pages/inventory/InventoryDetail";
+import StockAdjustments from "./legacy-pages/inventory/StockAdjustments";
+import Reorder from "./legacy-pages/inventory/Reorder";
 
-import PosReceipt from "./pages/pos/PosReceipt";
-import PosSale from "./pages/pos/PosSale";
-import SalesList from "./pages/pos/SalesList";
-import CreditDashboard from "./pages/pos/CreditDashboard";
-import CashDrawer from "./pages/pos/CashDrawer";
+import PosReceipt from "./legacy-pages/pos/PosReceipt";
+import PosSale from "./legacy-pages/pos/PosSale";
+import SalesList from "./legacy-pages/pos/SalesList";
+import CreditDashboard from "./legacy-pages/pos/CreditDashboard";
+import CashDrawer from "./legacy-pages/pos/CashDrawer";
 
-import RepairCreate from "./pages/repairs/RepairCreate";
-import Repairs from "./pages/repairs/Repairs";
-import RepairEdit from "./pages/repairs/RepairEdit";
+import RepairCreate from "./legacy-pages/repairs/RepairCreate";
+import Repairs from "./legacy-pages/repairs/Repairs";
+import RepairEdit from "./legacy-pages/repairs/RepairEdit";
 
-import Reports from "./pages/reports/Reports";
-import CashFlowReport from "./pages/reports/CashFlowReport";
-import IncomeStatement from "./pages/reports/IncomeStatement";
-import TrialBalance from "./pages/reports/TrialBalance";
-import ProfitTable from "./pages/reports/ProfitTable";
+import Reports from "./legacy-pages/reports/Reports";
+import CashFlowReport from "./legacy-pages/reports/CashFlowReport";
+import IncomeStatement from "./legacy-pages/reports/IncomeStatement";
+import TrialBalance from "./legacy-pages/reports/TrialBalance";
+import ProfitTable from "./legacy-pages/reports/ProfitTable";
 
-import CustomerCreate from "./pages/customers/CustomerCreate";
-import CustomerEdit from "./pages/customers/CustomerEdit";
-import CustomerList from "./pages/customers/CustomerList";
+import CustomerCreate from "./legacy-pages/customers/CustomerCreate";
+import CustomerEdit from "./legacy-pages/customers/CustomerEdit";
+import CustomerList from "./legacy-pages/customers/CustomerList";
 
 import RequireRole from "./auth/RequireRole";
 import RequireTenantAuth from "./auth/requireTenantAuth";
 import StoreLayout from "./components/StoreLayout";
 
-import TenantIntent from "./pages/Tenant/TenantIntent";
-import OwnerPayment from "./pages/Tenant/OwnerPayment";
-import VerifyOtp from "./pages/Tenant/VerifyOtp";
+import TenantIntent from "./legacy-pages/Tenant/TenantIntent";
+import OwnerPayment from "./legacy-pages/Tenant/OwnerPayment";
+import VerifyOtp from "./legacy-pages/Tenant/VerifyOtp";
 
 import SubscriptionGate from "./components/SubscriptionGate";
-import Renew from "./pages/Billing/Renew";
+import Renew from "./legacy-pages/Billing/Renew";
 
-import SuppliersList from "./pages/suppliers/SuppliersList";
-import SupplierCreate from "./pages/suppliers/SupplierCreate";
-import SupplierEdit from "./pages/suppliers/SupplierEdit";
-import SupplierView from "./pages/suppliers/SupplierView";
-import SupplierSupplyCreate from "./pages/suppliers/SupplierSupplyCreate";
+import SuppliersList from "./legacy-pages/suppliers/SuppliersList";
+import SupplierCreate from "./legacy-pages/suppliers/SupplierCreate";
+import SupplierEdit from "./legacy-pages/suppliers/SupplierEdit";
+import SupplierView from "./legacy-pages/suppliers/SupplierView";
+import SupplierSupplyCreate from "./legacy-pages/suppliers/SupplierSupplyCreate";
 
-import DeliveryNoteCreate from "./pages/deliveryNotes/DeliveryNoteCreate";
-import DeliveryNoteEdit from "./pages/deliveryNotes/DeliveryNoteEdit";
+import DeliveryNoteCreate from "./legacy-pages/deliveryNotes/DeliveryNoteCreate";
+import DeliveryNoteEdit from "./legacy-pages/deliveryNotes/DeliveryNoteEdit";
 
-import SettingsLayout from "./pages/settings/SettingsLayout";
-import SettingsGeneral from "./pages/settings/SettingsGeneral";
-import SettingsBranches from "./pages/settings/SettingsBranches";
-import SettingsBilling from "./pages/settings/SettingsBilling";
-import SettingsRoles from "./pages/settings/SettingsRoles";
-import SettingsMembers from "./pages/settings/SettingsMembers";
-import SettingsSecurity from "./pages/settings/SettingsSecurity";
-import SettingsAudit from "./pages/settings/SettingsAudit";
+import SettingsLayout from "./legacy-pages/settings/SettingsLayout";
+import SettingsGeneral from "./legacy-pages/settings/SettingsGeneral";
+import SettingsBranches from "./legacy-pages/settings/SettingsBranches";
+import SettingsBilling from "./legacy-pages/settings/SettingsBilling";
+import SettingsRoles from "./legacy-pages/settings/SettingsRoles";
+import SettingsMembers from "./legacy-pages/settings/SettingsMembers";
+import SettingsSecurity from "./legacy-pages/settings/SettingsSecurity";
+import SettingsAudit from "./legacy-pages/settings/SettingsAudit";
 
-import WhatsAppInbox from "./pages/whatsapp/WhatsAppInbox";
+import WhatsAppInbox from "./legacy-pages/whatsapp/WhatsAppInbox";
 
-import DocumentListPage from "./pages/documents/DocumentListPage";
-import DocumentPreviewRoute from "./pages/documents/DocumentPreviewRoute";
-import DocumentCenterPage from "./pages/documents/DocumentCenterPage";
+import DocumentListPage from "./legacy-pages/documents/DocumentListPage";
+import DocumentPreviewRoute from "./legacy-pages/documents/DocumentPreviewRoute";
+import DocumentCenterPage from "./legacy-pages/documents/DocumentCenterPage";
 
 import { listReceipts } from "./services/receiptsApi";
 import { listInvoices } from "./services/invoicesApi";
 import { listProformas } from "./services/proformasApi";
-import ProformaCreate from "./pages/proformas/ProformaCreate";
-import ProformaEdit from "./pages/proformas/ProformaEdit";
+import ProformaCreate from "./legacy-pages/proformas/ProformaCreate";
+import ProformaEdit from "./legacy-pages/proformas/ProformaEdit";
 
 import { listWarranties } from "./services/warrantiesApi";
-import WarrantyCreate from "./pages/warranties/WarrantyCreate";
-import WarrantyEdit from "./pages/warranties/WarrantyEdit";
+import WarrantyCreate from "./legacy-pages/warranties/WarrantyCreate";
+import WarrantyEdit from "./legacy-pages/warranties/WarrantyEdit";
 
 import { listDeliveryNotes } from "./services/deliveryNotesApi";
-import Expenses from "./pages/expenses/Expenses";
+import Expenses from "./legacy-pages/expenses/Expenses";
 
-import SupportTickets from "./pages/support/SupportTickets";
-import SupportTicketDetail from "./pages/support/SupportTicketDetail";
+import SupportTickets from "./legacy-pages/support/SupportTickets";
+import SupportTicketDetail from "./legacy-pages/support/SupportTicketDetail";
 
 function GuardedStoreLayout() {
   return (

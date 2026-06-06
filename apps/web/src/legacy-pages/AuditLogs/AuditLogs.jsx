@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { getAuditLogs } from "../services/auditApi";
+import { getAuditLogs } from "../../services/auditApi";
 
 export default function AuditLogs() {
   const [logs, setLogs] = useState([]);
@@ -11,20 +11,20 @@ export default function AuditLogs() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-4">Audit Logs</h1>
+      <h1 className="mb-4 text-2xl font-bold">Audit Logs</h1>
 
       <div className="space-y-3">
-        {logs.map(log => (
+        {logs.map((log) => (
           <div
             key={log.id}
-            className="bg-white p-3 rounded shadow border-l-4 border-blue-500"
+            className="rounded border-l-4 border-blue-500 bg-white p-3 shadow"
           >
             <div className="text-sm text-gray-500">
               {new Date(log.createdAt).toLocaleString()}
             </div>
 
             <div className="font-semibold">
-              {log.action.replaceAll("_", " ")}
+              {String(log.action || "").replaceAll("_", " ")}
             </div>
 
             <div className="text-sm">

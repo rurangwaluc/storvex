@@ -167,8 +167,8 @@ function inputClass() {
 export default function Login() {
   const nav = useNavigate();
 
-  const [email, setEmail] = useState("demo@shop.rw");
-  const [password, setPassword] = useState("Test@12345");
+  const [email, setEmail] = useState("owner@ruraxis.com");
+  const [password, setPassword] = useState("Owner@12345");
   const [loading, setLoading] = useState(false);
 
   const trimmedEmail = useMemo(() => normalizeEmail(email), [email]);

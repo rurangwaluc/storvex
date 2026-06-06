@@ -349,8 +349,14 @@ function pickEffectiveBranchLimit(overview) {
   return Number.isFinite(Number(raw)) ? Number(raw) : null;
 }
 
-const SUPPORT_WHATSAPP = cleanString(import.meta.env.VITE_STORVEX_SUPPORT_WHATSAPP);
-const SUPPORT_EMAIL = cleanString(import.meta.env.VITE_STORVEX_SUPPORT_EMAIL);
+const SUPPORT_WHATSAPP = cleanString(
+  process.env.NEXT_PUBLIC_STORVEX_SUPPORT_WHATSAPP,
+);
+
+const SUPPORT_EMAIL = cleanString(
+  process.env.NEXT_PUBLIC_STORVEX_SUPPORT_EMAIL,
+);
+
 
 function buildEnterpriseMessage({ tenantName, activeStaff, activeBranches, maxStaffLimit }) {
   return [
