@@ -1,16 +1,8 @@
-const API = "http://localhost:5000/api/auth/owner-intent";
+import { apiFetch } from "./apiClient";
 
 export async function createTenantIntent(data) {
-  const res = await fetch(API, {
+  return apiFetch("/auth/owner-intent", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
+    body: data,
   });
-
-  if (!res.ok) {
-    const err = await res.json();
-    throw err;
-  }
-
-  return res.json();
 }

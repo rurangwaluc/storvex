@@ -4,10 +4,23 @@ import {
   toastSubscriptionBlockedError,
 } from "../utils/subscriptionError";
 
-const API_BASE =
+const DEFAULT_API_BASE_URL = "/api";
+
+function cleanString(value) {
+  const s = String(value || "").trim();
+  return s || "";
+}
+
+function normalizeApiBaseUrl(value) {
+  const cleanValue = cleanString(value) || DEFAULT_API_BASE_URL;
+  return cleanValue.replace(/\/+$/, "");
+}
+
+export const API_BASE_URL = normalizeApiBaseUrl(
   import.meta.env.VITE_API_BASE_URL ||
-  import.meta.env.VITE_API_URL ||
-  "/api";
+    import.meta.env.VITE_API_URL ||
+    DEFAULT_API_BASE_URL,
+);
 
 const ACTIVE_BRANCH_KEYS = [
   "storvex_active_branch_id",
@@ -15,23 +28,20 @@ const ACTIVE_BRANCH_KEYS = [
   "branchId",
 ];
 
-const ME_CACHE_KEYS = [
-  "storvex_me_cache_v2",
-  "storvex_me_cache",
-];
+const ME_CACHE_KEYS = ["storvex_me_cache_v2", "storvex_me_cache"];
 
 const apiClient = axios.create({
-  baseURL: API_BASE,
+  baseURL: API_BASE_URL,
   withCredentials: false,
 });
 
-function getToken() {
-  return localStorage.getItem("tenantToken") || localStorage.getItem("token") || "";
+export function buildApiUrl(path = "") {
+  const cleanPath = String(path || "").replace(/^\/+/, "");
+  return cleanPath ? `${API_BASE_URL}/${cleanPath}` : API_BASE_URL;
 }
 
-function cleanString(value) {
-  const s = String(value || "").trim();
-  return s || "";
+function getToken() {
+  return localStorage.getItem("tenantToken") || localStorage.getItem("token") || "";
 }
 
 function safeJsonParse(value) {
@@ -225,17 +235,12 @@ export async function apiFetch(path, options = {}) {
     return res.data;
   } catch (error) {
     const message =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Request failed";
+      error?.response?.data?.message || error?.message || "Request failed";
 
     const err = new Error(message);
     err.response = error?.response;
     err.status = error?.response?.status;
-    err.code =
-      error?.response?.data?.code ||
-      error?.code ||
-      null;
+    err.code = error?.response?.data?.code || error?.code || null;
     err.data = error?.response?.data || null;
 
     throw err;

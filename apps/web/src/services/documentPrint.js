@@ -1,14 +1,11 @@
-import apiClient from "./apiClient";
+import { API_BASE_URL } from "./apiClient";
 
 function trimSlashes(value) {
   return String(value || "").replace(/^\/+|\/+$/g, "");
 }
 
 export function getApiBaseUrl() {
-  const fromClient = apiClient?.defaults?.baseURL;
-  const fromEnv = import.meta.env.VITE_API_BASE_URL;
-
-  return String(fromClient || fromEnv || "http://localhost:5000/api").replace(/\/+$/, "");
+  return API_BASE_URL;
 }
 
 export function getAuthToken() {

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiFetch } from "../../services/apiClient";
 
 export default function Payment() {
   const params = new URLSearchParams(window.location.search);
@@ -10,45 +11,65 @@ export default function Payment() {
 
   async function pay(e) {
     e.preventDefault();
-    setLoading(true);
 
-    const res = await fetch("http://localhost:5000/api/payments/initiate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        intentId,
-        phone,
-      }),
-    });
-
-    const data = await res.json();
-    setLoading(false);
-
-    if (!res.ok) {
-      setMessage(data.message || "Payment failed");
+    if (!intentId) {
+      setMessage("Payment session is missing. Please restart the signup process.");
       return;
     }
 
-    setMessage("Payment request sent. Please confirm on your phone.");
+    setLoading(true);
+    setMessage("");
+
+    try {
+      await apiFetch("/payments/initiate", {
+        method: "POST",
+        body: {
+          intentId,
+          phone,
+        },
+      });
+
+      setMessage("Payment request sent. Please confirm on your phone.");
+    } catch (error) {
+      setMessage(error?.message || "Payment failed");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <form
       onSubmit={pay}
-      className="max-w-md mx-auto mt-20 bg-white p-6 rounded shadow"
+      className="mx-auto mt-20 max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
     >
-      <h1 className="text-xl font-bold mb-4">Complete Payment</h1>
+      <h1 className="mb-2 text-xl font-bold text-slate-950">Complete payment</h1>
 
-      {message && <p className="mb-3">{message}</p>}
+      <p className="mb-4 text-sm text-slate-600">
+        Enter the phone number that should receive the mobile money payment request.
+      </p>
+
+      {message && (
+        <p className="mb-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          {message}
+        </p>
+      )}
+
+      <label className="mb-2 block text-sm font-semibold text-slate-800">
+        MTN MoMo phone
+      </label>
 
       <input
-        className="input mb-3"
-        placeholder="MTN MoMo Phone (07xxxxxxxx)"
+        className="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-slate-900 focus:ring-2 focus:ring-slate-900/10"
+        placeholder="07xxxxxxxx"
+        value={phone}
         required
         onChange={(e) => setPhone(e.target.value)}
       />
 
-      <button className="btn-primary w-full" disabled={loading}>
+      <button
+        className="w-full rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={loading}
+      >
         {loading ? "Processing..." : "Pay"}
       </button>
     </form>
