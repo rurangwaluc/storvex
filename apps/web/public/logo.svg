@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="64" viewBox="0 0 256 64" role="img" aria-labelledby="logoTitle">
+  <title id="logoTitle">Realty Spotters</title>
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#06b6d4" />
+      <stop offset="50%" stop-color="#4f46e5" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+
+  <rect rx="12" ry="12" width="64" height="64" fill="url(#g)" />
+
+  <g transform="translate(86,36)">
+    <path d="M-70-6 L-54 -24 L-38 -6 L-54 12 Z" fill="#ffffff" opacity="0.95" />
+  </g>
+
+  <g transform="translate(80,36)">
+    <text x="0" y="6" font-family="Inter, Arial, sans-serif" font-weight="700" font-size="20" fill="#0f172a">Realty Spotters</text>
+  </g>
+
+</svg>

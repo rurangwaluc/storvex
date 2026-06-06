@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@storvex/config": [
+        "packages/config/src"
+      ],
+      "@storvex/db": [
+        "packages/db/src"
+      ],
+      "@storvex/permissions": [
+        "packages/permissions/src"
+      ],
+      "@storvex/schemas": [
+        "packages/schemas/src"
+      ],
+      "@storvex/ui": [
+        "packages/ui/src"
+      ],
+      "@storvex/utils": [
+        "packages/utils/src"
+      ]
+    }
+  }
+}

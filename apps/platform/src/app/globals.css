@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+:root {
+  --platform-bg: #ffffff;
+  --platform-bg-soft: #f6f8fb;
+  --platform-surface: #ffffff;
+  --platform-surface-soft: #f7f9fc;
+  --platform-text: #101114;
+  --platform-muted: #667085;
+  --platform-border: rgba(16, 17, 20, 0.12);
+
+  --platform-primary: #077dcb;
+  --platform-primary-dark: #0569ad;
+  --platform-primary-soft: rgba(7, 125, 203, 0.1);
+
+  --platform-success: #12805c;
+  --platform-warning: #b7791f;
+  --platform-danger: #c2410c;
+
+  --platform-sidebar: #101114;
+  --platform-sidebar-soft: #18191c;
+  --platform-sidebar-text: #ffffff;
+  --platform-sidebar-muted: rgba(255, 255, 255, 0.62);
+  --platform-sidebar-border: rgba(255, 255, 255, 0.1);
+}
+
+html.dark {
+  --platform-bg: #1c1c1d;
+  --platform-bg-soft: #242426;
+  --platform-surface: #242426;
+  --platform-surface-soft: #2b2b2e;
+  --platform-text: #f8fafc;
+  --platform-muted: #a3a3a8;
+  --platform-border: rgba(255, 255, 255, 0.12);
+
+  --platform-primary: #077dcb;
+  --platform-primary-dark: #0a6fae;
+  --platform-primary-soft: rgba(7, 125, 203, 0.18);
+
+  --platform-success: #22c55e;
+  --platform-warning: #f59e0b;
+  --platform-danger: #fb7185;
+
+  --platform-sidebar: #151516;
+  --platform-sidebar-soft: #1c1c1d;
+  --platform-sidebar-text: #ffffff;
+  --platform-sidebar-muted: rgba(255, 255, 255, 0.62);
+  --platform-sidebar-border: rgba(255, 255, 255, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--platform-bg);
+  color: var(--platform-text);
+  font-family: var(--font-quicksand), ui-sans-serif, system-ui, sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(7, 125, 203, 0.22);
+}
+
+.platform-card {
+  border: 1px solid var(--platform-border);
+  background: var(--platform-surface);
+  color: var(--platform-text);
+}
+
+.platform-soft {
+  background: var(--platform-surface-soft);
+}
+
+.platform-muted {
+  color: var(--platform-muted);
+}
+
+.platform-focus {
+  outline: none;
+}
+
+.platform-focus:focus-visible {
+  box-shadow:
+    0 0 0 3px rgba(7, 125, 203, 0.18),
+    0 0 0 1px var(--platform-primary);
+}

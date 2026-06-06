@@ -1,0 +1,19 @@
+{
+  "name": "storvex",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev:api": "pnpm --filter @storvex/api dev",
+    "dev:web": "pnpm --filter @storvex/web dev",
+    "dev:platform": "pnpm --filter @storvex/platform dev",
+    "dev:mobile": "pnpm --filter @storvex/mobile start",
+    "build:web": "pnpm --filter @storvex/web build",
+    "build:platform": "pnpm --filter @storvex/platform build",
+    "start:api": "pnpm --filter @storvex/api start",
+    "lint:platform": "pnpm --filter @storvex/platform lint"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
