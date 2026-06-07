@@ -1,108 +1,111 @@
+import {
+  ArrowUpRight,
+  BarChart3,
+  Boxes,
+  Check,
+  CheckCircle2,
+  CircleDollarSign,
+  FileText,
+  LockKeyhole,
+  PackageCheck,
+  ShieldCheck,
+  UsersRound,
+  WalletCards,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
-import PublicLayout from "../../components/layout/PublicLayout";
-import Button from "../../components/ui/Button";
+import { useTheme } from "../../hooks/useTheme";
+import "./LandingPage.css";
 
-const proofCards = [
+const problemCards = [
   {
-    value: "Rwf",
-    title: "Built for local selling",
-    text: "Cash, MoMo, Bank, Card, customer balances, receipts, and branch work stay clear.",
+    icon: PackageCheck,
+    title: "Missed Opportunities",
+    text: "Never lose sales to stockouts or blind spots.",
   },
   {
-    value: "Branch",
-    title: "Branch truth from day one",
-    text: "Every sale, stock movement, payment, and document belongs to the right branch.",
+    icon: BarChart3,
+    title: "Performance Blind Spots",
+    text: "See what is selling and what’s not, instantly.",
   },
   {
-    value: "Owner",
-    title: "Control without confusion",
-    text: "Owners understand the business clearly while staff only access what they need.",
+    icon: UsersRound,
+    title: "Employee Slip-ups",
+    text: "Reduce mistakes and protect your profits.",
+  },
+  {
+    icon: WalletCards,
+    title: "Uncontrolled Costs",
+    text: "Track every expense and stop profit leaks.",
   },
 ];
 
-const modules = [
+const platformCards = [
   {
-    title: "Sales that leave evidence",
-    text: "Every sale records who sold, which branch sold, what was paid, and how the customer paid.",
-    stat: "POS",
+    icon: ArrowUpRight,
+    title: "Sales & Profit Tracking",
+    text: "Track sales, profit, and margins in real time across all channels.",
   },
   {
-    title: "Inventory you can trust",
-    text: "Stock belongs to a branch. Adjustments are visible. Owners do not lose stock silently.",
-    stat: "Stock",
+    icon: CircleDollarSign,
+    title: "Cash & Inventory Control",
+    text: "Monitor cash activity, reconcile fast, and prevent losses.",
   },
   {
-    title: "Cash drawer discipline",
-    text: "Open the drawer, count cash, record money in or out, and close with a clear difference.",
-    stat: "Cash",
+    icon: Boxes,
+    title: "Inventory You Can Trust",
+    text: "Low stock alerts and smarter ordering.",
   },
   {
-    title: "Pay-later follow-up",
-    text: "Track customers who still owe money, overdue balances, and payment history without spreadsheets.",
-    stat: "Debt",
+    icon: UsersRound,
+    title: "Team & Access Control",
+    text: "Set roles, permissions, and keep your team accountable.",
   },
   {
-    title: "Documents that look serious",
-    text: "Receipts, warranties, invoices, and branch identity stay clean and customer-ready.",
-    stat: "Docs",
+    icon: FileText,
+    title: "Documents & Records",
+    text: "Store receipts, warranty records, invoices, and more in one place.",
   },
   {
-    title: "Owner-grade visibility",
-    text: "Owners see branches, staff actions, payments, inventory, and customer risk in one workspace.",
-    stat: "Owner",
-  },
-];
-
-const onboardingSteps = [
-  {
-    label: "Create owner account",
-    text: "Add store name, owner contact, category, and location.",
+    icon: ShieldCheck,
+    title: "Store Security",
+    text: "Your data is protected and always visible to the owner.",
   },
   {
-    label: "Verify email and phone",
-    text: "Confirm the person creating the store before access is activated.",
+    icon: CheckCircle2,
+    title: "99.9% Uptime",
+    text: "Built for reliability you can count on.",
   },
   {
-    label: "Choose activation",
-    text: "Start with trial or activate a paid plan when the business is ready.",
-  },
-  {
-    label: "Create password",
-    text: "Storvex creates the store, owner, subscription, and first branch.",
-  },
-  {
-    label: "Open workspace",
-    text: "Continue with active branch, store profile, POS, inventory, and documents ready.",
+    icon: LockKeyhole,
+    title: "SOC 2 Compliant",
+    text: "Enterprise-grade security and privacy standards.",
   },
 ];
 
-const trustPoints = [
-  "Rwf-first wording",
-  "MoMo, Cash, Bank, Card",
-  "Branch-aware POS",
-  "Cash drawer control",
-  "Pay-later balances",
-  "Warranty records",
-  "Owner/staff separation",
-  "Dark and light mode",
+const mobilePoints = [
+  "Live updates on sales and profit",
+  "Approve refunds and overrides",
+  "Monitor branches and team",
+  "Get alerts that matter",
 ];
 
-const activityItems = [
+const footerGroups = [
   {
-    title: "Sale completed",
-    text: "A cashier records items sold, payment method, and branch.",
-    tag: "Paid",
+    title: "Product",
+    links: ["Features", "How it works", "Pricing", "Updates"],
   },
   {
-    title: "Stock updated",
-    text: "A product movement changes branch stock with a visible record.",
-    tag: "Stock",
+    title: "Solutions",
+    links: ["Single Store", "Multi-Branch", "Inventory Control", "Cash Management"],
   },
   {
-    title: "Customer document ready",
-    text: "Receipt or warranty can be prepared from the sale record.",
-    tag: "Docs",
+    title: "Resources",
+    links: ["Help Center", "Guides", "Blog", "System Status"],
+  },
+  {
+    title: "Company",
+    links: ["About Us", "Careers", "Contact Us", "Partners"],
   },
 ];
 
@@ -110,408 +113,575 @@ function cx(...items) {
   return items.filter(Boolean).join(" ");
 }
 
-function SectionEyebrow({ children }) {
+function Header() {
+  const { isDark, toggleTheme } = useTheme();
+
   return (
-    <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[var(--color-primary)]">
-      {children}
-    </p>
-  );
-}
+    <header className="svx-header">
+      <div className="svx-header-inner">
+        <Link to="/" aria-label="Storvex home" className="svx-logo-link">
+          <img
+            src={isDark ? "/storvex_white.webp" : "/storvex_dark.webp"}
+            alt="Storvex"
+            className="svx-header-logo"
+          />
+        </Link>
 
-function SurfaceCard({ children, className = "" }) {
-  return (
-    <div
-      className={cx(
-        "rounded-[34px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]",
-        className,
-      )}
-    >
-      {children}
-    </div>
-  );
-}
-
-function ProofCard({ value, title, text }) {
-  return (
-    <SurfaceCard className="p-5 sm:p-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex h-12 items-center justify-center rounded-2xl bg-[var(--color-primary-soft)] px-4 text-sm font-black text-[var(--color-primary)]">
-          {value}
-        </div>
-
-        <div className="h-2.5 w-2.5 rounded-full bg-[var(--color-primary)]" />
-      </div>
-
-      <h3 className="mt-5 text-base font-black tracking-[-0.02em] text-[var(--color-text)]">
-        {title}
-      </h3>
-
-      <p className="mt-2 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-        {text}
-      </p>
-    </SurfaceCard>
-  );
-}
-
-function ModuleCard({ title, text, stat }) {
-  return (
-    <SurfaceCard className="group overflow-hidden p-5 transition duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-card)]">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--color-primary-soft)] text-sm font-black text-[var(--color-primary)]">
-          {stat}
-        </div>
-
-        <span className="rounded-full bg-[var(--color-surface-2)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
-          Store control
-        </span>
-      </div>
-
-      <h3 className="mt-5 text-lg font-black tracking-[-0.03em] text-[var(--color-text)]">
-        {title}
-      </h3>
-
-      <p className="mt-2 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-        {text}
-      </p>
-    </SurfaceCard>
-  );
-}
-
-function JourneyStep({ step, item }) {
-  return (
-    <div className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] p-4 shadow-[var(--shadow-soft)]">
-      <div className="flex gap-4">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-xs font-black text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)]">
-          {step}
-        </div>
-
-        <div>
-          <h3 className="text-sm font-black text-[var(--color-text)]">
-            {item.label}
-          </h3>
-          <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-            {item.text}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function StoreControlPreview() {
-  return (
-    <SurfaceCard className="p-4 sm:p-5 lg:p-6">
-      <div className="rounded-[30px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4 sm:p-5">
-        <div className="flex flex-col gap-4 border-b border-[var(--color-border)] pb-5 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-              Store command view
-            </div>
-            <div className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)]">
-              Your store workspace
-            </div>
-            <div className="mt-1 text-sm font-bold text-[var(--color-text-muted)]">
-              Main branch • Sales • Stock • Cash • Documents
-            </div>
-          </div>
-
-          <div className="flex w-fit items-center gap-2 rounded-full border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-            <span className="h-2 w-2 rounded-full bg-[var(--color-primary)]" />
-            Active branch
-          </div>
-        </div>
-
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          {[
-            ["Today sales", "Rwf 1,250,000", "Sales recorded"],
-            ["Cash expected", "Rwf 780,000", "Drawer tracked"],
-            ["Pay later", "Rwf 320,000", "Follow-up needed"],
-          ].map(([label, value, note]) => (
-            <div
-              key={label}
-              className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-card)] p-4 shadow-[var(--shadow-soft)]"
+        <nav className="svx-nav" aria-label="Main navigation">
+          {["Features", "How it works", "Pricing", "Resources"].map((item) => (
+            <a
+              key={item}
+              href={
+                item === "Features"
+                  ? "#features"
+                  : item === "How it works"
+                    ? "#how-it-works"
+                    : item === "Pricing"
+                      ? "#pricing"
+                      : "#resources"
+              }
             >
-              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
-                {label}
+              {item}
+              {item === "Resources" ? <span>⌄</span> : null}
+            </a>
+          ))}
+        </nav>
+
+        <div className="svx-header-actions">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="svx-theme-toggle"
+            aria-label="Toggle theme"
+          >
+            <span className={!isDark ? "active" : ""}>☀</span>
+            <span className={isDark ? "active" : ""}>◐</span>
+          </button>
+
+          <Link to="/login" className="svx-login-link">
+            Log in
+          </Link>
+
+          <Link to="/signup" className="svx-header-cta">
+            Get started
+          </Link>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function Badge({ children }) {
+  return <span className="svx-badge">{children}</span>;
+}
+
+function PrimaryLink({ to = "/signup", children, className = "" }) {
+  return (
+    <Link to={to} className={cx("svx-btn svx-btn-primary", className)}>
+      {children}
+    </Link>
+  );
+}
+
+function SecondaryLink({ to = "/login", children, className = "" }) {
+  return (
+    <Link to={to} className={cx("svx-btn svx-btn-secondary", className)}>
+      {children}
+    </Link>
+  );
+}
+
+function WhiteCard({ children, className = "" }) {
+  return <div className={cx("svx-card", className)}>{children}</div>;
+}
+
+function FeatureIcon({ Icon }) {
+  return (
+    <div className="svx-feature-icon">
+      <Icon size={22} strokeWidth={2.5} />
+    </div>
+  );
+}
+
+function ProblemCard({ icon, title, text }) {
+  return (
+    <WhiteCard className="svx-feature-card svx-problem-card">
+      <div className="svx-card-topline">
+        <FeatureIcon Icon={icon} />
+        <h3>{title}</h3>
+      </div>
+
+      <p>{text}</p>
+    </WhiteCard>
+  );
+}
+
+function PlatformCard({ icon, title, text }) {
+  return (
+    <WhiteCard className="svx-feature-card svx-platform-card">
+      <div className="svx-card-topline">
+        <FeatureIcon Icon={icon} />
+        <h3>{title}</h3>
+      </div>
+
+      <p>{text}</p>
+    </WhiteCard>
+  );
+}
+
+function HeroLineChart() {
+  return (
+    <svg viewBox="0 0 430 150" className="svx-chart" aria-hidden="true">
+      <path
+        d="M8 108 C44 58, 76 44, 114 68 C146 88, 158 10, 198 38 C238 70, 232 112, 282 82 C320 58, 356 72, 422 28"
+        fill="none"
+        stroke="var(--landing-primary)"
+        strokeLinecap="round"
+        strokeWidth="5"
+      />
+      <path
+        d="M8 108 C44 58, 76 44, 114 68 C146 88, 158 10, 198 38 C238 70, 232 112, 282 82 C320 58, 356 72, 422 28"
+        fill="none"
+        stroke="var(--landing-primary)"
+        strokeLinecap="round"
+        strokeOpacity="0.12"
+        strokeWidth="14"
+      />
+      {[8, 76, 114, 198, 282, 356, 422].map((x, index) => (
+        <circle
+          key={x}
+          cx={x}
+          cy={[108, 44, 68, 38, 82, 72, 28][index]}
+          r="4"
+          fill="var(--landing-primary)"
+        />
+      ))}
+    </svg>
+  );
+}
+
+function DashboardMockup() {
+  const navItems = ["Overview", "Sales", "Orders", "Products", "Employees", "Reports", "Settings"];
+
+  return (
+    <div className="svx-dashboard">
+      <aside className="svx-dashboard-sidebar">
+        <div className="svx-dashboard-brand">
+          <img src="/storvex_icon.webp" alt="" />
+          <span>Storvex</span>
+        </div>
+
+        <div className="svx-dashboard-nav">
+          {navItems.map((item, index) => (
+            <div key={item} className={index === 0 ? "active" : ""}>
+              <span className="svx-nav-dot" />
+              {item}
+            </div>
+          ))}
+        </div>
+      </aside>
+
+      <main className="svx-dashboard-main">
+        <div className="svx-dashboard-top">
+          <div>
+            <h3>Overview</h3>
+            <div className="svx-date-pill">
+              <span>▣</span>
+              May 12 — May 18, 2026
+            </div>
+          </div>
+
+          <button type="button" className="svx-branch-pill">
+            Downtown Branch
+            <span>⌄</span>
+          </button>
+        </div>
+
+        <div className="svx-kpi-grid">
+          {[
+            ["Total sales", "RWF 14,250", "+12.9%"],
+            ["Net profit", "RWF 4,820", "+8.7%"],
+            ["Orders", "1,246", "+16.1%"],
+          ].map(([label, value, change]) => (
+            <div key={label} className="svx-kpi-card">
+              <div className="svx-kpi-head">
+                <span>{label}</span>
+                <span>⌄</span>
               </div>
-              <div className="mt-3 text-lg font-black tracking-[-0.03em] text-[var(--color-text)]">
-                {value}
-              </div>
-              <div className="mt-1 text-xs font-bold text-[var(--color-text-muted)]">
-                {note}
-              </div>
+              <strong>{value}</strong>
+              <p>{change} vs last week</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-5 grid gap-3 lg:grid-cols-2">
-          <div className="rounded-[26px] border border-[var(--color-border)] bg-[var(--color-card)] p-4 shadow-[var(--shadow-soft)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-black text-[var(--color-text)]">
-                  Drawer truth
-                </div>
-                <div className="mt-1 text-xs font-bold text-[var(--color-text-muted)]">
-                  Physical cash accountability
-                </div>
-              </div>
-
-              <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-                Open
-              </span>
+        <div className="svx-dashboard-bottom">
+          <div className="svx-chart-card">
+            <div className="svx-panel-head">
+              <h4>Sales over time</h4>
+              <span>Day</span>
             </div>
-
-            <div className="mt-5 space-y-3">
-              {[
-                ["Opening cash", "Rwf 50,000"],
-                ["Cash sales", "Rwf 730,000"],
-                ["Money out", "Rwf 0"],
-                ["Expected close", "Rwf 780,000"],
-              ].map(([label, value]) => (
-                <div key={label} className="flex items-center justify-between gap-3 text-sm">
-                  <span className="font-semibold text-[var(--color-text-muted)]">
-                    {label}
-                  </span>
-                  <span className="font-black text-[var(--color-text)]">{value}</span>
-                </div>
-              ))}
-            </div>
+            <HeroLineChart />
           </div>
 
-          <div className="rounded-[26px] border border-[var(--color-border)] bg-[var(--color-card)] p-4 shadow-[var(--shadow-soft)]">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-black text-[var(--color-text)]">
-                  Owner evidence
-                </div>
-                <div className="mt-1 text-xs font-bold text-[var(--color-text-muted)]">
-                  Recent business activity
-                </div>
-              </div>
+          <div className="svx-stores-card">
+            <h4>Top stores</h4>
 
-              <span className="text-xs font-black text-[var(--color-primary)]">
-                Live
-              </span>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              {activityItems.map((item) => (
-                <div
-                  key={item.title}
-                  className="rounded-2xl bg-[var(--color-surface-2)] px-4 py-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-black text-[var(--color-text)]">
-                        {item.title}
-                      </div>
-                      <div className="mt-1 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
-                        {item.text}
-                      </div>
-                    </div>
-
-                    <span className="shrink-0 rounded-full bg-[var(--color-card)] px-2.5 py-1 text-[10px] font-black text-[var(--color-primary)]">
-                      {item.tag}
-                    </span>
+            <div className="svx-store-list">
+              {[
+                ["Downtown Branch", "RWF 8,250"],
+                ["Market Street", "RWF 4,750"],
+                ["Lakeside Store", "RWF 5,430"],
+              ].map(([name, value], index) => (
+                <div key={name} className="svx-store-row">
+                  <div>
+                    <span>{index + 1}</span>
+                    <strong>{name}</strong>
                   </div>
+                  <b>{value}</b>
                 </div>
               ))}
             </div>
           </div>
         </div>
+      </main>
+    </div>
+  );
+}
 
-        <div className="mt-5 rounded-[26px] bg-[var(--color-primary)] p-4 text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)]">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-sm font-black">Owner decision point</div>
-              <div className="mt-1 text-xs font-semibold leading-5 opacity-75">
-                Can the owner trust today’s sales, cash, and stock movement?
+function PhoneMockup() {
+  return (
+    <div className="svx-phone">
+      <div className="svx-phone-notch" />
+
+      <div className="svx-phone-screen">
+        <div className="svx-phone-head">
+          <p>Overview</p>
+          <span>•••</span>
+        </div>
+
+        <p className="svx-phone-date">Daily · Jun 18, 2026</p>
+
+        <div className="svx-phone-card-stack">
+          {[
+            ["Total sales", "RWF 14.2M"],
+            ["Net profit", "RWF 4.82M"],
+            ["Orders", "1,246"],
+          ].map(([label, value]) => (
+            <div key={label} className="svx-phone-card">
+              <p>{label}</p>
+              <strong>{value}</strong>
+            </div>
+          ))}
+        </div>
+
+        <div className="svx-phone-bars">
+          {[22, 35, 28, 60, 42, 52, 74].map((height, index) => (
+            <span
+              key={index}
+              style={{ height: `${height}%`, opacity: index % 2 ? 0.55 : 0.9 }}
+            />
+          ))}
+        </div>
+
+        <div className="svx-phone-plus">+</div>
+      </div>
+    </div>
+  );
+}
+
+function MobileReadySection() {
+  return (
+    <section id="trust" className="svx-mobile-ready-section">
+      <div className="svx-mobile-ready-shell">
+        <div className="svx-mobile-ready-copy">
+          <Badge>Mobile-ready</Badge>
+
+          <h2>Run your store from anywhere.</h2>
+
+          <p>
+            Storvex works on desktop and mobile, so you can stay in control even when you’re on the
+            move.
+          </p>
+
+          <div className="svx-mobile-checklist">
+            {mobilePoints.map((item) => (
+              <div key={item}>
+                <span>
+                  <Check size={14} strokeWidth={3} />
+                </span>
+                <strong>{item}</strong>
               </div>
+            ))}
+          </div>
+
+          <div className="svx-store-badges">
+            <a href="/signup" aria-label="Download on the App Store" className="svx-app-badge">
+              <span className="svx-apple-mark"></span>
+              <span>
+                <small>Download on the</small>
+                App Store
+              </span>
+            </a>
+
+            <a href="/signup" aria-label="Get it on Google Play" className="svx-app-badge">
+              <span className="svx-play-mark">▶</span>
+              <span>
+                <small>Get it on</small>
+                Google Play
+              </span>
+            </a>
+          </div>
+        </div>
+
+        <div className="svx-mobile-ready-visual">
+          <div className="svx-mobile-network">
+            <svg viewBox="0 0 620 420" aria-hidden="true">
+              <path
+                d="M130 210 C205 145, 292 153, 350 214 C405 270, 496 248, 560 176"
+                fill="none"
+                stroke="currentColor"
+                strokeDasharray="8 10"
+                strokeLinecap="round"
+                strokeWidth="2"
+              />
+              <path
+                d="M350 214 C420 330, 505 335, 560 278"
+                fill="none"
+                stroke="currentColor"
+                strokeDasharray="8 10"
+                strokeLinecap="round"
+                strokeWidth="2"
+              />
+              <path
+                d="M350 214 C410 96, 492 74, 546 98"
+                fill="none"
+                stroke="currentColor"
+                strokeDasharray="8 10"
+                strokeLinecap="round"
+                strokeWidth="2"
+              />
+            </svg>
+
+            <div className="svx-mobile-app-icon">
+              <img src="/storvex_icon.webp" alt="Storvex app icon" />
             </div>
 
-            <div className="rounded-2xl bg-white/10 px-4 py-2 text-sm font-black">
-              Yes — every action has evidence
-            </div>
+            <img
+              src="/avatars/african-owner-3.webp"
+              alt="Store owner receiving live updates"
+              className="svx-network-avatar svx-network-avatar-one"
+            />
+            <img
+              src="/avatars/african-owner-1.webp"
+              alt="Store manager checking branch activity"
+              className="svx-network-avatar svx-network-avatar-two"
+            />
+            <img
+              src="/avatars/african-owner-2.webp"
+              alt="Store staff member using Storvex"
+              className="svx-network-avatar svx-network-avatar-three"
+            />
           </div>
+
+          <PhoneMockup />
         </div>
       </div>
-    </SurfaceCard>
+    </section>
+  );
+}
+
+function Footer() {
+    const currentYear = new Date().getFullYear();
+
+  return (
+    <section id="resources" className="svx-footer-section">
+      <div className="svx-footer-cta">
+        <div>
+          <h2>Ready to run your store with clarity?</h2>
+          <p>Create your owner account and open your first branch in minutes.</p>
+        </div>
+
+        <div className="svx-footer-cta-actions">
+          <Link to="/signup" className="svx-footer-primary">
+            Get started
+          </Link>
+
+          <Link to="/login" className="svx-footer-secondary">
+            Book a demo
+          </Link>
+        </div>
+      </div>
+
+      <footer className="svx-footer-main">
+        <div className="svx-footer-grid">
+          <div className="svx-footer-brand">
+            <img src="/storvex_white.webp" alt="Storvex" />
+
+            <p>
+              Store control system for modern retail. Track sales, protect profit, and run every
+              branch with confidence.
+            </p>
+
+            <div className="svx-footer-credit">
+                <span>
+                  Developed by{" "}
+                  <a
+                    href="https://webimpactlab.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="svx-external-link"
+                  >
+                    WebimpactLab
+                  </a>
+                </span>
+
+                <a
+                  href="https://wa.me/250785587830"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="svx-external-link"
+                >
+                  WhatsApp: +250 785 587 830
+                </a>
+              </div>
+
+            <div className="svx-footer-socials">
+              {["f", "𝕏", "in", "◎"].map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </div>
+          </div>
+
+          {footerGroups.map((group) => (
+            <div key={group.title} className="svx-footer-column">
+              <h3>{group.title}</h3>
+
+              <div>
+                {group.links.map((item) => (
+                  <Link key={item} to="/signup">
+                    {item}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <div className="svx-footer-newsletter">
+            <h3>Stay in the loop</h3>
+
+            <p>Get tips and updates that help you run a better store.</p>
+
+            <form className="svx-footer-email">
+              <input placeholder="Enter your email" />
+              <button type="submit" aria-label="Submit email">
+                →
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <div className="svx-footer-bottom">
+          <p>© {currentYear} Storvex. All rights reserved.</p>
+
+          <div>
+            <Link to="/signup">Privacy Policy</Link>
+            <Link to="/signup">Terms of Service</Link>
+          </div>
+
+          <div>
+            <Link to="/signup">Security</Link>
+            <span>🌐 English ⌄</span>
+          </div>
+        </div>
+      </footer>
+    </section>
   );
 }
 
 export default function LandingPage() {
   return (
-    <PublicLayout>
-      <section className="px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto flex max-w-4xl flex-col items-center text-center">
-            <div className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-[11px] font-black uppercase tracking-[0.22em] text-[var(--color-text-muted)] shadow-[var(--shadow-soft)]">
-              Store control system for modern retail
-            </div>
+    <div className="storvex-landing min-h-screen">
+      <Header />
 
-            <h1 className="mt-6 text-4xl font-black tracking-[-0.075em] text-[var(--color-text)] sm:text-5xl lg:text-[68px] lg:leading-[0.92]">
-              Stop guessing what happened in your store.
-            </h1>
+      <main>
+        <section className="svx-hero">
+          <div className="svx-hero-shape" />
 
-            <p className="mt-6 max-w-3xl text-base font-semibold leading-8 text-[var(--color-text-muted)] sm:text-lg">
-              Storvex gives store owners one serious workspace for sales, inventory,
-              cash drawer control, customer balances, receipts, warranties, staff access,
-              and branch accountability.
-            </p>
+          <div className="svx-hero-inner">
+            <div className="svx-hero-copy">
+              <Badge>For store owners</Badge>
 
-            <div className="mt-8 flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row">
-              <Button as={Link} to="/signup" size="lg">
-                Get started
-              </Button>
+              <h1>Stop guessing what happened in your store.</h1>
 
-              <Button as={Link} to="/login" variant="secondary" size="lg">
-                Sign in
-              </Button>
-            </div>
-
-            <div className="mt-7 flex flex-wrap justify-center gap-2">
-              {["No silent stock changes", "No unclear cash drawer", "No missing branch truth"].map(
-                (item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-[var(--color-border)] bg-[var(--color-card)] px-3 py-2 text-xs font-black text-[var(--color-text-muted)] shadow-[var(--shadow-soft)]"
-                  >
-                    {item}
-                  </span>
-                ),
-              )}
-            </div>
-          </div>
-
-          <div className="mx-auto mt-10 grid max-w-5xl gap-3 md:grid-cols-3">
-            {proofCards.map((item) => (
-              <ProofCard key={item.title} {...item} />
-            ))}
-          </div>
-
-          <div className="mx-auto mt-8 max-w-6xl">
-            <StoreControlPreview />
-          </div>
-        </div>
-      </section>
-
-      <section id="features" className="px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto max-w-3xl text-center">
-            <SectionEyebrow>Store operations</SectionEyebrow>
-            <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] text-[var(--color-text)] sm:text-4xl lg:text-5xl">
-              Built for the moments where stores lose money.
-            </h2>
-            <p className="mt-4 text-base font-semibold leading-8 text-[var(--color-text-muted)]">
-              Storvex is not a decorative dashboard. It is built around the places
-              where real stores leak money: unclear stock, weak cash control,
-              unpaid customer balances, and staff actions without evidence.
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {modules.map((feature) => (
-              <ModuleCard key={feature.title} {...feature} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="workflow" className="px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
-        <div className="mx-auto max-w-7xl">
-          <div className="mx-auto max-w-3xl text-center">
-            <SectionEyebrow>Owner onboarding</SectionEyebrow>
-            <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] text-[var(--color-text)] sm:text-4xl lg:text-5xl">
-              The first owner experience must feel controlled.
-            </h2>
-            <p className="mt-4 text-base font-semibold leading-8 text-[var(--color-text-muted)]">
-              Before the dashboard, the owner must understand the path: create the store,
-              verify ownership, choose access, create a password, and enter a workspace
-              where the first branch already exists.
-            </p>
-
-            <div className="mt-6">
-              <Button as={Link} to="/signup" size="lg">
-                Start owner setup
-              </Button>
-            </div>
-          </div>
-
-          <div className="mt-10 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-            {onboardingSteps.map((item, index) => (
-              <JourneyStep
-                key={item.label}
-                step={String(index + 1).padStart(2, "0")}
-                item={item}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="trust" className="px-4 py-12 sm:px-6 lg:px-8 lg:py-20">
-        <div className="mx-auto max-w-7xl">
-          <SurfaceCard className="p-6 sm:p-8 lg:p-10">
-            <div className="mx-auto max-w-3xl text-center">
-              <SectionEyebrow>Owner trust</SectionEyebrow>
-              <h2 className="mt-3 text-3xl font-black tracking-[-0.055em] text-[var(--color-text)] sm:text-4xl lg:text-5xl">
-                Clear for owners. Strict for staff. Useful every day.
-              </h2>
-              <p className="mt-4 text-base font-semibold leading-8 text-[var(--color-text-muted)]">
-                The owner should not need technical words to understand the business.
-                Storvex uses plain language around sales, stock, money, customers,
-                branches, and staff access.
+              <p>
+                Everything you need to run a smarter store. Track performance, manage your team, and
+                grow profitably with real-time clarity.
               </p>
-            </div>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {trustPoints.map((item) => (
-                <div
-                  key={item}
-                  className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-4 text-sm font-black text-[var(--color-text)] shadow-[var(--shadow-soft)]"
-                >
-                  {item}
+              <div className="svx-hero-actions">
+                <PrimaryLink>Get started</PrimaryLink>
+                <SecondaryLink>Book a demo</SecondaryLink>
+              </div>
+
+              <div className="svx-trust-row">
+                <div className="svx-trust-avatars">
+                  {["L", "A", "M", "K"].map((item) => (
+                    <span key={item}>{item}</span>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </SurfaceCard>
-        </div>
-      </section>
 
-      <section className="px-4 pb-14 pt-8 sm:px-6 lg:px-8 lg:pb-20">
-        <div className="mx-auto max-w-7xl">
-          <div className="overflow-hidden rounded-[40px] border border-[var(--color-border)] bg-[var(--color-primary)] p-6 text-[var(--color-primary-contrast)] shadow-[var(--shadow-card)] sm:p-8 lg:p-10">
-            <div className="flex flex-col items-center text-center">
-              <p className="text-[11px] font-black uppercase tracking-[0.22em] opacity-70">
-                Ready to begin
-              </p>
-              <h2 className="mt-3 max-w-4xl text-3xl font-black tracking-[-0.055em] sm:text-4xl lg:text-5xl">
-                Create the owner account and open a branch-ready workspace.
-              </h2>
-              <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 opacity-75 sm:text-base">
-                Start with store identity, verify the owner, activate access,
-                and continue into a workspace built for real store control.
-              </p>
-
-              <div className="mt-7 flex w-full flex-col justify-center gap-3 sm:w-auto sm:flex-row">
-                <Link
-                  to="/signup"
-                  className="inline-flex h-12 items-center justify-center rounded-2xl bg-[var(--color-primary-contrast)] px-6 text-sm font-black text-[var(--color-primary)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5"
-                >
-                  Get started
-                </Link>
-
-                <Link
-                  to="/login"
-                  className="inline-flex h-12 items-center justify-center rounded-2xl border border-white/25 bg-white/10 px-6 text-sm font-black text-[var(--color-primary-contrast)] transition hover:-translate-y-0.5 hover:bg-white/15"
-                >
-                  Sign in
-                </Link>
+                <p>Trusted by 2,000+ store owners</p>
               </div>
             </div>
+
+            <div className="svx-hero-visual">
+              <DashboardMockup />
+            </div>
           </div>
-        </div>
-      </section>
-    </PublicLayout>
+        </section>
+
+        <section id="how-it-works" className="svx-section svx-platform-section">
+          <div className="svx-section-shell">
+            <div className="svx-section-heading">
+              <span>Store operating system</span>
+              <h2>One platform. Complete store control.</h2>
+              <p>
+                Sales, stock, cash, documents, staff access, and branch visibility stay connected in
+                one owner-first workspace.
+              </p>
+            </div>
+
+            <div className="svx-card-grid svx-platform-grid">
+              {platformCards.map((item) => (
+                <PlatformCard key={item.title} {...item} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <MobileReadySection />
+
+        <section id="features" className="svx-section svx-problem-section">
+          <div className="svx-section-shell">
+            <div className="svx-section-heading">
+              <span>Profit protection</span>
+              <h2>Built for the moments where stores lose money.</h2>
+              <p>
+                Storvex focuses on the weak points that quietly damage stores: missed sales, blind
+                spots, staff mistakes, and uncontrolled costs.
+              </p>
+            </div>
+
+            <div className="svx-card-grid svx-problem-grid">
+              {problemCards.map((item) => (
+                <ProblemCard key={item.title} {...item} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <Footer />
+      </main>
+    </div>
   );
 }
