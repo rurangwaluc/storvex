@@ -1,87 +1,50 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 
-import Button from "../ui/Button";
-import LogoMark from "../ui/LogoMark";
-import ThemeToggle from "../ui/ThemeToggle";
-
-const NAV_ITEMS = [
+const navItems = [
   { label: "Features", href: "/#features" },
-  { label: "Workflow", href: "/#workflow" },
-  { label: "Trust", href: "/#trust" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Pricing", href: "/#pricing" },
+  { label: "Resources", href: "/#resources" },
 ];
 
-function isAuthPath(pathname) {
-  return [
-    "/login",
-    "/signup",
-    "/verify-otp",
-    "/owner-payment",
-    "/confirm-signup",
-  ].some((path) => pathname.startsWith(path));
-}
-
-export default function PublicHeader({ isDark, onToggleTheme }) {
-  const location = useLocation();
-  const compact = isAuthPath(location.pathname);
-
+export default function PublicHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-bg)]/82 backdrop-blur-2xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-        <Link
-          to="/"
-          className="group inline-flex min-w-0 rounded-[22px] outline-none transition focus:ring-4 focus:ring-[rgba(74,163,255,0.16)]"
-          aria-label="Storvex Stores home"
-        >
-          <LogoMark compact={false} />
+    <header className="sticky top-0 z-50 border-b border-[#e8edf6] bg-white/95 backdrop-blur-xl">
+      <div className="mx-auto flex h-[76px] max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
+        <Link to="/" className="flex items-center" aria-label="Storvex home">
+          <img
+            src="/storvex_dark.webp"
+            alt="Storvex"
+            className="h-[34px] w-auto object-contain sm:h-[38px]"
+          />
         </Link>
 
-        {!compact ? (
-          <nav className="hidden items-center gap-1 lg:flex">
-            {NAV_ITEMS.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="rounded-2xl px-4 py-2 text-sm font-black text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
-              >
-                {item.label}
-              </a>
-            ))}
-          </nav>
-        ) : null}
+        <nav className="hidden items-center gap-9 lg:flex">
+          {navItems.map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              className="text-[13px] font-black text-[#07142f] transition hover:text-[#0066ff]"
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
+        <div className="flex items-center gap-4">
+          <Link
+            to="/login"
+            className="hidden h-11 items-center justify-center rounded-[14px] px-3 text-[13px] font-black text-[#07142f] transition hover:bg-[#f4f8ff] md:inline-flex"
+          >
+            Log in
+          </Link>
 
-          {!compact ? (
-            <>
-              <Button
-                as={Link}
-                to="/login"
-                variant="ghost"
-                className="hidden xs:inline-flex"
-              >
-                Sign in
-              </Button>
-
-              <Button as={Link} to="/signup" className="hidden sm:inline-flex">
-                Get started
-              </Button>
-
-              <Button as={Link} to="/signup" size="sm" className="sm:hidden">
-                Start
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button as={Link} to="/login" className="hidden sm:inline-flex">
-                Log in
-              </Button>
-
-              <Button as={Link} to="/login" size="sm" className="sm:hidden">
-                Log in
-              </Button>
-            </>
-          )}
+          <Link
+            to="/signup"
+            className="inline-flex h-11 items-center justify-center rounded-[14px] bg-[#0066ff] px-6 text-[13px] font-black text-white shadow-[0_12px_24px_rgba(0,102,255,0.18)] transition hover:-translate-y-0.5 hover:bg-[#005be5]"
+          >
+            Get started
+          </Link>
         </div>
       </div>
     </header>

@@ -1,16 +1,23 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import React from "react";
 import { Toaster } from "react-hot-toast";
 
-import App from "../App";
+import StorvexAppLoader from "../components/pwa/StorvexAppLoader";
 import { ThemeProvider } from "../theme/ThemeProvider";
+
+const App = dynamic(() => import("../App"), {
+  ssr: false,
+  loading: () => <StorvexAppLoader />,
+});
 
 export default function LegacyClientApp() {
   return (
     <React.StrictMode>
       <ThemeProvider>
         <App />
+
         <Toaster
           position="top-right"
           toastOptions={{

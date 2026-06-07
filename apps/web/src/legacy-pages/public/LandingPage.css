@@ -59,14 +59,16 @@
 
 /* Header */
 .svx-header {
-  position: sticky;
+  position: fixed;
   top: 0;
-  z-index: 50;
+  right: 0;
+  left: 0;
+  z-index: 80;
   border-bottom: 1px solid var(--landing-border);
-  background: color-mix(in srgb, var(--landing-bg) 94%, transparent);
-  backdrop-filter: blur(18px);
+  background: color-mix(in srgb, var(--landing-bg) 92%, transparent);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 }
-
 .svx-header-inner {
   display: flex;
   align-items: center;
@@ -241,7 +243,7 @@
   position: relative;
   overflow: hidden;
   background: var(--landing-hero-bg);
-  padding: 92px 48px 86px;
+  padding: 168px 48px 86px;
 }
 
 .svx-hero-shape {
@@ -1379,7 +1381,8 @@
 /* 1366px laptops */
 @media (max-width: 1366px) {
   .svx-hero {
-    padding: 78px 40px 76px;
+      padding: 154px 40px 76px;
+
   }
 
   .svx-hero-inner {
@@ -1398,7 +1401,7 @@
   }
 
   .svx-hero {
-    padding: 64px 32px 70px;
+      padding: 140px 32px 70px;
   }
 
   .svx-hero-inner {
@@ -1603,7 +1606,8 @@
   }
 
   .svx-hero {
-    padding: 34px 16px 44px;
+      padding: 98px 16px 44px;
+
   }
 
   .svx-hero-inner {

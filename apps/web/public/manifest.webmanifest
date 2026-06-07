@@ -1,0 +1,32 @@
+{
+  "name": "Storvex",
+  "short_name": "Storvex",
+  "description": "Store control system for modern retail.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#06111F",
+  "theme_color": "#06111F",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    {
+      "src": "/storvex_icon.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/storvex_icon.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "/storvex_icon.webp",
+      "sizes": "512x512",
+      "type": "image/webp",
+      "purpose": "maskable"
+    }
+  ]
+}
