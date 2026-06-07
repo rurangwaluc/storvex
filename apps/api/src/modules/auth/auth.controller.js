@@ -217,7 +217,10 @@ function buildTenantCreateData(intent, ownerEmail, ownerPhone) {
     status: "ACTIVE",
   };
 
-  if (fieldExists(prisma.tenant, "shopType")) data.shopType = cleanString(intent.shopType);
+  if (fieldExists(prisma.tenant, "shopType")) {
+    data.shopType = normalizeBusinessCategory(intent.shopType);
+  }
+
   if (fieldExists(prisma.tenant, "district")) data.district = cleanString(intent.district);
   if (fieldExists(prisma.tenant, "sector")) data.sector = cleanString(intent.sector);
   if (fieldExists(prisma.tenant, "address")) data.address = cleanString(intent.address);
@@ -530,13 +533,17 @@ async function ownerIntent(req, res) {
     const emailNorm = normalizeEmail(email);
     const phoneNorm = normalizePhone(phone);
 
-    if (!emailNorm) return res.status(400).json({ message: "Invalid email format" });
+    if (!emailNorm) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
 
     if (!phoneNorm || !isRwandaMsisdn250(phoneNorm)) {
       return res
         .status(400)
         .json({ message: "Invalid phone format. Use 2507XXXXXXXX or 07XXXXXXXX" });
     }
+
+    const normalizedShopType = normalizeBusinessCategory(shopType);
 
     const signupMode = String(mode || "TRIAL").trim().toUpperCase();
 
@@ -547,10 +554,15 @@ async function ownerIntent(req, res) {
     let requestedPlan = null;
 
     if (signupMode === "PAID") {
-      if (!planKey) return res.status(400).json({ message: "planKey is required for paid signup" });
+      if (!planKey) {
+        return res.status(400).json({ message: "planKey is required for paid signup" });
+      }
 
       requestedPlan = getPlanByKey(planKey);
-      if (!requestedPlan) return res.status(400).json({ message: "Invalid planKey" });
+
+      if (!requestedPlan) {
+        return res.status(400).json({ message: "Invalid planKey" });
+      }
     } else {
       requestedPlan = getTrialPlan();
     }
@@ -564,7 +576,7 @@ async function ownerIntent(req, res) {
         ownerName: String(ownerName).trim(),
         email: emailNorm,
         phone: phoneNorm,
-        shopType: cleanString(shopType),
+        shopType: normalizedShopType,
         district: cleanString(district),
         sector: cleanString(sector),
         address: cleanString(address),
@@ -618,6 +630,11 @@ async function ownerIntent(req, res) {
     });
   } catch (err) {
     console.error("ownerIntent error:", err);
+
+    if (err?.status) {
+      return res.status(err.status).json({ message: err.message });
+    }
+
     return res.status(500).json({ message: "Server error" });
   }
 }
