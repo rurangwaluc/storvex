@@ -1,11 +1,13 @@
-const CACHE_NAME = "storvex-web-v1";
+const CACHE_NAME = "storvex-web-v3";
 const OFFLINE_URL = "/offline";
 
 const PRECACHE_URLS = [
   "/",
   "/offline",
   "/manifest.webmanifest",
-  "/storvex_icon.webp",
+  "/pwa-icon-192.png",
+  "/pwa-icon-512.png",
+  "/pwa-maskable-icon-512.png",
   "/storvex_dark.webp",
   "/storvex_white.webp"
 ];
@@ -42,7 +44,9 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match(OFFLINE_URL).then((response) => response || caches.match("/")))
+      fetch(request).catch(() =>
+        caches.match(OFFLINE_URL).then((response) => response || caches.match("/"))
+      )
     );
     return;
   }
