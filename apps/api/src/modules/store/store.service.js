@@ -5,6 +5,7 @@ const {
   isConfigured: isStorageConfigured,
 } = require("../../lib/storage/objectStorage");
 const { previewDocumentNumbers } = require("../documents/documentNumber.service");
+const { normalizeBusinessCategory } = require("../../config/businessCategories");
 
 const DEFAULT_COUNTRY_CODE = "RW";
 const DEFAULT_CURRENCY_CODE = "RWF";
@@ -14,15 +15,6 @@ const ALLOWED_LOGO_CONTENT_TYPES = new Set([
   "image/png",
   "image/jpeg",
   "image/webp",
-]);
-
-const ALLOWED_SHOP_TYPES = new Set([
-  "ELECTRONICS_RETAIL",
-  "PHONE_SHOP",
-  "LAPTOP_SHOP",
-  "ACCESSORIES_SHOP",
-  "REPAIR_SHOP",
-  "MIXED_ELECTRONICS",
 ]);
 
 const STORE_ROLES = new Set([
@@ -109,21 +101,7 @@ function normalizeShopType(value) {
   const raw = cleanUpperString(value, null, 80);
   if (!raw) return null;
 
-  if (raw === "ELECTRONICS") return "ELECTRONICS_RETAIL";
-  if (raw === "PHONE") return "PHONE_SHOP";
-  if (raw === "LAPTOP") return "LAPTOP_SHOP";
-  if (raw === "ACCESSORIES") return "ACCESSORIES_SHOP";
-  if (raw === "REPAIRS") return "REPAIR_SHOP";
-
-  if (!ALLOWED_SHOP_TYPES.has(raw)) {
-    const err = new Error(
-      "shopType must be one of ELECTRONICS_RETAIL, PHONE_SHOP, LAPTOP_SHOP, ACCESSORIES_SHOP, REPAIR_SHOP, MIXED_ELECTRONICS",
-    );
-    err.status = 400;
-    throw err;
-  }
-
-  return raw;
+  return normalizeBusinessCategory(raw);
 }
 
 function normalizeCountryCode(value) {
