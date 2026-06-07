@@ -200,9 +200,30 @@ function SmallLockIcon() {
 
 function BusinessCategoryPicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState("down");
   const pickerRef = useRef(null);
 
   const selected = BUSINESS_CATEGORIES.find((category) => category.value === value);
+
+  function chooseMenuPlacement() {
+    const picker = pickerRef.current;
+    if (!picker) return;
+
+    const rect = picker.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    const preferredMenuHeight = 340;
+    const shouldOpenUp = spaceBelow < preferredMenuHeight && spaceAbove > spaceBelow;
+
+    setPlacement(shouldOpenUp ? "up" : "down");
+  }
+
+  function toggleDropdown() {
+    chooseMenuPlacement();
+    setOpen((current) => !current);
+  }
 
   useEffect(() => {
     function handlePointerDown(event) {
@@ -217,24 +238,35 @@ function BusinessCategoryPicker({ value, onChange }) {
       }
     }
 
+    function handleResizeOrScroll() {
+      if (!open) return;
+      chooseMenuPlacement();
+    }
+
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleResizeOrScroll);
+    window.addEventListener("scroll", handleResizeOrScroll, true);
 
     return () => {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleResizeOrScroll);
+      window.removeEventListener("scroll", handleResizeOrScroll, true);
     };
-  }, []);
+  }, [open]);
 
   return (
     <div
       ref={pickerRef}
-      className={`svx-business-category-picker ${open ? "is-open" : ""}`}
+      className={`svx-business-category-picker ${open ? "is-open" : ""} ${
+        placement === "up" ? "is-up" : "is-down"
+      }`}
     >
       <button
         type="button"
         className="svx-business-category-button"
-        onClick={() => setOpen((current) => !current)}
+        onClick={toggleDropdown}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
