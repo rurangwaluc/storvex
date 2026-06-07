@@ -10,6 +10,8 @@ const {
   getTrialDays,
 } = require("../../config/plans");
 
+const { normalizeBusinessCategory } = require("../../config/businessCategories");
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 function normalizeEmail(x) {
