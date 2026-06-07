@@ -1,47 +1,89 @@
 import { Link } from "react-router-dom";
 
-const navItems = [
-  { label: "Features", href: "/#features" },
-  { label: "How it works", href: "/#how-it-works" },
-  { label: "Pricing", href: "/#pricing" },
-  { label: "Resources", href: "/#resources" },
-];
+import { useTheme } from "../../hooks/useTheme";
+
+function cx(...items) {
+  return items.filter(Boolean).join(" ");
+}
 
 export default function PublicHeader() {
+  const { isDark, toggleTheme } = useTheme();
+
+  const links = [
+    { label: "Features", href: "/#features" },
+    { label: "How it works", href: "/#how-it-works" },
+    { label: "Pricing", href: "/#pricing" },
+    { label: "Resources", href: "/#resources", hasChevron: true },
+  ];
+
   return (
-    <header className="sticky top-0 z-50 border-b border-[#e8edf6] bg-white/95 backdrop-blur-xl">
-      <div className="mx-auto flex h-[76px] max-w-[1440px] items-center justify-between px-5 sm:px-8 lg:px-12">
-        <Link to="/" className="flex items-center" aria-label="Storvex home">
+    <header className="fixed left-0 right-0 top-0 z-[90] border-b border-[var(--color-border)] bg-[var(--color-bg)]/95 backdrop-blur-[22px]">
+      <div className="mx-auto flex h-[76px] max-w-[1440px] items-center justify-between px-6 sm:px-8 lg:px-12">
+        <Link to="/" className="flex shrink-0 items-center" aria-label="Storvex home">
           <img
-            src="/storvex_dark.webp"
+            src={isDark ? "/storvex_white.webp" : "/storvex_dark.webp"}
             alt="Storvex"
-            className="h-[34px] w-auto object-contain sm:h-[38px]"
+            className="h-[44px] w-auto object-contain sm:h-[48px]"
           />
         </Link>
 
-        <nav className="hidden items-center gap-9 lg:flex">
-          {navItems.map((item) => (
+        <nav className="hidden items-center gap-9 lg:flex" aria-label="Main navigation">
+          {links.map((item) => (
             <a
               key={item.label}
               href={item.href}
-              className="text-[13px] font-black text-[#07142f] transition hover:text-[#0066ff]"
+              className="inline-flex items-center gap-1.5 text-[13px] font-black text-[var(--color-text)] transition hover:text-[var(--color-primary)]"
             >
               {item.label}
+              {item.hasChevron ? (
+                <span className="text-[11px] leading-none text-[var(--color-text-muted)]">
+                  ⌄
+                </span>
+              ) : null}
             </a>
           ))}
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="inline-flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-card)] p-1 text-[12px] font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5"
+            aria-label="Toggle theme"
+          >
+            <span
+              className={cx(
+                "flex h-7 w-7 items-center justify-center rounded-full transition",
+                !isDark
+                  ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)]"
+                  : "text-[var(--color-text-muted)]",
+              )}
+            >
+              ☀
+            </span>
+
+            <span
+              className={cx(
+                "flex h-7 w-7 items-center justify-center rounded-full transition",
+                isDark
+                  ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)]"
+                  : "text-[var(--color-text-muted)]",
+              )}
+            >
+              ◐
+            </span>
+          </button>
+
           <Link
             to="/login"
-            className="hidden h-11 items-center justify-center rounded-[14px] px-3 text-[13px] font-black text-[#07142f] transition hover:bg-[#f4f8ff] md:inline-flex"
+            className="hidden h-11 items-center justify-center rounded-[14px] px-3 text-[13px] font-black text-[var(--color-text)] transition hover:bg-[var(--color-surface-2)] md:inline-flex"
           >
             Log in
           </Link>
 
           <Link
             to="/signup"
-            className="inline-flex h-11 items-center justify-center rounded-[14px] bg-[#0066ff] px-6 text-[13px] font-black text-white shadow-[0_12px_24px_rgba(0,102,255,0.18)] transition hover:-translate-y-0.5 hover:bg-[#005be5]"
+            className="inline-flex h-11 items-center justify-center rounded-[14px] bg-[var(--color-primary)] px-6 text-[13px] font-black text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5"
           >
             Get started
           </Link>

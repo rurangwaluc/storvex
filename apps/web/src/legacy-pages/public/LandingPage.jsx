@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
   ArrowUpRight,
   BarChart3,
@@ -108,6 +109,66 @@ const footerGroups = [
     links: ["About Us", "Careers", "Contact Us", "Partners"],
   },
 ];
+
+function useLandingAnimations() {
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const root = document.querySelector(".storvex-landing");
+    if (!root) return;
+
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const revealItems = Array.from(
+      root.querySelectorAll(
+        [
+          ".svx-section-heading",
+          ".svx-feature-card",
+          ".svx-mobile-ready-shell",
+          ".svx-mobile-checklist > div",
+          ".svx-app-badge",
+          ".svx-footer-cta",
+          ".svx-footer-grid",
+        ].join(", ")
+      )
+    );
+
+    revealItems.forEach((item, index) => {
+      item.classList.add("svx-reveal");
+
+      if (item.classList.contains("svx-feature-card")) {
+        item.style.setProperty("--svx-reveal-delay", `${(index % 8) * 55}ms`);
+      } else {
+        item.style.setProperty("--svx-reveal-delay", `${Math.min(index * 35, 220)}ms`);
+      }
+    });
+
+    if (prefersReducedMotion || !("IntersectionObserver" in window)) {
+      revealItems.forEach((item) => item.classList.add("is-visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      {
+        root: null,
+        threshold: 0.16,
+        rootMargin: "0px 0px -8% 0px",
+      }
+    );
+
+    revealItems.forEach((item) => observer.observe(item));
+
+    return () => observer.disconnect();
+  }, []);
+}
 
 function cx(...items) {
   return items.filter(Boolean).join(" ");
@@ -491,7 +552,7 @@ function MobileReadySection() {
 }
 
 function Footer() {
-    const currentYear = new Date().getFullYear();
+  const currentYear = new Date().getFullYear();
 
   return (
     <section id="resources" className="svx-footer-section">
@@ -523,27 +584,27 @@ function Footer() {
             </p>
 
             <div className="svx-footer-credit">
-                <span>
-                  Developed by{" "}
-                  <a
-                    href="https://webimpactlab.com"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="svx-external-link"
-                  >
-                    WebimpactLab
-                  </a>
-                </span>
-
+              <span>
+                Developed by{" "}
                 <a
-                  href="https://wa.me/250785587830"
+                  href="https://webimpactlab.com"
                   target="_blank"
                   rel="noreferrer"
                   className="svx-external-link"
                 >
-                  WhatsApp: +250 785 587 830
+                  WebimpactLab
                 </a>
-              </div>
+              </span>
+
+              <a
+                href="https://wa.me/250785587830"
+                target="_blank"
+                rel="noreferrer"
+                className="svx-external-link"
+              >
+                WhatsApp: +250 785 587 830
+              </a>
+            </div>
 
             <div className="svx-footer-socials">
               {["f", "𝕏", "in", "◎"].map((item) => (
@@ -599,6 +660,8 @@ function Footer() {
 }
 
 export default function LandingPage() {
+  useLandingAnimations();
+
   return (
     <div className="storvex-landing min-h-screen">
       <Header />
