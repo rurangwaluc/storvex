@@ -1,12 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
-import PublicLayout from "../../components/layout/PublicLayout";
+import OnboardingShell from "../../components/onboarding/OnboardingShell";
+import {
+  readOnboardingState,
+  saveOnboardingState,
+} from "../../components/onboarding/onboardingStorage";
 import AsyncButton from "../../components/ui/AsyncButton";
 import apiClient from "../../services/apiClient";
 
 const RESEND_SECONDS = 45;
+const OTP_LENGTH = 6;
 
 function cx(...items) {
   return items.filter(Boolean).join(" ");
@@ -14,6 +19,26 @@ function cx(...items) {
 
 function cleanString(value) {
   return String(value || "").trim();
+}
+
+function normalizeContact(value) {
+  return cleanString(value).toLowerCase();
+}
+
+function getContactKey(value) {
+  return encodeURIComponent(normalizeContact(value));
+}
+
+function getSentKey(intentId, channel, contactValue) {
+  return `storvex_otp_sent_${intentId}_${channel}_${getContactKey(contactValue)}`;
+}
+
+function getVerifiedContactStorageKey(channel) {
+  return channel === "EMAIL" ? "storvex_emailVerifiedFor" : "storvex_phoneVerifiedFor";
+}
+
+function contactMatches(savedContact, currentContact) {
+  return Boolean(savedContact) && normalizeContact(savedContact) === normalizeContact(currentContact);
 }
 
 function maskEmail(email) {
@@ -24,7 +49,7 @@ function maskEmail(email) {
   const start = name.slice(0, 2);
   const end = name.length > 4 ? name.slice(-1) : "";
 
-  return `${start}${"•".repeat(Math.max(3, name.length - 3))}${end}@${domain}`;
+  return `${start}${"•".repeat(Math.max(4, name.length - 3))}${end}@${domain}`;
 }
 
 function maskPhone(phone) {
@@ -41,199 +66,219 @@ function maskPhone(phone) {
   return phone || "—";
 }
 
-function readOnboardingState() {
-  try {
-    const raw = localStorage.getItem("storvex_onboarding");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+function formatCountdown(seconds) {
+  return `00:${String(Math.max(0, seconds)).padStart(2, "0")}`;
 }
 
-function saveOnboardingState(next) {
-  localStorage.setItem("storvex_onboarding", JSON.stringify(next));
-
-  localStorage.setItem("storvex_intentId", next.intentId || "");
-  localStorage.setItem("storvex_ownerPhone", next.phone || "");
-  localStorage.setItem("storvex_ownerEmail", next.email || "");
-  localStorage.setItem("storvex_storeName", next.storeName || "");
-  localStorage.setItem("storvex_ownerName", next.ownerName || "");
-  localStorage.setItem("storvex_shopType", next.shopType || "");
-  localStorage.setItem("storvex_district", next.district || "");
-  localStorage.setItem("storvex_sector", next.sector || "");
-  localStorage.setItem("storvex_address", next.address || "");
-  localStorage.setItem("storvex_deviceId", next.deviceId || "");
-
-  localStorage.setItem("storvex_emailVerified", String(Boolean(next.emailVerified)));
-  localStorage.setItem("storvex_phoneVerified", String(Boolean(next.phoneVerified)));
-}
-
-function inputClass() {
-  return "h-14 w-full rounded-[20px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-center text-lg font-black tracking-[0.35em] text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(74,163,255,0.12)] disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function buttonBase() {
-  return "inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function secondaryButton() {
-  return cx(
-    buttonBase(),
-    "border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
-}
-
-function surfaceCard() {
-  return "rounded-[34px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-}
-
-function DetailTile({ label, value }) {
+function EmailIllustration({ verified }) {
   return (
-    <div className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
-        {label}
-      </p>
-      <p className="mt-2 break-words text-sm font-black text-[var(--color-text)]">
-        {value || "—"}
-      </p>
-    </div>
-  );
-}
-
-function StatusPill({ verified }) {
-  return (
-    <span
-      className={cx(
-        "inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.13em]",
-        verified
-          ? "bg-emerald-500/10 text-emerald-600"
-          : "bg-amber-500/10 text-amber-600",
-      )}
-    >
-      {verified ? "Verified" : "Pending"}
-    </span>
-  );
-}
-
-function ProgressStep({ number, label, active = false, done = false }) {
-  return (
-    <div
-      className={cx(
-        "flex items-center gap-3 rounded-2xl border px-4 py-3",
-        active || done
-          ? "border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]"
-          : "border-[var(--color-border)] bg-[var(--color-surface-2)]",
-      )}
-    >
-      <div
-        className={cx(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black",
-          done
-            ? "bg-emerald-600 text-white"
-            : active
-              ? "bg-[var(--color-primary)] text-white"
-              : "bg-[var(--color-card)] text-[var(--color-text-muted)]",
-        )}
-      >
-        {done ? "✓" : number}
+    <div className="relative h-[118px] w-[154px]" aria-hidden="true">
+      <div className="absolute bottom-0 left-1/2 h-[70px] w-[124px] -translate-x-1/2 overflow-hidden rounded-[14px] bg-gradient-to-br from-[#2563eb] to-[#60a5fa] shadow-[0_18px_45px_rgba(37,99,235,0.24)]">
+        <div className="absolute inset-x-0 top-0 h-0 w-0 border-l-[62px] border-r-[62px] border-t-[38px] border-l-transparent border-r-transparent border-t-white/30" />
+        <div className="absolute bottom-0 left-0 h-0 w-0 border-b-[40px] border-l-[62px] border-b-white/10 border-l-transparent" />
+        <div className="absolute bottom-0 right-0 h-0 w-0 border-b-[40px] border-r-[62px] border-b-white/10 border-r-transparent" />
       </div>
 
-      <div className="text-sm font-black text-[var(--color-text)]">{label}</div>
+      <div className="absolute left-1/2 top-0 h-[78px] w-[106px] -translate-x-1/2 rounded-[12px] border border-[#dbeafe] bg-white shadow-[0_16px_38px_rgba(15,23,42,0.12)]">
+        <div className="mx-auto mt-5 h-2 w-12 rounded-full bg-[#bfdbfe]" />
+        <div className="mx-auto mt-4 h-2 w-[72px] rounded-full bg-[#dbeafe]" />
+        <div className="mx-auto mt-4 h-2 w-10 rounded-full bg-[#bfdbfe]" />
+      </div>
+
+      <div
+        className={cx(
+          "absolute bottom-[5px] right-[8px] flex h-8 w-8 items-center justify-center rounded-full border-[4px] border-white text-white shadow-[0_10px_24px_rgba(37,99,235,0.28)]",
+          verified ? "bg-emerald-500" : "bg-[#2563eb]",
+        )}
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M7 12.5L10.25 15.75L17.5 8.5"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
     </div>
   );
 }
 
-function VerificationCard({
+function PhoneIllustration({ verified }) {
+  return (
+    <div className="relative h-[118px] w-[154px]" aria-hidden="true">
+      <div className="absolute bottom-0 left-[26px] h-[104px] w-[58px] rounded-[17px] border-[5px] border-[#1d4ed8] bg-gradient-to-b from-[#60a5fa] to-[#dbeafe] shadow-[0_18px_45px_rgba(37,99,235,0.24)]">
+        <div className="mx-auto mt-2 h-1.5 w-5 rounded-full bg-[#1d4ed8]/35" />
+        <div className="absolute inset-x-3 bottom-3 h-11 rounded-[12px] bg-white/35" />
+      </div>
+
+      <div className="absolute right-[6px] top-[35px] flex h-[46px] w-[104px] items-center justify-center gap-2 rounded-[13px] border border-[#dbeafe] bg-white shadow-[0_16px_38px_rgba(15,23,42,0.14)]">
+        {[0, 1, 2, 3].map((item) => (
+          <span
+            key={item}
+            className={cx(
+              "h-2.5 w-2.5 rounded-full",
+              verified ? "bg-emerald-500" : "bg-[#2563eb]",
+            )}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DigitCodeInput({ value, onChange, disabled, label }) {
+  const inputRefs = useRef([]);
+  const digits = Array.from({ length: OTP_LENGTH }, (_, index) => value[index] || "");
+
+  function updateDigit(index, nextValue) {
+    const clean = nextValue.replace(/[^\d]/g, "");
+
+    if (clean.length > 1) {
+      const pasted = clean.slice(0, OTP_LENGTH);
+      onChange(pasted);
+
+      const nextIndex = Math.min(pasted.length, OTP_LENGTH) - 1;
+      inputRefs.current[nextIndex]?.focus();
+      return;
+    }
+
+    const nextDigits = [...digits];
+    nextDigits[index] = clean;
+    onChange(nextDigits.join(""));
+
+    if (clean && index < OTP_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  }
+
+  function handleKeyDown(index, event) {
+    if (event.key === "Backspace" && !digits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+
+    if (event.key === "ArrowLeft" && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+
+    if (event.key === "ArrowRight" && index < OTP_LENGTH - 1) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  }
+
+  return (
+    <div className="flex justify-center gap-2.5" role="group" aria-label={label}>
+      {digits.map((digit, index) => (
+        <input
+          key={index}
+          ref={(node) => {
+            inputRefs.current[index] = node;
+          }}
+          className="h-[42px] w-[42px] rounded-[8px] border border-[var(--onboard-border)] bg-[var(--onboard-card)] text-center text-lg font-black text-[var(--onboard-text)] outline-none transition focus:border-[var(--onboard-primary)] focus:ring-2 focus:ring-[rgba(37,99,235,0.16)] disabled:cursor-not-allowed disabled:opacity-60"
+          value={digit}
+          onChange={(event) => updateDigit(index, event.target.value)}
+          onKeyDown={(event) => handleKeyDown(index, event)}
+          inputMode="numeric"
+          autoComplete={index === 0 ? "one-time-code" : "off"}
+          maxLength={1}
+          disabled={disabled}
+          aria-label={`${label} digit ${index + 1}`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function getCodeActionLabel({ verified, sending, cooldown, hasSentCode }) {
+  if (verified) return "Verified";
+  if (sending) return "Sending code...";
+  if (cooldown > 0) return "Resend code";
+  return hasSentCode ? "Resend code" : "Send code";
+}
+
+function VerificationPanel({
+  type,
   title,
-  description,
-  destination,
+  instruction,
   maskedDestination,
   verified,
   code,
   setCode,
-  devOtp,
   sending,
   verifying,
   cooldown,
+  hasSentCode,
   onSend,
-  onVerify,
 }) {
+  const isEmail = type === "email";
   const disabled = verified || sending || verifying;
+  const actionLabel = getCodeActionLabel({ verified, sending, cooldown, hasSentCode });
 
   return (
-    <section
-      className={cx(
-        "rounded-[30px] border p-5 shadow-[var(--shadow-soft)] sm:p-6",
-        verified
-          ? "border-emerald-500/20 bg-emerald-500/[0.04]"
-          : "border-[var(--color-border)] bg-[var(--color-card)]",
-      )}
-    >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-xl font-black tracking-[-0.03em] text-[var(--color-text)]">
-              {title}
-            </h2>
-            <StatusPill verified={verified} />
-          </div>
-
-          <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-            {description}
-          </p>
-
-          <div className="mt-4 inline-flex max-w-full rounded-2xl bg-[var(--color-surface-2)] px-4 py-3 text-sm font-black text-[var(--color-text)]">
-            <span className="truncate">{maskedDestination}</span>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={onSend}
-          disabled={verified || sending || verifying || cooldown > 0}
-          className={cx(secondaryButton(), "min-w-[128px] shrink-0 whitespace-nowrap")}
-        >
-          {verified
-            ? "Verified"
-            : cooldown > 0
-              ? `Resend in ${cooldown}s`
-              : sending
-                ? "Sending..."
-                : "Send code"}
-        </button>
+    <section className="relative overflow-hidden rounded-[18px] border border-[var(--onboard-border)] bg-[var(--onboard-card)] shadow-[0_24px_70px_rgba(15,45,90,0.06)]">
+      <div className="absolute left-5 top-5 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--onboard-primary)] text-xs font-black text-white">
+        2
       </div>
 
-      {devOtp && !verified ? (
-        <div className="mt-4 rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm font-semibold text-[var(--color-text-muted)]">
-          DEV OTP:{" "}
-          <span className="font-mono font-black text-[var(--color-text)]">{devOtp}</span>
+      <div className="grid min-h-[278px] gap-4 px-8 pb-6 pt-9 md:grid-cols-[148px_minmax(0,1fr)] md:items-center md:px-8">
+        <div className="flex justify-center md:justify-start">
+          {isEmail ? (
+            <EmailIllustration verified={verified} />
+          ) : (
+            <PhoneIllustration verified={verified} />
+          )}
         </div>
-      ) : null}
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-        <input
-          className={inputClass()}
-          value={code}
-          onChange={(event) =>
-            setCode(event.target.value.replace(/[^\d]/g, "").slice(0, 8))
-          }
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          placeholder="••••••"
-          disabled={disabled}
-          aria-label={`${title} code for ${destination}`}
-        />
+        <div className="text-center md:text-left">
+          <h3 className="text-[23px] font-black tracking-[-0.04em] text-[var(--onboard-text)]">
+            {title}
+          </h3>
 
-        <AsyncButton
-          type="button"
-          loading={verifying}
-          loadingText="Checking..."
-          disabled={verified || sending || !cleanString(code)}
-          onClick={onVerify}
-          className="h-14 min-w-[112px] whitespace-nowrap rounded-[20px] px-6"
-        >
-          {verified ? "Done" : "Verify"}
-        </AsyncButton>
+          <p className="mt-3 text-sm font-semibold leading-5 text-[var(--onboard-muted)]">
+            {instruction}
+          </p>
+
+          <p className="mt-1 text-sm font-black text-[var(--onboard-text)]">
+            {maskedDestination}
+          </p>
+
+          <div className="mt-5">
+            <DigitCodeInput
+              value={code}
+              onChange={(nextValue) =>
+                setCode(nextValue.replace(/[^\d]/g, "").slice(0, OTP_LENGTH))
+              }
+              disabled={disabled || !hasSentCode}
+              label={`${title} verification code`}
+            />
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-sm font-semibold text-[var(--onboard-muted)] md:justify-start">
+            <span>
+              {verified
+                ? "Verified."
+                : hasSentCode
+                  ? "Didn’t receive the code?"
+                  : "No code yet?"}
+            </span>
+
+            <button
+              type="button"
+              onClick={onSend}
+              disabled={verified || sending || verifying || cooldown > 0}
+              className="font-black text-[var(--onboard-primary)] transition hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {actionLabel}
+            </button>
+
+            {!verified && cooldown > 0 ? (
+              <span className="font-black text-[var(--onboard-text)]">
+                ({formatCountdown(cooldown)})
+              </span>
+            ) : null}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -241,14 +286,21 @@ function VerificationCard({
 
 export default function VerifyOtp() {
   const nav = useNavigate();
-
   const onboarding = useMemo(() => readOnboardingState(), []);
 
   const intentId = onboarding?.intentId || localStorage.getItem("storvex_intentId") || "";
   const storeName = onboarding?.storeName || localStorage.getItem("storvex_storeName") || "";
-  const ownerName = onboarding?.ownerName || localStorage.getItem("storvex_ownerName") || "";
   const ownerEmail = onboarding?.email || localStorage.getItem("storvex_ownerEmail") || "";
   const ownerPhone = onboarding?.phone || localStorage.getItem("storvex_ownerPhone") || "";
+  const ownerName = onboarding?.ownerName || localStorage.getItem("storvex_ownerName") || "";
+
+  const savedVerifiedEmail =
+    onboarding?.emailVerifiedFor || localStorage.getItem(getVerifiedContactStorageKey("EMAIL")) || "";
+  const savedVerifiedPhone =
+    onboarding?.phoneVerifiedFor || localStorage.getItem(getVerifiedContactStorageKey("PHONE")) || "";
+
+  const lastEmailAttemptRef = useRef("");
+  const lastPhoneAttemptRef = useRef("");
 
   const [emailCode, setEmailCode] = useState("");
   const [phoneCode, setPhoneCode] = useState("");
@@ -261,15 +313,35 @@ export default function VerifyOtp() {
   const [emailCooldown, setEmailCooldown] = useState(0);
   const [phoneCooldown, setPhoneCooldown] = useState(0);
 
-  const [emailVerified, setEmailVerified] = useState(
-    onboarding?.emailVerified ?? localStorage.getItem("storvex_emailVerified") === "true",
+  const [emailVerified, setEmailVerified] = useState(() => {
+    const savedFlag =
+      onboarding?.emailVerified ?? localStorage.getItem("storvex_emailVerified") === "true";
+
+    return Boolean(savedFlag && contactMatches(savedVerifiedEmail, ownerEmail));
+  });
+
+  const [phoneVerified, setPhoneVerified] = useState(() => {
+    const savedFlag =
+      onboarding?.phoneVerified ?? localStorage.getItem("storvex_phoneVerified") === "true";
+
+    return Boolean(savedFlag && contactMatches(savedVerifiedPhone, ownerPhone));
+  });
+
+  const [emailCodeSent, setEmailCodeSent] = useState(() =>
+    Boolean(
+      intentId &&
+        ownerEmail &&
+        localStorage.getItem(getSentKey(intentId, "EMAIL", ownerEmail)) === "true",
+    ),
   );
 
-  const [phoneVerified, setPhoneVerified] = useState(
-    onboarding?.phoneVerified ?? localStorage.getItem("storvex_phoneVerified") === "true",
+  const [phoneCodeSent, setPhoneCodeSent] = useState(() =>
+    Boolean(
+      intentId &&
+        ownerPhone &&
+        localStorage.getItem(getSentKey(intentId, "PHONE", ownerPhone)) === "true",
+    ),
   );
-
-  const [devHint, setDevHint] = useState({ email: null, phone: null });
 
   const canContinue = Boolean(emailVerified && phoneVerified);
 
@@ -279,6 +351,18 @@ export default function VerifyOtp() {
       nav("/signup", { replace: true });
     }
   }, [intentId, storeName, ownerEmail, ownerPhone, nav]);
+
+  useEffect(() => {
+    if (!intentId) return;
+
+    if (!emailVerified && !emailCodeSent && !sendingEmail) {
+      send("EMAIL", { automatic: true });
+    }
+
+    if (!phoneVerified && !phoneCodeSent && !sendingPhone) {
+      send("PHONE", { automatic: true });
+    }
+  }, [intentId, emailVerified, phoneVerified, emailCodeSent, phoneCodeSent]);
 
   useEffect(() => {
     if (emailCooldown <= 0) return undefined;
@@ -300,8 +384,41 @@ export default function VerifyOtp() {
     return () => window.clearInterval(timer);
   }, [phoneCooldown]);
 
+  useEffect(() => {
+    const code = cleanString(emailCode);
+
+    if (emailVerified || sendingEmail || verifyingEmail) return;
+    if (code.length !== OTP_LENGTH) return;
+    if (lastEmailAttemptRef.current === code) return;
+
+    const timer = window.setTimeout(() => {
+      lastEmailAttemptRef.current = code;
+      verify("EMAIL");
+    }, 220);
+
+    return () => window.clearTimeout(timer);
+  }, [emailCode, emailVerified, sendingEmail, verifyingEmail]);
+
+  useEffect(() => {
+    const code = cleanString(phoneCode);
+
+    if (phoneVerified || sendingPhone || verifyingPhone) return;
+    if (code.length !== OTP_LENGTH) return;
+    if (lastPhoneAttemptRef.current === code) return;
+
+    const timer = window.setTimeout(() => {
+      lastPhoneAttemptRef.current = code;
+      verify("PHONE");
+    }, 220);
+
+    return () => window.clearTimeout(timer);
+  }, [phoneCode, phoneVerified, sendingPhone, verifyingPhone]);
+
   function persistVerifiedFlags(nextEmailVerified, nextPhoneVerified) {
     const current = readOnboardingState() || {};
+
+    const nextEmailVerifiedFor = nextEmailVerified ? ownerEmail : "";
+    const nextPhoneVerifiedFor = nextPhoneVerified ? ownerPhone : "";
 
     const nextState = {
       ...current,
@@ -311,21 +428,29 @@ export default function VerifyOtp() {
       email: ownerEmail,
       phone: ownerPhone,
       shopType: current.shopType || localStorage.getItem("storvex_shopType") || "",
+      country: current.country || "Rwanda",
       district: current.district || localStorage.getItem("storvex_district") || "",
       sector: current.sector || localStorage.getItem("storvex_sector") || "",
       address: current.address || localStorage.getItem("storvex_address") || "",
       deviceId: current.deviceId || localStorage.getItem("storvex_deviceId") || "",
       emailVerified: Boolean(nextEmailVerified),
       phoneVerified: Boolean(nextPhoneVerified),
+      emailVerifiedFor: nextEmailVerifiedFor,
+      phoneVerifiedFor: nextPhoneVerifiedFor,
     };
 
     setEmailVerified(Boolean(nextEmailVerified));
     setPhoneVerified(Boolean(nextPhoneVerified));
+
+    localStorage.setItem(getVerifiedContactStorageKey("EMAIL"), nextEmailVerifiedFor);
+    localStorage.setItem(getVerifiedContactStorageKey("PHONE"), nextPhoneVerifiedFor);
+
     saveOnboardingState(nextState);
   }
 
-  async function send(channel) {
+  async function send(channel, options = {}) {
     const isEmail = channel === "EMAIL";
+    const contactValue = isEmail ? ownerEmail : ownerPhone;
 
     try {
       if (isEmail) setSendingEmail(true);
@@ -347,16 +472,30 @@ export default function VerifyOtp() {
       }
 
       if (data?.devOtp) {
-        setDevHint((current) => ({
-          ...current,
-          [isEmail ? "email" : "phone"]: data.devOtp,
-        }));
+        const autoCode = String(data.devOtp).replace(/[^\d]/g, "").slice(0, OTP_LENGTH);
+
+        if (autoCode.length === OTP_LENGTH) {
+          if (isEmail) {
+            setEmailCode(autoCode);
+          } else {
+            setPhoneCode(autoCode);
+          }
+        }
       }
 
-      if (isEmail) setEmailCooldown(RESEND_SECONDS);
-      else setPhoneCooldown(RESEND_SECONDS);
+      localStorage.setItem(getSentKey(intentId, channel, contactValue), "true");
 
-      toast.success(isEmail ? "Email code sent" : "Phone code sent");
+      if (isEmail) {
+        setEmailCodeSent(true);
+        setEmailCooldown(RESEND_SECONDS);
+      } else {
+        setPhoneCodeSent(true);
+        setPhoneCooldown(RESEND_SECONDS);
+      }
+
+      if (!options.automatic) {
+        toast.success(isEmail ? "Email code sent" : "Phone code sent");
+      }
     } catch (error) {
       toast.error(
         error?.response?.data?.message ||
@@ -373,8 +512,7 @@ export default function VerifyOtp() {
     const isEmail = channel === "EMAIL";
     const code = cleanString(isEmail ? emailCode : phoneCode);
 
-    if (!code) {
-      toast.error("Enter the verification code first");
+    if (!code || code.length < OTP_LENGTH) {
       return;
     }
 
@@ -424,145 +562,114 @@ export default function VerifyOtp() {
   }
 
   return (
-    <PublicLayout>
-      <section className="relative overflow-hidden px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        <div className="pointer-events-none absolute left-[-12rem] top-[-10rem] h-[28rem] w-[28rem] rounded-full bg-[rgba(74,163,255,0.16)] blur-3xl" />
-        <div className="pointer-events-none absolute bottom-[-14rem] right-[-10rem] h-[30rem] w-[30rem] rounded-full bg-[rgba(16,185,129,0.12)] blur-3xl" />
+    <OnboardingShell
+      activeStep={2}
+      title="Secure your owner account."
+      subtitle="Verify the owner email and phone before choosing how the store should start."
+      footer={
+        <p className="svx-onboard-login-note">
+          Need to change details? <Link to="/signup">Back to business setup</Link>
+        </p>
+      }
+    >
+      <form className="svx-onboard-form">
+        <div className="svx-onboard-form-heading">
+          <div>
+            <span className="svx-onboard-step-pill">Step 2 of 3</span>
 
-        <div className="relative mx-auto max-w-6xl space-y-6">
-          <section className={cx(surfaceCard(), "p-5 sm:p-6 lg:p-7")}>
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-3xl">
-                <div className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-                  Step 2 of 5
-                </div>
+            <h2>Secure your account.</h2>
 
-                <h1 className="mt-5 text-3xl font-black tracking-[-0.05em] text-[var(--color-text)] sm:text-4xl lg:text-5xl">
-                  Verify owner contact.
-                </h1>
+            <p>
+              Confirm the owner email and phone. This protects the store setup, account recovery,
+              and activation.
+            </p>
+          </div>
 
-                <p className="mt-4 max-w-2xl text-base font-medium leading-8 text-[var(--color-text-muted)]">
-                  Confirm the email and phone before choosing trial or paid activation.
-                  This protects the owner account and keeps the store setup legitimate.
-                </p>
-              </div>
-
-              <div
-                className={cx(
-                  "inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-[22px] px-4 py-3 text-sm font-black",
-                  canContinue
-                    ? "bg-emerald-500/10 text-emerald-600"
-                    : "bg-[var(--color-surface-2)] text-[var(--color-text)]",
-                )}
-              >
-                {canContinue ? "Ready to continue" : "Two checks required"}
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <DetailTile label="Store" value={storeName || "Your store"} />
-              <DetailTile label="Owner" value={ownerName || "Owner"} />
-              <DetailTile
-                label="Status"
-                value={canContinue ? "Email and phone verified" : "Verification needed"}
-              />
-            </div>
-          </section>
-
-          <section className={cx(surfaceCard(), "p-5")}>
-            <div className="grid gap-3 md:grid-cols-5">
-              <ProgressStep number="1" label="Create store account" done />
-              <ProgressStep number="2" label="Verify email and phone" active />
-              <ProgressStep number="3" label="Choose activation" />
-              <ProgressStep number="4" label="Create password" />
-              <ProgressStep number="5" label="Open workspace" />
-            </div>
-          </section>
-
-          <section className={cx(surfaceCard(), "p-5 sm:p-6 lg:p-7")}>
-            <div className="mb-6 border-b border-[var(--color-border)] pb-6">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-                Verification
-              </p>
-
-              <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)] sm:text-3xl">
-                Confirm email and phone
-              </h2>
-
-              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-                Send a code to each contact method, enter the code, and continue after both
-                checks are verified.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <VerificationCard
-                title="Email verification"
-                description="Use this email for login support, account recovery, and important store notices."
-                destination={ownerEmail}
-                maskedDestination={maskEmail(ownerEmail)}
-                verified={emailVerified}
-                code={emailCode}
-                setCode={setEmailCode}
-                devOtp={devHint.email}
-                sending={sendingEmail}
-                verifying={verifyingEmail}
-                cooldown={emailCooldown}
-                onSend={() => send("EMAIL")}
-                onVerify={() => verify("EMAIL")}
-              />
-
-              <VerificationCard
-                title="Phone verification"
-                description="Use this phone for owner confirmation, trial protection, and payment communication."
-                destination={ownerPhone}
-                maskedDestination={maskPhone(ownerPhone)}
-                verified={phoneVerified}
-                code={phoneCode}
-                setCode={setPhoneCode}
-                devOtp={devHint.phone}
-                sending={sendingPhone}
-                verifying={verifyingPhone}
-                cooldown={phoneCooldown}
-                onSend={() => send("PHONE")}
-                onVerify={() => verify("PHONE")}
-              />
-
-              <div className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm font-black text-[var(--color-text)]">
-                      Next: choose trial or paid activation
-                    </p>
-                    <p className="mt-1 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
-                      You can continue only after both email and phone are verified.
-                    </p>
-                  </div>
-
-                  <AsyncButton
-                    type="button"
-                    disabled={!canContinue}
-                    onClick={continueToActivation}
-                    className="w-full sm:w-auto"
-                  >
-                    Continue to activation
-                  </AsyncButton>
-                </div>
-              </div>
-
-              <p className="text-center text-sm font-semibold text-[var(--color-text-muted)]">
-                Need to change details?{" "}
-                <Link
-                  to="/signup"
-                  className="font-black text-[var(--color-text)] underline-offset-4 hover:underline"
-                >
-                  Back to owner setup
-                </Link>
-              </p>
-            </div>
-          </section>
+          <span className="svx-onboard-safe-pill">
+            <span>{canContinue ? "✓" : "2"}</span>
+            {canContinue ? "Ready to continue" : "Checks required"}
+          </span>
         </div>
-      </section>
-    </PublicLayout>
+
+        <div className="grid gap-7 lg:grid-cols-2">
+          <VerificationPanel
+            type="email"
+            title="Verify your email"
+            instruction={
+              sendingEmail && !emailCodeSent
+                ? "Sending a verification code to"
+                : "We sent a verification code to"
+            }
+            maskedDestination={maskEmail(ownerEmail)}
+            verified={emailVerified}
+            code={emailCode}
+            setCode={setEmailCode}
+            sending={sendingEmail}
+            verifying={verifyingEmail}
+            cooldown={emailCooldown}
+            hasSentCode={emailCodeSent}
+            onSend={() => send("EMAIL")}
+          />
+
+          <VerificationPanel
+            type="phone"
+            title="Verify your phone number"
+            instruction={
+              sendingPhone && !phoneCodeSent
+                ? "Sending the 6-digit code to"
+                : "Enter the 6-digit code sent to"
+            }
+            maskedDestination={maskPhone(ownerPhone)}
+            verified={phoneVerified}
+            code={phoneCode}
+            setCode={setPhoneCode}
+            sending={sendingPhone}
+            verifying={verifyingPhone}
+            cooldown={phoneCooldown}
+            hasSentCode={phoneCodeSent}
+            onSend={() => send("PHONE")}
+          />
+        </div>
+
+        <section className="svx-onboard-card svx-onboard-next-card">
+          <div className="svx-onboard-next-copy">
+            <div className="svx-onboard-lock-icon">
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path
+                  d="M12 3.5L19 6.5V11.5C19 16 16.15 19.25 12 20.5C7.85 19.25 5 16 5 11.5V6.5L12 3.5Z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M8.75 12L11 14.25L15.5 9.75"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+
+            <div>
+              <strong>Next: choose how to start</strong>
+              <p>
+                {storeName || "Your store"} will continue after both contact checks are complete.
+              </p>
+            </div>
+          </div>
+
+          <AsyncButton
+            type="button"
+            disabled={!canContinue}
+            onClick={continueToActivation}
+            className="w-full sm:w-auto"
+          >
+            Continue to activation
+            <span aria-hidden="true">→</span>
+          </AsyncButton>
+        </section>
+      </form>
+    </OnboardingShell>
   );
 }
