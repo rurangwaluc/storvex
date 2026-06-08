@@ -665,7 +665,7 @@ export default function VerifyOtp() {
             onClick={continueToActivation}
             className="w-full sm:w-auto"
           >
-            Continue to activation
+            Choose how to start
             <span aria-hidden="true">→</span>
           </AsyncButton>
         </section>
