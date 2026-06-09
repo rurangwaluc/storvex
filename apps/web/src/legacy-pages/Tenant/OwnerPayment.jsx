@@ -2,57 +2,81 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
-import PublicLayout from "../../components/layout/PublicLayout";
+import OnboardingShell from "../../components/onboarding/OnboardingShell";
+import {
+  readOnboardingState,
+  saveOnboardingState,
+} from "../../components/onboarding/onboardingStorage";
 import AsyncButton from "../../components/ui/AsyncButton";
 import AuthPageSkeleton from "../../components/ui/AuthPageSkeleton";
 import apiClient from "../../services/apiClient";
 
-function readOnboardingState() {
-  try {
-    const raw = localStorage.getItem("storvex_onboarding");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
+const PASSWORD_DRAFT_KEY = "storvex_ownerPasswordDraft";
 
-function saveOnboardingPatch(patch) {
-  const current = readOnboardingState() || {};
-  const next = { ...current, ...patch };
-
-  localStorage.setItem("storvex_onboarding", JSON.stringify(next));
-
-  if (typeof next.intentId === "string") {
-    localStorage.setItem("storvex_intentId", next.intentId || "");
-  }
-
-  if (typeof next.storeName === "string") {
-    localStorage.setItem("storvex_storeName", next.storeName || "");
-  }
-
-  if (typeof next.ownerName === "string") {
-    localStorage.setItem("storvex_ownerName", next.ownerName || "");
-  }
-
-  if (typeof next.phone === "string") {
-    localStorage.setItem("storvex_ownerPhone", next.phone || "");
-  }
-
-  if (typeof next.email === "string") {
-    localStorage.setItem("storvex_ownerEmail", next.email || "");
-  }
-
-  if (typeof next.planKey === "string") {
-    localStorage.setItem("storvex_planKey", next.planKey || "");
-  }
-
-  if (typeof next.signupMode === "string") {
-    localStorage.setItem("storvex_signupMode", next.signupMode || "");
-  }
-}
+const LAUNCH_PLANS = [
+  {
+    key: "LAUNCH_STARTER",
+    name: "Starter",
+    price: 10000,
+    currency: "RWF",
+    label: "RWF 10,000 / month",
+    bestFor: "Owner-run stores",
+    short: "Start with daily control for sales, stock, customers, and WhatsApp updates.",
+    features: [
+      "Sales and stock control",
+      "Expenses and customers",
+      "Basic reports",
+      "WhatsApp customer updates",
+      "1 store location",
+      "Owner plus one staff member",
+      "Marketplace profile included",
+    ],
+  },
+  {
+    key: "LAUNCH_GROWTH",
+    name: "Growth",
+    price: 25000,
+    currency: "RWF",
+    label: "RWF 25,000 / month",
+    bestFor: "Stores with staff",
+    short: "Best for serious stores managing staff, cash, suppliers, repairs, and reports.",
+    badge: "Recommended",
+    features: [
+      "Everything in Starter",
+      "Staff accounts",
+      "Cash control",
+      "Supplier records",
+      "Repairs tracking",
+      "Better reports",
+      "Marketplace visibility tools",
+    ],
+  },
+  {
+    key: "LAUNCH_BUSINESS",
+    name: "Business",
+    price: 45000,
+    currency: "RWF",
+    label: "RWF 45,000 / month",
+    bestFor: "Growing stores",
+    short: "Built for expansion with managers, multiple locations, and stronger visibility.",
+    features: [
+      "Everything in Growth",
+      "Multiple store locations",
+      "Manager access",
+      "Advanced reports",
+      "Priority support",
+      "Early marketplace boost access",
+      "Early AI tools access",
+    ],
+  },
+];
 
 function cx(...items) {
   return items.filter(Boolean).join(" ");
+}
+
+function cleanString(value) {
+  return String(value || "").trim();
 }
 
 function normalizePhone(value) {
@@ -70,217 +94,290 @@ function isValidRwandaPhone(value) {
   return /^2507\d{8}$/.test(normalizePhone(value));
 }
 
-function formatMoney(amount, currency) {
-  const n = Number(amount);
-  const c = currency || "RWF";
+function normalizeContact(value) {
+  return cleanString(value).toLowerCase();
+}
 
-  if (!Number.isFinite(n)) return String(amount || "—");
+function contactMatches(savedContact, currentContact) {
+  return Boolean(savedContact) && normalizeContact(savedContact) === normalizeContact(currentContact);
+}
+
+function readPasswordDraft() {
+  try {
+    return sessionStorage.getItem(PASSWORD_DRAFT_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function saveOnboardingPatch(patch) {
+  const current = readOnboardingState() || {};
+  const next = { ...current, ...patch };
+
+  saveOnboardingState(next);
+
+  if (typeof next.intentId === "string") localStorage.setItem("storvex_intentId", next.intentId || "");
+  if (typeof next.storeName === "string") localStorage.setItem("storvex_storeName", next.storeName || "");
+  if (typeof next.ownerName === "string") localStorage.setItem("storvex_ownerName", next.ownerName || "");
+  if (typeof next.phone === "string") localStorage.setItem("storvex_ownerPhone", next.phone || "");
+  if (typeof next.email === "string") localStorage.setItem("storvex_ownerEmail", next.email || "");
+  if (typeof next.planKey === "string") localStorage.setItem("storvex_planKey", next.planKey || "");
+  if (typeof next.signupMode === "string") localStorage.setItem("storvex_signupMode", next.signupMode || "");
+}
+
+function formatMoney(amount, currency = "RWF") {
+  const value = Number(amount);
+
+  if (!Number.isFinite(value)) return "—";
 
   return `${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
-  }).format(Math.round(n))} ${c}`;
+  }).format(Math.round(value))} ${currency}`;
 }
 
-function inferSegment(label = "") {
-  const text = String(label).toLowerCase();
-
-  if (text.includes("enterprise")) return "ENTERPRISE";
-  if (text.includes("solo")) return "SOLO";
-  if (text.includes("duo")) return "DUO";
-  if (text.includes("team 3")) return "TEAM_3";
-  if (text.includes("team 4")) return "TEAM_4";
-  if (text.includes("team 5")) return "TEAM_5";
-  if (text.includes("team 10")) return "TEAM_10";
-
-  return "OTHER";
-}
-
-function inferCycle(label = "", days = 0) {
-  const text = String(label).toLowerCase();
-  const d = Number(days || 0);
-
-  if (text.includes("1 year") || text.includes("year") || d >= 360) {
-    return "YEARLY";
-  }
-
-  if (text.includes("6 months") || text.includes("6 month") || d >= 175) {
-    return "HALF_YEAR";
-  }
-
-  if (text.includes("3 months") || text.includes("3 month") || d >= 85) {
-    return "QUARTERLY";
-  }
-
-  return "MONTHLY";
-}
-
-function cycleLabel(cycle) {
-  if (cycle === "MONTHLY") return "Monthly";
-  if (cycle === "QUARTERLY") return "3 months";
-  if (cycle === "HALF_YEAR") return "6 months";
-  if (cycle === "YEARLY") return "1 year";
-  return "Other";
-}
-
-function segmentLabel(segment) {
-  if (segment === "SOLO") return "Solo";
-  if (segment === "DUO") return "Duo";
-  if (segment === "TEAM_3") return "Team 3";
-  if (segment === "TEAM_4") return "Team 4";
-  if (segment === "TEAM_5") return "Team 5";
-  if (segment === "TEAM_10") return "Team 10";
-  return "Other";
-}
-
-function getSegmentDescription(segment) {
-  if (segment === "SOLO") return "One person starting clean operations.";
-  if (segment === "DUO") return "Two users sharing daily store work.";
-  if (segment === "TEAM_3") return "Small team with clearer responsibility.";
-  if (segment === "TEAM_4") return "Growing store with role separation.";
-  if (segment === "TEAM_5") return "More staff and wider daily coverage.";
-  if (segment === "TEAM_10") return "Busier stores with more operators.";
-
-  return "Choose what matches your current store size.";
-}
-
-function getCycleRecommendation(cycle) {
-  if (cycle === "HALF_YEAR") return "Best value for many growing stores.";
-  if (cycle === "YEARLY") return "Best long-term value.";
-  if (cycle === "QUARTERLY") return "Balanced commitment.";
-  return "Lowest upfront commitment.";
-}
-
-function groupPlans(plans) {
-  const standard = [];
-  let enterprise = null;
-
-  for (const plan of plans) {
-    const segment = inferSegment(plan.label);
-    const cycle = inferCycle(plan.label, plan.days);
-
-    const enriched = {
-      ...plan,
-      segment,
-      cycle,
-      isEnterprise: segment === "ENTERPRISE",
-    };
-
-    if (enriched.isEnterprise) {
-      enterprise = enriched;
-    } else {
-      standard.push(enriched);
-    }
-  }
-
-  const segments = Array.from(new Set(standard.map((plan) => plan.segment))).filter(Boolean);
-
-  const cycles = ["MONTHLY", "QUARTERLY", "HALF_YEAR", "YEARLY"].filter((cycle) =>
-    standard.some((plan) => plan.cycle === cycle),
-  );
-
-  return {
-    standard,
-    enterprise,
-    segments,
-    cycles,
-  };
-}
-
-function findRecommendedPlan(plans) {
-  if (!plans.length) return null;
-
-  const preferred = plans.find(
-    (plan) => plan.segment === "DUO" && plan.cycle === "HALF_YEAR",
-  );
-
-  if (preferred) return preferred;
-
-  const fallback = plans.find(
-    (plan) => plan.segment === "DUO" && plan.cycle === "QUARTERLY",
-  );
-
-  return fallback || plans[0];
-}
-
-function cardClass(active) {
-  return active
-    ? "border-transparent bg-[var(--color-primary)] text-white shadow-[var(--shadow-card)]"
-    : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] shadow-[var(--shadow-soft)] hover:border-[var(--color-primary)] hover:bg-[var(--color-surface-2)]";
-}
-
-function chipClass(active) {
-  return active
-    ? "border-transparent bg-[var(--color-primary)] text-white shadow-[var(--shadow-soft)]"
-    : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text-muted)] shadow-[var(--shadow-soft)] hover:border-[var(--color-primary)] hover:bg-[var(--color-surface-2)]";
-}
-
-function inputClass() {
-  return "h-12 w-full rounded-[18px] border border-[var(--color-border)] bg-[var(--color-card)] px-4 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(74,163,255,0.12)] disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function surfaceCard() {
-  return "rounded-[34px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-}
-
-function softPanel() {
-  return "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-5";
-}
-
-function DetailTile({ label, value }) {
+function CheckIcon() {
   return (
-    <div className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
-        {label}
-      </p>
-      <p className="mt-2 break-words text-sm font-black text-[var(--color-text)]">
-        {value || "—"}
-      </p>
-    </div>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M7 12.5L10.25 15.75L17.5 8.5"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
-function ProgressStep({ number, label, active = false, done = false }) {
+function ShieldIcon({ size = 34 }) {
   return (
-    <div
-      className={cx(
-        "flex items-center gap-3 rounded-2xl border px-4 py-3",
-        active || done
-          ? "border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]"
-          : "border-[var(--color-border)] bg-[var(--color-surface-2)]",
-      )}
-    >
-      <div
-        className={cx(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black",
-          done
-            ? "bg-emerald-600 text-white"
-            : active
-              ? "bg-[var(--color-primary)] text-white"
-              : "bg-[var(--color-card)] text-[var(--color-text-muted)]",
-        )}
-      >
-        {done ? "✓" : number}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3.5L19 6.5V11.5C19 16 16.15 19.25 12 20.5C7.85 19.25 5 16 5 11.5V6.5L12 3.5Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.75 12L11 14.25L15.5 9.75"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SparkIcon({ size = 34 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3L13.55 8.45L19 10L13.55 11.55L12 17L10.45 11.55L5 10L10.45 8.45L12 3Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M18 15L18.8 17.2L21 18L18.8 18.8L18 21L17.2 18.8L15 18L17.2 17.2L18 15Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function PriceTagIcon({ size = 34 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4.75 12.25V6.75C4.75 5.65 5.65 4.75 6.75 4.75H12.25C12.78 4.75 13.29 4.96 13.66 5.34L19.25 10.93C20.03 11.71 20.03 12.97 19.25 13.75L13.75 19.25C12.97 20.03 11.71 20.03 10.93 19.25L5.34 13.66C4.96 13.29 4.75 12.78 4.75 12.25Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 9H9.01"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <path
+        d="M11 15.25L15.25 11"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function FeatureItem({ children }) {
+  return (
+    <li className="flex items-start gap-2 text-sm font-bold leading-6 text-[var(--onboard-text)]">
+      <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/12 text-emerald-600">
+        <CheckIcon />
+      </span>
+      <span>{children}</span>
+    </li>
+  );
+}
+
+function SectionHeader({ icon, title, text }) {
+  return (
+    <div className="mb-6 flex items-start gap-4">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-[var(--onboard-primary-soft)] text-[var(--onboard-primary)]">
+        {icon}
       </div>
 
-      <div className="text-sm font-black text-[var(--color-text)]">{label}</div>
+      <div>
+        <h3 className="text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
+          {title}
+        </h3>
+        <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
+          {text}
+        </p>
+      </div>
     </div>
   );
 }
 
-function SectionHeader({ step, title, text }) {
+function StartOptionCard({ active, title, text, badge, icon, children, onClick }) {
   return (
-    <div>
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-        {step}
-      </p>
-      <h2 className="mt-1 text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
+    <button
+      type="button"
+      onClick={onClick}
+      className={cx(
+        "group relative overflow-hidden rounded-[28px] border p-6 text-left transition duration-300",
+        active
+          ? "z-10 -translate-y-1 border-[var(--onboard-primary)] bg-[var(--onboard-card)] shadow-[0_26px_90px_rgba(37,99,235,0.16)] ring-2 ring-[var(--onboard-primary)]"
+          : "border-[var(--onboard-border)] bg-[var(--onboard-card)] opacity-70 shadow-[0_18px_52px_rgba(15,45,90,0.04)] saturate-[0.86] hover:-translate-y-0.5 hover:border-[var(--onboard-primary)] hover:opacity-100 hover:saturate-100",
+      )}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div
+          className={cx(
+            "flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] text-[var(--onboard-primary)]",
+            active ? "bg-[var(--onboard-primary-soft)]" : "bg-[var(--onboard-card-soft)]",
+          )}
+        >
+          {icon}
+        </div>
+
+        {badge ? (
+          <span
+            className={cx(
+              "rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em]",
+              active
+                ? "bg-[var(--onboard-primary-soft)] text-[var(--onboard-primary)]"
+                : "bg-[var(--onboard-card-soft)] text-[var(--onboard-muted)]",
+            )}
+          >
+            {badge}
+          </span>
+        ) : null}
+      </div>
+
+      <h3 className="mt-5 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
         {title}
-      </h2>
-      {text ? (
-        <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-          {text}
-        </p>
+      </h3>
+
+      <p className="mt-3 text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
+        {text}
+      </p>
+
+      {children ? <div className="mt-5">{children}</div> : null}
+    </button>
+  );
+}
+
+function PlanCard({ plan, active, onSelect }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(plan)}
+      className={cx(
+        "relative flex h-full flex-col overflow-hidden rounded-[28px] border p-6 text-left transition duration-300 hover:-translate-y-1",
+        active
+          ? "border-[var(--onboard-primary)] bg-[var(--onboard-card)] shadow-[0_26px_90px_rgba(37,99,235,0.18)] ring-1 ring-[var(--onboard-primary)]"
+          : "border-[var(--onboard-border)] bg-[var(--onboard-card)] shadow-[0_24px_70px_rgba(15,45,90,0.06)] hover:border-[var(--onboard-primary)]",
+      )}
+    >
+      {plan.badge ? (
+        <span className="absolute right-5 top-5 rounded-full bg-[var(--onboard-primary)] px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-white">
+          {plan.badge}
+        </span>
       ) : null}
+
+      <div className="pr-28">
+        <p className="text-sm font-black text-[var(--onboard-muted)]">{plan.bestFor}</p>
+
+        <h3 className="mt-3 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
+          {plan.name}
+        </h3>
+
+        <p className="mt-3 text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
+          {plan.short}
+        </p>
+      </div>
+
+      <div className="mt-6">
+        <span className="text-3xl font-black tracking-[-0.05em] text-[var(--onboard-text)]">
+          {formatMoney(plan.price, plan.currency)}
+        </span>
+        <span className="ml-2 text-sm font-bold text-[var(--onboard-muted)]">/ month</span>
+      </div>
+
+      <ul className="mt-6 grid flex-1 gap-2">
+        {plan.features.map((feature) => (
+          <FeatureItem key={feature}>{feature}</FeatureItem>
+        ))}
+      </ul>
+
+      <div
+        className={cx(
+          "mt-8 flex h-12 items-center justify-center rounded-[16px] text-sm font-black transition",
+          active
+            ? "bg-[var(--onboard-primary)] text-white"
+            : "border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] text-[var(--onboard-text)]",
+        )}
+      >
+        {active ? "Selected" : `Use ${plan.name}`}
+      </div>
+    </button>
+  );
+}
+
+function PlanSummary({ selectedPlan, storeName }) {
+  return (
+    <div className="grid gap-3 rounded-[24px] border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] p-4 sm:grid-cols-3">
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+          Plan
+        </p>
+        <p className="mt-1 text-sm font-black text-[var(--onboard-text)]">
+          {selectedPlan.name}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+          Launch price
+        </p>
+        <p className="mt-1 text-sm font-black text-[var(--onboard-text)]">
+          {formatMoney(selectedPlan.price, selectedPlan.currency)} / month
+        </p>
+      </div>
+
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+          Store
+        </p>
+        <p className="mt-1 text-sm font-black text-[var(--onboard-text)]">
+          {storeName || "Your store"}
+        </p>
+      </div>
     </div>
   );
 }
@@ -295,26 +392,37 @@ export default function OwnerPayment() {
   const ownerEmail = onboarding?.email || localStorage.getItem("storvex_ownerEmail") || "";
   const ownerPhone = onboarding?.phone || localStorage.getItem("storvex_ownerPhone") || "";
 
+  const savedVerifiedEmail =
+    onboarding?.emailVerifiedFor || localStorage.getItem("storvex_emailVerifiedFor") || "";
+  const savedVerifiedPhone =
+    onboarding?.phoneVerifiedFor || localStorage.getItem("storvex_phoneVerifiedFor") || "";
+
   const emailVerified =
-    onboarding?.emailVerified ?? localStorage.getItem("storvex_emailVerified") === "true";
+    Boolean(onboarding?.emailVerified ?? localStorage.getItem("storvex_emailVerified") === "true") &&
+    contactMatches(savedVerifiedEmail, ownerEmail);
 
   const phoneVerified =
-    onboarding?.phoneVerified ?? localStorage.getItem("storvex_phoneVerified") === "true";
+    Boolean(onboarding?.phoneVerified ?? localStorage.getItem("storvex_phoneVerified") === "true") &&
+    contactMatches(savedVerifiedPhone, ownerPhone);
 
+  const passwordReady = Boolean(onboarding?.passwordReady && readPasswordDraft());
+
+  const [booting, setBooting] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [loadingPlans, setLoadingPlans] = useState(true);
-  const [plans, setPlans] = useState([]);
   const [phone, setPhone] = useState(ownerPhone || "");
 
-  const [activationMode, setActivationMode] = useState(
-    localStorage.getItem("storvex_signupMode") === "TRIAL" ? "TRIAL" : "PAID",
-  );
+  const [activationMode, setActivationMode] = useState(() => {
+    const stored = localStorage.getItem("storvex_signupMode");
+    return stored === "TRIAL" ? "TRIAL" : "PAID";
+  });
 
-  const [selectedSegment, setSelectedSegment] = useState("");
-  const [selectedCycle, setSelectedCycle] = useState("");
-  const [selectedPlanKey, setSelectedPlanKey] = useState(
-    localStorage.getItem("storvex_planKey") || "",
-  );
+  const [selectedPlanKey, setSelectedPlanKey] = useState(() => {
+    return localStorage.getItem("storvex_planKey") || "LAUNCH_GROWTH";
+  });
+
+  const selectedPlan = useMemo(() => {
+    return LAUNCH_PLANS.find((plan) => plan.key === selectedPlanKey) || LAUNCH_PLANS[1];
+  }, [selectedPlanKey]);
 
   useEffect(() => {
     if (!intentId || !storeName) {
@@ -323,204 +431,77 @@ export default function OwnerPayment() {
       return;
     }
 
-    if (!emailVerified || !phoneVerified) {
-      toast.error("Verify email and phone first.");
+    if (!emailVerified || !phoneVerified || !passwordReady) {
+      toast.error("Secure your account first.");
       nav("/verify-otp", { replace: true });
-    }
-  }, [intentId, storeName, emailVerified, phoneVerified, nav]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadPlans() {
-      setLoadingPlans(true);
-
-      try {
-        const { data } = await apiClient.get("/auth/plans");
-
-        if (cancelled) return;
-
-        const list = Array.isArray(data?.plans) ? data.plans : [];
-        setPlans(list);
-
-        if (!list.length) {
-          toast.error("No paid plans available.");
-        }
-      } catch (error) {
-        toast.error(error?.response?.data?.message || "Failed to load plans");
-      } finally {
-        if (!cancelled) {
-          setLoadingPlans(false);
-        }
-      }
-    }
-
-    loadPlans();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const grouped = useMemo(() => groupPlans(plans), [plans]);
-
-  const recommendedPlan = useMemo(
-    () => findRecommendedPlan(grouped.standard),
-    [grouped.standard],
-  );
-
-  useEffect(() => {
-    if (!grouped.standard.length) return;
-
-    const stored = localStorage.getItem("storvex_planKey");
-    const storedPlan = grouped.standard.find((plan) => plan.key === stored);
-    const basePlan = storedPlan || recommendedPlan || grouped.standard[0];
-
-    if (!basePlan) return;
-
-    setSelectedPlanKey(basePlan.key);
-    setSelectedSegment(basePlan.segment);
-    setSelectedCycle(basePlan.cycle);
-
-    if (activationMode === "PAID") {
-      saveOnboardingPatch({
-        planKey: basePlan.key,
-        signupMode: "PAID",
-        enterpriseInterest: false,
-      });
-    }
-  }, [grouped.standard, recommendedPlan, activationMode]);
-
-  const visiblePlans = useMemo(() => {
-    return grouped.standard.filter(
-      (plan) =>
-        (!selectedSegment || plan.segment === selectedSegment) &&
-        (!selectedCycle || plan.cycle === selectedCycle),
-    );
-  }, [grouped.standard, selectedSegment, selectedCycle]);
-
-  const selectedPlan = useMemo(() => {
-    return (
-      visiblePlans.find((plan) => plan.key === selectedPlanKey) ||
-      grouped.standard.find((plan) => plan.key === selectedPlanKey) ||
-      visiblePlans[0] ||
-      null
-    );
-  }, [visiblePlans, grouped.standard, selectedPlanKey]);
-
-  useEffect(() => {
-    if (activationMode === "TRIAL") {
-      saveOnboardingPatch({
-        signupMode: "TRIAL",
-        planKey: "",
-        enterpriseInterest: false,
-        phone: normalizePhone(phone),
-      });
       return;
     }
 
-    if (!selectedPlan) return;
+    setBooting(false);
+  }, [intentId, storeName, emailVerified, phoneVerified, passwordReady, nav]);
+
+  useEffect(() => {
+    saveOnboardingPatch({
+      intentId,
+      storeName,
+      ownerName,
+      email: ownerEmail,
+      phone: normalizePhone(phone || ownerPhone),
+      signupMode: activationMode,
+      planKey: activationMode === "PAID" ? selectedPlan.key : "",
+      launchPricing: true,
+      marketplaceIncluded: true,
+      passwordReady: true,
+    });
+  }, [intentId, storeName, ownerName, ownerEmail, ownerPhone, phone, activationMode, selectedPlan]);
+
+  function chooseTrial() {
+    setActivationMode("TRIAL");
+    localStorage.setItem("storvex_signupMode", "TRIAL");
+    localStorage.removeItem("storvex_planKey");
 
     saveOnboardingPatch({
-      planKey: selectedPlan.key,
-      signupMode: "PAID",
-      enterpriseInterest: false,
-      phone: normalizePhone(phone),
+      signupMode: "TRIAL",
+      planKey: "",
+      launchPricing: true,
+      marketplaceIncluded: true,
+      phone: normalizePhone(phone || ownerPhone),
+      passwordReady: true,
     });
-  }, [activationMode, selectedPlan, phone]);
-
-  function chooseMode(mode) {
-    setActivationMode(mode);
-
-    if (mode === "TRIAL") {
-      localStorage.setItem("storvex_signupMode", "TRIAL");
-      localStorage.removeItem("storvex_planKey");
-
-      saveOnboardingPatch({
-        signupMode: "TRIAL",
-        planKey: "",
-        enterpriseInterest: false,
-        phone: normalizePhone(phone),
-      });
-      return;
-    }
-
-    localStorage.setItem("storvex_signupMode", "PAID");
-
-    if (selectedPlan) {
-      saveOnboardingPatch({
-        signupMode: "PAID",
-        planKey: selectedPlan.key,
-        enterpriseInterest: false,
-        phone: normalizePhone(phone),
-      });
-    }
   }
 
-  function chooseSegment(segment) {
-    setSelectedSegment(segment);
-
-    const firstPlan =
-      grouped.standard.find(
-        (plan) => plan.segment === segment && plan.cycle === selectedCycle,
-      ) ||
-      grouped.standard.find(
-        (plan) => plan.segment === segment && plan.cycle === "HALF_YEAR",
-      ) ||
-      grouped.standard.find((plan) => plan.segment === segment);
-
-    if (firstPlan) {
-      setSelectedCycle(firstPlan.cycle);
-      setSelectedPlanKey(firstPlan.key);
-    }
-  }
-
-  function chooseCycle(cycle) {
-    setSelectedCycle(cycle);
-
-    const matched =
-      grouped.standard.find(
-        (plan) => plan.segment === selectedSegment && plan.cycle === cycle,
-      ) || null;
-
-    if (matched) {
-      setSelectedPlanKey(matched.key);
-    }
-  }
-
-  function choosePlan(plan) {
+  function choosePaidPlan(plan) {
+    setActivationMode("PAID");
     setSelectedPlanKey(plan.key);
+    localStorage.setItem("storvex_signupMode", "PAID");
+    localStorage.setItem("storvex_planKey", plan.key);
 
     saveOnboardingPatch({
       signupMode: "PAID",
       planKey: plan.key,
-      enterpriseInterest: false,
-      phone: normalizePhone(phone),
+      launchPricing: true,
+      marketplaceIncluded: true,
+      phone: normalizePhone(phone || ownerPhone),
+      passwordReady: true,
     });
   }
 
   function startTrial() {
-    saveOnboardingPatch({
-      signupMode: "TRIAL",
-      planKey: "",
-      enterpriseInterest: false,
-      phone: normalizePhone(phone),
-    });
-
-    toast.success("Trial selected");
+    chooseTrial();
+    toast.success("30-day trial selected");
     nav("/confirm-signup?mode=TRIAL");
   }
 
   async function sendPaymentRequest() {
     if (!selectedPlan?.key) {
-      toast.error("Select a plan first.");
+      toast.error("Choose a paid plan first.");
       return;
     }
 
-    const normalizedPhone = normalizePhone(phone);
+    const normalizedPhone = normalizePhone(phone || ownerPhone);
 
     if (!isValidRwandaPhone(normalizedPhone)) {
-      toast.error("Use a Rwanda phone number like 078xxxxxxx or 25078xxxxxxx");
+      toast.error("Use a Rwanda phone number like 078xxxxxxx or 25078xxxxxxx.");
       return;
     }
 
@@ -534,485 +515,193 @@ export default function OwnerPayment() {
       });
 
       saveOnboardingPatch({
-        planKey: selectedPlan.key,
         signupMode: "PAID",
-        enterpriseInterest: false,
+        planKey: selectedPlan.key,
+        launchPricing: true,
+        marketplaceIncluded: true,
         phone: normalizedPhone,
+        passwordReady: true,
       });
 
       toast.success("Payment request sent");
       nav("/confirm-signup?mode=PAID");
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Payment failed");
+      toast.error(error?.response?.data?.message || "Payment request failed");
     } finally {
       setLoading(false);
     }
   }
 
   function alreadyPaid() {
-    if (!selectedPlan?.key) {
-      toast.error("Select the paid plan first.");
-      return;
-    }
+    const normalizedPhone = normalizePhone(phone || ownerPhone);
 
     saveOnboardingPatch({
-      planKey: selectedPlan.key,
       signupMode: "PAID",
-      enterpriseInterest: false,
-      phone: normalizePhone(phone),
+      planKey: selectedPlan.key,
+      launchPricing: true,
+      marketplaceIncluded: true,
+      phone: normalizedPhone,
+      passwordReady: true,
     });
 
     nav("/confirm-signup?mode=PAID");
   }
 
-  function requestEnterpriseSetup() {
-    if (!grouped.enterprise) {
-      toast.error("Enterprise plan is not available.");
-      return;
-    }
-
-    saveOnboardingPatch({
-      planKey: grouped.enterprise.key,
-      signupMode: "ENTERPRISE",
-      enterpriseInterest: true,
-      phone: normalizePhone(phone),
-    });
-
-    toast.success("Enterprise interest saved. Custom checkout will be connected later.");
-  }
-
-  if (loadingPlans) {
+  if (booting) {
     return <AuthPageSkeleton titleWidth="w-72" lines={4} showSide={false} />;
   }
 
-return (
-  <PublicLayout>
-    <section className="relative overflow-hidden px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-      <div className="pointer-events-none absolute left-[-12rem] top-[-10rem] h-[28rem] w-[28rem] rounded-full bg-[rgba(74,163,255,0.16)] blur-3xl" />
-      <div className="pointer-events-none absolute bottom-[-14rem] right-[-10rem] h-[30rem] w-[30rem] rounded-full bg-[rgba(16,185,129,0.12)] blur-3xl" />
+  return (
+    <OnboardingShell
+      activeStep={3}
+      title="Choose how to start."
+      subtitle="Start free for 30 days, or keep launch pricing for your store."
+      footer={
+        <p className="svx-onboard-login-note">
+          Need to change security details? <Link to="/verify-otp">Back to security</Link>
+        </p>
+      }
+    >
+      <form className="svx-onboard-form">
+        <div className="svx-onboard-form-heading">
+          <div>
+            <span className="svx-onboard-step-pill">Step 3 of 3</span>
 
-      <div className="relative mx-auto max-w-6xl space-y-6">
-        <section className={cx(surfaceCard(), "p-5 sm:p-6 lg:p-7")}>
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-                Step 3 of 5
-              </div>
+            <h2>Start free or keep launch price.</h2>
 
-              <h1 className="mt-5 text-3xl font-black tracking-[-0.05em] text-[var(--color-text)] sm:text-4xl lg:text-5xl">
-                Activate your store.
-              </h1>
-
-              <p className="mt-4 max-w-2xl text-base font-medium leading-8 text-[var(--color-text-muted)]">
-                Choose free trial or paid activation. After this, you create the password
-                and Storvex opens the workspace with the first branch ready.
-              </p>
-            </div>
-
-            <div className="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-[22px] bg-emerald-500/10 px-4 py-3 text-sm font-black text-emerald-600">
-              Email and phone verified
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <DetailTile label="Store" value={storeName || "Your store"} />
-            <DetailTile label="Owner" value={ownerName || "Owner"} />
-            <DetailTile label="Email" value={ownerEmail || "—"} />
-          </div>
-        </section>
-
-        <section className={cx(surfaceCard(), "p-5")}>
-          <div className="grid gap-3 md:grid-cols-5">
-            <ProgressStep number="1" label="Create store account" done />
-            <ProgressStep number="2" label="Verify email and phone" done />
-            <ProgressStep number="3" label="Choose activation" active />
-            <ProgressStep number="4" label="Create password" />
-            <ProgressStep number="5" label="Open workspace" />
-          </div>
-        </section>
-
-        <section className={cx(surfaceCard(), "p-5 sm:p-6 lg:p-7")}>
-          <div className="mb-6 border-b border-[var(--color-border)] pb-6">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-              Activation
-            </p>
-
-            <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)] sm:text-3xl">
-              Choose how to start
-            </h2>
-
-            <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-              Pick the path that matches your store today. You can start with a trial,
-              or activate a paid plan immediately.
+            <p>
+              Try Storvex for 30 days, or activate today and keep your early-owner price while your
+              subscription stays active.
             </p>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => chooseMode("TRIAL")}
-              className={cx(
-                "rounded-[30px] border p-5 text-left transition hover:-translate-y-0.5",
-                activationMode === "TRIAL" ? cardClass(true) : cardClass(false),
-              )}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-lg font-black">Start free trial</div>
-                  <p
-                    className={cx(
-                      "mt-2 text-sm font-semibold leading-6",
-                      activationMode === "TRIAL"
-                        ? "text-white/80"
-                        : "text-[var(--color-text-muted)]",
-                    )}
-                  >
-                    Try Storvex first, then decide when the store is ready to continue.
-                  </p>
-                </div>
+          <span className="svx-onboard-safe-pill">
+            <span>✓</span>
+            Marketplace included
+          </span>
+        </div>
 
-                {activationMode === "TRIAL" ? (
-                  <span className="shrink-0 rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">
-                    Selected
-                  </span>
-                ) : null}
-              </div>
+        <section className="grid gap-5 lg:grid-cols-2">
+          <StartOptionCard
+            active={activationMode === "TRIAL"}
+            title="Start free trial"
+            text="Use Storvex for 30 days before paying. Available once per verified owner."
+            badge="No payment today"
+            icon={<SparkIcon />}
+            onClick={chooseTrial}
+          >
+            <ul className="grid gap-2">
+              <FeatureItem>30 days free</FeatureItem>
+              <FeatureItem>WhatsApp customer updates included</FeatureItem>
+              <FeatureItem>Marketplace profile included</FeatureItem>
+            </ul>
 
-              <div
-                className={cx(
-                  "mt-5 rounded-2xl px-4 py-3 text-sm font-black",
-                  activationMode === "TRIAL"
-                    ? "bg-white/15 text-white"
-                    : "bg-[var(--color-surface-2)] text-[var(--color-text)]",
-                )}
-              >
-                No payment request on this path
-              </div>
-            </button>
+            {activationMode === "TRIAL" ? (
+              <AsyncButton type="button" onClick={startTrial} className="mt-6 w-full">
+                Start free trial
+                <span aria-hidden="true">→</span>
+              </AsyncButton>
+            ) : null}
+          </StartOptionCard>
 
-            <button
-              type="button"
-              onClick={() => chooseMode("PAID")}
-              className={cx(
-                "rounded-[30px] border p-5 text-left transition hover:-translate-y-0.5",
-                activationMode === "PAID" ? cardClass(true) : cardClass(false),
-              )}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-lg font-black">Activate paid plan</div>
-                  <p
-                    className={cx(
-                      "mt-2 text-sm font-semibold leading-6",
-                      activationMode === "PAID"
-                        ? "text-white/80"
-                        : "text-[var(--color-text-muted)]",
-                    )}
-                  >
-                    Choose a plan and send a MoMo payment request to activate immediately.
-                  </p>
-                </div>
+          <StartOptionCard
+            active={activationMode === "PAID"}
+            title="Keep launch pricing"
+            text="Activate today and keep the early-owner price while your subscription stays active."
+            badge="Early-owner price"
+            icon={<PriceTagIcon />}
+            onClick={() => choosePaidPlan(selectedPlan)}
+          >
+            <PlanSummary selectedPlan={selectedPlan} storeName={storeName} />
 
-                {activationMode === "PAID" ? (
-                  <span className="shrink-0 rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">
-                    Selected
-                  </span>
-                ) : null}
-              </div>
-
-              <div
-                className={cx(
-                  "mt-5 rounded-2xl px-4 py-3 text-sm font-black",
-                  activationMode === "PAID"
-                    ? "bg-white/15 text-white"
-                    : "bg-[var(--color-surface-2)] text-[var(--color-text)]",
-                )}
-              >
-                Best for stores ready to start
-              </div>
-            </button>
-          </div>
-
-          {activationMode === "TRIAL" ? (
-            <div className="mt-6 rounded-[30px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-5">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <h3 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                    Trial selected
-                  </h3>
-                  <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-                    Continue to create your password and open the workspace.
-                  </p>
-                </div>
-
-                <AsyncButton
-                  type="button"
-                  onClick={startTrial}
-                  className="w-full lg:w-auto"
-                >
-                  Continue with trial
-                </AsyncButton>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-6 space-y-5">
-              <section className={softPanel()}>
-                <SectionHeader
-                  step="Plan step 1"
-                  title="Choose business size"
-                  text="Pick the size closest to your current team. You can upgrade later."
-                />
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {grouped.segments.map((segment) => {
-                    const active = selectedSegment === segment;
-
-                    return (
-                      <button
-                        key={segment}
-                        type="button"
-                        onClick={() => chooseSegment(segment)}
-                        className={cx(
-                          "rounded-[24px] border p-4 text-left transition hover:-translate-y-0.5",
-                          cardClass(active),
-                        )}
-                      >
-                        <div className="text-base font-black">{segmentLabel(segment)}</div>
-                        <p
-                          className={cx(
-                            "mt-2 text-sm font-semibold leading-6",
-                            active ? "text-white/80" : "text-[var(--color-text-muted)]",
-                          )}
-                        >
-                          {getSegmentDescription(segment)}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <section className={softPanel()}>
-                <SectionHeader
-                  step="Plan step 2"
-                  title="Choose billing cycle"
-                  text="Longer cycles reduce how often the owner needs to renew."
-                />
-
-                <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {grouped.cycles.map((cycle) => {
-                    const active = selectedCycle === cycle;
-
-                    return (
-                      <button
-                        key={cycle}
-                        type="button"
-                        onClick={() => chooseCycle(cycle)}
-                        className={cx(
-                          "rounded-2xl border px-4 py-3 text-sm font-black transition",
-                          chipClass(active),
-                        )}
-                      >
-                        {cycleLabel(cycle)}
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <section className={softPanel()}>
-                <SectionHeader
-                  step="Plan step 3"
-                  title="Confirm plan"
-                  text="This is the plan that will be used for payment activation."
-                />
-
-                <div className="mt-4 grid gap-3">
-                  {visiblePlans.map((plan) => {
-                    const active = selectedPlan?.key === plan.key;
-                    const recommended = recommendedPlan?.key === plan.key;
-
-                    return (
-                      <button
-                        key={plan.key}
-                        type="button"
-                        onClick={() => choosePlan(plan)}
-                        className={cx(
-                          "rounded-[24px] border p-5 text-left transition hover:-translate-y-0.5",
-                          cardClass(active),
-                        )}
-                      >
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
-                            <div className="text-base font-black">{plan.label}</div>
-                            <p
-                              className={cx(
-                                "mt-2 text-sm font-semibold",
-                                active ? "text-white/80" : "text-[var(--color-text-muted)]",
-                              )}
-                            >
-                              {Number(plan.days || 0)} days • {getCycleRecommendation(plan.cycle)}
-                            </p>
-                          </div>
-
-                          <div className="flex flex-wrap gap-2 sm:justify-end">
-                            {recommended ? (
-                              <span
-                                className={cx(
-                                  "whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em]",
-                                  active
-                                    ? "bg-white/15 text-white"
-                                    : "border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text-muted)]",
-                                )}
-                              >
-                                Recommended
-                              </span>
-                            ) : null}
-
-                            {active ? (
-                              <span className="whitespace-nowrap rounded-full bg-emerald-500/15 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">
-                                Selected
-                              </span>
-                            ) : null}
-                          </div>
-                        </div>
-
-                        <div className="mt-4 text-2xl font-black tracking-[-0.04em]">
-                          {formatMoney(plan.price, plan.currency)}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <section className={softPanel()}>
-                <SectionHeader
-                  step="Payment phone"
-                  title="MoMo request number"
-                  text="Use a Rwanda phone number that can receive and approve the payment request."
-                />
-
-                <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px] lg:items-end">
-                  <div>
-                    <label className="mb-1.5 block text-sm font-black text-[var(--color-text)]">
-                      Phone number
-                    </label>
-
-                    <input
-                      className={inputClass()}
-                      value={phone}
-                      onChange={(event) => setPhone(event.target.value)}
-                      placeholder="078xxxxxxx or 25078xxxxxxx"
-                    />
-                  </div>
-
-                  <div className="inline-flex h-12 items-center justify-center rounded-2xl bg-[var(--color-card)] px-4 text-sm font-black text-[var(--color-text-muted)] shadow-[var(--shadow-soft)]">
-                    {isValidRwandaPhone(phone) ? "Ready for MoMo" : "Phone needed"}
-                  </div>
-                </div>
-              </section>
-
-              <section className={cx(surfaceCard(), "p-5")}>
-                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-                  <div>
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-                      Activation summary
-                    </p>
-
-                    {selectedPlan ? (
-                      <>
-                        <h3 className="mt-3 text-xl font-black text-[var(--color-text)]">
-                          {selectedPlan.label}
-                        </h3>
-
-                        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-                          <DetailTile
-                            label="Amount"
-                            value={formatMoney(selectedPlan.price, selectedPlan.currency)}
-                          />
-                          <DetailTile
-                            label="Access period"
-                            value={`${selectedPlan.days} days`}
-                          />
-                          <DetailTile
-                            label="Payment phone"
-                            value={normalizePhone(phone) || "Not ready"}
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <p className="mt-3 text-sm font-semibold text-[var(--color-text-muted)]">
-                        No plan selected yet.
-                      </p>
-                    )}
-
-                    {grouped.enterprise ? (
-                      <div className="mt-5 rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                          <div>
-                            <h3 className="text-base font-black text-[var(--color-text)]">
-                              Enterprise setup
-                            </h3>
-                            <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-                              Enterprise is separated from self-serve activation until the custom payment flow is connected.
-                            </p>
-                          </div>
-
-                          <AsyncButton
-                            type="button"
-                            variant="secondary"
-                            onClick={requestEnterpriseSetup}
-                            className="w-full lg:w-auto"
-                          >
-                            Request enterprise setup
-                          </AsyncButton>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <div className="grid gap-3">
-                    <AsyncButton
-                      type="button"
-                      loading={loading}
-                      loadingText="Sending request..."
-                      onClick={sendPaymentRequest}
-                      className="w-full"
-                    >
-                      Send payment request
-                    </AsyncButton>
-
-                    <AsyncButton
-                      type="button"
-                      variant="secondary"
-                      onClick={alreadyPaid}
-                      className="w-full"
-                    >
-                      I already paid
-                    </AsyncButton>
-
-                    <p className="text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
-                      After payment, continue to create the owner password and open the workspace.
-                    </p>
-                  </div>
-                </div>
-              </section>
-            </div>
-          )}
-
-          <p className="mt-6 text-center text-sm font-semibold text-[var(--color-text-muted)]">
-            Need to verify again?{" "}
-            <Link
-              to="/verify-otp"
-              className="font-black text-[var(--color-text)] underline-offset-4 hover:underline"
-            >
-              Back to verification
-            </Link>
-          </p>
+            <p className="mt-4 text-xs font-bold leading-5 text-[var(--onboard-muted)]">
+              Launch pricing is available during the early rollout.
+            </p>
+          </StartOptionCard>
         </section>
-      </div>
-    </section>
-  </PublicLayout>
-);
+
+        <section className="svx-onboard-card">
+          <SectionHeader
+            icon={<PriceTagIcon />}
+            title="Launch plans"
+            text="Pick the level that matches how your store works today. You can upgrade as your team grows."
+          />
+
+          <div className="grid gap-5 lg:grid-cols-3">
+            {LAUNCH_PLANS.map((plan) => (
+              <PlanCard
+                key={plan.key}
+                plan={plan}
+                active={activationMode === "PAID" && selectedPlan.key === plan.key}
+                onSelect={choosePaidPlan}
+              />
+            ))}
+          </div>
+        </section>
+
+        {activationMode === "PAID" ? (
+          <section className="svx-onboard-card">
+            <SectionHeader
+              icon={<ShieldIcon />}
+              title="Payment request"
+              text="Use a Rwanda mobile money number that can receive and approve the payment request."
+            />
+
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-end">
+              <label className="block">
+                <span className="mb-2 block text-xs font-black text-[var(--onboard-text)]">
+                  MoMo phone number
+                </span>
+
+                <input
+                  className="h-14 w-full rounded-[16px] border border-[var(--onboard-border)] bg-[var(--onboard-card)] px-4 text-sm font-black text-[var(--onboard-text)] outline-none transition placeholder:text-[var(--onboard-muted)] focus:border-[var(--onboard-primary)] focus:ring-4 focus:ring-[rgba(37,99,235,0.14)]"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  placeholder="078xxxxxxx or 25078xxxxxxx"
+                  inputMode="tel"
+                />
+              </label>
+
+              <div
+                className={cx(
+                  "flex h-14 items-center justify-center rounded-[16px] px-4 text-sm font-black",
+                  isValidRwandaPhone(phone)
+                    ? "bg-emerald-500/10 text-emerald-600"
+                    : "bg-[var(--onboard-card-soft)] text-[var(--onboard-muted)]",
+                )}
+              >
+                {isValidRwandaPhone(phone) ? "Ready for MoMo" : "Phone needed"}
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <PlanSummary selectedPlan={selectedPlan} storeName={storeName} />
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <AsyncButton
+                type="button"
+                loading={loading}
+                loadingText="Sending request..."
+                onClick={sendPaymentRequest}
+                className="w-full"
+              >
+                Send payment request
+                <span aria-hidden="true">→</span>
+              </AsyncButton>
+
+              <AsyncButton
+                type="button"
+                variant="secondary"
+                onClick={alreadyPaid}
+                className="w-full"
+              >
+                I already paid
+              </AsyncButton>
+            </div>
+          </section>
+        ) : null}
+      </form>
+    </OnboardingShell>
+  );
 }
