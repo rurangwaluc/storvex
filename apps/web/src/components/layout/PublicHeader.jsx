@@ -6,45 +6,19 @@ function cx(...items) {
   return items.filter(Boolean).join(" ");
 }
 
-function isOnboardingPath(pathname) {
-  return ["/signup", "/verify-otp", "/owner-payment"].some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`),
-  );
-}
-
 export default function PublicHeader() {
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
 
   const pathname = location.pathname || "/";
-  const hash = location.hash || "";
+  const isLoginPage = pathname === "/login";
 
   const links = [
-    {
-      label: "Features",
-      href: "/#features",
-      active: pathname === "/" && hash === "#features",
-    },
-    {
-      label: "How it works",
-      href: "/#how-it-works",
-      active: pathname === "/" && hash === "#how-it-works",
-    },
-    {
-      label: "Pricing",
-      href: "/#pricing",
-      active: pathname === "/" && hash === "#pricing",
-    },
-    {
-      label: "Resources",
-      href: "/#resources",
-      hasChevron: true,
-      active: pathname === "/" && hash === "#resources",
-    },
+    { label: "Features", href: "/#features" },
+    { label: "How it works", href: "/#how-it-works" },
+    { label: "Pricing", href: "/#pricing" },
+    { label: "Resources", href: "/#resources", hasChevron: true },
   ];
-
-  const loginActive = pathname === "/login";
-  const getStartedActive = isOnboardingPath(pathname);
 
   return (
     <header className="fixed left-0 right-0 top-0 z-[90] border-b border-[var(--color-border)] bg-[var(--color-bg)]/95 backdrop-blur-[22px]">
@@ -63,24 +37,12 @@ export default function PublicHeader() {
             <a
               key={item.label}
               href={item.href}
-              aria-current={item.active ? "page" : undefined}
-              className={cx(
-                "inline-flex items-center gap-1.5 text-[13px] font-black transition",
-                item.active
-                  ? "text-[var(--color-primary)]"
-                  : "text-[var(--color-text)] hover:text-[var(--color-primary)]",
-              )}
+              className="inline-flex items-center gap-1.5 text-[13px] font-black text-[var(--color-text)] transition hover:text-[var(--color-primary)]"
             >
               {item.label}
+
               {item.hasChevron ? (
-                <span
-                  className={cx(
-                    "text-[11px] leading-none",
-                    item.active
-                      ? "text-[var(--color-primary)]"
-                      : "text-[var(--color-text-muted)]",
-                  )}
-                >
+                <span className="text-[11px] leading-none text-[var(--color-text-muted)]">
                   ⌄
                 </span>
               ) : null}
@@ -118,30 +80,20 @@ export default function PublicHeader() {
             </span>
           </button>
 
-          <Link
-            to="/login"
-            aria-current={loginActive ? "page" : undefined}
-            className={cx(
-              "hidden h-11 items-center justify-center rounded-[14px] px-3 text-[13px] font-black transition md:inline-flex",
-              loginActive
-                ? "bg-[var(--color-surface-2)] text-[var(--color-primary)]"
-                : "text-[var(--color-text)] hover:bg-[var(--color-surface-2)]",
-            )}
-          >
-            Log in
-          </Link>
+          {!isLoginPage ? (
+            <Link
+              to="/login"
+              className="hidden h-11 items-center justify-center rounded-[14px] px-3 text-[13px] font-black text-[var(--color-text)] transition hover:bg-[var(--color-surface-2)] md:inline-flex"
+            >
+              Log in
+            </Link>
+          ) : null}
 
           <Link
             to="/signup"
-            aria-current={getStartedActive ? "page" : undefined}
-            className={cx(
-              "inline-flex h-11 items-center justify-center rounded-[14px] px-6 text-[13px] font-black shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5",
-              getStartedActive
-                ? "bg-[var(--color-primary-dark,var(--color-primary))] text-[var(--color-primary-contrast)] ring-2 ring-[var(--color-primary)]/20"
-                : "bg-[var(--color-primary)] text-[var(--color-primary-contrast)]",
-            )}
+            className="inline-flex h-11 items-center justify-center rounded-[14px] bg-[var(--color-primary)] px-6 text-[13px] font-black text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5"
           >
-            Get started
+            {isLoginPage ? "Create account" : "Get started"}
           </Link>
         </div>
       </div>

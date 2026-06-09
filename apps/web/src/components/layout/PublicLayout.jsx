@@ -1,18 +1,15 @@
-import OnboardingHeader from "./OnboardingHeader";
 import PublicHeader from "./PublicHeader";
 
-export default function PublicLayout({
-  children,
-  variant = "public",
-  activeStep = 1,
-}) {
-  const isOnboarding = variant === "onboarding";
-
+export default function PublicLayout({ children, showHeader = true }) {
   return (
     <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
-      {isOnboarding ? <OnboardingHeader activeStep={activeStep} /> : <PublicHeader />}
+      {showHeader ? <PublicHeader /> : null}
 
-      <main className="bg-[var(--color-bg)] pt-[76px] text-[var(--color-text)]">
+      <main
+        className={`bg-[var(--color-bg)] text-[var(--color-text)] ${
+          showHeader ? "pt-[76px]" : ""
+        }`}
+      >
         {children}
       </main>
     </div>

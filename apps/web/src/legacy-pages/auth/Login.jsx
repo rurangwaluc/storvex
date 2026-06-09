@@ -2,19 +2,25 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { jwtDecode } from "jwt-decode";
-import { CheckCircle2, LockKeyhole, ShieldCheck, Store } from "lucide-react";
+import {
+  BadgeCheck,
+  LockKeyhole,
+  ShieldCheck,
+  Store,
+  UserRoundCheck,
+} from "lucide-react";
 
 import PublicLayout from "../../components/layout/PublicLayout";
+import {
+  OnboardingCard,
+  OnboardingIconBadge,
+} from "../../components/onboarding/OnboardingShell";
 import PasswordField from "../../components/auth/PasswordField";
 import AsyncButton from "../../components/ui/AsyncButton";
 import apiClient from "../../services/apiClient";
 
 function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
-}
-
-function cx(...items) {
-  return items.filter(Boolean).join(" ");
 }
 
 function removeStorageKeys(keys) {
@@ -144,32 +150,11 @@ function persistAuthSession(data) {
   };
 }
 
-function inputClass() {
-  return "h-12 w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-ring)] disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function TrustRow({ icon: Icon, title, text }) {
-  return (
-    <div className="flex gap-3 rounded-[18px] border border-[var(--color-border)] bg-[var(--color-bg)] p-4">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-        <Icon size={18} strokeWidth={2.5} />
-      </div>
-
-      <div className="min-w-0">
-        <p className="text-sm font-black text-[var(--color-text)]">{title}</p>
-        <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-          {text}
-        </p>
-      </div>
-    </div>
-  );
-}
-
 export default function Login() {
   const nav = useNavigate();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("owner@ruraxis.com");
+  const [password, setPassword] = useState("Owner@12345");
   const [loading, setLoading] = useState(false);
 
   const trimmedEmail = useMemo(() => normalizeEmail(email), [email]);
@@ -209,117 +194,152 @@ export default function Login() {
 
   return (
     <PublicLayout>
-      <section className="px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        <div className="mx-auto grid max-w-6xl overflow-hidden rounded-[30px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)] lg:grid-cols-[0.92fr_1.08fr]">
-          <aside className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)] p-6 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-[16px] bg-[var(--color-primary)] text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)]">
-              <Store size={22} strokeWidth={2.6} />
+      <div className="storvex-onboarding">
+        <section className="svx-onboard-top">
+          <div className="svx-onboard-shell">
+            <div className="svx-onboard-title-wrap">
+              <h1>Log in to your store workspace.</h1>
+
+              <p>
+                Use your owner or staff account to continue. Storvex opens the correct
+                workspace, access level, and selling location after login.
+              </p>
             </div>
+          </div>
+        </section>
 
-            <p className="mt-8 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-              Store access
-            </p>
-
-            <h1 className="mt-3 max-w-md text-3xl font-black leading-[1.02] tracking-[-0.05em] text-[var(--color-text)] sm:text-4xl lg:text-5xl">
-              Log in to your store workspace.
-            </h1>
-
-            <p className="mt-5 max-w-md text-base font-semibold leading-8 text-[var(--color-text-muted)]">
-              Continue with your owner or staff account. Storvex opens the right workspace,
-              access level, and active selling location after login.
-            </p>
-
-            <div className="mt-8 grid gap-3">
-              <TrustRow
-                icon={ShieldCheck}
-                title="Owner and staff access"
-                text="Each person enters with the access allowed for their responsibility."
-              />
-
-              <TrustRow
-                icon={CheckCircle2}
-                title="Correct workspace"
-                text="The store workspace opens with the right business details and selling location."
-              />
-
-              <TrustRow
-                icon={LockKeyhole}
-                title="Protected records"
-                text="Sales, stock, cash activity, and store records stay behind account access."
-              />
-            </div>
-          </aside>
-
-          <main className="p-6 sm:p-8 lg:p-10">
-            <div className="mx-auto flex min-h-full max-w-md flex-col justify-center">
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-                  Welcome back
-                </p>
-
-                <h2 className="mt-3 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)] sm:text-3xl">
-                  Enter your account details
-                </h2>
-
-                <p className="mt-3 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-                  Use the email and password connected to your Storvex account.
-                </p>
-              </div>
-
-              <form onSubmit={submit} className="mt-8 space-y-5">
+        <section className="svx-onboard-content">
+          <div className="svx-onboard-shell">
+            <form onSubmit={submit} className="svx-onboard-form">
+              <div className="svx-onboard-form-heading">
                 <div>
-                  <label className="mb-2 block text-sm font-black text-[var(--color-text)]">
-                    Email
-                  </label>
+                  <span className="svx-onboard-step-pill">Store access</span>
 
-                  <input
-                    type="email"
-                    className={inputClass()}
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    autoComplete="email"
-                    placeholder="you@store.com"
-                    autoFocus
-                    required
-                    disabled={loading}
-                  />
+                  <h2>Welcome back.</h2>
+
+                  <p>
+                    Continue with the account connected to your store. Owner and staff access
+                    open the workspace allowed for that person.
+                  </p>
                 </div>
 
-                <PasswordField
-                  id="login-password"
-                  label="Password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  autoComplete="current-password"
-                  placeholder="Enter your password"
-                  disabled={loading}
-                />
-
-                <AsyncButton
-                  type="submit"
-                  loading={loading}
-                  loadingText="Logging in..."
-                  className="h-12 w-full rounded-[16px] text-sm font-black"
-                >
-                  Log in
-                </AsyncButton>
-              </form>
-
-              <div className="mt-7 border-t border-[var(--color-border)] pt-6">
-                <p className="text-center text-sm font-semibold text-[var(--color-text-muted)]">
-                  New store?{" "}
-                  <Link
-                    to="/signup"
-                    className="font-black text-[var(--color-primary)] underline-offset-4 hover:underline"
-                  >
-                    Create account
-                  </Link>
-                </p>
+                <span className="svx-onboard-safe-pill">
+                  <ShieldCheck size={15} strokeWidth={2.8} />
+                  Protected access
+                </span>
               </div>
-            </div>
-          </main>
-        </div>
-      </section>
+
+              <div className="svx-onboard-form-grid">
+                <OnboardingCard className="order-2 lg:order-1">
+                  <div className="svx-onboard-card-title-row">
+                    <OnboardingIconBadge>
+                      <Store size={23} strokeWidth={2.2} />
+                    </OnboardingIconBadge>
+
+                    <div>
+                      <h3>Store access</h3>
+                      <p>Open the right store workspace after login.</p>
+                    </div>
+                  </div>
+
+                  <div className="svx-onboard-field-group">
+                    <div className="svx-onboard-card-title-row">
+                      <OnboardingIconBadge>
+                        <UserRoundCheck size={23} strokeWidth={2.2} />
+                      </OnboardingIconBadge>
+
+                      <div>
+                        <h3>Owner and staff access</h3>
+                        <p>
+                          Each person continues with the access allowed for their
+                          responsibility.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="svx-onboard-card-title-row">
+                      <OnboardingIconBadge>
+                        <LockKeyhole size={23} strokeWidth={2.2} />
+                      </OnboardingIconBadge>
+
+                      <div>
+                        <h3>Protected records</h3>
+                        <p>
+                          Sales, stock, cash activity, and store records stay behind account
+                          access.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </OnboardingCard>
+
+                <OnboardingCard className="order-1 lg:order-2">
+                  <div className="svx-onboard-card-title-row">
+                    <OnboardingIconBadge>
+                      <BadgeCheck size={23} strokeWidth={2.2} />
+                    </OnboardingIconBadge>
+
+                    <div>
+                      <h3>Account details</h3>
+                      <p>Use the email and password connected to your Storvex account.</p>
+                    </div>
+                  </div>
+
+                  <div className="svx-onboard-field-group">
+                    <div className="svx-onboard-field">
+                      <label>Email</label>
+
+                      <input
+                        type="email"
+                        className="svx-onboard-input"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        autoComplete="email"
+                        placeholder="you@store.com"
+                        autoFocus
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <PasswordField
+                      id="login-password"
+                      label="Password"
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      autoComplete="current-password"
+                      placeholder="Enter your password"
+                      disabled={loading}
+                    />
+                  </div>
+                </OnboardingCard>
+              </div>
+
+              <OnboardingCard className="svx-onboard-next-card">
+                <div className="svx-onboard-next-copy">
+                  <div className="svx-onboard-lock-icon">
+                    <LockKeyhole size={31} strokeWidth={2.3} />
+                  </div>
+
+                  <div>
+                    <strong>Next: open your workspace</strong>
+                    <p>Your store workspace will open after login.</p>
+                  </div>
+                </div>
+
+                <AsyncButton type="submit" loading={loading} loadingText="Logging in...">
+                  Log in
+                  <span aria-hidden="true">→</span>
+                </AsyncButton>
+              </OnboardingCard>
+            </form>
+
+            <p className="svx-onboard-login-note">
+              New store? <Link to="/signup">Create account</Link>
+            </p>
+          </div>
+        </section>
+      </div>
     </PublicLayout>
   );
 }
