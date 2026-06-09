@@ -1,20 +1,25 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   BarChart3,
   Building2,
   Check,
+  ChevronDown,
   ClipboardList,
   FileText,
   LockKeyhole,
+  Menu,
+  Moon,
   PackageCheck,
   ReceiptText,
   ShieldCheck,
   ShoppingCart,
   Store,
+  Sun,
   UserCog,
   UsersRound,
   WalletCards,
   Warehouse,
+  X,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -23,6 +28,7 @@ import "./LandingPage.css";
 
 const logoSrc = "/storvex_dark.webp";
 const whiteLogoSrc = "/storvex_white.webp";
+const iconSrc = "/storvex_icon.webp";
 
 const navItems = [
   { label: "Features", href: "#features" },
@@ -217,11 +223,50 @@ function SmartLink({ href, className, children, ...props }) {
 
 function Header() {
   const { isDark, toggleTheme } = useTheme();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const headerRef = useRef(null);
+
+  useEffect(() => {
+    if (!isMenuOpen) return undefined;
+
+    function handlePointerDown(event) {
+      if (!headerRef.current) return;
+      if (headerRef.current.contains(event.target)) return;
+      setIsMenuOpen(false);
+    }
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setIsMenuOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown, { passive: true });
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    function handleResize() {
+      if (window.innerWidth > 760) setIsMenuOpen(false);
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  function closeMenu() {
+    setIsMenuOpen(false);
+  }
 
   return (
-    <header className="svx-header">
+    <header ref={headerRef} className={cx("svx-header", isMenuOpen && "is-menu-open")}>
       <div className="svx-header-inner">
-        <Link to="/" aria-label="Storvex home" className="svx-logo-link">
+        <Link to="/" aria-label="Storvex home" className="svx-logo-link" onClick={closeMenu}>
           <img
             src={isDark ? whiteLogoSrc : logoSrc}
             alt="Storvex"
@@ -234,7 +279,7 @@ function Header() {
           {navItems.map((item) => (
             <SmartLink key={item.label} href={item.href}>
               {item.label}
-              {item.hasCaret ? <span aria-hidden="true">⌄</span> : null}
+              {item.hasCaret ? <ChevronDown size={13} strokeWidth={2.4} aria-hidden="true" /> : null}
             </SmartLink>
           ))}
         </nav>
@@ -244,10 +289,15 @@ function Header() {
             type="button"
             className="svx-theme-toggle"
             onClick={toggleTheme}
-            aria-label="Toggle theme"
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            aria-pressed={isDark}
           >
-            <span className={!isDark ? "active" : ""}>☀</span>
-            <span className={isDark ? "active" : ""}>◐</span>
+            <span className={cx("svx-theme-option", !isDark && "active")} aria-hidden="true">
+              <Sun size={15} strokeWidth={2.4} />
+            </span>
+            <span className={cx("svx-theme-option", isDark && "active")} aria-hidden="true">
+              <Moon size={15} strokeWidth={2.4} />
+            </span>
           </button>
 
           <Link to="/login" className="svx-login-link">
@@ -257,7 +307,47 @@ function Header() {
           <Link to="/signup" className="svx-header-cta">
             Get started
           </Link>
+
+          <button
+            type="button"
+            className="svx-mobile-menu-button"
+            onClick={() => setIsMenuOpen((current) => !current)}
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMenuOpen}
+            aria-controls="storvex-mobile-menu"
+          >
+            {isMenuOpen ? <X size={21} strokeWidth={2.4} /> : <Menu size={21} strokeWidth={2.4} />}
+          </button>
         </div>
+      </div>
+
+      <div
+        id="storvex-mobile-menu"
+        className="svx-mobile-menu"
+        aria-hidden={!isMenuOpen}
+      >
+        <nav className="svx-mobile-menu-panel" aria-label="Mobile navigation">
+          {navItems.map((item) => (
+            <SmartLink
+              key={item.label}
+              href={item.href}
+              className="svx-mobile-menu-link"
+              onClick={closeMenu}
+            >
+              <span>{item.label}</span>
+              {item.hasCaret ? <ChevronDown size={16} strokeWidth={2.4} aria-hidden="true" /> : null}
+            </SmartLink>
+          ))}
+
+          <div className="svx-mobile-menu-actions">
+            <Link to="/login" className="svx-mobile-menu-secondary" onClick={closeMenu}>
+              Log in
+            </Link>
+            <Link to="/signup" className="svx-mobile-menu-primary" onClick={closeMenu}>
+              Get started
+            </Link>
+          </div>
+        </nav>
       </div>
     </header>
   );
@@ -560,7 +650,7 @@ function MobileReadySection() {
           <PhoneMockup />
 
           <div className="svx-mobile-app-icon">
-            <img src={logoSrc} alt="" draggable="false" />
+            <img src={iconSrc} alt="" draggable="false" />
           </div>
 
           <StoreAvatar className="svx-network-avatar-one">Owner</StoreAvatar>

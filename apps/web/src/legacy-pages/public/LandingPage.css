@@ -2342,3 +2342,273 @@
   }
 }
 
+/* Premium mobile header controls */
+.svx-theme-toggle {
+  gap: 3px;
+  border-color: color-mix(in srgb, var(--landing-border) 82%, transparent);
+  background: color-mix(in srgb, var(--landing-card) 92%, transparent);
+  box-shadow: 0 12px 26px rgba(2, 10, 24, 0.08);
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms var(--svx-ease-out),
+    box-shadow 180ms ease;
+}
+
+.svx-theme-toggle:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--landing-primary) 28%, var(--landing-border));
+  box-shadow: 0 16px 32px rgba(2, 10, 24, 0.12);
+}
+
+.svx-theme-option {
+  color: var(--landing-muted-2);
+}
+
+.svx-theme-option.active {
+  color: #ffffff;
+  background: var(--landing-primary);
+  box-shadow: 0 8px 18px rgba(21, 156, 255, 0.28);
+}
+
+.svx-nav a {
+  gap: 5px;
+}
+
+.svx-nav span {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0;
+}
+
+.svx-mobile-menu-button {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--landing-border) 86%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--landing-card) 92%, transparent);
+  color: var(--landing-text);
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(2, 10, 24, 0.1);
+  transition:
+    transform 180ms var(--svx-ease-out),
+    border-color 180ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.svx-mobile-menu-button:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--landing-primary) 28%, var(--landing-border));
+  box-shadow: 0 18px 36px rgba(2, 10, 24, 0.14);
+}
+
+.svx-mobile-menu-button:focus-visible,
+.svx-theme-toggle:focus-visible,
+.svx-mobile-menu-link:focus-visible,
+.svx-mobile-menu-primary:focus-visible,
+.svx-mobile-menu-secondary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--landing-primary) 18%, transparent);
+}
+
+.svx-mobile-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: max(16px, env(safe-area-inset-right));
+  left: max(16px, env(safe-area-inset-left));
+  z-index: 100;
+  display: none;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.985);
+  transform-origin: top center;
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    transform 180ms var(--svx-ease-out);
+}
+
+.svx-header.is-menu-open .svx-mobile-menu {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.svx-mobile-menu-panel {
+  display: grid;
+  gap: 8px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--landing-border) 88%, transparent);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--landing-bg) 96%, var(--landing-card));
+  padding: 10px;
+  box-shadow:
+    0 30px 90px rgba(2, 10, 24, 0.28),
+    0 10px 28px rgba(2, 10, 24, 0.16);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+.svx-mobile-menu-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  border: 1px solid transparent;
+  border-radius: 15px;
+  background: transparent;
+  padding: 0 16px;
+  color: var(--landing-text);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    transform 160ms var(--svx-ease-out),
+    color 160ms ease;
+}
+
+.svx-mobile-menu-link:hover {
+  transform: translateX(2px);
+  border-color: color-mix(in srgb, var(--landing-primary) 20%, var(--landing-border));
+  background: color-mix(in srgb, var(--landing-primary-soft) 66%, transparent);
+  color: var(--landing-primary);
+}
+
+.svx-mobile-menu-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--landing-border);
+}
+
+.svx-mobile-menu-primary,
+.svx-mobile-menu-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  border-radius: 15px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 850;
+  transition:
+    transform 180ms var(--svx-ease-out),
+    background-color 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.svx-mobile-menu-primary {
+  border: 1px solid var(--landing-primary);
+  background: var(--landing-primary);
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(21, 156, 255, 0.2);
+}
+
+.svx-mobile-menu-secondary {
+  border: 1px solid var(--landing-border);
+  background: color-mix(in srgb, var(--landing-card) 78%, transparent);
+  color: var(--landing-text);
+}
+
+.svx-mobile-menu-primary:hover,
+.svx-mobile-menu-secondary:hover {
+  transform: translateY(-1px);
+}
+
+:root[data-theme="dark"] .svx-theme-toggle,
+:root[data-theme="dark"] .svx-mobile-menu-button,
+:root[data-theme="dark"] .svx-mobile-menu-panel {
+  box-shadow:
+    0 26px 80px rgba(0, 0, 0, 0.42),
+    0 8px 26px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 760px) {
+  .svx-header-inner {
+    height: 72px;
+    min-height: 72px;
+    padding: 0 18px;
+  }
+
+  .svx-header-logo {
+    height: 39px;
+  }
+
+  .svx-nav,
+  .svx-login-link,
+  .svx-header-actions > .svx-header-cta {
+    display: none;
+  }
+
+  .svx-header-actions {
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .svx-theme-toggle {
+    height: 42px;
+    padding: 4px;
+  }
+
+  .svx-theme-toggle span {
+    width: 32px;
+    height: 32px;
+  }
+
+  .svx-mobile-menu-button {
+    display: inline-flex;
+  }
+
+  .svx-mobile-menu {
+    display: block;
+  }
+
+  .svx-hero {
+    padding-top: 128px;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-header-inner {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .svx-header-logo {
+    height: 35px;
+  }
+
+  .svx-theme-toggle {
+    height: 40px;
+  }
+
+  .svx-theme-toggle span {
+    width: 30px;
+    height: 30px;
+  }
+
+  .svx-mobile-menu-button {
+    width: 42px;
+    height: 42px;
+    border-radius: 13px;
+  }
+
+  .svx-mobile-menu {
+    right: 12px;
+    left: 12px;
+  }
+
+  .svx-mobile-menu-panel {
+    border-radius: 20px;
+  }
+}
+
