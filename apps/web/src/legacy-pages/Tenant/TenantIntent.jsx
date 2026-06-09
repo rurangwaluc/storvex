@@ -1,4 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  BadgeCheck,
+  Boxes,
+  Building2,
+  Check,
+  ChevronDown,
+  CircleDollarSign,
+  Factory,
+  Home,
+  Lightbulb,
+  LockKeyhole,
+  MapPinHouse,
+  RotateCcw,
+  ShieldCheck,
+  Store,
+  UserRoundCheck,
+  Wrench,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -22,26 +40,31 @@ const BUSINESS_CATEGORIES = [
     value: "ELECTRONICS",
     label: "Electronics retailer",
     description: "Phones, laptops, accessories, repairs, and electronics stock.",
+    icon: Boxes,
   },
   {
     value: "HARDWARE",
     label: "Hardware / quincaillerie",
     description: "Construction tools, fittings, paint, locks, and hardware items.",
+    icon: Wrench,
   },
   {
     value: "HOME_KITCHEN",
     label: "Home and kitchen materials",
     description: "Home goods, kitchen supplies, appliances, and household materials.",
+    icon: Home,
   },
   {
     value: "LIGHTING",
     label: "Lighting business",
     description: "Bulbs, fixtures, electrical lighting products, and lighting accessories.",
+    icon: Lightbulb,
   },
   {
     value: "SPARE_PARTS",
     label: "Spare parts business",
     description: "Vehicle, machine, device, or repair-related spare parts.",
+    icon: Factory,
   },
 ];
 
@@ -101,100 +124,6 @@ function Field({ label, required = false, children, help }) {
 
       {help ? <HelpText>{help}</HelpText> : null}
     </div>
-  );
-}
-
-function StoreIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 10.5V20H20V10.5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M3 4H21L20 10.5H4L3 4Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <path d="M9 20V14H15V20" stroke="currentColor" strokeWidth="2" />
-    </svg>
-  );
-}
-
-function OwnerIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 12.5C14.4853 12.5 16.5 10.4853 16.5 8C16.5 5.51472 14.4853 3.5 12 3.5C9.51472 3.5 7.5 5.51472 7.5 8C7.5 10.4853 9.51472 12.5 12 12.5Z"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-      <path
-        d="M4.5 20.5C5.55 16.95 8.25 15.25 12 15.25C15.75 15.25 18.45 16.95 19.5 20.5"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function LocationIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 21C15.5 17.5 18 14.3 18 10.5C18 7.18629 15.3137 4.5 12 4.5C8.68629 4.5 6 7.18629 6 10.5C6 14.3 8.5 17.5 12 21Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 12.25C13.1046 12.25 14 11.3546 14 10.25C14 9.14543 13.1046 8.25 12 8.25C10.8954 8.25 10 9.14543 10 10.25C10 11.3546 10.8954 12.25 12 12.25Z"
-        stroke="currentColor"
-        strokeWidth="2"
-      />
-    </svg>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M7.5 10V8C7.5 5.51472 9.51472 3.5 12 3.5C14.4853 3.5 16.5 5.51472 16.5 8V10"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M6 10H18V20H6V10Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SmallLockIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M7.5 10V8C7.5 5.51472 9.51472 3.5 12 3.5C14.4853 3.5 16.5 5.51472 16.5 8V10"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M6 10H18V20H6V10Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }
 
@@ -275,14 +204,15 @@ function BusinessCategoryPicker({ value, onChange }) {
         </span>
 
         <span className="svx-business-category-chevron" aria-hidden="true">
-          ⌄
+          <ChevronDown size={17} strokeWidth={2.5} />
         </span>
       </button>
 
       {open ? (
         <div className="svx-business-category-menu" role="listbox">
-          {BUSINESS_CATEGORIES.map((category, index) => {
+          {BUSINESS_CATEGORIES.map((category) => {
             const active = category.value === value;
+            const Icon = category.icon;
 
             return (
               <button
@@ -297,7 +227,7 @@ function BusinessCategoryPicker({ value, onChange }) {
                 }}
               >
                 <span className="svx-business-category-icon">
-                  {active ? "✓" : index + 1}
+                  {active ? <Check size={17} strokeWidth={3} /> : <Icon size={18} strokeWidth={2.2} />}
                 </span>
 
                 <span>
@@ -317,39 +247,27 @@ function ResumeDraftCard({ draft, onContinue, onStartOver }) {
   if (!hasOnboardingDraft(draft)) return null;
 
   return (
-    <div className="mb-6 rounded-[22px] border border-[rgba(37,99,235,0.22)] bg-[var(--color-primary-soft)] p-5">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <div className="svx-onboard-draft-card">
+      <div className="svx-onboard-draft-copy">
+        <span className="svx-onboard-draft-icon">
+          <RotateCcw size={20} strokeWidth={2.3} />
+        </span>
+
         <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-            Saved setup found
-          </p>
-
-          <h2 className="mt-1 text-lg font-black text-[var(--color-text)]">
-            Continue setup for {draft.storeName}
-          </h2>
-
-          <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-            Continue from where you stopped, or start fresh with a new setup.
-          </p>
+          <p>Saved setup found</p>
+          <h2>Continue setup for {draft.storeName}</h2>
+          <span>Continue from where you stopped, or start fresh with a new setup.</span>
         </div>
+      </div>
 
-        <div className="grid gap-2 sm:grid-cols-2 lg:flex">
-          <button
-            type="button"
-            onClick={onStartOver}
-            className="inline-flex h-11 items-center justify-center rounded-[14px] border border-[var(--color-border)] bg-[var(--color-card)] px-5 text-sm font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5"
-          >
-            Start over
-          </button>
+      <div className="svx-onboard-draft-actions">
+        <button type="button" onClick={onStartOver} className="svx-onboard-secondary-action">
+          Start over
+        </button>
 
-          <button
-            type="button"
-            onClick={onContinue}
-            className="inline-flex h-11 items-center justify-center rounded-[14px] bg-[var(--color-primary)] px-5 text-sm font-black text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5"
-          >
-            Continue setup
-          </button>
-        </div>
+        <button type="button" onClick={onContinue} className="svx-onboard-primary-action">
+          Continue setup
+        </button>
       </div>
     </div>
   );
@@ -540,9 +458,15 @@ export default function TenantIntent() {
     <OnboardingShell
       activeStep={1}
       footer={
-        <p className="svx-onboard-login-note">
-          Already have a store account? <Link to="/login">Log in</Link>
-        </p>
+        <div className="svx-onboard-login-note">
+          <span className="svx-onboard-login-icon">
+            <ShieldCheck size={16} strokeWidth={2.5} />
+          </span>
+
+          <span>Already have a store account?</span>
+
+          <Link to="/login">Log in</Link>
+        </div>
       }
     >
       {draftVisible ? (
@@ -567,7 +491,7 @@ export default function TenantIntent() {
           </div>
 
           <span className="svx-onboard-safe-pill">
-            <span>✓</span>
+            <BadgeCheck size={15} strokeWidth={2.8} />
             No payment on this step
           </span>
         </div>
@@ -576,7 +500,7 @@ export default function TenantIntent() {
           <OnboardingCard>
             <div className="svx-onboard-card-title-row">
               <OnboardingIconBadge>
-                <StoreIcon />
+                <Store size={23} strokeWidth={2.2} />
               </OnboardingIconBadge>
 
               <div>
@@ -609,7 +533,7 @@ export default function TenantIntent() {
           <OnboardingCard>
             <div className="svx-onboard-card-title-row">
               <OnboardingIconBadge>
-                <OwnerIcon />
+                <UserRoundCheck size={23} strokeWidth={2.2} />
               </OnboardingIconBadge>
 
               <div>
@@ -663,7 +587,7 @@ export default function TenantIntent() {
         <OnboardingCard>
           <div className="svx-onboard-card-title-row">
             <OnboardingIconBadge>
-              <LocationIcon />
+              <MapPinHouse size={23} strokeWidth={2.2} />
             </OnboardingIconBadge>
 
             <div>
@@ -718,10 +642,10 @@ export default function TenantIntent() {
         <OnboardingCard className="svx-onboard-next-card">
           <div className="svx-onboard-next-copy">
             <div className="svx-onboard-lock-icon">
-              <LockIcon />
+              <LockKeyhole size={31} strokeWidth={2.3} />
 
               <span className="svx-onboard-lock-mini">
-                <SmallLockIcon />
+                <CircleDollarSign size={14} strokeWidth={2.7} />
               </span>
             </div>
 

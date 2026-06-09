@@ -126,22 +126,19 @@ export function hasOnboardingDraft(state = readOnboardingState()) {
 }
 
 export function getOnboardingResumeTarget(state = readOnboardingState()) {
-  if (!state?.intentId) return "/signup";
+  if (!hasOnboardingDraft(state)) {
+    return "/signup";
+  }
 
-  if (!state.emailVerified || !state.phoneVerified) {
+  const emailVerified = state?.emailVerified === true;
+  const phoneVerified = state?.phoneVerified === true;
+  const hasPassword =
+    Boolean(state?.passwordCreated) ||
+    Boolean(state?.ownerPasswordCreated) ||
+    Boolean(state?.securityComplete);
+
+  if (!emailVerified || !phoneVerified || !hasPassword) {
     return "/verify-otp";
-  }
-
-  if (!state.signupMode) {
-    return "/owner-payment";
-  }
-
-  if (state.signupMode === "TRIAL") {
-    return "/confirm-signup?mode=TRIAL";
-  }
-
-  if (state.signupMode === "PAID") {
-    return "/confirm-signup?mode=PAID";
   }
 
   return "/owner-payment";
