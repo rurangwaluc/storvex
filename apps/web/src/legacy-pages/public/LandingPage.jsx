@@ -671,11 +671,10 @@ export default function LandingPage() {
             <div className="svx-hero-copy">
               <Badge>For store owners</Badge>
 
-              <h1>Stop guessing what happened in your store.</h1>
+              <h1>Know What Happened In Your Store.</h1>
 
               <p>
-                Everything you need to run a smarter store. Track performance, manage your team, and
-                grow profitably with real-time clarity.
+                  Track sales, stock, cash, staff activity, and branch performance from one clear workspace.
               </p>
 
               <div className="svx-hero-actions">
