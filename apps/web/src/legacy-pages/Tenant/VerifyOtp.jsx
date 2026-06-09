@@ -12,6 +12,7 @@ import apiClient from "../../services/apiClient";
 
 const RESEND_SECONDS = 45;
 const OTP_LENGTH = 6;
+const PASSWORD_DRAFT_KEY = "storvex_ownerPasswordDraft";
 
 function cx(...items) {
   return items.filter(Boolean).join(" ");
@@ -39,6 +40,26 @@ function getVerifiedContactStorageKey(channel) {
 
 function contactMatches(savedContact, currentContact) {
   return Boolean(savedContact) && normalizeContact(savedContact) === normalizeContact(currentContact);
+}
+
+function readPasswordDraft() {
+  try {
+    return sessionStorage.getItem(PASSWORD_DRAFT_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function savePasswordDraft(password) {
+  try {
+    if (password) {
+      sessionStorage.setItem(PASSWORD_DRAFT_KEY, password);
+    } else {
+      sessionStorage.removeItem(PASSWORD_DRAFT_KEY);
+    }
+  } catch {
+    // Ignore storage failures. The user can still continue while the tab is open.
+  }
 }
 
 function maskEmail(email) {
@@ -125,6 +146,96 @@ function PhoneIllustration({ verified }) {
         ))}
       </div>
     </div>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M8 10V8.25C8 5.9 9.68 4.25 12 4.25C14.32 4.25 16 5.9 16 8.25V10"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M6.75 10H17.25C18.08 10 18.75 10.67 18.75 11.5V18.25C18.75 19.08 18.08 19.75 17.25 19.75H6.75C5.92 19.75 5.25 19.08 5.25 18.25V11.5C5.25 10.67 5.92 10 6.75 10Z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path d="M12 14V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ShieldIcon() {
+  return (
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 3.5L19 6.5V11.5C19 16 16.15 19.25 12 20.5C7.85 19.25 5 16 5 11.5V6.5L12 3.5Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8.75 12L11 14.25L15.5 9.75"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M2.75 12C4.55 7.85 7.7 5.75 12 5.75C16.3 5.75 19.45 7.85 21.25 12C19.45 16.15 16.3 18.25 12 18.25C7.7 18.25 4.55 16.15 2.75 12Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 14.75C13.52 14.75 14.75 13.52 14.75 12C14.75 10.48 13.52 9.25 12 9.25C10.48 9.25 9.25 10.48 9.25 12C9.25 13.52 10.48 14.75 12 14.75Z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M3.5 3.5L20.5 20.5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M9.3 5.98C10.14 5.83 11.04 5.75 12 5.75C16.3 5.75 19.45 7.85 21.25 12C20.62 13.45 19.82 14.65 18.84 15.6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14.12 14.12C13.58 14.58 12.83 14.86 12 14.75C10.48 14.55 9.45 13.52 9.25 12C9.14 11.17 9.42 10.42 9.88 9.88"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M6.55 7.3C4.95 8.35 3.68 9.92 2.75 12C4.55 16.15 7.7 18.25 12 18.25C13.35 18.25 14.58 18.04 15.68 17.62"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -284,6 +395,157 @@ function VerificationPanel({
   );
 }
 
+function PasswordRule({ valid, children }) {
+  return (
+    <span
+      className={cx(
+        "inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-black",
+        valid
+          ? "bg-emerald-500/10 text-emerald-600"
+          : "bg-[var(--onboard-card-soft)] text-[var(--onboard-muted)]",
+      )}
+    >
+      <span
+        className={cx(
+          "flex h-4 w-4 items-center justify-center rounded-full text-[10px]",
+          valid
+            ? "bg-emerald-500 text-white"
+            : "bg-[var(--onboard-border)] text-[var(--onboard-muted)]",
+        )}
+      >
+        {valid ? "✓" : "•"}
+      </span>
+      {children}
+    </span>
+  );
+}
+
+function PasswordField({
+  id,
+  label,
+  value,
+  onChange,
+  visible,
+  onToggleVisible,
+  placeholder,
+  disabled,
+  error,
+}) {
+  return (
+    <label htmlFor={id} className="block">
+      <span className="mb-2 block text-xs font-black text-[var(--onboard-text)]">
+        {label}
+      </span>
+
+      <div
+        className={cx(
+          "flex h-14 items-center rounded-[16px] border bg-[var(--onboard-card)] px-4 transition",
+          error
+            ? "border-red-500/70"
+            : "border-[var(--onboard-border)] focus-within:border-[var(--onboard-primary)] focus-within:ring-4 focus-within:ring-[rgba(37,99,235,0.14)]",
+          disabled && "opacity-60",
+        )}
+      >
+        <input
+          id={id}
+          type={visible ? "text" : "password"}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          autoComplete="new-password"
+          placeholder={placeholder}
+          disabled={disabled}
+          className="min-w-0 flex-1 bg-transparent text-sm font-black text-[var(--onboard-text)] outline-none placeholder:text-[var(--onboard-muted)] disabled:cursor-not-allowed"
+        />
+
+        <button
+          type="button"
+          onClick={onToggleVisible}
+          disabled={disabled}
+          className="ml-3 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--onboard-primary)] transition hover:bg-[var(--onboard-card-soft)] disabled:cursor-not-allowed disabled:opacity-60"
+          aria-label={visible ? "Hide password" : "Show password"}
+          title={visible ? "Hide password" : "Show password"}
+        >
+          {visible ? <EyeOffIcon /> : <EyeIcon />}
+        </button>
+      </div>
+
+      {error ? (
+        <span className="mt-2 block text-xs font-bold text-red-500">{error}</span>
+      ) : null}
+    </label>
+  );
+}
+
+function PasswordPanel({
+  unlocked,
+  password,
+  setPassword,
+  confirmPassword,
+  setConfirmPassword,
+  passwordVisible,
+  setPasswordVisible,
+  confirmPasswordVisible,
+  setConfirmPasswordVisible,
+  passwordLongEnough,
+  passwordHasLetter,
+  passwordHasNumber,
+  passwordHasSpecial,
+  passwordsMatch,
+}) {
+  const hasConfirm = confirmPassword.length > 0;
+
+  return (
+    <section className={cx("svx-onboard-card", !unlocked && "opacity-70")}>
+      <div className="svx-onboard-card-title-row">
+        <div className="svx-onboard-lock-icon">
+          <LockIcon />
+        </div>
+
+        <div>
+          <h3>Create owner password</h3>
+          <p>
+            After both contact checks are complete, create the password the owner will use to log in.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <PasswordField
+          id="owner-password"
+          label="Password"
+          value={password}
+          onChange={setPassword}
+          visible={passwordVisible}
+          onToggleVisible={() => setPasswordVisible((current) => !current)}
+          placeholder={unlocked ? "Example: Store@2026" : "Verify email and phone first"}
+          disabled={!unlocked}
+          error={password.length > 0 && !passwordLongEnough ? "Use at least 8 characters." : ""}
+        />
+
+        <PasswordField
+          id="owner-confirm-password"
+          label="Confirm password"
+          value={confirmPassword}
+          onChange={setConfirmPassword}
+          visible={confirmPasswordVisible}
+          onToggleVisible={() => setConfirmPasswordVisible((current) => !current)}
+          placeholder={unlocked ? "Repeat your password" : "Verify email and phone first"}
+          disabled={!unlocked}
+          error={hasConfirm && !passwordsMatch ? "Passwords do not match." : ""}
+        />
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        <PasswordRule valid={passwordLongEnough}>8+ characters</PasswordRule>
+        <PasswordRule valid={passwordHasLetter}>Has letters</PasswordRule>
+        <PasswordRule valid={passwordHasNumber}>Has numbers</PasswordRule>
+        <PasswordRule valid={passwordHasSpecial}>Has special character</PasswordRule>
+        <PasswordRule valid={passwordsMatch && hasConfirm}>Passwords match</PasswordRule>
+      </div>
+    </section>
+  );
+}
+
 export default function VerifyOtp() {
   const nav = useNavigate();
   const onboarding = useMemo(() => readOnboardingState(), []);
@@ -343,7 +605,26 @@ export default function VerifyOtp() {
     ),
   );
 
-  const canContinue = Boolean(emailVerified && phoneVerified);
+  const [password, setPassword] = useState(() => readPasswordDraft());
+  const [confirmPassword, setConfirmPassword] = useState(() => readPasswordDraft());
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+
+  const contactsVerified = Boolean(emailVerified && phoneVerified);
+  const passwordLongEnough = password.length >= 8;
+  const passwordHasLetter = /[a-zA-Z]/.test(password);
+  const passwordHasNumber = /\d/.test(password);
+  const passwordHasSpecial = /[^a-zA-Z0-9]/.test(password);
+  const passwordsMatch = Boolean(password && confirmPassword && password === confirmPassword);
+  const passwordReady = Boolean(
+    contactsVerified &&
+      passwordLongEnough &&
+      passwordHasLetter &&
+      passwordHasNumber &&
+      passwordHasSpecial &&
+      passwordsMatch,
+  );
+  const canContinue = passwordReady;
 
   useEffect(() => {
     if (!intentId || !storeName || !ownerEmail || !ownerPhone) {
@@ -414,6 +695,27 @@ export default function VerifyOtp() {
     return () => window.clearTimeout(timer);
   }, [phoneCode, phoneVerified, sendingPhone, verifyingPhone]);
 
+  useEffect(() => {
+    if (!contactsVerified) {
+      savePasswordDraft("");
+      setPassword("");
+      setConfirmPassword("");
+      return;
+    }
+
+    savePasswordDraft(password);
+  }, [contactsVerified, password]);
+
+  useEffect(() => {
+    if (!contactsVerified || !passwordReady) return;
+
+    const current = readOnboardingState() || {};
+    saveOnboardingState({
+      ...current,
+      passwordReady: true,
+    });
+  }, [contactsVerified, passwordReady]);
+
   function persistVerifiedFlags(nextEmailVerified, nextPhoneVerified) {
     const current = readOnboardingState() || {};
 
@@ -437,6 +739,7 @@ export default function VerifyOtp() {
       phoneVerified: Boolean(nextPhoneVerified),
       emailVerifiedFor: nextEmailVerifiedFor,
       phoneVerifiedFor: nextPhoneVerifiedFor,
+      passwordReady: Boolean(nextEmailVerified && nextPhoneVerified && passwordReady),
     };
 
     setEmailVerified(Boolean(nextEmailVerified));
@@ -553,10 +856,33 @@ export default function VerifyOtp() {
   }
 
   function continueToActivation() {
-    if (!canContinue) {
+    if (!contactsVerified) {
       toast.error("Verify both email and phone first");
       return;
     }
+
+    if (!passwordLongEnough) {
+      toast.error("Password must be at least 8 characters.");
+      return;
+    }
+
+    if (!passwordHasLetter || !passwordHasNumber || !passwordHasSpecial) {
+      toast.error("Password must include letters, numbers, and a special character.");
+      return;
+    }
+
+    if (!passwordsMatch) {
+      toast.error("Passwords do not match.");
+      return;
+    }
+
+    savePasswordDraft(password);
+
+    const current = readOnboardingState() || {};
+    saveOnboardingState({
+      ...current,
+      passwordReady: true,
+    });
 
     nav("/owner-payment");
   }
@@ -565,7 +891,7 @@ export default function VerifyOtp() {
     <OnboardingShell
       activeStep={2}
       title="Secure your owner account."
-      subtitle="Verify the owner email and phone before choosing how the store should start."
+      subtitle="Verify the owner email and phone, then create the owner password."
       footer={
         <p className="svx-onboard-login-note">
           Need to change details? <Link to="/signup">Back to business setup</Link>
@@ -580,14 +906,13 @@ export default function VerifyOtp() {
             <h2>Secure your account.</h2>
 
             <p>
-              Confirm the owner email and phone. This protects the store setup, account recovery,
-              and activation.
+              Confirm the owner email and phone, then create the password used to access the store.
             </p>
           </div>
 
           <span className="svx-onboard-safe-pill">
             <span>{canContinue ? "✓" : "2"}</span>
-            {canContinue ? "Ready to continue" : "Checks required"}
+            {canContinue ? "Ready to continue" : contactsVerified ? "Password needed" : "Checks required"}
           </span>
         </div>
 
@@ -631,30 +956,37 @@ export default function VerifyOtp() {
           />
         </div>
 
+        <PasswordPanel
+          unlocked={contactsVerified}
+          password={password}
+          setPassword={setPassword}
+          confirmPassword={confirmPassword}
+          setConfirmPassword={setConfirmPassword}
+          passwordVisible={passwordVisible}
+          setPasswordVisible={setPasswordVisible}
+          confirmPasswordVisible={confirmPasswordVisible}
+          setConfirmPasswordVisible={setConfirmPasswordVisible}
+          passwordLongEnough={passwordLongEnough}
+          passwordHasLetter={passwordHasLetter}
+          passwordHasNumber={passwordHasNumber}
+          passwordHasSpecial={passwordHasSpecial}
+          passwordsMatch={passwordsMatch}
+        />
+
         <section className="svx-onboard-card svx-onboard-next-card">
           <div className="svx-onboard-next-copy">
             <div className="svx-onboard-lock-icon">
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M12 3.5L19 6.5V11.5C19 16 16.15 19.25 12 20.5C7.85 19.25 5 16 5 11.5V6.5L12 3.5Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M8.75 12L11 14.25L15.5 9.75"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              <ShieldIcon />
             </div>
 
             <div>
               <strong>Next: choose how to start</strong>
               <p>
-                {storeName || "Your store"} will continue after both contact checks are complete.
+                {contactsVerified
+                  ? passwordReady
+                    ? `${storeName || "Your store"} is ready for the start option.`
+                    : "Create a strong owner password before choosing the start option."
+                  : "Email and phone must be verified before creating the owner password."}
               </p>
             </div>
           </div>
