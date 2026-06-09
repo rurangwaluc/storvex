@@ -554,107 +554,102 @@ function MobileReadySection() {
 function Footer() {
   const currentYear = new Date().getFullYear();
 
+  function handleNewsletterSubmit(event) {
+    event.preventDefault();
+  }
+
   return (
     <section id="resources" className="svx-footer-section">
-      <div className="svx-footer-cta">
-        <div>
-          <h2>Ready to run your store with clarity?</h2>
-          <p>Create your owner account and open your first branch in minutes.</p>
-        </div>
-
-        <div className="svx-footer-cta-actions">
-          <Link to="/signup" className="svx-footer-primary">
-            Get started
-          </Link>
-
-          <Link to="/login" className="svx-footer-secondary">
-            Book a demo
-          </Link>
-        </div>
-      </div>
-
-      <footer className="svx-footer-main">
-        <div className="svx-footer-grid">
-          <div className="svx-footer-brand">
-            <img src="/storvex_white.webp" alt="Storvex" />
-
-            <p>
-              Store control system for modern retail. Track sales, protect profit, and run every
-              branch with confidence.
-            </p>
-
-            <div className="svx-footer-credit">
-              <span>
-                Developed by{" "}
-                <a
-                  href="https://webimpactlab.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="svx-external-link"
-                >
-                  WebimpactLab
-                </a>
-              </span>
-
-              <a
-                href="https://wa.me/250785587830"
-                target="_blank"
-                rel="noreferrer"
-                className="svx-external-link"
-              >
-                WhatsApp: +250 785 587 830
-              </a>
-            </div>
-
-            <div className="svx-footer-socials">
-              {["f", "𝕏", "in", "◎"].map((item) => (
-                <span key={item}>{item}</span>
-              ))}
-            </div>
+      <div className="svx-footer-shell">
+        <div className="svx-footer-cta">
+          <div>
+            <span className="svx-footer-kicker">Built for store owners</span>
+            <h2>Ready to run your store with clarity?</h2>
+            <p>Create your owner account and open your first store workspace in minutes.</p>
           </div>
 
-          {footerGroups.map((group) => (
-            <div key={group.title} className="svx-footer-column">
-              <h3>{group.title}</h3>
+          <div className="svx-footer-cta-actions">
+            <Link to="/signup" className="svx-footer-primary">
+              Get started
+            </Link>
 
-              <div>
-                {group.links.map((item) => (
-                  <Link key={item} to="/signup">
-                    {item}
-                  </Link>
+            <Link to="/login" className="svx-footer-secondary">
+              Book a demo
+            </Link>
+          </div>
+        </div>
+
+        <footer className="svx-footer-main">
+          <div className="svx-footer-grid">
+            <div className="svx-footer-brand">
+              <img src="/storvex_white.webp" alt="Storvex" />
+
+              <p>
+                Store control system for modern retail. Track sales, protect profit, and run every
+                branch with confidence.
+              </p>
+
+              <div className="svx-footer-contact">
+                <a href="https://wa.me/250785587830" target="_blank" rel="noreferrer">
+                  WhatsApp: +250 785 587 830
+                </a>
+                <a href="https://webimpactlab.com" target="_blank" rel="noreferrer">
+                  WebimpactLab
+                </a>
+              </div>
+
+              <div className="svx-footer-socials">
+                {["f", "𝕏", "in", "◎"].map((item) => (
+                  <span key={item}>{item}</span>
                 ))}
               </div>
             </div>
-          ))}
 
-          <div className="svx-footer-newsletter">
-            <h3>Stay in the loop</h3>
+            <div className="svx-footer-links-wrap">
+              {footerGroups.map((group) => (
+                <div key={group.title} className="svx-footer-column">
+                  <h3>{group.title}</h3>
 
-            <p>Get tips and updates that help you run a better store.</p>
+                  <div>
+                    {group.links.map((item) => (
+                      <Link key={item} to="/signup">
+                        {item}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-            <form className="svx-footer-email">
-              <input placeholder="Enter your email" />
-              <button type="submit" aria-label="Submit email">
-                →
-              </button>
-            </form>
+            <div className="svx-footer-newsletter">
+              <h3>Stay in the loop</h3>
+
+              <p>Get practical updates that help you run a better store.</p>
+
+              <form className="svx-footer-email" onSubmit={handleNewsletterSubmit}>
+                <input placeholder="Enter your email" type="email" />
+                <button type="submit" aria-label="Submit email">
+                  →
+                </button>
+              </form>
+            </div>
           </div>
-        </div>
 
-        <div className="svx-footer-bottom">
-          <p>© {currentYear} Storvex. All rights reserved.</p>
+          <div className="svx-footer-bottom">
+            <p>© {currentYear} Storvex. All rights reserved.</p>
 
-          <div>
-            <Link to="/signup">Privacy Policy</Link>
-            <Link to="/signup">Terms of Service</Link>
+            <div>
+              <Link to="/signup">Privacy Policy</Link>
+              <Link to="/signup">Terms of Service</Link>
+            </div>
+
+            <div>
+              <Link to="/signup">Security</Link>
+              <span>🌐 English</span>
+            </div>
           </div>
-
-          <div>
-            <Link to="/signup">Security</Link>
-            <span>🌐 English ⌄</span>
-          </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
     </section>
   );
 }
