@@ -1,31 +1,62 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap");
+
 .storvex-onboarding {
   --onboard-bg: #ffffff;
+  --onboard-page: #ffffff;
   --onboard-card: #ffffff;
   --onboard-card-soft: #f8fbff;
   --onboard-text: #0d1b3e;
   --onboard-muted: #64748b;
   --onboard-border: rgba(13, 27, 62, 0.12);
   --onboard-primary: #2563eb;
+  --onboard-primary-dark: #0f4fd8;
   --onboard-primary-soft: #eef6ff;
+  --onboard-success: #10b981;
+  --onboard-danger: #ef4444;
+  --onboard-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --onboard-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --onboard-shadow: 0 14px 34px rgba(15, 45, 90, 0.045);
   --onboard-shadow-strong: 0 24px 70px rgba(15, 45, 90, 0.07);
 
   min-height: 100vh;
-  background: var(--onboard-bg);
+  background: var(--onboard-page);
   color: var(--onboard-text);
+  font-family: var(--onboard-body-font);
 }
 
 :root[data-theme="dark"] .storvex-onboarding {
   --onboard-bg: #06111f;
+  --onboard-page: #06111f;
   --onboard-card: #1f1f20;
-  --onboard-card-soft: #0d1d32;
+  --onboard-card-soft: #101923;
   --onboard-text: #ffffff;
   --onboard-muted: rgba(255, 255, 255, 0.72);
   --onboard-border: rgba(255, 255, 255, 0.12);
   --onboard-primary: #159cff;
-  --onboard-primary-soft: rgba(21, 156, 255, 0.14);
+  --onboard-primary-dark: #0b86df;
+  --onboard-primary-soft: rgba(21, 156, 255, 0.12);
   --onboard-shadow: none;
   --onboard-shadow-strong: none;
+
+  background: var(--onboard-page);
+}
+
+.storvex-onboarding main,
+.storvex-onboarding section,
+.svx-onboard-shell,
+.svx-onboard-top,
+.svx-onboard-content {
+  background: transparent;
+}
+
+:root[data-theme="dark"] body {
+  background: #06111f;
+}
+
+.storvex-onboarding *,
+.storvex-onboarding *::before,
+.storvex-onboarding *::after {
+  box-sizing: border-box;
 }
 
 .storvex-onboarding h1,
@@ -35,6 +66,22 @@
   margin: 0;
 }
 
+.storvex-onboarding h1,
+.storvex-onboarding h2,
+.storvex-onboarding h3 {
+  font-family: var(--onboard-heading-font);
+}
+
+.storvex-onboarding p,
+.storvex-onboarding span,
+.storvex-onboarding label,
+.storvex-onboarding input,
+.storvex-onboarding button,
+.storvex-onboarding a,
+.storvex-onboarding strong {
+  font-family: var(--onboard-body-font);
+}
+
 .svx-onboard-shell {
   width: min(100%, 1360px);
   margin: 0 auto;
@@ -42,7 +89,7 @@
 
 .svx-onboard-top {
   padding: 54px 48px 28px;
-  background: var(--onboard-bg);
+  background: transparent;
 }
 
 .svx-onboard-title-wrap {
@@ -54,18 +101,18 @@
 .svx-onboard-title-wrap h1 {
   color: var(--onboard-text);
   font-size: clamp(28px, 3vw, 42px);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.08;
-  letter-spacing: -0.055em;
+  letter-spacing: -0.045em;
 }
 
 .svx-onboard-title-wrap > p {
   max-width: 640px;
   margin: 12px auto 0;
   color: var(--onboard-muted);
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.75;
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.72;
 }
 
 .svx-onboard-progress-wrap {
@@ -107,7 +154,8 @@
   background: var(--onboard-card);
   color: var(--onboard-muted);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 800;
+  box-shadow: var(--onboard-shadow);
 }
 
 .svx-onboard-progress-step.is-active .svx-onboard-progress-number,
@@ -134,20 +182,20 @@
 .svx-onboard-progress-step p {
   margin-top: 10px;
   color: var(--onboard-muted);
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 12.5px;
+  font-weight: 700;
   line-height: 1.35;
 }
 
 .svx-onboard-progress-step.is-active p,
 .svx-onboard-progress-step.is-done p {
   color: var(--onboard-primary);
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .svx-onboard-content {
   padding: 24px 48px 84px;
-  background: var(--onboard-bg);
+  background: transparent;
 }
 
 .svx-onboard-form {
@@ -173,20 +221,22 @@
   background: var(--onboard-primary-soft);
   padding: 8px 14px;
   color: var(--onboard-primary);
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.18em;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
 .svx-onboard-safe-pill {
   gap: 8px;
-  background: var(--onboard-card-soft);
+  border: 1px solid var(--onboard-border);
+  background: color-mix(in srgb, var(--onboard-card-soft) 82%, transparent);
   color: var(--onboard-text);
   letter-spacing: 0;
   text-transform: none;
 }
 
+.svx-onboard-safe-pill svg,
 .svx-onboard-safe-pill span {
   color: var(--onboard-primary);
 }
@@ -195,9 +245,9 @@
   margin-top: 18px;
   color: var(--onboard-text);
   font-size: clamp(34px, 3.2vw, 52px);
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.08;
-  letter-spacing: -0.06em;
+  letter-spacing: -0.05em;
 }
 
 .svx-onboard-form-heading p {
@@ -205,8 +255,8 @@
   margin-top: 14px;
   color: var(--onboard-muted);
   font-size: 15.5px;
-  font-weight: 700;
-  line-height: 1.75;
+  font-weight: 600;
+  line-height: 1.72;
 }
 
 .svx-onboard-form-grid {
@@ -223,9 +273,23 @@
   position: relative;
   border: 1px solid var(--onboard-border);
   border-radius: 24px;
-  background: var(--onboard-card);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--onboard-card) 96%, var(--onboard-primary-soft)),
+      var(--onboard-card)
+    );
   padding: 28px;
   box-shadow: var(--onboard-shadow);
+}
+
+:root[data-theme="dark"] .svx-onboard-card {
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--onboard-card) 92%, var(--onboard-primary-soft)),
+      var(--onboard-card)
+    );
 }
 
 .svx-onboard-card:has(.svx-business-category-picker.is-open) {
@@ -246,25 +310,29 @@
   width: 52px;
   height: 52px;
   flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, var(--onboard-primary) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--onboard-primary) 18%, transparent);
   border-radius: 16px;
   background: var(--onboard-primary-soft);
   color: var(--onboard-primary);
 }
 
+.svx-onboard-icon-badge svg {
+  display: block;
+}
+
 .svx-onboard-card-title-row h3 {
   color: var(--onboard-text);
   font-size: 20px;
-  font-weight: 900;
+  font-weight: 800;
   line-height: 1.2;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.035em;
 }
 
 .svx-onboard-card-title-row p {
   margin-top: 4px;
   color: var(--onboard-muted);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 13.5px;
+  font-weight: 600;
   line-height: 1.5;
 }
 
@@ -284,11 +352,11 @@
   margin-bottom: 9px;
   color: var(--onboard-text);
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .svx-onboard-required {
-  color: #ef4444;
+  color: var(--onboard-danger);
 }
 
 .svx-onboard-input {
@@ -301,10 +369,11 @@
   color: var(--onboard-text);
   outline: none;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   transition:
     border-color 160ms ease,
-    box-shadow 160ms ease;
+    box-shadow 160ms ease,
+    transform 160ms ease;
 }
 
 select.svx-onboard-input {
@@ -312,7 +381,11 @@ select.svx-onboard-input {
 }
 
 .svx-onboard-input::placeholder {
-  color: var(--onboard-muted);
+  color: color-mix(in srgb, var(--onboard-muted) 76%, transparent);
+}
+
+.svx-onboard-input:hover {
+  border-color: color-mix(in srgb, var(--onboard-primary) 30%, var(--onboard-border));
 }
 
 .svx-onboard-input:focus {
@@ -324,7 +397,7 @@ select.svx-onboard-input {
   margin-top: 9px;
   color: var(--onboard-muted);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.55;
 }
 
@@ -349,77 +422,88 @@ select.svx-onboard-input {
   width: 58px;
   height: 58px;
   flex-shrink: 0;
-  border-radius: 999px;
-  background: var(--onboard-primary);
-  color: #ffffff;
+  border: 1px solid color-mix(in srgb, var(--onboard-primary) 26%, var(--onboard-border));
+  border-radius: 18px;
+  background: transparent;
+  color: var(--onboard-primary);
+  box-shadow: none;
 }
 
 .svx-onboard-lock-mini {
-  position: absolute;
-  right: -3px;
-  bottom: -3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 25px;
-  height: 25px;
-  border: 2px solid var(--onboard-card);
-  border-radius: 999px;
-  background: var(--onboard-card);
-  color: var(--onboard-primary);
+  display: none;
 }
 
 .svx-onboard-next-copy strong {
   display: block;
   color: var(--onboard-text);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 .svx-onboard-next-copy p {
   margin-top: 5px;
   color: var(--onboard-muted);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
+  line-height: 1.5;
 }
 
 .svx-onboard-login-note {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   width: fit-content;
-  max-width: calc(100% - 32px);
-  margin: 38px auto 0;
-  border: 1px solid var(--onboard-border);
-  border-radius: 999px;
-  background: var(--onboard-card);
-  padding: 14px 24px;
+  max-width: 100%;
+  margin: 32px auto 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
   color: var(--onboard-muted);
   text-align: center;
   font-size: 14px;
-  font-weight: 800;
-  box-shadow: var(--onboard-shadow);
-  transform: translateX(0);
+  font-weight: 700;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.svx-onboard-login-note::before {
+  display: none;
+}
+
+.svx-onboard-login-icon {
+  display: none;
 }
 
 .svx-onboard-login-note a,
 .svx-onboard-content a {
   color: var(--onboard-primary);
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .svx-onboard-login-note a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: auto;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--onboard-primary);
   text-decoration: none;
   transition:
     color 160ms ease,
-    transform 160ms ease;
+    text-decoration-color 160ms ease;
 }
 
 .svx-onboard-login-note a:hover {
-  transform: translateX(2px);
+  background: transparent;
+  transform: none;
   text-decoration: underline;
-  text-underline-offset: 4px;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
 }
 
 .svx-onboard-footer-row {
@@ -427,8 +511,111 @@ select.svx-onboard-input {
   justify-content: center;
 }
 
-/* Business category dropdown */
+/* Saved draft */
+.svx-onboard-draft-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+  border: 1px solid color-mix(in srgb, var(--onboard-primary) 22%, var(--onboard-border));
+  border-radius: 24px;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--onboard-card) 90%, var(--onboard-primary-soft)),
+      var(--onboard-card)
+    );
+  padding: 22px;
+  box-shadow: var(--onboard-shadow);
+}
 
+.svx-onboard-draft-copy {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
+.svx-onboard-draft-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  border-radius: 16px;
+  background: var(--onboard-primary-soft);
+  color: var(--onboard-primary);
+}
+
+.svx-onboard-draft-copy p {
+  color: var(--onboard-primary);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.svx-onboard-draft-copy h2 {
+  margin-top: 4px;
+  color: var(--onboard-text);
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+.svx-onboard-draft-copy span {
+  display: block;
+  margin-top: 5px;
+  color: var(--onboard-muted);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.svx-onboard-draft-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.svx-onboard-primary-action,
+.svx-onboard-secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 14px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 800;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.svx-onboard-primary-action {
+  border: 1px solid var(--onboard-primary);
+  background: var(--onboard-primary);
+  color: #ffffff;
+}
+
+.svx-onboard-secondary-action {
+  border: 1px solid var(--onboard-border);
+  background: var(--onboard-card);
+  color: var(--onboard-text);
+}
+
+.svx-onboard-primary-action:hover,
+.svx-onboard-secondary-action:hover {
+  transform: translateY(-1px);
+}
+
+/* Business category dropdown */
 .svx-business-category-picker {
   position: relative;
   z-index: 40;
@@ -453,7 +640,7 @@ select.svx-onboard-input {
   text-align: left;
   outline: none;
   font-size: 15px;
-  font-weight: 900;
+  font-weight: 800;
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease,
@@ -474,9 +661,10 @@ select.svx-onboard-input {
 }
 
 .svx-business-category-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--onboard-muted);
-  font-size: 14px;
-  font-weight: 900;
   transition: transform 180ms ease;
 }
 
@@ -554,8 +742,6 @@ select.svx-onboard-input {
   border-radius: 13px;
   background: var(--onboard-primary-soft);
   color: var(--onboard-primary);
-  font-size: 13px;
-  font-weight: 900;
 }
 
 .svx-business-category-option.is-active .svx-business-category-icon {
@@ -567,15 +753,15 @@ select.svx-onboard-input {
   display: block;
   color: var(--onboard-text);
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 800;
 }
 
 .svx-business-category-option span:last-child {
   display: block;
   margin-top: 4px;
   color: var(--onboard-muted);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 600;
   line-height: 1.45;
 }
 
@@ -584,7 +770,8 @@ select.svx-onboard-input {
   .svx-onboard-progress,
   .svx-onboard-form-heading,
   .svx-onboard-card,
-  .svx-onboard-login-note {
+  .svx-onboard-login-note,
+  .svx-onboard-draft-card {
     animation: svx-onboard-fade-up 760ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
 
@@ -598,6 +785,10 @@ select.svx-onboard-input {
 
   .svx-onboard-card {
     animation-delay: 170ms;
+  }
+
+  .svx-onboard-draft-card {
+    animation-delay: 180ms;
   }
 
   .svx-onboard-login-note {
@@ -626,6 +817,16 @@ select.svx-onboard-input {
   .svx-onboard-form-heading {
     flex-direction: column;
   }
+
+  .svx-onboard-draft-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .svx-onboard-draft-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -641,6 +842,12 @@ select.svx-onboard-input {
 
   .svx-onboard-title-wrap h1 {
     font-size: 30px;
+    letter-spacing: -0.04em;
+  }
+
+  .svx-onboard-title-wrap > p {
+    font-size: 14px;
+    line-height: 1.62;
   }
 
   .svx-onboard-progress {
@@ -652,23 +859,172 @@ select.svx-onboard-input {
     font-size: 11px;
   }
 
+  .svx-onboard-content {
+    padding-bottom: 64px;
+  }
+
+  .svx-onboard-form-heading {
+    margin-bottom: 8px;
+  }
+
+  .svx-onboard-form-heading h2 {
+    font-size: 34px;
+    letter-spacing: -0.045em;
+  }
+
+  .svx-onboard-form-heading p {
+    font-size: 14px;
+    line-height: 1.62;
+  }
+
+  .svx-onboard-safe-pill {
+    padding: 8px 12px;
+  }
+
   .svx-onboard-card {
+    border-radius: 20px;
     padding: 22px;
   }
 
-  .svx-onboard-next-card,
-  .svx-onboard-next-copy {
+  .svx-onboard-card-title-row {
     align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+
+  .svx-onboard-icon-badge {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+  }
+
+  .svx-onboard-card-title-row h3 {
+    font-size: 18px;
+  }
+
+  .svx-onboard-next-card {
+    align-items: stretch;
     flex-direction: column;
+    gap: 18px;
+    padding-top: 22px;
+  }
+
+  .svx-onboard-next-copy {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .svx-onboard-next-card button,
+  .svx-onboard-next-card .svx-async-button {
+    width: 100%;
   }
 
   .svx-onboard-login-note {
-    width: 100%;
-    border-radius: 18px;
-    padding: 16px 18px;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    font-size: 13.5px;
   }
 
   .svx-business-category-menu {
     max-height: min(300px, calc(100vh - 150px));
   }
+}
+
+@media (max-width: 520px) {
+  .svx-onboard-top,
+  .svx-onboard-content {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .svx-onboard-progress-step p {
+    font-size: 10px;
+  }
+
+  .svx-onboard-card {
+    padding: 18px;
+  }
+
+  .svx-onboard-field-group,
+  .svx-onboard-location-grid {
+    gap: 18px;
+  }
+
+  .svx-onboard-input,
+  .svx-business-category-button {
+    height: 52px;
+    min-height: 52px;
+    border-radius: 13px;
+    padding-right: 15px;
+    padding-left: 15px;
+    font-size: 14px;
+  }
+
+  .svx-onboard-help {
+    font-size: 12.5px;
+  }
+
+  .svx-onboard-draft-card {
+    border-radius: 20px;
+    padding: 18px;
+  }
+
+  .svx-onboard-draft-copy {
+    align-items: flex-start;
+  }
+
+  .svx-onboard-draft-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-onboard-login-note {
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    font-size: 13px;
+  }
+
+  .svx-onboard-login-note > span:not(.svx-onboard-login-icon) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .svx-onboard-login-note a {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+  }
+}
+/* Typography-only override for every onboarding step, including Verify OTP */
+.storvex-onboarding,
+.storvex-onboarding * {
+  font-family: var(--onboard-body-font);
+}
+
+.storvex-onboarding h1,
+.storvex-onboarding h2,
+.storvex-onboarding h3,
+.storvex-onboarding h4,
+.storvex-onboarding .svx-onboard-title-wrap h1,
+.storvex-onboarding .svx-onboard-form-heading h2,
+.storvex-onboarding .svx-onboard-card-title-row h3 {
+  font-family: var(--onboard-heading-font);
+}
+
+.storvex-onboarding input,
+.storvex-onboarding button,
+.storvex-onboarding select,
+.storvex-onboarding textarea,
+.storvex-onboarding label,
+.storvex-onboarding a,
+.storvex-onboarding p,
+.storvex-onboarding span,
+.storvex-onboarding strong,
+.storvex-onboarding small,
+.storvex-onboarding b {
+  font-family: var(--onboard-body-font);
 }
