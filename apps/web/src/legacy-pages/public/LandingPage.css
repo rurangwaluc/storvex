@@ -1,4 +1,5 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap");
+
 .storvex-landing {
   --landing-bg: #ffffff;
   --landing-hero-bg: #ffffff;
@@ -13,8 +14,10 @@
   --landing-primary-soft: #eef6ff;
   --landing-ellipse: #d7e5fb;
   --landing-footer: #031633;
-  --landing-heading-font: "Inter Tight", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --landing-body-font: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --landing-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --landing-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
   --svx-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --svx-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -128,7 +131,7 @@
   align-items: center;
   color: var(--landing-text);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.01em;
   transition:
     color 160ms ease,
@@ -174,7 +177,7 @@
   border-radius: 999px;
   color: var(--landing-muted-2);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .svx-theme-toggle span.active {
@@ -190,7 +193,7 @@
   padding: 0 12px;
   color: var(--landing-text);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   transition:
     color 160ms ease,
     transform 160ms var(--svx-ease-out);
@@ -211,7 +214,7 @@
   background: var(--landing-primary);
   color: #ffffff;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   box-shadow: 0 14px 28px rgba(37, 99, 235, 0.2);
   transition:
     transform 180ms var(--svx-ease-out),
@@ -234,14 +237,15 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 32px;
   border: 1px solid color-mix(in srgb, var(--landing-primary) 18%, transparent);
   border-radius: 999px;
   background: var(--landing-primary-soft);
-  padding: 8px 14px;
+  padding: 0 14px;
   color: var(--landing-primary);
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.17em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
@@ -254,7 +258,7 @@
   border-radius: 12px;
   padding: 0 26px;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   transition:
     transform 180ms var(--svx-ease-out),
     opacity 180ms ease,
@@ -331,7 +335,7 @@
   transform-origin: center;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.74;
+  opacity: 0.68;
 }
 
 .svx-hero-inner {
@@ -357,10 +361,10 @@
   max-width: 610px;
   margin-top: 24px;
   color: var(--landing-text);
-  font-size: clamp(46px, 4.15vw, 56px);
+  font-size: clamp(48px, 4.4vw, 62px);
   font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: -0.035em;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
   animation: svx-fade-up 820ms var(--svx-ease-out) 170ms both;
 }
 
@@ -369,8 +373,8 @@
   margin-top: 22px;
   color: var(--landing-muted);
   font-size: 16px;
-  font-weight: 600;
-  line-height: 1.85;
+  font-weight: 500;
+  line-height: 1.78;
 }
 
 .svx-hero-copy > p {
@@ -507,7 +511,7 @@
   padding: 10px 11px;
   color: rgba(255, 255, 255, 0.78);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .svx-dashboard-nav div.active {
@@ -538,10 +542,11 @@
 
 .svx-dashboard-top h3 {
   color: var(--landing-text);
+  font-family: var(--landing-heading-font);
   font-size: 25px;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.03em;
 }
 
 .svx-date-pill {
@@ -554,7 +559,7 @@
   padding: 6px 10px;
   color: var(--landing-text);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .svx-branch-pill {
@@ -568,7 +573,7 @@
   padding: 0 13px;
   color: var(--landing-text);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .svx-kpi-grid {
@@ -602,17 +607,18 @@
   gap: 8px;
   color: var(--landing-muted-2);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .svx-kpi-card strong {
   display: block;
   margin-top: 9px;
   color: var(--landing-text);
+  font-family: var(--landing-heading-font);
   font-size: clamp(20px, 1.38vw, 24px);
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
   white-space: nowrap;
 }
 
@@ -620,7 +626,7 @@
   margin-top: 9px;
   color: #10b981;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .svx-dashboard-bottom {
@@ -659,6 +665,7 @@
 .svx-panel-head h4,
 .svx-stores-card h4 {
   color: var(--landing-text);
+  font-family: var(--landing-heading-font);
   font-size: 12px;
   font-weight: 800;
 }
@@ -666,7 +673,7 @@
 .svx-panel-head span {
   color: var(--landing-primary);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .svx-chart {
@@ -752,14 +759,14 @@
   max-width: 88px;
   color: var(--landing-text);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.2;
 }
 
 .svx-store-row b {
   color: var(--landing-text);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -812,8 +819,8 @@
   color: var(--landing-text);
   font-size: clamp(32px, 3vw, 42px);
   font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -0.03em;
+  line-height: 1.07;
+  letter-spacing: -0.035em;
 }
 
 .svx-section-heading p {
@@ -821,8 +828,8 @@
   margin: 14px auto 0;
   color: var(--landing-muted);
   font-size: 15.5px;
-  font-weight: 600;
-  line-height: 1.75;
+  font-weight: 500;
+  line-height: 1.72;
 }
 
 .svx-card-grid {
@@ -889,7 +896,7 @@
   font-size: 17px;
   font-weight: 800;
   line-height: 1.25;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.025em;
 }
 
 .svx-feature-card p {
@@ -899,8 +906,8 @@
   margin-top: 10px;
   color: var(--landing-muted);
   font-size: 14.5px;
-  font-weight: 600;
-  line-height: 1.7;
+  font-weight: 500;
+  line-height: 1.66;
 }
 
 .svx-platform-card {
@@ -953,7 +960,7 @@
   background:
     radial-gradient(circle at 22% 26%, rgba(21, 156, 255, 0.1), transparent 28%),
     radial-gradient(circle at 78% 64%, rgba(37, 99, 235, 0.08), transparent 30%);
-  opacity: 0.86;
+  opacity: 0.8;
   pointer-events: none;
 }
 
@@ -973,7 +980,7 @@
   font-size: clamp(38px, 3.3vw, 44px);
   font-weight: 800;
   line-height: 1.04;
-  letter-spacing: -0.055em;
+  letter-spacing: -0.035em;
 }
 
 .svx-mobile-ready-copy > p {
@@ -981,8 +988,8 @@
   margin-top: 20px;
   color: var(--landing-muted);
   font-size: 15.5px;
-  font-weight: 600;
-  line-height: 1.8;
+  font-weight: 500;
+  line-height: 1.75;
 }
 
 .svx-mobile-checklist {
@@ -1011,7 +1018,7 @@
 .svx-mobile-checklist strong {
   color: var(--landing-text);
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .svx-store-badges {
@@ -1201,20 +1208,20 @@
 .svx-phone-head p {
   color: var(--landing-text);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .svx-phone-head span {
   color: var(--landing-muted-2);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .svx-phone-date {
   margin-top: 8px;
   color: var(--landing-muted-2);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .svx-phone-card-stack {
@@ -1233,16 +1240,17 @@
 .svx-phone-card p {
   color: var(--landing-muted-2);
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .svx-phone-card strong {
   display: block;
   margin-top: 4px;
   color: var(--landing-text);
+  font-family: var(--landing-heading-font);
   font-size: 18px;
   font-weight: 800;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
 }
 
 .svx-phone-bars {
@@ -1335,7 +1343,7 @@
   font-size: clamp(30px, 3vw, 42px);
   font-weight: 800;
   line-height: 1.06;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.035em;
 }
 
 .svx-footer-cta p {
@@ -1343,8 +1351,8 @@
   margin-top: 12px;
   color: rgba(255, 255, 255, 0.68) !important;
   font-size: 15px;
-  font-weight: 600;
-  line-height: 1.7;
+  font-weight: 500;
+  line-height: 1.65;
 }
 
 .svx-footer-cta-actions {
@@ -1363,7 +1371,7 @@
   padding: 0 30px;
   color: #ffffff;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
   transition:
     transform 180ms var(--svx-ease-out),
     box-shadow 180ms ease,
@@ -1425,7 +1433,7 @@
   color: rgba(255, 255, 255, 0.66) !important;
   font-size: 14px;
   font-weight: 500;
-  line-height: 1.7;
+  line-height: 1.65;
 }
 
 .svx-footer-credit {
@@ -1443,7 +1451,7 @@
   width: fit-content;
   color: #38bdf8 !important;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.45;
   text-decoration: none;
   transition:
@@ -1507,7 +1515,7 @@
 .svx-footer-column a {
   color: rgba(255, 255, 255, 0.62);
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.35;
   transition:
     color 160ms ease,
@@ -1540,7 +1548,7 @@
   color: #ffffff;
   outline: none;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .svx-footer-email input::placeholder {
@@ -1585,7 +1593,7 @@
 .svx-footer-bottom span {
   color: rgba(255, 255, 255, 0.62) !important;
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .svx-footer-bottom > div {
@@ -1738,8 +1746,7 @@
   }
 
   .svx-hero {
-    padding-right: 32px;
-    padding-left: 32px;
+    padding: 130px 32px 70px;
   }
 
   .svx-hero-inner {
@@ -1753,8 +1760,16 @@
     margin: 0 auto;
   }
 
-  .svx-hero-copy h1,
+  .svx-hero-copy h1 {
+    max-width: 740px;
+    margin-right: auto;
+    margin-left: auto;
+    font-size: clamp(48px, 6.4vw, 68px);
+    line-height: 0.98;
+  }
+
   .svx-hero-copy p {
+    max-width: 600px;
     margin-right: auto;
     margin-left: auto;
   }
@@ -1765,12 +1780,13 @@
   }
 
   .svx-hero-visual {
-    min-height: 390px;
+    min-height: auto;
   }
 
   .svx-dashboard {
     position: relative;
     right: auto;
+    width: min(760px, 100%);
     margin: 0 auto;
     transform: none;
   }
@@ -1855,11 +1871,39 @@
   }
 
   .svx-hero {
-    padding: 132px 24px 64px;
+    padding: 112px 22px 54px;
+  }
+
+  .svx-hero-inner {
+    gap: 34px;
+  }
+
+  .svx-hero-copy {
+    max-width: 640px;
+  }
+
+  .svx-hero-copy h1 {
+    max-width: 620px;
+    font-size: clamp(42px, 8vw, 58px);
+    line-height: 0.98;
+    letter-spacing: -0.04em;
+  }
+
+  .svx-hero-copy p {
+    max-width: 520px;
+    margin-top: 18px;
+    font-size: 15px;
+    line-height: 1.65;
+  }
+
+  .svx-hero-actions {
+    margin-top: 24px;
   }
 
   .svx-dashboard {
-    grid-template-columns: 112px minmax(0, 1fr);
+    width: 100%;
+    max-width: 720px;
+    min-height: auto;
   }
 
   .svx-dashboard-sidebar {
@@ -1939,41 +1983,72 @@
   }
 
   .svx-hero {
-    padding: 118px 18px 52px;
+    padding: 104px 18px 46px;
   }
 
   .svx-hero-copy {
     text-align: left;
   }
 
+  .svx-hero-copy .svx-badge {
+    min-height: 28px;
+    padding: 0 11px;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+  }
+
   .svx-hero-copy h1 {
-    max-width: 380px;
+    max-width: 430px;
+    margin-top: 18px;
     margin-left: 0;
-    font-size: clamp(38px, 12vw, 48px);
-    line-height: 1.06;
+    font-size: clamp(38px, 11.5vw, 48px);
+    line-height: 0.98;
+    letter-spacing: -0.038em;
   }
 
   .svx-hero-copy p {
-    max-width: 370px;
+    max-width: 390px;
+    margin-top: 16px;
     margin-left: 0;
-    font-size: 14.5px;
-    line-height: 1.7;
+    font-size: 14px;
+    line-height: 1.65;
   }
 
   .svx-hero-actions {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
     justify-content: stretch;
+    width: 100%;
+    max-width: 390px;
+    margin-top: 22px;
   }
 
   .svx-btn {
     width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 0 14px;
+    border-radius: 12px;
+    font-size: 13px;
   }
 
   .svx-trust-row {
-    align-items: flex-start;
+    align-items: center;
     justify-content: flex-start;
+    max-width: 390px;
+    margin-top: 20px;
+  }
+
+  .svx-trust-row p {
+    font-size: 12.5px;
+    line-height: 1.35;
+  }
+
+  .svx-trust-avatars span {
+    width: 30px;
+    height: 30px;
+    font-size: 9px;
   }
 
   .svx-hero-visual {
@@ -1985,7 +2060,8 @@
     display: block;
     width: 100%;
     min-height: auto;
-    border-radius: 18px;
+    overflow: hidden;
+    border-radius: 20px;
     transform: none;
   }
 
@@ -1994,16 +2070,56 @@
   }
 
   .svx-dashboard-main {
-    padding: 18px;
+    padding: 16px;
   }
 
   .svx-dashboard-top {
     flex-direction: column;
+    gap: 12px;
+  }
+
+  .svx-dashboard-top h3 {
+    font-size: 22px;
+  }
+
+  .svx-date-pill {
+    margin-top: 10px;
   }
 
   .svx-branch-pill {
     width: 100%;
+    min-height: 36px;
     justify-content: space-between;
+    font-size: 10px;
+  }
+
+  .svx-kpi-grid {
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .svx-kpi-card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .svx-kpi-card strong {
+    font-size: 21px;
+  }
+
+  .svx-dashboard-bottom {
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .svx-chart-card,
+  .svx-stores-card {
+    padding: 14px;
+    border-radius: 14px;
+  }
+
+  .svx-chart {
+    height: 96px;
   }
 
   .svx-section {
@@ -2300,6 +2416,73 @@
   }
 }
 
+@media (max-width: 560px) {
+  .svx-hero {
+    padding-top: 96px;
+  }
+
+  .svx-hero-copy h1 {
+    max-width: 360px;
+    font-size: clamp(35px, 12vw, 43px);
+  }
+
+  .svx-hero-copy p {
+    max-width: 350px;
+  }
+
+  .svx-hero-actions {
+    grid-template-columns: 1fr;
+    max-width: 350px;
+  }
+
+  .svx-trust-row {
+    align-items: center;
+    max-width: 350px;
+  }
+
+  .svx-dashboard {
+    border-radius: 18px;
+  }
+
+  .svx-dashboard-main {
+    padding: 15px;
+  }
+
+  .svx-dashboard-top h3 {
+    font-size: 21px;
+  }
+
+  .svx-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-kpi-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .svx-kpi-card strong {
+    margin-top: 0;
+    font-size: 20px;
+    text-align: right;
+  }
+
+  .svx-kpi-card p {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+
+  .svx-dashboard-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-store-row strong {
+    max-width: none;
+  }
+}
+
 @media (max-width: 420px) {
   .svx-header-logo {
     height: 31px;
@@ -2311,7 +2494,32 @@
   }
 
   .svx-hero-copy h1 {
-    font-size: 38px;
+    font-size: 35px;
+    line-height: 1;
+  }
+
+  .svx-hero-copy p {
+    font-size: 13.5px;
+  }
+
+  .svx-btn {
+    min-height: 46px;
+  }
+
+  .svx-dashboard-main {
+    padding: 13px;
+  }
+
+  .svx-kpi-card {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-kpi-card strong {
+    text-align: left;
+  }
+
+  .svx-chart {
+    height: 82px;
   }
 
   .svx-store-badges {
