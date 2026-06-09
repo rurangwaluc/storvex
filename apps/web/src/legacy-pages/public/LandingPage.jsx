@@ -21,26 +21,31 @@ import { Link } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
 import "./LandingPage.css";
 
-const problemCards = [
+const logoSrc = "/storvex_webp.webp";
+const whiteLogoSrc = "/storvex_white.webp";
+
+const navItems = [
+  { label: "Features", href: "#features" },
+  { label: "How it works", href: "#how-it-works" },
+  { label: "Pricing", href: "/signup" },
+  { label: "Resources", href: "#resources", hasCaret: true },
+];
+
+const heroStats = [
   {
-    icon: PackageCheck,
-    title: "Missed Stock",
-    text: "Know what is running low before customers ask for it.",
+    label: "Today’s sales",
+    value: "RWF 14,250",
+    helper: "Visible as sales happen",
   },
   {
-    icon: BarChart3,
-    title: "Unclear Performance",
-    text: "See what sells, what slows down, and where money is moving.",
+    label: "Net profit",
+    value: "RWF 4,820",
+    helper: "After recorded costs",
   },
   {
-    icon: UsersRound,
-    title: "Staff Mistakes",
-    text: "Reduce manual errors with clear roles, records, and activity visibility.",
-  },
-  {
-    icon: WalletCards,
-    title: "Cost Leaks",
-    text: "Track expenses and cash movement before small losses become big losses.",
+    label: "Orders",
+    value: "1,246",
+    helper: "Across active branches",
   },
 ];
 
@@ -86,94 +91,128 @@ const platformCards = [
     text: "Protect business access, records, and store activity with structured controls.",
   },
 ];
+
+const problemCards = [
+  {
+    icon: PackageCheck,
+    title: "Missed Stock",
+    text: "Know what is running low before customers ask for it.",
+  },
+  {
+    icon: BarChart3,
+    title: "Unclear Performance",
+    text: "See what sells, what slows down, and where money is moving.",
+  },
+  {
+    icon: UsersRound,
+    title: "Staff Mistakes",
+    text: "Reduce manual errors with clear roles, records, and activity visibility.",
+  },
+  {
+    icon: WalletCards,
+    title: "Cost Leaks",
+    text: "Track expenses and cash movement before small losses become big losses.",
+  },
+];
+
 const mobilePoints = [
   "Live updates on sales and profit",
-  "Approve refunds and overrides",
-  "Monitor branches and team",
-  "Get alerts that matter",
+  "Approve refunds and corrections",
+  "Monitor branches and staff",
+  "See alerts that matter",
 ];
 
 const footerGroups = [
   {
     title: "Product",
-    links: ["Features", "How it works", "Pricing", "Updates"],
+    links: [
+      { label: "Features", href: "#features" },
+      { label: "How it works", href: "#how-it-works" },
+      { label: "Pricing", href: "/signup" },
+      { label: "Updates", href: "/signup" },
+    ],
   },
   {
     title: "Solutions",
-    links: ["Single Store", "Multi-Branch", "Inventory Control", "Cash Management"],
+    links: [
+      { label: "Single Store", href: "/signup" },
+      { label: "Multi-Branch", href: "/signup" },
+      { label: "Inventory Control", href: "/signup" },
+      { label: "Cash Management", href: "/signup" },
+    ],
   },
   {
     title: "Resources",
-    links: ["Help Center", "Guides", "Blog", "System Status"],
+    links: [
+      { label: "Help Center", href: "/signup" },
+      { label: "Guides", href: "/signup" },
+      { label: "Blog", href: "/signup" },
+      { label: "System Status", href: "/signup" },
+    ],
   },
   {
     title: "Company",
-    links: ["About Us", "Careers", "Contact Us", "Partners"],
+    links: [
+      { label: "About Us", href: "/signup" },
+      { label: "Careers", href: "/signup" },
+      { label: "Contact Us", href: "/signup" },
+      { label: "Partners", href: "/signup" },
+    ],
   },
 ];
 
+function cx(...items) {
+  return items.filter(Boolean).join(" ");
+}
+
 function useLandingAnimations() {
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const elements = Array.from(document.querySelectorAll(".svx-reveal"));
 
-    const root = document.querySelector(".storvex-landing");
-    if (!root) return;
-
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    const revealItems = Array.from(
-      root.querySelectorAll(
-        [
-          ".svx-section-heading",
-          ".svx-feature-card",
-          ".svx-mobile-ready-shell",
-          ".svx-mobile-checklist > div",
-          ".svx-app-badge",
-          ".svx-footer-cta",
-          ".svx-footer-grid",
-        ].join(", ")
-      )
-    );
-
-    revealItems.forEach((item, index) => {
-      item.classList.add("svx-reveal");
-
-      if (item.classList.contains("svx-feature-card")) {
-        item.style.setProperty("--svx-reveal-delay", `${(index % 8) * 55}ms`);
-      } else {
-        item.style.setProperty("--svx-reveal-delay", `${Math.min(index * 35, 220)}ms`);
-      }
-    });
-
-    if (prefersReducedMotion || !("IntersectionObserver" in window)) {
-      revealItems.forEach((item) => item.classList.add("is-visible"));
-      return;
-    }
+    if (!elements.length) return undefined;
 
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (!entry.isIntersecting) return;
-
           entry.target.classList.add("is-visible");
           observer.unobserve(entry.target);
         });
       },
-      {
-        root: null,
-        threshold: 0.16,
-        rootMargin: "0px 0px -8% 0px",
-      }
+      { threshold: 0.18 },
     );
 
-    revealItems.forEach((item) => observer.observe(item));
+    elements.forEach((element, index) => {
+      element.style.setProperty("--svx-reveal-delay", `${Math.min(index * 45, 240)}ms`);
+      observer.observe(element);
+    });
 
     return () => observer.disconnect();
   }, []);
 }
 
-function cx(...items) {
-  return items.filter(Boolean).join(" ");
+function SmartLink({ href, className, children, ...props }) {
+  if (href?.startsWith("http")) {
+    return (
+      <a href={href} className={className} target="_blank" rel="noreferrer" {...props}>
+        {children}
+      </a>
+    );
+  }
+
+  if (href?.startsWith("#")) {
+    return (
+      <a href={href} className={className} {...props}>
+        {children}
+      </a>
+    );
+  }
+
+  return (
+    <Link to={href || "/signup"} className={className} {...props}>
+      {children}
+    </Link>
+  );
 }
 
 function Header() {
@@ -184,37 +223,27 @@ function Header() {
       <div className="svx-header-inner">
         <Link to="/" aria-label="Storvex home" className="svx-logo-link">
           <img
-            src={isDark ? "/storvex_white.webp" : "/storvex_dark.webp"}
+            src={isDark ? whiteLogoSrc : logoSrc}
             alt="Storvex"
             className="svx-header-logo"
+            draggable="false"
           />
         </Link>
 
         <nav className="svx-nav" aria-label="Main navigation">
-          {["Features", "How it works", "Pricing", "Resources"].map((item) => (
-            <a
-              key={item}
-              href={
-                item === "Features"
-                  ? "#features"
-                  : item === "How it works"
-                    ? "#how-it-works"
-                    : item === "Pricing"
-                      ? "#pricing"
-                      : "#resources"
-              }
-            >
-              {item}
-              {item === "Resources" ? <span>⌄</span> : null}
-            </a>
+          {navItems.map((item) => (
+            <SmartLink key={item.label} href={item.href}>
+              {item.label}
+              {item.hasCaret ? <span aria-hidden="true">⌄</span> : null}
+            </SmartLink>
           ))}
         </nav>
 
         <div className="svx-header-actions">
           <button
             type="button"
-            onClick={toggleTheme}
             className="svx-theme-toggle"
+            onClick={toggleTheme}
             aria-label="Toggle theme"
           >
             <span className={!isDark ? "active" : ""}>☀</span>
@@ -246,11 +275,16 @@ function PrimaryLink({ to = "/signup", children, className = "" }) {
   );
 }
 
-function SecondaryLink({ to = "/login", children, className = "" }) {
+function SecondaryLink({ href = "https://wa.me/250785587830", children, className = "" }) {
   return (
-    <Link to={to} className={cx("svx-btn svx-btn-secondary", className)}>
+    <a
+      href={href}
+      className={cx("svx-btn svx-btn-secondary", className)}
+      target="_blank"
+      rel="noreferrer"
+    >
       {children}
-    </Link>
+    </a>
   );
 }
 
@@ -258,65 +292,73 @@ function WhiteCard({ children, className = "" }) {
   return <div className={cx("svx-card", className)}>{children}</div>;
 }
 
-function FeatureIcon({ Icon }) {
+function FeatureIcon({ icon: Icon }) {
   return (
-    <div className="svx-feature-icon">
-      <Icon size={22} strokeWidth={2.5} />
+    <div className="svx-feature-icon" aria-hidden="true">
+      <Icon size={21} strokeWidth={2.1} />
     </div>
-  );
-}
-
-function ProblemCard({ icon, title, text }) {
-  return (
-    <WhiteCard className="svx-feature-card svx-problem-card">
-      <div className="svx-card-topline">
-        <FeatureIcon Icon={icon} />
-        <h3>{title}</h3>
-      </div>
-
-      <p>{text}</p>
-    </WhiteCard>
   );
 }
 
 function PlatformCard({ icon, title, text }) {
   return (
-    <WhiteCard className="svx-feature-card svx-platform-card">
+    <WhiteCard className="svx-feature-card svx-platform-card svx-reveal">
       <div className="svx-card-topline">
-        <FeatureIcon Icon={icon} />
+        <FeatureIcon icon={icon} />
         <h3>{title}</h3>
       </div>
-
       <p>{text}</p>
     </WhiteCard>
   );
 }
 
-function HeroLineChart() {
+function ProblemCard({ icon, title, text }) {
+  return (
+    <WhiteCard className="svx-feature-card svx-problem-card svx-reveal">
+      <div className="svx-card-topline">
+        <FeatureIcon icon={icon} />
+        <h3>{title}</h3>
+      </div>
+      <p>{text}</p>
+    </WhiteCard>
+  );
+}
+
+function LineChart() {
   return (
     <svg viewBox="0 0 430 150" className="svx-chart" aria-hidden="true">
+      <defs>
+        <linearGradient id="svxChartLine" x1="0" x2="1">
+          <stop offset="0%" stopColor="#159cff" />
+          <stop offset="100%" stopColor="#38bdf8" />
+        </linearGradient>
+      </defs>
+
       <path
-        d="M8 108 C44 58, 76 44, 114 68 C146 88, 158 10, 198 38 C238 70, 232 112, 282 82 C320 58, 356 72, 422 28"
+        d="M18 118 C48 76 78 58 113 84 C145 106 162 106 190 68 C218 32 247 30 276 68 C303 104 336 96 382 54"
         fill="none"
-        stroke="var(--landing-primary)"
+        stroke="url(#svxChartLine)"
+        strokeWidth="6"
         strokeLinecap="round"
-        strokeWidth="5"
       />
+
       <path
-        d="M8 108 C44 58, 76 44, 114 68 C146 88, 158 10, 198 38 C238 70, 232 112, 282 82 C320 58, 356 72, 422 28"
+        d="M18 118 C48 76 78 58 113 84 C145 106 162 106 190 68 C218 32 247 30 276 68 C303 104 336 96 382 54"
         fill="none"
-        stroke="var(--landing-primary)"
+        stroke="rgba(21,156,255,0.12)"
+        strokeWidth="22"
         strokeLinecap="round"
-        strokeOpacity="0.12"
-        strokeWidth="14"
       />
-      {[8, 76, 114, 198, 282, 356, 422].map((x, index) => (
+
+      {[18, 113, 190, 276, 382].map((x, index) => (
         <circle
           key={x}
           cx={x}
-          cy={[108, 44, 68, 38, 82, 72, 28][index]}
-          r="4"
-          fill="var(--landing-primary)"
+          cy={[118, 84, 68, 68, 54][index]}
+          r="5"
+          fill="#ffffff"
+          stroke="#159cff"
+          strokeWidth="4"
         />
       ))}
     </svg>
@@ -324,18 +366,16 @@ function HeroLineChart() {
 }
 
 function DashboardMockup() {
-  const navItems = ["Overview", "Sales", "Orders", "Products", "Employees", "Reports", "Settings"];
-
   return (
     <div className="svx-dashboard">
       <aside className="svx-dashboard-sidebar">
         <div className="svx-dashboard-brand">
-          <img src="/storvex_icon.webp" alt="" />
+          <img src={whiteLogoSrc} alt="" draggable="false" />
           <span>Storvex</span>
         </div>
 
         <div className="svx-dashboard-nav">
-          {navItems.map((item, index) => (
+          {["Overview", "Sales", "Orders", "Products", "Staff", "Reports"].map((item, index) => (
             <div key={item} className={index === 0 ? "active" : ""}>
               <span className="svx-nav-dot" />
               {item}
@@ -348,31 +388,23 @@ function DashboardMockup() {
         <div className="svx-dashboard-top">
           <div>
             <h3>Overview</h3>
-            <div className="svx-date-pill">
-              <span>▣</span>
-              May 12 — May 18, 2026
-            </div>
+            <div className="svx-date-pill">May 12 – May 18, 2026</div>
           </div>
 
           <button type="button" className="svx-branch-pill">
-            Downtown Branch
-            <span>⌄</span>
+            Downtown Branch <span aria-hidden="true">⌄</span>
           </button>
         </div>
 
         <div className="svx-kpi-grid">
-          {[
-            ["Total sales", "RWF 14,250", "+12.9%"],
-            ["Net profit", "RWF 4,820", "+8.7%"],
-            ["Orders", "1,246", "+16.1%"],
-          ].map(([label, value, change]) => (
-            <div key={label} className="svx-kpi-card">
+          {heroStats.map((item) => (
+            <div key={item.label} className="svx-kpi-card">
               <div className="svx-kpi-head">
-                <span>{label}</span>
+                <span>{item.label}</span>
                 <span>⌄</span>
               </div>
-              <strong>{value}</strong>
-              <p>{change} vs last week</p>
+              <strong>{item.value}</strong>
+              <p>{item.helper}</p>
             </div>
           ))}
         </div>
@@ -383,7 +415,7 @@ function DashboardMockup() {
               <h4>Sales over time</h4>
               <span>Day</span>
             </div>
-            <HeroLineChart />
+            <LineChart />
           </div>
 
           <div className="svx-stores-card">
@@ -394,13 +426,13 @@ function DashboardMockup() {
                 ["Downtown Branch", "RWF 8,250"],
                 ["Market Street", "RWF 4,750"],
                 ["Lakeside Store", "RWF 5,430"],
-              ].map(([name, value], index) => (
+              ].map(([name, amount], index) => (
                 <div key={name} className="svx-store-row">
                   <div>
                     <span>{index + 1}</span>
                     <strong>{name}</strong>
                   </div>
-                  <b>{value}</b>
+                  <b>{amount}</b>
                 </div>
               ))}
             </div>
@@ -437,12 +469,9 @@ function PhoneMockup() {
           ))}
         </div>
 
-        <div className="svx-phone-bars">
-          {[22, 35, 28, 60, 42, 52, 74].map((height, index) => (
-            <span
-              key={index}
-              style={{ height: `${height}%`, opacity: index % 2 ? 0.55 : 0.9 }}
-            />
+        <div className="svx-phone-bars" aria-hidden="true">
+          {[22, 28, 44, 38, 58, 70, 88].map((height) => (
+            <span key={height} style={{ height: `${height}%` }} />
           ))}
         </div>
 
@@ -452,18 +481,26 @@ function PhoneMockup() {
   );
 }
 
+function StoreAvatar({ className, children }) {
+  return (
+    <div className={cx("svx-network-avatar", className)} aria-hidden="true">
+      {children}
+    </div>
+  );
+}
+
 function MobileReadySection() {
   return (
     <section id="trust" className="svx-mobile-ready-section">
-      <div className="svx-mobile-ready-shell">
+      <div className="svx-mobile-ready-shell svx-reveal">
         <div className="svx-mobile-ready-copy">
           <Badge>Mobile-ready</Badge>
 
           <h2>Run your store from anywhere.</h2>
 
           <p>
-            Storvex works on desktop and mobile, so you can stay in control even when you’re on the
-            move.
+            Storvex works on desktop and mobile, so you can stay in control even when you are away
+            from the store.
           </p>
 
           <div className="svx-mobile-checklist">
@@ -498,59 +535,45 @@ function MobileReadySection() {
 
         <div className="svx-mobile-ready-visual">
           <div className="svx-mobile-network">
-            <svg viewBox="0 0 620 420" aria-hidden="true">
+            <svg viewBox="0 0 580 420" fill="none" aria-hidden="true">
               <path
-                d="M130 210 C205 145, 292 153, 350 214 C405 270, 496 248, 560 176"
-                fill="none"
+                d="M110 210 C190 120 260 118 330 206 C390 284 455 290 530 224"
                 stroke="currentColor"
-                strokeDasharray="8 10"
-                strokeLinecap="round"
                 strokeWidth="2"
+                strokeDasharray="8 10"
               />
               <path
-                d="M350 214 C420 330, 505 335, 560 278"
-                fill="none"
+                d="M132 256 C238 336 312 330 420 230"
                 stroke="currentColor"
-                strokeDasharray="8 10"
-                strokeLinecap="round"
                 strokeWidth="2"
+                strokeDasharray="8 10"
               />
               <path
-                d="M350 214 C410 96, 492 74, 546 98"
-                fill="none"
+                d="M164 162 C252 68 374 78 500 154"
                 stroke="currentColor"
-                strokeDasharray="8 10"
-                strokeLinecap="round"
                 strokeWidth="2"
+                strokeDasharray="8 10"
               />
             </svg>
-
-            <div className="svx-mobile-app-icon">
-              <img src="/storvex_icon.webp" alt="Storvex app icon" />
-            </div>
-
-            <img
-              src="/avatars/african-owner-3.webp"
-              alt="Store owner receiving live updates"
-              className="svx-network-avatar svx-network-avatar-one"
-            />
-            <img
-              src="/avatars/african-owner-1.webp"
-              alt="Store manager checking branch activity"
-              className="svx-network-avatar svx-network-avatar-two"
-            />
-            <img
-              src="/avatars/african-owner-2.webp"
-              alt="Store staff member using Storvex"
-              className="svx-network-avatar svx-network-avatar-three"
-            />
           </div>
 
           <PhoneMockup />
+
+          <div className="svx-mobile-app-icon">
+            <img src={logoSrc} alt="" draggable="false" />
+          </div>
+
+          <StoreAvatar className="svx-network-avatar-one">Owner</StoreAvatar>
+          <StoreAvatar className="svx-network-avatar-two">Staff</StoreAvatar>
+          <StoreAvatar className="svx-network-avatar-three">Stock</StoreAvatar>
         </div>
       </div>
     </section>
   );
+}
+
+function FooterLink({ href, children }) {
+  return <SmartLink href={href}>{children}</SmartLink>;
 }
 
 function Footer() {
@@ -575,16 +598,21 @@ function Footer() {
               Get started
             </Link>
 
-            <Link to="/login" className="svx-footer-secondary">
+            <a
+              href="https://wa.me/250785587830"
+              className="svx-footer-secondary"
+              target="_blank"
+              rel="noreferrer"
+            >
               Book a demo
-            </Link>
+            </a>
           </div>
         </div>
 
         <footer className="svx-footer-main">
           <div className="svx-footer-grid">
             <div className="svx-footer-brand">
-              <img src="/storvex_white.webp" alt="Storvex" />
+              <img src={whiteLogoSrc} alt="Storvex" draggable="false" />
 
               <p>
                 Store control system for modern retail. Track sales, protect profit, and run every
@@ -600,7 +628,7 @@ function Footer() {
                 </a>
               </div>
 
-              <div className="svx-footer-socials">
+              <div className="svx-footer-socials" aria-label="Social links">
                 {["f", "𝕏", "in", "◎"].map((item) => (
                   <span key={item}>{item}</span>
                 ))}
@@ -614,9 +642,9 @@ function Footer() {
 
                   <div>
                     {group.links.map((item) => (
-                      <Link key={item} to="/signup">
-                        {item}
-                      </Link>
+                      <FooterLink key={item.label} href={item.href}>
+                        {item.label}
+                      </FooterLink>
                     ))}
                   </div>
                 </div>
@@ -629,7 +657,7 @@ function Footer() {
               <p>Get practical updates that help you run a better store.</p>
 
               <form className="svx-footer-email" onSubmit={handleNewsletterSubmit}>
-                <input placeholder="Enter your email" type="email" />
+                <input placeholder="Enter your email" type="email" aria-label="Email address" />
                 <button type="submit" aria-label="Submit email">
                   →
                 </button>
@@ -656,6 +684,48 @@ function Footer() {
   );
 }
 
+function HeroSection() {
+  return (
+    <section className="svx-hero">
+      <div className="svx-hero-shape" />
+
+      <div className="svx-hero-inner">
+        <div className="svx-hero-copy">
+          <Badge>For store owners</Badge>
+
+          <h1>Know what happened in your store.</h1>
+
+          <p>
+            Track sales, stock, cash, staff activity, and branch performance from one clear
+            workspace.
+          </p>
+
+          <div className="svx-hero-actions">
+            <PrimaryLink>Get started</PrimaryLink>
+            <SecondaryLink>Book a demo</SecondaryLink>
+          </div>
+
+          <div className="svx-trust-row">
+            <div className="svx-trust-avatars" aria-hidden="true">
+              {[Store, Building2, Warehouse].map((Icon, index) => (
+                <span key={index}>
+                  <Icon size={14} strokeWidth={2.4} />
+                </span>
+              ))}
+            </div>
+
+            <p>Built for owner-run stores and growing retail teams.</p>
+          </div>
+        </div>
+
+        <div className="svx-hero-visual">
+          <DashboardMockup />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function LandingPage() {
   useLandingAnimations();
 
@@ -664,44 +734,11 @@ export default function LandingPage() {
       <Header />
 
       <main>
-        <section className="svx-hero">
-          <div className="svx-hero-shape" />
-
-          <div className="svx-hero-inner">
-            <div className="svx-hero-copy">
-              <Badge>For store owners</Badge>
-
-              <h1>Know What Happened In Your Store.</h1>
-
-              <p>
-                  Track sales, stock, cash, staff activity, and branch performance from one clear workspace.
-              </p>
-
-              <div className="svx-hero-actions">
-                <PrimaryLink>Get started</PrimaryLink>
-                <SecondaryLink>Book a demo</SecondaryLink>
-              </div>
-
-              <div className="svx-trust-row">
-                <div className="svx-trust-avatars">
-                  {["L", "A", "M", "K"].map((item) => (
-                    <span key={item}>{item}</span>
-                  ))}
-                </div>
-
-                <p>Trusted by 2,000+ store owners</p>
-              </div>
-            </div>
-
-            <div className="svx-hero-visual">
-              <DashboardMockup />
-            </div>
-          </div>
-        </section>
+        <HeroSection />
 
         <section id="how-it-works" className="svx-section svx-platform-section">
           <div className="svx-section-shell">
-            <div className="svx-section-heading">
+            <div className="svx-section-heading svx-reveal">
               <span>Store operating system</span>
               <h2>One platform. Complete store control.</h2>
               <p>
@@ -722,7 +759,7 @@ export default function LandingPage() {
 
         <section id="features" className="svx-section svx-problem-section">
           <div className="svx-section-shell">
-            <div className="svx-section-heading">
+            <div className="svx-section-heading svx-reveal">
               <span>Profit protection</span>
               <h2>Built for the moments where stores lose money.</h2>
               <p>
@@ -738,9 +775,9 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-
-        <Footer />
       </main>
+
+      <Footer />
     </div>
   );
 }
