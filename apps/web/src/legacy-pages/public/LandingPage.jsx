@@ -1,17 +1,20 @@
 import { useEffect } from "react";
 import {
-  ArrowUpRight,
   BarChart3,
-  Boxes,
+  Building2,
   Check,
-  CheckCircle2,
-  CircleDollarSign,
+  ClipboardList,
   FileText,
   LockKeyhole,
   PackageCheck,
+  ReceiptText,
   ShieldCheck,
+  ShoppingCart,
+  Store,
+  UserCog,
   UsersRound,
   WalletCards,
+  Warehouse,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -21,69 +24,68 @@ import "./LandingPage.css";
 const problemCards = [
   {
     icon: PackageCheck,
-    title: "Missed Opportunities",
-    text: "Never lose sales to stockouts or blind spots.",
+    title: "Missed Stock",
+    text: "Know what is running low before customers ask for it.",
   },
   {
     icon: BarChart3,
-    title: "Performance Blind Spots",
-    text: "See what is selling and what’s not, instantly.",
+    title: "Unclear Performance",
+    text: "See what sells, what slows down, and where money is moving.",
   },
   {
     icon: UsersRound,
-    title: "Employee Slip-ups",
-    text: "Reduce mistakes and protect your profits.",
+    title: "Staff Mistakes",
+    text: "Reduce manual errors with clear roles, records, and activity visibility.",
   },
   {
     icon: WalletCards,
-    title: "Uncontrolled Costs",
-    text: "Track every expense and stop profit leaks.",
+    title: "Cost Leaks",
+    text: "Track expenses and cash movement before small losses become big losses.",
   },
 ];
 
 const platformCards = [
   {
-    icon: ArrowUpRight,
-    title: "Sales & Profit Tracking",
-    text: "Track sales, profit, and margins in real time across all channels.",
+    icon: ShoppingCart,
+    title: "Sales Tracking",
+    text: "Record sales clearly and understand daily store performance.",
   },
   {
-    icon: CircleDollarSign,
-    title: "Cash & Inventory Control",
-    text: "Monitor cash activity, reconcile fast, and prevent losses.",
+    icon: ReceiptText,
+    title: "Cash Control",
+    text: "Track cash activity, payment records, and daily money movement.",
   },
   {
-    icon: Boxes,
-    title: "Inventory You Can Trust",
-    text: "Low stock alerts and smarter ordering.",
+    icon: Warehouse,
+    title: "Stock Visibility",
+    text: "Keep product quantities, low-stock alerts, and supply records under control.",
   },
   {
-    icon: UsersRound,
-    title: "Team & Access Control",
-    text: "Set roles, permissions, and keep your team accountable.",
+    icon: UserCog,
+    title: "Staff Access",
+    text: "Give each worker the right access without exposing owner-only controls.",
   },
   {
     icon: FileText,
-    title: "Documents & Records",
-    text: "Store receipts, warranty records, invoices, and more in one place.",
+    title: "Business Records",
+    text: "Keep receipts, warranties, delivery notes, and documents in one place.",
   },
   {
     icon: ShieldCheck,
-    title: "Store Security",
-    text: "Your data is protected and always visible to the owner.",
+    title: "Owner Visibility",
+    text: "Stay in control with clear records and activity that stays visible to the owner.",
   },
   {
-    icon: CheckCircle2,
-    title: "99.9% Uptime",
-    text: "Built for reliability you can count on.",
+    icon: ClipboardList,
+    title: "Reports",
+    text: "Review sales, expenses, stock, and performance without chasing papers.",
   },
   {
     icon: LockKeyhole,
-    title: "SOC 2 Compliant",
-    text: "Enterprise-grade security and privacy standards.",
+    title: "Secure Workspace",
+    text: "Protect business access, records, and store activity with structured controls.",
   },
 ];
-
 const mobilePoints = [
   "Live updates on sales and profit",
   "Approve refunds and overrides",
