@@ -24,8 +24,8 @@ export default function OnboardingShell({
   footer,
 }) {
   return (
-    <PublicLayout>
-      <main className="storvex-onboarding">
+    <PublicLayout variant="onboarding" activeStep={activeStep}>
+      <div className="storvex-onboarding">
         <section className="svx-onboard-top">
           <div className="svx-onboard-shell">
             <div className="svx-onboard-title-wrap">
@@ -43,15 +43,15 @@ export default function OnboardingShell({
         <section className="svx-onboard-content">
           <div className="svx-onboard-shell">{children}</div>
 
-         {footer ? (
+          {footer ? (
             <div className="svx-onboard-shell svx-onboard-footer-row">{footer}</div>
-            ) : (
+          ) : (
             <p className="svx-onboard-login-note">
               Already have a store account? <Link to="/login">Log in</Link>
             </p>
           )}
         </section>
-      </main>
+      </div>
     </PublicLayout>
   );
 }
