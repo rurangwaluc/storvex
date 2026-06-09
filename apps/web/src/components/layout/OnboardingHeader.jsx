@@ -17,14 +17,14 @@ const stepDetails = {
   },
   2: {
     eyebrow: "Step 2 of 3",
-    label: "Owner security",
+    label: "Account setup",
     actionLabel: "Back to setup",
     actionTo: "/signup",
     showBackIcon: true,
   },
   3: {
     eyebrow: "Step 3 of 3",
-    label: "Choose how to start",
+    label: "Launch plan",
     actionLabel: "Back",
     actionTo: "/verify-otp",
     showBackIcon: true,

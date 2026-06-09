@@ -5,15 +5,15 @@ function cx(...items) {
 const STEPS = [
   {
     number: 1,
-    label: "Tell us about your business",
+    label: "Business setup",
   },
   {
     number: 2,
-    label: "Secure your account",
+    label: "Account setup",
   },
   {
     number: 3,
-    label: "Choose how to start",
+    label: "Launch plan",
   },
 ];
 

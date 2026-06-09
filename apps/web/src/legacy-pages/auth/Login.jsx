@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { jwtDecode } from "jwt-decode";
+import { CheckCircle2, LockKeyhole, ShieldCheck, Store } from "lucide-react";
 
 import PublicLayout from "../../components/layout/PublicLayout";
 import PasswordField from "../../components/auth/PasswordField";
@@ -143,32 +144,32 @@ function persistAuthSession(data) {
   };
 }
 
-function surfaceCard() {
-  return "rounded-[34px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+function inputClass() {
+  return "h-12 w-full rounded-[16px] border border-[var(--color-border)] bg-[var(--color-bg)] px-4 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-ring)] disabled:cursor-not-allowed disabled:opacity-60";
 }
 
-function DetailTile({ label, value }) {
+function TrustRow({ icon: Icon, title, text }) {
   return (
-    <div className="rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
-        {label}
-      </p>
-      <p className="mt-2 break-words text-sm font-black text-[var(--color-text)]">
-        {value || "—"}
-      </p>
+    <div className="flex gap-3 rounded-[18px] border border-[var(--color-border)] bg-[var(--color-bg)] p-4">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[14px] bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+        <Icon size={18} strokeWidth={2.5} />
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-sm font-black text-[var(--color-text)]">{title}</p>
+        <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
+          {text}
+        </p>
+      </div>
     </div>
   );
-}
-
-function inputClass() {
-  return "h-12 w-full rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-ring)] disabled:cursor-not-allowed disabled:opacity-60";
 }
 
 export default function Login() {
   const nav = useNavigate();
 
-  const [email, setEmail] = useState("owner@ruraxis.com");
-  const [password, setPassword] = useState("Owner@12345");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const trimmedEmail = useMemo(() => normalizeEmail(email), [email]);
@@ -209,55 +210,65 @@ export default function Login() {
   return (
     <PublicLayout>
       <section className="px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-        <div className="mx-auto max-w-5xl space-y-6">
-          <section className={cx(surfaceCard(), "p-5 sm:p-6 lg:p-7")}>
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-3xl">
-                <div className="inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-                  Store access
-                </div>
-
-                <h1 className="mt-5 text-3xl font-black tracking-[-0.05em] text-[var(--color-text)] sm:text-4xl lg:text-5xl">
-                  Log in to your store.
-                </h1>
-
-                <p className="mt-4 max-w-2xl text-base font-semibold leading-8 text-[var(--color-text-muted)]">
-                  Use your owner or staff account to continue into the workspace. After login,
-                  Storvex opens the correct store and active selling location.
-                </p>
-              </div>
-
-              <div className="inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm font-black text-[var(--color-text)]">
-                Secure workspace access
-              </div>
+        <div className="mx-auto grid max-w-6xl overflow-hidden rounded-[30px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)] lg:grid-cols-[0.92fr_1.08fr]">
+          <aside className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)] p-6 sm:p-8 lg:border-b-0 lg:border-r lg:p-10">
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-[16px] bg-[var(--color-primary)] text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)]">
+              <Store size={22} strokeWidth={2.6} />
             </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <DetailTile label="Owner access" value="Full control" />
-              <DetailTile label="Staff access" value="Role-based work" />
-              <DetailTile label="After login" value="Open workspace" />
-            </div>
-          </section>
+            <p className="mt-8 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
+              Store access
+            </p>
 
-          <section className={cx(surfaceCard(), "p-5 sm:p-6 lg:p-7")}>
-            <div className="mx-auto max-w-xl">
-              <div className="mb-6 border-b border-[var(--color-border)] pb-6 text-center">
+            <h1 className="mt-3 max-w-md text-3xl font-black leading-[1.02] tracking-[-0.05em] text-[var(--color-text)] sm:text-4xl lg:text-5xl">
+              Log in to your store workspace.
+            </h1>
+
+            <p className="mt-5 max-w-md text-base font-semibold leading-8 text-[var(--color-text-muted)]">
+              Continue with your owner or staff account. Storvex opens the right workspace,
+              access level, and active selling location after login.
+            </p>
+
+            <div className="mt-8 grid gap-3">
+              <TrustRow
+                icon={ShieldCheck}
+                title="Owner and staff access"
+                text="Each person enters with the access allowed for their responsibility."
+              />
+
+              <TrustRow
+                icon={CheckCircle2}
+                title="Correct workspace"
+                text="The store workspace opens with the right business details and selling location."
+              />
+
+              <TrustRow
+                icon={LockKeyhole}
+                title="Protected records"
+                text="Sales, stock, cash activity, and store records stay behind account access."
+              />
+            </div>
+          </aside>
+
+          <main className="p-6 sm:p-8 lg:p-10">
+            <div className="mx-auto flex min-h-full max-w-md flex-col justify-center">
+              <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-                  Login
+                  Welcome back
                 </p>
 
-                <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)] sm:text-3xl">
+                <h2 className="mt-3 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)] sm:text-3xl">
                   Enter your account details
                 </h2>
 
-                <p className="mt-2 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-                  Continue into the store workspace with your saved access.
+                <p className="mt-3 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
+                  Use the email and password connected to your Storvex account.
                 </p>
               </div>
 
-              <form onSubmit={submit} className="space-y-4">
+              <form onSubmit={submit} className="mt-8 space-y-5">
                 <div>
-                  <label className="mb-1.5 block text-sm font-black text-[var(--color-text)]">
+                  <label className="mb-2 block text-sm font-black text-[var(--color-text)]">
                     Email
                   </label>
 
@@ -268,7 +279,9 @@ export default function Login() {
                     onChange={(event) => setEmail(event.target.value)}
                     autoComplete="email"
                     placeholder="you@store.com"
+                    autoFocus
                     required
+                    disabled={loading}
                   />
                 </div>
 
@@ -279,42 +292,32 @@ export default function Login() {
                   onChange={(event) => setPassword(event.target.value)}
                   autoComplete="current-password"
                   placeholder="Enter your password"
+                  disabled={loading}
                 />
 
-                <div className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm font-black text-[var(--color-text)]">
-                        Next: open your workspace
-                      </p>
-                      <p className="mt-1 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
-                        Storvex will load your store, role, and active selling location.
-                      </p>
-                    </div>
-
-                    <AsyncButton
-                      type="submit"
-                      loading={loading}
-                      loadingText="Logging in..."
-                      className="w-full sm:w-auto"
-                    >
-                      Log in
-                    </AsyncButton>
-                  </div>
-                </div>
+                <AsyncButton
+                  type="submit"
+                  loading={loading}
+                  loadingText="Logging in..."
+                  className="h-12 w-full rounded-[16px] text-sm font-black"
+                >
+                  Log in
+                </AsyncButton>
               </form>
 
-              <p className="mt-6 text-center text-sm font-semibold text-[var(--color-text-muted)]">
-                New store?{" "}
-                <Link
-                  to="/signup"
-                  className="font-black text-[var(--color-text)] underline-offset-4 hover:underline"
-                >
-                  Create account
-                </Link>
-              </p>
+              <div className="mt-7 border-t border-[var(--color-border)] pt-6">
+                <p className="text-center text-sm font-semibold text-[var(--color-text-muted)]">
+                  New store?{" "}
+                  <Link
+                    to="/signup"
+                    className="font-black text-[var(--color-primary)] underline-offset-4 hover:underline"
+                  >
+                    Create account
+                  </Link>
+                </p>
+              </div>
             </div>
-          </section>
+          </main>
         </div>
       </section>
     </PublicLayout>
