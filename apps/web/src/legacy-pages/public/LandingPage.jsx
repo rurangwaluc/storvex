@@ -21,7 +21,7 @@ import { Link } from "react-router-dom";
 import { useTheme } from "../../hooks/useTheme";
 import "./LandingPage.css";
 
-const logoSrc = "/storvex_webp.webp";
+const logoSrc = "/storvex_dark.webp";
 const whiteLogoSrc = "/storvex_white.webp";
 
 const navItems = [
