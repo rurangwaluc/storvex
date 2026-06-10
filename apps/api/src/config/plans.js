@@ -1,427 +1,215 @@
 // src/config/plans.js
 
 const CURRENCY = String(process.env.BILLING_CURRENCY || "RWF").toUpperCase();
+
 const TRIAL_PLAN_KEY = "TRIAL";
 const ENTERPRISE_PLAN_KEY = "ENTERPRISE";
 
 const TIER_KEYS = Object.freeze({
   TRIAL: "TRIAL",
+
+  LAUNCH_STARTER: "LAUNCH_STARTER",
+  LAUNCH_GROWTH: "LAUNCH_GROWTH",
+  LAUNCH_BUSINESS: "LAUNCH_BUSINESS",
+
+  // Compatibility with older plan naming.
   SOLO: "SOLO",
   DUO: "DUO",
   TEAM_3: "TEAM_3",
   TEAM_4: "TEAM_4",
   TEAM_5: "TEAM_5",
   TEAM_10: "TEAM_10",
+
   ENTERPRISE: "ENTERPRISE",
 });
 
 const CYCLE_KEYS = Object.freeze({
   TRIAL: "TRIAL",
   M1: "M1",
+  CUSTOM: "CUSTOM",
+
+  // Compatibility with older billing cycles.
   M3: "M3",
   M6: "M6",
   Y1: "Y1",
-  CUSTOM: "CUSTOM",
 });
 
+const PLAN_KEY_ALIASES = Object.freeze({
+  SOLO_M1: "LAUNCH_STARTER",
+  SOLO_M3: "LAUNCH_STARTER",
+  SOLO_M6: "LAUNCH_STARTER",
+  SOLO_Y1: "LAUNCH_STARTER",
+
+  DUO_M1: "LAUNCH_STARTER",
+  DUO_M3: "LAUNCH_STARTER",
+  DUO_M6: "LAUNCH_STARTER",
+  DUO_Y1: "LAUNCH_STARTER",
+
+  TEAM_3_M1: "LAUNCH_GROWTH",
+  TEAM_3_M3: "LAUNCH_GROWTH",
+  TEAM_3_M6: "LAUNCH_GROWTH",
+  TEAM_3_Y1: "LAUNCH_GROWTH",
+
+  TEAM_4_M1: "LAUNCH_GROWTH",
+  TEAM_4_M3: "LAUNCH_GROWTH",
+  TEAM_4_M6: "LAUNCH_GROWTH",
+  TEAM_4_Y1: "LAUNCH_GROWTH",
+
+  TEAM_5_M1: "LAUNCH_GROWTH",
+  TEAM_5_M3: "LAUNCH_GROWTH",
+  TEAM_5_M6: "LAUNCH_GROWTH",
+  TEAM_5_Y1: "LAUNCH_GROWTH",
+
+  TEAM_10_M1: "LAUNCH_BUSINESS",
+  TEAM_10_M3: "LAUNCH_BUSINESS",
+  TEAM_10_M6: "LAUNCH_BUSINESS",
+  TEAM_10_Y1: "LAUNCH_BUSINESS",
+});
+
+function money(value) {
+  const n = Number(value);
+
+  if (!Number.isFinite(n) || n < 0) return 0;
+
+  return Math.round(n);
+}
+
+function positiveInteger(value, fallback) {
+  const n = Number(value);
+
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+
+  return Math.floor(n);
+}
+
 function getTrialDays() {
-  const trialDays = Number(process.env.TRIAL_DAYS || 30);
-  return Number.isFinite(trialDays) && trialDays > 0 ? trialDays : 30;
+  return positiveInteger(process.env.TRIAL_DAYS || 30, 30);
 }
 
 function getGraceDays() {
   const graceDays = Number(process.env.GRACE_DAYS || 3);
-  return Number.isFinite(graceDays) && graceDays >= 0 ? graceDays : 3;
+
+  return Number.isFinite(graceDays) && graceDays >= 0 ? Math.floor(graceDays) : 3;
 }
 
 function getTrialStaffLimit() {
-  const n = Number(process.env.TRIAL_STAFF_LIMIT || 3);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 3;
+  return positiveInteger(process.env.TRIAL_STAFF_LIMIT || 3, 3);
 }
 
 function getTrialBranchLimit() {
-  const n = Number(process.env.TRIAL_BRANCH_LIMIT || 1);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 1;
-}
-
-function money(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n) || n < 0) return 0;
-  return Math.round(n);
+  return positiveInteger(process.env.TRIAL_BRANCH_LIMIT || 1, 1);
 }
 
 /**
- * Launch strategy:
- * - Keep entry affordable for Rwanda adoption
- * - Keep structure simple
- * - Growth in plan should clearly unlock both staff and branch expansion
+ * Storvex launch pricing.
  *
- * Branch ladder:
- * - SOLO     => 1 staff, 1 branch
- * - DUO      => 2 staff, 1 branch
- * - TEAM_3   => 3 staff, 2 branches
- * - TEAM_4   => 4 staff, 3 branches
- * - TEAM_5   => 5 staff, 4 branches
- * - TEAM_10  => 10 staff, 5 branches
+ * Server-authoritative pricing:
+ * - Starter: 10,000 RWF / month
+ * - Growth: 25,000 RWF / month
+ * - Business: 45,000 RWF / month
+ *
+ * The UI can display these values, but signup/payment must trust this backend file.
  */
 const PAID_PLANS = Object.freeze([
   {
-    key: "SOLO_M1",
-    tierKey: TIER_KEYS.SOLO,
+    key: "LAUNCH_STARTER",
+    tierKey: TIER_KEYS.LAUNCH_STARTER,
     cycleKey: CYCLE_KEYS.M1,
-    label: "Solo • Monthly",
-    tierLabel: "Solo",
+    label: "Starter",
+    tierLabel: "Starter",
     cycleLabel: "Monthly",
     days: 30,
-    price: money(7000),
+    price: money(process.env.LAUNCH_STARTER_PRICE || 10000),
     currency: CURRENCY,
-    staffLimit: 1,
-    branchLimit: 1,
+    staffLimit: positiveInteger(process.env.LAUNCH_STARTER_STAFF_LIMIT || 2, 2),
+    branchLimit: positiveInteger(process.env.LAUNCH_STARTER_BRANCH_LIMIT || 1, 1),
     isEnterprise: false,
+    marketplaceIncluded: true,
+    launchPricing: true,
+    features: [
+      "Sales and stock control",
+      "Expenses and customers",
+      "Basic reports",
+      "WhatsApp customer updates",
+      "1 store location",
+      "Owner plus one staff member",
+      "Marketplace profile included",
+    ],
   },
   {
-    key: "SOLO_M3",
-    tierKey: TIER_KEYS.SOLO,
-    cycleKey: CYCLE_KEYS.M3,
-    label: "Solo • 3 Months",
-    tierLabel: "Solo",
-    cycleLabel: "3 Months",
-    days: 90,
-    price: money(18900),
-    currency: CURRENCY,
-    staffLimit: 1,
-    branchLimit: 1,
-    isEnterprise: false,
-  },
-  {
-    key: "SOLO_M6",
-    tierKey: TIER_KEYS.SOLO,
-    cycleKey: CYCLE_KEYS.M6,
-    label: "Solo • 6 Months",
-    tierLabel: "Solo",
-    cycleLabel: "6 Months",
-    days: 180,
-    price: money(35700),
-    currency: CURRENCY,
-    staffLimit: 1,
-    branchLimit: 1,
-    isEnterprise: false,
-  },
-  {
-    key: "SOLO_Y1",
-    tierKey: TIER_KEYS.SOLO,
-    cycleKey: CYCLE_KEYS.Y1,
-    label: "Solo • 1 Year",
-    tierLabel: "Solo",
-    cycleLabel: "1 Year",
-    days: 365,
-    price: money(67200),
-    currency: CURRENCY,
-    staffLimit: 1,
-    branchLimit: 1,
-    isEnterprise: false,
-  },
-
-  {
-    key: "DUO_M1",
-    tierKey: TIER_KEYS.DUO,
+    key: "LAUNCH_GROWTH",
+    tierKey: TIER_KEYS.LAUNCH_GROWTH,
     cycleKey: CYCLE_KEYS.M1,
-    label: "Duo • Monthly",
-    tierLabel: "Duo",
+    label: "Growth",
+    tierLabel: "Growth",
     cycleLabel: "Monthly",
     days: 30,
-    price: money(12000),
+    price: money(process.env.LAUNCH_GROWTH_PRICE || 25000),
     currency: CURRENCY,
-    staffLimit: 2,
-    branchLimit: 1,
+    staffLimit: positiveInteger(process.env.LAUNCH_GROWTH_STAFF_LIMIT || 5, 5),
+    branchLimit: positiveInteger(process.env.LAUNCH_GROWTH_BRANCH_LIMIT || 1, 1),
     isEnterprise: false,
+    marketplaceIncluded: true,
+    launchPricing: true,
+    features: [
+      "Everything in Starter",
+      "Staff accounts",
+      "Cash control",
+      "Supplier records",
+      "Repairs tracking",
+      "Better reports",
+      "Marketplace visibility tools",
+    ],
   },
   {
-    key: "DUO_M3",
-    tierKey: TIER_KEYS.DUO,
-    cycleKey: CYCLE_KEYS.M3,
-    label: "Duo • 3 Months",
-    tierLabel: "Duo",
-    cycleLabel: "3 Months",
-    days: 90,
-    price: money(32400),
-    currency: CURRENCY,
-    staffLimit: 2,
-    branchLimit: 1,
-    isEnterprise: false,
-  },
-  {
-    key: "DUO_M6",
-    tierKey: TIER_KEYS.DUO,
-    cycleKey: CYCLE_KEYS.M6,
-    label: "Duo • 6 Months",
-    tierLabel: "Duo",
-    cycleLabel: "6 Months",
-    days: 180,
-    price: money(61200),
-    currency: CURRENCY,
-    staffLimit: 2,
-    branchLimit: 1,
-    isEnterprise: false,
-  },
-  {
-    key: "DUO_Y1",
-    tierKey: TIER_KEYS.DUO,
-    cycleKey: CYCLE_KEYS.Y1,
-    label: "Duo • 1 Year",
-    tierLabel: "Duo",
-    cycleLabel: "1 Year",
-    days: 365,
-    price: money(115200),
-    currency: CURRENCY,
-    staffLimit: 2,
-    branchLimit: 1,
-    isEnterprise: false,
-  },
-
-  {
-    key: "TEAM_3_M1",
-    tierKey: TIER_KEYS.TEAM_3,
+    key: "LAUNCH_BUSINESS",
+    tierKey: TIER_KEYS.LAUNCH_BUSINESS,
     cycleKey: CYCLE_KEYS.M1,
-    label: "Team 3 • Monthly",
-    tierLabel: "Team 3",
+    label: "Business",
+    tierLabel: "Business",
     cycleLabel: "Monthly",
     days: 30,
-    price: money(15000),
+    price: money(process.env.LAUNCH_BUSINESS_PRICE || 45000),
     currency: CURRENCY,
-    staffLimit: 3,
-    branchLimit: 2,
+    staffLimit: positiveInteger(process.env.LAUNCH_BUSINESS_STAFF_LIMIT || 15, 15),
+    branchLimit: positiveInteger(process.env.LAUNCH_BUSINESS_BRANCH_LIMIT || 3, 3),
     isEnterprise: false,
-  },
-  {
-    key: "TEAM_3_M3",
-    tierKey: TIER_KEYS.TEAM_3,
-    cycleKey: CYCLE_KEYS.M3,
-    label: "Team 3 • 3 Months",
-    tierLabel: "Team 3",
-    cycleLabel: "3 Months",
-    days: 90,
-    price: money(40500),
-    currency: CURRENCY,
-    staffLimit: 3,
-    branchLimit: 2,
-    isEnterprise: false,
-  },
-  {
-    key: "TEAM_3_M6",
-    tierKey: TIER_KEYS.TEAM_3,
-    cycleKey: CYCLE_KEYS.M6,
-    label: "Team 3 • 6 Months",
-    tierLabel: "Team 3",
-    cycleLabel: "6 Months",
-    days: 180,
-    price: money(76500),
-    currency: CURRENCY,
-    staffLimit: 3,
-    branchLimit: 2,
-    isEnterprise: false,
-  },
-  {
-    key: "TEAM_3_Y1",
-    tierKey: TIER_KEYS.TEAM_3,
-    cycleKey: CYCLE_KEYS.Y1,
-    label: "Team 3 • 1 Year",
-    tierLabel: "Team 3",
-    cycleLabel: "1 Year",
-    days: 365,
-    price: money(144000),
-    currency: CURRENCY,
-    staffLimit: 3,
-    branchLimit: 2,
-    isEnterprise: false,
-  },
-
-  {
-    key: "TEAM_4_M1",
-    tierKey: TIER_KEYS.TEAM_4,
-    cycleKey: CYCLE_KEYS.M1,
-    label: "Team 4 • Monthly",
-    tierLabel: "Team 4",
-    cycleLabel: "Monthly",
-    days: 30,
-    price: money(19000),
-    currency: CURRENCY,
-    staffLimit: 4,
-    branchLimit: 3,
-    isEnterprise: false,
-  },
-  {
-    key: "TEAM_4_M3",
-    tierKey: TIER_KEYS.TEAM_4,
-    cycleKey: CYCLE_KEYS.M3,
-    label: "Team 4 • 3 Months",
-    tierLabel: "Team 4",
-    cycleLabel: "3 Months",
-    days: 90,
-    price: money(51300),
-    currency: CURRENCY,
-    staffLimit: 4,
-    branchLimit: 3,
-    isEnterprise: false,
-  },
-  {
-    key: "TEAM_4_M6",
-    tierKey: TIER_KEYS.TEAM_4,
-    cycleKey: CYCLE_KEYS.M6,
-    label: "Team 4 • 6 Months",
-    tierLabel: "Team 4",
-    cycleLabel: "6 Months",
-    days: 180,
-    price: money(96900),
-    currency: CURRENCY,
-    staffLimit: 4,
-    branchLimit: 3,
-    isEnterprise: false,
-  },
-  {
-    key: "TEAM_4_Y1",
-    tierKey: TIER_KEYS.TEAM_4,
-    cycleKey: CYCLE_KEYS.Y1,
-    label: "Team 4 • 1 Year",
-    tierLabel: "Team 4",
-    cycleLabel: "1 Year",
-    days: 365,
-    price: money(182400),
-    currency: CURRENCY,
-    staffLimit: 4,
-    branchLimit: 3,
-    isEnterprise: false,
-  },
-
-  {
-    key: "TEAM_5_M1",
-    tierKey: TIER_KEYS.TEAM_5,
-    cycleKey: CYCLE_KEYS.M1,
-    label: "Team 5 • Monthly",
-    tierLabel: "Team 5",
-    cycleLabel: "Monthly",
-    days: 30,
-    price: money(23000),
-    currency: CURRENCY,
-    staffLimit: 5,
-    branchLimit: 4,
-    isEnterprise: false,
-  },
-  {
-    key: "TEAM_5_M3",
-    tierKey: TIER_KEYS.TEAM_5,
-    cycleKey: CYCLE_KEYS.M3,
-    label: "Team 5 • 3 Months",
-    tierLabel: "Team 5",
-    cycleLabel: "3 Months",
-    days: 90,
-    price: money(62100),
-    currency: CURRENCY,
-    staffLimit: 5,
-    branchLimit: 4,
-    isEnterprise: false,
-  },
-  {
-    key: "TEAM_5_M6",
-    tierKey: TIER_KEYS.TEAM_5,
-    cycleKey: CYCLE_KEYS.M6,
-    label: "Team 5 • 6 Months",
-    tierLabel: "Team 5",
-    cycleLabel: "6 Months",
-    days: 180,
-    price: money(117300),
-    currency: CURRENCY,
-    staffLimit: 5,
-    branchLimit: 4,
-    isEnterprise: false,
-  },
-  {
-    key: "TEAM_5_Y1",
-    tierKey: TIER_KEYS.TEAM_5,
-    cycleKey: CYCLE_KEYS.Y1,
-    label: "Team 5 • 1 Year",
-    tierLabel: "Team 5",
-    cycleLabel: "1 Year",
-    days: 365,
-    price: money(220800),
-    currency: CURRENCY,
-    staffLimit: 5,
-    branchLimit: 4,
-    isEnterprise: false,
-  },
-
-  {
-    key: "TEAM_10_M1",
-    tierKey: TIER_KEYS.TEAM_10,
-    cycleKey: CYCLE_KEYS.M1,
-    label: "Team 10 • Monthly",
-    tierLabel: "Team 10",
-    cycleLabel: "Monthly",
-    days: 30,
-    price: money(45000),
-    currency: CURRENCY,
-    staffLimit: 10,
-    branchLimit: 5,
-    isEnterprise: false,
-  },
-  {
-    key: "TEAM_10_M3",
-    tierKey: TIER_KEYS.TEAM_10,
-    cycleKey: CYCLE_KEYS.M3,
-    label: "Team 10 • 3 Months",
-    tierLabel: "Team 10",
-    cycleLabel: "3 Months",
-    days: 90,
-    price: money(121500),
-    currency: CURRENCY,
-    staffLimit: 10,
-    branchLimit: 5,
-    isEnterprise: false,
-  },
-  {
-    key: "TEAM_10_M6",
-    tierKey: TIER_KEYS.TEAM_10,
-    cycleKey: CYCLE_KEYS.M6,
-    label: "Team 10 • 6 Months",
-    tierLabel: "Team 10",
-    cycleLabel: "6 Months",
-    days: 180,
-    price: money(229500),
-    currency: CURRENCY,
-    staffLimit: 10,
-    branchLimit: 5,
-    isEnterprise: false,
-  },
-  {
-    key: "TEAM_10_Y1",
-    tierKey: TIER_KEYS.TEAM_10,
-    cycleKey: CYCLE_KEYS.Y1,
-    label: "Team 10 • 1 Year",
-    tierLabel: "Team 10",
-    cycleLabel: "1 Year",
-    days: 365,
-    price: money(432000),
-    currency: CURRENCY,
-    staffLimit: 10,
-    branchLimit: 5,
-    isEnterprise: false,
-  },
-
-  {
-    key: ENTERPRISE_PLAN_KEY,
-    tierKey: TIER_KEYS.ENTERPRISE,
-    cycleKey: CYCLE_KEYS.CUSTOM,
-    label: "Enterprise • Custom",
-    tierLabel: "Enterprise",
-    cycleLabel: "Custom",
-    days: 30,
-    price: 0,
-    currency: CURRENCY,
-    staffLimit: null,
-    branchLimit: null,
-    isEnterprise: true,
+    marketplaceIncluded: true,
+    launchPricing: true,
+    features: [
+      "Everything in Growth",
+      "Multiple store locations",
+      "Manager access",
+      "Advanced reports",
+      "Priority support",
+      "Early marketplace boost access",
+      "Early AI tools access",
+    ],
   },
 ]);
+
+const ENTERPRISE_PLAN = Object.freeze({
+  key: ENTERPRISE_PLAN_KEY,
+  tierKey: TIER_KEYS.ENTERPRISE,
+  cycleKey: CYCLE_KEYS.CUSTOM,
+  label: "Enterprise",
+  tierLabel: "Enterprise",
+  cycleLabel: "Custom",
+  days: 30,
+  price: 0,
+  currency: CURRENCY,
+  staffLimit: null,
+  branchLimit: null,
+  isEnterprise: true,
+  marketplaceIncluded: true,
+  launchPricing: false,
+  features: [
+    "Custom branches",
+    "Custom staff limits",
+    "Priority onboarding",
+    "Dedicated support",
+  ],
+});
 
 function getTrialPlan() {
   return {
@@ -430,76 +218,110 @@ function getTrialPlan() {
     cycleKey: CYCLE_KEYS.TRIAL,
     label: "Free Trial",
     tierLabel: "Free Trial",
-    cycleLabel: "30 Days",
+    cycleLabel: `${getTrialDays()} Days`,
     days: getTrialDays(),
     price: 0,
     currency: CURRENCY,
     staffLimit: getTrialStaffLimit(),
     branchLimit: getTrialBranchLimit(),
     isEnterprise: false,
+    marketplaceIncluded: true,
+    launchPricing: true,
+    features: [
+      `${getTrialDays()} days free`,
+      "Sales and stock control",
+      "WhatsApp customer updates",
+      "Marketplace profile included",
+    ],
   };
 }
 
 function getPaidPlans() {
-  return PAID_PLANS;
+  return PAID_PLANS.map((plan) => ({ ...plan }));
 }
 
 function getAllPlans() {
-  return [getTrialPlan(), ...PAID_PLANS];
+  return [getTrialPlan(), ...getPaidPlans(), { ...ENTERPRISE_PLAN }];
 }
 
 function normalizeKey(value) {
   return String(value || "").trim().toUpperCase();
 }
 
+function resolvePlanKey(value) {
+  const key = normalizeKey(value);
+
+  if (!key) return "";
+
+  return PLAN_KEY_ALIASES[key] || key;
+}
+
 function getPlanByKey(planKey) {
-  const key = normalizeKey(planKey);
+  const key = resolvePlanKey(planKey);
+
   if (!key) return null;
   if (key === TRIAL_PLAN_KEY) return getTrialPlan();
-  return PAID_PLANS.find((p) => p.key === key) || null;
+  if (key === ENTERPRISE_PLAN_KEY) return { ...ENTERPRISE_PLAN };
+
+  const plan = PAID_PLANS.find((item) => item.key === key);
+
+  return plan ? { ...plan } : null;
 }
 
 function getPlansByTierKey(tierKey) {
   const key = normalizeKey(tierKey);
-  return PAID_PLANS.filter((p) => p.tierKey === key);
+
+  if (!key) return [];
+
+  return PAID_PLANS.filter((plan) => plan.tierKey === key).map((plan) => ({ ...plan }));
 }
 
 function getPlansByCycleKey(cycleKey) {
   const key = normalizeKey(cycleKey);
-  return PAID_PLANS.filter((p) => p.cycleKey === key);
+
+  if (!key) return [];
+
+  return PAID_PLANS.filter((plan) => plan.cycleKey === key).map((plan) => ({ ...plan }));
 }
 
 function getPlanByTierAndCycle(tierKey, cycleKey) {
   const tier = normalizeKey(tierKey);
   const cycle = normalizeKey(cycleKey);
-  return PAID_PLANS.find((p) => p.tierKey === tier && p.cycleKey === cycle) || null;
+
+  const plan = PAID_PLANS.find((item) => item.tierKey === tier && item.cycleKey === cycle);
+
+  return plan ? { ...plan } : null;
 }
 
 function isTrialPlanKey(planKey) {
-  return normalizeKey(planKey) === TRIAL_PLAN_KEY;
+  return resolvePlanKey(planKey) === TRIAL_PLAN_KEY;
 }
 
 function isEnterprisePlanKey(planKey) {
-  return normalizeKey(planKey) === ENTERPRISE_PLAN_KEY;
+  return resolvePlanKey(planKey) === ENTERPRISE_PLAN_KEY;
 }
 
 function getStaffLimitForPlanKey(planKey) {
   const plan = getPlanByKey(planKey);
+
   return plan?.staffLimit ?? null;
 }
 
 function getBranchLimitForPlanKey(planKey) {
   const plan = getPlanByKey(planKey);
+
   return plan?.branchLimit ?? null;
 }
 
 function getPriceForPlanKey(planKey) {
   const plan = getPlanByKey(planKey);
+
   return plan?.price ?? null;
 }
 
 function getPlanSnapshot(planKey) {
   const plan = getPlanByKey(planKey);
+
   if (!plan) return null;
 
   return {
@@ -515,6 +337,8 @@ function getPlanSnapshot(planKey) {
     staffLimit: plan.staffLimit,
     branchLimit: plan.branchLimit,
     isEnterprise: Boolean(plan.isEnterprise),
+    marketplaceIncluded: Boolean(plan.marketplaceIncluded),
+    launchPricing: Boolean(plan.launchPricing),
   };
 }
 
@@ -524,19 +348,28 @@ module.exports = {
   ENTERPRISE_PLAN_KEY,
   TIER_KEYS,
   CYCLE_KEYS,
+  PLAN_KEY_ALIASES,
+
   getTrialDays,
   getGraceDays,
   getTrialStaffLimit,
   getTrialBranchLimit,
+
   getTrialPlan,
   getPaidPlans,
   getAllPlans,
+
+  normalizeKey,
+  resolvePlanKey,
+
   getPlanByKey,
   getPlansByTierKey,
   getPlansByCycleKey,
   getPlanByTierAndCycle,
+
   isTrialPlanKey,
   isEnterprisePlanKey,
+
   getStaffLimitForPlanKey,
   getBranchLimitForPlanKey,
   getPriceForPlanKey,
