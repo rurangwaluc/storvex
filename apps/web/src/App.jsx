@@ -3,6 +3,8 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AuditLogs from "./legacy-pages/audit/AuditLogs";
 import ConfirmSignup from "./legacy-pages/auth/ConfirmSignup";
 import Login from "./legacy-pages/auth/Login";
+import ForgotPassword from "./legacy-pages/auth/ForgotPassword";
+import ResetPassword from "./legacy-pages/auth/ResetPassword";
 import LandingPage from "./legacy-pages/public/LandingPage";
 
 import Dashboard from "./legacy-pages/dashboard/Dashboard";
@@ -114,6 +116,8 @@ export default function App() {
         <Route path="/owner-payment" element={<OwnerPayment />} />
         <Route path="/confirm-signup" element={<ConfirmSignup />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route path="/renew" element={<RequireTenantAuth />}>
           <Route index element={<GuardedRenewPage />} />

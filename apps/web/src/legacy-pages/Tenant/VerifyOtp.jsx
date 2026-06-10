@@ -775,7 +775,7 @@ export default function VerifyOtp() {
       }
 
       if (data?.devOtp) {
-        const autoCode = String(data.devOtp).replace(/[^\d]/g, "").slice(0, OTP_LENGTH);
+          const autoCode = String(data.devOtp).replace(/[^\d]/g, "").slice(0, OTP_LENGTH);
 
         if (autoCode.length === OTP_LENGTH) {
           if (isEmail) {
@@ -794,6 +794,16 @@ export default function VerifyOtp() {
       } else {
         setPhoneCodeSent(true);
         setPhoneCooldown(RESEND_SECONDS);
+      }
+
+      if (!data?.sent) {
+        toast.error(
+          data?.sendReason ||
+            (isEmail
+              ? "Email was not delivered. Check Resend configuration."
+              : "SMS was not delivered. Check Twilio configuration.")
+        );
+        return;
       }
 
       if (!options.automatic) {

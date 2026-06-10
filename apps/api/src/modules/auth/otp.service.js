@@ -6,8 +6,12 @@ const { sendEmailOtp, sendSmsOtp } = require("../notifications");
 const OTP_TTL_MINUTES = Number(process.env.OTP_TTL_MINUTES || 10);
 const OTP_SEND_COOLDOWN_SECONDS = Number(process.env.OTP_SEND_COOLDOWN_SECONDS || 60);
 const OTP_PEPPER = String(process.env.OTP_PEPPER || "");
+
 const DEV_OTP_ECHO =
   String(process.env.DEV_OTP_ECHO || "false").toLowerCase() === "true";
+
+const OTP_REQUIRE_DELIVERY =
+  String(process.env.OTP_REQUIRE_DELIVERY || "false").toLowerCase() === "true";
 
 const CHANNELS = new Set(["EMAIL", "PHONE"]);
 
@@ -26,8 +30,11 @@ function normalizeEmail(x) {
  */
 function normalizePhone(x) {
   const raw = String(x || "").trim().replace(/[^\d]/g, "");
+
   if (!raw) return null;
   if (raw.startsWith("07") && raw.length === 10) return `250${raw.slice(1)}`;
+  if (raw.startsWith("2507") && raw.length === 12) return raw;
+
   return raw;
 }
 
@@ -37,6 +44,7 @@ function isRwandaMsisdn250(phone) {
 
 function hashOtp({ intentId, channel, target, code }) {
   const material = `${OTP_PEPPER}|${intentId}|${channel}|${target}|${code}`;
+
   return crypto.createHash("sha256").update(material).digest("hex");
 }
 
@@ -46,6 +54,7 @@ function generateOtpCode() {
 
 function resolveTargetFromIntent(intent, channel) {
   if (!intent) return null;
+
   return channel === "EMAIL"
     ? normalizeEmail(intent.email)
     : normalizePhone(intent.phone);
@@ -104,7 +113,12 @@ async function logDelivery({
 
 async function assertCooldown(intentId, channel, target) {
   const recent = await prisma.otpCode.findFirst({
-    where: { intentId, channel, target, verifiedAt: null },
+    where: {
+      intentId,
+      channel,
+      target,
+      verifiedAt: null,
+    },
     orderBy: { createdAt: "desc" },
     select: { createdAt: true },
   });
@@ -112,14 +126,17 @@ async function assertCooldown(intentId, channel, target) {
   if (!recent) return;
 
   const secondsSince = Math.floor(
-    (Date.now() - new Date(recent.createdAt).getTime()) / 1000
+    (Date.now() - new Date(recent.createdAt).getTime()) / 1000,
   );
 
   if (secondsSince < OTP_SEND_COOLDOWN_SECONDS) {
-    const err = new Error(
-      `Please wait ${OTP_SEND_COOLDOWN_SECONDS - secondsSince}s before requesting another OTP.`
-    );
+    const waitSeconds = OTP_SEND_COOLDOWN_SECONDS - secondsSince;
+    const err = new Error(`Please wait ${waitSeconds}s before requesting another OTP.`);
+
     err.status = 429;
+    err.reason = "OTP_COOLDOWN_ACTIVE";
+    err.waitSeconds = waitSeconds;
+
     throw err;
   }
 }
@@ -144,25 +161,30 @@ async function createAndSendOtp({ intent, intentId, channel }) {
   if (!intentId || !intent) {
     const err = new Error("Missing intentId or intent");
     err.status = 400;
+    err.reason = "MISSING_INTENT";
     throw err;
   }
 
   if (!CHANNELS.has(channel)) {
     const err = new Error("Invalid channel. Use EMAIL or PHONE.");
     err.status = 400;
+    err.reason = "INVALID_CHANNEL";
     throw err;
   }
 
   const target = resolveTargetFromIntent(intent, channel);
+
   if (!target) {
     const err = new Error("Missing target on intent");
     err.status = 400;
+    err.reason = "MISSING_TARGET";
     throw err;
   }
 
   if (channel === "PHONE" && !isRwandaMsisdn250(target)) {
     const err = new Error("Invalid phone format on intent. Use 2507XXXXXXXX or 07XXXXXXXX");
     err.status = 400;
+    err.reason = "INVALID_PHONE_FORMAT";
     throw err;
   }
 
@@ -176,6 +198,7 @@ async function createAndSendOtp({ intent, intentId, channel }) {
   if (burned) {
     const err = new Error("Free trial already used. Please choose a paid plan.");
     err.status = 403;
+    err.reason = "TRIAL_ALREADY_USED";
     throw err;
   }
 
@@ -197,6 +220,7 @@ async function createAndSendOtp({ intent, intentId, channel }) {
   });
 
   let delivery;
+
   if (channel === "EMAIL") {
     delivery = await sendEmailOtp({
       to: target,
@@ -223,18 +247,27 @@ async function createAndSendOtp({ intent, intentId, channel }) {
     metadata: {
       environment: process.env.NODE_ENV || "development",
       channel,
+      requireDelivery: OTP_REQUIRE_DELIVERY,
+      devOtpEcho: DEV_OTP_ECHO,
     },
     deliveredAt: delivery?.sent ? new Date() : null,
   });
 
-  if (process.env.NODE_ENV === "production" && !delivery?.sent) {
-    await prisma.otpCode.delete({ where: { id: otpRow.id } });
+  const deliveryRequired = process.env.NODE_ENV === "production" || OTP_REQUIRE_DELIVERY;
+
+  if (deliveryRequired && !delivery?.sent) {
+    await prisma.otpCode.delete({
+      where: { id: otpRow.id },
+    });
 
     const err = new Error(
-      channel === "EMAIL" ? "Failed to send email OTP" : "Failed to send SMS OTP"
+      channel === "EMAIL" ? "Failed to send email OTP" : "Failed to send SMS OTP",
     );
+
     err.status = 502;
     err.reason = delivery?.reason || "SEND_FAILED";
+    err.provider = delivery?.provider || null;
+
     throw err;
   }
 

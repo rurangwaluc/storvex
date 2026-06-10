@@ -333,6 +333,15 @@ export default function Login() {
                       placeholder="Enter your password"
                       disabled={loading}
                     />
+
+                    <div className="flex justify-end">
+                      <Link
+                        to="/forgot-password"
+                        className="text-sm font-black text-[var(--onboard-primary)] hover:underline"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
                   </div>
 
                   <div className="mt-5 lg:hidden">
