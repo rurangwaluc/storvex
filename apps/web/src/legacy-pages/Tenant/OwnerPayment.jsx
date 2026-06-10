@@ -110,6 +110,41 @@ function readPasswordDraft() {
   }
 }
 
+function removeStorageKeys(keys) {
+  keys.forEach((key) => {
+    try {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    } catch {
+      // Ignore storage failures.
+    }
+  });
+}
+
+function clearOnboardingSession() {
+  removeStorageKeys([
+    PASSWORD_DRAFT_KEY,
+    "storvex_onboarding",
+    "storvex_intentId",
+    "storvex_ownerPhone",
+    "storvex_ownerEmail",
+    "storvex_storeName",
+    "storvex_ownerName",
+    "storvex_shopType",
+    "storvex_district",
+    "storvex_sector",
+    "storvex_address",
+    "storvex_deviceId",
+    "storvex_emailVerified",
+    "storvex_emailVerifiedFor",
+    "storvex_phoneVerified",
+    "storvex_phoneVerifiedFor",
+    "storvex_signupMode",
+    "storvex_planKey",
+    "storvex_paymentReference",
+  ]);
+}
+
 function saveOnboardingPatch(patch) {
   const current = readOnboardingState() || {};
   const next = { ...current, ...patch };
@@ -123,6 +158,10 @@ function saveOnboardingPatch(patch) {
   if (typeof next.email === "string") localStorage.setItem("storvex_ownerEmail", next.email || "");
   if (typeof next.planKey === "string") localStorage.setItem("storvex_planKey", next.planKey || "");
   if (typeof next.signupMode === "string") localStorage.setItem("storvex_signupMode", next.signupMode || "");
+
+  if (typeof next.paymentReference === "string") {
+    localStorage.setItem("storvex_paymentReference", next.paymentReference || "");
+  }
 }
 
 function formatMoney(amount, currency = "RWF") {
@@ -197,18 +236,8 @@ function PriceTagIcon({ size = 34 }) {
         strokeWidth="2"
         strokeLinejoin="round"
       />
-      <path
-        d="M9 9H9.01"
-        stroke="currentColor"
-        strokeWidth="3"
-        strokeLinecap="round"
-      />
-      <path
-        d="M11 15.25L15.25 11"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      <path d="M9 9H9.01" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+      <path d="M11 15.25L15.25 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -463,6 +492,7 @@ export default function OwnerPayment() {
     saveOnboardingPatch({
       signupMode: "TRIAL",
       planKey: "",
+      paymentReference: "",
       launchPricing: true,
       marketplaceIncluded: true,
       phone: normalizePhone(phone || ownerPhone),
@@ -486,10 +516,44 @@ export default function OwnerPayment() {
     });
   }
 
-  function startTrial() {
+  async function completeSignup(mode, planKey = "") {
+    const password = readPasswordDraft();
+
+    if (!password) {
+      toast.error("Password is missing. Secure your account again.");
+      nav("/verify-otp", { replace: true });
+      return;
+    }
+
+    const payload = {
+      intentId,
+      password,
+      mode,
+    };
+
+    if (mode === "PAID") {
+      payload.planKey = planKey;
+    }
+
+    await apiClient.post("/auth/confirm-signup", payload);
+
+    clearOnboardingSession();
+
+    toast.success(mode === "TRIAL" ? "Trial account created. Please log in." : "Store account activated. Please log in.");
+    nav("/login", { replace: true });
+  }
+
+  async function startTrial() {
     chooseTrial();
-    toast.success("30-day trial selected");
-    nav("/confirm-signup?mode=TRIAL");
+    setLoading(true);
+
+    try {
+      await completeSignup("TRIAL");
+    } catch (error) {
+      toast.error(error?.response?.data?.message || error?.message || "Trial signup failed");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function sendPaymentRequest() {
@@ -508,25 +572,27 @@ export default function OwnerPayment() {
     setLoading(true);
 
     try {
-      await apiClient.post("/auth/owner-payment", {
+      const { data } = await apiClient.post("/auth/owner-payment", {
         intentId,
         planKey: selectedPlan.key,
         phone: normalizedPhone,
       });
 
+      const paymentReference = data?.paymentReference || data?.payment?.reference || "";
+
       saveOnboardingPatch({
         signupMode: "PAID",
         planKey: selectedPlan.key,
+        paymentReference,
         launchPricing: true,
         marketplaceIncluded: true,
         phone: normalizedPhone,
         passwordReady: true,
       });
 
-      toast.success("Payment request sent");
-      nav("/confirm-signup?mode=PAID");
+      await completeSignup("PAID", selectedPlan.key);
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Payment request failed");
+      toast.error(error?.response?.data?.message || error?.message || "Payment request failed");
     } finally {
       setLoading(false);
     }
@@ -544,7 +610,8 @@ export default function OwnerPayment() {
       passwordReady: true,
     });
 
-    nav("/confirm-signup?mode=PAID");
+    toast.success("Log in after your payment is activated.");
+    nav("/login", { replace: true });
   }
 
   if (booting) {
@@ -597,7 +664,13 @@ export default function OwnerPayment() {
             </ul>
 
             {activationMode === "TRIAL" ? (
-              <AsyncButton type="button" onClick={startTrial} className="mt-6 w-full">
+              <AsyncButton
+                type="button"
+                loading={loading}
+                loadingText="Creating account..."
+                onClick={startTrial}
+                className="mt-6 w-full"
+              >
                 Start free trial
                 <span aria-hidden="true">→</span>
               </AsyncButton>
@@ -682,7 +755,7 @@ export default function OwnerPayment() {
               <AsyncButton
                 type="button"
                 loading={loading}
-                loadingText="Sending request..."
+                loadingText="Activating account..."
                 onClick={sendPaymentRequest}
                 className="w-full"
               >
@@ -693,6 +766,7 @@ export default function OwnerPayment() {
               <AsyncButton
                 type="button"
                 variant="secondary"
+                disabled={loading}
                 onClick={alreadyPaid}
                 className="w-full"
               >
