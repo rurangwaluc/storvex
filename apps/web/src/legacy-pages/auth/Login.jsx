@@ -150,6 +150,28 @@ function persistAuthSession(data) {
   };
 }
 
+function LoginActionCard({ loading }) {
+  return (
+    <OnboardingCard className="svx-onboard-next-card">
+      <div className="svx-onboard-next-copy">
+        <div className="svx-onboard-lock-icon">
+          <LockKeyhole size={31} strokeWidth={2.3} />
+        </div>
+
+        <div>
+          <strong>Next: open your workspace</strong>
+          <p>Your store workspace will open after login.</p>
+        </div>
+      </div>
+
+      <AsyncButton type="submit" loading={loading} loadingText="Logging in...">
+        Log in
+        <span aria-hidden="true">→</span>
+      </AsyncButton>
+    </OnboardingCard>
+  );
+}
+
 export default function Login() {
   const nav = useNavigate();
 
@@ -312,26 +334,16 @@ export default function Login() {
                       disabled={loading}
                     />
                   </div>
+
+                  <div className="mt-5 lg:hidden">
+                    <LoginActionCard loading={loading} />
+                  </div>
                 </OnboardingCard>
               </div>
 
-              <OnboardingCard className="svx-onboard-next-card">
-                <div className="svx-onboard-next-copy">
-                  <div className="svx-onboard-lock-icon">
-                    <LockKeyhole size={31} strokeWidth={2.3} />
-                  </div>
-
-                  <div>
-                    <strong>Next: open your workspace</strong>
-                    <p>Your store workspace will open after login.</p>
-                  </div>
-                </div>
-
-                <AsyncButton type="submit" loading={loading} loadingText="Logging in...">
-                  Log in
-                  <span aria-hidden="true">→</span>
-                </AsyncButton>
-              </OnboardingCard>
+              <div className="hidden lg:block">
+                <LoginActionCard loading={loading} />
+              </div>
             </form>
 
             <p className="svx-onboard-login-note">
