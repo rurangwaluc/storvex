@@ -496,8 +496,8 @@ export default function TenantIntent() {
           </span>
         </div>
 
-        <div className="svx-onboard-form-grid">
-          <OnboardingCard>
+        <div className="svx-onboard-form-grid lg:grid-cols-[0.94fr_1.06fr] lg:items-stretch">
+          <OnboardingCard className="h-full">
             <div className="svx-onboard-card-title-row">
               <OnboardingIconBadge>
                 <Store size={23} strokeWidth={2.2} />
@@ -530,7 +530,7 @@ export default function TenantIntent() {
             </div>
           </OnboardingCard>
 
-          <OnboardingCard>
+          <OnboardingCard className="h-full">
             <div className="svx-onboard-card-title-row">
               <OnboardingIconBadge>
                 <UserRoundCheck size={23} strokeWidth={2.2} />
@@ -554,32 +554,34 @@ export default function TenantIntent() {
                 />
               </Field>
 
-              <Field label="Email" required help="A verification code will be sent to this email.">
-                <input
-                  type="email"
-                  className="svx-onboard-input"
-                  value={form.email}
-                  onChange={(event) => setField("email", event.target.value)}
-                  placeholder="owner@store.com"
-                  autoComplete="email"
-                  required
-                />
-              </Field>
+              <div className="grid gap-5 lg:grid-cols-2">
+                <Field label="Email" required help="A verification code will be sent to this email.">
+                  <input
+                    type="email"
+                    className="svx-onboard-input"
+                    value={form.email}
+                    onChange={(event) => setField("email", event.target.value)}
+                    placeholder="owner@store.com"
+                    autoComplete="email"
+                    required
+                  />
+                </Field>
 
-              <Field
-                label="Phone"
-                required
-                help="Use a Rwanda number that can receive verification."
-              >
-                <input
-                  className="svx-onboard-input"
-                  value={form.phone}
-                  onChange={(event) => setField("phone", event.target.value)}
-                  placeholder="078xx xxxx or 25078xxxxxxx"
-                  autoComplete="tel"
+                <Field
+                  label="Phone"
                   required
-                />
-              </Field>
+                  help="Use a Rwanda number that can receive verification."
+                >
+                  <input
+                    className="svx-onboard-input"
+                    value={form.phone}
+                    onChange={(event) => setField("phone", event.target.value)}
+                    placeholder="078xx xxxx"
+                    autoComplete="tel"
+                    required
+                  />
+                </Field>
+              </div>
             </div>
           </OnboardingCard>
         </div>
