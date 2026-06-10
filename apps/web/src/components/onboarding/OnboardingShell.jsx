@@ -19,7 +19,7 @@ export function OnboardingIconBadge({ children }) {
 export default function OnboardingShell({
   activeStep = 1,
   title = "Let’s get your store set up in minutes.",
-  subtitle = "A short setup flow for business details, owner security, and how you want to start.",
+  subtitle = "A short setup flow for business details, account setup, and launch plan.",
   children,
   footer,
 }) {
