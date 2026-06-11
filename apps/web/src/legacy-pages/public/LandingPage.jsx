@@ -59,42 +59,22 @@ const platformCards = [
   {
     icon: ShoppingCart,
     title: "Sales Tracking",
-    text: "Record sales clearly and understand daily store performance.",
+    text: "Record sales clearly, review performance, and understand what is happening across the store.",
   },
   {
     icon: ReceiptText,
     title: "Cash Control",
-    text: "Track cash activity, payment records, and daily money movement.",
+    text: "Track cash activity, payment records, expenses, and daily money movement in one place.",
   },
   {
     icon: Warehouse,
     title: "Stock Visibility",
-    text: "Keep product quantities, low-stock alerts, and supply records under control.",
+    text: "Keep product quantities, low-stock alerts, supply records, and store documents under control.",
   },
   {
     icon: UserCog,
     title: "Staff Access",
-    text: "Give each worker the right access without exposing owner-only controls.",
-  },
-  {
-    icon: FileText,
-    title: "Business Records",
-    text: "Keep receipts, warranties, delivery notes, and documents in one place.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Owner Visibility",
-    text: "Stay in control with clear records and activity that stays visible to the owner.",
-  },
-  {
-    icon: ClipboardList,
-    title: "Reports",
-    text: "Review sales, expenses, stock, and performance without chasing papers.",
-  },
-  {
-    icon: LockKeyhole,
-    title: "Secure Workspace",
-    text: "Protect business access, records, and store activity with structured controls.",
+    text: "Give workers the right access while keeping owner visibility and secure controls in place.",
   },
 ];
 
@@ -847,18 +827,20 @@ export default function LandingPage() {
       <main>
         <HeroSection />
 
-        <section id="how-it-works" className="svx-section svx-platform-section">
-          <div className="svx-section-shell">
-            <div className="svx-section-heading svx-reveal">
+        <section id="how-it-works" className="svx-platform-showcase">
+          <div className="svx-platform-showcase-shell">
+            <div className="svx-platform-showcase-head svx-reveal">
               <span>Store operating system</span>
+
               <h2>One platform. Complete store control.</h2>
+
               <p>
                 Sales, stock, cash, documents, staff access, and branch visibility stay connected in
                 one owner-first workspace.
               </p>
             </div>
 
-            <div className="svx-card-grid svx-platform-grid">
+            <div className="svx-platform-showcase-grid">
               {platformCards.map((item) => (
                 <PlatformCard key={item.title} {...item} />
               ))}
