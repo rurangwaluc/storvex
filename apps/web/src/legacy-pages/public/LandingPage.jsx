@@ -40,12 +40,12 @@ const navItems = [
 const heroStats = [
   {
     label: "Today’s sales",
-    value: "RWF 14,250",
+    value: "RWF 14.2M",
     helper: "Visible as sales happen",
   },
   {
     label: "Net profit",
-    value: "RWF 4,820",
+    value: "RWF 4.8M",
     helper: "After recorded costs",
   },
   {
@@ -624,28 +624,11 @@ function MobileReadySection() {
         </div>
 
         <div className="svx-mobile-ready-visual">
-          <div className="svx-mobile-network">
-            <svg viewBox="0 0 580 420" fill="none" aria-hidden="true">
-              <path
-                d="M110 210 C190 120 260 118 330 206 C390 284 455 290 530 224"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeDasharray="8 10"
-              />
-              <path
-                d="M132 256 C238 336 312 330 420 230"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeDasharray="8 10"
-              />
-              <path
-                d="M164 162 C252 68 374 78 500 154"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeDasharray="8 10"
-              />
-            </svg>
-          </div>
+          <div className="svx-mobile-network svx-mobile-real-owners" aria-hidden="true">
+          <img src="/avatars/african-owner-3.webp" alt="" draggable="false" />
+          <img src="/avatars/african-owner-1.webp" alt="" draggable="false" />
+          <img src="/avatars/african-owner-2.webp" alt="" draggable="false" />
+        </div>
 
           <PhoneMockup />
 
@@ -688,14 +671,6 @@ function Footer() {
               Get started
             </Link>
 
-            <a
-              href="https://wa.me/250785587830"
-              className="svx-footer-secondary"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Book a demo
-            </a>
           </div>
         </div>
 
@@ -792,7 +767,7 @@ function HeroSection() {
 
           <div className="svx-hero-actions">
             <PrimaryLink>Get started</PrimaryLink>
-            <SecondaryLink>Book a demo</SecondaryLink>
+            
           </div>
 
           <div className="svx-trust-row">
