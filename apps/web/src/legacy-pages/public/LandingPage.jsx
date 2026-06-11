@@ -630,52 +630,35 @@ function MobileReadySection() {
         </div>
 
         <div className="svx-mobile-ready-network" aria-hidden="true">
-          <svg className="svx-network-paths" viewBox="0 0 520 420" fill="none">
+          <svg className="svx-network-paths" viewBox="0 0 280 340" fill="none" aria-hidden="true">
             <path
-              d="M190 72 V160"
+              d="M 80 68 Q 100 140 140 170"
               stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray="6 7"
+              strokeWidth="1.5"
+              strokeDasharray="5 4"
+              fill="none"
             />
 
             <path
-              d="M190 160 H82"
+              d="M 200 170 L 175 170"
               stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray="6 7"
+              strokeWidth="1.5"
+              strokeDasharray="5 4"
+              fill="none"
             />
 
             <path
-              d="M232 160 H392 C438 160 456 126 430 102 C410 82 372 78 332 78 H244"
+              d="M 110 290 Q 120 240 140 200"
               stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray="6 7"
+              strokeWidth="1.5"
+              strokeDasharray="5 4"
+              fill="none"
             />
 
-            <path
-              d="M190 202 V266 C190 310 222 332 268 332 H380"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray="6 7"
-            />
-
-            <path
-              d="M232 202 H316 C360 202 390 182 398 138"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeDasharray="6 7"
-            />
-
-            <circle cx="190" cy="72" r="6" fill="currentColor" />
-            <circle cx="82" cy="160" r="6" fill="currentColor" />
-            <circle cx="232" cy="160" r="6" fill="currentColor" />
-            <circle cx="190" cy="202" r="6" fill="currentColor" />
-            <circle cx="190" cy="266" r="6" fill="currentColor" />
+            <circle cx="100" cy="120" r="4" fill="currentColor" />
+            <circle cx="170" cy="168" r="4" fill="currentColor" opacity="0.45" />
+            <circle cx="120" cy="250" r="4" fill="currentColor" />
+            <circle cx="195" cy="170" r="4" fill="currentColor" opacity="0.45" />
           </svg>
 
           <div className="svx-network-center">
