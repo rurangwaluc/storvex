@@ -122,10 +122,11 @@ const problemCards = [
 ];
 
 const mobilePoints = [
-  "Live updates on sales and profit",
-  "Approve refunds and corrections",
-  "Monitor branches and staff",
-  "See alerts that matter",
+  "Live performance & insights",
+  "Orders, products & inventory",
+  "Customers & communication",
+  "Marketing & growth tools",
+  "Secure. Fast. Always available",
 ];
 
 const footerGroups = [
@@ -586,11 +587,12 @@ function MobileReadySection() {
         <div className="svx-mobile-ready-copy">
           <Badge>Mobile-ready</Badge>
 
-          <h2>Run your store from anywhere.</h2>
+          <h2>
+            Business control <span>in your pocket</span>
+          </h2>
 
           <p>
-            Storvex works on desktop and mobile, so you can stay in control even when you are away
-            from the store.
+            All the tools you need to run your store smarter, faster, and better.
           </p>
 
           <div className="svx-mobile-checklist">
@@ -623,22 +625,83 @@ function MobileReadySection() {
           </div>
         </div>
 
-        <div className="svx-mobile-ready-visual">
-          <div className="svx-mobile-network svx-mobile-real-owners" aria-hidden="true">
-          <img src="/avatars/african-owner-3.webp" alt="" draggable="false" />
-          <img src="/avatars/african-owner-1.webp" alt="" draggable="false" />
-          <img src="/avatars/african-owner-2.webp" alt="" draggable="false" />
+        <div className="svx-mobile-ready-phone-wrap">
+          <PhoneMockup />
         </div>
 
-          <PhoneMockup />
+        <div className="svx-mobile-ready-network" aria-hidden="true">
+          <svg className="svx-network-paths" viewBox="0 0 520 420" fill="none">
+            <path
+              d="M190 72 V160"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeDasharray="6 7"
+            />
 
-          <div className="svx-mobile-app-icon">
+            <path
+              d="M190 160 H82"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeDasharray="6 7"
+            />
+
+            <path
+              d="M232 160 H392 C438 160 456 126 430 102 C410 82 372 78 332 78 H244"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeDasharray="6 7"
+            />
+
+            <path
+              d="M190 202 V266 C190 310 222 332 268 332 H380"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeDasharray="6 7"
+            />
+
+            <path
+              d="M232 202 H316 C360 202 390 182 398 138"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeDasharray="6 7"
+            />
+
+            <circle cx="190" cy="72" r="6" fill="currentColor" />
+            <circle cx="82" cy="160" r="6" fill="currentColor" />
+            <circle cx="232" cy="160" r="6" fill="currentColor" />
+            <circle cx="190" cy="202" r="6" fill="currentColor" />
+            <circle cx="190" cy="266" r="6" fill="currentColor" />
+          </svg>
+
+          <div className="svx-network-center">
             <img src={iconSrc} alt="" draggable="false" />
           </div>
 
-          <StoreAvatar className="svx-network-avatar-one">Owner</StoreAvatar>
-          <StoreAvatar className="svx-network-avatar-two">Staff</StoreAvatar>
-          <StoreAvatar className="svx-network-avatar-three">Stock</StoreAvatar>
+          <img
+            src="/avatars/african-owner-3.webp"
+            alt=""
+            draggable="false"
+            className="svx-network-photo svx-network-photo-one"
+          />
+
+          <img
+            src="/avatars/african-owner-1.webp"
+            alt=""
+            draggable="false"
+            className="svx-network-photo svx-network-photo-two"
+          />
+
+          <img
+            src="/avatars/african-owner-2.webp"
+            alt=""
+            draggable="false"
+            className="svx-network-photo svx-network-photo-three"
+          />
         </div>
       </div>
     </section>
