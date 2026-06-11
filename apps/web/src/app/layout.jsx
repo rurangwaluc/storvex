@@ -15,10 +15,12 @@ export const metadata = {
   },
   icons: {
     icon: [
-      { url: "/storvex_icon.webp", type: "image/webp" },
       { url: "/favicon.ico" },
+      { url: "/storvex_icon.webp", type: "image/webp" },
+      { url: "/pwa-icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/pwa-icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/storvex_icon.webp", type: "image/webp" }],
+    apple: [{ url: "/pwa-icon-192.png", sizes: "192x192", type: "image/png" }],
   },
 };
 

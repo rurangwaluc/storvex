@@ -17,7 +17,8 @@ export default function OfflinePage() {
         <h1>You are offline.</h1>
 
         <p>
-          Storvex could not reach the internet. Check your connection, then return to your workspace.
+          Storvex could not reach the internet. Check your connection, then return to your
+          workspace.
         </p>
 
         <Link href="/" className="storvex-offline-action">
