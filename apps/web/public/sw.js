@@ -1,40 +1,24 @@
-const CACHE_VERSION = "v4";
+const CACHE_VERSION = "v5";
 const CACHE_NAME = `storvex-web-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline";
 
 const PRECACHE_URLS = [
-  "/",
-  "/offline",
+  OFFLINE_URL,
   "/manifest.webmanifest",
   "/pwa-icon-192.png",
   "/pwa-icon-512.png",
   "/pwa-maskable-icon-512.png",
+  "/storvex_icon.webp",
   "/storvex_dark.webp",
   "/storvex_white.webp",
-  "/storvex_icon.webp"
 ];
-
-async function addToCache(cache, url) {
-  try {
-    const response = await fetch(url, {
-      cache: "reload",
-      credentials: "same-origin"
-    });
-
-    if (response && response.ok) {
-      await cache.put(url, response);
-    }
-  } catch {
-    // Keep install resilient. One missing asset should not break the whole PWA.
-  }
-}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      await Promise.all(PRECACHE_URLS.map((url) => addToCache(cache, url)));
-      await self.skipWaiting();
-    })
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cache.addAll(PRECACHE_URLS))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -76,14 +60,16 @@ self.addEventListener("fetch", (event) => {
         })
         .catch(async () => {
           const offlineResponse = await caches.match(OFFLINE_URL);
-          if (offlineResponse) return offlineResponse;
 
-          const homeResponse = await caches.match("/");
-          if (homeResponse) return homeResponse;
+          if (offlineResponse) {
+            return offlineResponse;
+          }
 
           return new Response("Storvex is offline.", {
             status: 503,
-            headers: { "Content-Type": "text/plain" }
+            headers: {
+              "Content-Type": "text/plain; charset=utf-8",
+            },
           });
         })
     );
@@ -102,7 +88,9 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      const networkResponsePromise = fetch(request)
+      if (cachedResponse) return cachedResponse;
+
+      return fetch(request)
         .then((networkResponse) => {
           if (networkResponse && networkResponse.ok) {
             const responseClone = networkResponse.clone();
@@ -115,8 +103,6 @@ self.addEventListener("fetch", (event) => {
           return networkResponse;
         })
         .catch(() => cachedResponse);
-
-      return cachedResponse || networkResponsePromise;
     })
   );
 });
