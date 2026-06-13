@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useMemo, useState } from "react";
 import { clearActiveBranchId } from "../../services/apiClient";
+import "./AppSidebar.css";
 
 const LOGO_FOR_LIGHT_THEME_SRC = "/storvex_dark.webp";
 const LOGO_FOR_DARK_THEME_SRC = "/storvex_white.webp";
@@ -527,13 +528,13 @@ function LogoBlock({ collapsed, onClose, logoSrc }) {
       <Link
         to="/app"
         onClick={onClose}
-        className="group mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-[26px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--color-primary)]"
+        className="group mx-auto flex h-14 w-14 items-center justify-center overflow-hidden rounded-[22px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card)]"
         aria-label="Go to dashboard"
       >
         <img
           src={LOGO_ICON_SRC}
           alt="Storvex"
-          className="h-12 w-12 object-contain transition duration-300 group-hover:scale-105"
+          className="h-10 w-10 object-contain transition duration-300 group-hover:scale-105"
           draggable="false"
         />
       </Link>
@@ -544,14 +545,14 @@ function LogoBlock({ collapsed, onClose, logoSrc }) {
     <Link
       to="/app"
       onClick={onClose}
-      className="group flex min-w-0 items-center rounded-[30px] border border-transparent p-1.5 transition hover:border-[var(--color-border)] hover:bg-[var(--color-card)]"
+      className="group flex min-w-0 items-center rounded-[26px] border border-transparent p-1 transition hover:border-[var(--color-border)] hover:bg-[var(--color-card)]"
       aria-label="Go to dashboard"
     >
-      <span className="flex h-[74px] w-[232px] shrink-0 items-center justify-start overflow-hidden rounded-[26px] px-2">
+      <span className="flex h-[58px] w-[192px] shrink-0 items-center justify-start overflow-hidden rounded-[22px] px-2">
         <img
           src={logoSrc}
           alt="Storvex"
-          className="h-16 max-w-[214px] object-contain transition duration-300 group-hover:scale-[1.02]"
+          className="h-12 max-w-[176px] object-contain transition duration-300 group-hover:scale-[1.02]"
           draggable="false"
         />
       </span>
@@ -574,7 +575,7 @@ function WorkspaceCard({ collapsed, primaryRole }) {
   }
 
   return (
-    <div className="px-3 pb-4">
+    <div className="px-4 pb-4">
       <div className="relative overflow-hidden rounded-[26px] border border-[var(--color-border)] bg-[var(--color-card)] p-4 shadow-[var(--shadow-soft)]">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -631,10 +632,10 @@ function NavItemButton({ item, active, collapsed, onClick }) {
       type="button"
       onClick={onClick}
       className={cn(
-        "group relative flex w-full items-center gap-3 rounded-[22px] text-left transition duration-200",
-        collapsed ? "justify-center px-0 py-3" : "px-3.5 py-3",
+        "group relative flex w-full items-center gap-3 rounded-[20px] text-left transition duration-200",
+        collapsed ? "justify-center px-0 py-3" : "px-3 py-2.5",
         active
-          ? "border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] shadow-[var(--shadow-soft)]"
+          ? "border border-[var(--color-primary)]/25 bg-[var(--color-primary-soft)] text-[var(--color-text)] shadow-[var(--shadow-soft)]"
           : "border border-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]"
       )}
       title={collapsed ? item.label : undefined}
@@ -710,8 +711,8 @@ export default function AppSidebar({
 
       <aside
         className={cn(
-          "fixed left-0 top-0 z-50 flex h-[100dvh] flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] transition-all duration-300",
-          effectiveCollapsed ? "w-[92px]" : "w-[292px]",
+          "svx-sidebar fixed left-0 top-0 z-50 flex h-[100dvh] flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)]/98 shadow-[var(--shadow-card)] backdrop-blur-2xl transition-all duration-300",
+          effectiveCollapsed ? "w-[96px]" : "w-[308px]",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           "md:translate-x-0"
         )}
@@ -722,7 +723,7 @@ export default function AppSidebar({
           if (collapsed) setHoverOpen(false);
         }}
       >
-        <div className="relative flex min-h-[108px] items-center justify-between gap-3 px-4 py-4">
+        <div className="relative flex min-h-[88px] items-center justify-between gap-3 px-4 py-3">
           <LogoBlock collapsed={effectiveCollapsed} onClose={onClose} logoSrc={logoSrc} />
 
           {!effectiveCollapsed ? (
@@ -761,7 +762,7 @@ export default function AppSidebar({
           <WorkspaceCard collapsed={effectiveCollapsed} primaryRole={primaryRole} />
         </div>
 
-        <nav className="relative min-h-0 flex-1 overflow-y-auto px-3 pb-3 [scrollbar-width:thin]">
+        <nav className="relative min-h-0 flex-1 overflow-y-auto px-4 pb-4 [scrollbar-width:thin]">
           {filteredNav.map((group) => (
             <div key={group.section} className="mb-4">
               <GroupLabel label={group.section} collapsed={effectiveCollapsed} />
@@ -786,12 +787,12 @@ export default function AppSidebar({
           ))}
         </nav>
 
-        <div className="relative border-t border-[var(--color-border)]/70 p-3 md:p-4">
+        <div className="relative border-t border-[var(--color-border)]/70 p-4">
           <button
             type="button"
             onClick={handleLogout}
             className={cn(
-              "group flex w-full items-center gap-3 rounded-[24px] border border-transparent bg-[var(--color-surface-2)] text-[var(--color-danger)] transition hover:-translate-y-0.5 hover:border-red-500/30 hover:bg-red-500/10",
+              "group flex w-full items-center gap-3 rounded-[22px] border border-transparent bg-[var(--color-surface-2)] text-[var(--color-danger)] transition hover:-translate-y-0.5 hover:border-red-500/30 hover:bg-red-500/10",
               effectiveCollapsed ? "justify-center px-0 py-3.5" : "px-4 py-3.5"
             )}
             title={effectiveCollapsed ? "Sign out" : undefined}

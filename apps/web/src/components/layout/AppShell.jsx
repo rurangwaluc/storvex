@@ -1,4 +1,3 @@
-// frontend-stores/src/components/layout/AppShell.jsx
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -514,7 +513,7 @@ export default function AppShell({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
+    <div className="svx-shell-frame min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
       <AppSidebar
         collapsed={collapsed}
         mobileOpen={mobileOpen}
@@ -523,7 +522,7 @@ export default function AppShell({ children }) {
         onToggleCollapse={() => setCollapsed((prev) => !prev)}
       />
 
-      <div className={collapsed ? "md:pl-[92px]" : "md:pl-[280px]"}>
+      <div className={collapsed ? "svx-shell-content md:pl-[120px]" : "svx-shell-content md:pl-[332px]"}>
         <AppHeader
           isDark={isDark}
           onToggleTheme={toggleTheme}
@@ -534,7 +533,7 @@ export default function AppShell({ children }) {
         />
 
         <main
-          className="min-h-[calc(100vh-78px)] bg-[var(--color-bg)] px-4 pb-6 pt-4 text-[var(--color-text)] sm:px-6 sm:pb-8 sm:pt-5"
+          className="svx-shell-main mx-auto min-h-[calc(100vh-78px)] w-full max-w-[1880px] px-4 pb-8 pt-5 text-[var(--color-text)] sm:px-6 sm:pb-10 lg:px-8 xl:px-10 2xl:px-12"
           style={{
             paddingBottom: "max(1.5rem, env(safe-area-inset-bottom, 0px))",
           }}

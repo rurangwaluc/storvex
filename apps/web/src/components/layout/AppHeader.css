@@ -1,0 +1,525 @@
+.svx-app-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-bg) 94%, transparent);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  font-family: var(--svx-body-font);
+}
+
+.svx-header-inner {
+  width: 100%;
+  max-width: 1760px;
+  min-height: 72px;
+  margin: 0 auto;
+  padding: 10px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.svx-header-left {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.svx-header-left h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.svx-header-menu-button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-card);
+  color: var(--color-text);
+  display: none;
+  place-items: center;
+  box-shadow: var(--shadow-soft);
+}
+
+.svx-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.svx-header-date-display,
+.svx-header-add-button,
+.svx-header-theme-toggle,
+.svx-header-profile {
+  border: 1px solid var(--color-border);
+  font-family: inherit;
+  outline: none;
+}
+
+.svx-header-date-display {
+  height: 48px;
+  min-width: 220px;
+  padding: 0 16px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--color-card) 96%, transparent);
+  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: var(--shadow-soft);
+  cursor: default;
+  user-select: none;
+}
+
+.svx-header-date-icon {
+  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.svx-header-add-wrap,
+.svx-header-account-wrap {
+  position: relative;
+}
+
+.svx-header-add-button {
+  height: 48px;
+  padding: 0 20px;
+  border-radius: 16px;
+  border-color: color-mix(in srgb, var(--color-primary) 70%, transparent);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow:
+    0 18px 42px color-mix(in srgb, var(--color-primary) 26%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.svx-header-add-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow:
+    0 24px 58px color-mix(in srgb, var(--color-primary) 32%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.26);
+}
+
+.svx-header-action-menu,
+.svx-header-account-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 12px);
+  z-index: 40;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-card);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.2);
+}
+
+.svx-header-action-menu {
+  width: 240px;
+  padding: 8px;
+}
+
+.svx-header-action-item {
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 17px;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 900;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.svx-header-action-item:hover {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.svx-header-theme-toggle {
+  height: 48px;
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: var(--shadow-soft);
+}
+
+.svx-header-theme-toggle span {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  display: grid;
+  place-items: center;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.svx-header-theme-toggle span.is-active {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--color-primary) 24%, transparent);
+}
+
+.svx-header-profile {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--color-card);
+  color: var(--color-text);
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: var(--shadow-soft);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.svx-header-profile:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-primary) 44%, var(--color-border));
+  box-shadow: 0 18px 48px rgba(7, 125, 203, 0.12);
+}
+
+.svx-header-account-menu {
+  width: 310px;
+  padding: 10px;
+}
+
+.svx-header-account-head {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 20px;
+  background: var(--color-surface-2);
+}
+
+.svx-header-account-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 18px;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: 0 16px 36px color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+.svx-header-account-copy {
+  min-width: 0;
+}
+
+.svx-header-account-copy p {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.svx-header-account-copy span {
+  margin-top: 4px;
+  display: inline-flex;
+  width: max-content;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  padding: 3px 8px;
+  color: var(--color-primary);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.svx-header-account-copy small {
+  margin-top: 6px;
+  display: block;
+  max-width: 190px;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-header-account-list {
+  margin-top: 8px;
+  display: grid;
+  gap: 2px;
+}
+
+.svx-header-account-item {
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 17px;
+  background: transparent;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.svx-header-account-item:hover {
+  background: var(--color-surface-2);
+  color: var(--color-primary);
+}
+
+.svx-header-account-item.is-danger {
+  color: var(--color-danger);
+}
+
+.svx-header-icon,
+.svx-header-icon-sm,
+.svx-header-chevron {
+  display: block;
+  flex-shrink: 0;
+}
+
+.svx-header-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.svx-header-icon-sm {
+  width: 18px;
+  height: 18px;
+}
+
+.svx-header-chevron {
+  width: 16px;
+  height: 16px;
+}
+
+:root[data-theme="dark"] .svx-app-header {
+  background:
+    radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--color-primary) 11%, transparent), transparent 34rem),
+    linear-gradient(180deg, rgba(28, 28, 29, 0.94), rgba(28, 28, 29, 0.86));
+}
+
+@media (max-width: 1024px) {
+  .svx-header-inner {
+    padding: 10px 24px;
+  }
+
+  .svx-header-date-display {
+    min-width: 190px;
+  }
+}
+
+@media (max-width: 767px) {
+  .svx-app-header {
+    border-bottom-color: color-mix(in srgb, var(--color-border) 70%, transparent);
+  }
+
+  .svx-header-inner {
+    min-height: 60px;
+    padding:
+      max(10px, env(safe-area-inset-top, 0px))
+      12px
+      10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .svx-header-left {
+    gap: 9px;
+    min-width: 0;
+  }
+
+  .svx-header-menu-button {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    flex: 0 0 auto;
+  }
+
+  .svx-header-left h1 {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 19px;
+    letter-spacing: -0.04em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .svx-header-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .svx-header-date-display {
+    display: none;
+  }
+
+  .svx-header-add-button {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 14px;
+  }
+
+  .svx-header-add-button span,
+  .svx-header-add-button .svx-header-chevron {
+    display: none;
+  }
+
+  .svx-header-theme-toggle {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+  }
+
+  .svx-header-theme-toggle span {
+    display: none;
+  }
+
+  .svx-header-theme-toggle span.is-active {
+    display: grid;
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+  }
+
+  .svx-header-profile {
+    width: 38px;
+    height: 38px;
+    font-size: 11px;
+  }
+
+  .svx-header-action-menu {
+    right: 0;
+    width: min(240px, calc(100vw - 24px));
+  }
+
+  .svx-header-account-menu {
+    right: 0;
+    width: min(310px, calc(100vw - 24px));
+  }
+}
+
+@media (max-width: 420px) {
+  .svx-header-inner {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .svx-header-left h1 {
+    font-size: 18px;
+  }
+
+  .svx-header-actions {
+    gap: 7px;
+  }
+
+  .svx-header-menu-button,
+  .svx-header-add-button,
+  .svx-header-theme-toggle,
+  .svx-header-profile {
+    width: 36px;
+    height: 36px;
+    border-radius: 13px;
+  }
+
+  .svx-header-theme-toggle span.is-active {
+    border-radius: 13px;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 767px) {
+  .svx-header-inner {
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
+  }
+}
+
+/* Remove bulky workspace card from sidebar */
+.svx-sidebar > div:nth-of-type(2) {
+  display: none !important;
+}
+
+/* Tighten sidebar top after removing workspace card */
+.svx-sidebar > div:first-of-type {
+  min-height: 86px !important;
+  padding: 16px 18px 14px !important;
+}
+
+/* Bring navigation closer to the logo */
+.svx-sidebar nav {
+  padding-top: 6px !important;
+}
+
+/* Collapsed mode: remove unused workspace dot space too */
+.svx-sidebar.is-collapsed > div:nth-of-type(2),
+.svx-sidebar.w-\[96px\] > div:nth-of-type(2) {
+  display: none !important;
+}
+
+/* Mobile drawer also should not waste space */
+@media (max-width: 767px) {
+  .svx-sidebar > div:nth-of-type(2) {
+    display: none !important;
+  }
+
+  .svx-sidebar > div:first-of-type {
+    min-height: 82px !important;
+  }
+
+  .svx-sidebar nav {
+    padding-top: 8px !important;
+  }
+}
