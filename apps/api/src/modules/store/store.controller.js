@@ -70,7 +70,7 @@ async function getChecklist(req, res) {
       return res.status(404).json({ message: "Store setup checklist not found" });
     }
 
-    // Only expose electronics roles to frontend
+    // Only expose store operation counts to frontend
     const counts = checklist.counts || {};
     const filteredCounts = {
       activeOwners: counts.activeOwners || 0,
@@ -159,3 +159,4 @@ module.exports = {
   patchDocumentConfig,
   createLogoUploadUrl,
 };
+

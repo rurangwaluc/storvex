@@ -1,0 +1,677 @@
+.svx-settings-roles {
+  --roles-row: color-mix(in srgb, var(--settings-panel) 78%, transparent);
+  --roles-row-soft: color-mix(in srgb, var(--settings-panel) 54%, transparent);
+  --roles-line: color-mix(in srgb, var(--settings-border) 86%, transparent);
+  --roles-success: #10b981;
+  --roles-warning: #f59e0b;
+  --roles-info: #159cff;
+  --roles-danger: #ef4444;
+}
+
+.svx-roles-hero,
+.svx-roles-summary-card,
+.svx-roles-overview,
+.svx-roles-switch,
+.svx-roles-table-card,
+.svx-roles-compare-card,
+.svx-roles-members-card {
+  overflow: hidden;
+}
+
+.svx-roles-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  padding: 22px;
+}
+
+.svx-roles-hero-badges,
+.svx-roles-overview-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.svx-roles-summary-card {
+  padding: 18px;
+}
+
+.svx-roles-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.svx-roles-metric {
+  position: relative;
+  min-height: 108px;
+  overflow: hidden;
+  border: 1px solid var(--roles-line);
+  border-radius: 18px;
+  background: var(--settings-panel);
+  padding: 16px;
+}
+
+.svx-roles-metric::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--settings-muted-2);
+}
+
+.svx-roles-metric.is-primary::before {
+  background: var(--settings-primary);
+}
+
+.svx-roles-metric.is-success::before {
+  background: var(--roles-success);
+}
+
+.svx-roles-metric.is-warning::before {
+  background: var(--roles-warning);
+}
+
+.svx-roles-metric.is-info::before {
+  background: var(--roles-info);
+}
+
+.svx-roles-metric > span {
+  display: block;
+  color: var(--settings-muted-2);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.svx-roles-metric strong {
+  display: block;
+  margin-top: 9px;
+  color: var(--settings-text);
+  font-family: var(--settings-heading-font);
+  font-size: clamp(22px, 2vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1;
+}
+
+.svx-roles-metric p {
+  margin: 8px 0 0;
+  color: var(--settings-muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.svx-roles-badge,
+.svx-roles-status {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 11px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.svx-roles-badge.is-primary {
+  background: var(--settings-primary-soft);
+  color: var(--settings-primary);
+}
+
+.svx-roles-badge.is-success,
+.svx-roles-status.is-on {
+  background: rgba(16, 185, 129, 0.14);
+  color: #059669;
+}
+
+.svx-roles-badge.is-warning {
+  background: rgba(245, 158, 11, 0.14);
+  color: #d97706;
+}
+
+.svx-roles-badge.is-info {
+  background: rgba(21, 156, 255, 0.12);
+  color: var(--settings-primary);
+}
+
+.svx-roles-badge.is-neutral,
+.svx-roles-status.is-off {
+  background: var(--settings-panel);
+  color: var(--settings-muted);
+}
+
+:root[data-theme="dark"] .svx-roles-badge.is-success,
+:root[data-theme="dark"] .svx-roles-status.is-on {
+  color: #34d399;
+}
+
+:root[data-theme="dark"] .svx-roles-badge.is-warning {
+  color: #fbbf24;
+}
+
+.svx-roles-switch {
+  display: grid;
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+}
+
+.svx-roles-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.svx-roles-tab {
+  min-height: 40px;
+  border: 1px solid var(--roles-line);
+  border-radius: 14px;
+  background: var(--settings-card);
+  color: var(--settings-text);
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.svx-roles-tab.is-active {
+  border-color: var(--settings-primary);
+  background: var(--settings-primary);
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.16);
+}
+
+.svx-roles-select-wrap {
+  display: none;
+}
+
+.svx-roles-overview-head,
+.svx-roles-card-head,
+.svx-roles-members-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  border-bottom: 1px solid var(--roles-line);
+  padding: 20px;
+}
+
+.svx-roles-overview-head h3 {
+  margin: 14px 0 0;
+  color: var(--settings-text);
+  font-family: var(--settings-heading-font);
+  font-size: clamp(22px, 2vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.svx-roles-overview-head p,
+.svx-roles-members-card p {
+  max-width: 720px;
+  margin: 10px 0 0;
+  color: var(--settings-muted);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.6;
+}
+
+.svx-roles-overview .svx-roles-metrics-grid {
+  padding: 18px;
+}
+
+.svx-roles-primary-link {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--settings-primary) 44%, var(--settings-border));
+  border-radius: 14px;
+  background: var(--settings-primary);
+  color: #ffffff !important;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.16);
+}
+
+.svx-roles-access-table,
+.svx-roles-compare-table {
+  width: 100%;
+  padding: 0 18px 18px;
+}
+
+.svx-roles-table-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(170px, 1fr) minmax(260px, 1.45fr) minmax(110px, 0.6fr) minmax(100px, 0.55fr);
+  align-items: stretch;
+  border-bottom: 1px solid var(--roles-line);
+  background: var(--settings-card);
+}
+
+.svx-roles-table-row:last-child {
+  border-bottom: 0;
+}
+
+.svx-roles-table-row.is-head {
+  border-top: 1px solid var(--roles-line);
+  border-bottom: 1px solid var(--roles-line);
+  background: var(--roles-row-soft);
+  color: var(--settings-muted-2);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.svx-roles-table-row > div {
+  min-width: 0;
+  padding: 14px;
+  border-right: 1px solid var(--roles-line);
+}
+
+.svx-roles-table-row > div:last-child {
+  border-right: 0;
+}
+
+.svx-roles-table-row:not(.is-head) > div:first-child {
+  background: var(--roles-row-soft);
+}
+
+.svx-roles-table-row strong,
+.svx-roles-compare-row strong {
+  display: block;
+  color: var(--settings-text);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.svx-roles-table-row span,
+.svx-roles-compare-row span {
+  display: block;
+  margin-top: 4px;
+  color: var(--settings-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.svx-roles-table-row p {
+  margin: 0;
+  color: var(--settings-muted);
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.svx-roles-compare-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.8fr) minmax(0, 1.8fr) minmax(110px, 0.6fr);
+  align-items: stretch;
+  border-bottom: 1px solid var(--roles-line);
+  background: var(--settings-card);
+}
+
+.svx-roles-compare-row:last-child {
+  border-bottom: 0;
+}
+
+.svx-roles-compare-row.is-head {
+  border-top: 1px solid var(--roles-line);
+  background: var(--roles-row-soft);
+  color: var(--settings-muted-2);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.svx-roles-compare-row > div {
+  min-width: 0;
+  padding: 14px;
+  border-right: 1px solid var(--roles-line);
+}
+
+.svx-roles-compare-row > div:last-child {
+  border-right: 0;
+}
+
+.svx-roles-compare-row:not(.is-head) > div:nth-child(2) {
+  color: var(--settings-muted);
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.svx-roles-compare-select {
+  width: min(100%, 420px);
+}
+
+.svx-roles-compare-select label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--settings-text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.svx-roles-members-card {
+  border-bottom: 1px solid var(--color-border);
+  align-items: center;
+}
+
+.svx-roles-members-card strong {
+  color: var(--settings-text);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+@media (max-width: 1100px) {
+  .svx-roles-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-roles-switch {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-roles-tabs {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-settings-roles {
+    gap: 14px !important;
+  }
+
+  .svx-roles-hero,
+  .svx-roles-overview-head,
+  .svx-roles-card-head,
+  .svx-roles-members-card {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 16px;
+  }
+
+  .svx-roles-hero-badges,
+  .svx-roles-overview-badges {
+    justify-content: flex-start;
+  }
+
+  .svx-roles-summary-card,
+  .svx-roles-switch {
+    padding: 14px;
+  }
+
+  .svx-roles-metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px;
+  }
+
+  .svx-roles-metric {
+    min-height: 104px;
+    padding: 13px;
+  }
+
+  .svx-roles-metric strong {
+    font-size: clamp(22px, 7vw, 30px);
+  }
+
+  .svx-roles-tabs {
+    display: none;
+  }
+
+  .svx-roles-select-wrap {
+    display: block;
+  }
+
+  .svx-roles-primary-link {
+    width: 100%;
+  }
+
+  .svx-roles-access-table,
+  .svx-roles-compare-table {
+    padding: 0 14px 14px;
+  }
+
+  .svx-roles-table-row.is-head,
+  .svx-roles-compare-row.is-head {
+    display: none;
+  }
+
+  .svx-roles-table-row,
+  .svx-roles-compare-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    margin-bottom: 10px;
+    overflow: hidden;
+    border: 1px solid var(--roles-line);
+    border-radius: 16px;
+    background: var(--settings-card);
+  }
+
+  .svx-roles-table-row > div,
+  .svx-roles-compare-row > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--roles-line);
+    padding: 12px;
+  }
+
+  .svx-roles-table-row > div:nth-last-child(-n + 2),
+  .svx-roles-compare-row > div:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .svx-roles-table-row > div::before,
+  .svx-roles-compare-row > div::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 7px;
+    color: var(--settings-muted-2);
+    font-size: 9.5px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .svx-roles-table-row > div:nth-child(1),
+  .svx-roles-table-row > div:nth-child(3),
+  .svx-roles-compare-row > div:nth-child(2) {
+    grid-column: 1 / -1;
+  }
+
+  .svx-roles-table-row > div:nth-child(2),
+  .svx-roles-table-row > div:nth-child(4),
+  .svx-roles-table-row > div:nth-child(5),
+  .svx-roles-compare-row > div:nth-child(1),
+  .svx-roles-compare-row > div:nth-child(3) {
+    background: var(--roles-row-soft);
+  }
+
+  .svx-roles-card-head .svx-roles-badge {
+    justify-self: start;
+  }
+
+  .svx-roles-compare-select {
+    width: 100%;
+  }
+}
+
+@media (max-width: 389px) {
+  .svx-roles-metrics-grid,
+  .svx-roles-table-row,
+  .svx-roles-compare-row {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-roles-table-row > div,
+  .svx-roles-compare-row > div {
+    border-bottom: 1px solid var(--roles-line) !important;
+  }
+
+  .svx-roles-table-row > div:last-child,
+  .svx-roles-compare-row > div:last-child {
+    border-bottom: 0 !important;
+  }
+}
+
+
+/* Center compact badges inside the real table cells on desktop/tablet. */
+.svx-roles-table-row > div[data-label="Risk"],
+.svx-roles-table-row > div[data-label="Status"],
+.svx-roles-compare-row > div[data-label="Status"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
+.svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
+.svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
+  width: min(100%, 132px);
+}
+
+.svx-roles-table-row.is-head > div:nth-child(4),
+.svx-roles-table-row.is-head > div:nth-child(5),
+.svx-roles-compare-row.is-head > div:nth-child(3) {
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .svx-roles-table-row > div[data-label="Risk"],
+  .svx-roles-table-row > div[data-label="Status"],
+  .svx-roles-compare-row > div[data-label="Status"] {
+    align-items: flex-start;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
+  .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
+  .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
+    width: 100%;
+    max-width: 150px;
+  }
+}
+
+/* Keep Risk and Status cells centered both horizontally and vertically in the desktop access table. */
+@media (min-width: 721px) {
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Risk"],
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Status"],
+  .svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] {
+    display: grid !important;
+    align-self: stretch;
+    min-height: 100%;
+    place-items: center;
+    text-align: center;
+  }
+
+  .svx-settings-roles .svx-roles-table-row.is-head > div:nth-child(4),
+  .svx-settings-roles .svx-roles-table-row.is-head > div:nth-child(5),
+  .svx-settings-roles .svx-roles-compare-row.is-head > div:nth-child(3) {
+    display: grid !important;
+    align-self: stretch;
+    min-height: 100%;
+    place-items: center;
+    text-align: center;
+  }
+
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
+  .svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
+    margin: auto;
+  }
+}
+
+/* Final badge overflow correction: keep table badges centered without spilling outside cells. */
+.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"],
+.svx-settings-roles .svx-roles-table-row > div[data-label="Status"],
+.svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] {
+  overflow: hidden;
+}
+
+.svx-settings-roles .svx-roles-badge,
+.svx-settings-roles .svx-roles-status {
+  max-width: 100%;
+  min-height: 22px;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  line-height: 1;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
+.svx-settings-roles .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
+.svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
+  width: auto;
+  min-width: 70px;
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  align-self: center;
+}
+
+.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge.is-info {
+  min-width: 92px;
+}
+
+.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge.is-warning,
+.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge.is-neutral {
+  min-width: 72px;
+}
+
+.svx-settings-roles .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
+.svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
+  min-width: 76px;
+}
+
+@media (min-width: 721px) {
+  .svx-settings-roles .svx-roles-table-row {
+    grid-template-columns: minmax(128px, 0.8fr) minmax(155px, 0.95fr) minmax(250px, 1.5fr) minmax(118px, 0.62fr) minmax(96px, 0.54fr);
+  }
+
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Risk"],
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Status"],
+  .svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-settings-roles .svx-roles-badge,
+  .svx-settings-roles .svx-roles-status {
+    min-height: 24px;
+    padding: 0 9px;
+    font-size: 8.5px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
+  .svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
+    justify-self: start;
+    max-width: 100%;
+  }
+}

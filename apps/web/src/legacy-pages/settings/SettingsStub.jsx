@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import "./Settings.css";
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
@@ -96,7 +97,7 @@ export default function SettingsStub({ title = "Coming soon" }) {
   const items = titleItems(title);
 
   return (
-    <div className="space-y-6">
+    <div className="svx-settings-page svx-settings-stub space-y-6">
       <section className={cx(pageCard(), "overflow-hidden")}>
         <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
           <SectionHeading

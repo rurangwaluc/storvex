@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import { getMyPermissions, getPermissionPolicy } from "../../services/permissionsApi";
+import "./Settings.css";
+import "./SettingsRoles.css";
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
@@ -25,62 +27,25 @@ function pageCard() {
   return "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
 }
 
-function softPanel() {
-  return "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
-}
-
-function primaryBtn() {
-  return "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-5 text-sm font-black text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function secondaryBtn() {
-  return "inline-flex h-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-5 text-sm font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function badgeClass(tone = "neutral") {
-  if (tone === "primary") {
-    return "bg-[var(--color-primary-soft)] text-[var(--color-primary)]";
-  }
-
-  if (tone === "success") {
-    return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300";
-  }
-
-  if (tone === "warning") {
-    return "bg-amber-500/10 text-amber-600 dark:text-amber-300";
-  }
-
-  if (tone === "danger") {
-    return "bg-red-500/10 text-red-600 dark:text-red-300";
-  }
-
-  if (tone === "info") {
-    return "bg-sky-500/10 text-sky-600 dark:text-sky-300";
-  }
-
-  return "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
-}
-
-function Badge({ children, tone = "neutral", className = "" }) {
-  return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-xs font-black",
-        badgeClass(tone),
-        className
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
 function cleanString(value) {
   return String(value || "").trim();
 }
 
 function normalizeRole(role) {
   return cleanString(role).toUpperCase();
+}
+
+
+function isBusinessRole(role) {
+  return ["OWNER", "MANAGER", "CASHIER", "SELLER", "STOREKEEPER", "TECHNICIAN"].includes(normalizeRole(role));
+}
+
+function businessPolicyOnly(policy) {
+  if (!policy) return null;
+
+  return Object.fromEntries(
+    Object.entries(policy).filter(([role]) => isBusinessRole(role)),
+  );
 }
 
 function roleLabel(role) {
@@ -92,8 +57,6 @@ function roleLabel(role) {
   if (r === "SELLER") return "Seller";
   if (r === "STOREKEEPER") return "Storekeeper";
   if (r === "TECHNICIAN") return "Technician";
-  if (r === "PLATFORM_ADMIN") return "Platform admin";
-
   return r || "Unknown";
 }
 
@@ -114,27 +77,27 @@ function roleDescription(role) {
   const r = normalizeRole(role);
 
   if (r === "OWNER") {
-    return "Full store control: billing, staff, branches, settings, reports, and sensitive actions.";
+    return "Full store control across staff, branches, billing, settings, reports, and sensitive actions.";
   }
 
   if (r === "MANAGER") {
-    return "Operational supervisor: can view staff and manage daily operations, but cannot control owner-only areas like billing or staff changes.";
+    return "Daily operations access without owner-only billing and staff control.";
   }
 
   if (r === "CASHIER") {
-    return "Front-desk operator: handles sales, customer payments, receipts, and cashier workflows.";
+    return "Sales desk access for payments, receipts, and cashier workflows.";
   }
 
   if (r === "SELLER") {
-    return "Sales-focused user: supports selling, customer service, and sales documents.";
+    return "Sales and customer support access for daily selling work.";
   }
 
   if (r === "STOREKEEPER") {
-    return "Stock-focused user: manages inventory visibility, stock movement, and supplier-related workflows.";
+    return "Stock, supply, and inventory movement access.";
   }
 
   if (r === "TECHNICIAN") {
-    return "Repair-focused user: handles service jobs, repair workflows, and technical customer support.";
+    return "Repair jobs and technical customer support access.";
   }
 
   return "Role permissions are controlled by the backend policy.";
@@ -265,309 +228,211 @@ function permissionRisk(permission) {
   return "View only";
 }
 
-function permissionTone(permission) {
-  const risk = permissionRisk(permission);
-
+function riskTone(risk) {
   if (risk === "Sensitive") return "warning";
   if (risk === "Can change data") return "info";
-
   return "neutral";
+}
+
+function permissionTone(permission) {
+  return riskTone(permissionRisk(permission));
 }
 
 function roleCan(policy, role, permission) {
   return Array.isArray(policy?.[role]) && policy[role].includes(permission);
 }
 
+function Badge({ children, tone = "neutral", className = "" }) {
+  return <span className={cx("svx-roles-badge", `is-${tone}`, className)}>{children}</span>;
+}
+
+function PermissionStatus({ on }) {
+  return <span className={cx("svx-roles-status", on ? "is-on" : "is-off")}>{on ? "Allowed" : "Blocked"}</span>;
+}
+
 function SectionHeading({ eyebrow, title, subtitle }) {
   return (
     <div>
-      {eyebrow ? (
-        <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>
-          {eyebrow}
-        </div>
-      ) : null}
+      {eyebrow ? <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>{eyebrow}</div> : null}
 
-      <h2
-        className={cx(
-          "mt-3 text-[1.55rem] font-black tracking-[-0.04em] sm:text-[1.9rem]",
-          strongText()
-        )}
-      >
-        {title}
-      </h2>
+      <h2 className={cx("mt-3 text-[1.55rem] font-black tracking-[-0.04em] sm:text-[1.9rem]", strongText())}>{title}</h2>
 
-      {subtitle ? (
-        <p className={cx("mt-3 max-w-3xl text-sm font-semibold leading-6", mutedText())}>
-          {subtitle}
-        </p>
-      ) : null}
+      {subtitle ? <p className={cx("mt-3 max-w-3xl text-sm font-semibold leading-6", mutedText())}>{subtitle}</p> : null}
     </div>
   );
 }
 
 function SummaryCard({ label, value, note, tone = "neutral" }) {
-  const accentClass =
-    tone === "success"
-      ? "bg-emerald-500"
-      : tone === "warning"
-        ? "bg-amber-500"
-        : tone === "danger"
-          ? "bg-[var(--color-danger)]"
-          : tone === "info"
-            ? "bg-sky-500"
-            : "bg-[var(--color-primary)]";
-
   return (
-    <article className={cx(pageCard(), "relative min-h-[126px] overflow-hidden p-5")}>
-      <div className={cx("absolute left-0 top-0 h-full w-1.5", accentClass)} />
-
-      <div className="pl-2">
-        <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
-          {label}
-        </div>
-
-        <div className={cx("mt-2 text-[1.55rem] font-black tracking-[-0.04em]", strongText())}>
-          {value}
-        </div>
-
-        {note ? (
-          <div className={cx("mt-2 text-xs font-semibold leading-5", mutedText())}>
-            {note}
-          </div>
-        ) : null}
-      </div>
+    <article className={cx("svx-roles-metric", `is-${tone}`)}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      {note ? <p>{note}</p> : null}
     </article>
   );
 }
 
 function RoleSwitcher({ roles, selectedRole, onSelect }) {
   return (
-    <section className={cx(pageCard(), "p-4 sm:p-5")}>
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>
-            Choose role
-          </div>
-          <div className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>
-            Select a role to see what that staff member can access.
-          </div>
-        </div>
-
-        <div className="lg:hidden">
-          <select
-            className="app-input"
-            value={selectedRole}
-            onChange={(event) => onSelect(event.target.value)}
-          >
-            {roles.map((role) => (
-              <option key={role} value={role}>
-                {roleLabel(role)}
-              </option>
-            ))}
-          </select>
-        </div>
+    <section className={cx(pageCard(), "svx-roles-switch")}> 
+      <div>
+        <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>Choose role</div>
+        <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>Select a role. The table below shows only what that role can do.</p>
       </div>
 
-      <div className="mt-4 hidden flex-wrap gap-2 lg:flex">
+      <div className="svx-roles-tabs" role="tablist" aria-label="Store role selector">
         {roles.map((role) => (
           <button
             key={role}
             type="button"
             onClick={() => onSelect(role)}
-            className={cx(
-              "inline-flex h-11 items-center justify-center rounded-2xl px-4 text-sm font-black transition",
-              selectedRole === role
-                ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)]"
-                : "border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] hover:border-[var(--color-primary)]"
-            )}
+            className={cx("svx-roles-tab", selectedRole === role && "is-active")}
           >
             {roleLabel(role)}
           </button>
+        ))}
+      </div>
+
+      <div className="svx-roles-select-wrap">
+        <select className="app-input" value={selectedRole} onChange={(event) => onSelect(event.target.value)}>
+          {roles.map((role) => (
+            <option key={role} value={role}>
+              {roleLabel(role)}
+            </option>
+          ))}
+        </select>
+      </div>
+    </section>
+  );
+}
+
+function buildAreaRows({ role, policy, groups }) {
+  return groups
+    .map((section) => {
+      const allowed = section.rows.filter((permission) => roleCan(policy, role, permission));
+      if (!allowed.length) return null;
+
+      const sensitive = allowed.filter((permission) => permissionRisk(permission) === "Sensitive").length;
+      const writes = allowed.filter((permission) => permissionRisk(permission) === "Can change data").length;
+      const views = Math.max(0, allowed.length - sensitive - writes);
+      const mainRisk = sensitive > 0 ? "Sensitive" : writes > 0 ? "Can change data" : "View only";
+
+      const preview = allowed
+        .slice(0, 3)
+        .map(permissionLabel)
+        .join(", ");
+
+      return {
+        area: section.group,
+        count: allowed.length,
+        sensitive,
+        writes,
+        views,
+        mainRisk,
+        preview,
+      };
+    })
+    .filter(Boolean);
+}
+
+function RoleOverview({ role, permissions, areaRows }) {
+  const total = permissions.length;
+  const sensitive = permissions.filter((permission) => permissionRisk(permission) === "Sensitive").length;
+  const writes = permissions.filter((permission) => permissionRisk(permission) === "Can change data").length;
+  const views = Math.max(0, total - sensitive - writes);
+
+  return (
+    <section className={cx(pageCard(), "svx-roles-overview")}> 
+      <div className="svx-roles-overview-head">
+        <div>
+          <div className="svx-roles-overview-badges">
+            <Badge tone={roleTone(role)}>{roleLabel(role)}</Badge>
+            {normalizeRole(role) === "OWNER" ? <Badge tone="warning">Owner powers</Badge> : null}
+            {normalizeRole(role) === "MANAGER" ? <Badge tone="info">Daily operations</Badge> : null}
+          </div>
+
+          <h3>{roleLabel(role)} access</h3>
+          <p>{roleDescription(role)}</p>
+        </div>
+
+        <Link to="/app/settings/members" className="svx-roles-primary-link">
+          Open members
+        </Link>
+      </div>
+
+      <div className="svx-roles-metrics-grid">
+        <SummaryCard label="Allowed actions" value={total} note="Backend policy access points" tone="success" />
+        <SummaryCard label="Sensitive" value={sensitive} note="Needs owner awareness" tone={sensitive > 0 ? "warning" : "neutral"} />
+        <SummaryCard label="Can change data" value={writes} note="Creates or updates records" tone={writes > 0 ? "info" : "neutral"} />
+        <SummaryCard label="Store areas" value={areaRows.length} note="Business areas unlocked" tone="primary" />
+      </div>
+    </section>
+  );
+}
+
+function AccessTable({ role, areaRows }) {
+  return (
+    <section className={cx(pageCard(), "svx-roles-table-card")}> 
+      <div className="svx-roles-card-head">
+        <SectionHeading
+          eyebrow="Access table"
+          title={`${roleLabel(role)} permissions`}
+          subtitle="A compact business table. Owners see the area, the level of access, and whether the role can change important data."
+        />
+        <Badge tone="primary">{areaRows.length} areas</Badge>
+      </div>
+
+      <div className="svx-roles-access-table" role="table" aria-label={`${roleLabel(role)} access table`}>
+        <div className="svx-roles-table-row is-head" role="row">
+          <div role="columnheader">Area</div>
+          <div role="columnheader">Access</div>
+          <div role="columnheader">What this role can do</div>
+          <div role="columnheader">Risk</div>
+          <div role="columnheader">Status</div>
+        </div>
+
+        {areaRows.map((row) => (
+          <div className="svx-roles-table-row" role="row" key={row.area}>
+            <div role="cell" data-label="Area">
+              <strong>{row.area}</strong>
+              <span>{row.count} allowed action{row.count === 1 ? "" : "s"}</span>
+            </div>
+            <div role="cell" data-label="Access">
+              <span>{row.views} view</span>
+              <span>{row.writes} change</span>
+              <span>{row.sensitive} sensitive</span>
+            </div>
+            <div role="cell" data-label="Can do">
+              <p>{row.preview || "Allowed by policy"}</p>
+            </div>
+            <div role="cell" data-label="Risk">
+              <Badge tone={riskTone(row.mainRisk)}>{row.mainRisk}</Badge>
+            </div>
+            <div role="cell" data-label="Status">
+              <PermissionStatus on />
+            </div>
+          </div>
         ))}
       </div>
     </section>
   );
 }
 
-function PermissionStatus({ on }) {
-  return (
-    <span
-      className={cx(
-        "inline-flex h-8 items-center justify-center rounded-full px-3 text-xs font-black",
-        on
-          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
-          : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"
-      )}
-    >
-      {on ? "Allowed" : "Blocked"}
-    </span>
-  );
-}
-
-function PermissionCard({ permission, allowed }) {
-  return (
-    <article className={cx(softPanel(), "p-4")}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className={cx("text-sm font-black tracking-[-0.02em]", strongText())}>
-            {permissionLabel(permission)}
-          </div>
-
-          <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-            {groupForPermission(permission)}
-          </div>
-        </div>
-
-        <PermissionStatus on={allowed} />
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Badge tone={permissionTone(permission)}>{permissionRisk(permission)}</Badge>
-      </div>
-    </article>
-  );
-}
-
-function RoleOverview({ role, permissions }) {
-  const total = permissions.length;
-
-  const sensitive = permissions.filter((permission) => permissionRisk(permission) === "Sensitive").length;
-
-  const writes = permissions.filter(
-    (permission) => permissionRisk(permission) === "Can change data"
-  ).length;
-
-  const views = Math.max(0, total - sensitive - writes);
-
-  return (
-    <section className={cx(pageCard(), "overflow-hidden")}>
-      <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge tone={roleTone(role)}>{roleLabel(role)}</Badge>
-              {normalizeRole(role) === "OWNER" ? (
-                <Badge tone="warning">Owner-only powers</Badge>
-              ) : null}
-              {normalizeRole(role) === "MANAGER" ? (
-                <Badge tone="info">No billing or staff changes</Badge>
-              ) : null}
-            </div>
-
-            <h3 className={cx("mt-4 text-2xl font-black tracking-[-0.05em]", strongText())}>
-              {roleLabel(role)} access
-            </h3>
-
-            <p className={cx("mt-3 max-w-3xl text-sm font-semibold leading-6", mutedText())}>
-              {roleDescription(role)}
-            </p>
-          </div>
-
-          <Link to="/app/settings/members" className={secondaryBtn()}>
-            Manage members
-          </Link>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-3 px-5 py-5 sm:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard
-          label="Allowed actions"
-          value={total}
-          note="Access points enabled for this role"
-          tone="success"
-        />
-
-        <SummaryCard
-          label="Sensitive actions"
-          value={sensitive}
-          note="Owner-grade or high-control permissions"
-          tone={sensitive > 0 ? "warning" : "neutral"}
-        />
-
-        <SummaryCard
-          label="Data changes"
-          value={writes}
-          note="Actions that can create or change records"
-          tone={writes > 0 ? "info" : "neutral"}
-        />
-
-        <SummaryCard
-          label="View access"
-          value={views}
-          note="Read-only visibility permissions"
-          tone="neutral"
-        />
-      </div>
-    </section>
-  );
-}
-
-function GroupedPermissions({ role, policy, groups }) {
-  return (
-    <section className={cx(pageCard(), "p-5 sm:p-6")}>
-      <SectionHeading
-        eyebrow="Access details"
-        title={`${roleLabel(role)} permissions`}
-        subtitle="This is shown in business language so store owners can understand access without reading technical permission codes."
-      />
-
-      <div className="mt-6 space-y-4">
-        {groups.map((section) => {
-          const allowedInGroup = section.rows.filter((permission) => roleCan(policy, role, permission));
-
-          if (!allowedInGroup.length) return null;
-
-          return (
-            <div key={section.group} className={cx(softPanel(), "p-4 sm:p-5")}>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <div className={cx("text-lg font-black tracking-[-0.03em]", strongText())}>
-                    {section.group}
-                  </div>
-                  <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-                    {allowedInGroup.length} allowed action{allowedInGroup.length === 1 ? "" : "s"}
-                  </div>
-                </div>
-
-                <Badge tone="primary">{allowedInGroup.length}</Badge>
-              </div>
-
-              <div className="mt-4 grid grid-cols-1 gap-3 xl:grid-cols-2">
-                {allowedInGroup.map((permission) => (
-                  <PermissionCard key={`${role}-${permission}`} permission={permission} allowed />
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
 function CompareRoles({ roles, policy, selectedPermission, onSelectPermission, permissions }) {
-  const visibleRoles = roles.filter((role) =>
-    ["OWNER", "MANAGER", "CASHIER", "SELLER", "STOREKEEPER", "TECHNICIAN"].includes(
-      normalizeRole(role)
-    )
-  );
+  const visibleRoles = roles.filter(isBusinessRole);
 
   return (
-    <section className={cx(pageCard(), "p-5 sm:p-6")}>
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+    <section className={cx(pageCard(), "svx-roles-compare-card")}> 
+      <div className="svx-roles-card-head">
         <SectionHeading
           eyebrow="Compare"
           title="Compare one permission"
-          subtitle="Use this when you want to quickly verify which roles can perform a specific action."
+          subtitle="Use this only when you need to verify one action across roles."
         />
 
-        <div className="w-full xl:max-w-md">
-          <label className={cx("text-sm font-black", strongText())}>Permission</label>
-          <select
-            className="app-input mt-2"
-            value={selectedPermission}
-            onChange={(event) => onSelectPermission(event.target.value)}
-          >
+        <div className="svx-roles-compare-select">
+          <label>Permission</label>
+          <select className="app-input" value={selectedPermission} onChange={(event) => onSelectPermission(event.target.value)}>
             {permissions.map((permission) => (
               <option key={permission} value={permission}>
                 {groupForPermission(permission)} — {permissionLabel(permission)}
@@ -578,20 +443,26 @@ function CompareRoles({ roles, policy, selectedPermission, onSelectPermission, p
       </div>
 
       {selectedPermission ? (
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {visibleRoles.map((role) => (
-            <article key={`${role}-${selectedPermission}`} className={cx(softPanel(), "p-4")}>
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className={cx("text-sm font-black", strongText())}>{roleLabel(role)}</div>
-                  <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-                    {roleDescription(role)}
-                  </div>
-                </div>
+        <div className="svx-roles-compare-table" role="table" aria-label="Compare permission by role">
+          <div className="svx-roles-compare-row is-head" role="row">
+            <div role="columnheader">Role</div>
+            <div role="columnheader">Meaning</div>
+            <div role="columnheader">Status</div>
+          </div>
 
+          {visibleRoles.map((role) => (
+            <div key={`${role}-${selectedPermission}`} className="svx-roles-compare-row" role="row">
+              <div role="cell" data-label="Role">
+                <strong>{roleLabel(role)}</strong>
+                <span>{normalizeRole(role)}</span>
+              </div>
+              <div role="cell" data-label="Meaning">
+                {roleDescription(role)}
+              </div>
+              <div role="cell" data-label="Status">
                 <PermissionStatus on={roleCan(policy, role, selectedPermission)} />
               </div>
-            </article>
+            </div>
           ))}
         </div>
       ) : null}
@@ -621,17 +492,13 @@ export default function SettingsRoles() {
 
         if (!alive) return;
 
-        const roles = policyData?.roles || null;
+        const roles = businessPolicyOnly(policyData?.roles || null);
         const roleNames = roles ? Object.keys(roles) : [];
 
-        setMyRole(me?.role || null);
+        setMyRole(isBusinessRole(me?.role) ? me?.role : null);
         setPolicy(roles);
 
-        const preferredRole =
-          roleNames.find((role) => normalizeRole(role) === "OWNER") ||
-          roleNames[0] ||
-          "";
-
+        const preferredRole = roleNames.find((role) => normalizeRole(role) === "OWNER") || roleNames[0] || "";
         setSelectedRole(preferredRole);
 
         const allPermissions = new Set();
@@ -667,7 +534,7 @@ export default function SettingsRoles() {
   const roleNames = useMemo(() => {
     if (!policy) return [];
 
-    return Object.keys(policy).sort((a, b) => {
+    return Object.keys(policy).filter(isBusinessRole).sort((a, b) => {
       const rank = {
         OWNER: 1,
         MANAGER: 2,
@@ -686,8 +553,8 @@ export default function SettingsRoles() {
 
     const permissions = new Set();
 
-    Object.values(policy).forEach((items) => {
-      if (!Array.isArray(items)) return;
+    Object.entries(policy).forEach(([role, items]) => {
+      if (!isBusinessRole(role) || !Array.isArray(items)) return;
       items.forEach((permission) => permissions.add(permission));
     });
 
@@ -730,10 +597,7 @@ export default function SettingsRoles() {
     ];
 
     return Array.from(groups.entries())
-      .map(([group, rows]) => ({
-        group,
-        rows,
-      }))
+      .map(([group, rows]) => ({ group, rows }))
       .sort((a, b) => preferredOrder.indexOf(a.group) - preferredOrder.indexOf(b.group));
   }, [allPermissions]);
 
@@ -742,76 +606,49 @@ export default function SettingsRoles() {
     return Array.isArray(policy[selectedRole]) ? policy[selectedRole] : [];
   }, [policy, selectedRole]);
 
+  const areaRows = useMemo(() => {
+    if (!policy || !selectedRole) return [];
+    return buildAreaRows({ role: selectedRole, policy, groups: groupedPermissions });
+  }, [groupedPermissions, policy, selectedRole]);
+
   if (loading) {
     return <PageSkeleton titleWidth="w-56" lines={2} showTable={false} />;
   }
 
   if (!policy) {
     return (
-      <div className={cx(pageCard(), "p-6")}>
+      <div className={cx(pageCard(), "p-6")}> 
         <div className={cx("text-lg font-black", strongText())}>Roles & permissions</div>
-        <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>
-          Role policy is not available right now.
-        </p>
+        <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>Role policy is not available right now.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-w-0 space-y-6 overflow-x-hidden">
-      <section className={cx(pageCard(), "overflow-hidden")}>
-        <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <SectionHeading
-              eyebrow="Roles"
-              title="Roles & permissions"
-              subtitle="See what each staff role can do inside the store. The rules shown here come from the backend access policy."
-            />
-
-            <div className="flex flex-wrap gap-2">
-              <Badge tone="success">Policy controlled</Badge>
-              {myRole ? <Badge tone="primary">My role: {roleLabel(myRole)}</Badge> : null}
-              <Badge tone="neutral">{roleNames.length} roles</Badge>
-            </div>
-          </div>
+    <div className="svx-settings-page svx-settings-roles min-w-0 space-y-6 overflow-x-hidden">
+      <section className={cx(pageCard(), "svx-roles-hero")}> 
+        <div>
+          <SectionHeading
+            eyebrow="Roles"
+            title="Roles & permissions"
+            subtitle="See what each staff role can do. This page summarizes backend access rules in plain business language."
+          />
         </div>
 
-        <div className="grid grid-cols-1 gap-3 px-5 py-5 md:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard
-            label="Roles"
-            value={roleNames.length}
-            note="Staff categories available in this store"
-            tone="primary"
-          />
-
-          <SummaryCard
-            label="Permissions"
-            value={allPermissions.length}
-            note="Access rules controlled by backend policy"
-            tone="success"
-          />
-
-          <SummaryCard
-            label="Owner"
-            value={(policy.OWNER || []).length}
-            note="Full store control"
-            tone="warning"
-          />
-
-          <SummaryCard
-            label="Manager"
-            value={(policy.MANAGER || []).length}
-            note="Operational access without owner-only billing and staff powers"
-            tone="info"
-          />
+        <div className="svx-roles-hero-badges">
+          <Badge tone="success">Policy controlled</Badge>
+          {myRole ? <Badge tone="primary">My role: {roleLabel(myRole)}</Badge> : null}
+          <Badge tone="neutral">{roleNames.length} roles</Badge>
         </div>
       </section>
 
+     
+
       <RoleSwitcher roles={roleNames} selectedRole={selectedRole} onSelect={setSelectedRole} />
 
-      <RoleOverview role={selectedRole} permissions={selectedRolePermissions} />
+      <RoleOverview role={selectedRole} permissions={selectedRolePermissions} areaRows={areaRows} />
 
-      <GroupedPermissions role={selectedRole} policy={policy} groups={groupedPermissions} />
+      <AccessTable role={selectedRole} areaRows={areaRows} />
 
       <CompareRoles
         roles={roleNames}
@@ -821,22 +658,15 @@ export default function SettingsRoles() {
         permissions={allPermissions}
       />
 
-      <section className={cx(pageCard(), "p-5 sm:p-6")}>
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-          <div>
-            <div className={cx("text-lg font-black tracking-[-0.03em]", strongText())}>
-              Need to change someone’s role?
-            </div>
-            <p className={cx("mt-2 max-w-2xl text-sm font-semibold leading-6", mutedText())}>
-              Role changes should be done from Members so every staff account stays tied to the
-              right role and branch access.
-            </p>
-          </div>
-
-          <Link to="/app/settings/members" className={primaryBtn()}>
-            Open members
-          </Link>
+      <section className={cx(pageCard(), "svx-roles-members-card")}> 
+        <div>
+          <strong>Need to change someone’s role?</strong>
+          <p>Role changes should be done from Members so every staff account stays tied to the right role and branch access.</p>
         </div>
+
+        <Link to="/app/settings/members" className="svx-roles-primary-link">
+          Open members
+        </Link>
       </section>
     </div>
   );

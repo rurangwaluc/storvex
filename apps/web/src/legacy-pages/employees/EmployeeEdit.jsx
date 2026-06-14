@@ -377,7 +377,7 @@ export default function EmployeeEdit({ employee, onSaved, onCancel, canEdit = tr
   }
 
   return (
-    <form onSubmit={submit} className={cx(pageCard(), "overflow-hidden")}>
+    <form onSubmit={submit} className={cx(pageCard(), "svx-member-editor-form overflow-hidden")}>
       <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-3xl">
@@ -393,16 +393,7 @@ export default function EmployeeEdit({ employee, onSaved, onCancel, canEdit = tr
               <button type="button" onClick={onCancel} disabled={saving} className={secondaryBtn()}>
                 Close
               </button>
-            ) : null}
-
-            <button
-              type="submit"
-              disabled={saving || isProtectedOwner || loadingBranches}
-              className={primaryBtn()}
-            >
-              {saving ? "Saving..." : "Save changes"}
-            </button>
-          </div>
+            ) : null}          </div>
         </div>
       </div>
 

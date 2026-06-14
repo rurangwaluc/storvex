@@ -1,4 +1,3 @@
-// frontend-stores/src/pages/Billing/Renew.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -522,7 +521,7 @@ function PlanCard({ plan, active, disabled, reason, onSelect }) {
 }
 
 function EnterpriseRequiredPanel({
-  tenantName,
+  storeName,
   activeStaff,
   activeBranches,
   maxStaffLimit,
@@ -542,7 +541,7 @@ function EnterpriseRequiredPanel({
           </h3>
 
           <p className={cx("mt-3 max-w-3xl text-sm font-semibold leading-6", mutedText())}>
-            Standard self-service renewal supports up to {maxStaffLimit || 10} staff. {tenantName}
+            Standard self-service renewal supports up to {maxStaffLimit || 10} staff. {storeName}
             currently has {activeStaff} active staff and {activeBranches} active branch
             {activeBranches === 1 ? "" : "es"}, so it should be handled through a custom plan.
           </p>
@@ -584,7 +583,7 @@ function EnterpriseRequiredPanel({
   );
 }
 
-function TopRecoveryBar({ tenantName, sub, isDark, onToggleTheme }) {
+function TopRecoveryBar({ storeName, sub, isDark, onToggleTheme }) {
   const meta = statusMeta(sub);
 
   return (
@@ -596,7 +595,7 @@ function TopRecoveryBar({ tenantName, sub, isDark, onToggleTheme }) {
           </div>
 
           <div className={cx("mt-1 truncate text-lg font-black tracking-tight", strongText())}>
-            {tenantName}
+            {storeName}
           </div>
 
           <div className={cx("mt-1 text-sm font-semibold leading-6", mutedText())}>
@@ -688,8 +687,8 @@ export default function Renew() {
 
         setMe(meData || null);
 
-        if (!phone && meData?.tenant?.phone) {
-          setPhone(meData.tenant.phone);
+        if (!phone && meData?.store?.phone) {
+          setPhone(meData.store.phone);
         }
 
         const list = Array.isArray(planData?.plans) ? planData.plans : [];
@@ -835,7 +834,7 @@ export default function Renew() {
   }
 
   const sub = me?.subscription || null;
-  const tenantName = me?.tenant?.name || "Your store";
+  const storeName = me?.store?.name || "Your store";
   const subMeta = statusMeta(sub);
 
   const daysLeft = daysUntil(sub?.endDate);
@@ -844,7 +843,7 @@ export default function Renew() {
   return (
     <div className={pageShell()}>
       <TopRecoveryBar
-        tenantName={tenantName}
+        storeName={storeName}
         sub={sub}
         isDark={isDark}
         onToggleTheme={toggleTheme}
@@ -853,7 +852,7 @@ export default function Renew() {
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {enterpriseRequired ? (
           <EnterpriseRequiredPanel
-            tenantName={tenantName}
+            storeName={storeName}
             activeStaff={activeStaff}
             activeBranches={activeBranches}
             maxStaffLimit={grouped.maxStaffLimit}
@@ -874,7 +873,7 @@ export default function Renew() {
                 <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-3">
                   <InfoStat
                     label="Store"
-                    value={tenantName}
+                    value={storeName}
                     sub={`Access mode: ${sub?.accessMode || "—"}`}
                   />
 

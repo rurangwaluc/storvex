@@ -1,0 +1,908 @@
+/* Billing settings command structure.
+   Built around the Storvex landing foundation: #06111f page, #1f1f20 cards, #0d1d32 panels. */
+.svx-billing-page {
+  --billing-card: #ffffff;
+  --billing-panel: #f7faff;
+  --billing-text: #0d1b3e;
+  --billing-muted: #5f6b84;
+  --billing-border: rgba(13, 27, 62, 0.12);
+  --billing-primary: #2563eb;
+  --billing-primary-soft: #eef6ff;
+
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+  color: var(--billing-text);
+  animation: svxBillingPageIn 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes svxBillingPageIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.svx-billing-page > * {
+  min-width: 0;
+  animation: svxBillingCardIn 430ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes svxBillingCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.svx-billing-command,
+.svx-billing-card {
+  border: 1px solid var(--billing-border);
+  border-radius: 22px;
+  background: var(--billing-card);
+  box-shadow: 0 18px 46px rgba(15, 45, 90, 0.055);
+}
+
+.svx-billing-command {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  padding: 22px;
+}
+
+.svx-billing-command-main > span,
+.svx-billing-card-head span,
+.svx-billing-selected > span,
+.svx-billing-current-meta span,
+.svx-billing-renewal-panel label > span,
+.svx-billing-capacity-line strong,
+.svx-billing-history-row.is-head span,
+.svx-billing-payment-ref span {
+  color: var(--billing-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.svx-billing-command-main h2 {
+  margin: 10px 0 0;
+  color: var(--billing-text);
+  font-size: clamp(25px, 2.3vw, 34px);
+  font-weight: 950;
+  letter-spacing: -0.055em;
+  line-height: 1.02;
+}
+
+.svx-billing-command-main p,
+.svx-billing-card-head p {
+  margin: 10px 0 0;
+  max-width: 720px;
+  color: var(--billing-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.svx-billing-command-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.svx-billing-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+  gap: 18px;
+}
+
+.svx-billing-card {
+  padding: 20px;
+}
+
+.svx-billing-card-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.svx-billing-card-head h3 {
+  margin: 8px 0 0;
+  color: var(--billing-text);
+  font-size: clamp(20px, 1.7vw, 26px);
+  font-weight: 950;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.svx-billing-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 0 11px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.svx-billing-badge.is-primary {
+  background: var(--billing-primary-soft);
+  color: var(--billing-primary);
+}
+
+.svx-billing-badge.is-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.svx-billing-badge.is-warning {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.svx-billing-badge.is-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+.svx-billing-badge.is-info {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0284c7;
+}
+
+.svx-billing-badge.is-neutral {
+  background: var(--billing-panel);
+  color: var(--billing-muted);
+}
+
+.svx-billing-current-amount {
+  margin-top: 26px;
+  color: var(--billing-text);
+  font-size: clamp(32px, 4.4vw, 58px);
+  font-weight: 950;
+  letter-spacing: -0.07em;
+  line-height: 0.95;
+}
+
+.svx-billing-current-amount span {
+  margin-left: 8px;
+  color: var(--billing-muted);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: normal;
+}
+
+.svx-billing-current-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.svx-billing-current-meta > div,
+.svx-billing-capacity-line,
+.svx-billing-renewal-panel,
+.svx-billing-mini-grid > div,
+.svx-billing-history-row > div,
+.svx-billing-empty {
+  border: 1px solid var(--billing-border);
+  border-radius: 16px;
+  background: var(--billing-panel);
+}
+
+.svx-billing-current-meta > div {
+  min-width: 0;
+  padding: 14px;
+}
+
+.svx-billing-current-meta strong,
+.svx-billing-selected strong,
+.svx-billing-capacity-line div > span,
+.svx-billing-history-row strong {
+  display: block;
+  overflow: hidden;
+  color: var(--billing-text);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-billing-current-meta small {
+  display: block;
+  margin-top: 5px;
+  color: var(--billing-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.svx-billing-capacity {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.svx-billing-capacity-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 14px;
+}
+
+.svx-billing-capacity-line div > span {
+  margin-top: 6px;
+  color: var(--billing-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.svx-billing-progress {
+  grid-column: 1 / -1;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--billing-panel) 70%, var(--billing-card));
+}
+
+.svx-billing-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--billing-primary);
+}
+
+.svx-billing-progress[data-tone="success"] span {
+  background: #10b981;
+}
+
+.svx-billing-progress[data-tone="warning"] span {
+  background: #f59e0b;
+}
+
+.svx-billing-progress[data-tone="danger"] span {
+  background: #ef4444;
+}
+
+.svx-billing-renewal {
+  padding: 0;
+  overflow: hidden;
+}
+
+.svx-billing-renewal > .svx-billing-card-head {
+  padding: 20px;
+  border-bottom: 1px solid var(--billing-border);
+}
+
+.svx-billing-renewal-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 18px;
+  padding: 20px;
+}
+
+.svx-billing-plan-list {
+  display: grid;
+  gap: 12px;
+}
+
+.svx-billing-plan-row {
+  display: grid;
+  gap: 11px;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--billing-border);
+  border-radius: 18px;
+  background: var(--billing-card);
+  padding: 15px;
+  text-align: left;
+  transition: 180ms ease;
+}
+
+.svx-billing-plan-row:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--billing-primary) 40%, var(--billing-border));
+}
+
+.svx-billing-plan-row.is-active {
+  border-color: var(--billing-primary);
+  background: var(--billing-primary-soft);
+  box-shadow: 0 16px 36px rgba(37, 99, 235, 0.08);
+}
+
+.svx-billing-plan-main,
+.svx-billing-plan-top {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.svx-billing-plan-main strong {
+  color: var(--billing-text);
+  font-size: 18px;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.svx-billing-plan-main p,
+.svx-billing-plan-note {
+  margin: 4px 0 0;
+  color: var(--billing-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.svx-billing-plan-main > span {
+  flex: 0 0 auto;
+  color: var(--billing-text);
+  font-size: 14px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.svx-billing-plan-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.svx-billing-plan-features span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  border-radius: 999px;
+  background: var(--billing-panel);
+  color: var(--billing-muted);
+  padding: 0 10px;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.svx-billing-plan-features svg {
+  color: #10b981;
+}
+
+.svx-billing-renewal-panel {
+  display: grid;
+  align-content: start;
+  gap: 13px;
+  padding: 15px;
+}
+
+.svx-billing-selected {
+  border-bottom: 1px solid var(--billing-border);
+  padding-bottom: 13px;
+}
+
+.svx-billing-selected p {
+  margin: 6px 0 0;
+  color: var(--billing-muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.svx-billing-renewal-panel label {
+  display: grid;
+  gap: 8px;
+}
+
+.svx-billing-renewal-panel input,
+.svx-billing-renewal-panel select,
+.svx-billing-page .app-input {
+  min-height: 46px;
+  border: 1px solid var(--billing-border);
+  border-radius: 14px;
+  background: var(--billing-panel);
+  color: var(--billing-text);
+  padding: 0 14px;
+  outline: none;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.svx-billing-renewal-panel input:focus,
+.svx-billing-page .app-input:focus {
+  border-color: var(--billing-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--billing-primary) 16%, transparent);
+}
+
+.svx-billing-primary-btn,
+.svx-billing-secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 14px;
+  padding: 0 16px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 950;
+  transition: 180ms ease;
+}
+
+.svx-billing-primary-btn {
+  border: 1px solid var(--billing-primary);
+  background: var(--billing-primary);
+  color: #ffffff;
+}
+
+.svx-billing-secondary-btn {
+  border: 1px solid var(--billing-border);
+  background: var(--billing-card);
+  color: var(--billing-text);
+}
+
+.svx-billing-warning,
+.svx-billing-payment-ref {
+  border-radius: 14px;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.svx-billing-warning {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+}
+
+.svx-billing-payment-ref {
+  background: var(--billing-card);
+  color: var(--billing-muted);
+}
+
+.svx-billing-payment-ref strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--billing-text);
+  word-break: break-word;
+}
+
+.svx-billing-payment-ref p {
+  margin: 5px 0 0;
+}
+
+.svx-billing-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.svx-billing-history,
+.svx-billing-empty {
+  padding: 0;
+  overflow: hidden;
+}
+
+.svx-billing-empty {
+  padding: 26px;
+  text-align: center;
+}
+
+.svx-billing-empty strong {
+  display: block;
+  color: var(--billing-text);
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.svx-billing-empty p {
+  margin: 8px auto 0;
+  max-width: 520px;
+  color: var(--billing-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.svx-billing-history > .svx-billing-card-head {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--billing-border);
+}
+
+.svx-billing-history-table {
+  display: grid;
+}
+
+.svx-billing-history-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) minmax(120px, 0.8fr) minmax(110px, 0.7fr) minmax(110px, 0.8fr) minmax(130px, 0.8fr);
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--billing-border);
+  padding: 13px 20px;
+}
+
+.svx-billing-history-row:last-child {
+  border-bottom: 0;
+}
+
+.svx-billing-history-row.is-head {
+  background: var(--billing-panel);
+  padding-block: 11px;
+}
+
+.svx-billing-history-row small {
+  display: block;
+  margin-top: 4px;
+  color: var(--billing-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.svx-billing-history-row > div {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--billing-text);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+:root[data-theme="dark"] .svx-billing-page {
+  --billing-card: #1f1f20;
+  --billing-panel: rgba(13, 29, 50, 0.74);
+  --billing-text: #ffffff;
+  --billing-muted: rgba(255, 255, 255, 0.72);
+  --billing-border: rgba(255, 255, 255, 0.105);
+  --billing-primary: #159cff;
+  --billing-primary-soft: rgba(21, 156, 255, 0.12);
+}
+
+:root[data-theme="dark"] .svx-billing-command,
+:root[data-theme="dark"] .svx-billing-card {
+  border-color: rgba(255, 255, 255, 0.105);
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.025), transparent 34%),
+    #1f1f20;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme="dark"] .svx-billing-current-meta > div,
+:root[data-theme="dark"] .svx-billing-capacity-line,
+:root[data-theme="dark"] .svx-billing-renewal-panel,
+:root[data-theme="dark"] .svx-billing-mini-grid > div,
+:root[data-theme="dark"] .svx-billing-history-row > div,
+:root[data-theme="dark"] .svx-billing-empty,
+:root[data-theme="dark"] .svx-billing-plan-features span,
+:root[data-theme="dark"] .svx-billing-payment-ref,
+:root[data-theme="dark"] .svx-billing-history-row.is-head {
+  border-color: rgba(255, 255, 255, 0.09);
+  background: rgba(13, 29, 50, 0.64);
+}
+
+:root[data-theme="dark"] .svx-billing-plan-row {
+  border-color: rgba(255, 255, 255, 0.09);
+  background: rgba(31, 31, 32, 0.72);
+}
+
+:root[data-theme="dark"] .svx-billing-plan-row.is-active {
+  border-color: rgba(21, 156, 255, 0.72);
+  background: rgba(13, 29, 50, 0.92);
+  box-shadow: 0 20px 44px rgba(21, 156, 255, 0.08);
+}
+
+:root[data-theme="dark"] .svx-billing-renewal-panel input,
+:root[data-theme="dark"] .svx-billing-renewal-panel select,
+:root[data-theme="dark"] .svx-billing-page .app-input {
+  border-color: rgba(255, 255, 255, 0.09);
+  background: rgba(13, 29, 50, 0.64);
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .svx-billing-renewal-panel input::placeholder {
+  color: rgba(255, 255, 255, 0.52);
+}
+
+:root[data-theme="dark"] .svx-billing-secondary-btn {
+  border-color: rgba(255, 255, 255, 0.09);
+  background: rgba(31, 31, 32, 0.72);
+  color: #ffffff;
+}
+
+@media (max-width: 1180px) {
+  .svx-billing-grid,
+  .svx-billing-renewal-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-billing-capacity {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 920px) {
+  .svx-billing-command {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-billing-command-actions {
+    justify-content: flex-start;
+  }
+
+  .svx-billing-current-meta,
+  .svx-billing-mini-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-billing-history-row,
+  .svx-billing-history-row.is-head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-billing-history-row.is-head {
+    display: none;
+  }
+
+  .svx-billing-history-row > div::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    color: var(--billing-muted);
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+}
+
+@media (min-width: 390px) and (max-width: 720px) {
+  .svx-billing-page {
+    gap: 14px;
+  }
+
+  .svx-billing-command,
+  .svx-billing-card {
+    border-radius: 18px;
+  }
+
+  .svx-billing-command,
+  .svx-billing-card,
+  .svx-billing-renewal > .svx-billing-card-head,
+  .svx-billing-renewal-layout {
+    padding: 16px;
+  }
+
+  .svx-billing-capacity,
+  .svx-billing-plan-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-billing-plan-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-billing-plan-main > span {
+    white-space: normal;
+  }
+
+  .svx-billing-plan-features {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-billing-plan-features span {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 389px) {
+  .svx-billing-command-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-billing-command-actions > *,
+  .svx-billing-primary-btn,
+  .svx-billing-secondary-btn {
+    width: 100%;
+  }
+
+  .svx-billing-plan-features {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-billing-page,
+  .svx-billing-page > * {
+    animation: none !important;
+  }
+}
+
+
+/* Owner-first billing simplification: hide technical noise and reduce decision load. */
+.svx-billing-command-main h2 {
+  max-width: 760px;
+}
+
+.svx-billing-grid {
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+
+.svx-billing-current {
+  min-height: 308px;
+}
+
+.svx-billing-current-amount {
+  margin-top: 20px;
+}
+
+.svx-billing-current-meta {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 20px;
+}
+
+.svx-billing-capacity {
+  gap: 10px;
+}
+
+.svx-billing-renewal > .svx-billing-card-head {
+  padding-bottom: 16px;
+}
+
+.svx-billing-renewal-layout {
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 14px;
+}
+
+.svx-billing-plan-row {
+  gap: 8px;
+  padding: 14px;
+}
+
+.svx-billing-plan-main strong {
+  font-size: 17px;
+}
+
+.svx-billing-plan-main > span {
+  font-size: 13px;
+}
+
+.svx-billing-plan-note {
+  max-width: 680px;
+}
+
+.svx-billing-plan-features {
+  gap: 6px;
+}
+
+.svx-billing-plan-features span {
+  min-height: 24px;
+  padding-inline: 9px;
+  font-size: 10.5px;
+}
+
+.svx-billing-renewal-panel {
+  gap: 12px;
+}
+
+.svx-billing-empty {
+  padding: 22px;
+}
+
+.svx-billing-empty strong {
+  font-size: 17px;
+}
+
+.svx-billing-empty p {
+  font-size: 13px;
+}
+
+@media (max-width: 1180px) {
+  .svx-billing-grid,
+  .svx-billing-renewal-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-billing-capacity {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-billing-renewal-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+  }
+
+  .svx-billing-selected {
+    grid-column: 1 / -1;
+  }
+
+  .svx-billing-warning,
+  .svx-billing-payment-ref {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-billing-current-meta,
+  .svx-billing-capacity,
+  .svx-billing-renewal-panel {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-billing-plan-features {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+
+/* Billing button hierarchy: only payment request should feel primary. */
+.svx-billing-command-actions .svx-billing-refresh-soft {
+  min-height: 34px;
+  border-radius: 999px;
+  padding-inline: 13px;
+  background: var(--billing-panel);
+  color: var(--billing-text);
+  box-shadow: none;
+  font-size: 12px;
+}
+
+.svx-billing-command-actions .svx-billing-refresh-soft:hover {
+  border-color: color-mix(in srgb, var(--billing-primary) 28%, var(--billing-border));
+  background: color-mix(in srgb, var(--billing-primary-soft) 46%, var(--billing-panel));
+}
+
+.svx-billing-renewal-panel .svx-billing-primary-btn {
+  min-height: 46px;
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--billing-primary) 22%, transparent);
+}
+
+.svx-billing-renewal-panel .svx-billing-payment-status-btn {
+  min-height: 42px;
+  border-color: var(--billing-border);
+  background: var(--billing-panel);
+  color: var(--billing-text);
+  box-shadow: none;
+}
+
+.svx-billing-renewal-panel .svx-billing-payment-status-btn:hover {
+  border-color: color-mix(in srgb, var(--billing-primary) 30%, var(--billing-border));
+  background: color-mix(in srgb, var(--billing-primary-soft) 44%, var(--billing-panel));
+}
+
+:root[data-theme="dark"] .svx-billing-command-actions .svx-billing-refresh-soft,
+:root[data-theme="dark"] .svx-billing-renewal-panel .svx-billing-payment-status-btn {
+  border-color: rgba(255, 255, 255, 0.09);
+  background: rgba(13, 29, 50, 0.64);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+:root[data-theme="dark"] .svx-billing-command-actions .svx-billing-refresh-soft:hover,
+:root[data-theme="dark"] .svx-billing-renewal-panel .svx-billing-payment-status-btn:hover {
+  border-color: rgba(21, 156, 255, 0.34);
+  background: rgba(21, 156, 255, 0.12);
+  color: #ffffff;
+}
+
+@media (max-width: 389px) {
+  .svx-billing-command-actions .svx-billing-refresh-soft {
+    width: auto;
+    justify-self: start;
+  }
+}

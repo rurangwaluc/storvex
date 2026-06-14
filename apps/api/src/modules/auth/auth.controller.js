@@ -217,7 +217,7 @@ function buildTenantCreateData(intent, ownerEmail, ownerPhone) {
     status: "ACTIVE",
   };
 
-  if (fieldExists(prisma.tenant, "shopType")) data.shopType = cleanString(intent.shopType);
+  if (fieldExists(prisma.tenant, "shopType")) data.shopType = normalizeBusinessCategory(intent.shopType);
   if (fieldExists(prisma.tenant, "district")) data.district = cleanString(intent.district);
   if (fieldExists(prisma.tenant, "sector")) data.sector = cleanString(intent.sector);
   if (fieldExists(prisma.tenant, "address")) data.address = cleanString(intent.address);

@@ -391,7 +391,7 @@ export default function EmployeeCreate({ onSaved, onCancel, canCreate = true }) 
   }
 
   return (
-    <form onSubmit={submit} className={cx(pageCard(), "overflow-hidden")}>
+    <form onSubmit={submit} className={cx(pageCard(), "svx-member-editor-form overflow-hidden")}>
       <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-3xl">
@@ -407,12 +407,7 @@ export default function EmployeeCreate({ onSaved, onCancel, canCreate = true }) 
               <button type="button" onClick={onCancel} disabled={saving} className={secondaryBtn()}>
                 Close
               </button>
-            ) : null}
-
-            <button type="submit" disabled={saving || loadingBranches} className={primaryBtn()}>
-              {saving ? "Creating..." : "Create member"}
-            </button>
-          </div>
+            ) : null}          </div>
         </div>
       </div>
 

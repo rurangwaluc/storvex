@@ -13,6 +13,8 @@ import {
   revokeSecuritySession,
   revokeOtherSecuritySessions,
 } from "../../services/securityApi";
+import "./Settings.css";
+import "./SettingsSecurity.css";
 
 const INITIAL_SESSIONS_VISIBLE = 3;
 const INITIAL_LOGIN_EVENTS_VISIBLE = 5;
@@ -22,60 +24,20 @@ function cx(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
-function strongText() {
-  return "text-[var(--color-text)]";
-}
-
-function mutedText() {
-  return "text-[var(--color-text-muted)]";
-}
-
-function softText() {
-  return "text-[var(--color-text-muted)]";
+function cleanString(value) {
+  return String(value || "").trim();
 }
 
 function pageCard() {
-  return "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-}
-
-function softPanel() {
-  return "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
-}
-
-function primaryBtn() {
-  return "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-5 text-sm font-black text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function secondaryBtn() {
-  return "inline-flex h-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-5 text-sm font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function successBadge() {
-  return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300";
-}
-
-function infoBadge() {
-  return "bg-sky-500/10 text-sky-600 dark:text-sky-300";
-}
-
-function warningBadge() {
-  return "bg-amber-500/10 text-amber-600 dark:text-amber-300";
-}
-
-function processBadge() {
-  return "bg-violet-500/10 text-violet-600 dark:text-violet-300";
-}
-
-function neutralBadge() {
-  return "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
-}
-
-function fieldLabel() {
-  return "mb-1.5 block text-sm font-black text-[var(--color-text)]";
+  return "svx-security-card";
 }
 
 function inputClass() {
-  return "app-input";
+  return "svx-security-input";
+}
+
+function fieldLabel() {
+  return "svx-security-label";
 }
 
 function formatDateTime(value) {
@@ -113,136 +75,54 @@ function formatTimeAgo(value) {
   return `${days} day${days > 1 ? "s" : ""} ago`;
 }
 
-function SectionHeading({ eyebrow, title, subtitle }) {
+function securityButton(tone = "secondary") {
+  if (tone === "primary") return "svx-security-button is-primary";
+  if (tone === "danger") return "svx-security-button is-danger";
+  return "svx-security-button is-secondary";
+}
+
+function securityTone(tone = "neutral") {
+  if (tone === "success") return "is-success";
+  if (tone === "warning") return "is-warning";
+  if (tone === "danger") return "is-danger";
+  if (tone === "process") return "is-process";
+  if (tone === "info") return "is-info";
+  return "is-neutral";
+}
+
+function Pill({ tone = "neutral", children }) {
+  return <span className={cx("svx-security-pill", securityTone(tone))}>{children}</span>;
+}
+
+function SectionHeader({ eyebrow, title, subtitle, action = null, compact = false }) {
   return (
-    <div>
-      {eyebrow ? (
-        <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>
-          {eyebrow}
-        </div>
-      ) : null}
-
-      <h2
-        className={cx(
-          "mt-3 text-[1.55rem] font-black tracking-[-0.04em] sm:text-[1.9rem]",
-          strongText(),
-        )}
-      >
-        {title}
-      </h2>
-
-      {subtitle ? (
-        <p className={cx("mt-3 max-w-3xl text-sm font-semibold leading-6", mutedText())}>
-          {subtitle}
-        </p>
-      ) : null}
+    <div className={cx("svx-security-section-head", compact && "is-compact")}> 
+      <div>
+        {eyebrow ? <p className="svx-security-eyebrow">{eyebrow}</p> : null}
+        <h2>{title}</h2>
+        {subtitle ? <p className="svx-security-section-text">{subtitle}</p> : null}
+      </div>
+      {action ? <div className="svx-security-section-action">{action}</div> : null}
     </div>
   );
 }
 
-function SummaryCard({ label, value, note, tone = "neutral" }) {
-  const toneClass =
-    tone === "success"
-      ? "text-emerald-600 dark:text-emerald-300"
-      : tone === "warning"
-        ? "text-amber-600 dark:text-amber-300"
-        : tone === "danger"
-          ? "text-[var(--color-danger)]"
-          : strongText();
-
-  const accentClass =
-    tone === "success"
-      ? "bg-emerald-500"
-      : tone === "warning"
-        ? "bg-amber-500"
-        : tone === "danger"
-          ? "bg-[var(--color-danger)]"
-          : "bg-[var(--color-primary)]";
-
+function MetricCard({ label, value, note, tone = "neutral" }) {
   return (
-    <article className={cx(pageCard(), "relative min-h-[132px] overflow-hidden p-5 sm:p-6")}>
-      <div className={cx("absolute left-0 top-0 h-full w-1.5", accentClass)} />
-
-      <div className="pl-2">
-        <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>
-          {label}
-        </div>
-
-        <div className={cx("mt-2 text-[1.65rem] font-black tracking-[-0.04em]", toneClass)}>
-          {value}
-        </div>
-
-        {note ? (
-          <div className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>{note}</div>
-        ) : null}
-      </div>
+    <article className={cx("svx-security-metric", securityTone(tone))}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      {note ? <p>{note}</p> : null}
     </article>
   );
 }
 
-function InfoStat({ label, value, sub }) {
+function InfoItem({ label, value }) {
   return (
-    <div className={cx(softPanel(), "p-4")}>
-      <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>
-        {label}
-      </div>
-
-      <div className={cx("mt-2 text-sm font-black leading-6", strongText())}>{value || "—"}</div>
-
-      {sub ? <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>{sub}</div> : null}
+    <div className="svx-security-info-item">
+      <span>{label}</span>
+      <strong>{value || "—"}</strong>
     </div>
-  );
-}
-
-function StepCard({ number, title, text, active = false }) {
-  return (
-    <div
-      className={cx(
-        "rounded-[22px] border p-4 transition",
-        active
-          ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
-          : "border-[var(--color-border)] bg-[var(--color-surface-2)]",
-      )}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className={cx(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-black",
-            active
-              ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)]"
-              : "bg-[var(--color-card)] text-[var(--color-text)]",
-          )}
-        >
-          {number}
-        </div>
-
-        <div className="min-w-0">
-          <div className={cx("text-sm font-black", strongText())}>{title}</div>
-          <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>{text}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProtectionPill({ tone = "neutral", children }) {
-  const cls =
-    tone === "success"
-      ? successBadge()
-      : tone === "info"
-        ? infoBadge()
-        : tone === "warning"
-          ? warningBadge()
-          : tone === "process"
-            ? processBadge()
-            : neutralBadge();
-
-  return (
-    <span
-      className={cx("inline-flex items-center rounded-full px-3 py-1.5 text-xs font-black", cls)}
-    >
-      {children}
-    </span>
   );
 }
 
@@ -264,11 +144,9 @@ function loginEventTone(event) {
 
 function EmptyState({ title, text }) {
   return (
-    <div className={cx(softPanel(), "px-5 py-10 text-center")}>
-      <div className={cx("text-base font-black", strongText())}>{title}</div>
-      <div className={cx("mx-auto mt-2 max-w-md text-sm font-semibold leading-6", mutedText())}>
-        {text}
-      </div>
+    <div className="svx-security-empty">
+      <strong>{title}</strong>
+      <p>{text}</p>
     </div>
   );
 }
@@ -280,17 +158,14 @@ function LoadMorePanel({ visible, total, onLoadMore, label }) {
   const nextCount = Math.min(LOAD_MORE_STEP, remaining);
 
   return (
-    <div className={cx(softPanel(), "mt-4 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between")}>
+    <div className="svx-security-load-more">
       <div>
-        <div className={cx("text-sm font-black", strongText())}>
+        <strong>
           Showing {visible} of {total}
-        </div>
-        <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-          Load more only when you need deeper review.
-        </div>
+        </strong>
+        <p>Load more only when you need deeper review.</p>
       </div>
-
-      <button type="button" onClick={onLoadMore} className={secondaryBtn()}>
+      <button type="button" onClick={onLoadMore} className={securityButton("secondary")}>
         Load {nextCount} more {label}
       </button>
     </div>
@@ -301,68 +176,49 @@ function SessionCard({ session, currentSessionId, busyId, onRevoke }) {
   const isCurrent = session?.id === currentSessionId;
   const busy = busyId === session?.id;
   const tone = sessionTone(session, currentSessionId);
+  const lastActive = formatTimeAgo(session?.lastSeenAt || session?.createdAt);
+  const signedIn = formatDateTime(session?.createdAt);
+  const accessEnds = formatDateTime(session?.expiresAt);
 
   return (
-    <article className={cx(softPanel(), "p-4 sm:p-5")}>
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <ProtectionPill tone={tone}>
-              {isCurrent ? "This device" : session?.isRevoked ? "Signed out" : "Signed in"}
-            </ProtectionPill>
-
-            {session?.deviceLabel ? (
-              <ProtectionPill tone="info">{session.deviceLabel}</ProtectionPill>
-            ) : null}
-          </div>
-
-          <div className={cx("mt-3 text-base font-black tracking-tight", strongText())}>
-            {session?.deviceLabel || "Unknown device"}
-          </div>
-
-          <div className={cx("mt-1 break-words text-sm font-semibold leading-6", mutedText())}>
-            {session?.userAgent || "No device details available"}
-          </div>
-
-          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <InfoStat
-              label="Last active"
-              value={formatTimeAgo(session?.lastSeenAt || session?.createdAt)}
-            />
-            <InfoStat label="Signed in" value={formatDateTime(session?.createdAt)} />
-            <InfoStat label="Address" value={session?.ipAddress || "—"} />
-            <InfoStat label="Access ends" value={formatDateTime(session?.expiresAt)} />
-          </div>
+    <article className="svx-security-session-row">
+      <div className="svx-security-session-main">
+        <div className="svx-security-row-pills">
+          <Pill tone={tone}>{isCurrent ? "Current device" : session?.isRevoked ? "Signed out" : "Signed in"}</Pill>
+          {session?.deviceLabel ? <Pill tone="info">{session.deviceLabel}</Pill> : null}
         </div>
 
-        <div className="shrink-0">
-          {isCurrent ? (
-            <div
-              className={cx(
-                "rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm font-black",
-                mutedText(),
-              )}
-            >
-              Current device
-            </div>
-          ) : (
-            <AsyncButton
-              type="button"
-              loading={busy}
-              loadingText="Signing out..."
-              onClick={() => onRevoke(session.id)}
-              className="bg-[var(--color-danger)] text-white hover:opacity-95"
-            >
-              Sign out device
-            </AsyncButton>
-          )}
-        </div>
+        <h3>{session?.deviceLabel || "Unknown device"}</h3>
+        <p>{session?.userAgent || "No device details available"}</p>
+      </div>
+
+      <div className="svx-security-info-grid">
+        <InfoItem label="Last active" value={lastActive} />
+        <InfoItem label="Signed in" value={signedIn} />
+        <InfoItem label="Address" value={session?.ipAddress || "—"} />
+        <InfoItem label="Access ends" value={accessEnds} />
+      </div>
+
+      <div className="svx-security-row-action">
+        {isCurrent ? (
+          <span className="svx-security-current-device">This device</span>
+        ) : (
+          <AsyncButton
+            type="button"
+            loading={busy}
+            loadingText="Signing out..."
+            onClick={() => onRevoke(session.id)}
+            className={securityButton("danger")}
+          >
+            Sign out
+          </AsyncButton>
+        )}
       </div>
     </article>
   );
 }
 
-function LoginEventCard({ event }) {
+function LoginEventRow({ event }) {
   const tone = loginEventTone(event);
   const status = String(event?.status || "").toUpperCase();
 
@@ -376,35 +232,64 @@ function LoginEventCard({ event }) {
           : "Sign-in event";
 
   return (
-    <article className={cx(softPanel(), "p-4")}>
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <ProtectionPill tone={tone}>{title}</ProtectionPill>
-            {event?.role ? <ProtectionPill tone="info">{event.role}</ProtectionPill> : null}
-          </div>
-
-          <div className={cx("mt-3 text-sm font-black", strongText())}>
-            {event?.deviceLabel || "Unknown device"}
-          </div>
-
-          <div className={cx("mt-1 break-words text-sm font-semibold leading-6", mutedText())}>
-            {event?.email || "No email recorded"}
-          </div>
-
-          {event?.reason ? (
-            <div className={cx("mt-2 text-xs font-semibold leading-5", mutedText())}>
-              Note: {event.reason}
-            </div>
-          ) : null}
+    <article className="svx-security-event-row">
+      <div className="svx-security-event-main">
+        <div className="svx-security-row-pills">
+          <Pill tone={tone}>{title}</Pill>
+          {event?.role ? <Pill tone="info">{event.role}</Pill> : null}
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:min-w-[260px]">
-          <InfoStat label="Time" value={formatDateTime(event?.createdAt)} />
-          <InfoStat label="Address" value={event?.ipAddress || "—"} />
-        </div>
+        <strong>{event?.deviceLabel || "Unknown device"}</strong>
+        <p>{event?.email || "No email recorded"}</p>
+        {event?.reason ? <small>Note: {event.reason}</small> : null}
+      </div>
+
+      <div className="svx-security-event-side">
+        <InfoItem label="Time" value={formatDateTime(event?.createdAt)} />
+        <InfoItem label="Address" value={event?.ipAddress || "—"} />
       </div>
     </article>
+  );
+}
+
+function SecurityNote({ activeSessionsCount, failedAttemptsCount, activeOtherSessionsCount }) {
+  const items = [
+    {
+      label: "Device access",
+      value:
+        activeOtherSessionsCount > 0
+          ? `${activeOtherSessionsCount} other active device${activeOtherSessionsCount === 1 ? "" : "s"}`
+          : "Only this device matters now",
+    },
+    {
+      label: "Sign-in health",
+      value:
+        failedAttemptsCount > 0
+          ? `${failedAttemptsCount} failed or blocked attempt${failedAttemptsCount === 1 ? "" : "s"}`
+          : "No failed attempts found",
+    },
+    {
+      label: "Protection action",
+      value:
+        activeSessionsCount > 1
+          ? "Use sign out other devices if access looks suspicious."
+          : "Change password only when needed.",
+    },
+  ];
+
+  return (
+    <section className={cx(pageCard(), "svx-security-note-card")}>
+      <p className="svx-security-eyebrow">Security note</p>
+      <h3>What matters most</h3>
+      <div className="svx-security-note-list">
+        {items.map((item) => (
+          <div key={item.label}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -502,9 +387,9 @@ export default function SettingsSecurity() {
   const posture = useMemo(() => {
     if (activeSessionsCount <= 0) {
       return {
-        label: "Session unavailable",
+        label: "Needs review",
         tone: "warning",
-        note: "We could not confirm an active device session for this account.",
+        note: "We could not confirm an active device session.",
       };
     }
 
@@ -512,14 +397,14 @@ export default function SettingsSecurity() {
       return {
         label: "Attention needed",
         tone: "process",
-        note: "There were recent blocked or failed sign-in attempts.",
+        note: "Recent failed or blocked sign-ins were found.",
       };
     }
 
     return {
       label: "Protected",
       tone: "success",
-      note: "Your account currently shows a normal active sign-in state.",
+      note: "No urgent account security issue found.",
     };
   }, [activeSessionsCount, failedAttemptsCount]);
 
@@ -626,272 +511,211 @@ export default function SettingsSecurity() {
   ).length;
 
   return (
-    <div className="space-y-6">
-      <section className={cx(pageCard(), "overflow-hidden")}>
-        <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-3xl">
-              <SectionHeading
-                eyebrow="Security"
-                title="Login & security"
-                subtitle="Review signed-in devices, recent account access, and password protection from one clear security screen."
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <ProtectionPill tone={posture.tone}>{posture.label}</ProtectionPill>
-
+    <div className="svx-settings-page svx-settings-security">
+      <section className={cx(pageCard(), "svx-security-hero")}>
+        <SectionHeader
+          eyebrow="Security"
+          title="Login & security"
+          subtitle="Protect owner access, review active devices, and change the password without turning security into a technical report."
+          action={
+            <div className="svx-security-hero-actions">
+              <Pill tone={posture.tone}>{posture.label}</Pill>
               <AsyncButton
                 type="button"
                 loading={refreshing}
                 loadingText="Refreshing..."
                 onClick={() => loadAll(true)}
-                className={secondaryBtn()}
+                className={securityButton("secondary")}
               >
-                Refresh security
+                Refresh
               </AsyncButton>
             </div>
-          </div>
-        </div>
+          }
+        />
 
-        <div className="grid grid-cols-1 gap-3 px-5 py-5 md:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard
+        <div className="svx-security-metrics-grid">
+          <MetricCard
             label="Active devices"
             value={String(activeSessionsCount)}
-            note="Devices that still have access to this account"
+            note="Devices signed into this owner account"
             tone="success"
           />
-
-          <SummaryCard
+          <MetricCard
             label="Recent sign-ins"
             value={String(recentLoginsCount)}
             note="Latest account access records"
-            tone="neutral"
+            tone="info"
           />
-
-          <SummaryCard
-            label="Blocked or failed attempts"
+          <MetricCard
+            label="Failed attempts"
             value={String(failedAttemptsCount)}
-            note="Recent sign-in attempts that did not succeed"
+            note="Blocked or unsuccessful access attempts"
             tone={failedAttemptsCount > 0 ? "warning" : "success"}
           />
-
-          <SummaryCard
-            label="Last password update"
+          <MetricCard
+            label="Password updated"
             value={lastPasswordChange ? formatTimeAgo(lastPasswordChange) : "—"}
-            note={
-              lastPasswordChange
-                ? formatDateTime(lastPasswordChange)
-                : "No password update history yet"
-            }
+            note={lastPasswordChange ? formatDateTime(lastPasswordChange) : "No update history yet"}
             tone="neutral"
           />
         </div>
       </section>
 
-      <section className={cx(pageCard(), "p-5 sm:p-6")}>
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="max-w-3xl">
-            <SectionHeading
-              eyebrow="Current session"
-              title="Trusted device visibility"
-              subtitle="See your current device first, then load more only when deeper device review is needed."
-            />
-          </div>
-
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <AsyncButton
-              type="button"
-              loading={revokingOther}
-              loadingText="Signing out..."
-              onClick={onRevokeOtherSessions}
-              disabled={activeOtherSessionsCount === 0}
-              className={secondaryBtn()}
-            >
-              Sign out other devices
-            </AsyncButton>
-
-            <Link to="/app/settings/audit" className={primaryBtn()}>
-              Open audit logs
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          {sessions.length === 0 ? (
-            <EmptyState
-              title="No device sessions found"
-              text="We could not find any saved device sessions for this account."
-            />
-          ) : (
-            <>
-              <div className="grid grid-cols-1 gap-3">
-                {visibleSessions.map((session) => (
-                  <SessionCard
-                    key={session.id}
-                    session={session}
-                    currentSessionId={currentSessionId}
-                    busyId={revokeBusyId}
-                    onRevoke={onRevokeSession}
-                  />
-                ))}
-              </div>
-
-              <LoadMorePanel
-                visible={visibleSessions.length}
-                total={sessions.length}
-                label="devices"
-                onLoadMore={loadMoreSessions}
-              />
-            </>
-          )}
-        </div>
-      </section>
-
-      <section className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.1fr)_420px]">
-        <div className={cx(pageCard(), "p-5 sm:p-6")}>
-          <SectionHeading
-            eyebrow="Access activity"
-            title="Recent sign-in activity"
-            subtitle="A short review feed by default, with load more for deeper investigation."
+      <section className="svx-security-grid-main">
+        <section className={cx(pageCard(), "svx-security-password-card")}>
+          <SectionHeader
+            eyebrow="Password"
+            title="Change password"
+            subtitle="Use this when access feels risky, a staff device was lost, or the owner password needs rotation."
+            compact
           />
 
-          <div className="mt-6">
-            {loginEvents.length === 0 ? (
-              <EmptyState
-                title="No sign-in activity found"
-                text="Recent account access records will appear here once they are available."
+          <form onSubmit={onChangePassword} className="svx-security-password-form">
+            <div>
+              <label className={fieldLabel()}>Current password</label>
+              <input
+                type="password"
+                className={inputClass()}
+                value={form.currentPassword}
+                onChange={(e) => updateField("currentPassword", e.target.value)}
+                placeholder="Enter current password"
               />
-            ) : (
-              <>
-                <div className="grid grid-cols-1 gap-3">
-                  {visibleLoginEvents.map((event) => (
-                    <LoginEventCard key={event.id} event={event} />
-                  ))}
-                </div>
+            </div>
+            <div>
+              <label className={fieldLabel()}>New password</label>
+              <input
+                type="password"
+                className={inputClass()}
+                value={form.newPassword}
+                onChange={(e) => updateField("newPassword", e.target.value)}
+                placeholder="At least 6 characters"
+              />
+            </div>
+            <div>
+              <label className={fieldLabel()}>Confirm new password</label>
+              <input
+                type="password"
+                className={inputClass()}
+                value={form.confirmPassword}
+                onChange={(e) => updateField("confirmPassword", e.target.value)}
+                placeholder="Re-enter new password"
+              />
+            </div>
 
-                <LoadMorePanel
-                  visible={visibleLoginEvents.length}
-                  total={loginEvents.length}
-                  label="events"
-                  onLoadMore={loadMoreLoginEvents}
-                />
-              </>
-            )}
-          </div>
-        </div>
+            <label className="svx-security-check-row">
+              <input
+                type="checkbox"
+                checked={Boolean(form.revokeOtherSessions)}
+                onChange={(e) => updateField("revokeOtherSessions", e.target.checked)}
+              />
+              <span>
+                <strong>Sign out other devices after password change</strong>
+                <small>Recommended when you want the new password to apply everywhere immediately.</small>
+              </span>
+            </label>
 
-        <div className="space-y-4">
-          <section className={cx(pageCard(), "p-5 sm:p-6")}>
-            <SectionHeading
-              eyebrow="Password control"
-              title="Change password"
-              subtitle="Update your password and remove access from other devices at the same time."
-            />
+            <AsyncButton
+              type="submit"
+              loading={savingPassword}
+              loadingText="Updating..."
+              className={securityButton("primary")}
+            >
+              Update password
+            </AsyncButton>
+          </form>
+        </section>
 
-            <form onSubmit={onChangePassword} className="mt-6 space-y-4">
-              <div>
-                <label className={fieldLabel()}>Current password</label>
-                <input
-                  type="password"
-                  className={inputClass()}
-                  value={form.currentPassword}
-                  onChange={(e) => updateField("currentPassword", e.target.value)}
-                  placeholder="Enter current password"
-                />
-              </div>
+        <SecurityNote
+          activeSessionsCount={activeSessionsCount}
+          failedAttemptsCount={failedAttemptsCount}
+          activeOtherSessionsCount={activeOtherSessionsCount}
+        />
+      </section>
 
-              <div>
-                <label className={fieldLabel()}>New password</label>
-                <input
-                  type="password"
-                  className={inputClass()}
-                  value={form.newPassword}
-                  onChange={(e) => updateField("newPassword", e.target.value)}
-                  placeholder="At least 6 characters"
-                />
-              </div>
-
-              <div>
-                <label className={fieldLabel()}>Confirm new password</label>
-                <input
-                  type="password"
-                  className={inputClass()}
-                  value={form.confirmPassword}
-                  onChange={(e) => updateField("confirmPassword", e.target.value)}
-                  placeholder="Re-enter new password"
-                />
-              </div>
-
-              <label className={cx(softPanel(), "flex items-start gap-3 p-4")}>
-                <input
-                  type="checkbox"
-                  checked={Boolean(form.revokeOtherSessions)}
-                  onChange={(e) => updateField("revokeOtherSessions", e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded"
-                />
-
-                <div>
-                  <div className={cx("text-sm font-black", strongText())}>
-                    Sign out other devices after password change
-                  </div>
-                  <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-                    Recommended when you want the new password to apply everywhere immediately.
-                  </div>
-                </div>
-              </label>
-
+      <section className={cx(pageCard(), "svx-security-devices-card")}>
+        <SectionHeader
+          eyebrow="Devices"
+          title="Signed-in devices"
+          subtitle="Start with the current device. Load more only when the owner needs a deeper security review."
+          action={
+            <div className="svx-security-device-actions">
               <AsyncButton
-                type="submit"
-                loading={savingPassword}
-                loadingText="Updating..."
-                className="w-full"
+                type="button"
+                loading={revokingOther}
+                loadingText="Signing out..."
+                onClick={onRevokeOtherSessions}
+                disabled={activeOtherSessionsCount === 0}
+                className={securityButton("secondary")}
               >
-                Update password
+                Sign out other devices
               </AsyncButton>
-            </form>
-          </section>
-
-          <section className={cx(pageCard(), "p-5 sm:p-6")}>
-            <div className={cx("text-lg font-black tracking-tight", strongText())}>
-              How protection works
+              <Link to="/app/settings/audit" className={securityButton("primary")}>
+                Open audit logs
+              </Link>
             </div>
+          }
+        />
 
-            <div className="mt-4 grid grid-cols-1 gap-3">
-              <StepCard
-                number="1"
-                title="Signed-in device"
-                text="Your account stays active on devices where you have already signed in."
-                active={activeSessionsCount > 0}
-              />
-
-              <StepCard
-                number="2"
-                title="Access tracking"
-                text="Recent sign-ins and failed attempts are recorded so account activity can be reviewed."
-                active
-              />
-
-              <StepCard
-                number="3"
-                title="Password protection"
-                text="Changing your password can also remove access from other devices in one step."
-                active
-              />
+        {sessions.length === 0 ? (
+          <EmptyState
+            title="No device sessions found"
+            text="We could not find any saved device sessions for this account."
+          />
+        ) : (
+          <>
+            <div className="svx-security-session-list">
+              {visibleSessions.map((session) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  currentSessionId={currentSessionId}
+                  busyId={revokeBusyId}
+                  onRevoke={onRevokeSession}
+                />
+              ))}
             </div>
-          </section>
+            <LoadMorePanel
+              visible={visibleSessions.length}
+              total={sessions.length}
+              label="devices"
+              onLoadMore={loadMoreSessions}
+            />
+          </>
+        )}
+      </section>
 
-          <section className={cx(pageCard(), "p-5 sm:p-6")}>
-            <div className={cx("text-lg font-black tracking-tight", strongText())}>
-              Security note
+      <section className={cx(pageCard(), "svx-security-events-card")}>
+        <SectionHeader
+          eyebrow="Recent access"
+          title="Sign-in activity"
+          subtitle="A short security feed for owners. Open audit logs when a full operational investigation is needed."
+          action={
+            <Link to="/app/settings/audit" className={securityButton("secondary")}>
+              Full audit logs
+            </Link>
+          }
+        />
+
+        {loginEvents.length === 0 ? (
+          <EmptyState
+            title="No sign-in activity found"
+            text="Recent account access records will appear here once they are available."
+          />
+        ) : (
+          <>
+            <div className="svx-security-event-list">
+              {visibleLoginEvents.map((event) => (
+                <LoginEventRow key={event.id} event={event} />
+              ))}
             </div>
-
-            <p className={cx("mt-3 text-sm font-semibold leading-6", mutedText())}>
-              This page focuses on what matters most: which devices are signed in, when the
-              account was accessed, and how quickly you can protect it.
-            </p>
-          </section>
-        </div>
+            <LoadMorePanel
+              visible={visibleLoginEvents.length}
+              total={loginEvents.length}
+              label="events"
+              onLoadMore={loadMoreLoginEvents}
+            />
+          </>
+        )}
       </section>
     </div>
   );

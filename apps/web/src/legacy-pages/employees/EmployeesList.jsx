@@ -1,5 +1,6 @@
 // frontend-stores/src/pages/employees/EmployeesList.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { jwtDecode } from "jwt-decode";
 import toast from "react-hot-toast";
 
@@ -15,6 +16,7 @@ import {
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import TableSkeleton from "../../components/ui/TableSkeleton";
+import "./EmployeesList.css";
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
@@ -404,64 +406,119 @@ function PasswordResetDialog({
   onCancel,
   onConfirm,
 }) {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handleEscape(event) {
+      if (event.key === "Escape" && !loading) onCancel?.();
+    }
+
+    document.addEventListener("keydown", handleEscape);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open, loading, onCancel]);
+
   if (!open || !employee) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100]">
-      <div
-        className="absolute inset-0 bg-black/45 backdrop-blur-[3px]"
+  return createPortal(
+    <div className="svx-member-drawer-layer svx-member-reset-layer">
+      <button
+        type="button"
+        className="svx-member-drawer-backdrop"
+        aria-label="Close password reset"
         onClick={loading ? undefined : onCancel}
       />
 
-      <div className="absolute inset-0 flex items-center justify-center p-4">
-        <div className={cx(pageCard(), "w-full max-w-md p-6")}>
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M7 11V8a5 5 0 0110 0v3M5 11h14v10H5V11z"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-
+      <aside className="svx-member-drawer-panel svx-member-reset-panel" role="dialog" aria-modal="true" aria-label="Reset member password">
+        <div className="svx-member-drawer-header">
+          <div className="svx-member-drawer-person">
+            <div className="svx-member-avatar is-large">{initialsFromName(employee.name)}</div>
             <div className="min-w-0">
-              <h3 className={cx("text-lg font-black tracking-tight", strongText())}>
-                Reset password
-              </h3>
-              <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>
-                Set a new temporary password for {employee.name}. Share it privately.
-              </p>
+              <p>Password reset</p>
+              <h3>{employee.name}</h3>
+              <span>{employee.email || "No email recorded"}</span>
             </div>
           </div>
 
-          <div className="mt-5">
-            <label className={cx("text-sm font-black", strongText())}>New password</label>
+          <button type="button" className="svx-member-drawer-close" onClick={onCancel} disabled={loading}>
+            Close
+          </button>
+        </div>
+
+        <div className="svx-member-drawer-body">
+          <section className="svx-member-detail-section">
+            <div className="svx-member-detail-title">New temporary password</div>
+            <p className="svx-member-detail-copy">
+              Set a temporary password and share it privately with this staff member.
+            </p>
+
             <input
               type="text"
-              className="app-input mt-2"
+              className="app-input svx-member-reset-input"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="At least 6 characters"
               disabled={loading}
             />
-          </div>
+          </section>
 
-          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button type="button" onClick={onCancel} disabled={loading} className={secondaryBtn()}>
-              Cancel
-            </button>
-
-            <AsyncButton type="button" loading={loading} onClick={onConfirm} className={primaryBtn()}>
-              Reset password
-            </AsyncButton>
-          </div>
+          <section className="svx-member-detail-section">
+            <div className="svx-member-detail-title">Security note</div>
+            <p className="svx-member-detail-copy">
+              Resetting a password does not change this member’s role or branch access.
+            </p>
+          </section>
         </div>
-      </div>
-    </div>
+
+        <div className="svx-member-drawer-actions">
+          <button type="button" onClick={onCancel} disabled={loading} className={secondaryBtn()}>
+            Cancel
+          </button>
+
+          <AsyncButton type="button" loading={loading} onClick={onConfirm} className={primaryBtn()}>
+            Reset password
+          </AsyncButton>
+        </div>
+      </aside>
+    </div>,
+    document.body,
+  );
+}
+
+function MemberFormDrawer({ open, mode, onClose, children }) {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handleEscape(event) {
+      if (event.key === "Escape") onClose?.();
+    }
+
+    document.addEventListener("keydown", handleEscape);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <div className="svx-member-drawer-layer svx-member-form-layer">
+      <button type="button" className="svx-member-drawer-backdrop" aria-label="Close member form" onClick={onClose} />
+
+      <aside className="svx-member-form-drawer-panel" role="dialog" aria-modal="true" aria-label={mode === "edit" ? "Update member" : "Create member"}>
+        <div className="svx-member-form-drawer-body">{children}</div>
+      </aside>
+    </div>,
+    document.body,
   );
 }
 
@@ -546,11 +603,140 @@ function EmployeesSkeleton() {
   );
 }
 
+function DetailItem({ label, value }) {
+  return (
+    <div className="svx-member-detail-item">
+      <span>{label}</span>
+      <strong>{value || "—"}</strong>
+    </div>
+  );
+}
+
+function MemberDetailsDrawer({
+  employee,
+  open,
+  canManage,
+  rowBusy,
+  onClose,
+  onEdit,
+  onResetPassword,
+  onDeactivate,
+  onReactivate,
+  onDelete,
+}) {
+  useEffect(() => {
+    if (!open) return undefined;
+
+    function handleEscape(event) {
+      if (event.key === "Escape") onClose?.();
+    }
+
+    document.addEventListener("keydown", handleEscape);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open, onClose]);
+
+  if (!open || !employee) return null;
+
+  const inactive = employee.isActive === false;
+  const isOwnerRow = String(employee.role || "").toUpperCase() === "OWNER";
+  const canManageRow = Boolean(canManage && !isOwnerRow);
+  const branches = normalizeEmployeeBranches(employee);
+  const defaultBranch = branches.find((branch) => branch.isDefault) || branches.find((branch) => branch.isMain) || branches[0] || null;
+
+  return createPortal(
+    <div className="svx-member-drawer-layer">
+      <button type="button" className="svx-member-drawer-backdrop" aria-label="Close member details" onClick={onClose} />
+
+      <aside className="svx-member-drawer-panel" aria-label="Member details" role="dialog" aria-modal="true">
+        <div className="svx-member-drawer-header">
+          <div className="svx-member-drawer-person">
+            <div className="svx-member-avatar is-large">{initialsFromName(employee.name)}</div>
+            <div className="min-w-0">
+              <p>Staff profile</p>
+              <h3>{employee.name || "Team member"}</h3>
+              <span>{employee.email || "No email recorded"}</span>
+            </div>
+          </div>
+
+          <button type="button" className="svx-member-drawer-close" onClick={onClose}>
+            Close
+          </button>
+        </div>
+
+        <div className="svx-member-drawer-body">
+          <div className="svx-member-drawer-badges">
+            <RoleBadge role={employee.role} />
+            <StatusBadge active={!inactive} />
+            {isOwnerRow ? <Badge tone="primary">Protected account</Badge> : null}
+          </div>
+
+          <section className="svx-member-detail-grid">
+            <DetailItem label="Phone" value={employee.phone || "—"} />
+            <DetailItem label="Default branch" value={defaultBranch ? branchDisplayName(defaultBranch) : "No branch assigned"} />
+            <DetailItem label="Branch count" value={branches.length ? `${branches.length} branch${branches.length === 1 ? "" : "es"}` : "No branches"} />
+            <DetailItem label="Account state" value={inactive ? "Inactive" : "Active"} />
+          </section>
+
+          <section className="svx-member-detail-section">
+            <div className="svx-member-detail-title">Branch access</div>
+            <div className="svx-member-branch-list">
+              <BranchBadgeList branches={branches} />
+            </div>
+          </section>
+
+          <section className="svx-member-detail-section">
+            <div className="svx-member-detail-title">Access rule</div>
+            <p className="svx-member-detail-copy">
+              This member can only use the role and branch access assigned here. Owner-only controls remain protected.
+            </p>
+          </section>
+        </div>
+
+        <div className="svx-member-drawer-actions">
+          {canManageRow ? (
+            <>
+              <button type="button" className={primaryBtn()} disabled={rowBusy} onClick={() => onEdit(employee)}>
+                Update member
+              </button>
+              <button type="button" className={secondaryBtn()} disabled={rowBusy} onClick={() => onResetPassword(employee)}>
+                Reset password
+              </button>
+              <button
+                type="button"
+                className={secondaryBtn()}
+                disabled={rowBusy}
+                onClick={() => (inactive ? onReactivate(employee) : onDeactivate(employee))}
+              >
+                {inactive ? "Reactivate" : "Deactivate"}
+              </button>
+              <button type="button" className={dangerBtn()} disabled={rowBusy} onClick={() => onDelete(employee)}>
+                Remove
+              </button>
+            </>
+          ) : (
+            <div className={cx("text-sm font-black", mutedText())}>
+              {isOwnerRow ? "Owner account is protected. Details are view-only here." : "You can view this member, but only the owner can update access."}
+            </div>
+          )}
+        </div>
+      </aside>
+    </div>,
+    document.body,
+  );
+}
+
 function RowActionsMenu({
   employee,
   inactive,
   rowBusy,
   canManage,
+  onView,
   onEdit,
   onResetPassword,
   onDeactivate,
@@ -581,7 +767,11 @@ function RowActionsMenu({
   }, []);
 
   if (!canManage) {
-    return <span className={cx("text-xs font-black", mutedText())}>View only</span>;
+    return (
+      <button type="button" className="svx-member-view-button" onClick={() => onView(employee)}>
+        View details
+      </button>
+    );
   }
 
   return (
@@ -606,11 +796,22 @@ function RowActionsMenu({
             type="button"
             onClick={() => {
               setOpen(false);
+              onView(employee);
+            }}
+            className={menuItemClass()}
+          >
+            <span>View details</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
               onEdit(employee);
             }}
             className={menuItemClass()}
           >
-            <span>Edit member</span>
+            <span>Update member</span>
           </button>
 
           <button
@@ -672,6 +873,7 @@ export default function EmployeesList({ embedded = false }) {
   const [list, setList] = useState([]);
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [detailEmployee, setDetailEmployee] = useState(null);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -796,6 +998,14 @@ export default function EmployeesList({ embedded = false }) {
     [list],
   );
 
+  function openDetail(employee) {
+    setDetailEmployee(employee);
+  }
+
+  function closeDetail() {
+    setDetailEmployee(null);
+  }
+
   function openCreate() {
     if (!canManageMembers) return;
     setEditing(null);
@@ -810,6 +1020,7 @@ export default function EmployeesList({ embedded = false }) {
       return;
     }
 
+    setDetailEmployee(null);
     setEditing(emp);
     setShowForm(true);
   }
@@ -986,7 +1197,20 @@ export default function EmployeesList({ embedded = false }) {
   }
 
   return (
-    <div className={embedded ? "space-y-6" : "space-y-6"}>
+    <div className={cx("svx-members-page", embedded ? "space-y-6" : "space-y-6")}>
+      <MemberDetailsDrawer
+        open={Boolean(detailEmployee)}
+        employee={detailEmployee}
+        canManage={canManageMembers}
+        rowBusy={Boolean(detailEmployee && busyId === detailEmployee.id)}
+        onClose={closeDetail}
+        onEdit={openEdit}
+        onResetPassword={openResetPassword}
+        onDeactivate={(emp) => openConfirm("deactivate", emp)}
+        onReactivate={(emp) => openConfirm("reactivate", emp)}
+        onDelete={(emp) => openConfirm("delete", emp)}
+      />
+
       <ConfirmDialog
         open={confirmState.open}
         title={confirmTitle}
@@ -1008,86 +1232,8 @@ export default function EmployeesList({ embedded = false }) {
         onConfirm={handleResetPassword}
       />
 
-      <section className="space-y-5">
-        <div className={cx(pageCard(), "overflow-hidden")}>
-          <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-              <div className="max-w-3xl">
-                <SectionHeading
-                  eyebrow="Team"
-                  title="Staff access control"
-                  subtitle={
-                    canManageMembers
-                      ? "Create staff accounts, assign roles, reset passwords, and control branch access."
-                      : "Review staff roles and branch access. Staff changes are owner-only."
-                  }
-                />
-              </div>
-
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => load()}
-                  disabled={loading || refreshing}
-                  className={secondaryBtn()}
-                >
-                  {refreshing ? "Refreshing..." : "Refresh"}
-                </button>
-
-                {canManageMembers ? (
-                  <button
-                    type="button"
-                    onClick={showForm ? closeForm : openCreate}
-                    disabled={loading || refreshing}
-                    className={primaryBtn()}
-                  >
-                    {showForm ? "Close form" : "Add member"}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 px-5 py-5 md:grid-cols-2 xl:grid-cols-4">
-            {loading ? (
-              <SummaryCardsSkeleton />
-            ) : (
-              <>
-                <SummaryCard
-                  label="Active members"
-                  value={activeCount}
-                  note="Users who can currently sign in"
-                  tone="success"
-                />
-
-                <SummaryCard
-                  label="Inactive members"
-                  value={inactiveCount}
-                  note="Accounts currently blocked"
-                  tone={inactiveCount > 0 ? "warning" : "neutral"}
-                />
-
-                <SummaryCard
-                  label="Managers"
-                  value={managersCount}
-                  note="Operational supervisors without owner-only powers"
-                  tone="neutral"
-                />
-
-                <SummaryCard
-                  label="Branch assigned"
-                  value={assignedCount}
-                  note="Members connected to at least one branch"
-                  tone={branchAssignedTone}
-                />
-              </>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {showForm ? (
-        editing ? (
+            <MemberFormDrawer open={showForm} mode={editing ? "edit" : "create"} onClose={closeForm}>
+        {editing ? (
           <EmployeeEdit
             employee={editing}
             canEdit={canManageMembers}
@@ -1106,13 +1252,52 @@ export default function EmployeesList({ embedded = false }) {
             }}
             onCancel={closeForm}
           />
-        )
-      ) : null}
+        )}
+      </MemberFormDrawer>
 
-      <section className={cx(pageCard(), "p-5 sm:p-6")}>
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-end">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
-            <div className="lg:col-span-4">
+      <section className={cx(pageCard(), "svx-members-filter-card p-5 sm:p-6")}>
+        <div className="svx-members-filter-head">
+          <div className="min-w-0">
+            <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>
+              Staff directory
+            </div>
+            <div className="svx-members-title-row">
+              <h2 className={cx("text-[1.45rem] font-black tracking-[-0.04em]", strongText())}>
+                Members
+              </h2>
+              <Badge tone="neutral">{filtered.length} shown</Badge>
+            </div>
+            <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>
+              Search staff, open details, then update access only when needed.
+            </p>
+          </div>
+
+          <div className="svx-members-filter-actions">
+            <button
+              type="button"
+              onClick={() => load()}
+              disabled={loading || refreshing}
+              className={secondaryBtn()}
+            >
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
+
+            {canManageMembers ? (
+              <button
+                type="button"
+                onClick={showForm ? closeForm : openCreate}
+                disabled={loading || refreshing}
+                className={primaryBtn()}
+              >
+                {showForm ? "Close drawer" : "Add member"}
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="svx-members-filter-body">
+          <div className="svx-members-filter-fields">
+            <div className="svx-members-search-field">
               <label className={cx("text-sm font-black", strongText())}>Search</label>
               <input
                 className="app-input mt-2"
@@ -1122,7 +1307,7 @@ export default function EmployeesList({ embedded = false }) {
               />
             </div>
 
-            <div className="lg:col-span-2">
+            <div>
               <label className={cx("text-sm font-black", strongText())}>Role</label>
               <select
                 className="app-input mt-2"
@@ -1139,7 +1324,7 @@ export default function EmployeesList({ embedded = false }) {
               </select>
             </div>
 
-            <div className="lg:col-span-3">
+            <div>
               <label className={cx("text-sm font-black", strongText())}>Branch</label>
               <select
                 className="app-input mt-2"
@@ -1156,7 +1341,7 @@ export default function EmployeesList({ embedded = false }) {
               </select>
             </div>
 
-            <div className="lg:col-span-3">
+            <div>
               <label className={cx("text-sm font-black", strongText())}>Status</label>
               <select
                 className="app-input mt-2"
@@ -1169,21 +1354,9 @@ export default function EmployeesList({ embedded = false }) {
               </select>
             </div>
           </div>
-
-          <div className={cx(softPanel(), "p-4")}>
-            <div className={cx("text-sm font-black", strongText())}>Visible results</div>
-
-            <div className={cx("mt-2 text-2xl font-black tracking-tight", strongText())}>
-              {filtered.length}
-            </div>
-
-            <div className={cx("mt-1 text-sm font-semibold leading-6", mutedText())}>
-              Matching members ready for review.
-            </div>
-          </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2">
+        <div className="svx-members-filter-chips">
           <FilterChip active={statusFilter === "ALL"} onClick={() => setStatusFilter("ALL")}>
             All
           </FilterChip>
@@ -1214,106 +1387,93 @@ export default function EmployeesList({ embedded = false }) {
         <EmptyState onAdd={openCreate} canManage={canManageMembers} />
       ) : (
         <>
-          <section className="hidden lg:block">
-            <div className={cx(pageCard(), "overflow-hidden")}>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[1120px]">
-                  <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
-                    <tr>
-                      <th className={cx("px-4 py-3 text-left text-xs font-black uppercase tracking-[0.18em]", softText())}>
-                        Member
-                      </th>
-                      <th className={cx("px-4 py-3 text-left text-xs font-black uppercase tracking-[0.18em]", softText())}>
-                        Role
-                      </th>
-                      <th className={cx("px-4 py-3 text-left text-xs font-black uppercase tracking-[0.18em]", softText())}>
-                        Branches
-                      </th>
-                      <th className={cx("px-4 py-3 text-left text-xs font-black uppercase tracking-[0.18em]", softText())}>
-                        Phone
-                      </th>
-                      <th className={cx("px-4 py-3 text-left text-xs font-black uppercase tracking-[0.18em]", softText())}>
-                        Status
-                      </th>
-                      <th className={cx("px-4 py-3 text-right text-xs font-black uppercase tracking-[0.18em]", softText())}>
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
+          <section className="hidden lg:block svx-members-listing-section">
+            <div className={cx(pageCard(), "svx-members-table-card overflow-hidden")}>
+              <table className="svx-members-table w-full">
+                <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                  <tr>
+                    <th className={cx("px-4 py-3 text-left text-xs font-black uppercase tracking-[0.18em]", softText())}>
+                      Member
+                    </th>
+                    <th className={cx("px-4 py-3 text-left text-xs font-black uppercase tracking-[0.18em]", softText())}>
+                      Role
+                    </th>
+                    <th className={cx("px-4 py-3 text-left text-xs font-black uppercase tracking-[0.18em]", softText())}>
+                      Main branch
+                    </th>
+                    <th className={cx("px-4 py-3 text-left text-xs font-black uppercase tracking-[0.18em]", softText())}>
+                      Status
+                    </th>
+                    <th className={cx("px-4 py-3 text-right text-xs font-black uppercase tracking-[0.18em]", softText())}>
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
 
-                  <tbody>
-                    {filtered.map((u) => {
-                      const rowBusy = busyId === u.id;
-                      const inactive = u.isActive === false;
-                      const isOwnerRow = String(u.role || "").toUpperCase() === "OWNER";
-                      const canManageRow = canManageMembers && !isOwnerRow;
-                      const branches = normalizeEmployeeBranches(u);
+                <tbody>
+                  {filtered.map((u) => {
+                    const rowBusy = busyId === u.id;
+                    const inactive = u.isActive === false;
+                    const isOwnerRow = String(u.role || "").toUpperCase() === "OWNER";
+                    const canManageRow = canManageMembers && !isOwnerRow;
+                    const branches = normalizeEmployeeBranches(u);
+                    const defaultBranch = branches.find((branch) => branch.isDefault) || branches.find((branch) => branch.isMain) || branches[0] || null;
 
-                      return (
-                        <tr
-                          key={u.id}
-                          className="border-b border-[var(--color-border)] align-top last:border-b-0"
-                        >
-                          <td className="px-4 py-4">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-sm font-black text-[var(--color-text)]">
-                                {initialsFromName(u.name)}
-                              </div>
-
-                              <div className="min-w-0">
-                                <div className={cx("font-black", strongText())}>{u.name}</div>
-                                <div className={cx("mt-1 text-sm font-semibold", mutedText())}>
-                                  {u.email}
-                                </div>
+                    return (
+                      <tr
+                        key={u.id}
+                        className="svx-member-row border-b border-[var(--color-border)] align-middle last:border-b-0"
+                      >
+                        <td className="px-4 py-4">
+                          <button type="button" className="svx-member-person-button" onClick={() => openDetail(u)}>
+                            <div className="svx-member-avatar">{initialsFromName(u.name)}</div>
+                            <div className="min-w-0 text-left">
+                              <div className={cx("truncate font-black", strongText())}>{u.name}</div>
+                              <div className={cx("mt-1 truncate text-sm font-semibold", mutedText())}>
+                                {u.email}
                               </div>
                             </div>
-                          </td>
+                          </button>
+                        </td>
 
-                          <td className="px-4 py-4">
-                            <RoleBadge role={u.role} />
-                          </td>
+                        <td className="px-4 py-4">
+                          <RoleBadge role={u.role} />
+                        </td>
 
-                          <td className="max-w-[360px] px-4 py-4">
-                            <BranchBadgeList branches={branches} />
-                          </td>
+                        <td className="px-4 py-4">
+                          <div className={cx("text-sm font-black", strongText())}>
+                            {defaultBranch ? branchDisplayName(defaultBranch) : "No branch"}
+                          </div>
+                          <div className={cx("mt-1 text-xs font-semibold", mutedText())}>
+                            {branches.length ? `${branches.length} assigned` : "Needs assignment"}
+                          </div>
+                        </td>
 
-                          <td className="px-4 py-4">
-                            <div className={cx("text-sm font-black", strongText())}>
-                              {u.phone || "—"}
-                            </div>
-                          </td>
+                        <td className="px-4 py-4">
+                          <StatusBadge active={!inactive} />
+                        </td>
 
-                          <td className="px-4 py-4">
-                            <StatusBadge active={!inactive} />
-                          </td>
-
-                          <td className="px-4 py-4">
-                            <div className="flex justify-end">
-                              {canManageRow ? (
-                                <RowActionsMenu
-                                  employee={u}
-                                  inactive={inactive}
-                                  rowBusy={rowBusy}
-                                  canManage={canManageRow}
-                                  onEdit={openEdit}
-                                  onResetPassword={openResetPassword}
-                                  onDeactivate={(emp) => openConfirm("deactivate", emp)}
-                                  onReactivate={(emp) => openConfirm("reactivate", emp)}
-                                  onDelete={(emp) => openConfirm("delete", emp)}
-                                />
-                              ) : (
-                                <span className={cx("text-xs font-black", mutedText())}>
-                                  {isOwnerRow ? "Protected account" : "View only"}
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                        <td className="px-4 py-4">
+                          <div className="flex justify-end">
+                            <RowActionsMenu
+                              employee={u}
+                              inactive={inactive}
+                              rowBusy={rowBusy}
+                              canManage={canManageRow}
+                              onView={openDetail}
+                              onEdit={openEdit}
+                              onResetPassword={openResetPassword}
+                              onDeactivate={(emp) => openConfirm("deactivate", emp)}
+                              onReactivate={(emp) => openConfirm("reactivate", emp)}
+                              onDelete={(emp) => openConfirm("delete", emp)}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </section>
 
@@ -1324,67 +1484,50 @@ export default function EmployeesList({ embedded = false }) {
               const isOwnerRow = String(u.role || "").toUpperCase() === "OWNER";
               const canManageRow = canManageMembers && !isOwnerRow;
               const branches = normalizeEmployeeBranches(u);
+              const defaultBranch = branches.find((branch) => branch.isDefault) || branches.find((branch) => branch.isMain) || branches[0] || null;
 
               return (
-                <article key={u.id} className={cx(pageCard(), "p-5")}>
+                <article key={u.id} className={cx(pageCard(), "svx-member-mobile-card p-4")}>
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-start gap-3">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-sm font-black text-[var(--color-text)]">
-                        {initialsFromName(u.name)}
-                      </div>
+                    <button type="button" className="svx-member-person-button" onClick={() => openDetail(u)}>
+                      <div className="svx-member-avatar">{initialsFromName(u.name)}</div>
 
-                      <div className="min-w-0">
+                      <div className="min-w-0 text-left">
                         <div className={cx("truncate text-base font-black tracking-tight", strongText())}>
                           {u.name}
                         </div>
 
-                        <div className={cx("mt-1 break-all text-sm font-semibold", mutedText())}>
+                        <div className={cx("mt-1 truncate text-sm font-semibold", mutedText())}>
                           {u.email}
                         </div>
                       </div>
-                    </div>
+                    </button>
 
                     <StatusBadge active={!inactive} />
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <RoleBadge role={u.role} />
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <InfoStat label="Role" value={roleMeta(u.role).label} />
+                    <InfoStat label="Branch" value={defaultBranch ? branchDisplayName(defaultBranch) : "No branch"} sub={branches.length ? `${branches.length} assigned` : "Needs assignment"} />
                   </div>
 
-                  <div className="mt-4 space-y-3">
-                    <InfoStat label="Phone" value={u.phone || "—"} />
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <button type="button" className="svx-member-view-button" onClick={() => openDetail(u)}>
+                      View details
+                    </button>
 
-                    <div className={cx(softPanel(), "p-4")}>
-                      <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>
-                        Branch access
-                      </div>
-
-                      <div className="mt-3">
-                        <BranchBadgeList branches={branches} compact />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className={cx("text-sm font-black", strongText())}>Actions</div>
-
-                    {canManageRow ? (
-                      <RowActionsMenu
-                        employee={u}
-                        inactive={inactive}
-                        rowBusy={rowBusy}
-                        canManage={canManageRow}
-                        onEdit={openEdit}
-                        onResetPassword={openResetPassword}
-                        onDeactivate={(emp) => openConfirm("deactivate", emp)}
-                        onReactivate={(emp) => openConfirm("reactivate", emp)}
-                        onDelete={(emp) => openConfirm("delete", emp)}
-                      />
-                    ) : (
-                      <span className={cx("text-xs font-black", mutedText())}>
-                        {isOwnerRow ? "Protected account" : "View only"}
-                      </span>
-                    )}
+                    <RowActionsMenu
+                      employee={u}
+                      inactive={inactive}
+                      rowBusy={rowBusy}
+                      canManage={canManageRow}
+                      onView={openDetail}
+                      onEdit={openEdit}
+                      onResetPassword={openResetPassword}
+                      onDeactivate={(emp) => openConfirm("deactivate", emp)}
+                      onReactivate={(emp) => openConfirm("reactivate", emp)}
+                      onDelete={(emp) => openConfirm("delete", emp)}
+                    />
                   </div>
                 </article>
               );

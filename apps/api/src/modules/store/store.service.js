@@ -648,7 +648,7 @@ async function getSetupChecklist(tenantId, subscription = null) {
       label: "Store identity",
       required: true,
       done: Boolean(tenant.name && tenant.phone && tenant.email && tenant.shopType),
-      detail: "Store name, phone, email, and electronics retail category are set.",
+      detail: "Store name, phone, email, and business category are set.",
     },
     {
       key: "store_location",

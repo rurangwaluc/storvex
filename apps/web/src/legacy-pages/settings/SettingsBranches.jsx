@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import { createBranch, listBranches } from "../../services/branchApi";
+import "./Settings.css";
+import "./SettingsBranches.css";
 
 const EMPTY_FORM = {
   name: "",
@@ -142,7 +144,7 @@ function SummaryCard({ label, value, note, tone = "neutral" }) {
           : "bg-[var(--color-text-muted)]";
 
   return (
-    <article className={cx(pageCard(), "relative overflow-hidden p-5")}>
+    <article className={cx(pageCard(), "svx-branch-summary-card relative overflow-hidden p-5")}>
       <div className={cx("absolute left-0 top-0 h-full w-1.5", accent)} />
 
       <div className="pl-2">
@@ -166,9 +168,9 @@ function SummaryCard({ label, value, note, tone = "neutral" }) {
 
 function DetailLine({ label, value }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-[var(--color-border)] pb-3 last:border-b-0 last:pb-0">
+    <div className="svx-branch-detail-line flex items-center justify-between gap-4 border-b border-[var(--color-border)] pb-3 last:border-b-0 last:pb-0">
       <span className="text-sm font-semibold text-[var(--color-text-muted)]">{label}</span>
-      <span className="max-w-[58%] truncate text-right text-sm font-black text-[var(--color-text)]">
+      <span className="svx-branch-detail-value max-w-[58%] truncate text-right text-sm font-black text-[var(--color-text)]">
         {value || "—"}
       </span>
     </div>
@@ -181,8 +183,8 @@ function BranchCard({ branch }) {
     .join(" • ");
 
   return (
-    <article className={cx(pageCard(), "overflow-hidden p-5")}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <article className={cx(pageCard(), "svx-branch-card overflow-hidden p-5")}>
+      <div className="svx-branch-card-head flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Pill className={statusTone(branch?.status)}>{branch?.status || "UNKNOWN"}</Pill>
@@ -198,7 +200,7 @@ function BranchCard({ branch }) {
             )}
           </div>
 
-          <h3 className="mt-4 truncate text-xl font-black tracking-[-0.03em] text-[var(--color-text)]">
+          <h3 className="svx-branch-name mt-4 text-xl font-black tracking-[-0.03em] text-[var(--color-text)]">
             {branch?.name || "Branch"}
           </h3>
 
@@ -207,12 +209,12 @@ function BranchCard({ branch }) {
           </p>
         </div>
 
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)] text-lg font-black text-[var(--color-text)] shadow-[var(--shadow-soft)]">
+        <div className="svx-branch-code-mark flex h-14 w-14 shrink-0 items-center justify-center rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)] text-lg font-black text-[var(--color-text)] shadow-[var(--shadow-soft)]">
           {String(branch?.code || "BR").slice(0, 2)}
         </div>
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className="svx-branch-details mt-5 space-y-3">
         <DetailLine label="Phone" value={branch?.phone} />
         <DetailLine label="Email" value={branch?.email} />
         <DetailLine label="Location" value={location || "Not set"} />
@@ -246,7 +248,7 @@ function BranchForm({ form, setForm, saving, canCreate, usage, onSubmit }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className={cx(pageCard(), "p-5 sm:p-6")}>
+    <form onSubmit={onSubmit} className={cx(pageCard(), "svx-branch-form p-5 sm:p-6")}>
       <SectionHeader
         eyebrow="Create branch"
         title="Add a new branch"
@@ -263,7 +265,7 @@ function BranchForm({ form, setForm, saving, canCreate, usage, onSubmit }) {
         </div>
       ) : null}
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+      <div className="svx-branch-form-grid mt-6 grid gap-4 sm:grid-cols-2">
         <div>
           <label className={fieldLabel()}>Branch name</label>
           <input
@@ -357,7 +359,7 @@ function BranchForm({ form, setForm, saving, canCreate, usage, onSubmit }) {
         </div>
       </div>
 
-      <div className="mt-6 flex flex-col gap-3 rounded-[26px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="svx-branch-create-bar mt-6 flex flex-col gap-3 rounded-[26px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-black text-[var(--color-text)]">After creation</p>
           <p className="mt-1 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
@@ -479,8 +481,8 @@ export default function SettingsBranches() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className={cx(pageCard(), "p-5 sm:p-6")}>
+    <div className="svx-settings-page svx-settings-branches space-y-6">
+      <section className={cx(pageCard(), "svx-branch-overview-card p-5 sm:p-6")}>
         <SectionHeader
           eyebrow="Branches"
           title="Branch control"
@@ -498,7 +500,7 @@ export default function SettingsBranches() {
           }
         />
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="svx-branch-summary-grid mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryCard
             label="Active branches"
             value={usage?.activeBranches ?? activeBranches.length}
@@ -533,7 +535,7 @@ export default function SettingsBranches() {
         </div>
       </section>
 
-      <section className={cx(pageCard(), "p-5 sm:p-6")}>
+      <section className={cx(pageCard(), "svx-branch-list-card p-5 sm:p-6")}>
         <SectionHeader
           eyebrow="Current branches"
           title="Store branch list"
@@ -542,7 +544,7 @@ export default function SettingsBranches() {
 
         <div className="mt-6">
           {sortedBranches.length ? (
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="svx-branch-list-grid grid gap-4 lg:grid-cols-2">
               {sortedBranches.map((branch) => (
                 <BranchCard key={branch.id} branch={branch} />
               ))}

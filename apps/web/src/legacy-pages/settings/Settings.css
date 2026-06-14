@@ -1,0 +1,721 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap");
+
+.svx-settings-shell,
+.svx-settings-page {
+  --settings-bg: #ffffff;
+  --settings-card: #ffffff;
+  --settings-panel: #f7faff;
+  --settings-panel-strong: #eef6ff;
+  --settings-text: #0d1b3e;
+  --settings-muted: #5f6b84;
+  --settings-muted-2: #718096;
+  --settings-border: rgba(13, 27, 62, 0.12);
+  --settings-primary: #2563eb;
+  --settings-primary-dark: #0f4fd8;
+  --settings-primary-soft: #eef6ff;
+  --settings-ring: rgba(37, 99, 235, 0.14);
+  --settings-shadow: 0 18px 48px rgba(15, 45, 90, 0.055);
+  --settings-shadow-soft: 0 10px 30px rgba(15, 45, 90, 0.045);
+  --settings-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --settings-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --svx-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --svx-ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  color: var(--settings-text);
+  font-family: var(--settings-body-font);
+}
+
+:root[data-theme="dark"] .svx-settings-shell,
+:root[data-theme="dark"] .svx-settings-page {
+  --settings-bg: #06111f;
+  --settings-card: #1f1f20;
+  --settings-panel: #111f31;
+  --settings-panel-strong: #0d1d32;
+  --settings-text: #ffffff;
+  --settings-muted: rgba(255, 255, 255, 0.72);
+  --settings-muted-2: rgba(255, 255, 255, 0.58);
+  --settings-border: rgba(255, 255, 255, 0.12);
+  --settings-primary: #159cff;
+  --settings-primary-dark: #0b86df;
+  --settings-primary-soft: rgba(21, 156, 255, 0.14);
+  --settings-ring: rgba(21, 156, 255, 0.16);
+  --settings-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+  --settings-shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.18);
+}
+
+.svx-settings-shell *,
+.svx-settings-page * {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.svx-settings-shell h1,
+.svx-settings-shell h2,
+.svx-settings-shell h3,
+.svx-settings-page h1,
+.svx-settings-page h2,
+.svx-settings-page h3 {
+  font-family: var(--settings-heading-font);
+  letter-spacing: -0.04em;
+}
+
+.svx-settings-shell p,
+.svx-settings-shell span,
+.svx-settings-shell a,
+.svx-settings-shell button,
+.svx-settings-shell input,
+.svx-settings-shell select,
+.svx-settings-shell textarea,
+.svx-settings-page p,
+.svx-settings-page span,
+.svx-settings-page a,
+.svx-settings-page button,
+.svx-settings-page input,
+.svx-settings-page select,
+.svx-settings-page textarea {
+  font-family: var(--settings-body-font);
+}
+
+.svx-settings-shell > section,
+.svx-settings-page > section {
+  animation: svx-settings-enter 520ms var(--svx-ease-out) both;
+}
+
+.svx-settings-shell > section:nth-child(2),
+.svx-settings-page > section:nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.svx-settings-shell > section:nth-child(3),
+.svx-settings-page > section:nth-child(3) {
+  animation-delay: 90ms;
+}
+
+.svx-settings-shell a,
+.svx-settings-page a {
+  text-decoration: none;
+}
+
+.svx-settings-shell button,
+.svx-settings-page button,
+.svx-settings-shell a,
+.svx-settings-page a,
+.svx-settings-shell .app-input,
+.svx-settings-page .app-input {
+  transition:
+    transform 180ms var(--svx-ease-out),
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    box-shadow 180ms ease,
+    opacity 180ms ease;
+}
+
+.svx-settings-shell button:hover,
+.svx-settings-page button:hover,
+.svx-settings-shell a:hover,
+.svx-settings-page a:hover {
+  transform: translateY(-1px);
+}
+
+.svx-settings-shell button:active,
+.svx-settings-page button:active,
+.svx-settings-shell a:active,
+.svx-settings-page a:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.svx-settings-shell .app-input,
+.svx-settings-page .app-input,
+.svx-settings-shell input,
+.svx-settings-shell select,
+.svx-settings-shell textarea,
+.svx-settings-page input,
+.svx-settings-page select,
+.svx-settings-page textarea {
+  min-height: 44px;
+  border-color: var(--settings-border);
+  background: var(--settings-panel);
+  color: var(--settings-text);
+  caret-color: var(--settings-primary);
+}
+
+.svx-settings-shell .app-input:focus,
+.svx-settings-page .app-input:focus,
+.svx-settings-shell input:focus,
+.svx-settings-shell select:focus,
+.svx-settings-shell textarea:focus,
+.svx-settings-page input:focus,
+.svx-settings-page select:focus,
+.svx-settings-page textarea:focus {
+  border-color: color-mix(in srgb, var(--settings-primary) 60%, var(--settings-border));
+  box-shadow: 0 0 0 4px var(--settings-ring);
+  outline: none;
+}
+
+.svx-settings-shell .app-input::placeholder,
+.svx-settings-page .app-input::placeholder,
+.svx-settings-shell input::placeholder,
+.svx-settings-shell textarea::placeholder,
+.svx-settings-page input::placeholder,
+.svx-settings-page textarea::placeholder {
+  color: var(--settings-muted-2);
+}
+
+.svx-settings-shell [class*="rounded-[28px]"],
+.svx-settings-page [class*="rounded-[28px]"] {
+  background: var(--settings-card);
+  border-color: var(--settings-border);
+  box-shadow: var(--settings-shadow);
+}
+
+.svx-settings-shell [class*="rounded-[22px]"],
+.svx-settings-page [class*="rounded-[22px]"],
+.svx-settings-shell [class*="rounded-[24px]"],
+.svx-settings-page [class*="rounded-[24px]"] {
+  border-color: var(--settings-border);
+}
+
+.svx-settings-shell [class*="bg-[var(--color-surface-2)]"],
+.svx-settings-page [class*="bg-[var(--color-surface-2)]"] {
+  background: var(--settings-panel);
+}
+
+.svx-settings-shell [class*="bg-[var(--color-card)]"],
+.svx-settings-page [class*="bg-[var(--color-card)]"] {
+  background: var(--settings-card);
+}
+
+.svx-settings-shell [class*="text-[var(--color-text)]"],
+.svx-settings-page [class*="text-[var(--color-text)]"] {
+  color: var(--settings-text);
+}
+
+.svx-settings-shell [class*="text-[var(--color-text-muted)]"],
+.svx-settings-page [class*="text-[var(--color-text-muted)]"] {
+  color: var(--settings-muted);
+}
+
+.svx-settings-shell [class*="border-[var(--color-border)]"],
+.svx-settings-page [class*="border-[var(--color-border)]"] {
+  border-color: var(--settings-border);
+}
+
+.svx-settings-shell [class*="bg-[var(--color-primary-soft)]"],
+.svx-settings-page [class*="bg-[var(--color-primary-soft)]"] {
+  background: var(--settings-primary-soft);
+}
+
+.svx-settings-shell [class*="text-[var(--color-primary)]"],
+.svx-settings-page [class*="text-[var(--color-primary)]"] {
+  color: var(--settings-primary);
+}
+
+.svx-settings-shell [class*="bg-[var(--color-primary)]"],
+.svx-settings-page [class*="bg-[var(--color-primary)]"] {
+  background: var(--settings-primary);
+}
+
+.svx-settings-shell [class*="shadow-[var(--shadow-card)]"],
+.svx-settings-page [class*="shadow-[var(--shadow-card)]"] {
+  box-shadow: var(--settings-shadow);
+}
+
+.svx-settings-shell [class*="shadow-[var(--shadow-soft)]"],
+.svx-settings-page [class*="shadow-[var(--shadow-soft)]"] {
+  box-shadow: var(--settings-shadow-soft);
+}
+
+.svx-settings-shell [class*="tracking-[0.18em]"],
+.svx-settings-shell [class*="tracking-[0.13em]"],
+.svx-settings-shell [class*="tracking-[0.12em]"],
+.svx-settings-page [class*="tracking-[0.18em]"],
+.svx-settings-page [class*="tracking-[0.13em]"],
+.svx-settings-page [class*="tracking-[0.12em]"] {
+  letter-spacing: 0.16em;
+}
+
+.svx-settings-shell .sticky,
+.svx-settings-page .sticky {
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.svx-settings-shell [class*="grid"],
+.svx-settings-page [class*="grid"] {
+  min-width: 0;
+}
+
+/* Layout navigation polish */
+.svx-settings-shell nav a,
+.svx-settings-shell a[href^="/app/settings"] {
+  color: inherit;
+}
+
+.svx-settings-shell select.app-input {
+  font-weight: 800;
+}
+
+/* Cards that can get too tall on PWA */
+.svx-settings-roles article,
+.svx-settings-branches article,
+.svx-settings-audit article,
+.svx-settings-security article {
+  overflow-wrap: anywhere;
+}
+
+.svx-settings-branches form,
+.svx-settings-security form {
+  overflow: hidden;
+}
+
+/* PWA/mobile: compact, native-feeling, no desktop squeeze */
+@media (max-width: 720px) {
+  .svx-settings-shell,
+  .svx-settings-page {
+    padding-inline: 0;
+    overflow-x: hidden;
+  }
+
+  .svx-settings-shell > section,
+  .svx-settings-page > section {
+    border-radius: 20px !important;
+  }
+
+  .svx-settings-shell [class*="rounded-[28px]"],
+  .svx-settings-page [class*="rounded-[28px]"] {
+    border-radius: 20px !important;
+  }
+
+  .svx-settings-shell [class*="rounded-[24px]"],
+  .svx-settings-page [class*="rounded-[24px]"],
+  .svx-settings-shell [class*="rounded-[22px]"],
+  .svx-settings-page [class*="rounded-[22px]"] {
+    border-radius: 18px !important;
+  }
+
+  .svx-settings-shell [class*="px-5"],
+  .svx-settings-page [class*="px-5"],
+  .svx-settings-shell [class*="px-6"],
+  .svx-settings-page [class*="px-6"] {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .svx-settings-shell [class*="p-6"],
+  .svx-settings-page [class*="p-6"] {
+    padding: 16px !important;
+  }
+
+  .svx-settings-shell [class*="p-5"],
+  .svx-settings-page [class*="p-5"] {
+    padding: 14px !important;
+  }
+
+  .svx-settings-shell h1,
+  .svx-settings-page h1 {
+    font-size: clamp(1.45rem, 7vw, 2rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  .svx-settings-shell h2,
+  .svx-settings-page h2 {
+    font-size: clamp(1.25rem, 6vw, 1.7rem) !important;
+    line-height: 1.08 !important;
+  }
+
+  .svx-settings-shell h3,
+  .svx-settings-page h3 {
+    font-size: clamp(1.05rem, 5vw, 1.35rem) !important;
+    line-height: 1.12 !important;
+  }
+
+  .svx-settings-shell p,
+  .svx-settings-page p {
+    line-height: 1.52 !important;
+  }
+
+  .svx-settings-shell .app-input,
+  .svx-settings-page .app-input,
+  .svx-settings-shell input,
+  .svx-settings-shell select,
+  .svx-settings-shell textarea,
+  .svx-settings-page input,
+  .svx-settings-page select,
+  .svx-settings-page textarea {
+    min-height: 44px;
+    border-radius: 14px !important;
+    font-size: 13px !important;
+  }
+
+  .svx-settings-shell button,
+  .svx-settings-page button,
+  .svx-settings-shell a[class*="h-11"],
+  .svx-settings-page a[class*="h-11"] {
+    min-height: 42px;
+    border-radius: 14px !important;
+  }
+
+  .svx-settings-shell [class*="grid-cols-1"],
+  .svx-settings-page [class*="grid-cols-1"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-settings-shell [class*="sm:grid-cols-2"],
+  .svx-settings-page [class*="sm:grid-cols-2"],
+  .svx-settings-shell [class*="md:grid-cols-2"],
+  .svx-settings-page [class*="md:grid-cols-2"],
+  .svx-settings-shell [class*="xl:grid-cols-4"],
+  .svx-settings-page [class*="xl:grid-cols-4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-settings-branches form [class*="sm:grid-cols-2"],
+  .svx-settings-security form [class*="sm:grid-cols-2"],
+  .svx-settings-audit [class*="sm:grid-cols-2"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-settings-audit table,
+  .svx-settings-page table {
+    min-width: 680px;
+  }
+
+  .svx-settings-audit [class*="overflow-x-auto"],
+  .svx-settings-page [class*="overflow-x-auto"] {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .svx-settings-audit [class*="overflow-x-auto"]::-webkit-scrollbar,
+  .svx-settings-page [class*="overflow-x-auto"]::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .svx-settings-audit [class*="overflow-x-auto"]::-webkit-scrollbar-thumb,
+  .svx-settings-page [class*="overflow-x-auto"]::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--settings-primary) 34%, transparent);
+    border-radius: 999px;
+  }
+}
+
+@media (max-width: 540px) {
+  .svx-settings-shell [class*="sm:grid-cols-2"],
+  .svx-settings-page [class*="sm:grid-cols-2"],
+  .svx-settings-shell [class*="md:grid-cols-2"],
+  .svx-settings-page [class*="md:grid-cols-2"],
+  .svx-settings-shell [class*="xl:grid-cols-4"],
+  .svx-settings-page [class*="xl:grid-cols-4"],
+  .svx-settings-branches form [class*="sm:grid-cols-2"],
+  .svx-settings-security form [class*="sm:grid-cols-2"],
+  .svx-settings-audit [class*="sm:grid-cols-2"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-settings-shell [class*="flex-row"],
+  .svx-settings-page [class*="flex-row"] {
+    flex-wrap: wrap;
+  }
+
+  .svx-settings-shell [class*="w-full"],
+  .svx-settings-page [class*="w-full"] {
+    max-width: 100%;
+  }
+
+  .svx-settings-branches article .max-w-\[58\%\] {
+    max-width: 100% !important;
+  }
+}
+
+@media (max-width: 389px) {
+  .svx-settings-shell,
+  .svx-settings-page {
+    font-size: 13px;
+  }
+
+  .svx-settings-shell [class*="px-4"],
+  .svx-settings-page [class*="px-4"],
+  .svx-settings-shell [class*="px-5"],
+  .svx-settings-page [class*="px-5"],
+  .svx-settings-shell [class*="px-6"],
+  .svx-settings-page [class*="px-6"] {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+}
+
+@keyframes svx-settings-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Compact settings navigation pass */
+.svx-settings-control-card {
+  box-shadow: var(--settings-shadow-soft) !important;
+}
+
+.svx-settings-control-head {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--settings-card) 96%, transparent), var(--settings-card));
+}
+
+.svx-settings-desktop-nav {
+  background: color-mix(in srgb, var(--settings-panel) 52%, transparent);
+}
+
+.svx-settings-nav-panel {
+  border-radius: 20px !important;
+  background: color-mix(in srgb, var(--settings-panel) 78%, transparent) !important;
+}
+
+.svx-settings-nav-card {
+  background: color-mix(in srgb, var(--settings-card) 72%, transparent);
+  box-shadow: none !important;
+}
+
+.svx-settings-nav-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--settings-shadow-soft) !important;
+}
+
+.svx-settings-nav-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.svx-settings-nav-state {
+  height: 26px !important;
+  padding-inline: 10px !important;
+  font-size: 10px !important;
+  letter-spacing: 0.1em !important;
+}
+
+.svx-settings-current-row span {
+  height: 28px !important;
+  font-size: 10px !important;
+}
+
+@media (min-width: 1280px) {
+  .svx-settings-nav-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 1536px) {
+  .svx-settings-nav-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-settings-control-card {
+    border-radius: 18px !important;
+  }
+
+  .svx-settings-control-head {
+    padding: 14px !important;
+  }
+
+  .svx-settings-control-head h1 {
+    font-size: 1.45rem !important;
+  }
+
+  .svx-settings-control-head p:not(:first-child) {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+  }
+
+  .svx-settings-control-head .hidden.flex-wrap {
+    display: none !important;
+  }
+
+  .svx-settings-mobile-switch {
+    top: 60px;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  .svx-settings-mobile-switch label {
+    margin-bottom: 6px !important;
+  }
+
+  .svx-settings-mobile-switch p {
+    display: none;
+  }
+}
+
+/* Premium select/dropdown polish */
+.svx-settings-shell select,
+.svx-settings-page select,
+.svx-settings-shell select.app-input,
+.svx-settings-page select.app-input,
+.svx-settings-page select.svx-settings-input {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 46px;
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--settings-border) 86%, transparent);
+  border-radius: 14px;
+  background-color: var(--settings-panel);
+  background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10L12 15L17 10' stroke='%232563EB' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 18px 18px;
+  padding-right: 46px !important;
+  color: var(--settings-text);
+  cursor: pointer;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 50%, transparent),
+    0 10px 24px rgba(15, 45, 90, 0.035);
+}
+
+:root[data-theme="dark"] .svx-settings-shell select,
+:root[data-theme="dark"] .svx-settings-page select,
+:root[data-theme="dark"] .svx-settings-shell select.app-input,
+:root[data-theme="dark"] .svx-settings-page select.app-input,
+:root[data-theme="dark"] .svx-settings-page select.svx-settings-input {
+  background-color: #0d1d32;
+  background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10L12 15L17 10' stroke='%23159CFF' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.035),
+    0 12px 26px rgba(0, 0, 0, 0.16);
+}
+
+.svx-settings-shell select:hover,
+.svx-settings-page select:hover,
+.svx-settings-shell select.app-input:hover,
+.svx-settings-page select.app-input:hover,
+.svx-settings-page select.svx-settings-input:hover {
+  border-color: color-mix(in srgb, var(--settings-primary) 35%, var(--settings-border));
+  background-color: color-mix(in srgb, var(--settings-panel) 86%, var(--settings-primary-soft));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--settings-primary) 8%, transparent),
+    0 14px 30px rgba(15, 45, 90, 0.055);
+}
+
+.svx-settings-shell select:focus,
+.svx-settings-page select:focus,
+.svx-settings-shell select.app-input:focus,
+.svx-settings-page select.app-input:focus,
+.svx-settings-page select.svx-settings-input:focus {
+  border-color: var(--settings-primary);
+  background-color: var(--settings-card);
+  box-shadow:
+    0 0 0 4px var(--settings-ring, var(--settings-primary-ring)),
+    0 14px 32px rgba(15, 45, 90, 0.07);
+  outline: none;
+}
+
+.svx-settings-shell select:disabled,
+.svx-settings-page select:disabled,
+.svx-settings-shell select.app-input:disabled,
+.svx-settings-page select.app-input:disabled,
+.svx-settings-page select.svx-settings-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+  box-shadow: none;
+}
+
+.svx-settings-shell select option,
+.svx-settings-page select option {
+  background: var(--settings-card);
+  color: var(--settings-text);
+  font-weight: 700;
+}
+
+.svx-settings-shell select::-ms-expand,
+.svx-settings-page select::-ms-expand {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .svx-settings-shell select,
+  .svx-settings-page select,
+  .svx-settings-shell select.app-input,
+  .svx-settings-page select.app-input,
+  .svx-settings-page select.svx-settings-input {
+    min-height: 44px;
+    border-radius: 13px !important;
+    background-position: right 12px center;
+    padding-right: 42px !important;
+    font-size: 13px !important;
+  }
+}
+
+
+/* Mobile settings switcher padding refinement */
+@media (max-width: 720px) {
+  .svx-settings-mobile-switch {
+    margin-inline: 0 !important;
+    padding: 8px 0 6px !important;
+    border-top: 0 !important;
+    border-bottom: 1px solid var(--settings-border) !important;
+    background: color-mix(in srgb, var(--settings-bg) 92%, transparent) !important;
+  }
+
+  .svx-settings-mobile-switch > div {
+    padding: 10px !important;
+    border-radius: 18px !important;
+    box-shadow: var(--settings-shadow-soft) !important;
+  }
+
+  .svx-settings-mobile-switch label {
+    margin-bottom: 7px !important;
+    padding-left: 2px;
+    font-size: 9.5px !important;
+    letter-spacing: 0.16em !important;
+  }
+
+  .svx-settings-mobile-switch .grid {
+    grid-template-columns: 40px minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .svx-settings-mobile-switch .grid > div:first-child {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 14px !important;
+  }
+
+  .svx-settings-mobile-switch select,
+  .svx-settings-mobile-switch select.app-input {
+    min-height: 42px !important;
+    height: 42px !important;
+    border-radius: 14px !important;
+    background-position: right 11px center !important;
+    background-size: 16px 16px !important;
+    padding-left: 13px !important;
+    padding-right: 38px !important;
+    font-size: 13px !important;
+  }
+}
+
+@media (max-width: 389px) {
+  .svx-settings-mobile-switch > div {
+    padding: 9px !important;
+  }
+
+  .svx-settings-mobile-switch .grid {
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    gap: 7px !important;
+  }
+
+  .svx-settings-mobile-switch .grid > div:first-child {
+    width: 38px !important;
+    height: 38px !important;
+  }
+}

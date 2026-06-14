@@ -2,6 +2,7 @@
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 
 import { getUserRole } from "../../utils/role";
+import "./Settings.css";
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
@@ -20,11 +21,11 @@ function softText() {
 }
 
 function pageCard() {
-  return "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+  return "svx-settings-layout-card rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
 }
 
 function softPanel() {
-  return "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
+  return "svx-settings-layout-panel rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
 }
 
 function sectionBadge(tone = "neutral") {
@@ -47,8 +48,15 @@ const NAV_ITEMS = [
   {
     key: "general",
     label: "General",
-    subtitle: "Store profile and document defaults",
+    subtitle: "Store profile, category, location, and setup status",
     to: "/app/settings",
+    roles: ["OWNER", "MANAGER"],
+  },
+  {
+    key: "documents",
+    label: "Documents",
+    subtitle: "Receipts, invoices, tax display, terms, and print behavior",
+    to: "/app/settings/documents",
     roles: ["OWNER", "MANAGER"],
   },
   {
@@ -120,6 +128,19 @@ function Icon({ name }) {
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+        </svg>
+      );
+
+    case "documents":
+      return (
+        <svg {...common}>
+          <path
+            d="M7 3h7l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+          <path d="M14 3v5h5M8.5 12h7M8.5 16h5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
         </svg>
       );
 
@@ -217,6 +238,7 @@ function Icon({ name }) {
 
 function currentKeyFromPath(pathname) {
   if (pathname === "/app/settings") return "general";
+  if (pathname.includes("/app/settings/documents")) return "documents";
   if (pathname.includes("/app/settings/branches")) return "branches";
   if (pathname.includes("/app/settings/members")) return "members";
   if (pathname.includes("/app/settings/roles")) return "roles";
@@ -266,16 +288,17 @@ function NavCard({ item, end = false }) {
       {({ isActive }) => (
         <div
           className={cx(
-            "group min-h-[92px] rounded-[24px] border p-3 transition duration-200",
+            "svx-settings-nav-card group min-h-[66px] rounded-[18px] border p-2.5 transition duration-200",
+            isActive && "is-active",
             isActive
               ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] shadow-[var(--shadow-soft)]"
               : "border-transparent bg-transparent hover:border-[var(--color-border)] hover:bg-[var(--color-card)]",
           )}
         >
-          <div className="flex h-full items-start gap-3">
+          <div className="flex h-full items-center gap-2.5">
             <div
               className={cx(
-                "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition",
+                "svx-settings-nav-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] border transition",
                 isActive
                   ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-contrast)]"
                   : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)] group-hover:text-[var(--color-text)]",
@@ -289,12 +312,18 @@ function NavCard({ item, end = false }) {
                 {item.label}
               </div>
 
-              <div className={cx("mt-1 line-clamp-2 text-xs font-semibold leading-5", mutedText())}>
+              <div className={cx("svx-settings-nav-subtitle mt-0.5 line-clamp-1 text-[11px] font-semibold leading-4", mutedText())}>
                 {item.subtitle}
               </div>
             </div>
 
-            <span className={sectionBadge(isActive ? "primary" : "neutral")}>
+            <span
+              className={cx(
+                "svx-settings-nav-state",
+                isActive && "is-active",
+                sectionBadge(isActive ? "primary" : "neutral"),
+              )}
+            >
               {isActive ? "Open" : "Go"}
             </span>
           </div>
@@ -306,8 +335,8 @@ function NavCard({ item, end = false }) {
 
 function MobileSectionSwitcher({ activeItem, visibleNavItems, onChange }) {
   return (
-    <div className="sticky top-[78px] z-20 -mx-4 border-y border-[var(--color-border)] bg-[var(--color-bg)]/95 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:hidden">
-      <div className={cx(pageCard(), "overflow-hidden p-3 shadow-[var(--shadow-soft)]")}>
+    <div className="svx-settings-mobile-switch sticky top-[78px] z-20 -mx-4 border-y border-[var(--color-border)] bg-[var(--color-bg)]/95 px-4 py-2.5 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:hidden">
+      <div className={cx(pageCard(), "svx-settings-mobile-switch-card overflow-hidden p-2.5 shadow-[var(--shadow-soft)]")}>
         <label
           className={cx(
             "mb-2 block text-[10px] font-black uppercase tracking-[0.18em]",
@@ -317,13 +346,13 @@ function MobileSectionSwitcher({ activeItem, visibleNavItems, onChange }) {
           Settings section
         </label>
 
-        <div className="grid grid-cols-[42px_minmax(0,1fr)] gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-primary)] text-[var(--color-primary-contrast)]">
+        <div className="svx-settings-mobile-switch-grid grid grid-cols-[38px_minmax(0,1fr)] gap-2.5">
+          <div className="svx-settings-mobile-switch-icon flex h-10 w-10 items-center justify-center rounded-[14px] border border-[var(--color-border)] bg-[var(--color-primary)] text-[var(--color-primary-contrast)]">
             <Icon name={activeItem.key} />
           </div>
 
           <select
-            className="app-input h-11 min-w-0"
+            className="svx-settings-section-select app-input h-10 min-w-0"
             value={activeItem.to}
             onChange={(event) => onChange(event.target.value)}
           >
@@ -357,19 +386,22 @@ export default function SettingsLayout() {
     NAV_ITEMS[0];
 
   return (
-    <div className="min-w-0 space-y-5 overflow-x-hidden sm:space-y-6">
-      <section className={cx(pageCard(), "min-w-0 overflow-hidden")}>
-        <div className="border-b border-[var(--color-border)] px-4 py-4 sm:px-6 sm:py-5">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+    <div
+      className="svx-settings-shell min-w-0 space-y-4 overflow-x-hidden sm:space-y-5"
+      data-settings-section={activeItem.key}
+    >
+      <section className={cx(pageCard(), "svx-settings-control-card min-w-0 overflow-hidden")}>
+        <div className="svx-settings-control-head border-b border-[var(--color-border)] px-4 py-3.5 sm:px-5 sm:py-4">
+          <div className="svx-settings-control-head-inner flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-3xl">
               <SectionHeading
                 eyebrow="Control center"
                 title="Settings"
-                subtitle="Manage store identity, branches, staff access, document branding, security, and operational controls from one locked workspace."
+                subtitle="Manage store identity, documents, branches, staff access, security, and business controls."
               />
             </div>
 
-            <div className="hidden flex-wrap items-center gap-2 sm:flex">
+            <div className="svx-settings-control-tags hidden flex-wrap items-center gap-2 sm:flex">
               <span className={sectionBadge("primary")}>Store configuration</span>
               <span className={sectionBadge()}>Branch truth</span>
               <span className={sectionBadge()}>Access control</span>
@@ -377,16 +409,16 @@ export default function SettingsLayout() {
           </div>
         </div>
 
-        <div className="hidden px-5 py-5 sm:px-6 lg:block">
-          <div className={cx(softPanel(), "p-3")}>
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-3 2xl:grid-cols-6">
+        <div className="svx-settings-desktop-nav hidden px-4 py-4 sm:px-5 lg:block">
+          <div className={cx(softPanel(), "svx-settings-nav-panel p-2.5")}>
+            <div className="svx-settings-nav-grid grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
               {visibleNavItems.map((item) => (
                 <NavCard key={item.key} item={item} end={item.key === "general"} />
               ))}
             </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-2">
+          <div className="svx-settings-current-row mt-3 flex flex-wrap items-center gap-2">
             <span className={sectionBadge("primary")}>Current: {activeItem.label}</span>
             <span className={sectionBadge()}>{visibleNavItems.length} sections</span>
           </div>
@@ -399,7 +431,7 @@ export default function SettingsLayout() {
         onChange={(to) => navigate(to)}
       />
 
-      <section className="min-w-0 overflow-x-hidden">
+      <section className="svx-settings-outlet min-w-0 overflow-x-hidden">
         <Outlet />
       </section>
     </div>
