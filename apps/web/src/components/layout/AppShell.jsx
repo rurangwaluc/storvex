@@ -522,7 +522,7 @@ export default function AppShell({ children }) {
         onToggleCollapse={() => setCollapsed((prev) => !prev)}
       />
 
-      <div className={collapsed ? "svx-shell-content md:pl-[120px]" : "svx-shell-content md:pl-[332px]"}>
+      <div className={collapsed ? "svx-shell-content md:pl-[94px]" : "svx-shell-content md:pl-[230px]"}>
         <AppHeader
           isDark={isDark}
           onToggleTheme={toggleTheme}
