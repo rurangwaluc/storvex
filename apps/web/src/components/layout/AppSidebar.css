@@ -105,19 +105,19 @@
 
 /* Floating expand control — intentionally visible on both light and dark pages */
 .svx-sidebar button[aria-label="Expand sidebar"] {
-  top: 22px !important;
-  right: -17px !important;
+  top: 24px !important;
+  right: -14px !important;
   z-index: 80 !important;
   display: inline-flex !important;
-  width: 34px !important;
-  height: 34px !important;
+  width: 28px !important;
+  height: 28px !important;
   border: 1px solid rgba(37, 99, 235, 0.55) !important;
   border-radius: 999px !important;
   background: #ffffff !important;
   color: #0d1b3e !important;
   box-shadow:
-    0 0 0 4px var(--color-bg),
-    0 14px 28px rgba(3, 13, 26, 0.22) !important;
+    0 0 0 3px var(--color-bg),
+    0 10px 22px rgba(3, 13, 26, 0.2) !important;
   opacity: 1 !important;
 }
 
@@ -126,15 +126,22 @@
   background: #0d1b3e !important;
   color: #ffffff !important;
   box-shadow:
-    0 0 0 4px var(--color-bg),
-    0 14px 32px rgba(0, 0, 0, 0.36) !important;
+    0 0 0 3px var(--color-bg),
+    0 10px 24px rgba(0, 0, 0, 0.34) !important;
 }
 
 .svx-sidebar button[aria-label="Expand sidebar"]:hover {
   border-color: #2563eb !important;
   background: #2563eb !important;
   color: #ffffff !important;
-  transform: translateY(-1px) scale(1.03) !important;
+  transform: translateY(-1px) scale(1.02) !important;
+}
+
+
+.svx-sidebar button[aria-label="Expand sidebar"] svg {
+  width: 14px !important;
+  height: 14px !important;
+  stroke-width: 2.6 !important;
 }
 
 /* Hide bulky workspace card visually to keep sidebar focused */
