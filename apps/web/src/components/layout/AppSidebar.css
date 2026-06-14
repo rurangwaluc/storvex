@@ -1,50 +1,38 @@
-/* Storvex app sidebar — design skin only.
-   Logic stays in AppSidebar.jsx. This file keeps the sidebar aligned with the
-   landing-page foundation: Archivo headings, Source Sans 3 body text, flat
-   deep navy surfaces, restrained blue accents, and compact spacing. */
+/* Storvex sidebar skin — design-only polish.
+   Logic stays in AppSidebar.jsx. This file only controls visual treatment,
+   compact width, dark/light visibility, collapsed rail, and mobile drawer feel. */
 
 .svx-sidebar {
-  --svx-sidebar-primary: #2563eb;
-  --svx-sidebar-primary-hover: #1d4ed8;
-  --svx-sidebar-primary-soft: rgba(37, 99, 235, 0.14);
-  --svx-sidebar-bg: #030d1a;
-  --svx-sidebar-surface: rgba(255, 255, 255, 0.045);
-  --svx-sidebar-surface-hover: rgba(255, 255, 255, 0.075);
-  --svx-sidebar-text: #ffffff;
-  --svx-sidebar-muted: rgba(255, 255, 255, 0.68);
-  --svx-sidebar-muted-soft: rgba(255, 255, 255, 0.42);
-  --svx-sidebar-border: rgba(255, 255, 255, 0.1);
-  --svx-sidebar-border-strong: rgba(255, 255, 255, 0.15);
-  --svx-sidebar-danger: #ffb4ad;
-  --svx-sidebar-danger-bg: rgba(239, 68, 68, 0.12);
-  --svx-sidebar-expanded-width: 214px;
-  --svx-sidebar-collapsed-width: 72px;
-  --svx-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --svx-sidebar-bg: #030D1A;
+  --svx-sidebar-width: 206px;
+  --svx-sidebar-collapsed-width: 70px;
+  --svx-sidebar-pad: 7px;
+  --svx-sidebar-line: rgba(255, 255, 255, 0.1);
+  --svx-sidebar-text: rgba(255, 255, 255, 0.82);
+  --svx-sidebar-muted: rgba(255, 255, 255, 0.5);
+  --svx-sidebar-hover: rgba(255, 255, 255, 0.055);
 
-  width: var(--svx-sidebar-expanded-width) !important;
-  overflow: hidden;
-  border-right: 1px solid var(--svx-sidebar-border) !important;
+  width: var(--svx-sidebar-width) !important;
+  border-right: 0 !important;
   background: var(--svx-sidebar-bg) !important;
-  box-shadow: 18px 0 44px rgba(0, 0, 0, 0.26) !important;
-  color: var(--svx-sidebar-text) !important;
-  font-family: var(--svx-body-font, "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif) !important;
-}
-
-:root[data-theme="dark"] .svx-sidebar {
-  --svx-sidebar-primary: #159cff;
-  --svx-sidebar-primary-hover: #0b86df;
-  --svx-sidebar-primary-soft: rgba(21, 156, 255, 0.14);
-  background: #030d1a !important;
-  box-shadow: 18px 0 48px rgba(0, 0, 0, 0.34) !important;
+  color: #ffffff !important;
+  box-shadow: 16px 0 42px rgba(0, 0, 0, 0.18) !important;
+  font-family: var(
+    --svx-body-font,
+    "Source Sans 3",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif
+  ) !important;
+  transition:
+    width 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 
 .svx-sidebar.w-\[96px\] {
   width: var(--svx-sidebar-collapsed-width) !important;
-}
-
-.svx-sidebar::before,
-.svx-sidebar::after {
-  display: none !important;
 }
 
 .svx-sidebar a,
@@ -54,15 +42,10 @@
   font-family: inherit;
 }
 
-.svx-sidebar a,
-.svx-sidebar button {
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Header / logo */
+/* Header / logo row */
 .svx-sidebar > div:first-of-type {
-  min-height: 68px !important;
-  padding: 10px 8px 8px !important;
+  min-height: 64px !important;
+  padding: 10px var(--svx-sidebar-pad) 8px !important;
 }
 
 .svx-sidebar a[aria-label="Go to dashboard"] {
@@ -72,24 +55,21 @@
 }
 
 .svx-sidebar a[aria-label="Go to dashboard"]:hover {
-  border-color: transparent !important;
-  background: transparent !important;
+  border-color: var(--svx-sidebar-line) !important;
+  background: var(--svx-sidebar-hover) !important;
 }
 
 .svx-sidebar a[aria-label="Go to dashboard"] span[class*="h-"] {
-  width: 146px !important;
-  height: 44px !important;
-  border-radius: 12px !important;
-  padding-inline: 0 !important;
-}
-
-.svx-sidebar a[aria-label="Go to dashboard"] img {
-  filter: none !important;
+  width: 148px !important;
+  height: 46px !important;
+  border-radius: 14px !important;
+  padding-left: 2px !important;
+  padding-right: 2px !important;
 }
 
 .svx-sidebar a[aria-label="Go to dashboard"] img.h-12 {
-  height: 34px !important;
-  max-width: 142px !important;
+  height: 36px !important;
+  max-width: 138px !important;
 }
 
 .svx-sidebar a[aria-label="Go to dashboard"] img.h-10 {
@@ -97,96 +77,110 @@
   height: 32px !important;
 }
 
-.svx-sidebar a[aria-label="Go to dashboard"].mx-auto {
-  width: 44px !important;
-  height: 44px !important;
-  border-radius: 14px !important;
-  background: transparent !important;
+.svx-sidebar.w-\[96px\] a[aria-label="Go to dashboard"] {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 16px !important;
 }
 
-/* Top action buttons */
+/* Collapse / close controls */
 .svx-sidebar button[aria-label="Collapse sidebar"],
 .svx-sidebar button[aria-label="Close sidebar"] {
-  width: 32px !important;
-  height: 32px !important;
-  border: 1px solid var(--svx-sidebar-border) !important;
-  border-radius: 10px !important;
-  background: var(--svx-sidebar-surface) !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 12px !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  background: rgba(255, 255, 255, 0.075) !important;
+  color: #ffffff !important;
   box-shadow: none !important;
-  color: rgba(255, 255, 255, 0.84) !important;
-  transition:
-    transform 160ms var(--svx-ease-out),
-    background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease !important;
 }
 
 .svx-sidebar button[aria-label="Collapse sidebar"]:hover,
 .svx-sidebar button[aria-label="Close sidebar"]:hover {
-  transform: translateY(-1px) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
-  background: var(--svx-sidebar-surface-hover) !important;
+  border-color: rgba(37, 99, 235, 0.5) !important;
+  background: #2563eb !important;
   color: #ffffff !important;
+  transform: translateY(-1px) !important;
 }
 
+/* Floating expand control — intentionally visible on both light and dark pages */
 .svx-sidebar button[aria-label="Expand sidebar"] {
-  top: 24px !important;
-  right: -13px !important;
-  width: 28px !important;
-  height: 28px !important;
-  border: 1px solid var(--svx-sidebar-border-strong) !important;
+  top: 22px !important;
+  right: -17px !important;
+  z-index: 80 !important;
+  display: inline-flex !important;
+  width: 34px !important;
+  height: 34px !important;
+  border: 1px solid rgba(37, 99, 235, 0.55) !important;
   border-radius: 999px !important;
-  background: #030d1a !important;
-  box-shadow: 0 0 0 4px var(--color-bg), 0 10px 22px rgba(0, 0, 0, 0.22) !important;
+  background: #ffffff !important;
+  color: #0d1b3e !important;
+  box-shadow:
+    0 0 0 4px var(--color-bg),
+    0 14px 28px rgba(3, 13, 26, 0.22) !important;
+  opacity: 1 !important;
+}
+
+:root[data-theme="dark"] .svx-sidebar button[aria-label="Expand sidebar"] {
+  border-color: rgba(21, 156, 255, 0.62) !important;
+  background: #0d1b3e !important;
   color: #ffffff !important;
+  box-shadow:
+    0 0 0 4px var(--color-bg),
+    0 14px 32px rgba(0, 0, 0, 0.36) !important;
 }
 
 .svx-sidebar button[aria-label="Expand sidebar"]:hover {
-  transform: translateY(-1px) !important;
-  border-color: var(--svx-sidebar-primary) !important;
-  background: var(--svx-sidebar-primary) !important;
+  border-color: #2563eb !important;
+  background: #2563eb !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) scale(1.03) !important;
 }
 
-/* Keep workspace data hidden visually. Logic remains in JSX. */
+/* Hide bulky workspace card visually to keep sidebar focused */
 .svx-sidebar > div:nth-of-type(2) {
   display: none !important;
 }
 
 /* Navigation */
 .svx-sidebar nav {
-  padding: 7px 7px 10px !important;
+  padding: 6px var(--svx-sidebar-pad) 10px !important;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.24) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
 .svx-sidebar nav::-webkit-scrollbar {
-  width: 5px;
-}
-
-.svx-sidebar nav::-webkit-scrollbar-track {
-  background: transparent;
+  width: 4px;
 }
 
 .svx-sidebar nav::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .svx-sidebar nav > div {
-  margin-bottom: 10px !important;
+  margin-bottom: 9px !important;
 }
 
 .svx-sidebar nav div[class*="uppercase"] {
-  padding: 0 7px 6px !important;
-  color: var(--svx-sidebar-muted-soft) !important;
-  font-family: var(--svx-heading-font, "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif) !important;
+  padding: 0 7px 5px !important;
+  color: var(--svx-sidebar-muted) !important;
+  font-family: var(
+    --svx-heading-font,
+    "Archivo",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif
+  ) !important;
   font-size: 8.5px !important;
   font-weight: 800 !important;
-  letter-spacing: 0.15em !important;
+  letter-spacing: 0.16em !important;
 }
 
 .svx-sidebar nav .bg-\[var\(--color-border\)\] {
-  background: rgba(255, 255, 255, 0.16) !important;
+  background: rgba(255, 255, 255, 0.13) !important;
 }
 
 .svx-sidebar nav ul {
@@ -195,44 +189,45 @@
 
 .svx-sidebar nav button {
   min-height: 38px !important;
-  border: 1px solid transparent !important;
-  border-radius: 11px !important;
+  border-radius: 12px !important;
+  border-color: transparent !important;
   background: transparent !important;
+  color: var(--svx-sidebar-text) !important;
   box-shadow: none !important;
-  color: var(--svx-sidebar-muted) !important;
+}
+
+.svx-sidebar nav button:not(.justify-center) {
   gap: 8px !important;
   padding: 7px !important;
-  transition:
-    transform 160ms var(--svx-ease-out),
-    background-color 160ms ease,
-    border-color 160ms ease,
-    color 160ms ease !important;
 }
 
 .svx-sidebar nav button:hover {
-  transform: translateY(-1px) !important;
-  border-color: var(--svx-sidebar-border) !important;
-  background: var(--svx-sidebar-surface-hover) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: var(--svx-sidebar-hover) !important;
   color: #ffffff !important;
+  transform: translateY(-1px);
 }
 
 .svx-sidebar nav button span.h-8.w-8 {
   width: 28px !important;
   height: 28px !important;
-  border-radius: 9px !important;
+  border-radius: 10px !important;
   background: transparent !important;
   color: currentColor !important;
 }
 
-.svx-sidebar nav button:hover span.h-8.w-8,
-.svx-sidebar nav button:hover .bg-\[var\(--color-card\)\] {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: #ffffff !important;
-}
-
 .svx-sidebar nav button span.text-\[14px\] {
   color: currentColor !important;
-  font-size: 13px !important;
+  font-family: var(
+    --svx-heading-font,
+    "Archivo",
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif
+  ) !important;
+  font-size: 12.5px !important;
   font-weight: 700 !important;
   letter-spacing: -0.01em !important;
 }
@@ -244,21 +239,14 @@
   stroke: currentColor !important;
 }
 
-/* Active item: solid blue. */
+/* Active nav item — solid, real-world, no gradients */
 .svx-sidebar nav button.border-\[var\(--color-primary\)\]\/25,
 .svx-sidebar nav button.bg-\[var\(--color-primary-soft\)\] {
-  min-height: 39px !important;
-  border-color: var(--svx-sidebar-primary) !important;
-  border-radius: 11px !important;
-  background: var(--svx-sidebar-primary) !important;
-  box-shadow: none !important;
+  border-color: #2563eb !important;
+  background: #2563eb !important;
   color: #ffffff !important;
-}
-
-.svx-sidebar nav button.border-\[var\(--color-primary\)\]\/25:hover,
-.svx-sidebar nav button.bg-\[var\(--color-primary-soft\)\]:hover {
-  background: var(--svx-sidebar-primary-hover) !important;
-  color: #ffffff !important;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.24) !important;
+  transform: none !important;
 }
 
 .svx-sidebar nav button.border-\[var\(--color-primary\)\]\/25 span.absolute,
@@ -277,10 +265,19 @@
 .svx-sidebar nav button.border-\[var\(--color-primary\)\]\/25 span.text-\[14px\],
 .svx-sidebar nav button.bg-\[var\(--color-primary-soft\)\] span.text-\[14px\] {
   color: #ffffff !important;
+  stroke: currentColor !important;
 }
 
+.svx-sidebar nav button.border-\[var\(--color-primary\)\]\/25:hover,
+.svx-sidebar nav button.bg-\[var\(--color-primary-soft\)\]:hover {
+  border-color: #2563eb !important;
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Collapsed rail */
 .svx-sidebar nav button.justify-center {
-  min-height: 40px !important;
+  min-height: 38px !important;
   border-radius: 12px !important;
   padding: 6px 0 !important;
 }
@@ -290,31 +287,24 @@
   height: 30px !important;
 }
 
-.svx-sidebar nav button.justify-center.border-\[var\(--color-primary\)\]\/25,
-.svx-sidebar nav button.justify-center.bg-\[var\(--color-primary-soft\)\] {
-  border-radius: 12px !important;
-}
-
-/* Footer / sign out */
+/* Bottom sign out */
 .svx-sidebar > div:last-of-type {
-  border-top: 1px solid var(--svx-sidebar-border) !important;
-  padding: 9px 7px max(10px, env(safe-area-inset-bottom, 0px)) !important;
+  border-top-color: rgba(255, 255, 255, 0.1) !important;
+  padding: 10px var(--svx-sidebar-pad) max(10px, env(safe-area-inset-bottom, 0px)) !important;
 }
 
 .svx-sidebar > div:last-of-type button {
   min-height: 38px !important;
-  border-radius: 11px !important;
+  border-radius: 12px !important;
   border-color: transparent !important;
-  background: var(--svx-sidebar-surface) !important;
-  color: var(--svx-sidebar-danger) !important;
-  box-shadow: none !important;
-  padding: 7px !important;
+  background: rgba(255, 255, 255, 0.055) !important;
+  color: #ffb1aa !important;
 }
 
 .svx-sidebar > div:last-of-type button:hover {
-  transform: translateY(-1px) !important;
-  border-color: rgba(239, 68, 68, 0.28) !important;
-  background: var(--svx-sidebar-danger-bg) !important;
+  border-color: rgba(255, 138, 130, 0.28) !important;
+  background: rgba(255, 138, 130, 0.12) !important;
+  transform: translateY(-1px);
 }
 
 .svx-sidebar > div:last-of-type button span.h-8.w-8 {
@@ -323,43 +313,191 @@
 }
 
 .svx-sidebar > div:last-of-type button span.text-\[14px\] {
-  font-size: 13px !important;
+  font-size: 12.5px !important;
 }
 
+/* Content must gain the space removed from the sidebar */
+.svx-shell-content {
+  transition: padding-left 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Mobile drawer — premium native-feeling navigation without changing logic */
 @media (max-width: 767px) {
   .svx-sidebar {
-    width: min(78vw, 232px) !important;
+    --svx-sidebar-mobile-width: clamp(218px, 66vw, 268px);
+    width: min(var(--svx-sidebar-mobile-width), calc(100vw - 52px)) !important;
+    max-width: calc(100vw - 52px) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-radius: 0 18px 18px 0 !important;
+    background: #030D1A !important;
+    box-shadow: 18px 0 44px rgba(0, 0, 0, 0.28) !important;
     padding-top: env(safe-area-inset-top, 0px);
-    box-shadow: 20px 0 54px rgba(0, 0, 0, 0.34) !important;
+    will-change: transform;
   }
 
   .svx-sidebar > div:first-of-type {
-    min-height: 70px !important;
+    min-height: 62px !important;
+    padding: 8px 7px 7px !important;
   }
 
-  .svx-sidebar nav {
-    padding-top: 7px !important;
+  .svx-sidebar a[aria-label="Go to dashboard"] {
+    max-width: calc(100% - 42px) !important;
+    border-radius: 14px !important;
   }
 
-  .svx-sidebar nav button {
-    min-height: 42px !important;
-    border-radius: 12px !important;
+  .svx-sidebar a[aria-label="Go to dashboard"] span[class*="h-"] {
+    width: min(136px, 100%) !important;
+    height: 42px !important;
+    border-radius: 13px !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .svx-sidebar a[aria-label="Go to dashboard"] img.h-12 {
+    height: 32px !important;
+    max-width: 128px !important;
+  }
+
+  .svx-sidebar button[aria-label="Close sidebar"] {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 13px !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+  }
+
+  .svx-sidebar button[aria-label="Close sidebar"]:active {
+    transform: scale(0.98) !important;
   }
 
   .svx-sidebar button[aria-label="Expand sidebar"] {
     display: none !important;
   }
+
+  .svx-sidebar > div:nth-of-type(2) {
+    display: none !important;
+  }
+
+  .svx-sidebar nav {
+    padding: 6px 7px 8px !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .svx-sidebar nav > div {
+    margin-bottom: 7px !important;
+  }
+
+  .svx-sidebar nav div[class*="uppercase"] {
+    padding: 0 7px 4px !important;
+    font-size: 8px !important;
+    letter-spacing: 0.15em !important;
+  }
+
+  .svx-sidebar nav ul {
+    gap: 2px !important;
+  }
+
+  .svx-sidebar nav button {
+    min-height: 42px !important;
+    border-radius: 13px !important;
+    touch-action: manipulation;
+  }
+
+  .svx-sidebar nav button:not(.justify-center) {
+    gap: 8px !important;
+    padding: 7px !important;
+  }
+
+  .svx-sidebar nav button span.h-8.w-8 {
+    width: 29px !important;
+    height: 29px !important;
+    border-radius: 10px !important;
+  }
+
+  .svx-sidebar nav button span.text-\[14px\] {
+    font-size: 12.5px !important;
+    line-height: 1.1 !important;
+  }
+
+  .svx-sidebar nav button svg {
+    width: 17px !important;
+    height: 17px !important;
+  }
+
+  .svx-sidebar > div:last-of-type {
+    padding: 8px 7px max(10px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .svx-sidebar > div:last-of-type button {
+    min-height: 42px !important;
+    border-radius: 13px !important;
+  }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .svx-sidebar,
-  .svx-sidebar *,
-  .svx-sidebar *::before,
-  .svx-sidebar *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: 0.001ms !important;
+@media (max-width: 420px) {
+  .svx-sidebar {
+    --svx-sidebar-mobile-width: clamp(212px, 68vw, 246px);
+    max-width: calc(100vw - 48px) !important;
+    border-radius: 0 16px 16px 0 !important;
+  }
+
+  .svx-sidebar a[aria-label="Go to dashboard"] img.h-12 {
+    height: 30px !important;
+    max-width: 118px !important;
+  }
+
+  .svx-sidebar nav button {
+    min-height: 40px !important;
+  }
+
+  .svx-sidebar nav button span.text-\[14px\] {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .svx-sidebar {
+    --svx-sidebar-mobile-width: 218px;
+    max-width: calc(100vw - 44px) !important;
+  }
+
+  .svx-sidebar > div:first-of-type {
+    min-height: 58px !important;
+  }
+
+  .svx-sidebar a[aria-label="Go to dashboard"] span[class*="h-"] {
+    width: 116px !important;
+  }
+
+  .svx-sidebar a[aria-label="Go to dashboard"] img.h-12 {
+    height: 28px !important;
+    max-width: 110px !important;
+  }
+}
+
+@media (max-width: 767px) and (orientation: landscape) {
+  .svx-sidebar {
+    --svx-sidebar-mobile-width: 234px;
+  }
+
+  .svx-sidebar > div:first-of-type {
+    min-height: 56px !important;
+    padding-top: 6px !important;
+    padding-bottom: 5px !important;
+  }
+
+  .svx-sidebar nav {
+    padding-top: 4px !important;
+  }
+
+  .svx-sidebar nav button {
+    min-height: 38px !important;
+  }
+
+  .svx-sidebar > div:last-of-type button {
+    min-height: 38px !important;
   }
 }
