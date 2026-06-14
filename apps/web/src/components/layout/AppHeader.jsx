@@ -14,15 +14,6 @@ function MenuIcon() {
   );
 }
 
-function CalendarIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="svx-header-icon-sm" fill="none" stroke="currentColor" strokeWidth="1.9">
-      <path d="M7 3v3M17 3v3M4 9h16" strokeLinecap="round" />
-      <rect x="4" y="5" width="16" height="16" rx="4" />
-    </svg>
-  );
-}
-
 function PlusIcon() {
   return (
     <svg viewBox="0 0 24 24" className="svx-header-icon-sm" fill="none" stroke="currentColor" strokeWidth="2.1">
@@ -192,28 +183,6 @@ function initials(value) {
   return built || "SO";
 }
 
-function currentWeekLabel() {
-  const now = new Date();
-  const day = now.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diffToMonday);
-
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-
-  const sameMonth = monday.getMonth() === sunday.getMonth();
-  const monthA = monday.toLocaleDateString("en-US", { month: "short" });
-  const monthB = sunday.toLocaleDateString("en-US", { month: "short" });
-
-  if (sameMonth) {
-    return `${monthA} ${monday.getDate()} – ${sunday.getDate()}, ${sunday.getFullYear()}`;
-  }
-
-  return `${monthA} ${monday.getDate()} – ${monthB} ${sunday.getDate()}, ${sunday.getFullYear()}`;
-}
-
 function ActionMenu({ open, onClose }) {
   if (!open) return null;
 
@@ -363,13 +332,6 @@ export default function AppHeader({
         </div>
 
         <div className="svx-header-actions">
-          <div className="svx-header-date-display" aria-label="Current week">
-            <span className="svx-header-date-icon">
-              <CalendarIcon />
-            </span>
-            <span>{currentWeekLabel()}</span>
-          </div>
-
           <div className="svx-header-add-wrap" ref={actionMenuRef}>
             <button
               type="button"
