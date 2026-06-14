@@ -3,18 +3,41 @@
    logout, workspace cache, and active-route behavior unchanged. */
 
 .svx-sidebar {
+  --svx-sidebar-bg: #ffffff;
+  --svx-sidebar-bg-2: #f8fafc;
+  --svx-sidebar-text: #0f172a;
+  --svx-sidebar-muted: rgba(15, 23, 42, 0.62);
+  --svx-sidebar-border: rgba(15, 23, 42, 0.1);
+  --svx-sidebar-hover: rgba(7, 125, 203, 0.07);
+  --svx-sidebar-icon: rgba(15, 23, 42, 0.58);
+  --svx-sidebar-danger: #b42318;
+  --svx-sidebar-danger-bg: rgba(180, 35, 24, 0.08);
+
   font-family: var(--svx-body-font, "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif);
   background:
-    radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--color-primary) 7%, transparent), transparent 21rem),
-    linear-gradient(180deg, #06111f 0%, #06101d 48%, #040d19 100%) !important;
-  color: #ffffff !important;
-  border-right-color: transparent !important;
-    border-right-width: 0 !important;
-  box-shadow: 22px 0 72px rgba(0, 0, 0, 0.22) !important;
+    radial-gradient(circle at 78% -6%, color-mix(in srgb, var(--color-primary) 9%, transparent), transparent 18rem),
+    linear-gradient(180deg, var(--svx-sidebar-bg) 0%, var(--svx-sidebar-bg-2) 100%) !important;
+  color: var(--svx-sidebar-text) !important;
+  border-right: 1px solid var(--svx-sidebar-border) !important;
+  box-shadow: 20px 0 64px rgba(15, 23, 42, 0.08) !important;
 }
 
-.svx-sidebar {
-  border-right: 0 !important;
+:root[data-theme="dark"] .svx-sidebar {
+  --svx-sidebar-bg: #06111f;
+  --svx-sidebar-bg-2: #040d19;
+  --svx-sidebar-text: #ffffff;
+  --svx-sidebar-muted: rgba(255, 255, 255, 0.58);
+  --svx-sidebar-border: rgba(255, 255, 255, 0.1);
+  --svx-sidebar-hover: rgba(255, 255, 255, 0.06);
+  --svx-sidebar-icon: rgba(255, 255, 255, 0.72);
+  --svx-sidebar-danger: #ff9b94;
+  --svx-sidebar-danger-bg: rgba(255, 138, 130, 0.1);
+
+  background:
+    radial-gradient(circle at 82% -4%, color-mix(in srgb, var(--color-primary) 10%, transparent), transparent 19rem),
+    linear-gradient(180deg, #06111f 0%, #06101d 50%, #040d19 100%) !important;
+  border-right-color: transparent !important;
+  box-shadow: 22px 0 72px rgba(0, 0, 0, 0.24) !important;
 }
 
 .svx-sidebar a,
@@ -22,7 +45,6 @@
   font-family: inherit;
 }
 
-/* Top logo row */
 .svx-sidebar > div:first-of-type {
   min-height: 78px !important;
   padding: 14px 16px 10px !important;
@@ -35,15 +57,14 @@
 }
 
 .svx-sidebar a[aria-label="Go to dashboard"]:hover {
-  background: rgba(255, 255, 255, 0.045) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: var(--svx-sidebar-hover) !important;
+  border-color: var(--svx-sidebar-border) !important;
 }
 
 .svx-sidebar a[aria-label="Go to dashboard"] img {
-  filter: drop-shadow(0 10px 26px rgba(7, 125, 203, 0.16));
+  filter: drop-shadow(0 10px 26px rgba(7, 125, 203, 0.14));
 }
 
-/* Logo size tuning */
 .svx-sidebar a[aria-label="Go to dashboard"] span[class*="h-"] {
   border-radius: 18px !important;
 }
@@ -57,13 +78,12 @@
   width: 34px !important;
 }
 
-/* Collapse / close controls */
 .svx-sidebar button[aria-label="Collapse sidebar"],
 .svx-sidebar button[aria-label="Expand sidebar"],
 .svx-sidebar button[aria-label="Close sidebar"] {
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  background: rgba(255, 255, 255, 0.06) !important;
-  color: rgba(255, 255, 255, 0.86) !important;
+  border-color: var(--svx-sidebar-border) !important;
+  background: color-mix(in srgb, var(--svx-sidebar-bg) 84%, var(--color-primary) 16%) !important;
+  color: var(--svx-sidebar-text) !important;
   box-shadow: none !important;
 }
 
@@ -77,26 +97,45 @@
 .svx-sidebar button[aria-label="Collapse sidebar"]:hover,
 .svx-sidebar button[aria-label="Expand sidebar"]:hover,
 .svx-sidebar button[aria-label="Close sidebar"]:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 46%, transparent) !important;
-  background: color-mix(in srgb, var(--color-primary) 14%, transparent) !important;
+  border-color: color-mix(in srgb, var(--color-primary) 48%, transparent) !important;
+  background: color-mix(in srgb, var(--color-primary) 13%, var(--svx-sidebar-bg)) !important;
+  color: var(--color-primary) !important;
+}
+
+:root[data-theme="dark"] .svx-sidebar button[aria-label="Collapse sidebar"],
+:root[data-theme="dark"] .svx-sidebar button[aria-label="Close sidebar"] {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.86) !important;
+}
+
+:root[data-theme="dark"] .svx-sidebar button[aria-label="Collapse sidebar"]:hover,
+:root[data-theme="dark"] .svx-sidebar button[aria-label="Close sidebar"]:hover {
   color: #ffffff !important;
 }
 
-/* Floating collapsed button — visible on light and dark pages */
 .svx-sidebar button[aria-label="Expand sidebar"] {
   right: -18px !important;
   top: 28px !important;
   width: 36px !important;
   height: 36px !important;
   border-radius: 999px !important;
-  border: 1px solid color-mix(in srgb, var(--color-primary) 44%, rgba(255, 255, 255, 0.16)) !important;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 42%, var(--svx-sidebar-border)) !important;
+  background: var(--svx-sidebar-bg) !important;
+  color: var(--color-primary) !important;
+  box-shadow:
+    0 0 0 4px var(--color-bg),
+    0 16px 38px rgba(15, 23, 42, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+  opacity: 1 !important;
+}
+
+:root[data-theme="dark"] .svx-sidebar button[aria-label="Expand sidebar"] {
   background: #06111f !important;
   color: #ffffff !important;
   box-shadow:
     0 0 0 4px var(--color-bg),
     0 16px 38px rgba(0, 0, 0, 0.26),
     inset 0 1px 0 rgba(255, 255, 255, 0.11) !important;
-  opacity: 1 !important;
 }
 
 .svx-sidebar button[aria-label="Expand sidebar"]:hover {
@@ -106,31 +145,34 @@
   color: var(--color-primary-contrast) !important;
   box-shadow:
     0 0 0 4px var(--color-bg),
-    0 22px 52px color-mix(in srgb, var(--color-primary) 32%, rgba(0, 0, 0, 0.22)),
+    0 22px 52px color-mix(in srgb, var(--color-primary) 28%, rgba(15, 23, 42, 0.18)),
     inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
 }
 
-/* Remove bulky workspace card from sidebar */
+/* Remove bulky workspace card from sidebar while preserving workspace logic. */
 .svx-sidebar > div:nth-of-type(2) {
   display: none !important;
 }
 
-/* Navigation */
 .svx-sidebar nav {
   padding-top: 8px !important;
   padding-left: 14px !important;
   padding-right: 14px !important;
   padding-bottom: 12px !important;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: color-mix(in srgb, var(--svx-sidebar-muted) 34%, transparent) transparent;
 }
 
 .svx-sidebar nav::-webkit-scrollbar {
   width: 6px;
 }
 
+.svx-sidebar nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 .svx-sidebar nav::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
+  background: color-mix(in srgb, var(--svx-sidebar-muted) 28%, transparent);
   border-radius: 999px;
 }
 
@@ -141,7 +183,7 @@
 .svx-sidebar nav div[class*="uppercase"] {
   padding-left: 10px !important;
   padding-bottom: 6px !important;
-  color: rgba(255, 255, 255, 0.44) !important;
+  color: var(--svx-sidebar-muted) !important;
   font-family: var(--svx-heading-font, "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif) !important;
   font-size: 9px !important;
   font-weight: 800 !important;
@@ -149,7 +191,7 @@
 }
 
 .svx-sidebar nav .bg-\[var\(--color-border\)\] {
-  background: rgba(255, 255, 255, 0.13) !important;
+  background: color-mix(in srgb, var(--svx-sidebar-muted) 24%, transparent) !important;
 }
 
 .svx-sidebar nav ul {
@@ -159,16 +201,16 @@
 .svx-sidebar nav button {
   min-height: 42px !important;
   border-radius: 15px !important;
-  color: rgba(255, 255, 255, 0.72) !important;
+  color: var(--svx-sidebar-muted) !important;
   background: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
 }
 
 .svx-sidebar nav button:hover {
-  color: #ffffff !important;
-  background: rgba(255, 255, 255, 0.055) !important;
-  border-color: rgba(255, 255, 255, 0.085) !important;
+  color: var(--svx-sidebar-text) !important;
+  background: var(--svx-sidebar-hover) !important;
+  border-color: var(--svx-sidebar-border) !important;
   transform: translateY(-1px);
 }
 
@@ -176,10 +218,14 @@
   width: 30px !important;
   height: 30px !important;
   border-radius: 12px !important;
-  color: rgba(255, 255, 255, 0.72) !important;
+  color: var(--svx-sidebar-icon) !important;
 }
 
 .svx-sidebar nav button .bg-\[var\(--color-card\)\] {
+  background: color-mix(in srgb, var(--svx-sidebar-bg) 70%, var(--color-primary) 7%) !important;
+}
+
+:root[data-theme="dark"] .svx-sidebar nav button .bg-\[var\(--color-card\)\] {
   background: rgba(255, 255, 255, 0.07) !important;
 }
 
@@ -196,7 +242,7 @@
   stroke: currentColor !important;
 }
 
-/* Active nav item — cut-out style like the reference */
+/* Active nav item — premium cut-out on desktop, compact pill on mobile. */
 .svx-sidebar nav button.border-\[var\(--color-primary\)\]\/25,
 .svx-sidebar nav button.bg-\[var\(--color-primary-soft\)\] {
   position: relative !important;
@@ -211,7 +257,7 @@
   color: var(--color-primary) !important;
   box-shadow:
     14px 0 0 var(--color-bg),
-    0 18px 44px rgba(0, 0, 0, 0.12) !important;
+    0 18px 44px rgba(15, 23, 42, 0.1) !important;
 }
 
 .svx-sidebar nav button.border-\[var\(--color-primary\)\]\/25::after,
@@ -250,19 +296,23 @@
   font-weight: 800 !important;
 }
 
-/* Hover icon visibility */
 .svx-sidebar nav button:hover span.h-8.w-8,
 .svx-sidebar nav button:hover .bg-\[var\(--color-card\)\] {
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--svx-sidebar-bg)) !important;
+  color: var(--color-primary) !important;
+}
+
+:root[data-theme="dark"] .svx-sidebar nav button:hover span.h-8.w-8,
+:root[data-theme="dark"] .svx-sidebar nav button:hover .bg-\[var\(--color-card\)\] {
   background: rgba(255, 255, 255, 0.11) !important;
   color: #ffffff !important;
 }
 
 .svx-sidebar nav button:hover svg {
-  color: #ffffff !important;
+  color: currentColor !important;
   stroke: currentColor !important;
 }
 
-/* Keep active hover readable */
 .svx-sidebar nav button.border-\[var\(--color-primary\)\]\/25:hover,
 .svx-sidebar nav button.bg-\[var\(--color-primary-soft\)\]:hover {
   background: var(--color-bg) !important;
@@ -281,7 +331,6 @@
   color: var(--color-primary) !important;
 }
 
-/* Collapsed nav rail */
 .svx-sidebar nav button.justify-center {
   min-height: 44px !important;
   border-radius: 17px !important;
@@ -292,7 +341,6 @@
   height: 32px !important;
 }
 
-/* Collapsed active cut-out */
 .svx-sidebar nav button.justify-center.border-\[var\(--color-primary\)\]\/25,
 .svx-sidebar nav button.justify-center.bg-\[var\(--color-primary-soft\)\] {
   margin-right: -14px !important;
@@ -302,9 +350,8 @@
   border-radius: 999px 0 0 999px !important;
 }
 
-/* Bottom sign out — smaller, not competing with nav */
 .svx-sidebar > div:last-of-type {
-  border-top-color: rgba(255, 255, 255, 0.09) !important;
+  border-top-color: var(--svx-sidebar-border) !important;
   padding: 12px 14px max(14px, env(safe-area-inset-bottom, 0px)) !important;
 }
 
@@ -312,13 +359,17 @@
   min-height: 42px !important;
   border-radius: 16px !important;
   border-color: transparent !important;
+  background: color-mix(in srgb, var(--svx-sidebar-danger-bg) 86%, transparent) !important;
+  color: var(--svx-sidebar-danger) !important;
+}
+
+:root[data-theme="dark"] .svx-sidebar > div:last-of-type button {
   background: rgba(255, 255, 255, 0.055) !important;
-  color: #ff9b94 !important;
 }
 
 .svx-sidebar > div:last-of-type button:hover {
-  border-color: rgba(255, 138, 130, 0.28) !important;
-  background: rgba(255, 138, 130, 0.12) !important;
+  border-color: color-mix(in srgb, var(--svx-sidebar-danger) 28%, transparent) !important;
+  background: var(--svx-sidebar-danger-bg) !important;
   transform: translateY(-1px);
 }
 
@@ -327,7 +378,6 @@
   height: 30px !important;
 }
 
-/* Dark mode cut-out */
 :root[data-theme="dark"] .svx-sidebar nav button.border-\[var\(--color-primary\)\]\/25,
 :root[data-theme="dark"] .svx-sidebar nav button.bg-\[var\(--color-primary-soft\)\] {
   background: var(--color-bg) !important;
@@ -342,10 +392,9 @@
   background: var(--color-bg);
 }
 
-/* Mobile drawer */
 @media (max-width: 767px) {
   .svx-sidebar {
-    width: min(86vw, 326px) !important;
+    width: min(88vw, 326px) !important;
     border-radius: 0 28px 28px 0;
     padding-top: env(safe-area-inset-top, 0px);
   }

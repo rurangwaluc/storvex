@@ -3,20 +3,26 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   AlertTriangle,
+  ArrowUpRight,
   BarChart3,
   Boxes,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   ClipboardList,
   CreditCard,
   FileText,
-  MessageCircle,
+  Image,
   PackageCheck,
+  Plus,
   RefreshCw,
   ShoppingBag,
   ShoppingCart,
+  Store,
+  TrendingUp,
   Users,
   Wrench,
+  Zap,
 } from "lucide-react";
 
 import { getWorkspaceContext } from "../../services/storeApi";
@@ -26,20 +32,31 @@ import AsyncButton from "../../components/ui/AsyncButton";
 import { cn } from "../../lib/cn";
 
 const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
-
 const CARD =
-  "rounded-[26px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-const PANEL =
+  "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+const INNER =
   "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
-const SOFT_PANEL =
-  "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]";
+
+function numberValue(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
 
 function money(value) {
-  const n = Number(value || 0);
+  const n = numberValue(value);
 
   return `Rwf ${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(Math.round(n))}`;
+}
+
+function compactMoney(value) {
+  const n = numberValue(value);
+
+  if (Math.abs(n) >= 1000000) return `Rwf ${(n / 1000000).toFixed(1)}M`;
+  if (Math.abs(n) >= 1000) return `Rwf ${(n / 1000).toFixed(0)}K`;
+
+  return money(n);
 }
 
 function fmtDate(value) {
@@ -55,15 +72,6 @@ function fmtDate(value) {
   });
 }
 
-function todayLabel() {
-  return new Date().toLocaleDateString("en-US", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 function greeting() {
   const hour = new Date().getHours();
 
@@ -71,6 +79,26 @@ function greeting() {
   if (hour < 17) return "Good afternoon";
 
   return "Good evening";
+}
+
+function currentWeekLabel() {
+  const now = new Date();
+  const day = now.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diffToMonday);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const monthA = monday.toLocaleDateString("en-US", { month: "short" });
+  const monthB = sunday.toLocaleDateString("en-US", { month: "short" });
+
+  if (monthA === monthB) {
+    return `${monthA} ${monday.getDate()} – ${sunday.getDate()}, ${sunday.getFullYear()}`;
+  }
+
+  return `${monthA} ${monday.getDate()} – ${monthB} ${sunday.getDate()}, ${sunday.getFullYear()}`;
 }
 
 function firstWord(value) {
@@ -81,54 +109,107 @@ function safeList(value) {
   return Array.isArray(value) ? value : [];
 }
 
-function readCachedWorkspace() {
-  try {
-    const session = sessionStorage.getItem(WORKSPACE_CACHE_KEY);
-    if (session) return JSON.parse(session);
-  } catch {}
+function safeJsonParse(value) {
+  if (!value) return null;
 
   try {
-    const local = localStorage.getItem(WORKSPACE_CACHE_KEY);
-    if (local) return JSON.parse(local);
-  } catch {}
-
-  return null;
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
 }
 
-function categoryLabel(value) {
+function readCachedWorkspace() {
   return (
-    {
-      ELECTRONICS: "Electronics store",
-      ELECTRONICS_RETAIL: "Electronics store",
-      PHONE_SHOP: "Phone shop",
-      LAPTOP_SHOP: "Laptop shop",
-      ACCESSORIES_SHOP: "Accessories shop",
-      REPAIR_SHOP: "Repair shop",
-      MIXED_ELECTRONICS: "Mixed electronics shop",
-      HARDWARE: "Hardware store",
-      HOME_KITCHEN: "Home & kitchen store",
-      LIGHTING: "Lighting store",
-      SPARE_PARTS: "Spare parts store",
-    }[value] ||
-    value ||
-    "Retail store"
+    safeJsonParse(sessionStorage.getItem(WORKSPACE_CACHE_KEY)) ||
+    safeJsonParse(localStorage.getItem(WORKSPACE_CACHE_KEY))
   );
+}
+
+function normalizeCategory(value) {
+  const raw = String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
+
+  if (["HARDWARE", "QUINCAILLERIE"].includes(raw)) return "HARDWARE";
+  if (["HOME_KITCHEN", "HOME_AND_KITCHEN", "HOME_KITCHEN_MATERIALS"].includes(raw)) {
+    return "HOME_KITCHEN";
+  }
+  if (["LIGHTING", "LIGHTS"].includes(raw)) return "LIGHTING";
+  if (["SPARE_PARTS", "SPARES", "PARTS"].includes(raw)) return "SPARE_PARTS";
+
+  return "ELECTRONICS";
+}
+
+function categoryConfig(category) {
+  const configs = {
+    ELECTRONICS: {
+      label: "Electronics",
+      headline: "Sales, stock, repairs, warranties, and marketplace readiness in one view.",
+      stockLabel: "Devices and accessories to watch",
+      focusTitle: "Electronics focus",
+      focusText: "Keep warranty, repair, serial, and stock records clean before products reach customers.",
+      actionLabel: "Open repairs",
+      actionTo: "/app/repairs",
+      actionIcon: Wrench,
+      fields: ["Brand", "Model", "IMEI / serial", "Condition", "Warranty"],
+    },
+    HARDWARE: {
+      label: "Hardware",
+      headline: "Daily sales, low stock, supplier restock, and material movement at first glance.",
+      stockLabel: "Materials to restock",
+      focusTitle: "Hardware focus",
+      focusText: "Track unit type, size, weight, pack quantity, and supplier restock before shelves run dry.",
+      actionLabel: "Open suppliers",
+      actionTo: "/app/suppliers",
+      actionIcon: Boxes,
+      fields: ["Material", "Unit type", "Size", "Weight", "Pack quantity"],
+    },
+    HOME_KITCHEN: {
+      label: "Home & kitchen",
+      headline: "Product sets, stock health, customer demand, and marketplace readiness made simple.",
+      stockLabel: "Sets and materials to watch",
+      focusTitle: "Home & kitchen focus",
+      focusText: "Prepare clean product sets with color, size, material, room, and use-case details.",
+      actionLabel: "Review products",
+      actionTo: "/app/inventory",
+      actionIcon: Store,
+      fields: ["Material", "Set type", "Color", "Size", "Room / use case"],
+    },
+    LIGHTING: {
+      label: "Lighting",
+      headline: "Stock, wattage, voltage, warranty, and marketplace readiness for lighting products.",
+      stockLabel: "Lighting items to watch",
+      focusTitle: "Lighting focus",
+      focusText: "Keep wattage, voltage, color temperature, bulb type, and indoor/outdoor details clear.",
+      actionLabel: "Review stock",
+      actionTo: "/app/inventory",
+      actionIcon: Zap,
+      fields: ["Wattage", "Voltage", "Color temperature", "Bulb type", "Warranty"],
+    },
+    SPARE_PARTS: {
+      label: "Spare parts",
+      headline: "Part numbers, compatibility, condition, warranty, stock, and demand in one place.",
+      stockLabel: "Parts to restock",
+      focusTitle: "Spare parts focus",
+      focusText: "Make part number, compatible model, condition, and warranty clear before selling.",
+      actionLabel: "Review parts",
+      actionTo: "/app/inventory",
+      actionIcon: PackageCheck,
+      fields: ["Part number", "Compatible model", "Condition", "Warranty", "Demand"],
+    },
+  };
+
+  return configs[category] || configs.ELECTRONICS;
 }
 
 function statusTone(value) {
   const text = String(value || "").toLowerCase();
 
-  if (text.includes("active") || text.includes("paid") || text.includes("trial")) {
-    return "success";
-  }
-
-  if (text.includes("expire") || text.includes("pending")) {
-    return "warning";
-  }
-
-  if (text.includes("blocked") || text.includes("failed")) {
-    return "danger";
-  }
+  if (text.includes("active") || text.includes("paid") || text.includes("trial")) return "success";
+  if (text.includes("expire") || text.includes("pending")) return "warning";
+  if (text.includes("blocked") || text.includes("failed")) return "danger";
 
   return "neutral";
 }
@@ -145,7 +226,7 @@ function Badge({ children, tone = "neutral" }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em]",
+        "inline-flex min-h-8 items-center justify-center rounded-full px-3 text-[11px] font-black leading-none",
         styles[tone] || styles.neutral,
       )}
     >
@@ -154,7 +235,7 @@ function Badge({ children, tone = "neutral" }) {
   );
 }
 
-function IconShell({ children, tone = "info" }) {
+function IconBubble({ icon: Icon, tone = "info" }) {
   const styles = {
     success: "bg-emerald-500/10 text-emerald-600",
     warning: "bg-amber-500/10 text-amber-600",
@@ -166,28 +247,55 @@ function IconShell({ children, tone = "info" }) {
   return (
     <span
       className={cn(
-        "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl",
+        "flex h-12 w-12 shrink-0 items-center justify-center rounded-[20px]",
         styles[tone] || styles.info,
       )}
     >
-      {children}
+      <Icon size={21} strokeWidth={2.4} />
     </span>
   );
 }
 
-function SectionTitle({ eyebrow, title, action }) {
+function MetricCard({ label, value, note, icon, tone = "info", trend }) {
+  return (
+    <article className={cn(CARD, "min-h-[150px] p-5 sm:p-6")}>
+      <IconBubble icon={icon} tone={tone} />
+
+      <div className="mt-5 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[12px] font-black text-[var(--color-text-muted)]">{label}</p>
+          <p className="mt-1 truncate text-2xl font-black tracking-[-0.055em] text-[var(--color-text)] md:text-3xl">
+            {value}
+          </p>
+        </div>
+
+        {trend ? (
+          <span
+            className={cn(
+              "mb-2 inline-flex items-center gap-1 text-xs font-black",
+              tone === "danger" ? "text-red-600" : tone === "warning" ? "text-amber-600" : "text-emerald-600",
+            )}
+          >
+            {trend}
+          </span>
+        ) : null}
+      </div>
+
+      <p className="mt-2 text-[12px] font-bold leading-5 text-[var(--color-text-muted)]">{note}</p>
+    </article>
+  );
+}
+
+function SectionHead({ title, subtitle, action }) {
   return (
     <div className="mb-5 flex items-start justify-between gap-4">
       <div className="min-w-0">
-        {eyebrow ? (
-          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-            {eyebrow}
-          </p>
-        ) : null}
-
-        <h2 className="mt-1 text-xl font-black tracking-[-0.04em] text-[var(--color-text)]">
+        <h2 className="font-[var(--svx-heading-font)] text-lg font-black tracking-[-0.04em] text-[var(--color-text)]">
           {title}
         </h2>
+        {subtitle ? (
+          <p className="mt-1 text-sm font-bold leading-5 text-[var(--color-text-muted)]">{subtitle}</p>
+        ) : null}
       </div>
 
       {action ? <div className="shrink-0">{action}</div> : null}
@@ -195,97 +303,33 @@ function SectionTitle({ eyebrow, title, action }) {
   );
 }
 
-function MetricCard({ label, value, note, icon: Icon, tone = "info" }) {
-  return (
-    <article className={cn(CARD, "min-h-[138px] p-5")}>
-      <div className="flex items-start justify-between gap-3">
-        <IconShell tone={tone}>
-          <Icon size={20} strokeWidth={2.4} />
-        </IconShell>
-
-        <span
-          className={cn(
-            "mt-1 h-2.5 w-2.5 shrink-0 rounded-full",
-            tone === "success" && "bg-emerald-500 shadow-[0_0_0_6px_rgba(16,185,129,0.12)]",
-            tone === "warning" && "bg-amber-500 shadow-[0_0_0_6px_rgba(245,158,11,0.12)]",
-            tone === "danger" && "bg-red-500 shadow-[0_0_0_6px_rgba(239,68,68,0.12)]",
-            tone === "neutral" &&
-              "bg-[var(--color-text-muted)] shadow-[0_0_0_6px_var(--color-surface-2)]",
-            tone === "info" &&
-              "bg-[var(--color-primary)] shadow-[0_0_0_6px_var(--color-primary-soft)]",
-          )}
-        />
-      </div>
-
-      <p className="mt-4 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
-        {label}
-      </p>
-
-      <p className="mt-1 text-2xl font-black tracking-[-0.055em] text-[var(--color-text)] xl:text-3xl">
-        {value}
-      </p>
-
-      <p className="mt-1 text-xs font-bold leading-5 text-[var(--color-text-muted)]">
-        {note}
-      </p>
-    </article>
-  );
-}
-
-function CompactStat({ label, value, tone = "neutral" }) {
-  return (
-    <div className={cn(PANEL, "p-4")}>
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
-        {label}
-      </p>
-      <p
-        className={cn(
-          "mt-2 text-lg font-black tracking-[-0.035em] text-[var(--color-text)]",
-          tone === "danger" && "text-red-600",
-          tone === "warning" && "text-amber-600",
-          tone === "success" && "text-emerald-600",
-        )}
-      >
-        {value}
-      </p>
-    </div>
-  );
-}
-
 function RevenueChart({ monthlyRevenue = 0 }) {
-  const seed = Math.max(1, Math.round(Number(monthlyRevenue || 0) / 100000));
-  const pointList = [34, 48, 42, 63, 54, 72, 61, 84].map((item, index) => {
-    const y = 118 - Math.max(22, Math.min(98, item + ((seed + index) % 8)));
-    const x = 18 + index * 54;
+  const seed = Math.max(1, Math.round(numberValue(monthlyRevenue) / 100000));
+  const base = [40, 62, 48, 72, 60, 82, 66, 88, 74, 96, 80, 92];
+  const pointList = base.map((item, index) => {
+    const x = 24 + index * 36;
+    const y = 128 - Math.max(24, Math.min(104, item + ((seed + index) % 7)));
 
     return { x, y, point: `${x},${y}` };
   });
   const points = pointList.map((item) => item.point).join(" ");
+  const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   return (
-    <div className="mt-4 overflow-hidden rounded-[24px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-      <svg viewBox="0 0 420 150" className="h-[210px] w-full" role="img" aria-label="Sales overview">
+    <div className="mt-6 overflow-hidden rounded-[24px] bg-[var(--color-surface-2)] px-3 pb-4 pt-5">
+      <svg viewBox="0 0 430 150" className="h-[210px] w-full" role="img" aria-label="Sales overview chart">
         <defs>
-          <linearGradient id="storvexRevenueFillDashboard" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.28" />
+          <linearGradient id="storvexDashboardSalesFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.26" />
             <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
           </linearGradient>
         </defs>
 
-        {[32, 62, 92, 122].map((y) => (
-          <line
-            key={y}
-            x1="12"
-            x2="408"
-            y1={y}
-            y2={y}
-            stroke="var(--color-border)"
-            strokeWidth="1"
-          />
+        {[28, 58, 88, 118].map((y) => (
+          <line key={y} x1="16" x2="414" y1={y} y2={y} stroke="var(--color-border)" strokeWidth="1" />
         ))}
 
-        <polygon points={`18,140 ${points} 396,140`} fill="url(#storvexRevenueFillDashboard)" />
-
+        <polygon points={`24,140 ${points} 420,140`} fill="url(#storvexDashboardSalesFill)" />
         <polyline
           points={points}
           fill="none"
@@ -308,11 +352,9 @@ function RevenueChart({ monthlyRevenue = 0 }) {
         ))}
       </svg>
 
-      <div className="grid grid-cols-4 gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-text-muted)] sm:grid-cols-8">
-        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Now"].map((day) => (
-          <span key={day} className="text-center">
-            {day}
-          </span>
+      <div className="grid grid-cols-7 text-center text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
+        {labels.map((label) => (
+          <span key={label}>{label}</span>
         ))}
       </div>
     </div>
@@ -320,22 +362,21 @@ function RevenueChart({ monthlyRevenue = 0 }) {
 }
 
 function ProductRow({ item, index }) {
-  const qty = Number(item?.stockQty ?? item?.quantity ?? 0);
+  const qty = numberValue(item?.stockQty ?? item?.quantity);
   const tone = qty <= 0 ? "danger" : qty <= 2 ? "warning" : "success";
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[20px] bg-[var(--color-surface-2)] px-3 py-3">
+    <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] py-3 last:border-b-0">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-card)] text-xs font-black text-[var(--color-primary)]">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[18px] bg-[var(--color-surface-2)] text-xs font-black text-[var(--color-primary)]">
           {String(index + 1).padStart(2, "0")}
         </div>
 
         <div className="min-w-0">
-          <p className="truncate text-sm font-black text-[var(--color-text)]">
-            {item?.name || "Product"}
-          </p>
+          <p className="truncate text-sm font-black text-[var(--color-text)]">{item?.name || "Product"}</p>
           <p className="mt-0.5 truncate text-xs font-bold text-[var(--color-text-muted)]">
-            {[item?.category, item?.subcategory].filter(Boolean).join(" · ") || "Stock item"}
+            {[item?.category, item?.subcategory || item?.subcategoryOther].filter(Boolean).join(" · ") ||
+              "Stock item"}
           </p>
         </div>
       </div>
@@ -345,174 +386,95 @@ function ProductRow({ item, index }) {
   );
 }
 
-function FocusItem({ icon: Icon, title, text, tone = "info", to, action }) {
-  const buttonStyles = {
-    success: "border-emerald-500/30 text-emerald-600 hover:border-emerald-500",
-    warning: "border-amber-500/30 text-amber-600 hover:border-amber-500",
-    danger: "border-red-500/30 text-red-600 hover:border-red-500",
-    info: "border-[var(--color-primary-ring)] text-[var(--color-primary)] hover:border-[var(--color-primary)]",
-    neutral: "border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-primary)]",
-  };
-
-  return (
-    <div className="flex gap-3 rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-      <IconShell tone={tone}>
-        <Icon size={19} strokeWidth={2.4} />
-      </IconShell>
-
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-sm font-black text-[var(--color-text)]">{title}</p>
-            <p className="mt-1 text-xs font-bold leading-5 text-[var(--color-text-muted)]">
-              {text}
-            </p>
-          </div>
-
-          {to ? (
-            <Link
-              to={to}
-              className={cn(
-                "inline-flex h-9 shrink-0 items-center justify-center rounded-xl border bg-[var(--color-card)] px-3 text-[11px] font-black transition",
-                buttonStyles[tone] || buttonStyles.info,
-              )}
-            >
-              {action || "Open"}
-            </Link>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ActivityRow({ item }) {
   return (
-    <div className="flex items-center gap-3 rounded-[20px] bg-[var(--color-surface-2)] px-3 py-3">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
-        <CheckCircle2 size={17} strokeWidth={2.6} />
+    <div className="flex items-center justify-between gap-3 border-b border-[var(--color-border)] py-3 last:border-b-0">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[17px] bg-emerald-500/10 text-emerald-600">
+          <CheckCircle2 size={18} strokeWidth={2.5} />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-black text-[var(--color-text)]">{item?.action || "Activity"}</p>
+          <p className="mt-0.5 truncate text-xs font-bold text-[var(--color-text-muted)]">
+            {item?.entity || "Record"}
+          </p>
+        </div>
       </div>
 
-      <div className="min-w-0">
-        <p className="truncate text-sm font-black text-[var(--color-text)]" title={item?.action}>
-          {item?.action || "Activity"}
-        </p>
-        <p className="mt-0.5 truncate text-xs font-bold text-[var(--color-text-muted)]">
-          {[item?.entity || "Record", fmtDate(item?.createdAt)].filter(Boolean).join(" · ")}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function QuickAction({ label, to, icon: Icon, primary = false }) {
-  return (
-    <Link
-      to={to}
-      className={cn(
-        "flex min-h-[84px] flex-col justify-between rounded-[22px] border p-4 transition hover:-translate-y-0.5",
-        primary
-          ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-contrast)] shadow-[var(--shadow-card)]"
-          : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] shadow-[var(--shadow-soft)] hover:border-[var(--color-primary)]",
-      )}
-    >
-      <span
-        className={cn(
-          "flex h-9 w-9 items-center justify-center rounded-2xl",
-          primary ? "bg-white/15 text-white" : "bg-[var(--color-card)] text-[var(--color-primary)]",
-        )}
-      >
-        <Icon size={18} strokeWidth={2.4} />
+      <span className="hidden shrink-0 text-xs font-bold text-[var(--color-text-muted)] sm:block">
+        {fmtDate(item?.createdAt)}
       </span>
-
-      <span className="text-sm font-black">{label}</span>
-    </Link>
+    </div>
   );
 }
 
 function EmptyState({ title, text }) {
   return (
-    <div className="rounded-[22px] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-2)] px-5 py-8 text-center">
+    <div className="rounded-[24px] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-2)] px-5 py-8 text-center">
       <p className="text-sm font-black text-[var(--color-text)]">{title}</p>
       <p className="mt-1 text-sm font-bold text-[var(--color-text-muted)]">{text}</p>
     </div>
   );
 }
 
-function SubscriptionPanel({ subscription }) {
-  const daysLeft = Number(subscription?.daysLeft ?? 0);
-  const totalDays = Number(subscription?.totalDays ?? 0);
-  const percent =
-    daysLeft > 0 && totalDays > 0
-      ? Math.max(0, Math.min(100, (daysLeft / totalDays) * 100))
-      : subscription
-        ? 100
-        : 0;
-  const tone = statusTone(subscription?.label || subscription?.status);
+function ActionCard({ icon: Icon, title, text, to, tone = "info", action = "View now" }) {
+  return (
+    <article className={cn(INNER, "flex min-h-[156px] flex-col justify-between p-5")}>
+      <IconBubble icon={Icon} tone={tone} />
+      <div className="mt-5">
+        <p className="text-sm font-black text-[var(--color-text)]">{title}</p>
+        <p className="mt-1 text-xs font-bold leading-5 text-[var(--color-text-muted)]">{text}</p>
+      </div>
+      {to ? (
+        <Link
+          to={to}
+          className="mt-4 inline-flex items-center gap-2 text-sm font-black text-[var(--color-primary)]"
+        >
+          {action} <ArrowUpRight size={15} strokeWidth={2.6} />
+        </Link>
+      ) : null}
+    </article>
+  );
+}
+
+function CategoryPanel({ config }) {
+  const Icon = config.actionIcon;
 
   return (
-    <section className={cn(CARD, "p-5")}>
-      <SectionTitle
-        eyebrow="Access"
-        title="Subscription"
-        action={subscription ? <Badge tone={tone}>{subscription.label || "Active"}</Badge> : null}
-      />
+    <section className={cn(CARD, "p-5 sm:p-6")}>
+      <SectionHead title={config.focusTitle} subtitle={config.focusText} />
 
-      {subscription ? (
-        <div className={cn(PANEL, "p-4")}>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-base font-black text-[var(--color-text)]">
-                {subscription.planKey || "Current plan"}
-              </p>
-              <p className="mt-1 text-xs font-bold leading-5 text-[var(--color-text-muted)]">
-                {subscription.endDate
-                  ? `Renews ${fmtDate(subscription.endDate)}`
-                  : "Store access is active."}
-              </p>
-            </div>
-
-            {subscription.endDate ? (
-              <div className="rounded-2xl bg-[var(--color-card)] px-3 py-2 text-xs font-black text-[var(--color-text)]">
-                {daysLeft > 0 ? `${daysLeft} days left` : "Renew now"}
-              </div>
-            ) : null}
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+        {config.fields.map((field) => (
+          <div key={field} className="rounded-2xl bg-[var(--color-surface-2)] px-4 py-3">
+            <p className="text-[11px] font-black text-[var(--color-text)]">{field}</p>
           </div>
+        ))}
+      </div>
 
-          <div className="mt-4 h-3 overflow-hidden rounded-full bg-[var(--color-card)]">
-            <div
-              className={cn(
-                "h-full rounded-full",
-                percent > 40 ? "bg-emerald-500" : percent > 15 ? "bg-amber-500" : "bg-red-500",
-              )}
-              style={{ width: `${percent}%` }}
-            />
-          </div>
-
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <AsyncButton
-              loading={false}
-              as={Link}
-              to="/app/billing"
-              className="h-10 w-full sm:w-auto"
-            >
-              Open billing
-            </AsyncButton>
-            <AsyncButton
-              loading={false}
-              variant="secondary"
-              as={Link}
-              to="/renew"
-              className="h-10 w-full sm:w-auto"
-            >
-              Renew
-            </AsyncButton>
-          </div>
-        </div>
-      ) : (
-        <EmptyState title="No subscription information" text="Billing details will appear here." />
-      )}
+      <Link
+        to={config.actionTo}
+        className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] px-5 text-sm font-black text-[var(--color-primary-contrast)] shadow-[0_18px_42px_color-mix(in_srgb,var(--color-primary)_24%,transparent)]"
+      >
+        <Icon size={17} strokeWidth={2.6} />
+        {config.actionLabel}
+      </Link>
     </section>
+  );
+}
+
+function SubscriptionMini({ subscription }) {
+  if (!subscription) {
+    return <Badge tone="neutral">Access status unavailable</Badge>;
+  }
+
+  const tone = statusTone(subscription?.label || subscription?.status);
+  const daysLeft = numberValue(subscription?.daysLeft);
+
+  return (
+    <Badge tone={tone}>
+      {daysLeft > 0 ? `${daysLeft} days left` : subscription?.label || "Active"}
+    </Badge>
   );
 }
 
@@ -547,9 +509,7 @@ export default function Dashboard() {
         if (cachedWorkspace) setWorkspace(cachedWorkspace);
       }
 
-      if (dashboardData.status === "rejected") {
-        throw dashboardData.reason;
-      }
+      if (dashboardData.status === "rejected") throw dashboardData.reason;
     } catch (error) {
       console.error("Dashboard load failed:", error);
       toast.error("Failed to load dashboard");
@@ -588,9 +548,7 @@ export default function Dashboard() {
           if (cachedWorkspace) setWorkspace(cachedWorkspace);
         }
 
-        if (dashboardData.status === "rejected") {
-          throw dashboardData.reason;
-        }
+        if (dashboardData.status === "rejected") throw dashboardData.reason;
       } catch (error) {
         console.error("Dashboard load failed:", error);
         if (active) toast.error("Failed to load dashboard");
@@ -618,351 +576,355 @@ export default function Dashboard() {
   }
 
   const tenant = dashboard?.tenant || workspace?.tenant || workspace?.business || {};
-  const subscription = dashboard?.subscriptionSummary || null;
-  const setupSummary = workspace?.setupChecklistSummary || null;
-  const readiness = setupSummary?.summary || {};
-  const missing = Array.isArray(readiness?.missingRequiredKeys)
-    ? readiness.missingRequiredKeys
-    : [];
-
   const tenantName = tenant?.name || workspace?.name || "Your store";
-  const firstName = firstWord(tenantName);
-  const businessCategory = tenant?.businessCategory || tenant?.category || tenant?.shopType;
-  const location = [tenant?.district, tenant?.sector].filter(Boolean).join(" · ");
-  const readinessPercent = readiness?.readinessPercent ?? setupSummary?.readinessPercent ?? 0;
+  const ownerName =
+    workspace?.user?.name || localStorage.getItem("userName") || tenantName || "Owner";
+  const businessCategory = normalizeCategory(
+    tenant?.businessCategory || tenant?.category || tenant?.shopType || workspace?.businessCategory,
+  );
+  const config = categoryConfig(businessCategory);
 
-  const lowStock = safeList(dashboard?.lowStockProducts).slice(0, 4);
-  const activity = safeList(dashboard?.recentAudit).slice(0, 4);
+  const subscription = dashboard?.subscriptionSummary || null;
+  const lowStock = safeList(dashboard?.lowStockProducts).slice(0, 5);
+  const activity = safeList(dashboard?.recentAudit).slice(0, 5);
 
-  const todaySales = Number(dashboard?.todaySales || 0);
-  const monthlyRevenue = Number(dashboard?.monthlyRevenue || 0);
-  const pendingDeals = Number(dashboard?.pendingDeals || 0);
-  const activeRepairs = Number(dashboard?.activeRepairs || 0);
-  const lowStockCount = Number(dashboard?.lowStockCount || lowStock.length || 0);
-  const outOfStockCount = Number(dashboard?.outOfStockCount || 0);
-  const productCount = Number(dashboard?.productCount || 0);
+  const todaySales = numberValue(dashboard?.todaySales);
+  const monthlyRevenue = numberValue(dashboard?.monthlyRevenue);
+  const pendingDeals = numberValue(dashboard?.pendingDeals);
+  const activeRepairs = numberValue(dashboard?.activeRepairs);
+  const lowStockCount = numberValue(dashboard?.lowStockCount, lowStock.length);
+  const outOfStockCount = numberValue(dashboard?.outOfStockCount);
+  const productCount = numberValue(dashboard?.productCount);
 
   const marketplace = dashboard?.marketplace || dashboard?.marketplaceSummary || {};
-  const marketplacePublished = Number(marketplace?.publishedCount || 0);
-  const marketplaceDrafts = Number(marketplace?.draftCount || 0);
-  const marketplaceMissingImages = Number(marketplace?.missingImagesCount || 0);
+  const marketplacePublished = numberValue(marketplace?.publishedCount);
+  const marketplaceDrafts = numberValue(marketplace?.draftCount);
+  const marketplaceMissingImages = numberValue(marketplace?.missingImagesCount);
+  const stockAlerts = lowStockCount + outOfStockCount;
 
-  const focusItems = useMemo(() => {
+  const actionItems = useMemo(() => {
     const items = [];
 
-    if (lowStockCount > 0 || outOfStockCount > 0) {
+    if (stockAlerts > 0) {
       items.push({
         icon: AlertTriangle,
-        tone: outOfStockCount > 0 ? "danger" : "warning",
-        title: "Stock needs review",
+        title: `${stockAlerts} stock alert${stockAlerts === 1 ? "" : "s"}`,
         text:
           outOfStockCount > 0
-            ? `${outOfStockCount} product${outOfStockCount === 1 ? "" : "s"} out of stock. Hide unavailable marketplace products.`
-            : `${lowStockCount} product${lowStockCount === 1 ? "" : "s"} running low.`,
-        action: "Open stock",
+            ? `${outOfStockCount} item${outOfStockCount === 1 ? " is" : "s are"} out of stock.`
+            : "Some products are running low.",
         to: "/app/inventory",
-      });
-    }
-
-    if (marketplaceMissingImages > 0) {
-      items.push({
-        icon: PackageCheck,
-        tone: "warning",
-        title: "Products need images",
-        text: `${marketplaceMissingImages} marketplace product${marketplaceMissingImages === 1 ? "" : "s"} missing images.`,
-        action: "Add images",
-        to: "/app/inventory",
+        tone: outOfStockCount > 0 ? "danger" : "warning",
+        action: "View stock",
       });
     }
 
     if (pendingDeals > 0) {
       items.push({
         icon: ClipboardList,
+        title: `${pendingDeals} pending sale${pendingDeals === 1 ? "" : "s"}`,
+        text: "These need owner attention before they become a problem.",
+        to: "/app/pos/sales",
         tone: "warning",
-        title: "Pending sales",
-        text: `${pendingDeals} sale${pendingDeals === 1 ? "" : "s"} still need follow-up.`,
         action: "Review sales",
-        to: "/app/sales",
       });
     }
 
-    if (activeRepairs > 0) {
+    if (businessCategory === "ELECTRONICS" && activeRepairs > 0) {
       items.push({
         icon: Wrench,
-        tone: "info",
-        title: "Open repairs",
-        text: `${activeRepairs} repair item${activeRepairs === 1 ? "" : "s"} currently in service.`,
-        action: "Open repairs",
+        title: `${activeRepairs} open repair${activeRepairs === 1 ? "" : "s"}`,
+        text: "Track repairs and warranty work before customers return.",
         to: "/app/repairs",
+        tone: "info",
+        action: "Open repairs",
       });
     }
 
-    if (subscription && Number(subscription?.daysLeft || 0) > 0 && Number(subscription?.daysLeft || 0) <= 15) {
+    if (marketplaceMissingImages > 0) {
+      items.push({
+        icon: Image,
+        title: `${marketplaceMissingImages} product image${marketplaceMissingImages === 1 ? "" : "s"} needed`,
+        text: "Products should not be published without clear images.",
+        to: "/app/inventory",
+        tone: "warning",
+        action: "Add images",
+      });
+    }
+
+    if (subscription && numberValue(subscription?.daysLeft) > 0 && numberValue(subscription?.daysLeft) <= 15) {
       items.push({
         icon: CreditCard,
-        tone: "warning",
-        title: "Renewal is close",
-        text: `${subscription.daysLeft} day${subscription.daysLeft === 1 ? "" : "s"} left before renewal.`,
-        action: "Billing",
+        title: "Subscription renewal is close",
+        text: `${subscription.daysLeft} day${subscription.daysLeft === 1 ? "" : "s"} left before access renewal.`,
         to: "/app/billing",
+        tone: "warning",
+        action: "Open billing",
       });
     }
 
     if (!productCount) {
       items.push({
         icon: Boxes,
-        tone: "info",
-        title: "Add products",
-        text: "Create stock first so sales, reports, and marketplace visibility become useful.",
-        action: "Inventory",
+        title: "Add your first products",
+        text: "Inventory must exist before sales, reports, and marketplace visibility are useful.",
         to: "/app/inventory",
+        tone: "info",
+        action: "Add products",
       });
     }
 
     if (!items.length) {
       items.push({
         icon: CheckCircle2,
-        tone: "success",
         title: "No urgent action",
-        text: "Sales, stock, marketplace, and access look calm for now.",
-        action: null,
+        text: "Sales, stock, access, and marketplace readiness look calm right now.",
         to: null,
+        tone: "success",
+        action: null,
       });
     }
 
-    return items.slice(0, 3);
+    return items.slice(0, 4);
   }, [
     activeRepairs,
-    lowStockCount,
+    businessCategory,
     marketplaceMissingImages,
     outOfStockCount,
     pendingDeals,
     productCount,
+    stockAlerts,
     subscription,
   ]);
 
-  const metrics = useMemo(
-    () => [
-      {
-        label: "Today sales",
-        value: money(todaySales),
-        note: todaySales > 0 ? "Money recorded today" : "No sales yet today",
-        icon: BarChart3,
-        tone: todaySales > 0 ? "success" : "neutral",
-      },
-      {
-        label: "Monthly revenue",
-        value: money(monthlyRevenue),
-        note: "Recorded this month",
-        icon: CreditCard,
-        tone: "info",
-      },
-      {
-        label: "Pending sales",
-        value: String(pendingDeals),
-        note: pendingDeals > 0 ? "Needs follow-up" : "No pending sales",
-        icon: ClipboardList,
-        tone: pendingDeals > 0 ? "warning" : "success",
-      },
-      {
-        label: "Stock alerts",
-        value: String(lowStockCount + outOfStockCount),
-        note: lowStockCount + outOfStockCount > 0 ? "Needs review" : "Stock looks calm",
-        icon: Boxes,
-        tone: lowStockCount + outOfStockCount > 0 ? "warning" : "success",
-      },
-      {
-        label: "Marketplace",
-        value: String(marketplacePublished),
-        note: marketplacePublished > 0 ? "Products live" : "Nothing published",
-        icon: ShoppingCart,
-        tone: marketplacePublished > 0 ? "success" : "neutral",
-      },
-    ],
-    [
-      lowStockCount,
-      marketplacePublished,
-      monthlyRevenue,
-      outOfStockCount,
-      pendingDeals,
-      todaySales,
-    ],
-  );
+  const metrics = [
+    {
+      label: "Today sales",
+      value: compactMoney(todaySales),
+      note: todaySales > 0 ? "Money recorded today" : "No sales recorded yet",
+      icon: TrendingUp,
+      tone: todaySales > 0 ? "success" : "neutral",
+      trend: todaySales > 0 ? "Active" : null,
+    },
+    {
+      label: "Month revenue",
+      value: compactMoney(monthlyRevenue),
+      note: "Recorded this month",
+      icon: BarChart3,
+      tone: "info",
+      trend: monthlyRevenue > 0 ? "Live" : null,
+    },
+    {
+      label: "Products",
+      value: new Intl.NumberFormat("en-US").format(productCount),
+      note: `${config.label} items in stock records`,
+      icon: Boxes,
+      tone: productCount > 0 ? "success" : "neutral",
+    },
+    {
+      label: "Stock alerts",
+      value: String(stockAlerts),
+      note: stockAlerts > 0 ? "Owner action needed" : "Stock looks calm",
+      icon: AlertTriangle,
+      tone: stockAlerts > 0 ? "warning" : "success",
+      trend: stockAlerts > 0 ? "Review" : null,
+    },
+  ];
 
   if (loading && !workspace && !dashboard) {
     return <PageSkeleton variant="dashboard" />;
   }
 
   return (
-    <div className="space-y-5 pb-8">
-      <header className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-3xl font-black tracking-[-0.055em] text-[var(--color-text)] xl:text-4xl">
-            {greeting()}, {firstName}.
-          </h1>
-          <p className="mt-2 text-sm font-bold text-[var(--color-text-muted)]">
-            Here is what is happening in your store today.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className={cn(SOFT_PANEL, "flex h-12 items-center gap-3 px-4 text-sm font-black text-[var(--color-text)]")}>
-            <CalendarDays size={18} className="text-[var(--color-primary)]" />
-            {todayLabel()}
+    <div className="svx-owner-dashboard space-y-5 pb-8">
+      <header className={cn(CARD, "overflow-hidden p-5 sm:p-6 lg:p-7")}>
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-[var(--color-text-muted)]">
+              {greeting()}, {firstWord(ownerName)} 👋
+            </p>
+            <h1 className="mt-2 font-[var(--svx-heading-font)] text-3xl font-black leading-[1.03] tracking-[-0.06em] text-[var(--color-text)] sm:text-4xl xl:text-[42px]">
+              Here’s how your store is doing today.
+            </h1>
+            <p className="mt-3 max-w-3xl text-base font-bold leading-7 text-[var(--color-text-muted)]">
+              {config.headline}
+            </p>
           </div>
 
-          <AsyncButton
-            loading={refreshing}
-            loadingText="Refreshing..."
-            variant="secondary"
-            onClick={handleRefresh}
-            className="h-12 w-full sm:w-auto"
-          >
-            <RefreshCw size={16} />
-            Refresh
-          </AsyncButton>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center xl:justify-end">
+            <div className="flex h-12 items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 text-sm font-black text-[var(--color-text)] shadow-[var(--shadow-soft)]">
+              <CalendarDays size={17} className="text-[var(--color-primary)]" strokeWidth={2.4} />
+              <span>{currentWeekLabel()}</span>
+              <ChevronDown size={16} className="text-[var(--color-text-muted)]" strokeWidth={2.6} />
+            </div>
 
-          <AsyncButton loading={false} as={Link} to="/app/pos" className="h-12 w-full sm:w-auto">
-            <ShoppingBag size={16} />
-            New sale
-          </AsyncButton>
+            <AsyncButton
+              loading={refreshing}
+              loadingText="Refreshing..."
+              variant="secondary"
+              onClick={handleRefresh}
+              className="h-12 w-full rounded-2xl sm:w-auto"
+            >
+              <RefreshCw size={16} />
+              Refresh
+            </AsyncButton>
+
+            <AsyncButton loading={false} as={Link} to="/app/pos" className="h-12 w-full rounded-2xl sm:w-auto">
+              <Plus size={17} />
+              Add sale
+            </AsyncButton>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <Badge tone="info">{config.label}</Badge>
+          <SubscriptionMini subscription={subscription} />
+          {tenantName ? <Badge tone="neutral">{tenantName}</Badge> : null}
         </div>
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((item) => (
           <MetricCard key={item.label} {...item} />
         ))}
       </section>
 
-      <section className="grid gap-5 2xl:grid-cols-[minmax(0,1.1fr)_350px_430px]">
-        <section className={cn(CARD, "p-5")}>
-          <SectionTitle
-            eyebrow="Sales"
+      <section className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_minmax(330px,0.58fr)_minmax(360px,0.66fr)]">
+        <section className={cn(CARD, "p-5 sm:p-6")}>
+          <SectionHead
             title="Sales overview"
+            subtitle="Owner-level view of money recorded through the store."
             action={<Badge tone="info">This week</Badge>}
           />
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <CompactStat label="Today" value={money(todaySales)} />
-            <CompactStat label="This month" value={money(monthlyRevenue)} />
-            <CompactStat label="Pending" value={String(pendingDeals)} tone={pendingDeals ? "warning" : "success"} />
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-2">
+            <p className="font-[var(--svx-heading-font)] text-3xl font-black tracking-[-0.055em] text-[var(--color-text)]">
+              {money(monthlyRevenue)}
+            </p>
+            <span className="pb-1 text-sm font-black text-emerald-600">
+              {todaySales > 0 ? `${money(todaySales)} today` : "No sales today"}
+            </span>
           </div>
 
           <RevenueChart monthlyRevenue={monthlyRevenue} />
         </section>
 
-        <section className={cn(CARD, "p-5")}>
-          <SectionTitle
-            eyebrow="Stock"
-            title="Products to watch"
+        <section className={cn(CARD, "p-5 sm:p-6")}>
+          <SectionHead
+            title={config.stockLabel}
+            subtitle="Low and out-of-stock products only."
             action={
-              <Link
-                to="/app/inventory"
-                className="text-xs font-black text-[var(--color-primary)]"
-              >
+              <Link to="/app/inventory" className="text-sm font-black text-[var(--color-primary)]">
                 View all
               </Link>
             }
           />
 
           {!lowStock.length ? (
-            <EmptyState title="No low stock alerts" text="Stock looks healthy right now." />
+            <EmptyState title="No stock alerts" text="Stock looks healthy right now." />
           ) : (
-            <div className="space-y-3">
+            <div>
               {lowStock.map((item, index) => (
-                <ProductRow key={item.id || item.name} item={item} index={index} />
+                <ProductRow key={item.id || `${item.name}-${index}`} item={item} index={index} />
               ))}
             </div>
           )}
         </section>
 
-        <section className={cn(CARD, "p-5")}>
-          <SectionTitle eyebrow="Focus" title="What you should act on" />
+        <section className={cn(CARD, "p-5 sm:p-6")}>
+          <SectionHead title="Recent activity" subtitle="Latest business activity records." />
 
-          <div className="space-y-3">
-            {focusItems.map((item) => (
-              <FocusItem key={item.title} {...item} />
-            ))}
-          </div>
+          {!activity.length ? (
+            <EmptyState title="No recent activity" text="New sales, stock, and staff activity will appear here." />
+          ) : (
+            <div>
+              {activity.map((item, index) => (
+                <ActivityRow key={item.id || `${item.action}-${index}`} item={item} />
+              ))}
+            </div>
+          )}
         </section>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,0.85fr)_minmax(360px,0.7fr)]">
-        <section className={cn(CARD, "p-5")}>
-          <SectionTitle
-            eyebrow="Marketplace"
+      <section className={cn(CARD, "p-5 sm:p-6")}>
+        <SectionHead
+          title="Action center"
+          subtitle="Only the items that need owner attention. No noise."
+          action={<Badge tone={actionItems[0]?.tone === "success" ? "success" : "warning"}>{actionItems.length} item{actionItems.length === 1 ? "" : "s"}</Badge>}
+        />
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {actionItems.map((item) => (
+            <ActionCard key={item.title} {...item} />
+          ))}
+        </div>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.55fr)]">
+        <section className={cn(CARD, "p-5 sm:p-6")}>
+          <SectionHead
             title="Marketplace readiness"
+            subtitle="Products stay private until the owner chooses what to publish."
             action={<Badge tone={marketplacePublished > 0 ? "success" : "neutral"}>{marketplacePublished} live</Badge>}
           />
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <CompactStat label="Published" value={String(marketplacePublished)} tone={marketplacePublished ? "success" : "neutral"} />
-            <CompactStat label="Drafts" value={String(marketplaceDrafts)} />
-            <CompactStat label="Missing images" value={String(marketplaceMissingImages)} tone={marketplaceMissingImages ? "warning" : "success"} />
-          </div>
-
-          <div className="mt-4 rounded-[22px] bg-[var(--color-surface-2)] p-4">
-            <p className="text-sm font-black text-[var(--color-text)]">Owner controls visibility</p>
-            <p className="mt-1 text-xs font-bold leading-5 text-[var(--color-text-muted)]">
-              Stock stays private until you add images, review the public details, and choose what appears on the marketplace.
-            </p>
-          </div>
-        </section>
-
-        <SubscriptionPanel subscription={subscription} />
-
-        <section className={cn(CARD, "p-5")}>
-          <SectionTitle eyebrow="Activity" title="Recent activity" />
-
-          {!activity.length ? (
-            <EmptyState title="No recent activity" text="New activity will appear here." />
-          ) : (
-            <div className="space-y-3">
-              {activity.map((item) => (
-                <ActivityRow key={item.id || `${item.action}-${item.createdAt}`} item={item} />
-              ))}
+            <div className={cn(INNER, "p-4")}>
+              <p className="text-xs font-black text-[var(--color-text-muted)]">Published</p>
+              <p className="mt-1 text-2xl font-black text-[var(--color-text)]">{marketplacePublished}</p>
             </div>
-          )}
-        </section>
-      </section>
+            <div className={cn(INNER, "p-4")}>
+              <p className="text-xs font-black text-[var(--color-text-muted)]">Drafts</p>
+              <p className="mt-1 text-2xl font-black text-[var(--color-text)]">{marketplaceDrafts}</p>
+            </div>
+            <div className={cn(INNER, "p-4")}>
+              <p className="text-xs font-black text-[var(--color-text-muted)]">Missing images</p>
+              <p className="mt-1 text-2xl font-black text-[var(--color-text)]">{marketplaceMissingImages}</p>
+            </div>
+          </div>
 
-      <section className={cn(CARD, "p-5")}>
-        <SectionTitle eyebrow="Actions" title="Quick actions" />
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <QuickAction label="New sale" to="/app/pos" icon={ShoppingBag} primary />
-          <QuickAction label="Inventory" to="/app/inventory" icon={Boxes} />
-          <QuickAction label="Customers" to="/app/customers" icon={Users} />
-          <QuickAction label="Documents" to="/app/documents" icon={FileText} />
-          <QuickAction label="Reports" to="/app/reports" icon={BarChart3} />
-          <QuickAction label="WhatsApp" to="/app/whatsapp" icon={MessageCircle} />
-        </div>
-      </section>
-
-      {missing.length ? (
-        <section className={cn(CARD, "p-5")}>
-          <SectionTitle
-            eyebrow="Setup"
-            title="Operational readiness"
-            action={<Badge tone="warning">{readinessPercent}% ready</Badge>}
-          />
-
-          <div className="flex flex-wrap gap-2">
-            {missing.slice(0, 10).map((item) => (
-              <Badge key={item} tone="warning">
-                {item}
-              </Badge>
-            ))}
+          <div className="mt-4 flex flex-col gap-3 rounded-[24px] bg-[var(--color-surface-2)] p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-sm font-black text-[var(--color-text)]">Private by default</p>
+              <p className="mt-1 text-sm font-bold text-[var(--color-text-muted)]">
+                Publish only products with owner approval, clear images, and available stock.
+              </p>
+            </div>
+            <Link
+              to="/app/inventory"
+              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl bg-[var(--color-primary)] px-5 text-sm font-black text-[var(--color-primary-contrast)]"
+            >
+              <ShoppingCart size={17} strokeWidth={2.6} />
+              Review products
+            </Link>
           </div>
         </section>
-      ) : null}
 
-      <section className="sr-only" aria-label="Store summary">
-        <p>{tenantName}</p>
-        <p>{categoryLabel(businessCategory)}</p>
-        <p>{location}</p>
+        <section className={cn(CARD, "p-5 sm:p-6")}>
+          <SectionHead title="Owner shortcuts" subtitle="Fast actions used every day." />
+
+          <div className="grid gap-3">
+            <Link className={cn(INNER, "flex items-center justify-between gap-3 p-4 font-black text-[var(--color-text)]")} to="/app/pos">
+              <span className="flex items-center gap-3"><ShoppingBag size={18} className="text-[var(--color-primary)]" /> New sale</span>
+              <ArrowUpRight size={16} />
+            </Link>
+            <Link className={cn(INNER, "flex items-center justify-between gap-3 p-4 font-black text-[var(--color-text)]")} to="/app/inventory">
+              <span className="flex items-center gap-3"><Boxes size={18} className="text-[var(--color-primary)]" /> Inventory</span>
+              <ArrowUpRight size={16} />
+            </Link>
+            <Link className={cn(INNER, "flex items-center justify-between gap-3 p-4 font-black text-[var(--color-text)]")} to="/app/customers">
+              <span className="flex items-center gap-3"><Users size={18} className="text-[var(--color-primary)]" /> Customers</span>
+              <ArrowUpRight size={16} />
+            </Link>
+            <Link className={cn(INNER, "flex items-center justify-between gap-3 p-4 font-black text-[var(--color-text)]")} to="/app/reports">
+              <span className="flex items-center gap-3"><FileText size={18} className="text-[var(--color-primary)]" /> Reports</span>
+              <ArrowUpRight size={16} />
+            </Link>
+          </div>
+        </section>
       </section>
+
+      <CategoryPanel config={config} />
     </div>
   );
 }
