@@ -1,376 +1,527 @@
-/* Scoped Branch settings polish. This file only targets SettingsBranches. */
-.svx-settings-branches {
-  --branch-card-radius: 22px;
-  --branch-panel-radius: 18px;
-  --branch-touch: 46px;
-}
-
-.svx-settings-branches .svx-branch-overview-card,
-.svx-settings-branches .svx-branch-list-card,
-.svx-settings-branches .svx-branch-form {
+/* Branch view/edit additions. Keep this scoped to SettingsBranches. */
+.svx-branch-list-rows {
   overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-card);
 }
 
-.svx-settings-branches .svx-branch-summary-card {
-  min-height: 148px;
-  border-radius: var(--branch-panel-radius) !important;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--settings-card, var(--color-card)) 78%, transparent), var(--settings-card, var(--color-card))),
-    var(--settings-card, var(--color-card));
+.svx-branch-list-head,
+.svx-branch-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(180px, 1fr) minmax(120px, 0.45fr) minmax(150px, 0.55fr);
+  gap: 14px;
+  align-items: center;
 }
 
-.svx-settings-branches .svx-branch-summary-card > div:first-child {
-  width: 4px;
+.svx-branch-list-head {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  padding: 13px 16px;
 }
 
-.svx-settings-branches .svx-branch-summary-card p:first-of-type {
+.svx-branch-list-head span {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 950;
   letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
-.svx-settings-branches .svx-branch-summary-card [class*="text-3xl"] {
-  font-family: var(--settings-heading-font, "Archivo", system-ui, sans-serif);
-  font-size: clamp(1.55rem, 2vw, 2.05rem);
-  line-height: 1;
+.svx-branch-row {
+  min-width: 0;
+  border-bottom: 1px solid var(--color-border);
+  padding: 14px 16px;
 }
 
-.svx-settings-branches .svx-branch-card {
-  border-radius: var(--branch-card-radius) !important;
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--settings-card, var(--color-card)) 94%, transparent), var(--settings-card, var(--color-card))),
-    var(--settings-card, var(--color-card));
+.svx-branch-row:last-child {
+  border-bottom: 0;
 }
 
-.svx-settings-branches .svx-branch-card-head {
-  align-items: flex-start;
+.svx-branch-row-main {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
 }
 
-.svx-settings-branches .svx-branch-name {
-  display: -webkit-box;
+.svx-branch-row-mark {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 16px !important;
+  font-size: 0.95rem !important;
+}
+
+.svx-branch-row-title {
+  display: flex;
+  min-width: 0;
+  gap: 8px;
+  align-items: center;
+}
+
+.svx-branch-row-title strong,
+.svx-branch-row-location strong {
+  display: block;
   overflow: hidden;
-  max-width: 100%;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-height: 1.08;
-  word-break: break-word;
-}
-
-.svx-settings-branches .svx-branch-code-mark {
-  background: color-mix(in srgb, var(--settings-panel, var(--color-surface-2)) 76%, var(--settings-card, var(--color-card)));
-}
-
-.svx-settings-branches .svx-branch-details {
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--settings-panel, var(--color-surface-2)) 56%, transparent);
-  padding: 14px;
-}
-
-.svx-settings-branches .svx-branch-detail-line {
-  min-height: 34px;
-}
-
-.svx-settings-branches .svx-branch-detail-value {
-  overflow: hidden;
+  color: var(--color-text);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.svx-settings-branches .svx-branch-form-grid > div {
+.svx-branch-row-title strong {
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.svx-branch-row-main p {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.svx-branch-row-location span {
+  display: none;
+}
+
+.svx-branch-row-location strong {
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.svx-branch-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.svx-branch-row-actions button,
+.svx-branch-drawer-close,
+.svx-branch-primary-action,
+.svx-branch-secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border-radius: 14px;
+  padding: 0 13px;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 950;
+  transition: 160ms ease;
+}
+
+.svx-branch-row-actions button,
+.svx-branch-drawer-close,
+.svx-branch-secondary-action {
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text);
+}
+
+.svx-branch-primary-action {
+  min-height: 42px;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  box-shadow: var(--shadow-soft);
+}
+
+.svx-branch-secondary-action {
+  min-height: 42px;
+}
+
+.svx-branch-row-actions button:hover,
+.svx-branch-drawer-close:hover,
+.svx-branch-secondary-action:hover {
+  border-color: var(--color-primary);
+}
+
+/* Right drawer */
+.svx-branch-drawer-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.svx-branch-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(3, 10, 18, 0.46);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  pointer-events: auto;
+  animation: svxBranchBackdropIn 220ms ease both;
+}
+
+.svx-branch-drawer-panel {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(100vw, 540px);
+  height: 100dvh;
+  overflow: hidden;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text);
+  box-shadow: -28px 0 70px rgba(0, 0, 0, 0.26);
+  pointer-events: auto;
+  animation: svxBranchDrawerIn 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes svxBranchBackdropIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes svxBranchDrawerIn {
+  from {
+    opacity: 0.96;
+    transform: translateX(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.svx-branch-drawer-header,
+.svx-branch-drawer-footer {
+  border-color: var(--color-border);
+  background: color-mix(in srgb, var(--color-card) 94%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.svx-branch-drawer-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  border-bottom: 1px solid var(--color-border);
+  padding: 20px;
+}
+
+.svx-branch-drawer-header span,
+.svx-branch-drawer-section h4 {
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.svx-branch-drawer-header h3 {
+  margin: 8px 0 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 24px;
+  font-weight: 950;
+  letter-spacing: -0.05em;
+  line-height: 1.05;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-branch-drawer-header p {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.svx-branch-drawer-body {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 20px;
+}
+
+.svx-branch-drawer-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  border-top: 1px solid var(--color-border);
+  padding: 14px 20px;
+}
+
+.svx-branch-drawer-profile,
+.svx-branch-drawer-section {
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface-2);
+  padding: 14px;
+}
+
+.svx-branch-drawer-profile {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.svx-branch-drawer-profile .svx-branch-code-mark {
+  display: flex;
+  width: 54px;
+  height: 54px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  color: var(--color-text);
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.svx-branch-drawer-profile strong {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 17px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-branch-drawer-profile span {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.svx-branch-drawer-pills {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.svx-branch-drawer-section h4 {
+  margin: 0 0 12px;
+}
+
+.svx-branch-drawer-form {
   min-width: 0;
 }
 
-.svx-settings-branches input {
-  min-height: var(--branch-touch);
+/* Branch create now uses the same right-side drawer as view/edit. */
+.svx-branch-page-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
 }
 
-.svx-settings-branches .svx-branch-create-bar {
-  border-radius: 18px !important;
-  background: color-mix(in srgb, var(--settings-panel, var(--color-surface-2)) 72%, transparent);
+.svx-branch-page-actions > * {
+  white-space: nowrap;
 }
 
-.svx-settings-branches .svx-branch-create-bar button {
-  min-height: 44px;
+/* Branch list code mark: exact center alignment. */
+.svx-branch-code-mark,
+.svx-branch-row-mark {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  line-height: 1 !important;
 }
 
-/* Branches settings landing-page background/card foundation.
-   Scoped to /app/settings/branches only. */
-.svx-settings-branches {
-  --settings-bg: #ffffff;
-  --settings-card: #ffffff;
-  --settings-panel: #f7faff;
-  --settings-panel-strong: #eef6ff;
-  --settings-text: #0d1b3e;
-  --settings-muted: #5f6b84;
-  --settings-muted-2: #718096;
-  --settings-border: rgba(13, 27, 62, 0.12);
-  --settings-primary: #2563eb;
-  --settings-primary-soft: #eef6ff;
-  --settings-primary-ring: rgba(37, 99, 235, 0.14);
-
-  background: transparent;
-  color: var(--settings-text);
+.svx-branch-row-mark {
+  place-self: center !important;
 }
 
-.svx-settings-branches .svx-settings-card,
-.svx-settings-branches .svx-branch-overview-card,
-.svx-settings-branches .svx-branch-list-card,
-.svx-settings-branches .svx-branch-form {
-  border-color: var(--settings-border);
-  background: var(--settings-card);
-  box-shadow: 0 18px 46px rgba(15, 45, 90, 0.055);
+.svx-branch-row-main {
+  align-items: center !important;
 }
 
-.svx-settings-branches .svx-settings-panel,
-.svx-settings-branches .svx-branch-summary-card,
-.svx-settings-branches .svx-branch-card,
-.svx-settings-branches .svx-branch-details,
-.svx-settings-branches .svx-branch-create-bar {
-  border-color: var(--settings-border) !important;
-  background: var(--settings-panel) !important;
+.svx-branch-row-main .svx-branch-code-mark {
+  padding: 0 !important;
+  font-family: var(--settings-heading-font, "Archivo", system-ui, sans-serif);
+  letter-spacing: -0.02em;
 }
 
-.svx-settings-branches input,
-.svx-settings-branches select,
-.svx-settings-branches textarea,
-.svx-settings-branches .app-input,
-.svx-settings-branches .svx-settings-input {
-  border-color: var(--settings-border) !important;
-  background: var(--settings-panel) !important;
-  color: var(--settings-text) !important;
-}
-
-.svx-settings-branches input:focus,
-.svx-settings-branches select:focus,
-.svx-settings-branches textarea:focus,
-.svx-settings-branches .app-input:focus,
-.svx-settings-branches .svx-settings-input:focus {
-  border-color: var(--settings-primary) !important;
-  box-shadow: 0 0 0 4px var(--settings-primary-ring) !important;
-}
-
-.svx-settings-branches select option {
-  background: var(--settings-card);
-  color: var(--settings-text);
-}
-
-:root[data-theme="dark"] .svx-settings-branches {
-  --settings-bg: #06111f;
-  --settings-card: #1f1f20;
-  --settings-panel: rgba(13, 29, 50, 0.74);
-  --settings-panel-strong: #10243f;
-  --settings-text: #ffffff;
-  --settings-muted: rgba(255, 255, 255, 0.72);
-  --settings-muted-2: rgba(255, 255, 255, 0.56);
-  --settings-border: rgba(255, 255, 255, 0.105);
-  --settings-primary: #159cff;
-  --settings-primary-soft: rgba(21, 156, 255, 0.12);
-  --settings-primary-ring: rgba(21, 156, 255, 0.18);
-}
-
+/* FINAL Branches dark correction.
+   The big red-marked sections must be #1F1F20, same as signup cards. */
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-summary-card) > section,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) > section,
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-branch-summary-card),
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-branch-list-rows),
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-branch-page-actions),
 :root[data-theme="dark"] .svx-settings-branches .svx-settings-card,
-:root[data-theme="dark"] .svx-settings-branches .svx-branch-overview-card,
-:root[data-theme="dark"] .svx-settings-branches .svx-branch-list-card,
-:root[data-theme="dark"] .svx-settings-branches .svx-branch-form {
-  border-color: rgba(255, 255, 255, 0.105) !important;
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.025), transparent 34%),
-    #1f1f20 !important;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2) !important;
+:root[data-theme="dark"] .svx-settings-branches section,
+:root[data-theme="dark"] .svx-branch-overview-card,
+:root[data-theme="dark"] .svx-branch-list-card,
+:root[data-theme="dark"] .svx-branch-form {
+  background: #1f1f20 !important;
+  background-color: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24) !important;
 }
 
-:root[data-theme="dark"] .svx-settings-branches .svx-settings-panel,
-:root[data-theme="dark"] .svx-settings-branches .svx-branch-summary-card,
-:root[data-theme="dark"] .svx-settings-branches .svx-branch-card,
-:root[data-theme="dark"] .svx-settings-branches .svx-branch-details,
-:root[data-theme="dark"] .svx-settings-branches .svx-branch-create-bar {
-  border-color: rgba(255, 255, 255, 0.09) !important;
-  background: rgba(31, 31, 32, 0.72) !important;
+/* Inner Branches boxes also stay charcoal, not navy. */
+:root[data-theme="dark"] .svx-branch-summary-card,
+:root[data-theme="dark"] .svx-branch-list-rows,
+:root[data-theme="dark"] .svx-branch-list-head,
+:root[data-theme="dark"] .svx-branch-row,
+:root[data-theme="dark"] .svx-branch-drawer-profile,
+:root[data-theme="dark"] .svx-branch-drawer-section,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) .svx-settings-summary-card,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) .svx-settings-panel,
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-branch-list-rows) [class*="rounded-[22px]"],
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-branch-list-rows) [class*="rounded-[24px]"],
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-branch-summary-card) [class*="rounded-[22px]"],
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-branch-summary-card) [class*="rounded-[24px]"] {
+  background: #1f1f20 !important;
+  background-color: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
   box-shadow: none !important;
 }
 
-:root[data-theme="dark"] .svx-settings-branches .svx-branch-details,
-:root[data-theme="dark"] .svx-settings-branches .svx-branch-create-bar,
-:root[data-theme="dark"] .svx-settings-branches .svx-branch-code-mark {
-  background: rgba(13, 29, 50, 0.64) !important;
-}
-
-:root[data-theme="dark"] .svx-settings-branches input,
-:root[data-theme="dark"] .svx-settings-branches select,
-:root[data-theme="dark"] .svx-settings-branches textarea,
-:root[data-theme="dark"] .svx-settings-branches .app-input,
-:root[data-theme="dark"] .svx-settings-branches .svx-settings-input {
-  border-color: rgba(255, 255, 255, 0.09) !important;
-  background: rgba(13, 29, 50, 0.64) !important;
+/* Only small accent pieces use dark blue. */
+:root[data-theme="dark"] .svx-branch-code-mark,
+:root[data-theme="dark"] .svx-branch-row-mark,
+:root[data-theme="dark"] .svx-branch-row-actions button,
+:root[data-theme="dark"] .svx-branch-drawer-close {
+  background: #0d1d32 !important;
+  background-color: #0d1d32 !important;
+  border-color: rgba(21, 156, 255, 0.22) !important;
   color: #ffffff !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025) !important;
 }
 
-:root[data-theme="dark"] .svx-settings-branches select {
-  background-color: rgba(13, 29, 50, 0.66) !important;
-  background-image:
-    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.72) 50%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.72) 50%, transparent 50%),
-    linear-gradient(180deg, rgba(13, 29, 50, 0.72), rgba(13, 29, 50, 0.62)) !important;
-}
-
-:root[data-theme="dark"] .svx-settings-branches select option {
+/* Branch drawer uses same charcoal card shell. */
+:root[data-theme="dark"] .svx-branch-drawer-panel {
   background: #1f1f20 !important;
-  color: #ffffff !important;
+  background-color: #1f1f20 !important;
+  border-left-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow: -30px 0 80px rgba(0, 0, 0, 0.42) !important;
 }
 
-:root[data-theme="dark"] .svx-settings-branches .svx-settings-savebar {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(31, 31, 32, 0.82);
-  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.2);
+:root[data-theme="dark"] .svx-branch-drawer-header,
+:root[data-theme="dark"] .svx-branch-drawer-footer {
+  background: rgba(31, 31, 32, 0.94) !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+}
+
+/* Inputs in branch drawers/forms: signup charcoal. */
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) input,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) select,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) textarea,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) .app-input,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) .svx-settings-input,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) .svx-settings-textarea {
+  background: #1c1c1d !important;
+  background-color: #1c1c1d !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) input::placeholder,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) textarea::placeholder {
+  color: rgba(255, 255, 255, 0.56) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) input:focus,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) select:focus,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) textarea:focus,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) .app-input:focus,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) .svx-settings-input:focus,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) .svx-settings-textarea:focus {
+  border-color: #159cff !important;
+  box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.18) !important;
 }
 
 @media (min-width: 390px) and (max-width: 720px) {
-  .svx-settings-branches .svx-branch-summary-grid,
-  .svx-settings-branches .svx-branch-form-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  .svx-branch-list-head {
+    display: none;
   }
 
-  .svx-settings-branches .svx-branch-summary-card {
-    min-height: 128px;
-    padding: 14px !important;
+  .svx-branch-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 11px;
+    padding: 14px;
   }
 
-  .svx-settings-branches .svx-branch-summary-card [class*="text-3xl"] {
-    font-size: clamp(1.35rem, 6vw, 1.85rem);
+  .svx-branch-row-location span {
+    display: block;
+    color: var(--color-text-muted);
+    font-size: 10px;
+    font-weight: 950;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
   }
 
-  .svx-settings-branches .svx-branch-summary-card p:last-child {
-    font-size: 11.5px;
-    line-height: 1.42;
+  .svx-branch-row-location strong {
+    margin-top: 4px;
+    white-space: normal;
   }
 
-  .svx-settings-branches .svx-branch-list-grid {
-    grid-template-columns: minmax(0, 1fr) !important;
-  }
-
-  .svx-settings-branches .svx-branch-card {
-    padding: 14px !important;
-  }
-
-  .svx-settings-branches .svx-branch-card-head {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) 48px;
-    gap: 12px !important;
-  }
-
-  .svx-settings-branches .svx-branch-code-mark {
-    width: 48px !important;
-    height: 48px !important;
-    border-radius: 16px !important;
-    font-size: 0.95rem !important;
-  }
-
-  .svx-settings-branches .svx-branch-name {
-    margin-top: 12px !important;
-    font-size: 1.05rem !important;
-  }
-
-  .svx-settings-branches .svx-branch-details {
+  .svx-branch-row-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px 12px;
-    margin-top: 14px !important;
-    padding: 12px;
+    justify-content: flex-start;
   }
 
-  .svx-settings-branches .svx-branch-detail-line {
-    display: grid !important;
-    min-height: auto;
-    gap: 4px !important;
-    border-bottom: 0 !important;
-    padding-bottom: 0 !important;
+  .svx-branch-drawer-panel {
+    width: min(100vw, 460px);
   }
 
-  .svx-settings-branches .svx-branch-detail-line span:first-child {
-    font-size: 11px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
+  .svx-branch-drawer-header,
+  .svx-branch-drawer-body,
+  .svx-branch-drawer-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .svx-branch-page-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
   }
 
-  .svx-settings-branches .svx-branch-detail-value {
-    max-width: 100% !important;
-    text-align: left !important;
-    white-space: normal;
-    font-size: 12.5px;
-    line-height: 1.35;
-  }
-
-  .svx-settings-branches .svx-branch-form-grid label {
-    font-size: 12px !important;
-  }
-
-  .svx-settings-branches .svx-branch-form-grid input {
-    min-height: 44px;
-    padding-inline: 12px !important;
-    font-size: 12.5px !important;
-  }
-
-  .svx-settings-branches .svx-branch-create-bar {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center !important;
-    gap: 12px !important;
-    padding: 12px !important;
-  }
-
-  .svx-settings-branches .svx-branch-create-bar button {
-    width: auto !important;
-    min-width: 136px;
+  .svx-branch-page-actions > * {
+    width: 100%;
   }
 }
 
 @media (max-width: 389px) {
-  .svx-settings-branches .svx-branch-summary-grid,
-  .svx-settings-branches .svx-branch-form-grid,
-  .svx-settings-branches .svx-branch-details {
-    grid-template-columns: minmax(0, 1fr) !important;
+  .svx-branch-drawer-footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
   }
 
-  .svx-settings-branches .svx-branch-summary-card,
-  .svx-settings-branches .svx-branch-card,
-  .svx-settings-branches .svx-branch-form {
-    padding: 13px !important;
+  .svx-branch-drawer-footer > * {
+    width: 100%;
   }
 
-  .svx-settings-branches .svx-branch-card-head {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) 46px;
-    gap: 10px !important;
+  .svx-branch-drawer-panel {
+    width: 100vw;
   }
+}
 
-  .svx-settings-branches .svx-branch-code-mark {
-    width: 46px !important;
-    height: 46px !important;
-    border-radius: 16px !important;
-  }
-
-  .svx-settings-branches .svx-branch-name {
-    white-space: normal;
-    font-size: 1rem !important;
-  }
-
-  .svx-settings-branches .svx-branch-detail-line {
-    display: grid !important;
-    gap: 3px !important;
-  }
-
-  .svx-settings-branches .svx-branch-detail-value {
-    max-width: 100% !important;
-    text-align: left !important;
-    white-space: normal;
-  }
-
-  .svx-settings-branches .svx-branch-create-bar {
-    position: sticky;
-    bottom: 10px;
-    z-index: 12;
-    margin-top: 16px !important;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+@media (prefers-reduced-motion: reduce) {
+  .svx-branch-drawer-backdrop,
+  .svx-branch-drawer-panel {
+    animation: none !important;
   }
 }

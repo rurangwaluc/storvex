@@ -4,7 +4,7 @@
   --roles-line: color-mix(in srgb, var(--settings-border) 86%, transparent);
   --roles-success: #10b981;
   --roles-warning: #f59e0b;
-  --roles-info: #159cff;
+  --roles-info: #2f8fff;
   --roles-danger: #ef4444;
 }
 
@@ -367,14 +367,221 @@
 }
 
 .svx-roles-members-card {
-  border-bottom: 1px solid var(--color-border);
   align-items: center;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .svx-roles-members-card strong {
   color: var(--settings-text);
   font-size: 16px;
   font-weight: 900;
+}
+
+/* Center compact badges inside the real table cells on desktop/tablet. */
+.svx-roles-table-row > div[data-label="Risk"],
+.svx-roles-table-row > div[data-label="Status"],
+.svx-roles-compare-row > div[data-label="Status"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
+.svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
+.svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
+  width: min(100%, 132px);
+}
+
+.svx-roles-table-row.is-head > div:nth-child(4),
+.svx-roles-table-row.is-head > div:nth-child(5),
+.svx-roles-compare-row.is-head > div:nth-child(3) {
+  text-align: center;
+}
+
+/* Keep Risk and Status cells centered both horizontally and vertically in the desktop access table. */
+@media (min-width: 721px) {
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Risk"],
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Status"],
+  .svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] {
+    display: grid !important;
+    align-self: stretch;
+    min-height: 100%;
+    place-items: center;
+    text-align: center;
+  }
+
+  .svx-settings-roles .svx-roles-table-row.is-head > div:nth-child(4),
+  .svx-settings-roles .svx-roles-table-row.is-head > div:nth-child(5),
+  .svx-settings-roles .svx-roles-compare-row.is-head > div:nth-child(3) {
+    display: grid !important;
+    align-self: stretch;
+    min-height: 100%;
+    place-items: center;
+    text-align: center;
+  }
+
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
+  .svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
+    margin: auto;
+  }
+
+  .svx-settings-roles .svx-roles-table-row {
+    grid-template-columns: minmax(128px, 0.8fr) minmax(155px, 0.95fr) minmax(250px, 1.5fr) minmax(118px, 0.62fr) minmax(96px, 0.54fr);
+  }
+
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Risk"],
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Status"],
+  .svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+/* Final badge overflow correction: keep table badges centered without spilling outside cells. */
+.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"],
+.svx-settings-roles .svx-roles-table-row > div[data-label="Status"],
+.svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] {
+  overflow: hidden;
+}
+
+.svx-settings-roles .svx-roles-badge,
+.svx-settings-roles .svx-roles-status {
+  max-width: 100%;
+  min-height: 22px;
+  overflow-wrap: anywhere;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  line-height: 1;
+  text-align: center;
+  white-space: normal;
+}
+
+.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
+.svx-settings-roles .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
+.svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
+  display: inline-flex;
+  width: auto;
+  min-width: 70px;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  justify-self: center;
+}
+
+.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge.is-info {
+  min-width: 92px;
+}
+
+.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge.is-warning,
+.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge.is-neutral {
+  min-width: 72px;
+}
+
+.svx-settings-roles .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
+.svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
+  min-width: 76px;
+}
+
+/* FINAL Roles dark correction.
+   Every red-marked Roles section/card uses signup black/charcoal: #1F1F20. */
+:root[data-theme="dark"] .svx-settings-roles {
+  --settings-bg: #0a0e17;
+  --settings-card: #1f1f20;
+  --settings-panel: #1f1f20;
+  --settings-panel-strong: #0d1d32;
+  --settings-input: #1c1c1d;
+  --settings-text: #ffffff;
+  --settings-muted: rgba(255, 255, 255, 0.72);
+  --settings-muted-2: rgba(255, 255, 255, 0.56);
+  --settings-border: rgba(255, 255, 255, 0.11);
+  --settings-input-border: rgba(255, 255, 255, 0.12);
+  --settings-primary: #159cff;
+  --settings-primary-soft: rgba(21, 156, 255, 0.14);
+  --settings-ring: rgba(21, 156, 255, 0.18);
+
+  --roles-row: #1f1f20;
+  --roles-row-soft: #1f1f20;
+  --roles-line: rgba(255, 255, 255, 0.11);
+
+  --color-card: #1f1f20;
+  --color-surface: #1f1f20;
+  --color-surface-2: #1f1f20;
+  --color-surface-3: #0d1d32;
+  --color-text: #ffffff;
+  --color-text-muted: rgba(255, 255, 255, 0.72);
+  --color-border: rgba(255, 255, 255, 0.11);
+  --color-primary: #159cff;
+  --color-primary-soft: rgba(21, 156, 255, 0.14);
+}
+
+/* Main page sections/cards marked in red. */
+:root[data-theme="dark"] .svx-settings-page:has(.svx-settings-roles) > section,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-roles-table-card) > section,
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-roles-hero),
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-roles-switch),
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-roles-overview),
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-roles-table-card),
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-roles-compare-card),
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-roles-members-card),
+:root[data-theme="dark"] .svx-settings-roles .svx-settings-card,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-hero,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-summary-card,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-overview,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-switch,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-table-card,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-compare-card,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-members-card {
+  background: #1f1f20 !important;
+  background-color: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24) !important;
+}
+
+/* Inner metrics/table rows also stay charcoal, not navy. */
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-metric,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-table-row,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-compare-row,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-table-row > div,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-compare-row > div,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-table-row:not(.is-head) > div:first-child,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-compare-row:not(.is-head) > div:nth-child(2),
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-table-row.is-head,
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-compare-row.is-head,
+:root[data-theme="dark"] .svx-settings-roles [class*="rounded-[22px]"],
+:root[data-theme="dark"] .svx-settings-roles [class*="rounded-[24px]"],
+:root[data-theme="dark"] .svx-settings-roles [class*="bg-[var(--color-card)]"],
+:root[data-theme="dark"] .svx-settings-roles [class*="bg-[var(--color-surface)]"],
+:root[data-theme="dark"] .svx-settings-roles [class*="bg-[var(--color-surface-2)]"] {
+  background: #1f1f20 !important;
+  background-color: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+}
+
+/* Only selected/active controls use blue. */
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-tab.is-active {
+  background: #159cff !important;
+  background-color: #159cff !important;
+  border-color: #159cff !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-tab:not(.is-active),
+:root[data-theme="dark"] .svx-settings-roles .svx-roles-select-wrap select,
+:root[data-theme="dark"] .svx-settings-roles input,
+:root[data-theme="dark"] .svx-settings-roles select,
+:root[data-theme="dark"] .svx-settings-roles textarea,
+:root[data-theme="dark"] .svx-settings-roles .app-input {
+  background: #1c1c1d !important;
+  background-color: #1c1c1d !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
 }
 
 @media (max-width: 1100px) {
@@ -455,8 +662,8 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0;
-    margin-bottom: 10px;
     overflow: hidden;
+    margin-bottom: 10px;
     border: 1px solid var(--roles-line);
     border-radius: 16px;
     background: var(--settings-card);
@@ -507,6 +714,37 @@
   .svx-roles-compare-select {
     width: 100%;
   }
+
+  .svx-roles-table-row > div[data-label="Risk"],
+  .svx-roles-table-row > div[data-label="Status"],
+  .svx-roles-compare-row > div[data-label="Status"] {
+    align-items: flex-start;
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
+  .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
+  .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
+    width: 100%;
+    max-width: 150px;
+  }
+
+  .svx-settings-roles .svx-roles-badge,
+  .svx-settings-roles .svx-roles-status {
+    min-height: 24px;
+    padding: 0 9px;
+    font-size: 8.5px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
+  .svx-settings-roles .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
+  .svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
+    justify-self: start;
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 389px) {
@@ -524,154 +762,5 @@
   .svx-roles-table-row > div:last-child,
   .svx-roles-compare-row > div:last-child {
     border-bottom: 0 !important;
-  }
-}
-
-
-/* Center compact badges inside the real table cells on desktop/tablet. */
-.svx-roles-table-row > div[data-label="Risk"],
-.svx-roles-table-row > div[data-label="Status"],
-.svx-roles-compare-row > div[data-label="Status"] {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
-.svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
-.svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
-  width: min(100%, 132px);
-}
-
-.svx-roles-table-row.is-head > div:nth-child(4),
-.svx-roles-table-row.is-head > div:nth-child(5),
-.svx-roles-compare-row.is-head > div:nth-child(3) {
-  text-align: center;
-}
-
-@media (max-width: 720px) {
-  .svx-roles-table-row > div[data-label="Risk"],
-  .svx-roles-table-row > div[data-label="Status"],
-  .svx-roles-compare-row > div[data-label="Status"] {
-    align-items: flex-start;
-    justify-content: flex-start;
-    text-align: left;
-  }
-
-  .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
-  .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
-  .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
-    width: 100%;
-    max-width: 150px;
-  }
-}
-
-/* Keep Risk and Status cells centered both horizontally and vertically in the desktop access table. */
-@media (min-width: 721px) {
-  .svx-settings-roles .svx-roles-table-row > div[data-label="Risk"],
-  .svx-settings-roles .svx-roles-table-row > div[data-label="Status"],
-  .svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] {
-    display: grid !important;
-    align-self: stretch;
-    min-height: 100%;
-    place-items: center;
-    text-align: center;
-  }
-
-  .svx-settings-roles .svx-roles-table-row.is-head > div:nth-child(4),
-  .svx-settings-roles .svx-roles-table-row.is-head > div:nth-child(5),
-  .svx-settings-roles .svx-roles-compare-row.is-head > div:nth-child(3) {
-    display: grid !important;
-    align-self: stretch;
-    min-height: 100%;
-    place-items: center;
-    text-align: center;
-  }
-
-  .svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
-  .svx-settings-roles .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
-  .svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
-    margin: auto;
-  }
-}
-
-/* Final badge overflow correction: keep table badges centered without spilling outside cells. */
-.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"],
-.svx-settings-roles .svx-roles-table-row > div[data-label="Status"],
-.svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] {
-  overflow: hidden;
-}
-
-.svx-settings-roles .svx-roles-badge,
-.svx-settings-roles .svx-roles-status {
-  max-width: 100%;
-  min-height: 22px;
-  border-radius: 999px;
-  padding: 0 8px;
-  font-size: 8.5px;
-  font-weight: 900;
-  letter-spacing: 0.035em;
-  line-height: 1;
-  text-align: center;
-  white-space: normal;
-  overflow-wrap: anywhere;
-}
-
-.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
-.svx-settings-roles .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
-.svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
-  width: auto;
-  min-width: 70px;
-  max-width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  justify-self: center;
-  align-self: center;
-}
-
-.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge.is-info {
-  min-width: 92px;
-}
-
-.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge.is-warning,
-.svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge.is-neutral {
-  min-width: 72px;
-}
-
-.svx-settings-roles .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
-.svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
-  min-width: 76px;
-}
-
-@media (min-width: 721px) {
-  .svx-settings-roles .svx-roles-table-row {
-    grid-template-columns: minmax(128px, 0.8fr) minmax(155px, 0.95fr) minmax(250px, 1.5fr) minmax(118px, 0.62fr) minmax(96px, 0.54fr);
-  }
-
-  .svx-settings-roles .svx-roles-table-row > div[data-label="Risk"],
-  .svx-settings-roles .svx-roles-table-row > div[data-label="Status"],
-  .svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] {
-    padding-left: 8px;
-    padding-right: 8px;
-  }
-}
-
-@media (max-width: 720px) {
-  .svx-settings-roles .svx-roles-badge,
-  .svx-settings-roles .svx-roles-status {
-    min-height: 24px;
-    padding: 0 9px;
-    font-size: 8.5px;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-  }
-
-  .svx-settings-roles .svx-roles-table-row > div[data-label="Risk"] .svx-roles-badge,
-  .svx-settings-roles .svx-roles-table-row > div[data-label="Status"] .svx-roles-status,
-  .svx-settings-roles .svx-roles-compare-row > div[data-label="Status"] .svx-roles-status {
-    justify-self: start;
-    max-width: 100%;
   }
 }

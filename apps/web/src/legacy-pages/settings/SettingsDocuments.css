@@ -14,6 +14,7 @@
 
   max-width: 1440px;
   margin-inline: auto;
+  background: transparent;
 }
 
 .svx-settings-documents-page .svx-settings-card {
@@ -100,7 +101,7 @@
   min-width: 0;
   border: 1px solid var(--settings-border);
   border-radius: var(--docs-panel-radius);
-  background: color-mix(in srgb, var(--settings-panel) 82%, transparent);
+  background: var(--settings-panel);
   padding: 16px;
 }
 
@@ -126,10 +127,10 @@
 }
 
 .svx-settings-accordion-list details {
+  overflow: hidden;
   border: 1px solid var(--settings-border);
   border-radius: var(--docs-panel-radius);
   background: var(--settings-panel);
-  overflow: hidden;
 }
 
 .svx-settings-accordion-list summary {
@@ -179,6 +180,123 @@
 
 .svx-settings-documents-page .svx-settings-savebar {
   margin-inline: 0;
+}
+
+/* Exact signup-style dark color correction for Documents page only.
+   No layout changes. Section/card background must match the black signup cards. */
+:root[data-theme="dark"] .svx-settings-documents-page {
+  --settings-bg: #0a0e17;
+  --settings-header: #0d1320;
+  --settings-card: #1f1f20;
+  --settings-panel: #1f1f20;
+  --settings-panel-strong: #0d1d32;
+  --settings-input: #1c1c1d;
+  --settings-text: #ffffff;
+  --settings-muted: rgba(255, 255, 255, 0.72);
+  --settings-muted-2: rgba(255, 255, 255, 0.56);
+  --settings-border: rgba(255, 255, 255, 0.11);
+  --settings-input-border: rgba(255, 255, 255, 0.12);
+  --settings-primary: #159cff;
+  --settings-primary-soft: rgba(21, 156, 255, 0.14);
+  --settings-ring: rgba(21, 156, 255, 0.18);
+
+  --color-card: #1f1f20;
+  --color-surface: #1f1f20;
+  --color-surface-2: #1f1f20;
+  --color-surface-3: #0d1d32;
+  --color-text: #ffffff;
+  --color-text-muted: rgba(255, 255, 255, 0.72);
+  --color-border: rgba(255, 255, 255, 0.11);
+  --color-primary: #159cff;
+  --color-primary-soft: rgba(21, 156, 255, 0.14);
+}
+
+/* Main Documents sections: black/charcoal like signup cards. */
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-card,
+:root[data-theme="dark"] .svx-settings-documents-page section,
+:root[data-theme="dark"] .svx-settings-documents-page [class*="rounded-[28px]"],
+:root[data-theme="dark"] .svx-settings-documents-page [class*="bg-[var(--color-card)]"],
+:root[data-theme="dark"] .svx-settings-documents-page [class*="bg-[var(--color-surface)]"],
+:root[data-theme="dark"] .svx-settings-documents-page [class*="bg-[var(--color-surface-2)]"] {
+  border-color: var(--settings-border) !important;
+  background: #1f1f20 !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24) !important;
+}
+
+/* Inner cards/columns: also charcoal, not navy. */
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-panel,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-summary-card,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-option-card,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-switch-row,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-documents-tax-side,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-accordion-list details,
+:root[data-theme="dark"] .svx-settings-documents-page [class*="rounded-[22px]"],
+:root[data-theme="dark"] .svx-settings-documents-page [class*="rounded-[24px]"] {
+  border-color: var(--settings-border) !important;
+  background: #1f1f20 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-panel.is-warning {
+  border-color: rgba(251, 191, 36, 0.24) !important;
+  background: rgba(251, 191, 36, 0.08) !important;
+}
+
+/* Only selected/active states use blue. */
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-summary-card.is-primary,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-option-card.is-selected {
+  border-color: rgba(21, 156, 255, 0.56) !important;
+  background: #0d1d32 !important;
+  box-shadow: 0 14px 30px rgba(21, 156, 255, 0.08) !important;
+}
+
+/* Inputs exactly like signup fields: charcoal, not blue. */
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-input,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-textarea,
+:root[data-theme="dark"] .svx-settings-documents-page .app-input,
+:root[data-theme="dark"] .svx-settings-documents-page input,
+:root[data-theme="dark"] .svx-settings-documents-page select,
+:root[data-theme="dark"] .svx-settings-documents-page textarea {
+  border-color: var(--settings-input-border) !important;
+  background: #1c1c1d !important;
+  color: var(--settings-text) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-input::placeholder,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-textarea::placeholder,
+:root[data-theme="dark"] .svx-settings-documents-page input::placeholder,
+:root[data-theme="dark"] .svx-settings-documents-page textarea::placeholder {
+  color: var(--settings-muted-2) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-input:focus,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-textarea:focus,
+:root[data-theme="dark"] .svx-settings-documents-page .app-input:focus,
+:root[data-theme="dark"] .svx-settings-documents-page input:focus,
+:root[data-theme="dark"] .svx-settings-documents-page select:focus,
+:root[data-theme="dark"] .svx-settings-documents-page textarea:focus {
+  border-color: var(--settings-primary) !important;
+  box-shadow: 0 0 0 4px var(--settings-ring) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-documents-page select {
+  background-color: #1c1c1d !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10L12 15L17 10' stroke='%23159CFF' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  background-size: 18px 18px !important;
+}
+
+:root[data-theme="dark"] .svx-settings-documents-page select option {
+  background: #1f1f20 !important;
+  color: var(--settings-text) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-savebar {
+  border-color: var(--settings-border) !important;
+  background: #1f1f20 !important;
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.24) !important;
 }
 
 /* Desktop/tablet refinement */
@@ -448,156 +566,43 @@
   }
 }
 
-/* Documents settings landing-page background/card foundation.
-   Scoped to /app/settings/documents only. */
-.svx-settings-documents-page {
-  --settings-bg: #ffffff;
-  --settings-card: #ffffff;
-  --settings-panel: #f7faff;
-  --settings-panel-strong: #eef6ff;
-  --settings-text: #0d1b3e;
-  --settings-muted: #5f6b84;
-  --settings-muted-2: #718096;
-  --settings-border: rgba(13, 27, 62, 0.12);
-  --settings-primary: #2563eb;
-  --settings-primary-soft: #eef6ff;
-  --settings-primary-ring: rgba(37, 99, 235, 0.14);
-
-  background: transparent;
-  color: var(--settings-text);
+/* FINAL FIX: Documents main section cards must match signup black/charcoal.
+   This targets the big sections marked in red. */
+:root[data-theme="dark"] .svx-settings-documents-page > section,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-card,
+:root[data-theme="dark"] .svx-settings-documents-page section.svx-settings-card,
+:root[data-theme="dark"] .svx-settings-documents-page article.svx-settings-card,
+:root[data-theme="dark"] .svx-settings-documents-page [class~="svx-settings-card"] {
+  background: #1f1f20 !important;
+  background-color: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
 }
 
-.svx-settings-documents-page .svx-settings-card {
-  border-color: var(--settings-border);
-  background: var(--settings-card);
-  box-shadow: 0 18px 46px rgba(15, 45, 90, 0.055);
+/* Also force common Tailwind variable background utilities inside Documents page. */
+:root[data-theme="dark"] .svx-settings-documents-page [class*="bg-"],
+:root[data-theme="dark"] .svx-settings-documents-page [class*="bg-[var(--color-card)]"],
+:root[data-theme="dark"] .svx-settings-documents-page [class*="bg-[var(--color-surface)]"],
+:root[data-theme="dark"] .svx-settings-documents-page [class*="bg-[var(--color-surface-2)]"],
+:root[data-theme="dark"] .svx-settings-documents-page [class*="bg-[var(--color-surface-3)]"] {
+  background-color: #1f1f20 !important;
 }
 
-.svx-settings-documents-page .svx-settings-panel,
-.svx-settings-documents-page .svx-settings-summary-card,
-.svx-settings-documents-page .svx-settings-option-card,
-.svx-settings-documents-page .svx-settings-switch-row,
-.svx-settings-documents-page .svx-documents-tax-side,
-.svx-settings-documents-page .svx-settings-accordion-list details {
-  border-color: var(--settings-border);
-  background: var(--settings-panel);
+/* Keep selected/active option cards blue only where selection is meaningful. */
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-option-card.is-selected,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-summary-card.is-primary {
+  background: #0d1d32 !important;
+  background-color: #0d1d32 !important;
+  border-color: rgba(21, 156, 255, 0.56) !important;
 }
 
-.svx-settings-documents-page .svx-settings-input,
-.svx-settings-documents-page .svx-settings-textarea,
-.svx-settings-documents-page .app-input,
-.svx-settings-documents-page input,
-.svx-settings-documents-page select,
-.svx-settings-documents-page textarea {
-  border-color: var(--settings-border);
-  background: var(--settings-panel);
-  color: var(--settings-text);
-}
-
-.svx-settings-documents-page .svx-settings-input:focus,
-.svx-settings-documents-page .svx-settings-textarea:focus,
-.svx-settings-documents-page .app-input:focus,
-.svx-settings-documents-page input:focus,
-.svx-settings-documents-page select:focus,
-.svx-settings-documents-page textarea:focus {
-  border-color: var(--settings-primary);
-  box-shadow: 0 0 0 4px var(--settings-primary-ring);
-}
-
-.svx-settings-documents-page select option {
-  background: var(--settings-card);
-  color: var(--settings-text);
-}
-
-:root[data-theme="dark"] .svx-settings-documents-page {
-  --settings-bg: #06111f;
-  --settings-card: #1f1f20;
-  --settings-panel: rgba(13, 29, 50, 0.74);
-  --settings-panel-strong: #10243f;
-  --settings-text: #ffffff;
-  --settings-muted: rgba(255, 255, 255, 0.72);
-  --settings-muted-2: rgba(255, 255, 255, 0.56);
-  --settings-border: rgba(255, 255, 255, 0.105);
-  --settings-primary: #159cff;
-  --settings-primary-soft: rgba(21, 156, 255, 0.12);
-  --settings-primary-ring: rgba(21, 156, 255, 0.18);
-}
-
-:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-card {
-  border-color: rgba(255, 255, 255, 0.105);
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.025), transparent 34%),
-    #1f1f20;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
-}
-
-:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-section-head {
-  border-bottom-color: rgba(255, 255, 255, 0.09);
-}
-
-:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-panel,
-:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-summary-card,
-:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-option-card,
-:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-switch-row,
-:root[data-theme="dark"] .svx-settings-documents-page .svx-documents-tax-side,
-:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-accordion-list details {
-  border-color: rgba(255, 255, 255, 0.09);
-  background: rgba(31, 31, 32, 0.72);
-  box-shadow: none;
-}
-
-:root[data-theme="dark"] .svx-settings-documents-page .svx-documents-tax-side,
-:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-panel.is-warning {
-  background: rgba(13, 29, 50, 0.64);
-}
-
-:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-option-card.is-selected {
-  border-color: rgba(21, 156, 255, 0.72);
-  background: rgba(13, 29, 50, 0.92);
-  box-shadow: 0 14px 30px rgba(21, 156, 255, 0.08);
-}
-
-:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-input,
-:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-textarea,
-:root[data-theme="dark"] .svx-settings-documents-page .app-input,
+/* Inputs stay signup charcoal, not section blue. */
 :root[data-theme="dark"] .svx-settings-documents-page input,
 :root[data-theme="dark"] .svx-settings-documents-page select,
-:root[data-theme="dark"] .svx-settings-documents-page textarea {
-  border-color: rgba(255, 255, 255, 0.09);
-  background: rgba(13, 29, 50, 0.64);
-  color: #ffffff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
-}
-
-:root[data-theme="dark"] .svx-settings-documents-page select {
-  background-color: rgba(13, 29, 50, 0.66);
-  background-image:
-    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.72) 50%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.72) 50%, transparent 50%),
-    linear-gradient(180deg, rgba(13, 29, 50, 0.72), rgba(13, 29, 50, 0.62));
-}
-
-:root[data-theme="dark"] .svx-settings-documents-page select option {
-  background: #1f1f20;
-  color: #ffffff;
-}
-
-:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-savebar {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(31, 31, 32, 0.82);
-  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.2);
-}
-
-@media (max-width: 720px) {
-  :root[data-theme="dark"] .svx-settings-documents-page .svx-settings-card {
-    border-radius: 18px;
-  }
-
-  :root[data-theme="dark"] .svx-settings-documents-page .svx-settings-summary-card,
-  :root[data-theme="dark"] .svx-settings-documents-page .svx-settings-option-card,
-  :root[data-theme="dark"] .svx-settings-documents-page .svx-settings-switch-row,
-  :root[data-theme="dark"] .svx-settings-documents-page .svx-settings-panel,
-  :root[data-theme="dark"] .svx-settings-documents-page .svx-documents-tax-side {
-    border-radius: 15px;
-  }
+:root[data-theme="dark"] .svx-settings-documents-page textarea,
+:root[data-theme="dark"] .svx-settings-documents-page .app-input,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-input,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-settings-textarea {
+  background: #1c1c1d !important;
+  background-color: #1c1c1d !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }

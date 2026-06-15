@@ -1,4 +1,4 @@
- @import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -27,35 +27,32 @@
   --shadow-soft: 0 10px 24px rgba(28, 28, 29, 0.06);
   --shadow-card: 0 18px 48px rgba(28, 28, 29, 0.1);
 
-
-
   --svx-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --svx-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-
 }
 
 :root[data-theme="dark"] {
-  --color-bg: #1c1c1d;
-  --color-surface: #1c1c1d;
-  --color-surface-2: #262627;
-  --color-surface-3: #313133;
-  --color-card: #232324;
+  --color-bg: #0a0e17;
+  --color-surface: #0d1320;
+  --color-surface-2: #111a2c;
+  --color-surface-3: #131c2e;
+  --color-card: #111a2c;
 
   --color-text: #ffffff;
-  --color-text-muted: rgba(255, 255, 255, 0.74);
-  --color-border: rgba(255, 255, 255, 0.12);
+  --color-text-muted: #8b97ac;
+  --color-border: #1e2738;
 
-  --color-primary: #077dcb;
-  --color-primary-soft: rgba(7, 125, 203, 0.18);
-  --color-primary-ring: rgba(7, 125, 203, 0.34);
+  --color-primary: #2f8fff;
+  --color-primary-soft: #15253d;
+  --color-primary-ring: rgba(47, 143, 255, 0.18);
   --color-primary-contrast: #ffffff;
 
-  --color-success: #ffffff;
-  --color-warning: #f5c56b;
-  --color-danger: #ff8a82;
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-danger: #ff5c7a;
 
-  --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.24);
-  --shadow-card: 0 22px 54px rgba(0, 0, 0, 0.36);
+  --shadow-soft: 0 10px 24px rgba(0, 0, 0, 0.2);
+  --shadow-card: 0 22px 54px rgba(0, 0, 0, 0.28);
 }
 
 * {
@@ -143,6 +140,11 @@ svg {
     background-color 160ms ease;
 }
 
+:root[data-theme="dark"] .app-input {
+  border-color: #25304a;
+  background: #0c1320;
+}
+
 .app-input::placeholder {
   color: var(--color-text-muted);
 }
@@ -194,28 +196,28 @@ svg {
 }
 
 :root[data-theme="dark"] .badge-success {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: rgba(52, 211, 153, 0.12);
+  color: #34d399;
 }
 
 :root[data-theme="dark"] .badge-info {
-  background: rgba(7, 125, 203, 0.18);
-  color: #ffffff;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 :root[data-theme="dark"] .badge-neutral {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.74);
+  background: #16233d;
+  color: var(--color-text-muted);
 }
 
 :root[data-theme="dark"] .badge-warning {
-  background: rgba(245, 197, 107, 0.14);
-  color: #f5c56b;
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
 }
 
 :root[data-theme="dark"] .badge-danger {
-  background: rgba(255, 138, 130, 0.16);
-  color: #ffb7b2;
+  background: rgba(255, 92, 122, 0.14);
+  color: #ff5c7a;
 }
 
 /*

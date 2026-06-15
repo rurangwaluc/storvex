@@ -1741,3 +1741,183 @@
     white-space: normal;
   }
 }
+
+/* Signup-matched Settings dark surfaces.
+   Append only. Do not remove existing CSS.
+   Purpose: make Settings cards, columns/panels, and inputs match onboarding/signup. */
+
+:root[data-theme="dark"] .svx-settings-shell,
+:root[data-theme="dark"] .svx-settings-page {
+  --settings-bg: #0a0e17;
+  --settings-card: #1f1f20;
+  --settings-panel: #1f1f20;
+  --settings-panel-strong: #0d1d32;
+  --settings-input: #1c1c1d;
+  --settings-text: #ffffff;
+  --settings-muted: rgba(255, 255, 255, 0.72);
+  --settings-muted-2: rgba(255, 255, 255, 0.56);
+  --settings-border: rgba(255, 255, 255, 0.11);
+  --settings-input-border: rgba(255, 255, 255, 0.12);
+  --settings-primary: #159cff;
+  --settings-primary-dark: #0b86df;
+  --settings-primary-soft: rgba(21, 156, 255, 0.14);
+  --settings-primary-ring: rgba(21, 156, 255, 0.18);
+
+  --color-bg: #0a0e17;
+  --color-card: #1f1f20;
+  --color-surface: #1f1f20;
+  --color-surface-2: #1f1f20;
+  --color-surface-3: #0d1d32;
+  --color-text: #ffffff;
+  --color-text-muted: rgba(255, 255, 255, 0.72);
+  --color-border: rgba(255, 255, 255, 0.11);
+  --color-primary: #159cff;
+  --color-primary-soft: rgba(21, 156, 255, 0.14);
+  --color-primary-ring: rgba(21, 156, 255, 0.18);
+}
+
+/* Main Settings cards should feel like signup cards, not blue dashboard cards. */
+:root[data-theme="dark"] .svx-settings-card,
+:root[data-theme="dark"] .svx-settings-control-card,
+:root[data-theme="dark"] .svx-settings-layout-card {
+  background: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24) !important;
+}
+
+/* Inner columns and small cards: keep same signup card family. */
+:root[data-theme="dark"] .svx-settings-panel,
+:root[data-theme="dark"] .svx-settings-summary-card,
+:root[data-theme="dark"] .svx-settings-check-row,
+:root[data-theme="dark"] .svx-settings-logo-panel,
+:root[data-theme="dark"] .svx-settings-option-card,
+:root[data-theme="dark"] .svx-settings-switch-row,
+:root[data-theme="dark"] .svx-document-preview-card,
+:root[data-theme="dark"] .svx-settings-doc-action-row,
+:root[data-theme="dark"] .svx-settings-locked-category-card {
+  background: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow: none !important;
+}
+
+/* Selected/important columns can use the signup dark-blue accent, but only softly. */
+:root[data-theme="dark"] .svx-settings-summary-card.is-primary,
+:root[data-theme="dark"] .svx-settings-option-card.is-selected,
+:root[data-theme="dark"] .svx-settings-nav-card.is-active,
+:root[data-theme="dark"] .svx-settings-desktop-nav a[aria-current="page"] .svx-settings-nav-card {
+  background: #0d1d32 !important;
+  border-color: rgba(21, 156, 255, 0.42) !important;
+}
+
+/* Settings navigation cards should also stop looking dashboard-blue. */
+:root[data-theme="dark"] .svx-settings-nav-panel {
+  background: #0d1320 !important;
+  border-color: rgba(21, 156, 255, 0.16) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-nav-card {
+  background: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-settings-nav-card:hover {
+  background: #232324 !important;
+  border-color: rgba(21, 156, 255, 0.3) !important;
+}
+
+/* Inputs must match signup fields: dark charcoal, not blue panels. */
+:root[data-theme="dark"] .svx-settings-input,
+:root[data-theme="dark"] .svx-settings-textarea,
+:root[data-theme="dark"] .svx-settings-page .app-input,
+:root[data-theme="dark"] .svx-settings-page input,
+:root[data-theme="dark"] .svx-settings-page select,
+:root[data-theme="dark"] .svx-settings-page textarea {
+  background: #1c1c1d !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-settings-input::placeholder,
+:root[data-theme="dark"] .svx-settings-textarea::placeholder,
+:root[data-theme="dark"] .svx-settings-page input::placeholder,
+:root[data-theme="dark"] .svx-settings-page textarea::placeholder {
+  color: rgba(255, 255, 255, 0.46) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-input:focus,
+:root[data-theme="dark"] .svx-settings-textarea:focus,
+:root[data-theme="dark"] .svx-settings-page .app-input:focus,
+:root[data-theme="dark"] .svx-settings-page input:focus,
+:root[data-theme="dark"] .svx-settings-page select:focus,
+:root[data-theme="dark"] .svx-settings-page textarea:focus {
+  border-color: #159cff !important;
+  box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.18) !important;
+}
+
+/* Select arrows keep signup input colors. */
+:root[data-theme="dark"] .svx-settings-page select,
+:root[data-theme="dark"] .svx-settings-shell select,
+:root[data-theme="dark"] .svx-settings-section-select {
+  background-color: #1c1c1d !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.72) 50%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72) 50%, transparent 50%),
+    linear-gradient(180deg, #1c1c1d, #1c1c1d) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-page select option,
+:root[data-theme="dark"] .svx-settings-shell select option {
+  background: #1f1f20 !important;
+  color: #ffffff !important;
+}
+
+/* Icon chips like signup: blue icon on dark-blue chip. */
+:root[data-theme="dark"] .svx-settings-nav-icon,
+:root[data-theme="dark"] .svx-settings-logo-preview,
+:root[data-theme="dark"] .svx-settings-page [class*="h-14"][class*="w-14"],
+:root[data-theme="dark"] .svx-settings-shell [class*="h-14"][class*="w-14"] {
+  background: #0d1d32 !important;
+  border-color: rgba(21, 156, 255, 0.22) !important;
+  color: #159cff !important;
+}
+
+/* Badges/pills like signup step/status pills. */
+:root[data-theme="dark"] .svx-settings-badge.is-primary,
+:root[data-theme="dark"] .svx-settings-nav-state {
+  background: rgba(21, 156, 255, 0.14) !important;
+  color: #159cff !important;
+}
+
+:root[data-theme="dark"] .svx-settings-badge.is-neutral,
+:root[data-theme="dark"] .svx-settings-badge.is-strong {
+  background: #0d1d32 !important;
+  color: rgba(255, 255, 255, 0.64) !important;
+}
+
+/* Sticky save/action bar should feel like the signup bottom action card. */
+:root[data-theme="dark"] .svx-settings-savebar {
+  background: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow: 0 24px 54px rgba(0, 0, 0, 0.24) !important;
+}
+
+/* Primary actions keep signup CTA blue. */
+:root[data-theme="dark"] .svx-settings-primary-link,
+:root[data-theme="dark"] .svx-settings-page button[class*="bg-[var(--color-primary)]"],
+:root[data-theme="dark"] .svx-settings-shell button[class*="bg-[var(--color-primary)]"],
+:root[data-theme="dark"] .svx-settings-page a[class*="bg-[var(--color-primary)]"],
+:root[data-theme="dark"] .svx-settings-shell a[class*="bg-[var(--color-primary)]"] {
+  background: #159cff !important;
+  border-color: #159cff !important;
+  color: #ffffff !important;
+  box-shadow: 0 14px 28px rgba(21, 156, 255, 0.18) !important;
+}
+
+/* Secondary buttons stay neutral like signup ghost/outline controls. */
+:root[data-theme="dark"] .svx-settings-secondary-button {
+  background: #1c1c1d !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}

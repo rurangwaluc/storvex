@@ -1,78 +1,3 @@
-/* Audit page surface alignment with the current Storvex landing page.
-   Dark mode matches LandingPage.css:
-   page background #06111f, cards #1f1f20, soft panels #0d1d32. */
-:root[data-theme="dark"] .svx-settings-audit-page,
-:root[data-theme="dark"] .svx-audit-drawer-layer {
-  --settings-page-bg: #06111f;
-  --settings-card: #1f1f20;
-  --settings-panel: #0d1d32;
-  --settings-panel-strong: #111f31;
-  --settings-text: #ffffff;
-  --settings-muted: rgba(255, 255, 255, 0.72);
-  --settings-muted-2: rgba(255, 255, 255, 0.58);
-  --settings-border: rgba(255, 255, 255, 0.12);
-  --settings-primary: #159cff;
-  --settings-primary-soft: rgba(21, 156, 255, 0.14);
-}
-
-:root[data-theme="dark"] .svx-settings-audit-page {
-  background: #06111f;
-}
-
-:root[data-theme="dark"] .svx-audit-filter-card,
-:root[data-theme="dark"] .svx-audit-list-card,
-:root[data-theme="dark"] .svx-audit-drawer-panel {
-  background: #1f1f20 !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-:root[data-theme="dark"] .svx-audit-filter-head,
-:root[data-theme="dark"] .svx-audit-list-head,
-:root[data-theme="dark"] .svx-audit-pagination,
-:root[data-theme="dark"] .svx-audit-drawer-header {
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-:root[data-theme="dark"] .svx-audit-visible-count,
-:root[data-theme="dark"] .svx-audit-table-head,
-:root[data-theme="dark"] .svx-audit-row-main,
-:root[data-theme="dark"] .svx-audit-drawer-info-grid > *,
-:root[data-theme="dark"] .svx-audit-recorded-details,
-:root[data-theme="dark"] .svx-audit-metadata-card {
-  background: #0d1d32 !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-:root[data-theme="dark"] .svx-audit-row,
-:root[data-theme="dark"] .svx-audit-row-cell {
-  background: #1f1f20 !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-:root[data-theme="dark"] .svx-audit-row:hover {
-  background: color-mix(in srgb, #1f1f20 82%, #159cff 18%) !important;
-}
-
-:root[data-theme="dark"] .svx-audit-field .app-input,
-:root[data-theme="dark"] .svx-audit-field input,
-:root[data-theme="dark"] .svx-audit-field select {
-  background: #0d1d32 !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  color: #ffffff !important;
-}
-
-:root[data-theme="dark"] .svx-audit-field .app-input::placeholder,
-:root[data-theme="dark"] .svx-audit-field input::placeholder {
-  color: rgba(255, 255, 255, 0.5) !important;
-}
-
-:root[data-theme="dark"] .svx-audit-drawer-backdrop {
-  background: rgba(6, 17, 31, 0.58);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-}
-
-
 .svx-settings-audit-page {
   width: 100%;
   max-width: 1440px;
@@ -456,484 +381,7 @@
   }
 }
 
-@media (max-width: 1200px) {
-  .svx-audit-filter-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .svx-audit-field.is-search,
-  .svx-audit-field.is-wide {
-    grid-column: span 2;
-  }
-
-  .svx-audit-table-head,
-  .svx-audit-row {
-    grid-template-columns: minmax(185px, 1.1fr) minmax(170px, 0.92fr) minmax(145px, 0.78fr) minmax(145px, 0.78fr) minmax(150px, 0.78fr) minmax(78px, 0.34fr);
-  }
-}
-
-@media (max-width: 720px) {
-  .svx-settings-audit-page {
-    gap: 14px;
-  }
-
-  .svx-audit-filter-head,
-  .svx-audit-list-head {
-    grid-template-columns: minmax(0, 1fr);
-    padding: 16px;
-  }
-
-  .svx-audit-visible-count {
-    min-width: 0;
-  }
-
-  .svx-audit-filter-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-    padding: 16px 16px 0;
-  }
-
-  .svx-audit-field.is-search,
-  .svx-audit-field.is-wide {
-    grid-column: 1 / -1;
-  }
-
-  .svx-audit-filter-chips,
-  .svx-audit-filter-actions,
-  .svx-audit-pagination {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  .svx-audit-table-head {
-    display: none;
-  }
-
-  .svx-audit-table {
-    display: grid;
-    gap: 10px;
-    padding: 0 14px 14px;
-  }
-
-  .svx-audit-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    overflow: hidden;
-    border: 1px solid var(--settings-border, var(--color-border));
-    border-radius: 16px;
-  }
-
-  .svx-audit-row-cell {
-    border-right: 0;
-    border-bottom: 1px solid var(--settings-border, var(--color-border));
-    padding: 12px;
-  }
-
-  .svx-audit-row-cell::before {
-    content: attr(data-label);
-    display: block;
-    margin-bottom: 7px;
-    color: var(--settings-muted-2, var(--color-text-muted));
-    font-size: 9.5px;
-    font-weight: 900;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-  }
-
-  .svx-audit-row-main,
-  .svx-audit-row-cell:nth-child(5) {
-    grid-column: 1 / -1;
-  }
-
-  .svx-audit-row-cell:nth-child(5),
-  .svx-audit-row-cell:nth-child(6) {
-    border-bottom: 0;
-  }
-
-  .svx-audit-row-action {
-    justify-content: flex-start;
-  }
-
-  .svx-audit-row-action span {
-    width: 100%;
-  }
-
-  .svx-audit-pagination {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .svx-audit-drawer-panel {
-    width: min(420px, calc(100vw - 20px));
-  }
-
-  .svx-audit-drawer-header {
-    padding: 18px 16px 14px;
-  }
-
-  .svx-audit-drawer-body {
-    padding: 16px;
-  }
-
-  .svx-audit-drawer-info-grid,
-  .svx-audit-metadata-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .svx-audit-drawer-header h3 {
-    font-size: 1.45rem;
-  }
-}
-
-@media (max-width: 389px) {
-  .svx-audit-filter-grid,
-  .svx-audit-row,
-  .svx-audit-drawer-info-grid,
-  .svx-audit-metadata-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .svx-audit-row-main,
-  .svx-audit-row-cell:nth-child(5) {
-    grid-column: auto;
-  }
-
-  .svx-audit-row-cell:nth-child(5) {
-    border-bottom: 1px solid var(--settings-border, var(--color-border));
-  }
-
-  .svx-audit-drawer-panel {
-    width: calc(100vw - 8px);
-  }
-
-  .svx-audit-drawer-backdrop {
-    background: rgba(3, 13, 26, 0.32);
-  }
-}
-
-/* PWA audit log refinement: compact mobile rows, no squeezed desktop table. */
-@media (max-width: 720px) {
-  .svx-settings-audit-page {
-    gap: 12px;
-    overflow-x: clip;
-  }
-
-  .svx-audit-filter-card,
-  .svx-audit-list-card {
-    border-radius: 20px;
-  }
-
-  .svx-audit-filter-head,
-  .svx-audit-list-head {
-    padding: 14px;
-    gap: 10px;
-  }
-
-  .svx-audit-filter-head h2,
-  .svx-audit-list-head h2 {
-    margin-top: 6px;
-    font-size: 1.45rem;
-    line-height: 1.03;
-  }
-
-  .svx-audit-filter-head p,
-  .svx-audit-list-head p {
-    margin-top: 7px;
-    font-size: 12.5px;
-    line-height: 1.45;
-  }
-
-  .svx-audit-visible-count {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    min-height: 54px;
-    padding: 10px 12px;
-    border-radius: 14px;
-  }
-
-  .svx-audit-visible-count strong {
-    margin-top: 0;
-    font-size: 22px;
-  }
-
-  .svx-audit-filter-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    padding: 14px 14px 0;
-  }
-
-  .svx-audit-field label {
-    font-size: 11.5px !important;
-  }
-
-  .svx-audit-field .app-input,
-  .svx-audit-field input,
-  .svx-audit-field select {
-    min-height: 42px;
-    height: 42px;
-    border-radius: 13px;
-    padding-inline: 12px;
-    font-size: 12.5px;
-  }
-
-  .svx-audit-field.is-search,
-  .svx-audit-field.is-wide {
-    grid-column: 1 / -1;
-  }
-
-  .svx-audit-filter-chips {
-    gap: 7px;
-    padding: 14px 14px 0;
-  }
-
-  .svx-audit-filter-chips button {
-    height: 34px;
-    min-height: 34px;
-    border-radius: 12px;
-    padding-inline: 12px;
-    font-size: 10.5px;
-  }
-
-  .svx-audit-filter-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
-    padding: 14px;
-  }
-
-  .svx-audit-filter-actions button {
-    width: 100%;
-    min-height: 42px;
-    border-radius: 13px;
-  }
-
-  .svx-audit-list-head {
-    border-bottom: 0;
-  }
-
-  .svx-audit-list-head .svx-roles-badge,
-  .svx-audit-list-head > span {
-    justify-self: start;
-  }
-
-  .svx-audit-table {
-    gap: 8px;
-    padding: 0 10px 12px;
-  }
-
-  .svx-audit-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0;
-    border: 1px solid var(--settings-border, var(--color-border));
-    border-radius: 16px;
-    background: var(--settings-card, var(--color-card));
-    padding: 0;
-  }
-
-  .svx-audit-row-cell {
-    border: 0;
-    border-bottom: 0 !important;
-    padding: 0;
-    background: transparent !important;
-  }
-
-  .svx-audit-row-cell::before {
-    display: none;
-  }
-
-  .svx-audit-row-main {
-    grid-column: 1 / 2;
-    grid-row: 1;
-    padding: 12px 12px 8px;
-  }
-
-  .svx-audit-row-badges {
-    gap: 5px;
-    margin-bottom: 7px;
-  }
-
-  .svx-audit-row .svx-audit-row-badges span {
-    margin-top: 0;
-    font-size: 9.5px;
-  }
-
-  .svx-audit-row-main strong {
-    font-size: 14px;
-    line-height: 1.16;
-  }
-
-  .svx-audit-row-main span {
-    margin-top: 3px;
-    font-size: 11.5px;
-  }
-
-  .svx-audit-row-cell[data-label="Action"] {
-    grid-column: 2 / 3;
-    grid-row: 1;
-    align-self: stretch;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 10px 10px 8px 0;
-  }
-
-  .svx-audit-row-action span {
-    width: auto;
-    min-width: 66px;
-    min-height: 34px;
-    border-radius: 12px;
-    padding: 0 12px;
-    font-size: 11px;
-  }
-
-  .svx-audit-row-cell[data-label="Branch"],
-  .svx-audit-row-cell[data-label="Done by"],
-  .svx-audit-row-cell[data-label="Time"],
-  .svx-audit-row-cell[data-label="Value / Ref"] {
-    padding: 8px 12px;
-    border-top: 1px solid var(--settings-border, var(--color-border));
-  }
-
-  .svx-audit-row-cell[data-label="Branch"] {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
-
-  .svx-audit-row-cell[data-label="Done by"] {
-    grid-column: 1 / 2;
-    grid-row: 3;
-  }
-
-  .svx-audit-row-cell[data-label="Time"] {
-    grid-column: 2 / 3;
-    grid-row: 3;
-    border-left: 1px solid var(--settings-border, var(--color-border));
-  }
-
-  .svx-audit-row-cell[data-label="Value / Ref"] {
-    grid-column: 1 / -1;
-    grid-row: 4;
-    padding-bottom: 10px;
-  }
-
-  .svx-audit-row-cell[data-label="Branch"] strong,
-  .svx-audit-row-cell[data-label="Done by"] strong,
-  .svx-audit-row-cell[data-label="Time"] strong,
-  .svx-audit-row-cell[data-label="Value / Ref"] strong {
-    font-size: 12.5px;
-    line-height: 1.2;
-  }
-
-  .svx-audit-row-cell[data-label="Branch"] span,
-  .svx-audit-row-cell[data-label="Done by"] span,
-  .svx-audit-row-cell[data-label="Time"] span,
-  .svx-audit-row-cell[data-label="Value / Ref"] span {
-    margin-top: 2px;
-    font-size: 10.5px;
-    line-height: 1.25;
-  }
-
-  .svx-audit-row-cell[data-label="Branch"] strong {
-    max-width: 100%;
-  }
-
-  .svx-audit-pagination {
-    padding: 12px;
-    gap: 10px;
-  }
-
-  .svx-audit-pagination > div:last-child {
-    display: grid !important;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    width: 100%;
-  }
-
-  .svx-audit-pagination button {
-    width: 100%;
-    min-height: 40px;
-    border-radius: 13px;
-  }
-
-  .svx-audit-drawer-panel {
-    width: min(88vw, 420px);
-  }
-
-  .svx-audit-drawer-header {
-    padding: 16px 14px 12px;
-  }
-
-  .svx-audit-drawer-body {
-    padding: 12px;
-  }
-
-  .svx-audit-drawer-info-grid,
-  .svx-audit-metadata-grid {
-    gap: 8px;
-  }
-
-  .svx-audit-drawer-info-grid > *,
-  .svx-audit-metadata-card {
-    border-radius: 14px;
-    padding: 11px;
-  }
-}
-
-@media (min-width: 390px) and (max-width: 720px) {
-  .svx-audit-row-cell[data-label="Branch"] strong {
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-  }
-}
-
-@media (max-width: 389px) {
-  .svx-audit-filter-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .svx-audit-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .svx-audit-row-main,
-  .svx-audit-row-cell[data-label="Action"],
-  .svx-audit-row-cell[data-label="Branch"],
-  .svx-audit-row-cell[data-label="Done by"],
-  .svx-audit-row-cell[data-label="Time"],
-  .svx-audit-row-cell[data-label="Value / Ref"] {
-    grid-column: 1 / -1;
-    grid-row: auto;
-  }
-
-  .svx-audit-row-cell[data-label="Action"] {
-    padding: 0 12px 12px;
-    border-top: 0;
-    justify-content: stretch;
-  }
-
-  .svx-audit-row-action span {
-    width: 100%;
-  }
-
-  .svx-audit-row-cell[data-label="Time"] {
-    border-left: 0;
-  }
-
-  .svx-audit-drawer-panel {
-    width: calc(100vw - 10px);
-  }
-
-  .svx-audit-drawer-info-grid,
-  .svx-audit-metadata-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-/* Final audit density polish: keep landing-page surfaces, reduce height, and make inputs less visually loud. */
+/* Final audit density polish: compact, readable audit layout. */
 .svx-audit-filter-card,
 .svx-audit-list-card {
   border-radius: 22px;
@@ -1045,17 +493,103 @@
   padding: 14px 20px;
 }
 
-:root[data-theme="dark"] .svx-audit-field .app-input,
-:root[data-theme="dark"] .svx-audit-field input,
-:root[data-theme="dark"] .svx-audit-field select {
-  background: color-mix(in srgb, #0d1d32 86%, #1f1f20 14%) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
+/* FINAL Audit dark correction.
+   Every Audit section/card uses signup black/charcoal: #1F1F20.
+   Inputs use #1C1C1D. */
+:root[data-theme="dark"] .svx-settings-audit-page,
+:root[data-theme="dark"] .svx-audit-drawer-layer {
+  --settings-page-bg: #0a0e17;
+  --settings-card: #1f1f20;
+  --settings-panel: #1f1f20;
+  --settings-panel-strong: #0d1d32;
+  --settings-input: #1c1c1d;
+  --settings-text: #ffffff;
+  --settings-muted: rgba(255, 255, 255, 0.72);
+  --settings-muted-2: rgba(255, 255, 255, 0.56);
+  --settings-border: rgba(255, 255, 255, 0.11);
+  --settings-input-border: rgba(255, 255, 255, 0.12);
+  --settings-primary: #159cff;
+  --settings-primary-soft: rgba(21, 156, 255, 0.14);
+  --settings-ring: rgba(21, 156, 255, 0.18);
+
+  --color-card: #1f1f20;
+  --color-surface: #1f1f20;
+  --color-surface-2: #1f1f20;
+  --color-surface-3: #0d1d32;
+  --color-text: #ffffff;
+  --color-text-muted: rgba(255, 255, 255, 0.72);
+  --color-border: rgba(255, 255, 255, 0.11);
+  --color-primary: #159cff;
+  --color-primary-soft: rgba(21, 156, 255, 0.14);
 }
 
+:root[data-theme="dark"] .svx-settings-audit-page {
+  background: transparent !important;
+}
+
+/* Main red-marked Audit sections/cards. */
+:root[data-theme="dark"] .svx-settings-page:has(.svx-settings-audit-page) > section,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-audit-filter-card) > section,
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-audit-filter-card),
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-audit-list-card),
+:root[data-theme="dark"] .svx-settings-audit-page .svx-audit-filter-card,
+:root[data-theme="dark"] .svx-settings-audit-page .svx-audit-list-card,
+:root[data-theme="dark"] .svx-audit-drawer-panel {
+  background: #1f1f20 !important;
+  background-color: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24) !important;
+}
+
+:root[data-theme="dark"] .svx-audit-filter-head,
+:root[data-theme="dark"] .svx-audit-list-head,
+:root[data-theme="dark"] .svx-audit-pagination,
+:root[data-theme="dark"] .svx-audit-drawer-header {
+  border-color: rgba(255, 255, 255, 0.11) !important;
+}
+
+/* Inner rows/panels also stay charcoal, not navy. */
 :root[data-theme="dark"] .svx-audit-visible-count,
 :root[data-theme="dark"] .svx-audit-table-head,
-:root[data-theme="dark"] .svx-audit-row-main {
-  background: color-mix(in srgb, #0d1d32 88%, #1f1f20 12%) !important;
+:root[data-theme="dark"] .svx-audit-row,
+:root[data-theme="dark"] .svx-audit-row-cell,
+:root[data-theme="dark"] .svx-audit-row-main,
+:root[data-theme="dark"] .svx-audit-drawer-info-grid > *,
+:root[data-theme="dark"] .svx-audit-recorded-details,
+:root[data-theme="dark"] .svx-audit-metadata-card,
+:root[data-theme="dark"] .svx-settings-audit-page [class*="rounded-[22px]"],
+:root[data-theme="dark"] .svx-settings-audit-page [class*="rounded-[24px]"],
+:root[data-theme="dark"] .svx-settings-audit-page [class*="bg-[var(--color-card)]"],
+:root[data-theme="dark"] .svx-settings-audit-page [class*="bg-[var(--color-surface)]"],
+:root[data-theme="dark"] .svx-settings-audit-page [class*="bg-[var(--color-surface-2)]"] {
+  background: #1f1f20 !important;
+  background-color: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+}
+
+:root[data-theme="dark"] .svx-audit-row:hover {
+  background: color-mix(in srgb, #1f1f20 86%, #159cff 14%) !important;
+}
+
+/* Inputs use signup charcoal. */
+:root[data-theme="dark"] .svx-audit-field .app-input,
+:root[data-theme="dark"] .svx-audit-field input,
+:root[data-theme="dark"] .svx-audit-field select,
+:root[data-theme="dark"] .svx-settings-audit-page input,
+:root[data-theme="dark"] .svx-settings-audit-page select,
+:root[data-theme="dark"] .svx-settings-audit-page textarea {
+  background: #1c1c1d !important;
+  background-color: #1c1c1d !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-audit-field .app-input::placeholder,
+:root[data-theme="dark"] .svx-audit-field input::placeholder,
+:root[data-theme="dark"] .svx-settings-audit-page input::placeholder,
+:root[data-theme="dark"] .svx-settings-audit-page textarea::placeholder {
+  color: rgba(255, 255, 255, 0.56) !important;
 }
 
 :root[data-theme="dark"] .svx-audit-row-action span {
@@ -1064,7 +598,35 @@
   box-shadow: 0 10px 22px rgba(21, 156, 255, 0.16);
 }
 
+:root[data-theme="dark"] .svx-audit-drawer-backdrop {
+  background: rgba(3, 10, 18, 0.58);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+/* Responsive rules */
+@media (max-width: 1200px) {
+  .svx-audit-filter-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .svx-audit-field.is-search,
+  .svx-audit-field.is-wide {
+    grid-column: span 2;
+  }
+
+  .svx-audit-table-head,
+  .svx-audit-row {
+    grid-template-columns: minmax(185px, 1.1fr) minmax(170px, 0.92fr) minmax(145px, 0.78fr) minmax(145px, 0.78fr) minmax(150px, 0.78fr) minmax(78px, 0.34fr);
+  }
+}
+
 @media (max-width: 720px) {
+  .svx-settings-audit-page {
+    gap: 12px;
+    overflow-x: clip;
+  }
+
   .svx-audit-filter-card,
   .svx-audit-list-card {
     border-radius: 18px;
@@ -1072,22 +634,50 @@
 
   .svx-audit-filter-head,
   .svx-audit-list-head {
+    grid-template-columns: minmax(0, 1fr);
     padding: 13px;
+    gap: 10px;
   }
 
   .svx-audit-filter-head h2,
   .svx-audit-list-head h2 {
+    margin-top: 6px;
     font-size: 1.32rem;
+    line-height: 1.03;
+  }
+
+  .svx-audit-filter-head p,
+  .svx-audit-list-head p {
+    margin-top: 7px;
+    font-size: 12.5px;
+    line-height: 1.45;
   }
 
   .svx-audit-visible-count {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
     min-height: 48px;
     padding: 9px 11px;
+    border-radius: 14px;
+  }
+
+  .svx-audit-visible-count strong {
+    margin-top: 0;
+    font-size: 22px;
   }
 
   .svx-audit-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 9px;
     padding: 12px 12px 0;
+  }
+
+  .svx-audit-field label {
+    font-size: 11.5px !important;
   }
 
   .svx-audit-field .app-input,
@@ -1096,32 +686,124 @@
     min-height: 40px;
     height: 40px;
     border-radius: 12px;
+    padding-inline: 12px;
     font-size: 12px !important;
   }
 
+  .svx-audit-field.is-search,
+  .svx-audit-field.is-wide {
+    grid-column: 1 / -1;
+  }
+
   .svx-audit-filter-chips {
+    gap: 7px;
     padding: 12px 12px 0;
   }
 
+  .svx-audit-filter-chips button {
+    height: 34px;
+    min-height: 34px;
+    border-radius: 12px;
+    padding-inline: 12px;
+    font-size: 10.5px;
+  }
+
   .svx-audit-filter-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
     padding: 12px;
   }
 
+  .svx-audit-filter-actions button {
+    width: 100%;
+    min-height: 42px;
+    border-radius: 13px;
+  }
+
+  .svx-audit-list-head {
+    border-bottom: 0;
+  }
+
+  .svx-audit-list-head .svx-roles-badge,
+  .svx-audit-list-head > span {
+    justify-self: start;
+  }
+
+  .svx-audit-table-head {
+    display: none;
+  }
+
   .svx-audit-table {
+    display: grid;
     gap: 7px;
     padding: 0 8px 10px;
   }
 
   .svx-audit-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid var(--settings-border, var(--color-border));
     border-radius: 14px;
+    padding: 0;
+  }
+
+  .svx-audit-row-cell {
+    border: 0;
+    border-bottom: 0 !important;
+    padding: 0;
+    background: transparent !important;
+  }
+
+  .svx-audit-row-cell::before {
+    display: none;
   }
 
   .svx-audit-row-main {
+    grid-column: 1 / 2;
+    grid-row: 1;
     padding: 10px 10px 7px;
   }
 
+  .svx-audit-row-badges {
+    gap: 5px;
+    margin-bottom: 7px;
+  }
+
+  .svx-audit-row .svx-audit-row-badges span {
+    margin-top: 0;
+    font-size: 9.5px;
+  }
+
+  .svx-audit-row-main strong {
+    font-size: 13.5px;
+    line-height: 1.16;
+  }
+
+  .svx-audit-row-main span {
+    margin-top: 3px;
+    font-size: 11.5px;
+  }
+
   .svx-audit-row-cell[data-label="Action"] {
+    grid-column: 2 / 3;
+    grid-row: 1;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 9px 9px 7px 0;
+  }
+
+  .svx-audit-row-action span {
+    width: auto;
+    min-width: 60px;
+    min-height: 32px;
+    border-radius: 11px;
+    padding: 0 12px;
+    font-size: 11px;
   }
 
   .svx-audit-row-cell[data-label="Branch"],
@@ -1129,10 +811,29 @@
   .svx-audit-row-cell[data-label="Time"],
   .svx-audit-row-cell[data-label="Value / Ref"] {
     padding: 7px 10px;
+    border-top: 1px solid var(--settings-border, var(--color-border));
   }
 
-  .svx-audit-row-main strong {
-    font-size: 13.5px;
+  .svx-audit-row-cell[data-label="Branch"] {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .svx-audit-row-cell[data-label="Done by"] {
+    grid-column: 1 / 2;
+    grid-row: 3;
+  }
+
+  .svx-audit-row-cell[data-label="Time"] {
+    grid-column: 2 / 3;
+    grid-row: 3;
+    border-left: 1px solid var(--settings-border, var(--color-border));
+  }
+
+  .svx-audit-row-cell[data-label="Value / Ref"] {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    padding-bottom: 10px;
   }
 
   .svx-audit-row-cell[data-label="Branch"] strong,
@@ -1140,15 +841,112 @@
   .svx-audit-row-cell[data-label="Time"] strong,
   .svx-audit-row-cell[data-label="Value / Ref"] strong {
     font-size: 12px;
+    line-height: 1.2;
   }
 
-  .svx-audit-row-action span {
-    min-width: 60px;
-    min-height: 32px;
-    border-radius: 11px;
+  .svx-audit-row-cell[data-label="Branch"] span,
+  .svx-audit-row-cell[data-label="Done by"] span,
+  .svx-audit-row-cell[data-label="Time"] span,
+  .svx-audit-row-cell[data-label="Value / Ref"] span {
+    margin-top: 2px;
+    font-size: 10.5px;
+    line-height: 1.25;
   }
 
   .svx-audit-pagination {
+    flex-direction: column;
+    align-items: stretch;
     padding: 10px;
+    gap: 10px;
+  }
+
+  .svx-audit-pagination > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .svx-audit-pagination button {
+    width: 100%;
+    min-height: 40px;
+    border-radius: 13px;
+  }
+
+  .svx-audit-drawer-panel {
+    width: min(88vw, 420px);
+  }
+
+  .svx-audit-drawer-header {
+    padding: 16px 14px 12px;
+  }
+
+  .svx-audit-drawer-body {
+    padding: 12px;
+  }
+
+  .svx-audit-drawer-info-grid,
+  .svx-audit-metadata-grid {
+    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-audit-drawer-info-grid > *,
+  .svx-audit-metadata-card {
+    border-radius: 14px;
+    padding: 11px;
+  }
+
+  .svx-audit-drawer-header h3 {
+    font-size: 1.45rem;
+  }
+}
+
+@media (min-width: 390px) and (max-width: 720px) {
+  .svx-audit-row-cell[data-label="Branch"] strong {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+  }
+}
+
+@media (max-width: 389px) {
+  .svx-audit-filter-grid,
+  .svx-audit-row,
+  .svx-audit-drawer-info-grid,
+  .svx-audit-metadata-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-audit-row-main,
+  .svx-audit-row-cell[data-label="Action"],
+  .svx-audit-row-cell[data-label="Branch"],
+  .svx-audit-row-cell[data-label="Done by"],
+  .svx-audit-row-cell[data-label="Time"],
+  .svx-audit-row-cell[data-label="Value / Ref"] {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .svx-audit-row-cell[data-label="Action"] {
+    justify-content: stretch;
+    padding: 0 12px 12px;
+    border-top: 0;
+  }
+
+  .svx-audit-row-action span {
+    width: 100%;
+  }
+
+  .svx-audit-row-cell[data-label="Time"] {
+    border-left: 0;
+  }
+
+  .svx-audit-drawer-panel {
+    width: calc(100vw - 10px);
+  }
+
+  .svx-audit-drawer-backdrop {
+    background: rgba(3, 13, 26, 0.32);
   }
 }

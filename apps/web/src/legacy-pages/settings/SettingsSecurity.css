@@ -6,7 +6,7 @@
   --security-success: #10b981;
   --security-warning: #f59e0b;
   --security-danger: #ef4444;
-  --security-info: #159cff;
+  --security-info: #2f8fff;
   gap: 18px;
 }
 
@@ -510,6 +510,111 @@
 .svx-security-empty {
   margin-top: 0;
   text-align: center;
+}
+
+/* FINAL Security dark correction.
+   Every red-marked Security section/card uses signup black/charcoal: #1F1F20. */
+:root[data-theme="dark"] .svx-settings-security {
+  --settings-bg: #0a0e17;
+  --settings-card: #1f1f20;
+  --settings-panel: #1f1f20;
+  --settings-panel-strong: #0d1d32;
+  --settings-input: #1c1c1d;
+  --settings-text: #ffffff;
+  --settings-muted: rgba(255, 255, 255, 0.72);
+  --settings-muted-2: rgba(255, 255, 255, 0.56);
+  --settings-border: rgba(255, 255, 255, 0.11);
+  --settings-input-border: rgba(255, 255, 255, 0.12);
+  --settings-primary: #159cff;
+  --settings-primary-soft: rgba(21, 156, 255, 0.14);
+  --settings-ring: rgba(21, 156, 255, 0.18);
+
+  --security-card: #1f1f20;
+  --security-panel: #1f1f20;
+  --security-panel-soft: #1f1f20;
+  --security-line: rgba(255, 255, 255, 0.11);
+
+  --color-card: #1f1f20;
+  --color-surface: #1f1f20;
+  --color-surface-2: #1f1f20;
+  --color-surface-3: #0d1d32;
+  --color-text: #ffffff;
+  --color-text-muted: rgba(255, 255, 255, 0.72);
+  --color-border: rgba(255, 255, 255, 0.11);
+  --color-primary: #159cff;
+  --color-primary-soft: rgba(21, 156, 255, 0.14);
+}
+
+/* Main page sections/cards marked in red. */
+:root[data-theme="dark"] .svx-settings-page:has(.svx-settings-security) > section,
+:root[data-theme="dark"] .svx-settings-page:has(.svx-security-card) > section,
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-security-card),
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-security-metrics-grid),
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-security-password-form),
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-security-session-list),
+:root[data-theme="dark"] .svx-settings-page section:has(.svx-security-event-list),
+:root[data-theme="dark"] .svx-settings-security .svx-security-card,
+:root[data-theme="dark"] .svx-settings-security .svx-settings-card {
+  background: #1f1f20 !important;
+  background-color: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24) !important;
+}
+
+/* Inner cards/rows also stay charcoal, not navy. */
+:root[data-theme="dark"] .svx-settings-security .svx-security-metric,
+:root[data-theme="dark"] .svx-settings-security .svx-security-note-list > div,
+:root[data-theme="dark"] .svx-settings-security .svx-security-check-row,
+:root[data-theme="dark"] .svx-settings-security .svx-security-session-row,
+:root[data-theme="dark"] .svx-settings-security .svx-security-event-row,
+:root[data-theme="dark"] .svx-settings-security .svx-security-info-item,
+:root[data-theme="dark"] .svx-settings-security .svx-security-load-more,
+:root[data-theme="dark"] .svx-settings-security .svx-security-empty,
+:root[data-theme="dark"] .svx-settings-security [class*="rounded-[22px]"],
+:root[data-theme="dark"] .svx-settings-security [class*="rounded-[24px]"],
+:root[data-theme="dark"] .svx-settings-security [class*="bg-[var(--color-card)]"],
+:root[data-theme="dark"] .svx-settings-security [class*="bg-[var(--color-surface)]"],
+:root[data-theme="dark"] .svx-settings-security [class*="bg-[var(--color-surface-2)]"] {
+  background: #1f1f20 !important;
+  background-color: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow: none !important;
+}
+
+/* Inputs use signup charcoal. */
+:root[data-theme="dark"] .svx-settings-security input,
+:root[data-theme="dark"] .svx-settings-security select,
+:root[data-theme="dark"] .svx-settings-security textarea,
+:root[data-theme="dark"] .svx-settings-security .app-input,
+:root[data-theme="dark"] .svx-settings-security .svx-security-input {
+  background: #1c1c1d !important;
+  background-color: #1c1c1d !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-settings-security input::placeholder,
+:root[data-theme="dark"] .svx-settings-security textarea::placeholder {
+  color: rgba(255, 255, 255, 0.56) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-security input:focus,
+:root[data-theme="dark"] .svx-settings-security select:focus,
+:root[data-theme="dark"] .svx-settings-security textarea:focus,
+:root[data-theme="dark"] .svx-settings-security .app-input:focus,
+:root[data-theme="dark"] .svx-settings-security .svx-security-input:focus {
+  border-color: #159cff !important;
+  box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.18) !important;
+}
+
+/* Buttons keep their intended hierarchy. */
+:root[data-theme="dark"] .svx-settings-security .svx-security-button.is-secondary,
+:root[data-theme="dark"] .svx-settings-security .svx-security-current-device {
+  background: #1c1c1d !important;
+  background-color: #1c1c1d !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
 }
 
 @media (max-width: 1180px) {

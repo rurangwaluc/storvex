@@ -6,10 +6,12 @@
   --settings-card: #ffffff;
   --settings-panel: #f7faff;
   --settings-panel-strong: #eef6ff;
+  --settings-input: #ffffff;
   --settings-text: #0d1b3e;
   --settings-muted: #5f6b84;
   --settings-muted-2: #718096;
   --settings-border: rgba(13, 27, 62, 0.12);
+  --settings-input-border: rgba(13, 27, 62, 0.12);
   --settings-primary: #2563eb;
   --settings-primary-dark: #0f4fd8;
   --settings-primary-soft: #eef6ff;
@@ -31,20 +33,36 @@
 
 :root[data-theme="dark"] .svx-settings-shell,
 :root[data-theme="dark"] .svx-settings-page {
-  --settings-bg: #06111f;
+  --settings-bg: #0a0e17;
+  --settings-header: #0d1320;
   --settings-card: #1f1f20;
-  --settings-panel: #111f31;
+  --settings-panel: #1f1f20;
   --settings-panel-strong: #0d1d32;
+  --settings-input: #1c1c1d;
   --settings-text: #ffffff;
   --settings-muted: rgba(255, 255, 255, 0.72);
-  --settings-muted-2: rgba(255, 255, 255, 0.58);
-  --settings-border: rgba(255, 255, 255, 0.12);
+  --settings-muted-2: rgba(255, 255, 255, 0.56);
+  --settings-border: rgba(255, 255, 255, 0.11);
+  --settings-input-border: rgba(255, 255, 255, 0.12);
   --settings-primary: #159cff;
   --settings-primary-dark: #0b86df;
   --settings-primary-soft: rgba(21, 156, 255, 0.14);
-  --settings-ring: rgba(21, 156, 255, 0.16);
-  --settings-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
-  --settings-shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.18);
+  --settings-ring: rgba(21, 156, 255, 0.18);
+  --settings-shadow: 0 24px 64px rgba(0, 0, 0, 0.24);
+  --settings-shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.18);
+
+  --color-bg: #0a0e17;
+  --color-card: #1f1f20;
+  --color-surface: #1f1f20;
+  --color-surface-2: #1f1f20;
+  --color-surface-3: #0d1d32;
+  --color-text: #ffffff;
+  --color-text-muted: rgba(255, 255, 255, 0.72);
+  --color-border: rgba(255, 255, 255, 0.11);
+  --color-primary: #159cff;
+  --color-primary-soft: rgba(21, 156, 255, 0.14);
+  --color-primary-ring: rgba(21, 156, 255, 0.18);
+  --color-primary-contrast: #ffffff;
 }
 
 .svx-settings-shell *,
@@ -138,8 +156,8 @@
 .svx-settings-page select,
 .svx-settings-page textarea {
   min-height: 44px;
-  border-color: var(--settings-border);
-  background: var(--settings-panel);
+  border-color: var(--settings-input-border);
+  background: var(--settings-input);
   color: var(--settings-text);
   caret-color: var(--settings-primary);
 }
@@ -152,7 +170,7 @@
 .svx-settings-page input:focus,
 .svx-settings-page select:focus,
 .svx-settings-page textarea:focus {
-  border-color: color-mix(in srgb, var(--settings-primary) 60%, var(--settings-border));
+  border-color: color-mix(in srgb, var(--settings-primary) 60%, var(--settings-input-border));
   box-shadow: 0 0 0 4px var(--settings-ring);
   outline: none;
 }
@@ -271,6 +289,297 @@
 .svx-settings-branches form,
 .svx-settings-security form {
   overflow: hidden;
+}
+
+/* Compact settings navigation pass */
+.svx-settings-control-card {
+  box-shadow: var(--settings-shadow-soft) !important;
+}
+
+.svx-settings-control-head {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--settings-card) 96%, transparent), var(--settings-card));
+}
+
+.svx-settings-desktop-nav {
+  background: color-mix(in srgb, var(--settings-panel) 52%, transparent);
+}
+
+.svx-settings-nav-panel {
+  border-radius: 20px !important;
+  background: color-mix(in srgb, var(--settings-panel) 78%, transparent) !important;
+}
+
+.svx-settings-nav-card {
+  background: color-mix(in srgb, var(--settings-card) 72%, transparent);
+  box-shadow: none !important;
+}
+
+.svx-settings-nav-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--settings-shadow-soft) !important;
+}
+
+.svx-settings-nav-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.svx-settings-nav-state {
+  height: 26px !important;
+  padding-inline: 10px !important;
+  font-size: 10px !important;
+  letter-spacing: 0.1em !important;
+}
+
+.svx-settings-current-row span {
+  height: 28px !important;
+  font-size: 10px !important;
+}
+
+/* Premium select/dropdown polish */
+.svx-settings-shell select,
+.svx-settings-page select,
+.svx-settings-shell select.app-input,
+.svx-settings-page select.app-input,
+.svx-settings-page select.svx-settings-input {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 46px;
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--settings-input-border) 86%, transparent);
+  border-radius: 14px;
+  background-color: var(--settings-input);
+  background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10L12 15L17 10' stroke='%232563EB' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 18px 18px;
+  padding-right: 46px !important;
+  color: var(--settings-text);
+  cursor: pointer;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 50%, transparent),
+    0 10px 24px rgba(15, 45, 90, 0.035);
+}
+
+:root[data-theme="dark"] .svx-settings-shell select,
+:root[data-theme="dark"] .svx-settings-page select,
+:root[data-theme="dark"] .svx-settings-shell select.app-input,
+:root[data-theme="dark"] .svx-settings-page select.app-input,
+:root[data-theme="dark"] .svx-settings-page select.svx-settings-input {
+  background-color: var(--settings-input);
+  background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10L12 15L17 10' stroke='%23159CFF' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 12px 26px rgba(0, 0, 0, 0.16);
+}
+
+.svx-settings-shell select:hover,
+.svx-settings-page select:hover,
+.svx-settings-shell select.app-input:hover,
+.svx-settings-page select.app-input:hover,
+.svx-settings-page select.svx-settings-input:hover {
+  border-color: color-mix(in srgb, var(--settings-primary) 35%, var(--settings-input-border));
+  background-color: color-mix(in srgb, var(--settings-input) 86%, var(--settings-primary-soft));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--settings-primary) 8%, transparent),
+    0 14px 30px rgba(15, 45, 90, 0.055);
+}
+
+.svx-settings-shell select:focus,
+.svx-settings-page select:focus,
+.svx-settings-shell select.app-input:focus,
+.svx-settings-page select.app-input:focus,
+.svx-settings-page select.svx-settings-input:focus {
+  border-color: var(--settings-primary);
+  background-color: var(--settings-input);
+  box-shadow:
+    0 0 0 4px var(--settings-ring),
+    0 14px 32px rgba(15, 45, 90, 0.07);
+  outline: none;
+}
+
+.svx-settings-shell select:disabled,
+.svx-settings-page select:disabled,
+.svx-settings-shell select.app-input:disabled,
+.svx-settings-page select.app-input:disabled,
+.svx-settings-page select.svx-settings-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+  box-shadow: none;
+}
+
+.svx-settings-shell select option,
+.svx-settings-page select option {
+  background: var(--settings-card);
+  color: var(--settings-text);
+  font-weight: 700;
+}
+
+.svx-settings-shell select::-ms-expand,
+.svx-settings-page select::-ms-expand {
+  display: none;
+}
+
+/* Signup/onboarding-matched dark Settings surfaces */
+:root[data-theme="dark"] .svx-settings-control-card,
+:root[data-theme="dark"] .svx-settings-layout-card,
+:root[data-theme="dark"] .svx-settings-card,
+:root[data-theme="dark"] .svx-settings-shell [class*="rounded-[28px]"],
+:root[data-theme="dark"] .svx-settings-page [class*="rounded-[28px]"] {
+  border-color: var(--settings-border) !important;
+  background: var(--settings-card) !important;
+  box-shadow: var(--settings-shadow) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-layout-panel,
+:root[data-theme="dark"] .svx-settings-nav-panel,
+:root[data-theme="dark"] .svx-settings-panel,
+:root[data-theme="dark"] .svx-settings-summary-card,
+:root[data-theme="dark"] .svx-settings-check-row,
+:root[data-theme="dark"] .svx-settings-logo-panel,
+:root[data-theme="dark"] .svx-settings-option-card,
+:root[data-theme="dark"] .svx-settings-switch-row,
+:root[data-theme="dark"] .svx-document-preview-card,
+:root[data-theme="dark"] .svx-settings-doc-action-row,
+:root[data-theme="dark"] .svx-settings-shell [class*="rounded-[22px]"],
+:root[data-theme="dark"] .svx-settings-page [class*="rounded-[22px]"],
+:root[data-theme="dark"] .svx-settings-shell [class*="rounded-[24px]"],
+:root[data-theme="dark"] .svx-settings-page [class*="rounded-[24px]"] {
+  border-color: var(--settings-border) !important;
+  background: var(--settings-panel) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-settings-summary-card.is-primary,
+:root[data-theme="dark"] .svx-settings-option-card.is-selected,
+:root[data-theme="dark"] .svx-settings-nav-card.is-active,
+:root[data-theme="dark"] .svx-settings-desktop-nav a[aria-current="page"] .svx-settings-nav-card {
+  background: var(--settings-panel-strong) !important;
+  border-color: color-mix(in srgb, var(--settings-primary) 42%, var(--settings-border)) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-control-head {
+  border-bottom-color: var(--settings-border) !important;
+  background: transparent !important;
+}
+
+:root[data-theme="dark"] .svx-settings-desktop-nav,
+:root[data-theme="dark"] .svx-settings-nav-panel {
+  border-color: color-mix(in srgb, var(--settings-primary) 16%, var(--settings-border)) !important;
+  background: var(--settings-header) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-nav-card {
+  background: var(--settings-card) !important;
+  border-color: var(--settings-border) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-settings-nav-card:hover {
+  background: #232324 !important;
+  border-color: color-mix(in srgb, var(--settings-primary) 30%, var(--settings-border)) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-nav-icon,
+:root[data-theme="dark"] .svx-settings-logo-preview,
+:root[data-theme="dark"] .svx-settings-page [class*="h-14"][class*="w-14"],
+:root[data-theme="dark"] .svx-settings-shell [class*="h-14"][class*="w-14"] {
+  background: var(--settings-panel-strong) !important;
+  border-color: color-mix(in srgb, var(--settings-primary) 22%, var(--settings-border)) !important;
+  color: var(--settings-primary) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-shell .app-input,
+:root[data-theme="dark"] .svx-settings-page .app-input,
+:root[data-theme="dark"] .svx-settings-shell input,
+:root[data-theme="dark"] .svx-settings-shell select,
+:root[data-theme="dark"] .svx-settings-shell textarea,
+:root[data-theme="dark"] .svx-settings-page input,
+:root[data-theme="dark"] .svx-settings-page select,
+:root[data-theme="dark"] .svx-settings-page textarea,
+:root[data-theme="dark"] .svx-settings-input,
+:root[data-theme="dark"] .svx-settings-textarea {
+  border-color: var(--settings-input-border) !important;
+  background: var(--settings-input) !important;
+  color: var(--settings-text) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-settings-shell .app-input::placeholder,
+:root[data-theme="dark"] .svx-settings-page .app-input::placeholder,
+:root[data-theme="dark"] .svx-settings-shell input::placeholder,
+:root[data-theme="dark"] .svx-settings-shell textarea::placeholder,
+:root[data-theme="dark"] .svx-settings-page input::placeholder,
+:root[data-theme="dark"] .svx-settings-page textarea::placeholder {
+  color: var(--settings-muted-2) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-shell .app-input:focus,
+:root[data-theme="dark"] .svx-settings-page .app-input:focus,
+:root[data-theme="dark"] .svx-settings-shell input:focus,
+:root[data-theme="dark"] .svx-settings-shell select:focus,
+:root[data-theme="dark"] .svx-settings-shell textarea:focus,
+:root[data-theme="dark"] .svx-settings-page input:focus,
+:root[data-theme="dark"] .svx-settings-page select:focus,
+:root[data-theme="dark"] .svx-settings-page textarea:focus {
+  border-color: var(--settings-primary) !important;
+  box-shadow: 0 0 0 4px var(--settings-ring) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-current-row span,
+:root[data-theme="dark"] .svx-settings-nav-state,
+:root[data-theme="dark"] .svx-settings-badge {
+  border-color: color-mix(in srgb, var(--settings-primary) 14%, transparent) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-badge.is-primary,
+:root[data-theme="dark"] .svx-settings-nav-state {
+  background: var(--settings-primary-soft) !important;
+  color: var(--settings-primary) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-badge.is-neutral,
+:root[data-theme="dark"] .svx-settings-badge.is-strong {
+  background: var(--settings-panel-strong) !important;
+  color: var(--settings-muted) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-primary-link,
+:root[data-theme="dark"] .svx-settings-page button[class*="bg-[var(--color-primary)]"],
+:root[data-theme="dark"] .svx-settings-shell button[class*="bg-[var(--color-primary)]"],
+:root[data-theme="dark"] .svx-settings-page a[class*="bg-[var(--color-primary)]"],
+:root[data-theme="dark"] .svx-settings-shell a[class*="bg-[var(--color-primary)]"] {
+  background: var(--settings-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--settings-primary) !important;
+  box-shadow: 0 16px 36px rgba(21, 156, 255, 0.18) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-secondary-button {
+  background: var(--settings-input) !important;
+  border-color: var(--settings-input-border) !important;
+  color: var(--settings-text) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-savebar {
+  border-color: var(--settings-border) !important;
+  background: var(--settings-card) !important;
+  box-shadow: var(--settings-shadow-soft) !important;
+}
+
+:root[data-theme="dark"] .svx-settings-page .text-amber-600 {
+  color: #fbbf24 !important;
+}
+
+:root[data-theme="dark"] .svx-settings-page .text-red-600 {
+  color: #ff5c7a !important;
+}
+
+:root[data-theme="dark"] .svx-settings-page .text-emerald-600 {
+  color: #34d399 !important;
 }
 
 /* PWA/mobile: compact, native-feeling, no desktop squeeze */
@@ -401,6 +710,56 @@
     background: color-mix(in srgb, var(--settings-primary) 34%, transparent);
     border-radius: 999px;
   }
+
+  .svx-settings-mobile-switch {
+    top: 60px;
+    margin-inline: 0 !important;
+    padding: 8px 0 6px !important;
+    border-top: 0 !important;
+    border-bottom: 1px solid var(--settings-border) !important;
+    background: color-mix(in srgb, var(--settings-bg) 92%, transparent) !important;
+  }
+
+  .svx-settings-mobile-switch > div {
+    padding: 10px !important;
+    border-radius: 18px !important;
+    box-shadow: var(--settings-shadow-soft) !important;
+  }
+
+  .svx-settings-mobile-switch label {
+    margin-bottom: 7px !important;
+    padding-left: 2px;
+    font-size: 9.5px !important;
+    letter-spacing: 0.16em !important;
+  }
+
+  .svx-settings-mobile-switch p {
+    display: none;
+  }
+
+  .svx-settings-mobile-switch .grid {
+    grid-template-columns: 40px minmax(0, 1fr) !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .svx-settings-mobile-switch .grid > div:first-child {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 14px !important;
+  }
+
+  .svx-settings-mobile-switch select,
+  .svx-settings-mobile-switch select.app-input {
+    min-height: 42px !important;
+    height: 42px !important;
+    border-radius: 14px !important;
+    background-position: right 11px center !important;
+    background-size: 16px 16px !important;
+    padding-left: 13px !important;
+    padding-right: 38px !important;
+    font-size: 13px !important;
+  }
 }
 
 @media (max-width: 540px) {
@@ -446,64 +805,20 @@
     padding-left: 12px !important;
     padding-right: 12px !important;
   }
-}
 
-@keyframes svx-settings-enter {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
+  .svx-settings-mobile-switch > div {
+    padding: 9px !important;
   }
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .svx-settings-mobile-switch .grid {
+    grid-template-columns: 38px minmax(0, 1fr) !important;
+    gap: 7px !important;
   }
-}
 
-/* Compact settings navigation pass */
-.svx-settings-control-card {
-  box-shadow: var(--settings-shadow-soft) !important;
-}
-
-.svx-settings-control-head {
-  background:
-    linear-gradient(180deg, color-mix(in srgb, var(--settings-card) 96%, transparent), var(--settings-card));
-}
-
-.svx-settings-desktop-nav {
-  background: color-mix(in srgb, var(--settings-panel) 52%, transparent);
-}
-
-.svx-settings-nav-panel {
-  border-radius: 20px !important;
-  background: color-mix(in srgb, var(--settings-panel) 78%, transparent) !important;
-}
-
-.svx-settings-nav-card {
-  background: color-mix(in srgb, var(--settings-card) 72%, transparent);
-  box-shadow: none !important;
-}
-
-.svx-settings-nav-card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--settings-shadow-soft) !important;
-}
-
-.svx-settings-nav-icon svg {
-  width: 16px;
-  height: 16px;
-}
-
-.svx-settings-nav-state {
-  height: 26px !important;
-  padding-inline: 10px !important;
-  font-size: 10px !important;
-  letter-spacing: 0.1em !important;
-}
-
-.svx-settings-current-row span {
-  height: 28px !important;
-  font-size: 10px !important;
+  .svx-settings-mobile-switch .grid > div:first-child {
+    width: 38px !important;
+    height: 38px !important;
+  }
 }
 
 @media (min-width: 1280px) {
@@ -518,204 +833,21 @@
   }
 }
 
-@media (max-width: 720px) {
-  .svx-settings-control-card {
-    border-radius: 18px !important;
-  }
-
-  .svx-settings-control-head {
-    padding: 14px !important;
-  }
-
-  .svx-settings-control-head h1 {
-    font-size: 1.45rem !important;
-  }
-
-  .svx-settings-control-head p:not(:first-child) {
-    font-size: 12px !important;
-    line-height: 1.45 !important;
-  }
-
-  .svx-settings-control-head .hidden.flex-wrap {
-    display: none !important;
-  }
-
-  .svx-settings-mobile-switch {
-    top: 60px;
-    padding-top: 8px !important;
-    padding-bottom: 8px !important;
-  }
-
-  .svx-settings-mobile-switch label {
-    margin-bottom: 6px !important;
-  }
-
-  .svx-settings-mobile-switch p {
-    display: none;
+@media (prefers-reduced-motion: reduce) {
+  .svx-settings-shell > section,
+  .svx-settings-page > section {
+    animation: none !important;
   }
 }
 
-/* Premium select/dropdown polish */
-.svx-settings-shell select,
-.svx-settings-page select,
-.svx-settings-shell select.app-input,
-.svx-settings-page select.app-input,
-.svx-settings-page select.svx-settings-input {
-  appearance: none;
-  -webkit-appearance: none;
-  min-height: 46px;
-  width: 100%;
-  border: 1px solid color-mix(in srgb, var(--settings-border) 86%, transparent);
-  border-radius: 14px;
-  background-color: var(--settings-panel);
-  background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10L12 15L17 10' stroke='%232563EB' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  background-size: 18px 18px;
-  padding-right: 46px !important;
-  color: var(--settings-text);
-  cursor: pointer;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, #ffffff 50%, transparent),
-    0 10px 24px rgba(15, 45, 90, 0.035);
-}
-
-:root[data-theme="dark"] .svx-settings-shell select,
-:root[data-theme="dark"] .svx-settings-page select,
-:root[data-theme="dark"] .svx-settings-shell select.app-input,
-:root[data-theme="dark"] .svx-settings-page select.app-input,
-:root[data-theme="dark"] .svx-settings-page select.svx-settings-input {
-  background-color: #0d1d32;
-  background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10L12 15L17 10' stroke='%23159CFF' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.035),
-    0 12px 26px rgba(0, 0, 0, 0.16);
-}
-
-.svx-settings-shell select:hover,
-.svx-settings-page select:hover,
-.svx-settings-shell select.app-input:hover,
-.svx-settings-page select.app-input:hover,
-.svx-settings-page select.svx-settings-input:hover {
-  border-color: color-mix(in srgb, var(--settings-primary) 35%, var(--settings-border));
-  background-color: color-mix(in srgb, var(--settings-panel) 86%, var(--settings-primary-soft));
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--settings-primary) 8%, transparent),
-    0 14px 30px rgba(15, 45, 90, 0.055);
-}
-
-.svx-settings-shell select:focus,
-.svx-settings-page select:focus,
-.svx-settings-shell select.app-input:focus,
-.svx-settings-page select.app-input:focus,
-.svx-settings-page select.svx-settings-input:focus {
-  border-color: var(--settings-primary);
-  background-color: var(--settings-card);
-  box-shadow:
-    0 0 0 4px var(--settings-ring, var(--settings-primary-ring)),
-    0 14px 32px rgba(15, 45, 90, 0.07);
-  outline: none;
-}
-
-.svx-settings-shell select:disabled,
-.svx-settings-page select:disabled,
-.svx-settings-shell select.app-input:disabled,
-.svx-settings-page select.app-input:disabled,
-.svx-settings-page select.svx-settings-input:disabled {
-  cursor: not-allowed;
-  opacity: 0.68;
-  box-shadow: none;
-}
-
-.svx-settings-shell select option,
-.svx-settings-page select option {
-  background: var(--settings-card);
-  color: var(--settings-text);
-  font-weight: 700;
-}
-
-.svx-settings-shell select::-ms-expand,
-.svx-settings-page select::-ms-expand {
-  display: none;
-}
-
-@media (max-width: 720px) {
-  .svx-settings-shell select,
-  .svx-settings-page select,
-  .svx-settings-shell select.app-input,
-  .svx-settings-page select.app-input,
-  .svx-settings-page select.svx-settings-input {
-    min-height: 44px;
-    border-radius: 13px !important;
-    background-position: right 12px center;
-    padding-right: 42px !important;
-    font-size: 13px !important;
-  }
-}
-
-
-/* Mobile settings switcher padding refinement */
-@media (max-width: 720px) {
-  .svx-settings-mobile-switch {
-    margin-inline: 0 !important;
-    padding: 8px 0 6px !important;
-    border-top: 0 !important;
-    border-bottom: 1px solid var(--settings-border) !important;
-    background: color-mix(in srgb, var(--settings-bg) 92%, transparent) !important;
+@keyframes svx-settings-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
   }
 
-  .svx-settings-mobile-switch > div {
-    padding: 10px !important;
-    border-radius: 18px !important;
-    box-shadow: var(--settings-shadow-soft) !important;
-  }
-
-  .svx-settings-mobile-switch label {
-    margin-bottom: 7px !important;
-    padding-left: 2px;
-    font-size: 9.5px !important;
-    letter-spacing: 0.16em !important;
-  }
-
-  .svx-settings-mobile-switch .grid {
-    grid-template-columns: 40px minmax(0, 1fr) !important;
-    align-items: center !important;
-    gap: 8px !important;
-  }
-
-  .svx-settings-mobile-switch .grid > div:first-child {
-    width: 40px !important;
-    height: 40px !important;
-    border-radius: 14px !important;
-  }
-
-  .svx-settings-mobile-switch select,
-  .svx-settings-mobile-switch select.app-input {
-    min-height: 42px !important;
-    height: 42px !important;
-    border-radius: 14px !important;
-    background-position: right 11px center !important;
-    background-size: 16px 16px !important;
-    padding-left: 13px !important;
-    padding-right: 38px !important;
-    font-size: 13px !important;
-  }
-}
-
-@media (max-width: 389px) {
-  .svx-settings-mobile-switch > div {
-    padding: 9px !important;
-  }
-
-  .svx-settings-mobile-switch .grid {
-    grid-template-columns: 38px minmax(0, 1fr) !important;
-    gap: 7px !important;
-  }
-
-  .svx-settings-mobile-switch .grid > div:first-child {
-    width: 38px !important;
-    height: 38px !important;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

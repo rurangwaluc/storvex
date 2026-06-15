@@ -106,7 +106,7 @@ function formatDate(value) {
 
 function prettifyEnum(value) {
   const s = cleanString(value).replaceAll("_", " ").toLowerCase();
-  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "Unknown";
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : "Activity";
 }
 
 function normalizeAction(value) {
@@ -139,70 +139,149 @@ function entityTone(entity) {
   return "neutral";
 }
 
+function actionLabel(action) {
+  const key = normalizeAction(action);
+
+  if (key.includes("CREATE") || key.includes("CREATED")) return "Created";
+  if (key.includes("UPDATE") || key.includes("EDIT")) return "Updated";
+  if (key.includes("ASSIGN")) return "Assigned";
+  if (key.includes("DELETE") || key.includes("REMOVE")) return "Removed";
+  if (key.includes("CANCEL")) return "Cancelled";
+  if (key.includes("REFUND")) return "Refunded";
+  if (key.includes("VOID")) return "Voided";
+  if (key.includes("LOGIN") || key.includes("SIGN_IN")) return "Signed in";
+
+  return prettifyEnum(action);
+}
+
+function areaLabel(entity) {
+  const key = normalizeEntity(entity);
+
+  if (key.includes("SALE")) return "Sale";
+  if (key.includes("PAYMENT")) return "Payment";
+  if (key.includes("PRODUCT")) return "Product";
+  if (key.includes("BRANCH")) return "Branch";
+  if (key.includes("USER") || key.includes("EMPLOYEE")) return "Staff";
+  if (key.includes("SUPPLIER")) return "Supplier";
+  if (key.includes("CUSTOMER")) return "Customer";
+  if (key.includes("REPAIR")) return "Repair";
+  if (key.includes("INVOICE")) return "Invoice";
+  if (key.includes("EXPENSE")) return "Expense";
+  if (key.includes("LOGIN") || key.includes("AUTH")) return "Sign in";
+
+  return prettifyEnum(entity);
+}
+
+function activityTitle(item) {
+  if (!item) return "Activity";
+
+  const area = areaLabel(item.entity);
+  const action = actionLabel(item.action);
+
+  if (area === "Sign in") return action;
+  return `${area} ${action.toLowerCase()}`;
+}
+
 function branchName(branch) {
-  if (!branch) return "Workspace-wide";
+  if (!branch) return "All-store activity";
   return branch.code ? `${branch.code} • ${branch.name || "Branch"}` : branch.name || "Branch";
 }
 
 function scopeLabel(item) {
   if (item?.branch) return branchName(item.branch);
-  return "Workspace-wide";
+  return "All-store activity";
 }
 
 function scopeNote(item) {
   if (item?.branch) return "Branch activity";
-  return "Workspace-wide";
+  return "Store-wide activity";
 }
 
-function readableMetadataKey(key) {
-  const normalized = cleanString(key)
-    .replace(/Id$/i, "")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replaceAll("_", " ")
-    .toLowerCase();
+function safeMetadata(metadata) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return {};
 
-  if (!normalized) return "Detail";
-  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  const blockedWords = [
+    "id",
+    "token",
+    "secret",
+    "hash",
+    "password",
+    "metadata",
+    "before",
+    "after",
+    "raw",
+    "payload",
+    "request",
+    "response",
+  ];
+
+  return Object.entries(metadata).reduce((acc, [key, value]) => {
+    const normalizedKey = cleanString(key).toLowerCase();
+    const isBlocked = blockedWords.some((word) => normalizedKey.includes(word));
+
+    if (isBlocked) return acc;
+    if (value === null || value === undefined || value === "") return acc;
+    if (typeof value === "object") return acc;
+
+    acc[key] = value;
+    return acc;
+  }, {});
 }
 
-function readableMetadataValue(value) {
-  if (value === null || value === undefined || value === "") return "—";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (typeof value === "number") return value.toLocaleString();
-
-  if (Array.isArray(value)) {
-    if (!value.length) return "—";
-    return value.map(readableMetadataValue).join(", ");
-  }
-
-  if (typeof value === "object") return JSON.stringify(value);
-  return String(value);
-}
-
-function summarizeMetadata(metadata) {
-  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) return [];
-
-  return Object.entries(metadata)
-    .filter(([key]) => {
-      const k = cleanString(key).toLowerCase();
-      return !["password", "token", "secret", "hash"].some((unsafe) => k.includes(unsafe));
-    })
-    .slice(0, 8)
-    .map(([key, value]) => ({
-      key: readableMetadataKey(key),
-      value: readableMetadataValue(value),
-    }));
+function friendlyMoney(value) {
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return null;
+  return numberValue.toLocaleString();
 }
 
 function auditValue(item) {
-  const rows = summarizeMetadata(item?.metadata);
-  const preferred = rows.find((row) => ["Total", "Amount", "Name", "Sku", "Reference"].includes(row.key));
-  return preferred?.value || item?.entityId || "Reference saved";
+  const data = safeMetadata(item?.metadata);
+  const amount = friendlyMoney(data.total || data.amount || data.paidAmount || data.balance);
+  const name = cleanString(data.name || data.productName || data.customerName || data.supplierName || data.branchName);
+  const number = cleanString(data.receiptNumber || data.invoiceNumber || data.documentNumber);
+
+  if (amount) return amount;
+  if (name) return name;
+  if (number) return number;
+
+  return "Saved";
+}
+
+function detailSummaryRows(item) {
+  if (!item) return [];
+
+  const data = safeMetadata(item.metadata);
+  const rows = [];
+
+  const amount = friendlyMoney(data.total || data.amount || data.paidAmount || data.balance);
+  const name = cleanString(data.name || data.productName || data.customerName || data.supplierName || data.branchName);
+  const number = cleanString(data.receiptNumber || data.invoiceNumber || data.documentNumber);
+  const status = cleanString(data.status || data.paymentStatus);
+  const quantity = cleanString(data.quantity || data.qty);
+  const method = cleanString(data.paymentMethod || data.method);
+
+  if (name) rows.push({ label: "Name", value: name });
+  if (amount) rows.push({ label: "Amount", value: amount });
+  if (number) rows.push({ label: "Document", value: number });
+  if (status) rows.push({ label: "Status", value: prettifyEnum(status) });
+  if (quantity) rows.push({ label: "Quantity", value: quantity });
+  if (method) rows.push({ label: "Method", value: prettifyEnum(method) });
+
+  if (!rows.length) {
+    rows.push({
+      label: "Result",
+      value: "This activity was saved successfully.",
+    });
+  }
+
+  return rows.slice(0, 6);
 }
 
 function AuditBadge({ value, tone = "neutral" }) {
   const finalTone = tone === "entity" ? entityTone(value) : tone === "action" ? actionTone(value) : tone;
-  return <Badge tone={finalTone}>{prettifyEnum(value)}</Badge>;
+  const label = tone === "action" ? actionLabel(value) : tone === "entity" ? areaLabel(value) : prettifyEnum(value);
+
+  return <Badge tone={finalTone}>{label}</Badge>;
 }
 
 function SectionHeading({ eyebrow, title, subtitle }) {
@@ -233,30 +312,6 @@ function FilterChip({ active, children, onClick }) {
     >
       {children}
     </button>
-  );
-}
-
-function StatCard({ label, value, note, tone = "neutral" }) {
-  const accentClass =
-    tone === "success"
-      ? "bg-emerald-500"
-      : tone === "warning"
-        ? "bg-amber-500"
-        : tone === "danger"
-          ? "bg-[var(--color-danger)]"
-          : tone === "info"
-            ? "bg-sky-500"
-            : "bg-[var(--color-primary)]";
-
-  return (
-    <article className={cx(pageCard(), "relative min-h-[132px] overflow-hidden p-5")}>
-      <div className={cx("absolute left-0 top-0 h-full w-1.5", accentClass)} />
-      <div className="pl-2">
-        <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>{label}</div>
-        <div className={cx("mt-2 truncate text-[1.35rem] font-black tracking-[-0.04em]", strongText())}>{value}</div>
-        {note ? <div className={cx("mt-2 text-xs font-semibold leading-5", mutedText())}>{note}</div> : null}
-      </div>
-    </article>
   );
 }
 
@@ -324,18 +379,18 @@ function AuditRowCard({ item, onOpen }) {
           <AuditBadge value={item.action} tone="action" />
           <AuditBadge value={item.entity} tone="entity" />
         </div>
-        <strong>{prettifyEnum(item.action)}</strong>
-        <span>{prettifyEnum(item.entity)} · {scopeNote(item)}</span>
+        <strong>{activityTitle(item)}</strong>
+        <span>{scopeNote(item)}</span>
       </div>
 
       <div className="svx-audit-row-cell" data-label="Branch">
         <strong>{scopeLabel(item)}</strong>
-        <span>{item.branch ? "Branch record" : "Workspace-wide"}</span>
+        <span>{item.branch ? "Branch record" : "Store-wide"}</span>
       </div>
 
       <div className="svx-audit-row-cell" data-label="Done by">
         <strong>{item.user?.name || "System"}</strong>
-        <span>{item.user?.role ? prettifyEnum(item.user.role) : "System action"}</span>
+        <span>{item.user?.role ? prettifyEnum(item.user.role) : "Automatic action"}</span>
       </div>
 
       <div className="svx-audit-row-cell" data-label="Time">
@@ -343,9 +398,9 @@ function AuditRowCard({ item, onOpen }) {
         <span>{formatDateTime(item.createdAt)}</span>
       </div>
 
-      <div className="svx-audit-row-cell" data-label="Value / Ref">
+      <div className="svx-audit-row-cell" data-label="Summary">
         <strong>{value}</strong>
-        <span>Reference saved</span>
+        <span>Saved</span>
       </div>
 
       <div className="svx-audit-row-cell svx-audit-row-action" data-label="Action">
@@ -356,7 +411,7 @@ function AuditRowCard({ item, onOpen }) {
 }
 
 function ActivityDetailDrawer({ open, item, loading, onClose }) {
-  const metadataRows = useMemo(() => summarizeMetadata(item?.metadata), [item?.metadata]);
+  const summaryRows = useMemo(() => detailSummaryRows(item), [item]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -384,7 +439,7 @@ function ActivityDetailDrawer({ open, item, loading, onClose }) {
         <header className="svx-audit-drawer-header">
           <div className="min-w-0">
             <div className={sectionEyebrow()}>Activity details</div>
-            <h3>{loading ? "Loading activity..." : prettifyEnum(item?.action)}</h3>
+            <h3>{loading ? "Loading activity..." : activityTitle(item)}</h3>
             {!loading && item ? (
               <p>Clear record of what happened, who did it, when it happened, and where it applied.</p>
             ) : null}
@@ -414,42 +469,36 @@ function ActivityDetailDrawer({ open, item, loading, onClose }) {
                 <InfoBlock
                   label="Done by"
                   value={item.user?.name || "System"}
-                  note={item.user?.email || item.user?.role || "Automatic system action"}
+                  note={item.user?.email || item.user?.role || "Automatic action"}
                 />
                 <InfoBlock
                   label="Branch"
                   value={scopeLabel(item)}
-                  note={item.branch ? "Branch-specific activity" : "Workspace-wide activity"}
+                  note={item.branch ? "Branch activity" : "Store-wide activity"}
                   tone={item.branch ? "success" : "neutral"}
                 />
                 <InfoBlock label="Time" value={formatDateTime(item.createdAt)} />
                 <InfoBlock
-                  label="Record reference"
-                  value={item.entityId || "—"}
-                  note="Internal reference for support or investigation"
+                  label="Area"
+                  value={areaLabel(item.entity)}
+                  note={`${actionLabel(item.action)} activity`}
                 />
               </div>
 
               <section className={cx(softPanel(), "svx-audit-recorded-details")}>
-                <div className={cx("text-sm font-black", strongText())}>Recorded details</div>
+                <div className={cx("text-sm font-black", strongText())}>Activity summary</div>
                 <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>
-                  These are the useful details saved with this activity. Technical fields are softened for store users.
+                  Useful store-friendly details about this activity.
                 </p>
 
-                {metadataRows.length ? (
-                  <div className="svx-audit-metadata-grid">
-                    {metadataRows.map((row) => (
-                      <div key={row.key} className="svx-audit-metadata-card">
-                        <div>{row.key}</div>
-                        <strong>{row.value}</strong>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className={cx("mt-4 text-sm font-semibold leading-6", mutedText())}>
-                    No extra details were recorded for this activity.
-                  </div>
-                )}
+                <div className="svx-audit-metadata-grid">
+                  {summaryRows.map((row) => (
+                    <div key={row.label} className="svx-audit-metadata-card">
+                      <div>{row.label}</div>
+                      <strong>{row.value}</strong>
+                    </div>
+                  ))}
+                </div>
               </section>
             </>
           ) : (
@@ -467,8 +516,8 @@ function BranchSelect({ branches, value, onChange, viewerAccess }) {
 
   return (
     <select className="app-input mt-2" value={value} onChange={(event) => onChange(event.target.value)}>
-      <option value="ALL">{canViewAllBranches ? "All branches and workspace" : "My branches and workspace"}</option>
-      <option value={WORKSPACE_BRANCH_VALUE}>Workspace-wide only</option>
+      <option value="ALL">{canViewAllBranches ? "All branches and store-wide" : "My branches and store-wide"}</option>
+      <option value={WORKSPACE_BRANCH_VALUE}>Store-wide only</option>
 
       {branches.map((branch) => (
         <option key={branch.id} value={branch.id}>
@@ -640,7 +689,7 @@ export default function SettingsAudit() {
             <div>
               <div className={sectionEyebrow()}>Audit filters</div>
               <h2>Find activity</h2>
-              <p>Filter by user, branch, activity type, or date without exposing technical log details.</p>
+              <p>Filter by user, branch, activity type, or date without showing internal system data.</p>
             </div>
 
             <div className="svx-audit-visible-count">
@@ -654,7 +703,7 @@ export default function SettingsAudit() {
               <label className={cx("text-sm font-black", strongText())}>Search</label>
               <input
                 className={cx(inputClass(), "mt-2")}
-                placeholder="Search user, branch, or reference..."
+                placeholder="Search user, branch, or activity..."
                 value={filters.q}
                 onChange={(event) => updateFilter("q", event.target.value)}
               />
@@ -674,7 +723,7 @@ export default function SettingsAudit() {
               <label className={cx("text-sm font-black", strongText())}>Action</label>
               <input
                 className={cx(inputClass(), "mt-2")}
-                placeholder="CREATE"
+                placeholder="Created, updated, deleted..."
                 value={filters.action}
                 onChange={(event) => updateFilter("action", event.target.value)}
               />
@@ -684,7 +733,7 @@ export default function SettingsAudit() {
               <label className={cx("text-sm font-black", strongText())}>Area</label>
               <input
                 className={cx(inputClass(), "mt-2")}
-                placeholder="SALE, PRODUCT, BRANCH..."
+                placeholder="Sales, products, branches..."
                 value={filters.entity}
                 onChange={(event) => updateFilter("entity", event.target.value)}
               />
@@ -711,14 +760,14 @@ export default function SettingsAudit() {
             </div>
 
             <div className="svx-audit-field is-wide">
-              <label className={cx("text-sm font-black", strongText())}>Workspace-wide records</label>
+              <label className={cx("text-sm font-black", strongText())}>Store-wide records</label>
               <select
                 className={cx(inputClass(), "mt-2")}
                 value={filters.includeWorkspaceWide ? "YES" : "NO"}
                 onChange={(event) => updateFilter("includeWorkspaceWide", event.target.value === "YES")}
               >
-                <option value="YES">Include workspace-wide records</option>
-                <option value="NO">Only branch-specific records</option>
+                <option value="YES">Include store-wide records</option>
+                <option value="NO">Only branch records</option>
               </select>
             </div>
           </div>
@@ -762,7 +811,7 @@ export default function SettingsAudit() {
                 <div>Branch</div>
                 <div>Done by</div>
                 <div>Time</div>
-                <div>Value / Ref</div>
+                <div>Summary</div>
                 <div>Action</div>
               </div>
 
