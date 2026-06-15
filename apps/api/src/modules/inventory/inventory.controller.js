@@ -136,6 +136,167 @@ function parseMinStockLevel(x) {
   return Number.isFinite(n) && n >= 0 ? n : NaN;
 }
 
+
+const BUSINESS_CATEGORY_OPTIONS = [
+  "ELECTRONICS",
+  "HARDWARE",
+  "HOME_KITCHEN",
+  "LIGHTING",
+  "SPARE_PARTS",
+];
+
+function normalizeBusinessCategory(value) {
+  const raw = String(value || "").trim().toUpperCase();
+
+  if (!raw) return null;
+
+  if (
+    [
+      "ELECTRONICS",
+      "ELECTRONICS_RETAIL",
+      "PHONE_SHOP",
+      "LAPTOP_SHOP",
+      "ACCESSORIES_SHOP",
+      "REPAIR_SHOP",
+      "MIXED_ELECTRONICS",
+    ].includes(raw)
+  ) {
+    return "ELECTRONICS";
+  }
+
+  if (raw === "HARDWARE" || raw === "QUINCAILLERIE") return "HARDWARE";
+  if (raw === "HOME_KITCHEN" || raw === "HOME_AND_KITCHEN") return "HOME_KITCHEN";
+  if (raw === "LIGHTING" || raw === "LIGHTING_BUSINESS") return "LIGHTING";
+  if (raw === "SPARE_PARTS" || raw === "SPARE_PARTS_BUSINESS") return "SPARE_PARTS";
+
+  return BUSINESS_CATEGORY_OPTIONS.includes(raw) ? raw : null;
+}
+
+function normalizePlainObject(value) {
+  if (value == null) return null;
+
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  if (typeof value === "object" && !Array.isArray(value)) return value;
+
+  return null;
+}
+
+function slugify(value) {
+  const base = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return base || null;
+}
+
+async function getTenantBusinessCategory(tenantId) {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { shopType: true },
+  });
+
+  return normalizeBusinessCategory(tenant?.shopType) || "ELECTRONICS";
+}
+
+async function ensureProductForTenant(tenantId, productId, select = null) {
+  const product = await prisma.product.findFirst({
+    where: { id: productId, tenantId },
+    select: select || productSelect(),
+  });
+
+  if (!product) {
+    const e = new Error("PRODUCT_NOT_FOUND");
+    e.code = "PRODUCT_NOT_FOUND";
+    throw e;
+  }
+
+  return product;
+}
+
+function normalizeImageInput(body = {}) {
+  const url = cleanString(body.url || body.publicUrl || body.imageUrl);
+  if (!url) {
+    const e = new Error("IMAGE_URL_REQUIRED");
+    e.code = "IMAGE_URL_REQUIRED";
+    throw e;
+  }
+
+  return {
+    url,
+    key: cleanString(body.key || body.objectKey),
+    altText: cleanString(body.altText),
+    sortOrder: Number.isFinite(toInt(body.sortOrder)) ? toInt(body.sortOrder) : 0,
+    isPrimary: cleanBool(body.isPrimary) === true,
+  };
+}
+
+function normalizeMarketplaceInput(body = {}, product = null, businessCategory = null) {
+  const title = cleanString(body.marketplaceTitle || body.title || product?.marketplaceTitle || product?.name);
+  const description = cleanString(
+    body.marketplaceDescription || body.description || product?.marketplaceDescription
+  );
+
+  const rawPrice =
+    body.marketplacePrice != null
+      ? body.marketplacePrice
+      : body.price != null
+        ? body.price
+        : product?.marketplacePrice != null
+          ? product.marketplacePrice
+          : product?.sellPrice;
+
+  const price = toMoney(rawPrice);
+
+  const category =
+    cleanString(body.marketplaceCategory || body.publicCategory || product?.marketplaceCategory) ||
+    cleanString(product?.category) ||
+    businessCategory ||
+    null;
+
+  const attributes =
+    normalizePlainObject(body.marketplaceAttributes || body.attributes) ||
+    normalizePlainObject(product?.marketplaceAttributes) ||
+    {};
+
+  return {
+    marketplaceTitle: title,
+    marketplaceDescription: description,
+    marketplacePrice: Number.isFinite(price) ? price : NaN,
+    marketplaceCategory: category,
+    marketplaceAttributes: {
+      ...attributes,
+      businessCategory,
+    },
+  };
+}
+
+function marketplaceValidationErrors({ product, imageCount, marketplace }) {
+  const errors = [];
+
+  if (!product?.isActive) errors.push("Product must be active before publishing");
+  if (!imageCount) errors.push("Add at least one product image before publishing");
+  if (!marketplace.marketplaceTitle) errors.push("Marketplace product name is required");
+  if (!marketplace.marketplaceDescription) errors.push("Marketplace description is required");
+  if (!Number.isFinite(marketplace.marketplacePrice) || marketplace.marketplacePrice < 0) {
+    errors.push("Marketplace price must be 0 or more");
+  }
+  if (!marketplace.marketplaceCategory) errors.push("Marketplace category is required");
+
+  return errors;
+}
+
 function productSelect() {
   return {
     id: true,
@@ -153,6 +314,30 @@ function productSelect() {
     stockQty: true,
     isActive: true,
     createdAt: true,
+
+    categoryAttributes: true,
+    marketplaceStatus: true,
+    marketplaceTitle: true,
+    marketplaceDescription: true,
+    marketplacePrice: true,
+    marketplaceCategory: true,
+    marketplaceAttributes: true,
+    marketplaceSlug: true,
+    marketplacePublishedAt: true,
+    marketplaceUnpublishedAt: true,
+
+    images: {
+      orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        url: true,
+        key: true,
+        altText: true,
+        sortOrder: true,
+        isPrimary: true,
+        createdAt: true,
+      },
+    },
   };
 }
 
@@ -307,6 +492,10 @@ function normalizeProductInput(body, { isCreate = false } = {}) {
   if (data.category && String(data.category) !== "Accessories") {
     data.subcategory = null;
     data.subcategoryOther = null;
+  }
+
+  if (body.categoryAttributes != null) {
+    data.categoryAttributes = normalizePlainObject(body.categoryAttributes);
   }
 
   if (data.subcategory && data.subcategory !== "Other") {
@@ -932,6 +1121,7 @@ async function createProduct(req, res) {
           subcategory: data.subcategory,
           subcategoryOther: data.subcategoryOther,
           brand: data.brand,
+          categoryAttributes: data.categoryAttributes,
           minStockLevel: data.minStockLevel,
           costPrice: data.costPrice,
           sellPrice: data.sellPrice,
@@ -1080,6 +1270,7 @@ async function updateProduct(req, res) {
             subcategory: existing.subcategory,
             subcategoryOther: existing.subcategoryOther,
             brand: existing.brand,
+            categoryAttributes: existing.categoryAttributes,
             minStockLevel: existing.minStockLevel,
             costPrice: existing.costPrice,
             sellPrice: existing.sellPrice,
@@ -1093,6 +1284,7 @@ async function updateProduct(req, res) {
             subcategory: updated.subcategory,
             subcategoryOther: updated.subcategoryOther,
             brand: updated.brand,
+            categoryAttributes: updated.categoryAttributes,
             minStockLevel: updated.minStockLevel,
             costPrice: updated.costPrice,
             sellPrice: updated.sellPrice,
@@ -2303,6 +2495,500 @@ async function exportStockAdjustmentsExcel(req, res) {
   }
 }
 
+
+async function listProductImages(req, res) {
+  const tenantId = getTenantId(req);
+  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+  const productId = req.params.id;
+
+  try {
+    await ensureProductForTenant(tenantId, productId, { id: true });
+
+    const images = await prisma.productImage.findMany({
+      where: { tenantId, productId },
+      orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        url: true,
+        key: true,
+        altText: true,
+        sortOrder: true,
+        isPrimary: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return res.json({ images, count: images.length });
+  } catch (err) {
+    if (err?.code === "PRODUCT_NOT_FOUND") {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    console.error("listProductImages error:", err);
+    return res.status(500).json({ message: "Failed to load product images" });
+  }
+}
+
+async function addProductImage(req, res) {
+  const tenantId = getTenantId(req);
+  const userId = getUserId(req);
+  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+  const productId = req.params.id;
+  const activeBranchId = getActiveBranchId(req);
+
+  try {
+    const product = await ensureProductForTenant(tenantId, productId, {
+      id: true,
+      name: true,
+      marketplaceStatus: true,
+    });
+
+    const input = normalizeImageInput(req.body || {});
+
+    const created = await prisma.$transaction(async (tx) => {
+      const existingCount = await tx.productImage.count({
+        where: { tenantId, productId },
+      });
+
+      const shouldBePrimary = input.isPrimary || existingCount === 0;
+
+      if (shouldBePrimary) {
+        await tx.productImage.updateMany({
+          where: { tenantId, productId },
+          data: { isPrimary: false },
+        });
+      }
+
+      const image = await tx.productImage.create({
+        data: {
+          tenantId,
+          productId,
+          url: input.url,
+          key: input.key,
+          altText: input.altText,
+          sortOrder: input.sortOrder,
+          isPrimary: shouldBePrimary,
+        },
+        select: {
+          id: true,
+          url: true,
+          key: true,
+          altText: true,
+          sortOrder: true,
+          isPrimary: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      await writeAuditLog(tx, {
+        tenantId,
+        userId,
+        branchId: activeBranchId,
+        entity: "PRODUCT",
+        entityId: product.id,
+        action: INVENTORY_AUDIT_ACTIONS.PRODUCT_UPDATED,
+        metadata: {
+          branchId: activeBranchId,
+          name: product.name,
+          imageAdded: true,
+          marketplaceStatus: product.marketplaceStatus,
+        },
+      });
+
+      return image;
+    });
+
+    return res.status(201).json({ image: created });
+  } catch (err) {
+    if (err?.code === "PRODUCT_NOT_FOUND") {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    if (err?.code === "IMAGE_URL_REQUIRED") {
+      return res.status(400).json({ message: "Image URL is required" });
+    }
+
+    console.error("addProductImage error:", err);
+    return res.status(500).json({ message: "Failed to add product image" });
+  }
+}
+
+async function deleteProductImage(req, res) {
+  const tenantId = getTenantId(req);
+  const userId = getUserId(req);
+  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+  const productId = req.params.id;
+  const imageId = req.params.imageId;
+  const activeBranchId = getActiveBranchId(req);
+
+  try {
+    const product = await ensureProductForTenant(tenantId, productId, {
+      id: true,
+      name: true,
+      marketplaceStatus: true,
+    });
+
+    const existing = await prisma.productImage.findFirst({
+      where: { id: imageId, tenantId, productId },
+      select: { id: true, isPrimary: true },
+    });
+
+    if (!existing) return res.status(404).json({ message: "Image not found" });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.productImage.delete({ where: { id: imageId } });
+
+      if (existing.isPrimary) {
+        const nextImage = await tx.productImage.findFirst({
+          where: { tenantId, productId },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          select: { id: true },
+        });
+
+        if (nextImage) {
+          await tx.productImage.update({
+            where: { id: nextImage.id },
+            data: { isPrimary: true },
+          });
+        }
+      }
+
+      await writeAuditLog(tx, {
+        tenantId,
+        userId,
+        branchId: activeBranchId,
+        entity: "PRODUCT",
+        entityId: product.id,
+        action: INVENTORY_AUDIT_ACTIONS.PRODUCT_UPDATED,
+        metadata: {
+          branchId: activeBranchId,
+          name: product.name,
+          imageRemoved: true,
+          marketplaceStatus: product.marketplaceStatus,
+        },
+      });
+    });
+
+    return res.json({ message: "Image removed" });
+  } catch (err) {
+    if (err?.code === "PRODUCT_NOT_FOUND") {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    console.error("deleteProductImage error:", err);
+    return res.status(500).json({ message: "Failed to remove product image" });
+  }
+}
+
+async function setPrimaryProductImage(req, res) {
+  const tenantId = getTenantId(req);
+  const userId = getUserId(req);
+  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+  const productId = req.params.id;
+  const imageId = req.params.imageId;
+  const activeBranchId = getActiveBranchId(req);
+
+  try {
+    const product = await ensureProductForTenant(tenantId, productId, {
+      id: true,
+      name: true,
+      marketplaceStatus: true,
+    });
+
+    const existing = await prisma.productImage.findFirst({
+      where: { id: imageId, tenantId, productId },
+      select: { id: true },
+    });
+
+    if (!existing) return res.status(404).json({ message: "Image not found" });
+
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.productImage.updateMany({
+        where: { tenantId, productId },
+        data: { isPrimary: false },
+      });
+
+      const image = await tx.productImage.update({
+        where: { id: imageId },
+        data: { isPrimary: true },
+        select: {
+          id: true,
+          url: true,
+          key: true,
+          altText: true,
+          sortOrder: true,
+          isPrimary: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      await writeAuditLog(tx, {
+        tenantId,
+        userId,
+        branchId: activeBranchId,
+        entity: "PRODUCT",
+        entityId: product.id,
+        action: INVENTORY_AUDIT_ACTIONS.PRODUCT_UPDATED,
+        metadata: {
+          branchId: activeBranchId,
+          name: product.name,
+          primaryImageUpdated: true,
+          marketplaceStatus: product.marketplaceStatus,
+        },
+      });
+
+      return image;
+    });
+
+    return res.json({ image: updated });
+  } catch (err) {
+    if (err?.code === "PRODUCT_NOT_FOUND") {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    console.error("setPrimaryProductImage error:", err);
+    return res.status(500).json({ message: "Failed to set primary image" });
+  }
+}
+
+async function updateMarketplaceDraft(req, res) {
+  const tenantId = getTenantId(req);
+  const userId = getUserId(req);
+  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+  const productId = req.params.id;
+  const activeBranchId = getActiveBranchId(req);
+
+  try {
+    const businessCategory = await getTenantBusinessCategory(tenantId);
+
+    const product = await ensureProductForTenant(tenantId, productId, {
+      id: true,
+      name: true,
+      isActive: true,
+      category: true,
+      sellPrice: true,
+      marketplaceStatus: true,
+      marketplaceTitle: true,
+      marketplaceDescription: true,
+      marketplacePrice: true,
+      marketplaceCategory: true,
+      marketplaceAttributes: true,
+    });
+
+    const marketplace = normalizeMarketplaceInput(req.body || {}, product, businessCategory);
+    const nextSlug = slugify(req.body?.marketplaceSlug || req.body?.slug || marketplace.marketplaceTitle);
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.product.update({
+        where: { id: product.id },
+        data: {
+          marketplaceTitle: marketplace.marketplaceTitle,
+          marketplaceDescription: marketplace.marketplaceDescription,
+          marketplacePrice: Number.isFinite(marketplace.marketplacePrice)
+            ? marketplace.marketplacePrice
+            : null,
+          marketplaceCategory: marketplace.marketplaceCategory,
+          marketplaceAttributes: marketplace.marketplaceAttributes,
+          marketplaceSlug: nextSlug ? `${nextSlug}-${product.id.slice(0, 6)}` : null,
+          marketplaceStatus:
+            product.marketplaceStatus === "PUBLISHED"
+              ? "PUBLISHED"
+              : "DRAFT",
+        },
+        select: productSelect(),
+      });
+
+      await writeAuditLog(tx, {
+        tenantId,
+        userId,
+        branchId: activeBranchId,
+        entity: "PRODUCT",
+        entityId: product.id,
+        action: INVENTORY_AUDIT_ACTIONS.PRODUCT_UPDATED,
+        metadata: {
+          branchId: activeBranchId,
+          name: product.name,
+          marketplaceDraftUpdated: true,
+          businessCategory,
+        },
+      });
+
+      return row;
+    });
+
+    return res.json({ product: updated });
+  } catch (err) {
+    if (err?.code === "PRODUCT_NOT_FOUND") {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    console.error("updateMarketplaceDraft error:", err);
+    return res.status(500).json({ message: "Failed to update marketplace details" });
+  }
+}
+
+async function publishToMarketplace(req, res) {
+  const tenantId = getTenantId(req);
+  const userId = getUserId(req);
+  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+  const productId = req.params.id;
+  const activeBranchId = getActiveBranchId(req);
+
+  try {
+    const businessCategory = await getTenantBusinessCategory(tenantId);
+
+    const product = await ensureProductForTenant(tenantId, productId, {
+      id: true,
+      name: true,
+      isActive: true,
+      category: true,
+      sellPrice: true,
+      marketplaceTitle: true,
+      marketplaceDescription: true,
+      marketplacePrice: true,
+      marketplaceCategory: true,
+      marketplaceAttributes: true,
+    });
+
+    const imageCount = await prisma.productImage.count({
+      where: { tenantId, productId },
+    });
+
+    const marketplace = normalizeMarketplaceInput(req.body || {}, product, businessCategory);
+    const errors = marketplaceValidationErrors({ product, imageCount, marketplace });
+
+    if (errors.length) {
+      return res.status(400).json({
+        message: errors[0],
+        code: "MARKETPLACE_PUBLISH_BLOCKED",
+        errors,
+      });
+    }
+
+    const nextSlugBase = slugify(req.body?.marketplaceSlug || req.body?.slug || marketplace.marketplaceTitle);
+    const nextSlug = `${nextSlugBase || "product"}-${product.id.slice(0, 6)}`;
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.product.update({
+        where: { id: product.id },
+        data: {
+          marketplaceTitle: marketplace.marketplaceTitle,
+          marketplaceDescription: marketplace.marketplaceDescription,
+          marketplacePrice: marketplace.marketplacePrice,
+          marketplaceCategory: marketplace.marketplaceCategory,
+          marketplaceAttributes: marketplace.marketplaceAttributes,
+          marketplaceSlug: nextSlug,
+          marketplaceStatus: "PUBLISHED",
+          marketplacePublishedAt: new Date(),
+          marketplaceUnpublishedAt: null,
+        },
+        select: productSelect(),
+      });
+
+      await writeAuditLog(tx, {
+        tenantId,
+        userId,
+        branchId: activeBranchId,
+        entity: "PRODUCT",
+        entityId: product.id,
+        action: INVENTORY_AUDIT_ACTIONS.PRODUCT_UPDATED,
+        metadata: {
+          branchId: activeBranchId,
+          name: product.name,
+          marketplacePublished: true,
+          businessCategory,
+          imageCount,
+        },
+      });
+
+      return row;
+    });
+
+    return res.json({
+      message: "Product published to marketplace",
+      product: updated,
+    });
+  } catch (err) {
+    if (err?.code === "PRODUCT_NOT_FOUND") {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    if (err?.code === "P2002") {
+      return res.status(409).json({
+        message: "Marketplace link already exists. Change the marketplace name and try again.",
+      });
+    }
+
+    console.error("publishToMarketplace error:", err);
+    return res.status(500).json({ message: "Failed to publish product" });
+  }
+}
+
+async function unpublishFromMarketplace(req, res) {
+  const tenantId = getTenantId(req);
+  const userId = getUserId(req);
+  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+  const productId = req.params.id;
+  const activeBranchId = getActiveBranchId(req);
+
+  try {
+    const product = await ensureProductForTenant(tenantId, productId, {
+      id: true,
+      name: true,
+      marketplaceStatus: true,
+    });
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.product.update({
+        where: { id: product.id },
+        data: {
+          marketplaceStatus: "UNPUBLISHED",
+          marketplaceUnpublishedAt: new Date(),
+        },
+        select: productSelect(),
+      });
+
+      await writeAuditLog(tx, {
+        tenantId,
+        userId,
+        branchId: activeBranchId,
+        entity: "PRODUCT",
+        entityId: product.id,
+        action: INVENTORY_AUDIT_ACTIONS.PRODUCT_UPDATED,
+        metadata: {
+          branchId: activeBranchId,
+          name: product.name,
+          marketplaceUnpublished: true,
+        },
+      });
+
+      return row;
+    });
+
+    return res.json({
+      message: "Product removed from marketplace",
+      product: updated,
+    });
+  } catch (err) {
+    if (err?.code === "PRODUCT_NOT_FOUND") {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    console.error("unpublishFromMarketplace error:", err);
+    return res.status(500).json({ message: "Failed to unpublish product" });
+  }
+}
+
 module.exports = {
   getProducts,
   searchProducts,
@@ -2311,6 +2997,15 @@ module.exports = {
   updateProduct,
   deleteProduct,
   activateProduct,
+
+  listProductImages,
+  addProductImage,
+  deleteProductImage,
+  setPrimaryProductImage,
+  updateMarketplaceDraft,
+  publishToMarketplace,
+  unpublishFromMarketplace,
+
   adjustStock,
   listStockAdjustments,
   listAllStockAdjustments,

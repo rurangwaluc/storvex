@@ -73,6 +73,57 @@ router.get(
   inventoryController.exportStockAdjustmentsExcel
 );
 
+// Product images
+router.get(
+  "/products/:id/images",
+  ...readBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_VIEW),
+  inventoryController.listProductImages
+);
+
+router.post(
+  "/products/:id/images",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryController.addProductImage
+);
+
+router.delete(
+  "/products/:id/images/:imageId",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryController.deleteProductImage
+);
+
+router.patch(
+  "/products/:id/images/:imageId/primary",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryController.setPrimaryProductImage
+);
+
+// Marketplace publishing
+router.patch(
+  "/products/:id/marketplace",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryController.updateMarketplaceDraft
+);
+
+router.patch(
+  "/products/:id/marketplace/publish",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryController.publishToMarketplace
+);
+
+router.patch(
+  "/products/:id/marketplace/unpublish",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryController.unpublishFromMarketplace
+);
+
 // Get product by ID
 router.get(
   "/products/:id",
