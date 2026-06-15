@@ -18,6 +18,11 @@ function cleanObject(obj) {
   return out;
 }
 
+function cleanPlainObject(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return value;
+}
+
 function withBranchOptions(options = {}) {
   const branchId =
     cleanString(options.branchId) ||
@@ -48,6 +53,8 @@ function buildQuery(params = {}) {
     from: params.from,
     to: params.to,
     type: params.type,
+    marketplaceStatus: cleanString(params.marketplaceStatus),
+    marketplaceCategory: cleanString(params.marketplaceCategory),
   });
 }
 
@@ -65,6 +72,7 @@ function normalizeProductPayload(payload = {}) {
     costPrice: payload.costPrice,
     sellPrice: payload.sellPrice,
     stockQty: payload.stockQty,
+    categoryAttributes: cleanPlainObject(payload.categoryAttributes),
   });
 }
 
@@ -75,6 +83,27 @@ function normalizeStockAdjustmentPayload(payload = {}) {
     newStockQty: payload.newStockQty,
     lossReason: cleanString(payload.lossReason).toUpperCase(),
     note: cleanString(payload.note),
+  });
+}
+
+function normalizeProductImagePayload(payload = {}) {
+  return cleanObject({
+    url: cleanString(payload.url || payload.publicUrl || payload.imageUrl),
+    key: cleanString(payload.key || payload.objectKey),
+    altText: cleanString(payload.altText),
+    sortOrder: payload.sortOrder,
+    isPrimary: payload.isPrimary,
+  });
+}
+
+function normalizeMarketplacePayload(payload = {}) {
+  return cleanObject({
+    marketplaceTitle: cleanString(payload.marketplaceTitle || payload.title),
+    marketplaceDescription: cleanString(payload.marketplaceDescription || payload.description),
+    marketplacePrice: payload.marketplacePrice ?? payload.price,
+    marketplaceCategory: cleanString(payload.marketplaceCategory || payload.publicCategory),
+    marketplaceAttributes: cleanPlainObject(payload.marketplaceAttributes || payload.attributes),
+    marketplaceSlug: cleanString(payload.marketplaceSlug || payload.slug),
   });
 }
 
@@ -146,6 +175,9 @@ export function searchProducts(params = {}, options = {}) {
  * - branchReservedQty
  * - effectiveStockQty
  * - branchScope
+ * - images
+ * - categoryAttributes
+ * - marketplaceStatus / marketplace fields
  */
 export function getProductById(productId, options = {}) {
   const id = cleanString(productId);
@@ -163,10 +195,8 @@ export function getProductById(productId, options = {}) {
 /**
  * Create product in the active branch.
  *
- * stockQty is allowed here because backend creates:
- * - Product catalog row
- * - BranchInventory row for active branch
- * - synced Product.stockQty
+ * Images are intentionally optional here.
+ * Marketplace publishing checks images later when the owner chooses to publish.
  */
 export function createProduct(payload, options = {}) {
   return apiFetch(`${INVENTORY_BASE}/products`, {
@@ -225,7 +255,135 @@ export function activateProduct(productId, options = {}) {
   }
 
   return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/activate`, {
+    method: "PATCH",
+    ...withBranchOptions(options),
+  });
+}
+
+/**
+ * Product marketplace images.
+ *
+ * Images are optional for internal inventory/POS products.
+ * At least one image is required only when publishing to marketplace.
+ */
+export function getProductImages(productId, options = {}) {
+  const id = cleanString(productId);
+
+  if (!id) {
+    return Promise.reject(new Error("Product id is required"));
+  }
+
+  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/images`, {
+    method: "GET",
+    ...withBranchOptions(options),
+  });
+}
+
+export function addProductImage(productId, payload, options = {}) {
+  const id = cleanString(productId);
+
+  if (!id) {
+    return Promise.reject(new Error("Product id is required"));
+  }
+
+  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/images`, {
     method: "POST",
+    body: normalizeProductImagePayload(payload),
+    ...withBranchOptions(options),
+  });
+}
+
+export function deleteProductImage(productId, imageId, options = {}) {
+  const id = cleanString(productId);
+  const imgId = cleanString(imageId);
+
+  if (!id) {
+    return Promise.reject(new Error("Product id is required"));
+  }
+
+  if (!imgId) {
+    return Promise.reject(new Error("Image id is required"));
+  }
+
+  return apiFetch(
+    `${INVENTORY_BASE}/products/${encodeURIComponent(id)}/images/${encodeURIComponent(imgId)}`,
+    {
+      method: "DELETE",
+      ...withBranchOptions(options),
+    },
+  );
+}
+
+export function setPrimaryProductImage(productId, imageId, options = {}) {
+  const id = cleanString(productId);
+  const imgId = cleanString(imageId);
+
+  if (!id) {
+    return Promise.reject(new Error("Product id is required"));
+  }
+
+  if (!imgId) {
+    return Promise.reject(new Error("Image id is required"));
+  }
+
+  return apiFetch(
+    `${INVENTORY_BASE}/products/${encodeURIComponent(id)}/images/${encodeURIComponent(imgId)}/primary`,
+    {
+      method: "PATCH",
+      ...withBranchOptions(options),
+    },
+  );
+}
+
+/**
+ * Marketplace draft and publish actions.
+ *
+ * Draft update saves public-facing listing details.
+ * Publish requires backend validation:
+ * - active product
+ * - at least one image
+ * - public title
+ * - public description
+ * - public price
+ * - marketplace category
+ */
+export function updateMarketplaceDraft(productId, payload, options = {}) {
+  const id = cleanString(productId);
+
+  if (!id) {
+    return Promise.reject(new Error("Product id is required"));
+  }
+
+  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/marketplace`, {
+    method: "PATCH",
+    body: normalizeMarketplacePayload(payload),
+    ...withBranchOptions(options),
+  });
+}
+
+export function publishProductToMarketplace(productId, payload = {}, options = {}) {
+  const id = cleanString(productId);
+
+  if (!id) {
+    return Promise.reject(new Error("Product id is required"));
+  }
+
+  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/marketplace/publish`, {
+    method: "PATCH",
+    body: normalizeMarketplacePayload(payload),
+    ...withBranchOptions(options),
+  });
+}
+
+export function unpublishProductFromMarketplace(productId, options = {}) {
+  const id = cleanString(productId);
+
+  if (!id) {
+    return Promise.reject(new Error("Product id is required"));
+  }
+
+  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/marketplace/unpublish`, {
+    method: "PATCH",
     ...withBranchOptions(options),
   });
 }
@@ -332,7 +490,7 @@ export async function downloadReorderPdf(params = {}, options = {}) {
     ...withBranchOptions(options),
   });
 
-  const filename = "storvex-reorder.pdf";
+  const filename = filenameFromResponse(response, "storvex-reorder.pdf");
   downloadBlob(response, filename);
 
   return response;
@@ -349,7 +507,7 @@ export async function downloadInventoryExcel(params = {}, options = {}) {
     ...withBranchOptions(options),
   });
 
-  const filename = "storvex-inventory.xlsx";
+  const filename = filenameFromResponse(response, "storvex-inventory.xlsx");
   downloadBlob(response, filename);
 
   return response;
@@ -366,7 +524,7 @@ export async function downloadStockAdjustmentsExcel(params = {}, options = {}) {
     ...withBranchOptions(options),
   });
 
-  const filename = "storvex-stock-history.xlsx";
+  const filename = filenameFromResponse(response, "storvex-stock-history.xlsx");
   downloadBlob(response, filename);
 
   return response;
@@ -410,6 +568,15 @@ export const inventoryApi = {
   updateProduct,
   deleteProduct,
   activateProduct,
+
+  getProductImages,
+  addProductImage,
+  deleteProductImage,
+  setPrimaryProductImage,
+  updateMarketplaceDraft,
+  publishProductToMarketplace,
+  unpublishProductFromMarketplace,
+
   adjustStock,
   getProductStockAdjustments,
   getStockAdjustments,
