@@ -193,6 +193,7 @@ model Tenant {
   notifications            Notification[]
   payments                 Payment[]
   products                 Product[]
+  productImages ProductImage[]
   promotions               Promotion[]
   purchaseOrders           PurchaseOrder[]
   purchaseOrderItemSerials PurchaseOrderItemSerial[]
@@ -442,14 +443,27 @@ model Product {
   barcode                   String?
   location                  String?
   notes                     String?
-  refundItems               SaleRefundItem[]          @relation("ProductToRefundItems")
   supplierName              String?
   supplierId                String?
+
+  categoryAttributes        Json?
+  marketplaceStatus         ProductMarketplaceStatus  @default(INTERNAL)
+  marketplaceTitle          String?                   @db.Text
+  marketplaceDescription    String?                   @db.Text
+  marketplacePrice          Float?
+  marketplaceCategory       String?                   @db.Text
+  marketplaceAttributes     Json?
+  marketplaceSlug           String?                   @db.Text
+  marketplacePublishedAt    DateTime?
+  marketplaceUnpublishedAt  DateTime?
+
+  refundItems               SaleRefundItem[]          @relation("ProductToRefundItems")
   deliveryNoteItems         DeliveryNoteItem[]
   deals                     InterStoreDeal[]          @relation("ProductDeals")
   receivedInInterStoreDeals InterStoreDeal[]          @relation("ReceivedProduct")
   supplier                  Supplier?                 @relation(fields: [supplierId], references: [id])
   tenant                    Tenant                    @relation(fields: [tenantId], references: [id])
+  images                    ProductImage[]
   promotions                Promotion[]
   purchaseOrderItems        PurchaseOrderItem[]
   purchaseOrderItemSerials  PurchaseOrderItemSerial[]
@@ -459,6 +473,7 @@ model Product {
   proformaItems             ProformaItem[]
   branchInventory           BranchInventory[]
 
+  @@unique([tenantId, marketplaceSlug])
   @@index([tenantId, supplierId])
   @@index([tenantId])
   @@index([tenantId, category])
@@ -467,6 +482,28 @@ model Product {
   @@index([tenantId, barcode])
   @@index([tenantId, brand])
   @@index([tenantId, supplierName])
+  @@index([tenantId, marketplaceStatus])
+  @@index([tenantId, marketplaceCategory])
+}
+
+model ProductImage {
+  id        String   @id @default(uuid())
+  tenantId  String
+  productId String
+  url       String   @db.Text
+  key       String?  @db.Text
+  altText   String?  @db.Text
+  sortOrder Int      @default(0)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, productId])
+  @@index([tenantId, productId, isPrimary])
 }
 
 model BranchInventory {
@@ -1868,4 +1905,11 @@ enum ProformaStatus {
   EXPIRED
   CONVERTED
   CANCELLED
+}
+
+enum ProductMarketplaceStatus {
+  INTERNAL
+  DRAFT
+  PUBLISHED
+  UNPUBLISHED
 }
