@@ -1,38 +1,48 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Barcode,
+  Boxes,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  DollarSign,
+  Edit3,
+  Eye,
+  ImagePlus,
+  Layers3,
+  PackageCheck,
+  RefreshCw,
+  ShieldCheck,
+  ShoppingCart,
+  Store,
+  Tags,
+  Warehouse,
+} from "lucide-react";
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import FormPageSkeleton from "../../components/ui/FormPageSkeleton";
 import {
-  adjustStock,
   getProductById,
   getProductStockAdjustments,
 } from "../../services/inventoryApi";
-import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import "./InventoryDetail.css";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 6;
 
-const LOSS_REASONS = [
-  { value: "DAMAGED", label: "Damaged" },
-  { value: "STOLEN", label: "Stolen" },
-  { value: "LOST", label: "Lost" },
-  { value: "EXPIRED", label: "Expired" },
-  { value: "INTERNAL_USE", label: "Used inside the business" },
-  { value: "COUNTING_ERROR", label: "Counting mistake" },
-  { value: "OTHER", label: "Other reason" },
-];
-
-const DEFAULT_STOCK_FORM = {
-  type: "RESTOCK",
-  quantity: 1,
-  newStockQty: 0,
-  lossReason: "DAMAGED",
-  note: "",
+const CATEGORY_LABELS = {
+  ELECTRONICS: "Electronics",
+  HARDWARE: "Hardware",
+  HOME_KITCHEN: "Home & kitchen",
+  LIGHTING: "Lighting",
+  SPARE_PARTS: "Spare parts",
 };
 
-function cx(...xs) {
-  return xs.filter(Boolean).join(" ");
+function cx(...items) {
+  return items.filter(Boolean).join(" ");
 }
 
 function cleanString(value) {
@@ -43,51 +53,78 @@ function cleanString(value) {
 function formatRwf(value) {
   const n = Number(value || 0);
 
-  return new Intl.NumberFormat("en-RW", {
-    style: "currency",
-    currency: "RWF",
+  return `Rwf ${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
-  }).format(Number.isFinite(n) ? n : 0);
+  }).format(Number.isFinite(n) ? Math.round(n) : 0)}`;
 }
 
 function formatNumber(value) {
   const n = Number(value || 0);
-  return new Intl.NumberFormat("en-RW").format(Number.isFinite(n) ? n : 0);
+
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(n) ? n : 0);
 }
 
 function formatDateTime(value) {
   if (!value) return "—";
 
-  try {
-    return new Date(value).toLocaleString("en-RW", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-  } catch {
-    return "—";
-  }
-}
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
 
-function activeBranchNameFromStorage() {
-  const name = cleanString(localStorage.getItem("activeBranchName"));
-  const code = cleanString(localStorage.getItem("activeBranchCode"));
-
-  if (code && name) return `${code} • ${name}`;
-  if (name) return name;
-  if (code) return code;
-
-  return "this branch";
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function productStock(product) {
   return Number(product?.effectiveStockQty ?? product?.branchStockQty ?? product?.stockQty ?? 0);
 }
 
-function productTotalStock(product) {
-  return Number(product?.stockQty ?? product?.effectiveStockQty ?? product?.branchStockQty ?? 0);
+function productReserved(product) {
+  return Number(product?.branchReservedQty ?? product?.reservedQty ?? 0);
 }
 
-function stockHealth(product) {
+function productImages(product) {
+  const images = Array.isArray(product?.images) ? product.images : [];
+  return images
+    .map((image) => {
+      if (typeof image === "string") return { url: image };
+      return image;
+    })
+    .filter((image) => cleanString(image?.url || image?.imageUrl));
+}
+
+function primaryImage(product) {
+  const images = productImages(product);
+  const primary = images.find((image) => image?.isPrimary) || images[0];
+
+  return primary?.url || primary?.imageUrl || "";
+}
+
+function productInitials(name) {
+  const parts = cleanString(name).split(/\s+/).filter(Boolean);
+
+  if (!parts.length) return "P";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+function categoryText(product) {
+  return (
+    cleanString(product?.category) ||
+    cleanString(product?.marketplaceCategory) ||
+    cleanString(product?.subcategory) ||
+    "Uncategorized"
+  );
+}
+
+function productStatus(product) {
   const qty = productStock(product);
   const min = Number(product?.minStockLevel ?? 0);
 
@@ -95,7 +132,7 @@ function stockHealth(product) {
     return {
       label: "Out of stock",
       tone: "danger",
-      text: "This product is not available here.",
+      text: "This product is not available in this branch.",
     };
   }
 
@@ -103,997 +140,530 @@ function stockHealth(product) {
     return {
       label: "Low stock",
       tone: "warning",
-      text: "This product needs attention soon.",
+      text: "This product needs restock attention.",
     };
   }
 
   return {
-    label: "Good stock",
+    label: "In stock",
     tone: "success",
-    text: "This product has enough stock here.",
+    text: "This product has enough stock for now.",
   };
 }
 
+function marketplaceStatus(product) {
+  const status = cleanString(product?.marketplaceStatus).toUpperCase();
+
+  if (status === "PUBLISHED") return { label: "Published", tone: "success" };
+  if (status === "DRAFT") return { label: "Draft", tone: "warning" };
+  if (status === "UNPUBLISHED") return { label: "Unpublished", tone: "neutral" };
+
+  return { label: "Internal only", tone: "neutral" };
+}
+
+function branchLabel(product) {
+  const scope = product?.branchScope || {};
+  const code = cleanString(scope?.code || scope?.branchCode);
+  const name =
+    cleanString(scope?.name || scope?.branchName) ||
+    cleanString(localStorage.getItem("activeBranchName"));
+  const storedCode = cleanString(localStorage.getItem("activeBranchCode"));
+
+  if (code && name) return `${code} • ${name}`;
+  if (storedCode && name) return `${storedCode} • ${name}`;
+  if (name) return name;
+  if (code) return code;
+  if (storedCode) return storedCode;
+
+  return "Current branch";
+}
+
+function normalizedCategoryAttributes(product) {
+  const raw =
+    product?.categoryAttributes ||
+    product?.marketplaceAttributes ||
+    product?.attributes ||
+    {};
+
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return [];
+
+  return Object.entries(raw)
+    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .map(([key, value]) => ({
+      key,
+      label: friendlyAttributeLabel(key),
+      value: friendlyAttributeValue(value),
+    }));
+}
+
+function friendlyAttributeLabel(key) {
+  return String(key || "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^./, (char) => char.toUpperCase());
+}
+
+function friendlyAttributeValue(value) {
+  if (Array.isArray(value)) return value.filter(Boolean).join(", ");
+  if (typeof value === "object") return "Saved";
+  return String(value);
+}
+
 function stockChangeLabel(type) {
-  if (type === "RESTOCK") return "Stock added";
-  if (type === "LOSS") return "Stock removed";
-  if (type === "CORRECTION") return "Count corrected";
+  const value = cleanString(type).toUpperCase();
+
+  if (value === "RESTOCK") return "Stock added";
+  if (value === "LOSS") return "Stock removed";
+  if (value === "CORRECTION") return "Count corrected";
+
   return "Stock changed";
 }
 
-function changeValue(row) {
-  const value = Number(row?.delta || 0);
+function stockChangeTone(type, delta) {
+  const value = cleanString(type).toUpperCase();
+  const change = Number(delta || 0);
 
-  if (value > 0) return `+${formatNumber(value)}`;
-  return formatNumber(value);
-}
-
-function changeTone(row) {
-  const value = Number(row?.delta || 0);
-
-  if (row?.type === "RESTOCK" || value > 0) return "success";
-  if (row?.type === "LOSS" || value < 0) return "danger";
-  if (row?.type === "CORRECTION") return "warning";
+  if (value === "RESTOCK" || change > 0) return "success";
+  if (value === "LOSS" || change < 0) return "danger";
+  if (value === "CORRECTION") return "warning";
 
   return "neutral";
 }
 
-function pageCard() {
-  return "rounded-[30px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+function stockChangeValue(row) {
+  const delta = Number(row?.delta ?? row?.quantity ?? 0);
+
+  if (delta > 0) return `+${formatNumber(delta)}`;
+  return formatNumber(delta);
 }
 
-function softPanel() {
-  return "rounded-[24px] bg-[var(--color-surface-2)]";
+function StatusBadge({ tone = "neutral", children }) {
+  return <span className={cx("svx-detail-badge", `is-${tone}`)}>{children}</span>;
 }
 
-function inputClass() {
-  return "h-12 w-full rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(74,163,255,0.12)] disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function buttonBase() {
-  return "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function secondaryButton() {
-  return cx(
-    buttonBase(),
-    "bg-[var(--color-surface-2)] text-[var(--color-text)] shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
-}
-
-function primaryButton() {
-  return cx(
-    buttonBase(),
-    "bg-[var(--color-primary)] text-white shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
-}
-
-function successButton() {
-  return cx(
-    buttonBase(),
-    "bg-emerald-600 text-white shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
-}
-
-function dangerButton() {
-  return cx(
-    buttonBase(),
-    "bg-red-600 text-white shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
-}
-
-function warningButton() {
-  return cx(
-    buttonBase(),
-    "bg-amber-500 text-white shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
-}
-
-function BackIcon() {
+function DetailSection({ icon: Icon, title, text, action, children }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+    <section className="svx-detail-card">
+      <div className="svx-detail-section-head">
+        <span className="svx-detail-section-icon" aria-hidden="true">
+          <Icon size={20} strokeWidth={2.25} />
+        </span>
 
-function EditIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9">
-      <path d="M4 20h4l11-11a2.8 2.8 0 0 0-4-4L4 16v4Z" />
-      <path d="m13.5 6.5 4 4" />
-    </svg>
-  );
-}
+        <div>
+          <div className="svx-detail-section-title-row">
+            <h2>{title}</h2>
+            {action ? <div>{action}</div> : null}
+          </div>
+          {text ? <p>{text}</p> : null}
+        </div>
+      </div>
 
-function StockIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.9">
-      <path d="M21 8l-9-5-9 5 9 5 9-5Z" />
-      <path d="M3 11v8l9 5 9-5v-8" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M6 6l12 12M18 6 6 18" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function WarningIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M12 9v4" strokeLinecap="round" />
-      <path d="M12 17h.01" strokeLinecap="round" />
-      <path d="M10.3 4.6 2.8 18a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 4.6a2 2 0 0 0-3.4 0Z" />
-    </svg>
-  );
-}
-
-function EmptyIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M7 3h10a2 2 0 0 1 2 2v16l-4-2-3 2-3-2-4 2V5a2 2 0 0 1 2-2Z" />
-      <path d="M8 8h8M8 12h8M8 16h5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function StatusPill({ tone = "neutral", children }) {
-  const classes =
-    tone === "success"
-      ? "bg-emerald-500/10 text-emerald-600"
-      : tone === "warning"
-        ? "bg-amber-500/10 text-amber-600"
-        : tone === "danger"
-          ? "bg-red-500/10 text-red-600"
-          : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
-
-  return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em]",
-        classes,
-      )}
-    >
       {children}
-    </span>
+    </section>
   );
 }
 
-function InfoTile({ label, value, note, tone = "neutral" }) {
-  const valueClass =
-    tone === "success"
-      ? "text-emerald-600"
-      : tone === "warning"
-        ? "text-amber-600"
-        : tone === "danger"
-          ? "text-red-600"
-          : "text-[var(--color-text)]";
-
+function SummaryCard({ icon: Icon, label, value, note, tone = "neutral" }) {
   return (
-    <article className={cx(pageCard(), "relative overflow-hidden p-5")}>
-      <div className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-[rgba(74,163,255,0.08)] blur-2xl" />
+    <article className={cx("svx-detail-summary-card", `is-${tone}`)}>
+      <span aria-hidden="true">
+        <Icon size={18} strokeWidth={2.25} />
+      </span>
 
-      <div className="relative">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
-            {label}
-          </p>
-          <span
-            className={cx(
-              "h-2.5 w-2.5 rounded-full",
-              tone === "success"
-                ? "bg-emerald-500"
-                : tone === "warning"
-                  ? "bg-amber-500"
-                  : tone === "danger"
-                    ? "bg-red-500"
-                    : "bg-[var(--color-primary)]",
-            )}
-          />
-        </div>
-
-        <p className={cx("mt-3 truncate text-2xl font-black tracking-[-0.03em]", valueClass)}>
-          {value}
-        </p>
-
-        {note ? (
-          <p className="mt-1 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
-            {note}
-          </p>
-        ) : null}
+      <div>
+        <p>{label}</p>
+        <strong>{value}</strong>
+        {note ? <small>{note}</small> : null}
       </div>
     </article>
   );
 }
 
-function DetailRow({ label, value }) {
+function InfoRow({ label, value, tone }) {
   return (
-    <div className={cx(softPanel(), "p-4")}>
-      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
-        {label}
-      </p>
-      <p className="mt-2 break-words text-sm font-black text-[var(--color-text)]">
-        {value || "Not set"}
-      </p>
+    <div className={cx("svx-detail-info-row", tone && `is-${tone}`)}>
+      <span>{label}</span>
+      <strong>{value || "—"}</strong>
     </div>
   );
 }
 
-function SkeletonBlock({ className = "" }) {
+function Gallery({ product }) {
+  const images = productImages(product);
+  const main = primaryImage(product);
+
   return (
-    <div className={cx("animate-pulse rounded-[22px] bg-[var(--color-surface-2)]", className)} />
-  );
-}
+    <div className="svx-detail-gallery">
+      <div className="svx-detail-main-image">
+        {main ? (
+          <img src={main} alt={product?.name || "Product"} loading="lazy" />
+        ) : (
+          <div className="svx-detail-image-empty">
+            <ImagePlus size={30} strokeWidth={2.2} />
+            <span>No image yet</span>
+          </div>
+        )}
+      </div>
 
-function ErrorState({ message, onRetry, onBack }) {
-  return (
-    <div className="space-y-5">
-      <section className={cx(pageCard(), "p-6 text-center")}>
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[26px] bg-red-500/10 text-red-600 shadow-[var(--shadow-soft)]">
-          <WarningIcon />
+      {images.length ? (
+        <div className="svx-detail-thumb-strip">
+          {images.slice(0, 5).map((image, index) => (
+            <span key={image?.id || image?.url || index}>
+              <img src={image.url || image.imageUrl} alt="" loading="lazy" />
+            </span>
+          ))}
         </div>
-
-        <h1 className="mt-5 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)]">
-          Product could not be loaded
-        </h1>
-
-        <p className="mx-auto mt-2 max-w-xl text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-          {message || "Something went wrong while loading this product."}
-        </p>
-
-        <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-          <button type="button" onClick={onBack} className={secondaryButton()}>
-            <BackIcon />
-            Back
-          </button>
-
-          <button type="button" onClick={onRetry} className={primaryButton()}>
-            Try again
-          </button>
-        </div>
-      </section>
+      ) : null}
     </div>
   );
 }
 
-function ChangeCard({ row }) {
-  const tone = changeTone(row);
-
+function EmptyState({ title, text }) {
   return (
-    <article className={cx(softPanel(), "p-4 shadow-[var(--shadow-soft)]")}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="font-black text-[var(--color-text)]">
-              {stockChangeLabel(row?.type)}
-            </p>
-            <StatusPill tone={tone}>{changeValue(row)}</StatusPill>
-          </div>
-
-          <p className="mt-1 text-xs font-semibold text-[var(--color-text-muted)]">
-            {formatDateTime(row?.createdAt)}
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2 text-right sm:min-w-[170px]">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
-              Before
-            </p>
-            <p className="mt-1 text-sm font-black text-[var(--color-text)]">
-              {formatNumber(row?.beforeQty)}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
-              After
-            </p>
-            <p className="mt-1 text-sm font-black text-[var(--color-text)]">
-              {formatNumber(row?.afterQty)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <p className="mt-3 break-words text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-        {row?.note || "No note was added."}
-      </p>
-    </article>
-  );
-}
-
-function StockChangeModal({
-  open,
-  product,
-  form,
-  setForm,
-  saving,
-  preview,
-  onClose,
-  onSubmit,
-}) {
-  if (!open || !product) return null;
-
-  const isRestock = form.type === "RESTOCK";
-  const isLoss = form.type === "LOSS";
-  const isCorrection = form.type === "CORRECTION";
-
-  const saveClass = isRestock ? successButton() : isLoss ? dangerButton() : warningButton();
-  const saveLabel = isRestock ? "Save stock added" : isLoss ? "Save stock removed" : "Save correction";
-
-  function update(key, value) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function selectType(type) {
-    setForm({
-      type,
-      quantity: 1,
-      newStockQty: productStock(product),
-      lossReason: "DAMAGED",
-      note: "",
-    });
-  }
-
-  return (
-    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/55 px-3 pb-3 pt-10 backdrop-blur-sm sm:items-center sm:p-6">
-      <div className="max-h-[94dvh] w-full max-w-4xl overflow-hidden rounded-[34px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[0_30px_100px_rgba(15,23,42,0.25)]">
-        <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-          <div className="min-w-0">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-              Stock change
-            </p>
-
-            <h2 className="mt-1 truncate text-xl font-black tracking-[-0.03em] text-[var(--color-text)] sm:text-2xl">
-              {product.name}
-            </h2>
-
-            <p className="mt-1 text-sm font-medium text-[var(--color-text-muted)]">
-              Record what changed and keep the stock count clear.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] text-[var(--color-text)] transition hover:-translate-y-0.5 disabled:opacity-60"
-          >
-            <CloseIcon />
-          </button>
-        </div>
-
-        <div className="max-h-[calc(94dvh-96px)] overflow-y-auto p-5 sm:p-6">
-          <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-            <div className="space-y-5">
-              <section className={cx(softPanel(), "p-4 sm:p-5")}>
-                <div className="grid gap-3 md:grid-cols-3">
-                  <button
-                    type="button"
-                    onClick={() => selectType("RESTOCK")}
-                    className={cx(
-                      "rounded-[24px] p-4 text-left transition hover:-translate-y-0.5",
-                      isRestock
-                        ? "bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-500/20"
-                        : "bg-[var(--color-card)] text-[var(--color-text)]",
-                    )}
-                  >
-                    <span className="block text-sm font-black">Stock arrived</span>
-                    <span className="mt-2 block text-xs font-semibold leading-5 text-current/75">
-                      Use when new units came into this branch.
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => selectType("LOSS")}
-                    className={cx(
-                      "rounded-[24px] p-4 text-left transition hover:-translate-y-0.5",
-                      isLoss
-                        ? "bg-red-500/10 text-red-700 ring-1 ring-red-500/20"
-                        : "bg-[var(--color-card)] text-[var(--color-text)]",
-                    )}
-                  >
-                    <span className="block text-sm font-black">Stock removed</span>
-                    <span className="mt-2 block text-xs font-semibold leading-5 text-current/75">
-                      Use for damage, theft, loss, expiry, or internal use.
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => selectType("CORRECTION")}
-                    className={cx(
-                      "rounded-[24px] p-4 text-left transition hover:-translate-y-0.5",
-                      isCorrection
-                        ? "bg-amber-500/10 text-amber-700 ring-1 ring-amber-500/20"
-                        : "bg-[var(--color-card)] text-[var(--color-text)]",
-                    )}
-                  >
-                    <span className="block text-sm font-black">Correct count</span>
-                    <span className="mt-2 block text-xs font-semibold leading-5 text-current/75">
-                      Use after physically counting the stock.
-                    </span>
-                  </button>
-                </div>
-              </section>
-
-              <section className={cx(pageCard(), "p-5")}>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {isCorrection ? (
-                    <label className="block">
-                      <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                        Correct count to
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={form.newStockQty}
-                        onChange={(event) => update("newStockQty", event.target.value)}
-                        className={inputClass()}
-                        placeholder="Enter the real count"
-                      />
-                    </label>
-                  ) : (
-                    <label className="block">
-                      <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                        Quantity
-                      </span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={form.quantity}
-                        onChange={(event) => update("quantity", event.target.value)}
-                        className={inputClass()}
-                        placeholder="How many?"
-                      />
-                    </label>
-                  )}
-
-                  {isLoss ? (
-                    <label className="block">
-                      <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                        Reason
-                      </span>
-                      <select
-                        value={form.lossReason}
-                        onChange={(event) => update("lossReason", event.target.value)}
-                        className={inputClass()}
-                      >
-                        {LOSS_REASONS.map((reason) => (
-                          <option key={reason.value} value={reason.value}>
-                            {reason.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : null}
-
-                  <label className="block sm:col-span-2">
-                    <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                      Note
-                    </span>
-                    <textarea
-                      value={form.note}
-                      onChange={(event) => update("note", event.target.value)}
-                      className="min-h-[110px] w-full rounded-[20px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(74,163,255,0.12)]"
-                      placeholder={
-                        isLoss
-                          ? "Example: damaged during delivery check"
-                          : isRestock
-                            ? "Example: received supplier delivery"
-                            : "Example: corrected after physical count"
-                      }
-                    />
-                  </label>
-                </div>
-              </section>
-            </div>
-
-            <aside className="space-y-5">
-              <section className={cx(pageCard(), "p-5")}>
-                <h3 className="text-base font-black text-[var(--color-text)]">
-                  Before saving
-                </h3>
-
-                <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                  Check the result so the owner can trust the numbers.
-                </p>
-
-                <div className="mt-5 grid gap-3">
-                  <InfoTile
-                    label="Before"
-                    value={formatNumber(preview?.before ?? productStock(product))}
-                  />
-                  <InfoTile
-                    label="Change"
-                    value={
-                      preview
-                        ? preview.change > 0
-                          ? `+${formatNumber(preview.change)}`
-                          : formatNumber(preview.change)
-                        : "—"
-                    }
-                    tone={
-                      !preview
-                        ? "neutral"
-                        : preview.change > 0
-                          ? "success"
-                          : preview.change < 0
-                            ? "danger"
-                            : "warning"
-                    }
-                  />
-                  <InfoTile
-                    label="After"
-                    value={preview ? formatNumber(preview.after) : "—"}
-                    tone={!preview ? "neutral" : preview.after <= 0 ? "danger" : "success"}
-                  />
-                </div>
-              </section>
-
-              <section className={cx(pageCard(), "p-5")}>
-                <div className="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    disabled={saving}
-                    className={secondaryButton()}
-                  >
-                    Cancel
-                  </button>
-
-                  <AsyncButton
-                    loading={saving}
-                    onClick={onSubmit}
-                    disabled={!preview}
-                    className={saveClass}
-                  >
-                    {saveLabel}
-                  </AsyncButton>
-                </div>
-              </section>
-            </aside>
-          </div>
-        </div>
-      </div>
+    <div className="svx-detail-empty">
+      <p>{title}</p>
+      <span>{text}</span>
     </div>
   );
 }
 
 export default function InventoryDetail() {
-  const navigate = useNavigate();
   const { id } = useParams();
+  const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true);
-  const [changesLoading, setChangesLoading] = useState(true);
-  const [error, setError] = useState("");
   const [product, setProduct] = useState(null);
-  const [changes, setChanges] = useState([]);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [activeBranchLabel, setActiveBranchLabel] = useState(() => activeBranchNameFromStorage());
+  const [stockRows, setStockRows] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMovements, setLoadingMovements] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const [stockModalOpen, setStockModalOpen] = useState(false);
-  const [stockSaving, setStockSaving] = useState(false);
-  const [stockForm, setStockForm] = useState(DEFAULT_STOCK_FORM);
+  const loadProduct = useCallback(
+    async ({ quiet = false } = {}) => {
+      if (!id) return;
 
-  const health = useMemo(() => stockHealth(product), [product]);
+      if (!quiet) setLoading(true);
 
-  const profitPerItem = useMemo(() => {
-    const sellPrice = Number(product?.sellPrice || 0);
-    const costPrice = Number(product?.costPrice || 0);
-    return sellPrice - costPrice;
-  }, [product]);
+      try {
+        const response = await getProductById(id);
+        const nextProduct = response?.product || response?.data?.product || response?.data || response;
 
-  const preview = useMemo(() => {
-    if (!product) return null;
+        setProduct(nextProduct || null);
+      } catch (error) {
+        console.error("Product detail load failed:", error);
+        toast.error(error?.message || "Failed to load product");
+      } finally {
+        if (!quiet) setLoading(false);
+      }
+    },
+    [id],
+  );
 
-    const before = productStock(product);
+  const loadMovements = useCallback(async () => {
+    if (!id) return;
 
-    if (stockForm.type === "CORRECTION") {
-      const after = Number(stockForm.newStockQty);
-
-      if (!Number.isFinite(after) || after < 0) return null;
-
-      const cleanAfter = Math.floor(after);
-
-      return {
-        before,
-        after: cleanAfter,
-        change: cleanAfter - before,
-      };
-    }
-
-    const quantity = Number(stockForm.quantity);
-
-    if (!Number.isFinite(quantity) || quantity <= 0) return null;
-
-    const cleanQuantity = Math.floor(quantity);
-
-    if (stockForm.type === "RESTOCK") {
-      return {
-        before,
-        after: before + cleanQuantity,
-        change: cleanQuantity,
-      };
-    }
-
-    if (stockForm.type === "LOSS") {
-      const after = before - cleanQuantity;
-
-      if (after < 0) return null;
-
-      return {
-        before,
-        after,
-        change: -cleanQuantity,
-      };
-    }
-
-    return null;
-  }, [product, stockForm]);
-
-  const loadProduct = useCallback(async () => {
-    setLoading(true);
-    setError("");
+    setLoadingMovements(true);
 
     try {
-      const loadedProduct = await getProductById(String(id || ""));
-      setProduct(loadedProduct || null);
-      setActiveBranchLabel(activeBranchNameFromStorage());
-    } catch (err) {
-      if (!handleSubscriptionBlockedError(err, { toastId: "inventory-detail-load-blocked" })) {
-        setError(err?.message || "Failed to load product");
-      }
+      const response = await getProductStockAdjustments(id, { limit: PAGE_SIZE });
+      const rows =
+        response?.adjustments ||
+        response?.stockAdjustments ||
+        response?.items ||
+        response?.data?.adjustments ||
+        response?.data ||
+        [];
+
+      setStockRows(Array.isArray(rows) ? rows.slice(0, PAGE_SIZE) : []);
+    } catch (error) {
+      console.error("Product stock movement load failed:", error);
+      setStockRows([]);
     } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  const loadChanges = useCallback(async () => {
-    setChangesLoading(true);
-
-    try {
-      const data = await getProductStockAdjustments(String(id || ""), {
-        limit: 200,
-      });
-
-      setChanges(Array.isArray(data?.adjustments) ? data.adjustments : []);
-    } catch (err) {
-      if (!handleSubscriptionBlockedError(err, { toastId: "inventory-detail-changes-blocked" })) {
-        setChanges([]);
-      }
-    } finally {
-      setChangesLoading(false);
+      setLoadingMovements(false);
     }
   }, [id]);
 
   useEffect(() => {
     loadProduct();
-    loadChanges();
-  }, [loadProduct, loadChanges]);
+    loadMovements();
+  }, [loadProduct, loadMovements]);
 
-  useEffect(() => {
-    function onBranchChanged() {
-      setActiveBranchLabel(activeBranchNameFromStorage());
-      setVisibleCount(PAGE_SIZE);
-      loadProduct();
-      loadChanges();
-    }
-
-    window.addEventListener("storvex:branch-changed", onBranchChanged);
-    window.addEventListener("storvex:workspace-refreshed", onBranchChanged);
-
-    return () => {
-      window.removeEventListener("storvex:branch-changed", onBranchChanged);
-      window.removeEventListener("storvex:workspace-refreshed", onBranchChanged);
-    };
-  }, [loadProduct, loadChanges]);
-
-  function openStockModal() {
-    setStockForm({
-      type: "RESTOCK",
-      quantity: 1,
-      newStockQty: productStock(product),
-      lossReason: "DAMAGED",
-      note: "",
-    });
-    setStockModalOpen(true);
-  }
-
-  async function submitStockChange() {
-    if (!product) return;
-
-    if (!preview) {
-      toast.error("Please enter a valid stock number");
-      return;
-    }
-
-    if (stockForm.type === "LOSS" && !stockForm.lossReason) {
-      toast.error("Choose why stock was removed");
-      return;
-    }
-
-    if (
-      stockForm.type === "LOSS" &&
-      (stockForm.lossReason === "STOLEN" || stockForm.lossReason === "OTHER") &&
-      !cleanString(stockForm.note)
-    ) {
-      toast.error("Add a note for this stock removal");
-      return;
-    }
-
-    setStockSaving(true);
+  async function handleRefresh() {
+    setRefreshing(true);
 
     try {
-      const payload =
-        stockForm.type === "CORRECTION"
-          ? {
-              type: "CORRECTION",
-              newStockQty: preview.after,
-              note: cleanString(stockForm.note),
-            }
-          : {
-              type: stockForm.type,
-              quantity: Math.abs(preview.change),
-              lossReason: stockForm.type === "LOSS" ? stockForm.lossReason : undefined,
-              note: cleanString(stockForm.note),
-            };
-
-      await adjustStock(product.id, payload);
-
-      toast.success("Stock updated");
-      setStockModalOpen(false);
-
-      await Promise.all([loadProduct(), loadChanges()]);
-    } catch (err) {
-      if (handleSubscriptionBlockedError(err, { toastId: "inventory-detail-stock-blocked" })) {
-        return;
-      }
-
-      toast.error(err?.message || "Failed to update stock");
+      await Promise.all([loadProduct({ quiet: true }), loadMovements()]);
+      toast.success("Product refreshed");
     } finally {
-      setStockSaving(false);
+      setRefreshing(false);
     }
   }
 
-  if (loading) {
-    return <FormPageSkeleton />;
+  const status = productStatus(product);
+  const marketplace = marketplaceStatus(product);
+  const attributes = useMemo(() => normalizedCategoryAttributes(product), [product]);
+  const images = productImages(product);
+
+  const qty = productStock(product);
+  const reserved = productReserved(product);
+  const costPrice = Number(product?.costPrice || 0);
+  const sellPrice = Number(product?.sellPrice || product?.price || 0);
+  const minStockLevel = Number(product?.minStockLevel || 0);
+  const stockSellValue = qty * sellPrice;
+  const stockCostValue = qty * costPrice;
+  const profitPerItem = sellPrice - costPrice;
+  const possibleProfit = qty * profitPerItem;
+  const category = categoryText(product);
+
+  if (loading && !product) {
+    return <FormPageSkeleton title="Loading product" />;
   }
 
-  if (error) {
+  if (!product) {
     return (
-      <ErrorState
-        message={error}
-        onRetry={() => {
-          loadProduct();
-          loadChanges();
-        }}
-        onBack={() => navigate("/app/inventory")}
-      />
+      <main className="svx-detail-page">
+        <div className="svx-detail-shell">
+          <button type="button" className="svx-detail-back" onClick={() => navigate("/app/inventory")}>
+            <ArrowLeft size={18} strokeWidth={2.4} />
+            <span>Inventory</span>
+          </button>
+
+          <section className="svx-detail-card">
+            <EmptyState title="Product not found" text="The product may have been removed or you may not have access to it." />
+          </section>
+        </div>
+      </main>
     );
   }
 
-  const visibleChanges = changes.slice(0, visibleCount);
-  const hasMore = visibleCount < changes.length;
-
   return (
-    <div className="space-y-5">
-      <StockChangeModal
-        open={stockModalOpen}
-        product={product}
-        form={stockForm}
-        setForm={setStockForm}
-        saving={stockSaving}
-        preview={preview}
-        onClose={() => {
-          if (!stockSaving) setStockModalOpen(false);
-        }}
-        onSubmit={submitStockChange}
-      />
-
-      <section className={cx(pageCard(), "relative overflow-hidden p-5 sm:p-6")}>
-        <div className="pointer-events-none absolute -right-24 -top-24 h-[260px] w-[260px] rounded-full bg-[rgba(74,163,255,0.10)] blur-3xl" />
-
-        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-              Stock control
-            </p>
-
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-black tracking-[-0.04em] text-[var(--color-text)] sm:text-3xl">
-                {product?.name || "Product"}
-              </h1>
-
-              <StatusPill tone={health.tone}>{health.label}</StatusPill>
-            </div>
-
-            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-              View this product in{" "}
-              <span className="font-black text-[var(--color-text)]">{activeBranchLabel}</span>.
-              See stock, price, product details, and recent changes in one place.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row xl:justify-end">
-            <button
-              type="button"
-              onClick={() => navigate("/app/inventory")}
-              className={secondaryButton()}
-            >
-              <BackIcon />
-              Back
+    <main className="svx-detail-page">
+      <div className="svx-detail-shell">
+        <header className="svx-detail-hero">
+          <div className="svx-detail-hero-copy">
+            <button type="button" className="svx-detail-back" onClick={() => navigate("/app/inventory")}>
+              <ArrowLeft size={18} strokeWidth={2.4} />
+              <span>Inventory</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => navigate(`/app/inventory/${product?.id}/edit`)}
-              className={secondaryButton()}
-            >
-              <EditIcon />
-              Edit
-            </button>
-
-            <button
-              type="button"
-              onClick={openStockModal}
-              className={primaryButton()}
-            >
-              <StockIcon />
-              Change stock
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <InfoTile
-          label="Available here"
-          value={formatNumber(productStock(product))}
-          note={health.text}
-          tone={health.tone}
-        />
-
-        <InfoTile
-          label="Total stock"
-          value={formatNumber(productTotalStock(product))}
-          note="Across the business"
-        />
-
-        <InfoTile
-          label="Sell price"
-          value={formatRwf(product?.sellPrice)}
-          note="Current selling price"
-          tone="success"
-        />
-
-        <InfoTile
-          label="Profit per item"
-          value={formatRwf(profitPerItem)}
-          note="Sell price minus cost price"
-          tone={profitPerItem > 0 ? "success" : profitPerItem < 0 ? "danger" : "neutral"}
-        />
-      </section>
-
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <section className={cx(pageCard(), "p-5 sm:p-6")}>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                Recent stock changes
-              </h2>
-              <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                The first 10 changes are shown first. Load more when you need the full history.
-              </p>
+            <div className="svx-detail-kicker-row">
+              <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+              <StatusBadge tone={marketplace.tone}>{marketplace.label}</StatusBadge>
             </div>
 
-            {changesLoading ? (
-              <span className="text-sm font-bold text-[var(--color-text-muted)]">
-                Loading...
-              </span>
-            ) : null}
+            <h1>{product?.name || "Product"}</h1>
+
+            <div className="svx-detail-hero-meta">
+              <span>{product?.brand || "No brand"}</span>
+              <span>{category}</span>
+              <span>{branchLabel(product)}</span>
+            </div>
+
+            <p>{status.text}</p>
           </div>
 
-          {changesLoading ? (
-            <div className="mt-5 grid gap-3">
-              {[1, 2, 3, 4].map((item) => (
-                <SkeletonBlock key={item} className="h-28 w-full" />
-              ))}
-            </div>
-          ) : changes.length === 0 ? (
-            <div className="mt-5 flex min-h-[260px] flex-col items-center justify-center rounded-[30px] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-2)] p-8 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-[26px] bg-[var(--color-card)] text-[var(--color-primary)] shadow-[var(--shadow-soft)]">
-                <EmptyIcon />
-              </div>
+          <div className="svx-detail-hero-actions">
+            <AsyncButton
+              type="button"
+              loading={refreshing}
+              loadingText="Refreshing..."
+              className="svx-detail-secondary-button"
+              onClick={handleRefresh}
+            >
+              <RefreshCw size={16} strokeWidth={2.35} />
+              <span>Refresh</span>
+            </AsyncButton>
 
-              <h3 className="mt-4 text-lg font-black text-[var(--color-text)]">
-                No stock changes yet
-              </h3>
+            <Link to={`/app/inventory/${product.id}/edit`} className="svx-detail-primary-button">
+              <Edit3 size={16} strokeWidth={2.35} />
+              <span>Edit product</span>
+            </Link>
+          </div>
+        </header>
 
-              <p className="mt-1 max-w-md text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                When stock is added, removed, or corrected, it will appear here.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="mt-5 grid gap-3">
-                {visibleChanges.map((row) => (
-                  <ChangeCard key={row.id} row={row} />
-                ))}
-              </div>
-
-              <div className="mt-6 flex flex-col items-center justify-between gap-3 rounded-[26px] bg-[var(--color-surface-2)] px-4 py-4 sm:flex-row">
-                <p className="text-center text-sm font-bold text-[var(--color-text-muted)] sm:text-left">
-                  Showing {formatNumber(visibleChanges.length)} of {formatNumber(changes.length)} change
-                  {changes.length === 1 ? "" : "s"}.
-                </p>
-
-                {hasMore ? (
-                  <button
-                    type="button"
-                    onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
-                    className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-[var(--color-card)] px-5 text-sm font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 sm:w-auto"
-                  >
-                    Load 10 more
-                  </button>
-                ) : (
-                  <span className="rounded-full bg-[var(--color-card)] px-3 py-2 text-xs font-black text-[var(--color-text-muted)] shadow-[var(--shadow-soft)]">
-                    End of list
-                  </span>
-                )}
-              </div>
-            </>
-          )}
+        <section className="svx-detail-summary-grid" aria-label="Product summary">
+          <SummaryCard
+            icon={Warehouse}
+            label="Current stock"
+            value={formatNumber(qty)}
+            note={reserved > 0 ? `${formatNumber(reserved)} reserved` : branchLabel(product)}
+            tone={status.tone}
+          />
+          <SummaryCard
+            icon={DollarSign}
+            label="Selling price"
+            value={formatRwf(sellPrice)}
+            note={`Profit per item ${formatRwf(profitPerItem)}`}
+            tone={profitPerItem >= 0 ? "success" : "danger"}
+          />
+          <SummaryCard
+            icon={Tags}
+            label="Stock value"
+            value={formatRwf(stockSellValue)}
+            note={`Cost value ${formatRwf(stockCostValue)}`}
+            tone="success"
+          />
+          <SummaryCard
+            icon={ShoppingCart}
+            label="Marketplace"
+            value={marketplace.label}
+            note={images.length ? `${images.length} image${images.length === 1 ? "" : "s"} ready` : "No images yet"}
+            tone={marketplace.tone}
+          />
         </section>
 
-        <aside className="space-y-5 xl:sticky xl:top-[96px] xl:self-start">
-          <section className={cx(pageCard(), "p-5")}>
-            <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-              Product details
-            </h2>
+        <div className="svx-detail-layout">
+          <div className="svx-detail-main">
+            <DetailSection
+              icon={PackageCheck}
+              title="Product overview"
+              text="Clear product information for sales, stock control, and marketplace preparation."
+              action={<StatusBadge tone={status.tone}>{status.label}</StatusBadge>}
+            >
+              <div className="svx-detail-overview-grid">
+                <Gallery product={product} />
 
-            <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-              Details your staff can use when searching, selling, or checking this item.
-            </p>
+                <div className="svx-detail-info-grid">
+                  <InfoRow label="Product name" value={product?.name} />
+                  <InfoRow label="Brand" value={product?.brand || "Not set"} />
+                  <InfoRow label="Category" value={category} />
+                  <InfoRow label="Type" value={product?.subcategory || product?.subcategoryOther || "Not set"} />
+                  <InfoRow label="SKU" value={product?.sku || "Not set"} />
+                  <InfoRow label="Barcode" value={product?.barcode || "Not set"} />
+                  <InfoRow label="Serial / IMEI" value={product?.serial || "Not tracked"} />
+                  <InfoRow label="Status" value={product?.isActive === false ? "Inactive" : "Active"} tone={product?.isActive === false ? "danger" : "success"} />
+                </div>
+              </div>
+            </DetailSection>
 
-            <div className="mt-5 grid gap-3">
-              <DetailRow label="Brand" value={product?.brand} />
-              <DetailRow label="Category" value={product?.category} />
-              <DetailRow label="Accessory type" value={product?.subcategoryOther || product?.subcategory} />
-              <DetailRow label="Product code" value={product?.sku} />
-              <DetailRow label="Serial / IMEI" value={product?.serial} />
-              <DetailRow label="Barcode" value={product?.barcode} />
-              <DetailRow label="Low stock alert" value={formatNumber(product?.minStockLevel)} />
-            </div>
-          </section>
+            <DetailSection
+              icon={Layers3}
+              title="Category details"
+              text="Category-aware product details saved for this product."
+            >
+              {attributes.length ? (
+                <div className="svx-detail-attribute-grid">
+                  {attributes.map((item) => (
+                    <InfoRow key={item.key} label={item.label} value={item.value} />
+                  ))}
+                </div>
+              ) : (
+                <EmptyState title="No category details yet" text="Edit the product to add processor, memory, condition, unit, size, or other category-specific details." />
+              )}
+            </DetailSection>
 
-          <section className={cx(pageCard(), "p-5")}>
-            <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-              Money view
-            </h2>
+            <DetailSection
+              icon={ClipboardList}
+              title="Recent stock movement"
+              text="Latest restocks, losses, and corrections for this product."
+              action={<Link to={`/app/inventory/${product.id}/stock-adjustments`} className="svx-detail-text-link">View history</Link>}
+            >
+              {loadingMovements ? (
+                <div className="svx-detail-movement-loading">
+                  {[1, 2, 3].map((item) => (
+                    <span key={item} />
+                  ))}
+                </div>
+              ) : stockRows.length ? (
+                <div className="svx-detail-movement-list">
+                  {stockRows.map((row, index) => {
+                    const tone = stockChangeTone(row?.type, row?.delta);
 
-            <div className="mt-5 grid gap-3">
-              <DetailRow label="Cost price" value={formatRwf(product?.costPrice)} />
-              <DetailRow label="Sell price" value={formatRwf(product?.sellPrice)} />
-              <DetailRow
-                label="Stock cost here"
-                value={formatRwf(productStock(product) * Number(product?.costPrice || 0))}
-              />
-              <DetailRow
-                label="Possible sales value here"
-                value={formatRwf(productStock(product) * Number(product?.sellPrice || 0))}
-              />
-            </div>
-          </section>
-        </aside>
+                    return (
+                      <div key={row?.id || index} className="svx-detail-movement-row">
+                        <div>
+                          <strong>{stockChangeLabel(row?.type)}</strong>
+                          <span>{formatDateTime(row?.createdAt || row?.date)}</span>
+                        </div>
+
+                        <div>
+                          <StatusBadge tone={tone}>{stockChangeValue(row)}</StatusBadge>
+                          {row?.note ? <small>{row.note}</small> : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <EmptyState title="No stock movement yet" text="Restocks, losses, and count corrections will appear here." />
+              )}
+            </DetailSection>
+          </div>
+
+          <aside className="svx-detail-side">
+            <DetailSection
+              icon={Boxes}
+              title="Stock control"
+              text="Stock quantity can only be changed through stock movement."
+            >
+              <div className="svx-detail-side-stack">
+                <InfoRow label="Current stock" value={formatNumber(qty)} tone={status.tone} />
+                <InfoRow label="Low stock alert" value={minStockLevel > 0 ? formatNumber(minStockLevel) : "Not set"} />
+                <InfoRow label="Reserved" value={formatNumber(reserved)} />
+                <InfoRow label="Branch" value={branchLabel(product)} />
+              </div>
+            </DetailSection>
+
+            <DetailSection
+              icon={DollarSign}
+              title="Price and value"
+              text="Owner-facing money summary for this product."
+            >
+              <div className="svx-detail-side-stack">
+                <InfoRow label="Cost price" value={formatRwf(costPrice)} />
+                <InfoRow label="Selling price" value={formatRwf(sellPrice)} />
+                <InfoRow label="Profit per item" value={formatRwf(profitPerItem)} tone={profitPerItem >= 0 ? "success" : "danger"} />
+                <InfoRow label="Possible profit" value={formatRwf(possibleProfit)} tone={possibleProfit >= 0 ? "success" : "danger"} />
+              </div>
+            </DetailSection>
+
+            <DetailSection
+              icon={ImagePlus}
+              title="Marketplace readiness"
+              text="Images are only required when publishing this product."
+            >
+              <div className="svx-detail-marketplace-box">
+                <div>
+                  <StatusBadge tone={marketplace.tone}>{marketplace.label}</StatusBadge>
+                  <p>{images.length ? `${images.length} image${images.length === 1 ? "" : "s"} available` : "No images attached yet"}</p>
+                </div>
+
+                <span>
+                  Products stay private until the owner reviews images, public details, and chooses to publish.
+                </span>
+              </div>
+            </DetailSection>
+
+            <section className="svx-detail-action-card">
+              <Link to={`/app/inventory/${product.id}/edit`} className="svx-detail-primary-button">
+                <Edit3 size={16} strokeWidth={2.35} />
+                <span>Edit product</span>
+              </Link>
+
+              <button
+                type="button"
+                className="svx-detail-secondary-button"
+                onClick={() => toast("Update stock drawer is next.")}
+              >
+                <Warehouse size={16} strokeWidth={2.35} />
+                <span>Update stock</span>
+              </button>
+
+              <Link to="/app/inventory" className="svx-detail-muted-link">
+                Back to products
+                <ChevronRight size={15} strokeWidth={2.4} />
+              </Link>
+            </section>
+          </aside>
+        </div>
+
+        <section className="svx-detail-sr-only" aria-label="Product facts">
+          <p>{product?.name}</p>
+          <p>{category}</p>
+          <p>{formatNumber(qty)}</p>
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
