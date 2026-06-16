@@ -1,0 +1,1151 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap");
+
+.svx-restock-page {
+  --restock-surface: #ffffff;
+  --restock-soft: #f8fbff;
+  --restock-text: #06122e;
+  --restock-muted: #5d6b85;
+  --restock-line: #dfe7f3;
+  --restock-line-soft: #edf2fa;
+  --restock-blue: #075cff;
+  --restock-blue-soft: #eef5ff;
+  --restock-green: #0cab66;
+  --restock-green-soft: #eafaf3;
+  --restock-orange: #f59e0b;
+  --restock-orange-soft: #fff4df;
+  --restock-red: #ef4444;
+  --restock-red-soft: #fff0f0;
+  --restock-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --restock-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --restock-shadow: 0 20px 60px rgba(15, 46, 92, 0.08);
+
+  width: 100%;
+  max-width: 100%;
+  color: var(--restock-text);
+  font-family: var(--restock-body-font);
+  overflow-x: hidden;
+}
+
+:root[data-theme="dark"] .svx-restock-page {
+  --restock-surface: #1f1f20;
+  --restock-soft: #1c1c1d;
+  --restock-text: #ffffff;
+  --restock-muted: rgba(255, 255, 255, 0.72);
+  --restock-line: rgba(255, 255, 255, 0.12);
+  --restock-line-soft: rgba(255, 255, 255, 0.08);
+  --restock-blue: #159cff;
+  --restock-blue-soft: rgba(21, 156, 255, 0.14);
+  --restock-green: #23c783;
+  --restock-green-soft: rgba(35, 199, 131, 0.13);
+  --restock-orange: #f7ad35;
+  --restock-orange-soft: rgba(247, 173, 53, 0.13);
+  --restock-red: #ff6262;
+  --restock-red-soft: rgba(255, 98, 98, 0.14);
+  --restock-shadow: none;
+}
+
+.svx-restock-page *,
+.svx-restock-page *::before,
+.svx-restock-page *::after {
+  box-sizing: border-box;
+}
+
+.svx-restock-page h1,
+.svx-restock-page h2,
+.svx-restock-page h3,
+.svx-restock-page p {
+  margin: 0;
+}
+
+.svx-restock-page button,
+.svx-restock-page input,
+.svx-restock-page select,
+.svx-restock-page textarea {
+  font-family: inherit;
+}
+
+.svx-restock-shell {
+  width: min(100%, 1360px);
+  margin: 0 auto;
+  padding: clamp(18px, 2.4vw, 36px);
+}
+
+.svx-restock-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+
+.svx-restock-back {
+  width: fit-content;
+  min-height: 42px;
+  border: 1px solid var(--restock-line);
+  border-radius: 999px;
+  background: var(--restock-surface);
+  color: var(--restock-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.svx-restock-kicker {
+  width: fit-content;
+  min-height: 28px;
+  border-radius: 999px;
+  background: var(--restock-blue-soft);
+  color: var(--restock-blue);
+  display: inline-flex;
+  align-items: center;
+  margin-top: 24px;
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.svx-restock-hero h1 {
+  margin-top: 12px;
+  color: var(--restock-text);
+  font-family: var(--restock-heading-font);
+  font-size: clamp(38px, 5vw, 64px);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.svx-restock-hero-text {
+  max-width: 720px;
+  margin-top: 14px;
+  color: var(--restock-muted);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.svx-restock-hero-text strong {
+  color: var(--restock-text);
+  font-weight: 900;
+}
+
+.svx-restock-hero-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.svx-restock-primary-button,
+.svx-restock-secondary-button,
+.svx-restock-primary-action,
+.svx-restock-secondary-action,
+.svx-restock-save-button,
+.svx-restock-cancel-button {
+  min-height: 48px;
+  border-radius: 16px;
+  border: 1px solid var(--restock-line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.svx-restock-primary-button,
+.svx-restock-primary-action,
+.svx-restock-save-button {
+  border-color: var(--restock-blue);
+  background: var(--restock-blue);
+  color: #ffffff;
+  box-shadow: 0 18px 38px rgba(21, 156, 255, 0.22);
+}
+
+.svx-restock-secondary-button,
+.svx-restock-secondary-action,
+.svx-restock-cancel-button {
+  background: var(--restock-surface);
+  color: var(--restock-text);
+}
+
+.svx-restock-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.svx-restock-metric,
+.svx-restock-board,
+.svx-restock-product,
+.svx-restock-empty,
+.svx-restock-next-step {
+  border: 1px solid var(--restock-line-soft);
+  background: var(--restock-surface);
+  box-shadow: var(--restock-shadow);
+}
+
+.svx-restock-metric {
+  min-width: 0;
+  min-height: 112px;
+  border-radius: 24px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.svx-restock-metric > span {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  background: var(--restock-blue-soft);
+  color: var(--restock-blue);
+  display: grid;
+  place-items: center;
+}
+
+.svx-restock-metric.is-danger > span {
+  background: var(--restock-red-soft);
+  color: var(--restock-red);
+}
+
+.svx-restock-metric.is-warning > span {
+  background: var(--restock-orange-soft);
+  color: var(--restock-orange);
+}
+
+.svx-restock-metric.is-success > span {
+  background: var(--restock-green-soft);
+  color: var(--restock-green);
+}
+
+.svx-restock-metric p {
+  color: var(--restock-muted);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.svx-restock-metric strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--restock-text);
+  font-family: var(--restock-heading-font);
+  font-size: clamp(20px, 1.6vw, 26px);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+}
+
+.svx-restock-metric small {
+  display: block;
+  margin-top: 4px;
+  color: var(--restock-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.18;
+}
+
+.svx-restock-board {
+  border-radius: 28px;
+  padding: 20px;
+}
+
+.svx-restock-board-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+  gap: 18px;
+  align-items: end;
+  margin-bottom: 16px;
+}
+
+.svx-restock-board-head h2 {
+  color: var(--restock-text);
+  font-family: var(--restock-heading-font);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.svx-restock-board-head p {
+  margin-top: 5px;
+  color: var(--restock-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.svx-restock-threshold span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--restock-muted);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.svx-restock-threshold input {
+  width: 100%;
+  height: 50px;
+  border: 1px solid var(--restock-line);
+  border-radius: 16px;
+  background: var(--restock-soft);
+  color: var(--restock-text);
+  outline: none;
+  padding: 0 15px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.svx-restock-threshold input:focus {
+  border-color: rgba(21, 156, 255, 0.72);
+  box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.12);
+}
+
+.svx-restock-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.svx-restock-tabs button {
+  min-height: 54px;
+  border: 1px solid var(--restock-line);
+  border-radius: 18px;
+  background: var(--restock-soft);
+  color: var(--restock-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.svx-restock-tabs button span {
+  min-width: 34px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--restock-surface);
+  color: var(--restock-muted);
+  display: inline-grid;
+  place-items: center;
+  padding: 0 10px;
+}
+
+.svx-restock-tabs button.is-active {
+  border-color: var(--restock-blue);
+  background: var(--restock-blue);
+  color: #ffffff;
+}
+
+.svx-restock-tabs button.is-active span {
+  color: var(--restock-blue);
+}
+
+.svx-restock-tabs button.is-active.is-danger {
+  border-color: var(--restock-red);
+  background: var(--restock-red);
+}
+
+.svx-restock-tabs button.is-active.is-warning {
+  border-color: var(--restock-orange);
+  background: var(--restock-orange);
+}
+
+.svx-restock-search-note {
+  min-height: 46px;
+  border: 1px solid var(--restock-line);
+  border-radius: 16px;
+  background: var(--restock-soft);
+  color: var(--restock-muted);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.svx-restock-search-note svg {
+  color: var(--restock-blue);
+  flex: 0 0 auto;
+}
+
+.svx-restock-list {
+  display: grid;
+  gap: 12px;
+}
+
+.svx-restock-product {
+  position: relative;
+  border-radius: 22px;
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(360px, 1.4fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 16px;
+}
+
+.svx-restock-product::before {
+  content: "";
+  position: absolute;
+  inset: 14px auto 14px 0;
+  width: 5px;
+  border-radius: 999px;
+  background: var(--restock-orange);
+}
+
+.svx-restock-product.is-danger::before {
+  background: var(--restock-red);
+}
+
+.svx-restock-product-main {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 0 0 0 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.svx-restock-product-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 15px;
+  background: var(--restock-blue-soft);
+  color: var(--restock-blue);
+  display: grid;
+  place-items: center;
+}
+
+.svx-restock-product-main strong {
+  display: block;
+  color: var(--restock-text);
+  font-family: var(--restock-heading-font);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+.svx-restock-product-main small {
+  display: block;
+  margin-top: 4px;
+  color: var(--restock-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.svx-restock-product-data {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.svx-restock-product-data div {
+  min-height: 62px;
+  border-radius: 16px;
+  background: var(--restock-soft);
+  display: grid;
+  align-content: center;
+  padding: 11px 12px;
+}
+
+.svx-restock-product-data span {
+  color: var(--restock-muted);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.12;
+}
+
+.svx-restock-product-data strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--restock-text);
+  font-family: var(--restock-heading-font);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  overflow-wrap: anywhere;
+}
+
+.svx-restock-product-data strong.is-danger {
+  color: var(--restock-red);
+}
+
+.svx-restock-product-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.svx-restock-badge {
+  width: fit-content;
+  min-height: 30px;
+  border-radius: 999px;
+  background: var(--restock-soft);
+  color: var(--restock-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 11px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.svx-restock-badge.is-danger {
+  background: var(--restock-red-soft);
+  color: var(--restock-red);
+}
+
+.svx-restock-badge.is-warning {
+  background: var(--restock-orange-soft);
+  color: var(--restock-orange);
+}
+
+.svx-restock-badge.is-success {
+  background: var(--restock-green-soft);
+  color: var(--restock-green);
+}
+
+.svx-restock-secondary-action,
+.svx-restock-primary-action {
+  min-height: 42px;
+  padding-inline: 14px;
+  border-radius: 14px;
+}
+
+.svx-restock-empty {
+  min-height: 250px;
+  border: 1px dashed var(--restock-line);
+  border-radius: 24px;
+  background: var(--restock-soft);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  padding: 30px;
+  text-align: center;
+}
+
+.svx-restock-empty > span {
+  width: 60px;
+  height: 60px;
+  border-radius: 20px;
+  background: var(--restock-blue-soft);
+  color: var(--restock-blue);
+  display: grid;
+  place-items: center;
+}
+
+.svx-restock-empty h3 {
+  margin-top: 14px;
+  color: var(--restock-text);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.svx-restock-empty p {
+  max-width: 430px;
+  margin-top: 6px;
+  color: var(--restock-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.svx-restock-footer {
+  min-height: 62px;
+  border-radius: 20px;
+  background: var(--restock-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  color: var(--restock-muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.svx-restock-footer button {
+  min-height: 42px;
+  border: 1px solid var(--restock-line);
+  border-radius: 14px;
+  background: var(--restock-surface);
+  color: var(--restock-text);
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.svx-restock-footer strong {
+  color: var(--restock-text);
+}
+
+.svx-restock-next-step {
+  min-height: 58px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  color: var(--restock-muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.svx-restock-next-step > span {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: var(--restock-blue-soft);
+  color: var(--restock-blue);
+  display: grid;
+  place-items: center;
+}
+
+.svx-restock-next-step a {
+  color: var(--restock-blue);
+  text-decoration: none;
+}
+
+/* Update stock drawer */
+.svx-restock-stock-layer {
+  --drawer-surface: #ffffff;
+  --drawer-soft: #f8fbff;
+  --drawer-text: #06122e;
+  --drawer-muted: #5d6b85;
+  --drawer-line: #dfe7f3;
+  --drawer-blue: #075cff;
+  --drawer-blue-soft: #eef5ff;
+  --drawer-green: #0cab66;
+  --drawer-red: #ef4444;
+  --drawer-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --drawer-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  position: fixed;
+  inset: 0;
+  z-index: 2147483600;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 20px;
+  color: var(--drawer-text);
+  font-family: var(--drawer-body-font);
+  pointer-events: none;
+}
+
+:root[data-theme="dark"] .svx-restock-stock-layer {
+  --drawer-surface: #1f1f20;
+  --drawer-soft: #1c1c1d;
+  --drawer-text: #ffffff;
+  --drawer-muted: rgba(255, 255, 255, 0.72);
+  --drawer-line: rgba(255, 255, 255, 0.12);
+  --drawer-blue: #159cff;
+  --drawer-blue-soft: rgba(21, 156, 255, 0.14);
+  --drawer-green: #23c783;
+  --drawer-red: #ff6262;
+}
+
+.svx-restock-stock-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(2, 8, 20, 0.62);
+  backdrop-filter: blur(12px) saturate(115%);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.svx-restock-stock-drawer {
+  position: relative;
+  z-index: 1;
+  width: min(430px, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px);
+  border: 1px solid var(--drawer-line);
+  border-radius: 28px;
+  background: var(--drawer-surface);
+  color: var(--drawer-text);
+  box-shadow: 0 34px 110px rgba(0, 0, 0, 0.44);
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+.svx-restock-stock-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.svx-restock-stock-head span {
+  width: fit-content;
+  min-height: 26px;
+  border-radius: 999px;
+  background: var(--drawer-blue-soft);
+  color: var(--drawer-blue);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.svx-restock-stock-head h2 {
+  margin-top: 9px;
+  color: var(--drawer-text);
+  font-family: var(--drawer-heading-font);
+  font-size: clamp(28px, 3vw, 34px);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.svx-restock-stock-head p {
+  margin-top: 6px;
+  color: var(--drawer-muted);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.svx-restock-stock-close {
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--drawer-line);
+  border-radius: 15px;
+  background: var(--drawer-soft);
+  color: var(--drawer-text);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.svx-restock-stock-current {
+  border: 1px solid var(--drawer-line);
+  border-radius: 22px;
+  background: var(--drawer-soft);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.svx-restock-stock-current span,
+.svx-restock-stock-impact span,
+.svx-restock-stock-form label > span {
+  display: block;
+  color: var(--drawer-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.svx-restock-stock-current strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--drawer-text);
+  font-family: var(--drawer-heading-font);
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.svx-restock-stock-arrow {
+  color: var(--drawer-muted);
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.svx-restock-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.svx-restock-mode {
+  min-height: 72px;
+  border: 1px solid var(--drawer-line);
+  border-radius: 18px;
+  background: var(--drawer-soft);
+  color: var(--drawer-text);
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.svx-restock-mode.is-active {
+  border-color: var(--drawer-blue);
+  background: var(--drawer-blue);
+  color: #ffffff;
+}
+
+.svx-restock-mode strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.svx-restock-mode span {
+  display: block;
+  margin-top: 5px;
+  color: currentColor;
+  opacity: 0.78;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.18;
+}
+
+.svx-restock-stock-note {
+  border: 1px solid var(--drawer-line);
+  border-radius: 18px;
+  background: var(--drawer-soft);
+  color: var(--drawer-muted);
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px 13px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.svx-restock-stock-note svg {
+  color: var(--drawer-blue);
+}
+
+.svx-restock-stock-form {
+  display: grid;
+  gap: 12px;
+}
+
+.svx-restock-stock-form label {
+  display: block;
+}
+
+.svx-restock-stock-form label > span {
+  margin-bottom: 7px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.svx-restock-stock-form input,
+.svx-restock-stock-form select,
+.svx-restock-stock-form textarea {
+  width: 100%;
+  border: 1px solid var(--drawer-line);
+  border-radius: 16px;
+  background: var(--drawer-soft);
+  color: var(--drawer-text);
+  outline: none;
+  padding: 0 15px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.svx-restock-stock-form input,
+.svx-restock-stock-form select {
+  height: 50px;
+}
+
+.svx-restock-stock-form textarea {
+  min-height: 96px;
+  resize: vertical;
+  padding-top: 13px;
+  line-height: 1.38;
+}
+
+.svx-restock-stock-form input:focus,
+.svx-restock-stock-form select:focus,
+.svx-restock-stock-form textarea:focus {
+  border-color: rgba(21, 156, 255, 0.72);
+  box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.12);
+}
+
+.svx-restock-stock-impact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.svx-restock-stock-impact div {
+  min-height: 66px;
+  border-radius: 18px;
+  background: var(--drawer-soft);
+  display: grid;
+  align-content: center;
+  padding: 12px 13px;
+}
+
+.svx-restock-stock-impact strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--drawer-text);
+  font-family: var(--drawer-heading-font);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.svx-restock-stock-impact strong.is-success {
+  color: var(--drawer-green);
+}
+
+.svx-restock-stock-impact strong.is-danger {
+  color: var(--drawer-red);
+}
+
+.svx-restock-stock-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--drawer-line);
+}
+
+.svx-restock-stock-actions .svx-restock-save-button,
+.svx-restock-stock-actions .svx-restock-cancel-button {
+  width: 100%;
+  min-height: 50px;
+}
+
+.svx-restock-skeleton {
+  border-radius: 28px;
+  background: var(--restock-soft);
+  animation: svx-restock-pulse 1.2s ease-in-out infinite alternate;
+}
+
+.svx-restock-skeleton.is-hero {
+  height: 210px;
+}
+
+.svx-restock-skeleton.is-list {
+  height: 420px;
+}
+
+.svx-restock-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.svx-restock-skeleton-grid span {
+  height: 112px;
+  border-radius: 24px;
+  background: var(--restock-soft);
+  animation: svx-restock-pulse 1.2s ease-in-out infinite alternate;
+}
+
+@keyframes svx-restock-pulse {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+@media (max-width: 1280px) {
+  .svx-restock-product {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-restock-product-data {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .svx-restock-product-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 920px) {
+  .svx-restock-shell {
+    padding: 18px;
+  }
+
+  .svx-restock-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-restock-hero-actions {
+    justify-content: flex-start;
+  }
+
+  .svx-restock-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-restock-board-head {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-restock-product-data {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-restock-product-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .svx-restock-product-actions .svx-restock-badge,
+  .svx-restock-product-actions button {
+    width: 100%;
+  }
+
+  .svx-restock-stock-layer {
+    align-items: stretch;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .svx-restock-stock-drawer {
+    width: 100%;
+    max-width: 100%;
+    height: 100dvh;
+    max-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding: max(22px, calc(env(safe-area-inset-top) + 18px)) 22px max(34px, calc(env(safe-area-inset-bottom) + 28px));
+  }
+
+  .svx-restock-mode-grid,
+  .svx-restock-stock-impact {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .svx-restock-shell {
+    padding: 14px;
+  }
+
+  .svx-restock-hero h1 {
+    font-size: 40px;
+  }
+
+  .svx-restock-hero-actions,
+  .svx-restock-tabs,
+  .svx-restock-product-data {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-restock-hero-actions {
+    flex-direction: column;
+  }
+
+  .svx-restock-primary-button,
+  .svx-restock-secondary-button {
+    width: 100%;
+  }
+
+  .svx-restock-board {
+    border-radius: 24px;
+    padding: 14px;
+  }
+
+  .svx-restock-product {
+    border-radius: 20px;
+    padding: 14px;
+  }
+
+  .svx-restock-product-main {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .svx-restock-product-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .svx-restock-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .svx-restock-footer button {
+    width: 100%;
+  }
+
+  .svx-restock-stock-drawer {
+    padding-inline: 18px;
+  }
+}
+
+@media (max-width: 380px) {
+  .svx-restock-stock-current {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-restock-stock-arrow {
+    transform: rotate(90deg);
+  }
+}
+
+
+/* Final empty-state polish: no download/CTA noise when restock list is empty. */
+.svx-restock-empty {
+  min-height: 190px !important;
+  padding: 24px !important;
+}
+
+.svx-restock-empty > span {
+  width: 52px !important;
+  height: 52px !important;
+  border-radius: 18px !important;
+}
+
+.svx-restock-empty h3 {
+  margin-top: 12px !important;
+}
+
+.svx-restock-empty p {
+  margin-top: 5px !important;
+}
+
+@media (max-width: 560px) {
+  .svx-restock-empty {
+    min-height: 170px !important;
+    padding: 20px 16px !important;
+  }
+}
