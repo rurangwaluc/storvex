@@ -2301,3 +2301,1259 @@
   background: var(--inventory-blue-soft) !important;
   border-color: rgba(21, 156, 255, 0.28) !important;
 }
+
+/* =========================================================
+   Final listing stock drawer parity + row click
+   Keeps existing inventory listing working; only improves the stock sheet.
+   ========================================================= */
+
+.svx-inventory-clickable-row {
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .svx-inventory-clickable-row:hover {
+    background: color-mix(in srgb, var(--inventory-blue-soft) 38%, transparent);
+  }
+}
+
+.svx-inventory-clickable-row .svx-inventory-row-actions,
+.svx-inventory-clickable-row button,
+.svx-inventory-clickable-row a,
+.svx-inventory-clickable-row input,
+.svx-inventory-clickable-row select {
+  cursor: auto;
+}
+
+.svx-inventory-clickable-row .svx-inventory-product-cell,
+.svx-inventory-clickable-row .svx-inventory-icon-button,
+.svx-inventory-clickable-row .svx-inventory-actions-menu button {
+  cursor: pointer;
+}
+
+/* Reset old popup styles if the old modal CSS still exists below/above this block. */
+.svx-inventory-stock-drawer-layer {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483600 !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-end !important;
+  padding: 20px 20px 20px 0 !important;
+  pointer-events: none !important;
+}
+
+.svx-inventory-stock-backdrop {
+  position: absolute !important;
+  inset: 0 !important;
+  border: 0 !important;
+  background: rgba(2, 8, 20, 0.58) !important;
+  backdrop-filter: blur(10px) !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.svx-inventory-stock-drawer {
+  position: relative !important;
+  z-index: 1 !important;
+  width: min(100%, 460px) !important;
+  height: auto !important;
+  max-height: calc(100dvh - 40px) !important;
+  min-height: 0 !important;
+  border: 1px solid var(--inventory-line) !important;
+  border-radius: 28px !important;
+  background: var(--inventory-surface) !important;
+  color: var(--inventory-text) !important;
+  box-shadow: -30px 0 80px rgba(0, 0, 0, 0.28) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 22px !important;
+  overflow-y: auto !important;
+  pointer-events: auto !important;
+}
+
+.svx-inventory-stock-head {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  margin-bottom: 18px !important;
+}
+
+.svx-inventory-stock-head > div {
+  min-width: 0 !important;
+}
+
+.svx-inventory-stock-head span {
+  width: fit-content !important;
+  min-height: 28px !important;
+  border-radius: 999px !important;
+  background: var(--inventory-blue-soft) !important;
+  color: var(--inventory-blue) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 0 10px !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+}
+
+.svx-inventory-stock-head h2 {
+  margin-top: 10px !important;
+  color: var(--inventory-text) !important;
+  font-family: var(--inventory-heading-font) !important;
+  font-size: 32px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.svx-inventory-stock-head p {
+  margin-top: 7px !important;
+  color: var(--inventory-muted) !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+}
+
+.svx-inventory-stock-close {
+  width: 42px !important;
+  height: 42px !important;
+  border: 1px solid var(--inventory-line) !important;
+  border-radius: 14px !important;
+  background: var(--inventory-soft) !important;
+  color: var(--inventory-text) !important;
+  display: grid !important;
+  place-items: center !important;
+  cursor: pointer !important;
+  flex: 0 0 auto !important;
+}
+
+.svx-inventory-stock-current {
+  border: 1px solid var(--inventory-line) !important;
+  border-radius: 24px !important;
+  background: var(--inventory-soft) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 16px !important;
+  margin-bottom: 14px !important;
+}
+
+.svx-inventory-stock-current div {
+  min-width: 0 !important;
+}
+
+.svx-inventory-stock-current span,
+.svx-inventory-stock-impact span {
+  display: block !important;
+  color: var(--inventory-muted) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  line-height: 1.15 !important;
+}
+
+.svx-inventory-stock-current strong {
+  display: block !important;
+  margin-top: 5px !important;
+  color: var(--inventory-text) !important;
+  font-family: var(--inventory-heading-font) !important;
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.svx-inventory-stock-arrow {
+  color: var(--inventory-muted) !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 24px !important;
+  font-weight: 900 !important;
+}
+
+.svx-inventory-stock-mode-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin-bottom: 12px !important;
+}
+
+.svx-inventory-stock-mode {
+  min-height: 76px !important;
+  border: 1px solid var(--inventory-line) !important;
+  border-radius: 18px !important;
+  background: var(--inventory-soft) !important;
+  color: var(--inventory-text) !important;
+  padding: 11px !important;
+  text-align: left !important;
+  cursor: pointer !important;
+}
+
+.svx-inventory-stock-mode.is-active {
+  border-color: var(--inventory-blue) !important;
+  background: var(--inventory-blue) !important;
+  color: #ffffff !important;
+}
+
+.svx-inventory-stock-mode strong {
+  display: block !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  line-height: 1.1 !important;
+}
+
+.svx-inventory-stock-mode span {
+  display: block !important;
+  margin-top: 5px !important;
+  color: currentColor !important;
+  opacity: 0.76 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+.svx-inventory-stock-note {
+  border: 1px solid var(--inventory-line) !important;
+  border-radius: 18px !important;
+  background: var(--inventory-soft) !important;
+  color: var(--inventory-muted) !important;
+  display: grid !important;
+  grid-template-columns: 20px minmax(0, 1fr) !important;
+  gap: 10px !important;
+  align-items: start !important;
+  padding: 13px 14px !important;
+  margin-bottom: 14px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1.45 !important;
+}
+
+.svx-inventory-stock-note svg {
+  width: 17px !important;
+  height: 17px !important;
+  color: var(--inventory-blue) !important;
+  margin-top: 1px !important;
+}
+
+.svx-inventory-stock-form-grid {
+  display: grid !important;
+  gap: 12px !important;
+}
+
+.svx-inventory-stock-form-grid .input-premium {
+  background: var(--inventory-soft) !important;
+}
+
+.svx-inventory-stock-textarea {
+  width: 100% !important;
+  min-height: 104px !important;
+  border: 1px solid var(--inventory-line) !important;
+  border-radius: 16px !important;
+  background: var(--inventory-soft) !important;
+  color: var(--inventory-text) !important;
+  outline: none !important;
+  resize: vertical !important;
+  padding: 13px 15px !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  line-height: 1.4 !important;
+}
+
+.svx-inventory-stock-textarea::placeholder {
+  color: var(--inventory-muted) !important;
+  opacity: 0.72 !important;
+}
+
+.svx-inventory-stock-textarea:focus {
+  border-color: rgba(21, 156, 255, 0.72) !important;
+  box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.12) !important;
+}
+
+.svx-inventory-stock-impact {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin-top: 14px !important;
+}
+
+.svx-inventory-stock-impact div {
+  min-height: 72px !important;
+  border-radius: 18px !important;
+  background: var(--inventory-soft) !important;
+  display: grid !important;
+  align-content: center !important;
+  padding: 13px 14px !important;
+}
+
+.svx-inventory-stock-impact strong {
+  display: block !important;
+  margin-top: 5px !important;
+  color: var(--inventory-text) !important;
+  font-family: var(--inventory-heading-font) !important;
+  font-size: 19px !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+  letter-spacing: -0.035em !important;
+}
+
+.svx-inventory-stock-impact strong.is-success {
+  color: var(--inventory-green) !important;
+}
+
+.svx-inventory-stock-impact strong.is-danger {
+  color: var(--inventory-red) !important;
+}
+
+.svx-inventory-stock-actions {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+  margin-top: 18px !important;
+  padding-top: 0 !important;
+}
+
+.svx-inventory-stock-actions .svx-inventory-button {
+  width: 100% !important;
+}
+
+.svx-inventory-stock-cancel {
+  min-height: 48px !important;
+  border: 1px solid var(--inventory-line) !important;
+  border-radius: 14px !important;
+  background: var(--inventory-soft) !important;
+  color: var(--inventory-text) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 18px !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+@media (max-width: 899px) {
+  .svx-inventory-stock-drawer-layer {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+
+  .svx-inventory-stock-drawer {
+    width: 100% !important;
+    height: auto !important;
+    max-height: calc(100dvh - 18px) !important;
+    border-right: 1px solid var(--inventory-line) !important;
+    border-bottom: 0 !important;
+    border-radius: 28px 28px 0 0 !important;
+    padding: 18px 16px max(18px, env(safe-area-inset-bottom)) !important;
+    box-shadow: 0 -28px 70px rgba(0, 0, 0, 0.32) !important;
+  }
+
+  .svx-inventory-stock-mode-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-inventory-stock-impact {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-inventory-stock-drawer {
+    padding-inline: 12px !important;
+  }
+
+  .svx-inventory-stock-current {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-inventory-stock-arrow {
+    transform: rotate(90deg) !important;
+  }
+}
+
+
+/* =========================================================
+   FINAL LOCK — Inventory listing Update Stock drawer
+   Reason: this drawer is rendered through createPortal(document.body),
+   so it cannot depend on CSS variables defined only inside
+   .svx-inventory-page. This block gives the portal its own theme
+   variables and matches the Product Details drawer visual language.
+   ========================================================= */
+
+.svx-inventory-stock-drawer-layer {
+  --drawer-surface: #ffffff;
+  --drawer-soft: #f8fbff;
+  --drawer-text: #06122e;
+  --drawer-muted: #5d6b85;
+  --drawer-line: #dfe7f3;
+  --drawer-blue: #075cff;
+  --drawer-blue-soft: #eef5ff;
+  --drawer-green: #0cab66;
+  --drawer-red: #ef4444;
+  --drawer-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --drawer-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483600 !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: flex-end !important;
+  padding: 20px !important;
+  color: var(--drawer-text) !important;
+  font-family: var(--drawer-body-font) !important;
+  pointer-events: none !important;
+}
+
+:root[data-theme="dark"] .svx-inventory-stock-drawer-layer {
+  --drawer-surface: #1f1f20;
+  --drawer-soft: #1c1c1d;
+  --drawer-text: #ffffff;
+  --drawer-muted: rgba(255, 255, 255, 0.72);
+  --drawer-line: rgba(255, 255, 255, 0.12);
+  --drawer-blue: #159cff;
+  --drawer-blue-soft: rgba(21, 156, 255, 0.14);
+  --drawer-green: #23c783;
+  --drawer-red: #ff6262;
+}
+
+.svx-inventory-stock-backdrop {
+  position: absolute !important;
+  inset: 0 !important;
+  border: 0 !important;
+  background: rgba(2, 8, 20, 0.62) !important;
+  backdrop-filter: blur(12px) saturate(115%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(115%) !important;
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+.svx-inventory-stock-drawer {
+  position: relative !important;
+  z-index: 1 !important;
+  width: min(430px, calc(100vw - 40px)) !important;
+  height: auto !important;
+  max-height: calc(100dvh - 40px) !important;
+  min-height: 0 !important;
+  border: 1px solid var(--drawer-line) !important;
+  border-radius: 28px !important;
+  background: var(--drawer-surface) !important;
+  color: var(--drawer-text) !important;
+  box-shadow: 0 34px 110px rgba(0, 0, 0, 0.44) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  padding: 18px !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  pointer-events: auto !important;
+}
+
+.svx-inventory-stock-drawer *,
+.svx-inventory-stock-drawer *::before,
+.svx-inventory-stock-drawer *::after {
+  box-sizing: border-box !important;
+}
+
+.svx-inventory-stock-drawer h2,
+.svx-inventory-stock-drawer p {
+  margin: 0 !important;
+}
+
+.svx-inventory-stock-drawer button,
+.svx-inventory-stock-drawer input,
+.svx-inventory-stock-drawer select,
+.svx-inventory-stock-drawer textarea {
+  font-family: var(--drawer-body-font) !important;
+}
+
+.svx-inventory-stock-drawer::-webkit-scrollbar {
+  width: 8px !important;
+}
+
+.svx-inventory-stock-drawer::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.36) !important;
+  border-radius: 999px !important;
+}
+
+.svx-inventory-stock-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 42px !important;
+  align-items: start !important;
+  gap: 14px !important;
+  margin: 0 0 14px !important;
+}
+
+.svx-inventory-stock-head > div {
+  min-width: 0 !important;
+}
+
+.svx-inventory-stock-head span {
+  width: fit-content !important;
+  min-height: 26px !important;
+  border-radius: 999px !important;
+  background: var(--drawer-blue-soft) !important;
+  color: var(--drawer-blue) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  padding: 0 10px !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.15em !important;
+  text-transform: uppercase !important;
+}
+
+.svx-inventory-stock-head h2 {
+  margin-top: 9px !important;
+  color: var(--drawer-text) !important;
+  font-family: var(--drawer-heading-font) !important;
+  font-size: clamp(28px, 3vw, 34px) !important;
+  font-weight: 800 !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.055em !important;
+}
+
+.svx-inventory-stock-head p {
+  margin-top: 6px !important;
+  color: var(--drawer-muted) !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  line-height: 1.25 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.svx-inventory-stock-close {
+  width: 42px !important;
+  height: 42px !important;
+  border: 1px solid var(--drawer-line) !important;
+  border-radius: 15px !important;
+  background: var(--drawer-soft) !important;
+  color: var(--drawer-text) !important;
+  display: grid !important;
+  place-items: center !important;
+  cursor: pointer !important;
+  flex: 0 0 auto !important;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease !important;
+}
+
+.svx-inventory-stock-close:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(21, 156, 255, 0.5) !important;
+  background: var(--drawer-blue-soft) !important;
+  color: var(--drawer-blue) !important;
+}
+
+.svx-inventory-stock-current {
+  border: 1px solid var(--drawer-line) !important;
+  border-radius: 22px !important;
+  background: var(--drawer-soft) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 14px !important;
+  margin: 0 0 12px !important;
+}
+
+.svx-inventory-stock-current div {
+  min-width: 0 !important;
+}
+
+.svx-inventory-stock-current span,
+.svx-inventory-stock-impact span,
+.svx-inventory-stock-form-grid .block > span {
+  display: block !important;
+  color: var(--drawer-muted) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  line-height: 1.1 !important;
+}
+
+.svx-inventory-stock-current strong {
+  display: block !important;
+  margin-top: 5px !important;
+  color: var(--drawer-text) !important;
+  font-family: var(--drawer-heading-font) !important;
+  font-size: 28px !important;
+  font-weight: 800 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.svx-inventory-stock-arrow {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  color: var(--drawer-muted) !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: 24px !important;
+  font-weight: 900 !important;
+}
+
+.svx-inventory-stock-mode-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  margin: 0 0 12px !important;
+}
+
+.svx-inventory-stock-mode {
+  min-height: 72px !important;
+  border: 1px solid var(--drawer-line) !important;
+  border-radius: 18px !important;
+  background: var(--drawer-soft) !important;
+  color: var(--drawer-text) !important;
+  padding: 10px !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease !important;
+}
+
+.svx-inventory-stock-mode:hover {
+  transform: translateY(-1px) !important;
+  border-color: rgba(21, 156, 255, 0.42) !important;
+}
+
+.svx-inventory-stock-mode.is-active {
+  border-color: var(--drawer-blue) !important;
+  background: var(--drawer-blue) !important;
+  color: #ffffff !important;
+}
+
+.svx-inventory-stock-mode strong {
+  display: block !important;
+  color: currentColor !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  line-height: 1.05 !important;
+}
+
+.svx-inventory-stock-mode span {
+  display: block !important;
+  margin-top: 5px !important;
+  color: currentColor !important;
+  opacity: 0.78 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1.18 !important;
+}
+
+.svx-inventory-stock-note {
+  border: 1px solid var(--drawer-line) !important;
+  border-radius: 18px !important;
+  background: var(--drawer-soft) !important;
+  color: var(--drawer-muted) !important;
+  display: grid !important;
+  grid-template-columns: 20px minmax(0, 1fr) !important;
+  gap: 10px !important;
+  align-items: start !important;
+  padding: 12px 13px !important;
+  margin: 0 0 12px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1.4 !important;
+}
+
+.svx-inventory-stock-note svg {
+  width: 17px !important;
+  height: 17px !important;
+  color: var(--drawer-blue) !important;
+  margin-top: 1px !important;
+}
+
+.svx-inventory-stock-form-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 12px !important;
+  margin: 0 !important;
+}
+
+.svx-inventory-stock-form-grid .block {
+  min-width: 0 !important;
+}
+
+.svx-inventory-stock-form-grid .block > span {
+  margin-bottom: 7px !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.svx-inventory-stock-form-grid .input-premium {
+  width: 100% !important;
+  height: 50px !important;
+  min-height: 50px !important;
+  border: 1px solid var(--drawer-line) !important;
+  border-radius: 16px !important;
+  background: var(--drawer-soft) !important;
+  color: var(--drawer-text) !important;
+  outline: none !important;
+  padding: 0 15px !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  box-shadow: none !important;
+}
+
+.svx-inventory-stock-form-grid .input-premium::placeholder {
+  color: var(--drawer-muted) !important;
+  opacity: 0.72 !important;
+}
+
+.svx-inventory-stock-form-grid .input-premium:focus {
+  border-color: rgba(21, 156, 255, 0.72) !important;
+  box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.12) !important;
+}
+
+.svx-inventory-stock-textarea {
+  width: 100% !important;
+  min-height: 96px !important;
+  border: 1px solid var(--drawer-line) !important;
+  border-radius: 16px !important;
+  background: var(--drawer-soft) !important;
+  color: var(--drawer-text) !important;
+  outline: none !important;
+  resize: vertical !important;
+  padding: 13px 15px !important;
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  line-height: 1.38 !important;
+  box-shadow: none !important;
+}
+
+.svx-inventory-stock-textarea::placeholder {
+  color: var(--drawer-muted) !important;
+  opacity: 0.72 !important;
+}
+
+.svx-inventory-stock-textarea:focus {
+  border-color: rgba(21, 156, 255, 0.72) !important;
+  box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.12) !important;
+}
+
+.svx-inventory-stock-impact {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin: 12px 0 0 !important;
+}
+
+.svx-inventory-stock-impact div {
+  min-height: 66px !important;
+  border-radius: 18px !important;
+  background: var(--drawer-soft) !important;
+  display: grid !important;
+  align-content: center !important;
+  padding: 12px 13px !important;
+}
+
+.svx-inventory-stock-impact strong {
+  display: block !important;
+  margin-top: 5px !important;
+  color: var(--drawer-text) !important;
+  font-family: var(--drawer-heading-font) !important;
+  font-size: 18px !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.035em !important;
+  overflow-wrap: anywhere !important;
+}
+
+.svx-inventory-stock-impact strong.is-success {
+  color: var(--drawer-green) !important;
+}
+
+.svx-inventory-stock-impact strong.is-danger {
+  color: var(--drawer-red) !important;
+}
+
+.svx-inventory-stock-actions {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+  margin: 14px 0 0 !important;
+  padding: 0 !important;
+}
+
+.svx-inventory-stock-actions .svx-inventory-button,
+.svx-inventory-stock-actions .svx-inventory-button--primary,
+.svx-inventory-stock-actions button {
+  width: 100% !important;
+}
+
+.svx-inventory-stock-cancel {
+  min-height: 48px !important;
+  border: 1px solid var(--drawer-line) !important;
+  border-radius: 15px !important;
+  background: var(--drawer-soft) !important;
+  color: var(--drawer-text) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 18px !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  cursor: pointer !important;
+}
+
+.svx-inventory-stock-actions .svx-inventory-button--primary {
+  min-height: 50px !important;
+  border: 1px solid var(--drawer-blue) !important;
+  border-radius: 15px !important;
+  background: var(--drawer-blue) !important;
+  color: #ffffff !important;
+  box-shadow: 0 18px 38px rgba(21, 156, 255, 0.22) !important;
+}
+
+@media (max-height: 780px) and (min-width: 900px) {
+  .svx-inventory-stock-drawer {
+    padding: 16px !important;
+  }
+
+  .svx-inventory-stock-head h2 {
+    font-size: 29px !important;
+  }
+
+  .svx-inventory-stock-current {
+    padding: 12px !important;
+  }
+
+  .svx-inventory-stock-current strong {
+    font-size: 24px !important;
+  }
+
+  .svx-inventory-stock-mode {
+    min-height: 66px !important;
+  }
+
+  .svx-inventory-stock-textarea {
+    min-height: 78px !important;
+  }
+
+  .svx-inventory-stock-impact div {
+    min-height: 60px !important;
+  }
+}
+
+@media (max-width: 899px) {
+  .svx-inventory-stock-drawer-layer {
+    align-items: flex-end !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  .svx-inventory-stock-drawer {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: calc(100dvh - 16px) !important;
+    border-right: 1px solid var(--drawer-line) !important;
+    border-bottom: 0 !important;
+    border-radius: 28px 28px 0 0 !important;
+    padding: 18px 16px max(18px, env(safe-area-inset-bottom)) !important;
+    box-shadow: 0 -28px 80px rgba(0, 0, 0, 0.38) !important;
+  }
+
+  .svx-inventory-stock-mode-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-inventory-stock-mode {
+    min-height: 62px !important;
+  }
+
+  .svx-inventory-stock-impact {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-inventory-stock-drawer {
+    padding-inline: 12px !important;
+  }
+
+  .svx-inventory-stock-current {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-inventory-stock-arrow {
+    transform: rotate(90deg) !important;
+  }
+}
+
+
+/* =========================================================
+   ABSOLUTE FINAL — Update Stock drawer breakpoint correction
+   The current CSS above still turns ALL <=899px screens into a
+   bottom sheet. That is the exact problem. This block comes last
+   and makes tablet / PWA / collapsed-sidebar widths use the same
+   right drawer style as Product Details.
+   ========================================================= */
+
+@media (min-width: 560px) and (max-width: 899px) {
+  .svx-inventory-stock-drawer-layer {
+    align-items: flex-start !important;
+    justify-content: flex-end !important;
+    padding: 20px !important;
+  }
+
+  .svx-inventory-stock-drawer {
+    width: min(430px, calc(100vw - 96px)) !important;
+    max-width: 430px !important;
+    height: auto !important;
+    max-height: calc(100dvh - 40px) !important;
+    border: 1px solid var(--drawer-line) !important;
+    border-radius: 28px !important;
+    padding: 18px !important;
+    box-shadow: 0 34px 110px rgba(0, 0, 0, 0.48) !important;
+  }
+
+  .svx-inventory-stock-mode-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .svx-inventory-stock-mode {
+    min-height: 70px !important;
+  }
+
+  .svx-inventory-stock-impact {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* True phone width only: bottom sheet. */
+@media (max-width: 559px) {
+  .svx-inventory-stock-drawer-layer {
+    align-items: flex-end !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  .svx-inventory-stock-drawer {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: calc(100dvh - 16px) !important;
+    border-right: 1px solid var(--drawer-line) !important;
+    border-bottom: 0 !important;
+    border-radius: 28px 28px 0 0 !important;
+    padding: 18px 16px max(28px, calc(env(safe-area-inset-bottom) + 18px)) !important;
+    box-shadow: 0 -28px 80px rgba(0, 0, 0, 0.38) !important;
+  }
+
+  .svx-inventory-stock-mode-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-inventory-stock-mode {
+    min-height: 62px !important;
+  }
+
+  .svx-inventory-stock-impact {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* =========================================================
+   ABSOLUTE FINAL — Update Stock true-phone PWA layout
+   Below 559px should not be a half-height bottom sheet.
+   It should become a full-height mobile drawer/sheet so the user
+   starts at the form immediately and the bottom app/profile button
+   cannot cover Save.
+   ========================================================= */
+
+@media (max-width: 559px) {
+  .svx-inventory-stock-drawer-layer {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483647 !important;
+    display: flex !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .svx-inventory-stock-backdrop {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    border: 0 !important;
+    background: rgba(2, 8, 20, 0.68) !important;
+    backdrop-filter: blur(12px) saturate(115%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(115%) !important;
+    pointer-events: auto !important;
+  }
+
+  .svx-inventory-stock-drawer {
+    position: relative !important;
+    z-index: 2 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 100dvh !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: var(--drawer-surface, #1f1f20) !important;
+    color: var(--drawer-text, #ffffff) !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    pointer-events: auto !important;
+  }
+
+  .svx-inventory-stock-head {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 3 !important;
+    margin: calc(max(16px, env(safe-area-inset-top)) * -1) -16px 14px !important;
+    padding: max(16px, env(safe-area-inset-top)) 16px 12px !important;
+    background: var(--drawer-surface, #1f1f20) !important;
+    border-bottom: 1px solid var(--drawer-line, rgba(255, 255, 255, 0.12)) !important;
+  }
+
+  .svx-inventory-stock-head h2 {
+    font-size: clamp(30px, 8vw, 38px) !important;
+  }
+
+  .svx-inventory-stock-current {
+    grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) !important;
+    padding: 14px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .svx-inventory-stock-current strong {
+    font-size: 30px !important;
+  }
+
+  .svx-inventory-stock-arrow {
+    transform: none !important;
+  }
+
+  .svx-inventory-stock-mode-grid {
+    grid-template-columns: 1fr !important;
+    gap: 9px !important;
+  }
+
+  .svx-inventory-stock-mode {
+    min-height: 66px !important;
+  }
+
+  .svx-inventory-stock-textarea {
+    min-height: 112px !important;
+  }
+
+  .svx-inventory-stock-impact {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-inventory-stock-actions {
+    position: sticky !important;
+    bottom: 0 !important;
+    z-index: 4 !important;
+    margin: 14px -16px calc(max(18px, env(safe-area-inset-bottom)) * -1) !important;
+    padding: 12px 16px max(18px, env(safe-area-inset-bottom)) !important;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--drawer-surface, #1f1f20) 0%, transparent),
+      var(--drawer-surface, #1f1f20) 22%,
+      var(--drawer-surface, #1f1f20) 100%
+    ) !important;
+    border-top: 1px solid var(--drawer-line, rgba(255, 255, 255, 0.12)) !important;
+  }
+
+  .svx-inventory-stock-actions .svx-inventory-button--primary,
+  .svx-inventory-stock-cancel {
+    min-height: 52px !important;
+    border-radius: 16px !important;
+  }
+}
+
+
+/* =========================================================
+   FINAL UPDATE STOCK DRAWER — no sticky behavior anywhere
+   User requirement: nothing sticky inside the Update Stock drawer.
+   Applies below 559px and also protects all drawer breakpoints.
+   ========================================================= */
+
+.svx-inventory-stock-head,
+.svx-inventory-stock-actions {
+  position: static !important;
+  top: auto !important;
+  bottom: auto !important;
+  z-index: auto !important;
+}
+
+@media (max-width: 559px) {
+  .svx-inventory-stock-drawer-layer {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483647 !important;
+    display: flex !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .svx-inventory-stock-backdrop {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    border: 0 !important;
+    background: rgba(2, 8, 20, 0.68) !important;
+    backdrop-filter: blur(12px) saturate(115%) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(115%) !important;
+    pointer-events: auto !important;
+  }
+
+  .svx-inventory-stock-drawer {
+    position: relative !important;
+    z-index: 2 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 100dvh !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: var(--drawer-surface, #1f1f20) !important;
+    color: var(--drawer-text, #ffffff) !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding:
+      max(22px, calc(env(safe-area-inset-top) + 18px))
+      22px
+      max(34px, calc(env(safe-area-inset-bottom) + 28px)) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    pointer-events: auto !important;
+  }
+
+  .svx-inventory-stock-head {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+    margin: 0 0 20px !important;
+    padding: 0 0 16px !important;
+    background: transparent !important;
+    border-bottom: 1px solid var(--drawer-line, rgba(255, 255, 255, 0.12)) !important;
+  }
+
+  .svx-inventory-stock-head h2 {
+    font-size: clamp(30px, 8vw, 38px) !important;
+  }
+
+  .svx-inventory-stock-current {
+    grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) !important;
+    padding: 16px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .svx-inventory-stock-current strong {
+    font-size: 30px !important;
+  }
+
+  .svx-inventory-stock-arrow {
+    transform: none !important;
+  }
+
+  .svx-inventory-stock-current,
+  .svx-inventory-stock-mode,
+  .svx-inventory-stock-note,
+  .svx-inventory-stock-form-grid .input-premium,
+  .svx-inventory-stock-textarea,
+  .svx-inventory-stock-impact div,
+  .svx-inventory-stock-cancel,
+  .svx-inventory-stock-actions .svx-inventory-button--primary {
+    border-radius: 18px !important;
+  }
+
+  .svx-inventory-stock-mode-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .svx-inventory-stock-mode {
+    min-height: 68px !important;
+    padding: 13px 14px !important;
+  }
+
+  .svx-inventory-stock-note {
+    padding: 14px 15px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .svx-inventory-stock-form-grid {
+    gap: 14px !important;
+  }
+
+  .svx-inventory-stock-form-grid .block > span {
+    margin-bottom: 9px !important;
+  }
+
+  .svx-inventory-stock-form-grid .input-premium {
+    height: 56px !important;
+    padding-inline: 18px !important;
+  }
+
+  .svx-inventory-stock-textarea {
+    min-height: 124px !important;
+    padding: 16px 18px !important;
+  }
+
+  .svx-inventory-stock-impact {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    margin-top: 16px !important;
+  }
+
+  .svx-inventory-stock-impact div {
+    min-height: 76px !important;
+    padding: 15px 16px !important;
+  }
+
+  .svx-inventory-stock-actions {
+    position: static !important;
+    bottom: auto !important;
+    z-index: auto !important;
+    margin: 20px 0 0 !important;
+    padding: 18px 0 0 !important;
+    background: transparent !important;
+    border-top: 1px solid var(--drawer-line, rgba(255, 255, 255, 0.12)) !important;
+  }
+
+  .svx-inventory-stock-cancel,
+  .svx-inventory-stock-actions .svx-inventory-button--primary {
+    min-height: 56px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .svx-inventory-stock-drawer {
+    padding:
+      max(20px, calc(env(safe-area-inset-top) + 16px))
+      18px
+      max(32px, calc(env(safe-area-inset-bottom) + 26px)) !important;
+  }
+
+  .svx-inventory-stock-head {
+    margin-bottom: 18px !important;
+    padding-bottom: 14px !important;
+  }
+
+  .svx-inventory-stock-actions {
+    margin-top: 18px !important;
+    padding-top: 16px !important;
+  }
+}

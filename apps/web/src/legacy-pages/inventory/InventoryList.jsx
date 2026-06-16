@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -113,6 +112,49 @@ function productStatus(product) {
     alertText: `${formatNumber(qty)} left`,
   };
 }
+
+function stockPreview(currentQty, form) {
+  const qty = Number(currentQty || 0);
+  const type = cleanString(form?.type).toUpperCase();
+  const quantity = Number(form?.quantity || 0);
+  const newStockQty = Number(form?.newStockQty || 0);
+
+  if (type === "RESTOCK") return qty + Math.max(0, quantity);
+  if (type === "LOSS") return Math.max(0, qty - Math.max(0, quantity));
+  if (type === "CORRECTION") return Math.max(0, newStockQty);
+
+  return qty;
+}
+
+function stockActionCopy(type) {
+  const value = cleanString(type).toUpperCase();
+
+  if (value === "RESTOCK") {
+    return {
+      title: "Add stock",
+      quantityLabel: "Quantity added",
+      quantityPlaceholder: "Example: 10",
+      note: "Use this when new stock arrives from a supplier or branch transfer.",
+    };
+  }
+
+  if (value === "LOSS") {
+    return {
+      title: "Remove stock",
+      quantityLabel: "Quantity removed",
+      quantityPlaceholder: "Example: 1",
+      note: "Use this for damaged, missing, expired, or written-off stock.",
+    };
+  }
+
+  return {
+    title: "Correct count",
+    quantityLabel: "Correct stock count",
+    quantityPlaceholder: "Example: 6",
+    note: "Use this after a physical count when the system quantity is wrong.",
+  };
+}
+
 
 function activeBranchNameFromStorage() {
   const name = cleanString(localStorage.getItem("activeBranchName"));
@@ -368,130 +410,178 @@ function StockAdjustmentModal({
   onClose,
   onSubmit,
 }) {
-  if (!open || !product) return null;
+  if (!open || !product || typeof document === "undefined") return null;
 
   function update(key, value) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev) => ({
+      ...prev,
+      [key]: value,
+      ...(key === "type"
+        ? {
+            quantity: value === "CORRECTION" ? prev.quantity : prev.quantity || 1,
+            newStockQty: value === "CORRECTION" ? branchStock(product) : prev.newStockQty,
+            lossReason: value === "LOSS" ? prev.lossReason || "DAMAGED" : prev.lossReason,
+          }
+        : {}),
+    }));
   }
 
   const currentQty = branchStock(product);
+  const type = cleanString(form.type).toUpperCase();
+  const copy = stockActionCopy(type);
+  const previewQty = stockPreview(currentQty, form);
+  const change = previewQty - currentQty;
 
-  return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/50 px-3 pb-3 pt-10 backdrop-blur-sm sm:items-center sm:p-6">
-      <div className="max-h-[92dvh] w-full max-w-2xl overflow-hidden rounded-[32px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[0_30px_100px_rgba(15,23,42,0.25)]">
-        <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
+  return createPortal(
+    <div className="svx-inventory-stock-drawer-layer" role="dialog" aria-modal="true" aria-label="Update stock">
+      <button
+        type="button"
+        className="svx-inventory-stock-backdrop"
+        aria-label="Close stock drawer"
+        onClick={onClose}
+        disabled={saving}
+      />
+
+      <form className="svx-inventory-stock-drawer" onSubmit={onSubmit}>
+        <header className="svx-inventory-stock-head">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-              Stock change
-            </p>
-            <h2 className="mt-1 text-xl font-black tracking-[-0.03em] text-[var(--color-text)]">
-              {product.name}
-            </h2>
-            <p className="mt-1 text-sm font-medium text-[var(--color-text-muted)]">
-              Current stock here:{" "}
-              <span className="font-black text-[var(--color-text)]">{formatNumber(currentQty)}</span>
-            </p>
+            <span>Stock movement</span>
+            <h2>Update stock</h2>
+            <p>{product.name}</p>
           </div>
 
+          <button type="button" onClick={onClose} className="svx-inventory-stock-close" disabled={saving}>
+            <CloseIcon />
+          </button>
+        </header>
+
+        <section className="svx-inventory-stock-current">
+          <div>
+            <span>Current stock</span>
+            <strong>{formatNumber(currentQty)}</strong>
+          </div>
+
+          <div className="svx-inventory-stock-arrow">›</div>
+
+          <div>
+            <span>After update</span>
+            <strong>{formatNumber(previewQty)}</strong>
+          </div>
+        </section>
+
+        <section className="svx-inventory-stock-mode-grid" aria-label="Stock movement type">
+          {[
+            { value: "RESTOCK", label: "Restock", text: "New stock arrived" },
+            { value: "LOSS", label: "Loss", text: "Stock left without sale" },
+            { value: "CORRECTION", label: "Correction", text: "Fix counted stock" },
+          ].map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              className={cn("svx-inventory-stock-mode", type === item.value && "is-active")}
+              onClick={() => update("type", item.value)}
+              disabled={saving}
+            >
+              <strong>{item.label}</strong>
+              <span>{item.text}</span>
+            </button>
+          ))}
+        </section>
+
+        <div className="svx-inventory-stock-note">
+          <AlertIcon />
+          <span>{copy.note}</span>
+        </div>
+
+        <div className="svx-inventory-stock-form-grid">
+          {type === "CORRECTION" ? (
+            <Field label={copy.quantityLabel} required>
+              <input
+                type="number"
+                min="0"
+                value={form.newStockQty}
+                onChange={(e) => update("newStockQty", e.target.value)}
+                className="input-premium"
+                placeholder={copy.quantityPlaceholder}
+              />
+            </Field>
+          ) : (
+            <Field label={copy.quantityLabel} required>
+              <input
+                type="number"
+                min="1"
+                value={form.quantity}
+                onChange={(e) => update("quantity", e.target.value)}
+                className="input-premium"
+                placeholder={copy.quantityPlaceholder}
+              />
+            </Field>
+          )}
+
+          {type === "LOSS" ? (
+            <Field label="Reason" required>
+              <select
+                value={form.lossReason}
+                onChange={(e) => update("lossReason", e.target.value)}
+                className="input-premium"
+              >
+                {LOSS_REASONS.map((reason) => (
+                  <option key={reason.value} value={reason.value}>
+                    {reason.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : null}
+
+          <Field label="Note" className={type === "LOSS" ? "" : "sm:col-span-2"}>
+            <textarea
+              value={form.note}
+              onChange={(e) => update("note", e.target.value)}
+              className="svx-inventory-stock-textarea"
+              placeholder="Example: Supplier delivery received, damaged item removed, or physical count corrected."
+            />
+          </Field>
+        </div>
+
+        <section className="svx-inventory-stock-impact">
+          <div>
+            <span>Stock change</span>
+            <strong className={cn(change > 0 && "is-success", change < 0 && "is-danger")}>
+              {change > 0 ? `+${formatNumber(change)}` : formatNumber(change)}
+            </strong>
+          </div>
+
+          <div>
+            <span>Movement type</span>
+            <strong>{copy.title}</strong>
+          </div>
+        </section>
+
+        <footer className="svx-inventory-stock-actions">
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] text-[var(--color-text)] transition hover:-translate-y-0.5"
+            className="svx-inventory-stock-cancel"
+            disabled={saving}
           >
-            <CloseIcon />
+            Cancel
           </button>
-        </div>
 
-        <form onSubmit={onSubmit} className="px-5 py-5 sm:px-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="What happened?">
-              <select
-                value={form.type}
-                onChange={(e) => update("type", e.target.value)}
-                className="input-premium"
-              >
-                <option value="RESTOCK">New stock arrived</option>
-                <option value="LOSS">Stock was lost or damaged</option>
-                <option value="CORRECTION">Correct the count</option>
-              </select>
-            </Field>
-
-            {form.type === "CORRECTION" ? (
-              <Field label="Correct stock count">
-                <input
-                  type="number"
-                  min="0"
-                  value={form.newStockQty}
-                  onChange={(e) => update("newStockQty", e.target.value)}
-                  className="input-premium"
-                />
-              </Field>
-            ) : (
-              <Field label="Quantity">
-                <input
-                  type="number"
-                  min="1"
-                  value={form.quantity}
-                  onChange={(e) => update("quantity", e.target.value)}
-                  className="input-premium"
-                />
-              </Field>
-            )}
-
-            {form.type === "LOSS" ? (
-              <Field label="Reason">
-                <select
-                  value={form.lossReason}
-                  onChange={(e) => update("lossReason", e.target.value)}
-                  className="input-premium"
-                >
-                  {LOSS_REASONS.map((reason) => (
-                    <option key={reason.value} value={reason.value}>
-                      {reason.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-            ) : null}
-
-            <Field label="Note" className={form.type === "LOSS" ? "" : "sm:col-span-2"}>
-              <input
-                value={form.note}
-                onChange={(e) => update("note", e.target.value)}
-                className="input-premium"
-                placeholder="Example: Added from supplier delivery"
-              />
-            </Field>
-          </div>
-
-          <div className="mt-5 rounded-[24px] bg-[var(--color-surface-2)] p-4">
-            <p className="text-[12px] font-bold text-[var(--color-text-muted)]">
-              This changes stock for this branch and keeps the business total correct.
-            </p>
-          </div>
-
-          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-2xl bg-[var(--color-surface-2)] px-4 py-2.5 text-sm font-black text-[var(--color-text)] transition hover:-translate-y-0.5"
-            >
-              Cancel
-            </button>
-
-            <AsyncButton
-              type="submit"
-              loading={saving}
-              className="svx-inventory-button--primary"
-            >
-              Save stock change
-            </AsyncButton>
-          </div>
-        </form>
-      </div>
-    </div>
+          <AsyncButton
+            type="submit"
+            loading={saving}
+            className="svx-inventory-button--primary"
+          >
+            Save stock update
+          </AsyncButton>
+        </footer>
+      </form>
+    </div>,
+    document.body,
   );
 }
+
 
 export default function InventoryList() {
   const navigate = useNavigate();
@@ -606,6 +696,24 @@ export default function InventoryList() {
     };
   }, [actionsMenu]);
 
+  useEffect(() => {
+    if (!stockModalOpen) return undefined;
+
+    function onEscape(event) {
+      if (event.key === "Escape") setStockModalOpen(false);
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onEscape);
+    };
+  }, [stockModalOpen]);
+
+
   function openActionsMenu(event, product) {
     event.stopPropagation();
 
@@ -674,20 +782,45 @@ export default function InventoryList() {
 
     if (!selectedProduct?.id) return;
 
+    const type = cleanString(stockForm.type).toUpperCase();
+    const quantity = Number(stockForm.quantity);
+    const newStockQty = Number(stockForm.newStockQty);
+    const currentQty = branchStock(selectedProduct);
+
+    if (!["RESTOCK", "LOSS", "CORRECTION"].includes(type)) {
+      toast.error("Choose a stock movement type");
+      return;
+    }
+
+    if (type === "CORRECTION") {
+      if (!Number.isFinite(newStockQty) || newStockQty < 0) {
+        toast.error("Enter the correct stock count");
+        return;
+      }
+    } else if (!Number.isFinite(quantity) || quantity <= 0) {
+      toast.error("Enter a valid quantity");
+      return;
+    }
+
+    if (type === "LOSS" && quantity > currentQty) {
+      toast.error("You cannot remove more stock than available");
+      return;
+    }
+
     setSavingStock(true);
 
     try {
       const payload =
-        stockForm.type === "CORRECTION"
+        type === "CORRECTION"
           ? {
               type: "CORRECTION",
-              newStockQty: stockForm.newStockQty,
+              newStockQty,
               note: stockForm.note,
             }
           : {
-              type: stockForm.type,
-              quantity: stockForm.quantity,
-              lossReason: stockForm.type === "LOSS" ? stockForm.lossReason : undefined,
+              type,
+              quantity,
+              lossReason: type === "LOSS" ? stockForm.lossReason : undefined,
               note: stockForm.note,
             };
 
@@ -923,11 +1056,18 @@ export default function InventoryList() {
                       const status = productStatus(product);
 
                       return (
-                        <tr key={product.id}>
+                        <tr
+                          key={product.id}
+                          className="svx-inventory-clickable-row"
+                          onClick={() => openDetailPage(product)}
+                        >
                           <td>
                             <button
                               type="button"
-                              onClick={() => openDetailPage(product)}
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                openDetailPage(product);
+                              }}
                               className="svx-inventory-product-cell"
                             >
                               <ProductThumb product={product} />
@@ -947,7 +1087,11 @@ export default function InventoryList() {
                           <td>{formatRwf(stockValue)}</td>
                           <td><StatusBadge product={product} /></td>
                           <td>
-                            <div className="svx-inventory-row-actions" data-inventory-actions-menu>
+                            <div
+                              className="svx-inventory-row-actions"
+                              data-inventory-actions-menu
+                              onClick={(event) => event.stopPropagation()}
+                            >
                               <button
                                 type="button"
                                 onClick={(event) => openActionsMenu(event, product)}

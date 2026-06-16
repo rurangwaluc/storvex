@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
+  AlertTriangle,
   ArrowLeft,
   BadgeCheck,
   Barcode,
@@ -21,11 +22,13 @@ import {
   Store,
   Tags,
   Warehouse,
+  X,
 } from "lucide-react";
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import FormPageSkeleton from "../../components/ui/FormPageSkeleton";
 import {
+  adjustStock,
   getProductById,
   getProductStockAdjustments,
 } from "../../services/inventoryApi";
@@ -239,6 +242,56 @@ function stockChangeValue(row) {
   return formatNumber(delta);
 }
 
+function stockPreview(currentQty, form) {
+  const qty = Number(currentQty || 0);
+  const type = cleanString(form?.type).toUpperCase();
+  const quantity = Number(form?.quantity || 0);
+  const newStockQty = Number(form?.newStockQty || 0);
+
+  if (type === "RESTOCK") return qty + Math.max(0, quantity);
+  if (type === "LOSS") return Math.max(0, qty - Math.max(0, quantity));
+  if (type === "CORRECTION") return Math.max(0, newStockQty);
+
+  return qty;
+}
+
+function stockActionCopy(type) {
+  const value = cleanString(type).toUpperCase();
+
+  if (value === "RESTOCK") {
+    return {
+      title: "Add stock",
+      quantityLabel: "Quantity added",
+      quantityPlaceholder: "Example: 10",
+      note: "Use this when new stock arrives from a supplier or branch transfer.",
+    };
+  }
+
+  if (value === "LOSS") {
+    return {
+      title: "Remove stock",
+      quantityLabel: "Quantity removed",
+      quantityPlaceholder: "Example: 1",
+      note: "Use this for damaged, missing, expired, or written-off stock.",
+    };
+  }
+
+  return {
+    title: "Correct count",
+    quantityLabel: "Correct stock count",
+    quantityPlaceholder: "Example: 6",
+    note: "Use this after a physical count when the system quantity is wrong.",
+  };
+}
+
+const LOSS_REASONS = [
+  { value: "DAMAGED", label: "Damaged" },
+  { value: "MISSING", label: "Missing" },
+  { value: "EXPIRED", label: "Expired" },
+  { value: "RETURNED_BAD", label: "Returned bad" },
+  { value: "OTHER", label: "Other" },
+];
+
 function StatusBadge({ tone = "neutral", children }) {
   return <span className={cx("svx-detail-badge", `is-${tone}`)}>{children}</span>;
 }
@@ -320,6 +373,178 @@ function Gallery({ product }) {
   );
 }
 
+
+function StockUpdateDrawer({
+  open,
+  product,
+  form,
+  saving,
+  onClose,
+  onChange,
+  onSubmit,
+}) {
+  if (!open || !product) return null;
+
+  const qty = productStock(product);
+  const copy = stockActionCopy(form.type);
+  const type = cleanString(form.type).toUpperCase();
+  const preview = stockPreview(qty, form);
+  const change = preview - qty;
+
+  return (
+    <div className="svx-stock-drawer-layer" role="dialog" aria-modal="true" aria-label="Update stock">
+      <button
+        type="button"
+        className="svx-stock-drawer-backdrop"
+        aria-label="Close stock drawer"
+        onClick={onClose}
+        disabled={saving}
+      />
+
+      <form className="svx-stock-drawer" onSubmit={onSubmit}>
+        <header className="svx-stock-drawer-head">
+          <div>
+            <span className="svx-stock-drawer-kicker">Stock movement</span>
+            <h2>Update stock</h2>
+            <p>{product?.name || "Product"}</p>
+          </div>
+
+          <button type="button" className="svx-stock-drawer-close" onClick={onClose} disabled={saving}>
+            <X size={18} strokeWidth={2.4} />
+          </button>
+        </header>
+
+        <section className="svx-stock-drawer-current">
+          <div>
+            <span>Current stock</span>
+            <strong>{formatNumber(qty)}</strong>
+          </div>
+
+          <ChevronRight size={18} strokeWidth={2.4} />
+
+          <div>
+            <span>After update</span>
+            <strong>{formatNumber(preview)}</strong>
+          </div>
+        </section>
+
+        <section className="svx-stock-mode-grid" aria-label="Stock action type">
+          {[
+            { value: "RESTOCK", label: "Restock", text: "New stock arrived" },
+            { value: "LOSS", label: "Loss", text: "Stock left without sale" },
+            { value: "CORRECTION", label: "Correction", text: "Fix counted stock" },
+          ].map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              className={cx("svx-stock-mode", type === item.value && "is-active")}
+              onClick={() => onChange("type", item.value)}
+              disabled={saving}
+            >
+              <strong>{item.label}</strong>
+              <span>{item.text}</span>
+            </button>
+          ))}
+        </section>
+
+        <div className="svx-stock-drawer-note">
+          <AlertTriangle size={17} strokeWidth={2.35} />
+          <span>{copy.note}</span>
+        </div>
+
+        <div className="svx-stock-form-grid">
+          {type === "CORRECTION" ? (
+            <label className="svx-stock-field">
+              <span>{copy.quantityLabel}</span>
+              <input
+                type="number"
+                min="0"
+                className="svx-stock-input"
+                value={form.newStockQty}
+                onChange={(event) => onChange("newStockQty", event.target.value)}
+                placeholder={copy.quantityPlaceholder}
+                disabled={saving}
+              />
+            </label>
+          ) : (
+            <label className="svx-stock-field">
+              <span>{copy.quantityLabel}</span>
+              <input
+                type="number"
+                min="1"
+                className="svx-stock-input"
+                value={form.quantity}
+                onChange={(event) => onChange("quantity", event.target.value)}
+                placeholder={copy.quantityPlaceholder}
+                disabled={saving}
+              />
+            </label>
+          )}
+
+          {type === "LOSS" ? (
+            <label className="svx-stock-field">
+              <span>Reason</span>
+              <select
+                className="svx-stock-input"
+                value={form.lossReason}
+                onChange={(event) => onChange("lossReason", event.target.value)}
+                disabled={saving}
+              >
+                {LOSS_REASONS.map((reason) => (
+                  <option key={reason.value} value={reason.value}>
+                    {reason.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          <label className="svx-stock-field is-wide">
+            <span>Note</span>
+            <textarea
+              className="svx-stock-textarea"
+              value={form.note}
+              onChange={(event) => onChange("note", event.target.value)}
+              placeholder="Example: Supplier delivery received, damaged item removed, or physical count corrected."
+              disabled={saving}
+            />
+          </label>
+        </div>
+
+        <section className="svx-stock-impact">
+          <div>
+            <span>Stock change</span>
+            <strong className={cx(change > 0 && "is-success", change < 0 && "is-danger")}>
+              {change > 0 ? `+${formatNumber(change)}` : formatNumber(change)}
+            </strong>
+          </div>
+
+          <div>
+            <span>Movement type</span>
+            <strong>{copy.title}</strong>
+          </div>
+        </section>
+
+        <footer className="svx-stock-drawer-actions">
+          <button type="button" className="svx-detail-secondary-button" onClick={onClose} disabled={saving}>
+            Cancel
+          </button>
+
+          <AsyncButton
+            type="submit"
+            loading={saving}
+            loadingText="Saving movement..."
+            className="svx-detail-primary-button"
+          >
+            <Warehouse size={16} strokeWidth={2.35} />
+            <span>Save stock update</span>
+          </AsyncButton>
+        </footer>
+      </form>
+    </div>
+  );
+}
+
 function EmptyState({ title, text }) {
   return (
     <div className="svx-detail-empty">
@@ -338,6 +563,15 @@ export default function InventoryDetail() {
   const [loading, setLoading] = useState(true);
   const [loadingMovements, setLoadingMovements] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [stockDrawerOpen, setStockDrawerOpen] = useState(false);
+  const [stockSaving, setStockSaving] = useState(false);
+  const [stockForm, setStockForm] = useState({
+    type: "RESTOCK",
+    quantity: "",
+    newStockQty: "",
+    lossReason: "DAMAGED",
+    note: "",
+  });
 
   const loadProduct = useCallback(
     async ({ quiet = false } = {}) => {
@@ -389,6 +623,26 @@ export default function InventoryDetail() {
     loadMovements();
   }, [loadProduct, loadMovements]);
 
+  useEffect(() => {
+    if (!stockDrawerOpen) return undefined;
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setStockDrawerOpen(false);
+      }
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [stockDrawerOpen]);
+
+
   async function handleRefresh() {
     setRefreshing(true);
 
@@ -399,6 +653,94 @@ export default function InventoryDetail() {
       setRefreshing(false);
     }
   }
+
+  function openStockDrawer(defaultType = "RESTOCK") {
+    setStockForm({
+      type: defaultType,
+      quantity: "",
+      newStockQty: "",
+      lossReason: "DAMAGED",
+      note: "",
+    });
+    setStockDrawerOpen(true);
+  }
+
+  function updateStockForm(name, value) {
+    setStockForm((current) => ({
+      ...current,
+      [name]: value,
+      ...(name === "type"
+        ? {
+            quantity: "",
+            newStockQty: "",
+            lossReason: value === "LOSS" ? current.lossReason || "DAMAGED" : current.lossReason,
+          }
+        : {}),
+    }));
+  }
+
+  function validateStockForm() {
+    const type = cleanString(stockForm.type).toUpperCase();
+    const qty = Number(stockForm.quantity);
+    const newQty = Number(stockForm.newStockQty);
+    const currentQty = productStock(product);
+
+    if (!["RESTOCK", "LOSS", "CORRECTION"].includes(type)) {
+      toast.error("Choose a stock movement type");
+      return false;
+    }
+
+    if (type === "CORRECTION") {
+      if (!Number.isFinite(newQty) || newQty < 0) {
+        toast.error("Enter the correct stock count");
+        return false;
+      }
+
+      return true;
+    }
+
+    if (!Number.isFinite(qty) || qty <= 0) {
+      toast.error("Enter a valid quantity");
+      return false;
+    }
+
+    if (type === "LOSS" && qty > currentQty) {
+      toast.error("You cannot remove more stock than available");
+      return false;
+    }
+
+    return true;
+  }
+
+  async function handleStockSubmit(event) {
+    event.preventDefault();
+
+    if (!validateStockForm()) return;
+
+    const type = cleanString(stockForm.type).toUpperCase();
+
+    setStockSaving(true);
+
+    try {
+      await adjustStock(id, {
+        type,
+        quantity: type === "CORRECTION" ? undefined : Number(stockForm.quantity),
+        newStockQty: type === "CORRECTION" ? Number(stockForm.newStockQty) : undefined,
+        lossReason: type === "LOSS" ? stockForm.lossReason : undefined,
+        note: stockForm.note,
+      });
+
+      toast.success("Stock updated");
+      setStockDrawerOpen(false);
+      await Promise.all([loadProduct({ quiet: true }), loadMovements()]);
+    } catch (error) {
+      console.error("Stock update failed:", error);
+      toast.error(error?.message || "Failed to update stock");
+    } finally {
+      setStockSaving(false);
+    }
+  }
+
 
   const status = productStatus(product);
   const marketplace = marketplaceStatus(product);
@@ -644,7 +986,7 @@ export default function InventoryDetail() {
               <button
                 type="button"
                 className="svx-detail-secondary-button"
-                onClick={() => toast("Update stock drawer is next.")}
+                onClick={() => openStockDrawer("RESTOCK")}
               >
                 <Warehouse size={16} strokeWidth={2.35} />
                 <span>Update stock</span>
@@ -663,6 +1005,16 @@ export default function InventoryDetail() {
           <p>{category}</p>
           <p>{formatNumber(qty)}</p>
         </section>
+
+        <StockUpdateDrawer
+          open={stockDrawerOpen}
+          product={product}
+          form={stockForm}
+          saving={stockSaving}
+          onClose={() => setStockDrawerOpen(false)}
+          onChange={updateStockForm}
+          onSubmit={handleStockSubmit}
+        />
       </div>
     </main>
   );
