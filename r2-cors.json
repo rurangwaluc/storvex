@@ -1,0 +1,22 @@
+[
+  {
+    "AllowedOrigins": [
+      "http://localhost:3000",
+      "https://storvex.rw",
+      "https://www.storvex.rw"
+    ],
+    "AllowedMethods": [
+      "GET",
+      "PUT",
+      "HEAD"
+    ],
+    "AllowedHeaders": [
+      "content-type",
+      "x-amz-*"
+    ],
+    "ExposeHeaders": [
+      "ETag"
+    ],
+    "MaxAgeSeconds": 3600
+  }
+]

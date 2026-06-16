@@ -68,7 +68,39 @@ async function createPresignedImageUpload({
   };
 }
 
+async function uploadObject({
+  key,
+  body,
+  contentType,
+  cacheControl = "public, max-age=31536000, immutable",
+}) {
+  const client = getClient();
+  if (!client) {
+    const err = new Error("Object storage is not configured");
+    err.status = 503;
+    throw err;
+  }
+
+  const bucket = getEnv("OBJECT_STORAGE_BUCKET");
+
+  const cmd = new PutObjectCommand({
+    Bucket: bucket,
+    Key: key,
+    Body: body,
+    ContentType: contentType,
+    CacheControl: cacheControl,
+  });
+
+  await client.send(cmd);
+
+  return {
+    publicUrl: buildPublicUrl(key),
+    objectKey: key,
+  };
+}
+
 module.exports = {
   isConfigured,
   createPresignedImageUpload,
+  uploadObject,
 };

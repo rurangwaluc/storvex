@@ -1,4 +1,4 @@
-const CACHE_VERSION = "v5";
+const CACHE_VERSION = "v6-no-stale-js";
 const CACHE_NAME = `storvex-web-${CACHE_VERSION}`;
 const OFFLINE_URL = "/offline";
 
@@ -13,12 +13,55 @@ const PRECACHE_URLS = [
   "/storvex_white.webp",
 ];
 
+function shouldSkipCache(requestUrl) {
+  return (
+    requestUrl.pathname.startsWith("/_next/") ||
+    requestUrl.pathname.startsWith("/api/") ||
+    requestUrl.pathname.includes("__next")
+  );
+}
+
+async function networkFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+
+  try {
+    const response = await fetch(request);
+
+    if (response && response.ok) {
+      await cache.put(request, response.clone());
+    }
+
+    return response;
+  } catch {
+    const cached = await cache.match(request);
+
+    if (cached) return cached;
+
+    throw new Error("No network or cache response available");
+  }
+}
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+
+  if (cached) return cached;
+
+  const response = await fetch(request);
+
+  if (response && response.ok) {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(request, response.clone());
+  }
+
+  return response;
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
       .then((cache) => cache.addAll(PRECACHE_URLS))
-      .then(() => self.skipWaiting())
+      .then(() => self.skipWaiting()),
   );
 });
 
@@ -30,11 +73,17 @@ self.addEventListener("activate", (event) => {
         Promise.all(
           keys
             .filter((key) => key.startsWith("storvex-web-") && key !== CACHE_NAME)
-            .map((key) => caches.delete(key))
-        )
+            .map((key) => caches.delete(key)),
+        ),
       )
-      .then(() => self.clients.claim())
+      .then(() => self.clients.claim()),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("fetch", (event) => {
@@ -46,18 +95,15 @@ self.addEventListener("fetch", (event) => {
 
   if (requestUrl.origin !== self.location.origin) return;
 
+  if (shouldSkipCache(requestUrl)) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
-        .then((response) => {
-          const responseClone = response.clone();
-
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseClone);
-          });
-
-          return response;
-        })
+        .then((response) => response)
         .catch(async () => {
           const offlineResponse = await caches.match(OFFLINE_URL);
 
@@ -71,38 +117,23 @@ self.addEventListener("fetch", (event) => {
               "Content-Type": "text/plain; charset=utf-8",
             },
           });
-        })
+        }),
     );
 
     return;
   }
 
+  if (request.destination === "script" || request.destination === "style") {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
   const shouldCache =
-    request.destination === "style" ||
-    request.destination === "script" ||
     request.destination === "image" ||
     request.destination === "font" ||
     request.destination === "manifest";
 
   if (!shouldCache) return;
 
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-
-      return fetch(request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.ok) {
-            const responseClone = networkResponse.clone();
-
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseClone);
-            });
-          }
-
-          return networkResponse;
-        })
-        .catch(() => cachedResponse);
-    })
-  );
+  event.respondWith(cacheFirst(request));
 });

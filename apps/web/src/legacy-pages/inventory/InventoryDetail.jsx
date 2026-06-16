@@ -154,14 +154,22 @@ function productStatus(product) {
   };
 }
 
-function marketplaceStatus(product) {
-  const status = cleanString(product?.marketplaceStatus).toUpperCase();
+function productImageStatus(product) {
+  const count = productImages(product).length;
 
-  if (status === "PUBLISHED") return { label: "Published", tone: "success" };
-  if (status === "DRAFT") return { label: "Draft", tone: "warning" };
-  if (status === "UNPUBLISHED") return { label: "Unpublished", tone: "neutral" };
+  if (count > 0) {
+    return {
+      label: "Images added",
+      tone: "success",
+      text: `${count} product image${count === 1 ? "" : "s"} attached.`,
+    };
+  }
 
-  return { label: "Internal only", tone: "neutral" };
+  return {
+    label: "No images",
+    tone: "warning",
+    text: "Add clear product photos so this item is easy to recognize.",
+  };
 }
 
 function branchLabel(product) {
@@ -343,15 +351,27 @@ function InfoRow({ label, value, tone }) {
   );
 }
 
-function Gallery({ product }) {
+function Gallery({ product, onViewImage }) {
   const images = productImages(product);
-  const main = primaryImage(product);
+  const mainImage = images.find((image) => image?.isPrimary) || images[0] || null;
+  const main = mainImage?.url || mainImage?.imageUrl || "";
 
   return (
     <div className="svx-detail-gallery">
       <div className="svx-detail-main-image">
         {main ? (
-          <img src={main} alt={product?.name || "Product"} loading="lazy" />
+          <button
+            type="button"
+            className="svx-detail-main-image-view"
+            onClick={() => onViewImage(mainImage)}
+            aria-label="View product image"
+          >
+            <img src={main} alt={product?.name || "Product"} loading="lazy" />
+            <span>
+              <Eye size={15} strokeWidth={2.35} />
+              View product
+            </span>
+          </button>
         ) : (
           <div className="svx-detail-image-empty">
             <ImagePlus size={30} strokeWidth={2.2} />
@@ -363,12 +383,72 @@ function Gallery({ product }) {
       {images.length ? (
         <div className="svx-detail-thumb-strip">
           {images.slice(0, 5).map((image, index) => (
-            <span key={image?.id || image?.url || index}>
+            <button
+              type="button"
+              key={image?.id || image?.url || index}
+              className={cx(image?.isPrimary && "is-active")}
+              onClick={() => onViewImage(image)}
+              aria-label="View product image"
+            >
               <img src={image.url || image.imageUrl} alt="" loading="lazy" />
-            </span>
+            </button>
           ))}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+
+function ProductImageViewer({ image, productName, onClose }) {
+  useEffect(() => {
+    if (!image) return undefined;
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") onClose();
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [image, onClose]);
+
+  if (!image) return null;
+
+  const url = image.url || image.imageUrl || "";
+
+  return (
+    <div className="svx-detail-product-viewer-layer" role="dialog" aria-modal="true" aria-label="Product image preview">
+      <button
+        type="button"
+        className="svx-detail-product-viewer-backdrop"
+        onClick={onClose}
+        aria-label="Close product image preview"
+      />
+
+      <section className="svx-detail-product-viewer">
+        <header>
+          <div>
+            <StatusBadge tone={image?.isPrimary ? "success" : "neutral"}>
+              {image?.isPrimary ? "Feature image" : "Product image"}
+            </StatusBadge>
+            <h2>{productName || "Product"}</h2>
+          </div>
+
+          <button type="button" className="svx-detail-product-viewer-close" onClick={onClose} aria-label="Close image preview">
+            <X size={18} strokeWidth={2.5} />
+          </button>
+        </header>
+
+        <div className="svx-detail-product-viewer-frame">
+          <img src={url} alt={image?.altText || productName || "Product"} />
+        </div>
+      </section>
     </div>
   );
 }
@@ -564,6 +644,7 @@ export default function InventoryDetail() {
   const [loadingMovements, setLoadingMovements] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [stockDrawerOpen, setStockDrawerOpen] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
   const [stockSaving, setStockSaving] = useState(false);
   const [stockForm, setStockForm] = useState({
     type: "RESTOCK",
@@ -743,7 +824,7 @@ export default function InventoryDetail() {
 
 
   const status = productStatus(product);
-  const marketplace = marketplaceStatus(product);
+  const imageStatus = productImageStatus(product);
   const attributes = useMemo(() => normalizedCategoryAttributes(product), [product]);
   const images = productImages(product);
 
@@ -791,7 +872,7 @@ export default function InventoryDetail() {
 
             <div className="svx-detail-kicker-row">
               <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
-              <StatusBadge tone={marketplace.tone}>{marketplace.label}</StatusBadge>
+              <StatusBadge tone={imageStatus.tone}>{imageStatus.label}</StatusBadge>
             </div>
 
             <h1>{product?.name || "Product"}</h1>
@@ -847,11 +928,11 @@ export default function InventoryDetail() {
             tone="success"
           />
           <SummaryCard
-            icon={ShoppingCart}
-            label="Marketplace"
-            value={marketplace.label}
-            note={images.length ? `${images.length} image${images.length === 1 ? "" : "s"} ready` : "No images yet"}
-            tone={marketplace.tone}
+            icon={ImagePlus}
+            label="Product photos"
+            value={imageStatus.label}
+            note={images.length ? `${images.length} image${images.length === 1 ? "" : "s"} attached` : "Click Add images below"}
+            tone={imageStatus.tone}
           />
         </section>
 
@@ -860,11 +941,11 @@ export default function InventoryDetail() {
             <DetailSection
               icon={PackageCheck}
               title="Product overview"
-              text="Clear product information for sales, stock control, and marketplace preparation."
+              text="Clear product information for sales, stock control, and product image preparation."
               action={<StatusBadge tone={status.tone}>{status.label}</StatusBadge>}
             >
               <div className="svx-detail-overview-grid">
-                <Gallery product={product} />
+                <Gallery product={product} onViewImage={setImagePreview} />
 
                 <div className="svx-detail-info-grid">
                   <InfoRow label="Product name" value={product?.name} />
@@ -962,18 +1043,34 @@ export default function InventoryDetail() {
 
             <DetailSection
               icon={ImagePlus}
-              title="Marketplace readiness"
-              text="Images are only required when publishing this product."
+              title="Product photos"
+              text="Add, view, set primary, or delete images for this product."
             >
-              <div className="svx-detail-marketplace-box">
+              <div className="svx-detail-marketplace-box svx-detail-product-photos-box">
                 <div>
-                  <StatusBadge tone={marketplace.tone}>{marketplace.label}</StatusBadge>
-                  <p>{images.length ? `${images.length} image${images.length === 1 ? "" : "s"} available` : "No images attached yet"}</p>
+                  <StatusBadge tone={imageStatus.tone}>{imageStatus.label}</StatusBadge>
+                  <p>{images.length ? `${images.length} image${images.length === 1 ? "" : "s"} attached` : "No product images yet"}</p>
                 </div>
 
                 <span>
-                  Products stay private until the owner reviews images, public details, and chooses to publish.
+                  Start here when you want to add photos. Use clear JPG, PNG, or WEBP images up to 5MB each.
                 </span>
+
+                {images.length ? (
+                  <button
+                    type="button"
+                    className="svx-detail-marketplace-button"
+                    onClick={() => setImagePreview(images.find((image) => image?.isPrimary) || images[0])}
+                  >
+                    <Eye size={16} strokeWidth={2.35} />
+                    <span>View product</span>
+                  </button>
+                ) : null}
+
+                <Link to={`/app/inventory/${product.id}/images`} className="svx-detail-marketplace-button is-secondary">
+                  <ImagePlus size={16} strokeWidth={2.35} />
+                  <span>{images.length ? "Manage images" : "Add images"}</span>
+                </Link>
               </div>
             </DetailSection>
 
@@ -1005,6 +1102,12 @@ export default function InventoryDetail() {
           <p>{category}</p>
           <p>{formatNumber(qty)}</p>
         </section>
+
+        <ProductImageViewer
+          image={imagePreview}
+          productName={product?.name || "Product"}
+          onClose={() => setImagePreview(null)}
+        />
 
         <StockUpdateDrawer
           open={stockDrawerOpen}

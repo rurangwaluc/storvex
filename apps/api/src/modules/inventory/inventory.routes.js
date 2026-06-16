@@ -1,7 +1,17 @@
+const multer = require("multer");
 const express = require("express");
 const router = express.Router();
 
+const productImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+});
+
+
 const inventoryController = require("./inventory.controller");
+const inventoryImagesController = require("./inventory.images.controller");
 
 const authenticate = require("../../middlewares/authenticate");
 const requireTenant = require("../../middlewares/requireTenant");
@@ -74,6 +84,21 @@ router.get(
 );
 
 // Product images
+router.post(
+  "/products/:id/images/upload",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  productImageUpload.single("image"),
+  inventoryImagesController.uploadProductImage
+);
+
+router.post(
+  "/products/:id/images/upload-url",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryImagesController.createProductImageUploadUrl
+);
+
 router.get(
   "/products/:id/images",
   ...readBase,

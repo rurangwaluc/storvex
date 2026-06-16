@@ -16,6 +16,7 @@ import InventoryCreate from "./legacy-pages/inventory/InventoryCreate";
 import InventoryEdit from "./legacy-pages/inventory/InventoryEdit";
 import InventoryList from "./legacy-pages/inventory/InventoryList";
 import InventoryDetail from "./legacy-pages/inventory/InventoryDetail";
+import ProductImages from "./legacy-pages/inventory/ProductImages";
 import StockAdjustments from "./legacy-pages/inventory/StockAdjustments";
 import Reorder from "./legacy-pages/inventory/Reorder";
 
@@ -183,6 +184,7 @@ export default function App() {
             >
               <Route path="inventory" element={<InventoryList />} />
               <Route path="inventory/:id" element={<InventoryDetail />} />
+              <Route path="inventory/:id/images" element={<ProductImages />} />
               <Route path="inventory/reorder" element={<Reorder />} />
               <Route
                 path="inventory/stock-history"

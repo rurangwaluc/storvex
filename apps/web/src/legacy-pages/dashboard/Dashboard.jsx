@@ -187,60 +187,23 @@ function pickPaymentAmount(source, keys) {
 
 function RevenueChart({ monthlyRevenue = 0 }) {
   const seed = Math.max(1, Math.round(Number(monthlyRevenue || 0) / 100000));
-  const pointList = [150, 128, 150, 108, 86, 138, 128, 52, 40].map((y, index) => {
-    const x = 40 + index * 39.5;
-    const adjusted = Math.max(28, Math.min(178, y - ((seed + index) % 7)));
+  const bars = [62, 52, 68, 46, 38, 74, 58].map((height, index) => {
+    const adjusted = Math.max(28, Math.min(88, height + ((seed + index) % 9) - 4));
 
-    return { x, y: adjusted, point: `${x},${adjusted}` };
+    return {
+      day: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index],
+      height: adjusted,
+    };
   });
-  const points = pointList.map((item) => item.point).join(" ");
 
   return (
-    <div className="svx-sales-chart">
-      <svg viewBox="0 0 360 230" role="img" aria-label="Sales overview" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="storvexDashboardChartFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="var(--dashboard-primary)" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="var(--dashboard-primary)" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-
-        {[8, 50, 92, 134, 176, 200].map((y) => (
-          <line key={y} x1="34" x2="360" y1={y} y2={y} className="svx-chart-grid-line" />
-        ))}
-
-        <g className="svx-chart-y-labels">
-          <text x="0" y="12">Rwf25M</text>
-          <text x="0" y="54">20M</text>
-          <text x="0" y="96">15M</text>
-          <text x="0" y="138">10M</text>
-          <text x="0" y="180">5M</text>
-          <text x="4" y="204">0</text>
-        </g>
-
-        <path
-          d={`M${pointList[0].x},${pointList[0].y} L${pointList
-            .slice(1)
-            .map((item) => item.point)
-            .join(" L")} L356,200 L40,200 Z`}
-          className="svx-chart-fill"
-        />
-        <polyline points={points} className="svx-chart-line" />
-
-        {pointList.map((item, index) => (
-          <circle
-            key={item.point}
-            cx={item.x}
-            cy={item.y}
-            r={index === pointList.length - 1 ? "5.5" : "4"}
-            className="svx-chart-dot"
-          />
-        ))}
-      </svg>
-
-      <div className="svx-chart-labels">
-        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-          <span key={day}>{day}</span>
+    <div className="svx-sales-chart is-safe-bars" role="img" aria-label="Sales overview">
+      <div className="svx-chart-bars">
+        {bars.map((item) => (
+          <div className="svx-chart-bar-group" key={item.day}>
+            <span className="svx-chart-bar" style={{ height: `${item.height}%` }} />
+            <small>{item.day}</small>
+          </div>
         ))}
       </div>
     </div>

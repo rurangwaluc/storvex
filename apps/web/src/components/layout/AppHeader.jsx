@@ -89,6 +89,9 @@ function pageTitle(pathname) {
   if (path.startsWith("/app/interstore")) return "Store transfers";
   if (path.startsWith("/app/inventory/reorder")) return "Restock list";
   if (path.startsWith("/app/inventory/stock-history")) return "Stock activity";
+  if (/^\/app\/inventory\/[^/]+\/images/.test(path)) return "Product images";
+  if (/^\/app\/inventory\/[^/]+\/edit/.test(path)) return "Edit product";
+  if (/^\/app\/inventory\/[^/]+$/.test(path)) return "Product details";
   if (path.startsWith("/app/inventory")) return "Stock overview";
   if (path.startsWith("/app/suppliers")) return "Suppliers";
   if (path.startsWith("/app/customers")) return "Customers";
