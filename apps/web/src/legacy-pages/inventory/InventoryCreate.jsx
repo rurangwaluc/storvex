@@ -1,51 +1,177 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import {
+  ArrowLeft,
+  BadgeCheck,
+  Barcode,
+  Boxes,
+  CheckCircle2,
+  ChevronRight,
+  ClipboardList,
+  DollarSign,
+  ImagePlus,
+  Layers3,
+  PackagePlus,
+  Save,
+  ShieldCheck,
+  Smartphone,
+  Store,
+  Tags,
+  Warehouse,
+} from "lucide-react";
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import { createProduct } from "../../services/inventoryApi";
+import { getWorkspaceContext } from "../../services/storeApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import "./InventoryCreate.css";
 
-const CATEGORY_OPTIONS = [
-  "Phones",
-  "Laptops",
-  "Tablets",
-  "Desktop Computers",
-  "Monitors",
-  "Printers",
-  "Networking",
-  "TV & Audio",
-  "Gaming",
-  "Cameras",
-  "Storage",
-  "Accessories",
-  "Smart Devices",
-  "Components",
-  "Other",
+const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
+
+const BUSINESS_CATEGORY_META = {
+  ELECTRONICS: {
+    label: "Electronics",
+    eyebrow: "Device-ready stock",
+    help: "Use model, serial, warranty, and device details where they matter.",
+    categoryOptions: [
+      "Phones",
+      "Laptops",
+      "Tablets",
+      "Desktop Computers",
+      "Monitors",
+      "Printers",
+      "Networking",
+      "TV & Audio",
+      "Gaming",
+      "Cameras",
+      "Storage",
+      "Accessories",
+      "Smart Devices",
+      "Components",
+      "Other",
+    ],
+  },
+  HARDWARE: {
+    label: "Hardware / Quincaillerie",
+    eyebrow: "Building materials stock",
+    help: "Use unit, size, material, and grade to keep hardware stock clear.",
+    categoryOptions: [
+      "Cement",
+      "Iron sheets",
+      "Paint",
+      "Plumbing",
+      "Electrical",
+      "Tools",
+      "Locks",
+      "Tiles",
+      "Timber",
+      "Fasteners",
+      "Adhesives",
+      "Other",
+    ],
+  },
+  HOME_KITCHEN: {
+    label: "Home & kitchen",
+    eyebrow: "Home product stock",
+    help: "Use material, color, set size, and room/use case for clean product records.",
+    categoryOptions: [
+      "Cookware",
+      "Kitchen appliances",
+      "Dining",
+      "Home appliances",
+      "Storage",
+      "Cleaning",
+      "Furniture",
+      "Decor",
+      "Bathroom",
+      "Bedding",
+      "Other",
+    ],
+  },
+  LIGHTING: {
+    label: "Lighting",
+    eyebrow: "Lighting stock",
+    help: "Use wattage, voltage, fitting, and indoor/outdoor details.",
+    categoryOptions: [
+      "Bulbs",
+      "Tubes",
+      "Ceiling lights",
+      "Wall lights",
+      "Outdoor lights",
+      "Solar lights",
+      "LED strips",
+      "Switches",
+      "Cables",
+      "Accessories",
+      "Other",
+    ],
+  },
+  SPARE_PARTS: {
+    label: "Spare parts",
+    eyebrow: "Compatibility-first stock",
+    help: "Use part number, compatible model, condition, and warranty where needed.",
+    categoryOptions: [
+      "Phone parts",
+      "Laptop parts",
+      "Printer parts",
+      "TV parts",
+      "Audio parts",
+      "Power parts",
+      "Cables",
+      "Screens",
+      "Batteries",
+      "Boards",
+      "Other",
+    ],
+  },
+};
+
+const DEFAULT_META = BUSINESS_CATEGORY_META.ELECTRONICS;
+
+const ELECTRONICS_SUBCATEGORIES = {
+  Accessories: [
+    "Charger",
+    "Headphones / Earbuds",
+    "Phone cover",
+    "Screen protector",
+    "Adapter / Dongle",
+    "Cable",
+    "Power bank",
+    "SSD / HDD",
+    "RAM",
+    "Keyboard / Mouse",
+    "Laptop bag",
+    "Battery",
+    "Remote",
+    "Tripod",
+    "Microphone",
+    "Webcam",
+    "Other",
+  ],
+  Storage: ["SSD", "HDD", "Memory card", "Flash disk", "External drive", "Other"],
+  Components: ["RAM", "Motherboard", "Power supply", "Battery", "Screen", "Keyboard", "Fan", "Other"],
+};
+
+const UNIT_OPTIONS = [
+  "Piece",
+  "Box",
+  "Carton",
+  "Pack",
+  "Pair",
+  "Set",
+  "Bag",
+  "Kg",
+  "Litre",
+  "Metre",
+  "Roll",
+  "Bundle",
 ];
 
-const ACCESSORY_SUBCATEGORY_OPTIONS = [
-  "Charger",
-  "Headphones/Earbuds",
-  "Phone cover",
-  "Screen protector",
-  "Adapter/Dongle",
-  "Cable",
-  "Power bank",
-  "SSD/HDD",
-  "RAM",
-  "Keyboard/Mouse",
-  "Laptop bag",
-  "Battery",
-  "Remote",
-  "Tripod",
-  "Microphone",
-  "Webcam",
-  "Other",
-];
+const CONDITION_OPTIONS = ["New", "Used", "Refurbished", "Open box"];
 
-function cx(...xs) {
-  return xs.filter(Boolean).join(" ");
+function cx(...items) {
+  return items.filter(Boolean).join(" ");
 }
 
 function cleanString(value) {
@@ -53,19 +179,37 @@ function cleanString(value) {
   return s || "";
 }
 
+function normalizeBusinessCategory(value) {
+  const raw = cleanString(value).toUpperCase();
+
+  if (["HARDWARE", "QUINCAILLERIE"].includes(raw)) return "HARDWARE";
+  if (["HOME_KITCHEN", "HOME_AND_KITCHEN", "HOME & KITCHEN"].includes(raw)) return "HOME_KITCHEN";
+  if (raw === "LIGHTING") return "LIGHTING";
+  if (["SPARE_PARTS", "SPARE PARTS", "AUTO_PARTS"].includes(raw)) return "SPARE_PARTS";
+
+  return "ELECTRONICS";
+}
+
+function parseNumber(value) {
+  if (value === "" || value === null || value === undefined) return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
 function formatRwf(value) {
   const n = Number(value || 0);
 
-  return new Intl.NumberFormat("en-RW", {
-    style: "currency",
-    currency: "RWF",
+  return `Rwf ${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
-  }).format(Number.isFinite(n) ? n : 0);
+  }).format(Number.isFinite(n) ? Math.round(n) : 0)}`;
 }
 
-function formatNumber(value) {
+function formatPlain(value) {
   const n = Number(value || 0);
-  return new Intl.NumberFormat("en-RW").format(Number.isFinite(n) ? n : 0);
+
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 0,
+  }).format(Number.isFinite(n) ? Math.round(n) : 0);
 }
 
 function activeBranchNameFromStorage() {
@@ -76,718 +220,697 @@ function activeBranchNameFromStorage() {
   if (name) return name;
   if (code) return code;
 
-  return "this branch";
+  return "Current branch";
 }
 
-function normalizeCategory(value) {
-  const raw = cleanString(value);
-  const low = raw.toLowerCase();
+function readCachedWorkspace() {
+  try {
+    const session = sessionStorage.getItem(WORKSPACE_CACHE_KEY);
+    if (session) return JSON.parse(session);
+  } catch {}
 
-  if (low === "accessory" || low === "accessories") return "Accessories";
-  if (low === "phone" || low === "phones") return "Phones";
-  if (low === "laptop" || low === "laptops") return "Laptops";
-  if (low === "tablet" || low === "tablets") return "Tablets";
-  if (low === "desktop" || low === "desktop computers") return "Desktop Computers";
-  if (low === "monitor" || low === "monitors") return "Monitors";
-  if (low === "printer" || low === "printers") return "Printers";
-  if (low === "network" || low === "networking") return "Networking";
-  if (low === "tv" || low === "tv & audio") return "TV & Audio";
-  if (low === "gaming") return "Gaming";
-  if (low === "camera" || low === "cameras") return "Cameras";
-  if (low === "storage") return "Storage";
-  if (low === "smart devices" || low === "smart device") return "Smart Devices";
-  if (low === "component" || low === "components") return "Components";
-  if (low === "other") return "Other";
+  try {
+    const local = localStorage.getItem(WORKSPACE_CACHE_KEY);
+    if (local) return JSON.parse(local);
+  } catch {}
 
-  return CATEGORY_OPTIONS.includes(raw) ? raw : "";
+  return null;
 }
 
-function parseMoney(value) {
-  const n = Number(value);
-  return Number.isFinite(n) ? n : NaN;
+function productInitials(name) {
+  const parts = cleanString(name).split(/\s+/).filter(Boolean);
+
+  if (!parts.length) return "P";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
-function parseStock(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return NaN;
-  return Math.floor(n);
-}
-
-function pageCard() {
-  return "rounded-[30px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-}
-
-function softPanel() {
-  return "rounded-[24px] bg-[var(--color-surface-2)]";
-}
-
-function inputClass() {
-  return "h-12 w-full rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(74,163,255,0.12)] disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function buttonBase() {
-  return "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function secondaryButton() {
-  return cx(
-    buttonBase(),
-    "bg-[var(--color-surface-2)] text-[var(--color-text)] shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
+function businessCategoryFromWorkspace(workspace) {
+  const tenant = workspace?.tenant || workspace?.business || workspace?.store || {};
+  return normalizeBusinessCategory(
+    tenant?.businessCategory ||
+      tenant?.category ||
+      tenant?.businessType ||
+      workspace?.businessCategory ||
+      workspace?.category,
   );
 }
 
-function primaryButton() {
-  return cx(
-    buttonBase(),
-    "bg-[var(--color-primary)] text-white shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
+function attributeFieldsFor(categoryKey, productCategory) {
+  if (categoryKey === "HARDWARE") {
+    return [
+      { name: "unit", label: "Selling unit", type: "select", options: UNIT_OPTIONS, placeholder: "Piece" },
+      { name: "size", label: "Size / measurement", placeholder: "Example: 20L, 12mm, 2m" },
+      { name: "material", label: "Material", placeholder: "Example: steel, PVC, wood" },
+      { name: "grade", label: "Grade / quality", placeholder: "Example: standard, heavy duty" },
+    ];
+  }
+
+  if (categoryKey === "HOME_KITCHEN") {
+    return [
+      { name: "material", label: "Material", placeholder: "Example: stainless steel, glass" },
+      { name: "color", label: "Color", placeholder: "Example: black" },
+      { name: "size", label: "Size", placeholder: "Example: medium, 2L, queen" },
+      { name: "setPieces", label: "Pieces in set", type: "number", placeholder: "Example: 6" },
+    ];
+  }
+
+  if (categoryKey === "LIGHTING") {
+    return [
+      { name: "wattage", label: "Wattage", placeholder: "Example: 12W" },
+      { name: "voltage", label: "Voltage", placeholder: "Example: 220V" },
+      { name: "fitting", label: "Fitting", placeholder: "Example: E27, GU10" },
+      { name: "lightColor", label: "Light color", placeholder: "Example: warm white" },
+    ];
+  }
+
+  if (categoryKey === "SPARE_PARTS") {
+    return [
+      { name: "partNumber", label: "Part number", placeholder: "Example: A2337-SCREEN" },
+      { name: "compatibleModel", label: "Compatible model", placeholder: "Example: iPhone 13, HP 840 G5" },
+      { name: "condition", label: "Condition", type: "select", options: CONDITION_OPTIONS, placeholder: "New" },
+      { name: "warrantyDays", label: "Warranty days", type: "number", placeholder: "Example: 30" },
+    ];
+  }
+
+  if (["Phones", "Tablets"].includes(productCategory)) {
+    return [
+      { name: "storage", label: "Storage", placeholder: "Example: 128GB" },
+      { name: "memory", label: "Memory", placeholder: "Example: 6GB RAM" },
+      { name: "color", label: "Color", placeholder: "Example: Midnight" },
+      { name: "condition", label: "Condition", type: "select", options: CONDITION_OPTIONS, placeholder: "New" },
+    ];
+  }
+
+  if (["Laptops", "Desktop Computers"].includes(productCategory)) {
+    return [
+      { name: "processor", label: "Processor", placeholder: "Example: Core i5" },
+      { name: "memory", label: "Memory", placeholder: "Example: 8GB RAM" },
+      { name: "storage", label: "Storage", placeholder: "Example: 512GB SSD" },
+      { name: "condition", label: "Condition", type: "select", options: CONDITION_OPTIONS, placeholder: "New" },
+    ];
+  }
+
+  if (productCategory === "Accessories") {
+    return [
+      { name: "compatibility", label: "Compatible with", placeholder: "Example: USB-C phones" },
+      { name: "color", label: "Color", placeholder: "Example: black" },
+      { name: "warrantyDays", label: "Warranty days", type: "number", placeholder: "Example: 30" },
+      { name: "unit", label: "Selling unit", type: "select", options: UNIT_OPTIONS, placeholder: "Piece" },
+    ];
+  }
+
+  return [
+    { name: "model", label: "Model", placeholder: "Example: 2024 model" },
+    { name: "specification", label: "Key specification", placeholder: "Example: Bluetooth, 4K, dual-band" },
+    { name: "condition", label: "Condition", type: "select", options: CONDITION_OPTIONS, placeholder: "New" },
+    { name: "warrantyDays", label: "Warranty days", type: "number", placeholder: "Example: 30" },
+  ];
 }
 
-function BackIcon() {
+function Field({ label, required = false, help, children, wide = false }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M15 18l-6-6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function SaveIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M5 12l4 4L19 6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function ProductIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.9">
-      <path d="M21 8l-9-5-9 5 9 5 9-5Z" />
-      <path d="M3 11v8l9 5 9-5v-8" />
-      <path d="M12 13v8" />
-    </svg>
-  );
-}
-
-function StatusPill({ tone = "neutral", children }) {
-  const classes =
-    tone === "success"
-      ? "bg-emerald-500/10 text-emerald-600"
-      : tone === "warning"
-        ? "bg-amber-500/10 text-amber-600"
-        : tone === "danger"
-          ? "bg-red-500/10 text-red-600"
-          : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
-
-  return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em]",
-        classes,
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
-function Field({ label, hint, children, required = false, className = "" }) {
-  return (
-    <label className={cx("block", className)}>
-      <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+    <label className={cx("svx-product-field", wide && "is-wide")}>
+      <span className="svx-product-field-label">
         {label}
-        {required ? <span className="text-red-500"> *</span> : null}
+        {required ? <strong>*</strong> : null}
       </span>
-
       {children}
-
-      {hint ? (
-        <span className="mt-2 block text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
-          {hint}
-        </span>
-      ) : null}
+      {help ? <span className="svx-product-field-help">{help}</span> : null}
     </label>
   );
 }
 
-function MetricCard({ label, value, note, tone = "neutral" }) {
-  const dot =
-    tone === "success"
-      ? "bg-emerald-500"
-      : tone === "warning"
-        ? "bg-amber-500"
-        : tone === "danger"
-          ? "bg-red-500"
-          : "bg-[var(--color-primary)]";
-
+function SectionHeader({ icon: Icon, title, text, badge }) {
   return (
-    <article className={cx(pageCard(), "relative overflow-hidden p-5")}>
-      <div className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-[rgba(74,163,255,0.08)] blur-2xl" />
+    <div className="svx-product-section-head">
+      <span className="svx-product-section-icon" aria-hidden="true">
+        <Icon size={20} strokeWidth={2.2} />
+      </span>
 
-      <div className="relative">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
-            {label}
-          </p>
-          <span className={cx("h-2.5 w-2.5 rounded-full", dot)} />
+      <div>
+        <div className="svx-product-section-title-row">
+          <h2>{title}</h2>
+          {badge ? <span>{badge}</span> : null}
         </div>
-
-        <p className="mt-3 truncate text-xl font-black tracking-[-0.03em] text-[var(--color-text)]">
-          {value}
-        </p>
-
-        {note ? (
-          <p className="mt-1 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
-            {note}
-          </p>
-        ) : null}
+        <p>{text}</p>
       </div>
-    </article>
+    </div>
   );
 }
 
-function ChoiceCard({ active, title, text, onClick, disabled }) {
+function SummaryRow({ label, value, tone }) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className={cx(
-        "rounded-[24px] p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-60",
-        active
-          ? "bg-[var(--color-primary)] text-white shadow-[var(--shadow-soft)]"
-          : "bg-[var(--color-surface-2)] text-[var(--color-text)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)]",
-      )}
-    >
-      <span className="block text-sm font-black">{title}</span>
-      <span className={cx("mt-2 block text-xs font-semibold leading-5", active ? "text-white/80" : "text-[var(--color-text-muted)]")}>
-        {text}
+    <div className={cx("svx-product-summary-row", tone && `is-${tone}`)}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+function MiniCard({ icon: Icon, label, value, tone = "neutral" }) {
+  return (
+    <div className={cx("svx-product-mini-card", `is-${tone}`)}>
+      <span aria-hidden="true">
+        <Icon size={18} strokeWidth={2.25} />
       </span>
-    </button>
+      <div>
+        <p>{label}</p>
+        <strong>{value}</strong>
+      </div>
+    </div>
   );
 }
 
 export default function InventoryCreate() {
   const navigate = useNavigate();
-
+  const [workspace, setWorkspace] = useState(() => readCachedWorkspace());
+  const [branchLabel] = useState(() => activeBranchNameFromStorage());
   const [saving, setSaving] = useState(false);
-  const [hasSerial, setHasSerial] = useState(false);
-  const [activeBranchLabel] = useState(() => activeBranchNameFromStorage());
-
+  const [trackSerial, setTrackSerial] = useState(false);
   const [form, setForm] = useState({
     name: "",
     sku: "",
-    serial: "",
     barcode: "",
+    serial: "",
+    brand: "",
+    category: "",
+    subcategory: "",
+    subcategoryOther: "",
     costPrice: "",
     sellPrice: "",
     stockQty: "",
     minStockLevel: "",
-    category: "",
-    subcategory: "",
-    subcategoryOther: "",
-    brand: "",
+    categoryAttributes: {},
   });
 
-  const category = useMemo(() => normalizeCategory(form.category), [form.category]);
-  const isAccessories = category === "Accessories";
-  const isOtherAccessoryType = isAccessories && form.subcategory === "Other";
+  useEffect(() => {
+    let active = true;
 
-  const buyPrice = parseMoney(form.costPrice || 0);
-  const sellPrice = parseMoney(form.sellPrice || 0);
-  const startingStock = parseStock(form.stockQty || 0);
-  const lowStockAlert = form.minStockLevel === "" ? null : parseStock(form.minStockLevel);
+    async function loadWorkspace() {
+      try {
+        const data = await getWorkspaceContext();
+        if (!active) return;
 
+        if (data) {
+          setWorkspace(data);
+
+          try {
+            sessionStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify(data));
+            localStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify(data));
+          } catch {}
+        }
+      } catch {
+        // Keep cached/default category. Creating products should not be blocked by a failed context refresh.
+      }
+    }
+
+    loadWorkspace();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const businessCategory = businessCategoryFromWorkspace(workspace);
+  const meta = BUSINESS_CATEGORY_META[businessCategory] || DEFAULT_META;
+  const productCategoryOptions = meta.categoryOptions;
+  const subcategoryOptions = ELECTRONICS_SUBCATEGORIES[form.category] || [];
+  const attributeFields = useMemo(
+    () => attributeFieldsFor(businessCategory, form.category),
+    [businessCategory, form.category],
+  );
+
+  const costPrice = parseNumber(form.costPrice);
+  const sellPrice = parseNumber(form.sellPrice);
+  const stockQty = parseNumber(form.stockQty);
+  const minStockLevel = parseNumber(form.minStockLevel);
   const profitPerItem =
-    Number.isFinite(sellPrice) && Number.isFinite(buyPrice)
-      ? sellPrice - buyPrice
-      : 0;
-
+    costPrice !== null && sellPrice !== null ? sellPrice - costPrice : 0;
+  const stockValue =
+    stockQty !== null && sellPrice !== null ? stockQty * sellPrice : 0;
   const stockCost =
-    Number.isFinite(startingStock) && Number.isFinite(buyPrice)
-      ? startingStock * buyPrice
-      : 0;
-
-  const stockSellValue =
-    Number.isFinite(startingStock) && Number.isFinite(sellPrice)
-      ? startingStock * sellPrice
-      : 0;
+    stockQty !== null && costPrice !== null ? stockQty * costPrice : 0;
+  const margin =
+    sellPrice && sellPrice > 0 ? Math.round((profitPerItem / sellPrice) * 100) : 0;
 
   const stockTone =
-    !Number.isFinite(startingStock) || startingStock <= 0
+    stockQty === null || stockQty <= 0
       ? "danger"
-      : lowStockAlert != null && Number.isFinite(lowStockAlert) && startingStock <= lowStockAlert
+      : minStockLevel !== null && stockQty <= minStockLevel
         ? "warning"
         : "success";
 
-  const stockLabel =
-    !Number.isFinite(startingStock) || startingStock <= 0
-      ? "No starting stock"
-      : lowStockAlert != null && Number.isFinite(lowStockAlert) && startingStock <= lowStockAlert
-        ? "Low starting stock"
-        : "Good starting stock";
-
-  function setField(key, value) {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function handleCategoryChange(value) {
-    const nextCategory = normalizeCategory(value);
-
-    setForm((prev) => {
-      const next = {
-        ...prev,
-        category: nextCategory,
-      };
-
-      if (nextCategory !== "Accessories") {
-        next.subcategory = "";
-        next.subcategoryOther = "";
-      }
-
-      return next;
-    });
-  }
-
-  function handleSerialToggle(nextValue) {
-    const checked = Boolean(nextValue);
-
-    setHasSerial(checked);
-    setForm((prev) => ({
-      ...prev,
-      serial: checked ? prev.serial : "",
+  function setField(name, value) {
+    setForm((current) => ({
+      ...current,
+      [name]: value,
     }));
   }
 
-  function validatePayload(payload) {
-    if (!payload.name) {
-      return "Product name is required";
-    }
-
-    if (!Number.isFinite(payload.costPrice) || payload.costPrice < 0) {
-      return "Cost price must be 0 or more";
-    }
-
-    if (!Number.isFinite(payload.sellPrice) || payload.sellPrice < 0) {
-      return "Sell price must be 0 or more";
-    }
-
-    if (!Number.isFinite(payload.stockQty) || payload.stockQty < 0) {
-      return "Starting stock must be 0 or more";
-    }
-
-    if (
-      payload.minStockLevel !== null &&
-      (!Number.isFinite(payload.minStockLevel) || payload.minStockLevel < 0)
-    ) {
-      return "Low stock alert must be 0 or more";
-    }
-
-    if (hasSerial && !payload.serial) {
-      return "Serial / IMEI is required when single-item tracking is on";
-    }
-
-    if (
-      payload.category === "Accessories" &&
-      payload.subcategory === "Other" &&
-      !payload.subcategoryOther
-    ) {
-      return "Write the custom accessory type";
-    }
-
-    return "";
+  function setAttribute(name, value) {
+    setForm((current) => ({
+      ...current,
+      categoryAttributes: {
+        ...(current.categoryAttributes || {}),
+        [name]: value,
+      },
+    }));
   }
 
-  async function submit(event) {
+  function handleCategoryChange(value) {
+    setForm((current) => ({
+      ...current,
+      category: value,
+      subcategory: "",
+      subcategoryOther: "",
+      categoryAttributes: {},
+    }));
+  }
+
+  function validateForm() {
+    const name = cleanString(form.name);
+    const category = cleanString(form.category);
+
+    if (!name) {
+      toast.error("Product name is required");
+      return false;
+    }
+
+    if (!category) {
+      toast.error("Choose the product category");
+      return false;
+    }
+
+    if (trackSerial && !cleanString(form.serial)) {
+      toast.error("Serial or IMEI is required when tracking is on");
+      return false;
+    }
+
+    if (costPrice === null || costPrice < 0) {
+      toast.error("Enter a valid cost price");
+      return false;
+    }
+
+    if (sellPrice === null || sellPrice <= 0) {
+      toast.error("Enter a valid selling price");
+      return false;
+    }
+
+    if (stockQty === null || stockQty < 0) {
+      toast.error("Enter valid starting stock");
+      return false;
+    }
+
+    if (minStockLevel !== null && minStockLevel < 0) {
+      toast.error("Low stock alert cannot be negative");
+      return false;
+    }
+
+    return true;
+  }
+
+  function buildAttributes() {
+    const out = {};
+
+    for (const field of attributeFields) {
+      const value = form.categoryAttributes?.[field.name];
+      if (value === undefined || value === null || value === "") continue;
+      out[field.name] = field.type === "number" ? Number(value) : cleanString(value);
+    }
+
+    return out;
+  }
+
+  async function handleSubmit(event) {
     event.preventDefault();
 
-    if (saving) return;
-
-    const payload = {
-      name: cleanString(form.name),
-      sku: cleanString(form.sku) || null,
-      serial: hasSerial ? cleanString(form.serial) || null : null,
-      barcode: cleanString(form.barcode) || null,
-      category: category || null,
-      subcategory: null,
-      subcategoryOther: null,
-      brand: cleanString(form.brand) || null,
-      minStockLevel: form.minStockLevel === "" ? null : parseStock(form.minStockLevel),
-      costPrice: parseMoney(form.costPrice),
-      sellPrice: parseMoney(form.sellPrice),
-      stockQty: parseStock(form.stockQty),
-    };
-
-    if (category === "Accessories") {
-      payload.subcategory = cleanString(form.subcategory) || null;
-      payload.subcategoryOther =
-        payload.subcategory === "Other" ? cleanString(form.subcategoryOther) || null : null;
-    }
-
-    const validationMessage = validatePayload(payload);
-
-    if (validationMessage) {
-      toast.error(validationMessage);
-      return;
-    }
+    if (!validateForm()) return;
 
     setSaving(true);
 
     try {
-      await createProduct(payload);
+      const payload = {
+        name: cleanString(form.name),
+        sku: cleanString(form.sku),
+        barcode: cleanString(form.barcode),
+        serial: trackSerial ? cleanString(form.serial) : "",
+        brand: cleanString(form.brand),
+        category: cleanString(form.category),
+        subcategory: cleanString(form.subcategory),
+        subcategoryOther: cleanString(form.subcategoryOther),
+        costPrice: Number(form.costPrice),
+        sellPrice: Number(form.sellPrice),
+        stockQty: Number(form.stockQty),
+        minStockLevel: form.minStockLevel === "" ? undefined : Number(form.minStockLevel),
+        categoryAttributes: buildAttributes(),
+      };
 
-      toast.success("Product added");
-      navigate("/app/inventory");
-    } catch (error) {
-      if (handleSubscriptionBlockedError(error, { toastId: "inventory-create-blocked" })) {
-        return;
+      const response = await createProduct(payload);
+      const product = response?.product || response?.data?.product || response;
+      const productId = product?.id;
+
+      toast.success("Product saved");
+
+      if (productId) {
+        navigate(`/app/inventory/${productId}`);
+      } else {
+        navigate("/app/inventory");
       }
-
-      toast.error(error?.message || "Failed to add product");
+    } catch (error) {
+      handleSubscriptionBlockedError(error) || toast.error(error?.message || "Failed to save product");
     } finally {
       setSaving(false);
     }
   }
 
   return (
-    <div className="space-y-5">
-      <section className={cx(pageCard(), "relative overflow-hidden p-5 sm:p-6")}>
-        <div className="pointer-events-none absolute -right-24 -top-24 h-[260px] w-[260px] rounded-full bg-[rgba(74,163,255,0.10)] blur-3xl" />
-
-        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-              Stock control
-            </p>
-
-            <h1 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)] sm:text-3xl">
-              Add product
-            </h1>
-
-            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-              Add a product to{" "}
-              <span className="font-black text-[var(--color-text)]">{activeBranchLabel}</span>.
-              Starting stock will be available for sale in this branch.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row xl:justify-end">
+    <main className="svx-product-page">
+      <form className="svx-product-shell" onSubmit={handleSubmit}>
+        <header className="svx-product-hero">
+          <div className="svx-product-hero-copy">
             <button
               type="button"
+              className="svx-product-back"
               onClick={() => navigate("/app/inventory")}
               disabled={saving}
-              className={secondaryButton()}
             >
-              <BackIcon />
-              Back
+              <ArrowLeft size={18} strokeWidth={2.4} />
+              <span>Inventory</span>
             </button>
 
-            <AsyncButton
-              loading={saving}
-              onClick={submit}
-              className={primaryButton()}
-            >
-              <SaveIcon />
-              Save product
-            </AsyncButton>
+            <p className="svx-product-kicker">Create product</p>
+            <h1>Add a product.</h1>
+            <p>
+              Save the product for stock and sales first. Marketplace images are added later only when the owner chooses to publish it.
+            </p>
           </div>
-        </div>
-      </section>
 
-      <form onSubmit={submit} className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <div className="space-y-5">
-          <section className={cx(pageCard(), "p-5 sm:p-6")}>
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[22px] bg-[rgba(74,163,255,0.12)] text-[var(--color-primary)] shadow-[var(--shadow-soft)]">
-                <ProductIcon />
-              </div>
+          <div className="svx-product-hero-card">
+            <span className="svx-product-avatar" aria-hidden="true">
+              {productInitials(form.name)}
+            </span>
 
-              <div>
-                <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                  Product details
-                </h2>
-                <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                  Use simple names your team can recognize quickly when selling.
-                </p>
-              </div>
+            <div>
+              <p>{form.name || "New product"}</p>
+              <span>{form.category || meta.label}</span>
             </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <Field label="Product name" required>
-                <input
-                  value={form.name}
-                  onChange={(event) => setField("name", event.target.value)}
-                  className={inputClass()}
-                  placeholder="Example: Dell Inspiron 15"
-                  disabled={saving}
-                />
-              </Field>
+            <ChevronRight size={18} strokeWidth={2.5} />
+          </div>
+        </header>
 
-              <Field label="Brand">
-                <input
-                  value={form.brand}
-                  onChange={(event) => setField("brand", event.target.value)}
-                  className={inputClass()}
-                  placeholder="Example: Dell"
-                  disabled={saving}
-                />
-              </Field>
+        <section className="svx-product-metrics" aria-label="Product preview">
+          <MiniCard icon={Warehouse} label="Branch" value={branchLabel} tone="blue" />
+          <MiniCard icon={DollarSign} label="Selling value" value={formatRwf(stockValue)} tone="green" />
+          <MiniCard icon={ShieldCheck} label="Margin" value={`${Number.isFinite(margin) ? margin : 0}%`} tone={profitPerItem >= 0 ? "green" : "red"} />
+          <MiniCard icon={Boxes} label="Starting stock" value={stockQty === null ? "0" : formatPlain(stockQty)} tone={stockTone} />
+        </section>
 
-              <Field label="Product code" hint="Optional. Use it if your shop already has product codes.">
-                <input
-                  value={form.sku}
-                  onChange={(event) => setField("sku", event.target.value)}
-                  className={inputClass()}
-                  placeholder="Example: DEL-INS15"
-                  disabled={saving}
-                />
-              </Field>
+        <div className="svx-product-layout">
+          <div className="svx-product-main">
+            <section className="svx-product-card">
+              <SectionHeader
+                icon={PackagePlus}
+                title="Product basics"
+                text="Only ask for what helps the owner sell, find, and control this product."
+                badge={meta.eyebrow}
+              />
 
-              <Field label="Barcode" hint="Optional. Useful when using barcode search or scanner.">
-                <input
-                  value={form.barcode}
-                  onChange={(event) => setField("barcode", event.target.value)}
-                  className={inputClass()}
-                  placeholder="Barcode number"
-                  disabled={saving}
-                />
-              </Field>
+              <div className="svx-product-grid">
+                <Field label="Product name" required wide>
+                  <input
+                    className="svx-product-input"
+                    value={form.name}
+                    onChange={(event) => setField("name", event.target.value)}
+                    placeholder="Example: Dell Inspiron 15"
+                    disabled={saving}
+                  />
+                </Field>
 
-              <Field label="Category">
-                <select
-                  value={category}
-                  onChange={(event) => handleCategoryChange(event.target.value)}
-                  className={inputClass()}
-                  disabled={saving}
-                >
-                  <option value="">Choose category</option>
-                  {CATEGORY_OPTIONS.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
-              {isAccessories ? (
-                <Field label="Accessory type">
+                <Field label="Product category" required>
                   <select
-                    value={form.subcategory}
-                    onChange={(event) => setField("subcategory", event.target.value)}
-                    className={inputClass()}
+                    className="svx-product-input"
+                    value={form.category}
+                    onChange={(event) => handleCategoryChange(event.target.value)}
                     disabled={saving}
                   >
-                    <option value="">Choose accessory type</option>
-                    {ACCESSORY_SUBCATEGORY_OPTIONS.map((item) => (
+                    <option value="">Choose category</option>
+                    {productCategoryOptions.map((item) => (
                       <option key={item} value={item}>
                         {item}
                       </option>
                     ))}
                   </select>
                 </Field>
-              ) : null}
 
-              {isOtherAccessoryType ? (
-                <Field label="Custom accessory type" className="sm:col-span-2">
+                <Field label="Brand">
                   <input
-                    value={form.subcategoryOther}
-                    onChange={(event) => setField("subcategoryOther", event.target.value)}
-                    className={inputClass()}
-                    placeholder="Write the accessory type"
+                    className="svx-product-input"
+                    value={form.brand}
+                    onChange={(event) => setField("brand", event.target.value)}
+                    placeholder="Example: Dell"
                     disabled={saving}
                   />
                 </Field>
-              ) : null}
-            </div>
-          </section>
 
-          <section className={cx(pageCard(), "p-5 sm:p-6")}>
-            <div>
-              <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                Serial / IMEI
-              </h2>
-              <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                Turn this on only when the item must be identified one by one, like phones and laptops.
-              </p>
-            </div>
+                {subcategoryOptions.length ? (
+                  <Field label="Product type">
+                    <select
+                      className="svx-product-input"
+                      value={form.subcategory}
+                      onChange={(event) => setField("subcategory", event.target.value)}
+                      disabled={saving}
+                    >
+                      <option value="">Choose type</option>
+                      {subcategoryOptions.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : null}
 
-            <div className="mt-5 grid gap-4 sm:grid-cols-2">
-              <ChoiceCard
-                active={!hasSerial}
-                title="No single-item tracking"
-                text="Best for normal stock where each unit does not need its own serial number."
-                disabled={saving}
-                onClick={() => handleSerialToggle(false)}
-              />
+                {form.subcategory === "Other" ? (
+                  <Field label="Custom type">
+                    <input
+                      className="svx-product-input"
+                      value={form.subcategoryOther}
+                      onChange={(event) => setField("subcategoryOther", event.target.value)}
+                      placeholder="Write the type"
+                      disabled={saving}
+                    />
+                  </Field>
+                ) : null}
 
-              <ChoiceCard
-                active={hasSerial}
-                title="Use Serial / IMEI"
-                text="Best for phones, laptops, and devices where each unit must be identifiable."
-                disabled={saving}
-                onClick={() => handleSerialToggle(true)}
-              />
-            </div>
-
-            {hasSerial ? (
-              <div className="mt-5">
-                <Field label="Serial / IMEI" required>
+                <Field label="SKU">
                   <input
-                    value={form.serial}
-                    onChange={(event) => setField("serial", event.target.value)}
-                    className={inputClass()}
-                    placeholder="Serial or IMEI number"
+                    className="svx-product-input"
+                    value={form.sku}
+                    onChange={(event) => setField("sku", event.target.value)}
+                    placeholder="Example: DEL-I15"
+                    disabled={saving}
+                  />
+                </Field>
+
+                <Field label="Barcode">
+                  <input
+                    className="svx-product-input"
+                    value={form.barcode}
+                    onChange={(event) => setField("barcode", event.target.value)}
+                    placeholder="Scan or enter barcode"
                     disabled={saving}
                   />
                 </Field>
               </div>
-            ) : null}
-          </section>
+            </section>
 
-          <section className={cx(pageCard(), "p-5 sm:p-6")}>
-            <div>
-              <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                Price and stock
-              </h2>
-              <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                Set the cost, selling price, and how many units are available here today.
+            <section className="svx-product-card">
+              <SectionHeader
+                icon={Layers3}
+                title="Category details"
+                text={meta.help}
+                badge="Category-aware"
+              />
+
+              <div className="svx-product-grid">
+                {attributeFields.map((field) => (
+                  <Field key={field.name} label={field.label}>
+                    {field.type === "select" ? (
+                      <select
+                        className="svx-product-input"
+                        value={form.categoryAttributes?.[field.name] || ""}
+                        onChange={(event) => setAttribute(field.name, event.target.value)}
+                        disabled={saving}
+                      >
+                        <option value="">{field.placeholder || "Choose"}</option>
+                        {(field.options || []).map((item) => (
+                          <option key={item} value={item}>
+                            {item}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={field.type === "number" ? "number" : "text"}
+                        min={field.type === "number" ? "0" : undefined}
+                        className="svx-product-input"
+                        value={form.categoryAttributes?.[field.name] || ""}
+                        onChange={(event) => setAttribute(field.name, event.target.value)}
+                        placeholder={field.placeholder}
+                        disabled={saving}
+                      />
+                    )}
+                  </Field>
+                ))}
+              </div>
+            </section>
+
+            <section className="svx-product-card">
+              <SectionHeader
+                icon={BadgeCheck}
+                title="Tracking"
+                text="Use serial or IMEI only when a product must be identified one by one."
+              />
+
+              <div className="svx-product-choice-grid">
+                <button
+                  type="button"
+                  className={cx("svx-product-choice", !trackSerial && "is-active")}
+                  onClick={() => {
+                    setTrackSerial(false);
+                    setField("serial", "");
+                  }}
+                  disabled={saving}
+                >
+                  <strong>Normal stock</strong>
+                  <span>Best for products where every unit is the same.</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={cx("svx-product-choice", trackSerial && "is-active")}
+                  onClick={() => setTrackSerial(true)}
+                  disabled={saving}
+                >
+                  <strong>Serial / IMEI</strong>
+                  <span>Best for phones, laptops, and warranty-sensitive items.</span>
+                </button>
+              </div>
+
+              {trackSerial ? (
+                <div className="svx-product-grid is-single">
+                  <Field label="Serial / IMEI" required>
+                    <input
+                      className="svx-product-input"
+                      value={form.serial}
+                      onChange={(event) => setField("serial", event.target.value)}
+                      placeholder="Serial or IMEI number"
+                      disabled={saving}
+                    />
+                  </Field>
+                </div>
+              ) : null}
+            </section>
+
+            <section className="svx-product-card">
+              <SectionHeader
+                icon={Tags}
+                title="Price and stock"
+                text="Set what the product costs, what it sells for, and what is available in this branch."
+              />
+
+              <div className="svx-product-grid">
+                <Field label="Cost price" required>
+                  <input
+                    type="number"
+                    min="0"
+                    className="svx-product-input"
+                    value={form.costPrice}
+                    onChange={(event) => setField("costPrice", event.target.value)}
+                    placeholder="450000"
+                    disabled={saving}
+                  />
+                </Field>
+
+                <Field label="Selling price" required>
+                  <input
+                    type="number"
+                    min="0"
+                    className="svx-product-input"
+                    value={form.sellPrice}
+                    onChange={(event) => setField("sellPrice", event.target.value)}
+                    placeholder="530000"
+                    disabled={saving}
+                  />
+                </Field>
+
+                <Field label="Starting stock" required>
+                  <input
+                    type="number"
+                    min="0"
+                    className="svx-product-input"
+                    value={form.stockQty}
+                    onChange={(event) => setField("stockQty", event.target.value)}
+                    placeholder="5"
+                    disabled={saving}
+                  />
+                </Field>
+
+                <Field label="Low stock alert">
+                  <input
+                    type="number"
+                    min="0"
+                    className="svx-product-input"
+                    value={form.minStockLevel}
+                    onChange={(event) => setField("minStockLevel", event.target.value)}
+                    placeholder="2"
+                    disabled={saving}
+                  />
+                </Field>
+              </div>
+            </section>
+          </div>
+
+          <aside className="svx-product-side">
+            <section className="svx-product-card svx-product-side-card">
+              <SectionHeader
+                icon={ClipboardList}
+                title="Before saving"
+                text="Quick check for this product."
+              />
+
+              <div className="svx-product-summary">
+                <SummaryRow label="Product" value={form.name || "Not named"} />
+                <SummaryRow label="Category" value={form.category || meta.label} />
+                <SummaryRow label="Cost" value={formatRwf(costPrice || 0)} />
+                <SummaryRow label="Selling price" value={formatRwf(sellPrice || 0)} />
+                <SummaryRow label="Profit per item" value={formatRwf(profitPerItem)} tone={profitPerItem >= 0 ? "success" : "danger"} />
+                <SummaryRow label="Stock cost" value={formatRwf(stockCost)} />
+                <SummaryRow label="Possible sales value" value={formatRwf(stockValue)} tone="success" />
+              </div>
+            </section>
+
+            <section className="svx-product-card svx-product-marketplace-note">
+              <SectionHeader
+                icon={ImagePlus}
+                title="Marketplace images"
+                text="Images are not required for internal stock."
+              />
+
+              <p>
+                Save the product first. Images become required only when the owner chooses to publish this product to the marketplace.
               </p>
-            </div>
+            </section>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <Field label="Cost price" required>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.costPrice}
-                  onChange={(event) => setField("costPrice", event.target.value)}
-                  className={inputClass()}
-                  placeholder="450000"
-                  disabled={saving}
-                />
-              </Field>
-
-              <Field label="Sell price" required>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.sellPrice}
-                  onChange={(event) => setField("sellPrice", event.target.value)}
-                  className={inputClass()}
-                  placeholder="529999"
-                  disabled={saving}
-                />
-              </Field>
-
-              <Field label="Starting stock here" required>
-                <input
-                  type="number"
-                  min="0"
-                  value={form.stockQty}
-                  onChange={(event) => setField("stockQty", event.target.value)}
-                  className={inputClass()}
-                  placeholder="5"
-                  disabled={saving}
-                />
-              </Field>
-
-              <Field label="Low stock alert" hint="The system will warn you when stock gets this low.">
-                <input
-                  type="number"
-                  min="0"
-                  value={form.minStockLevel}
-                  onChange={(event) => setField("minStockLevel", event.target.value)}
-                  className={inputClass()}
-                  placeholder="2"
-                  disabled={saving}
-                />
-              </Field>
-            </div>
-          </section>
-        </div>
-
-        <aside className="space-y-5 xl:sticky xl:top-[96px] xl:self-start">
-          <section className={cx(pageCard(), "p-5")}>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-                  Preview
-                </p>
-
-                <h2 className="mt-2 text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                  Before saving
-                </h2>
-              </div>
-
-              <StatusPill tone={stockTone}>{stockLabel}</StatusPill>
-            </div>
-
-            <div className="mt-5 grid gap-3">
-              <MetricCard
-                label="Profit per item"
-                value={formatRwf(profitPerItem)}
-                note="Sell price minus cost price"
-                tone={profitPerItem > 0 ? "success" : profitPerItem < 0 ? "danger" : "neutral"}
-              />
-
-              <MetricCard
-                label="Stock cost"
-                value={formatRwf(stockCost)}
-                note="Money tied in this starting stock"
-                tone="neutral"
-              />
-
-              <MetricCard
-                label="Possible sales value"
-                value={formatRwf(stockSellValue)}
-                note="If all starting stock is sold"
-                tone="success"
-              />
-            </div>
-          </section>
-
-          <section className={cx(pageCard(), "p-5")}>
-            <h3 className="text-base font-black text-[var(--color-text)]">
-              Product summary
-            </h3>
-
-            <div className="mt-4 space-y-3">
-              <div className={cx(softPanel(), "p-4")}>
-                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
-                  Product
-                </p>
-                <p className="mt-2 truncate text-sm font-black text-[var(--color-text)]">
-                  {form.name || "Not named yet"}
-                </p>
-              </div>
-
-              <div className={cx(softPanel(), "p-4")}>
-                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
-                  Available here
-                </p>
-                <p className="mt-2 text-xl font-black text-[var(--color-text)]">
-                  {Number.isFinite(startingStock) ? formatNumber(startingStock) : "—"}
-                </p>
-              </div>
-
-              <div className={cx(softPanel(), "p-4")}>
-                <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
-                  Branch
-                </p>
-                <p className="mt-2 truncate text-sm font-black text-[var(--color-text)]">
-                  {activeBranchLabel}
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <section className={cx(pageCard(), "p-5")}>
-            <div className="flex flex-col gap-2">
+            <section className="svx-product-save-card">
               <button
                 type="button"
+                className="svx-product-secondary"
                 onClick={() => navigate("/app/inventory")}
                 disabled={saving}
-                className={secondaryButton()}
               >
                 Cancel
               </button>
@@ -795,15 +918,16 @@ export default function InventoryCreate() {
               <AsyncButton
                 type="submit"
                 loading={saving}
-                className={primaryButton()}
+                loadingText="Saving product..."
+                className="svx-product-primary"
               >
-                <SaveIcon />
-                Save product
+                <Save size={17} strokeWidth={2.4} />
+                <span>Save product</span>
               </AsyncButton>
-            </div>
-          </section>
-        </aside>
+            </section>
+          </aside>
+        </div>
       </form>
-    </div>
+    </main>
   );
 }
