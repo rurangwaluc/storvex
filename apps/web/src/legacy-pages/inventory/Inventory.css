@@ -2228,3 +2228,76 @@
     white-space: normal !important;
   }
 }
+
+
+/* =========================================================
+   Inventory action menu visibility lock
+   The product actions menu is rendered to document.body and
+   positioned from the clicked three-dot button, so it never hides
+   behind rows, cards, sidebars, or table overflow.
+   ========================================================= */
+
+.svx-inventory-actions-menu {
+  position: fixed !important;
+  z-index: 2147483647 !important;
+  max-width: calc(100vw - 24px) !important;
+  padding: 8px !important;
+  border: 1px solid var(--inventory-line) !important;
+  border-radius: 18px !important;
+  background: var(--inventory-surface) !important;
+  color: var(--inventory-text) !important;
+  box-shadow: 0 24px 80px rgba(2, 6, 23, 0.36) !important;
+  overflow: hidden !important;
+}
+
+:root[data-theme="dark"] .svx-inventory-actions-menu {
+  background: #1f1f20 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.68) !important;
+}
+
+.svx-inventory-actions-menu button {
+  width: 100% !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+  color: var(--inventory-text) !important;
+  cursor: pointer !important;
+  display: grid !important;
+  grid-template-columns: 38px minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 11px 10px !important;
+  text-align: left !important;
+}
+
+.svx-inventory-actions-menu button:hover {
+  background: var(--inventory-soft) !important;
+}
+
+.svx-inventory-actions-menu svg {
+  color: var(--inventory-blue) !important;
+}
+
+.svx-inventory-actions-menu strong {
+  display: block !important;
+  color: var(--inventory-text) !important;
+  font-size: 13.5px !important;
+  font-weight: 800 !important;
+  line-height: 1.18 !important;
+}
+
+.svx-inventory-actions-menu small {
+  display: block !important;
+  margin-top: 3px !important;
+  color: var(--inventory-muted) !important;
+  font-size: 11.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+}
+
+.svx-inventory-icon-button--menu[aria-expanded="true"] {
+  color: var(--inventory-blue) !important;
+  background: var(--inventory-blue-soft) !important;
+  border-color: rgba(21, 156, 255, 0.28) !important;
+}

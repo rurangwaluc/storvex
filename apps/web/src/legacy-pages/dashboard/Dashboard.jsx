@@ -9,13 +9,10 @@ import {
   CheckCircle2,
   ClipboardList,
   CreditCard,
-  FileText,
-  MessageCircle,
   PackageCheck,
   RefreshCw,
   ShoppingBag,
   ShoppingCart,
-  Users,
   Wrench,
 } from "lucide-react";
 
@@ -188,15 +185,6 @@ function pickPaymentAmount(source, keys) {
   return null;
 }
 
-function PaymentMethodStat({ label, value }) {
-  return (
-    <div className="svx-payment-method-stat">
-      <span>{label}</span>
-      <strong>{value === null ? "—" : money(value)}</strong>
-    </div>
-  );
-}
-
 function RevenueChart({ monthlyRevenue = 0 }) {
   const seed = Math.max(1, Math.round(Number(monthlyRevenue || 0) / 100000));
   const pointList = [150, 128, 150, 108, 86, 138, 128, 52, 40].map((y, index) => {
@@ -230,7 +218,13 @@ function RevenueChart({ monthlyRevenue = 0 }) {
           <text x="4" y="204">0</text>
         </g>
 
-        <path d={`M${pointList[0].x},${pointList[0].y} L${pointList.slice(1).map((item) => item.point).join(" L")} L356,200 L40,200 Z`} className="svx-chart-fill" />
+        <path
+          d={`M${pointList[0].x},${pointList[0].y} L${pointList
+            .slice(1)
+            .map((item) => item.point)
+            .join(" L")} L356,200 L40,200 Z`}
+          className="svx-chart-fill"
+        />
         <polyline points={points} className="svx-chart-line" />
 
         {pointList.map((item, index) => (
@@ -323,27 +317,6 @@ function ProductRow({ item }) {
   );
 }
 
-function FocusItem({ icon: Icon, title, text, tone = "info", to, action }) {
-  return (
-    <div className="svx-focus-item">
-      <IconShell tone={tone}>
-        <Icon size={18} strokeWidth={2.4} />
-      </IconShell>
-
-      <div className="svx-focus-copy">
-        <p>{title}</p>
-        <span>{text}</span>
-      </div>
-
-      {to ? (
-        <Link to={to} className={cx("svx-focus-link", `is-${tone}`)}>
-          {action || "Open"}
-        </Link>
-      ) : null}
-    </div>
-  );
-}
-
 function ActivityRow({ item }) {
   const action = String(item?.action || "Activity").replaceAll("_", " ");
   const entity = item?.entity || item?.type || "Record";
@@ -365,17 +338,6 @@ function ActivityRow({ item }) {
   );
 }
 
-function QuickAction({ label, to, icon: Icon, primary = false }) {
-  return (
-    <Link to={to} className={cx("svx-quick-action", primary && "is-primary")}>
-      <span>
-        <Icon size={18} strokeWidth={2.35} />
-      </span>
-      <strong>{label}</strong>
-    </Link>
-  );
-}
-
 function EmptyState({ title, text }) {
   return (
     <div className="svx-empty-state">
@@ -384,7 +346,6 @@ function EmptyState({ title, text }) {
     </div>
   );
 }
-
 
 function ActionCenterCard({ icon: Icon, title, text, tone = "info", to, action }) {
   const content = (
@@ -450,7 +411,10 @@ function SubscriptionPanel({ subscription }) {
           </div>
 
           <div className="svx-subscription-progress" aria-hidden="true">
-            <span className={cx(percent > 40 ? "is-success" : percent > 15 ? "is-warning" : "is-danger")} style={{ width: `${percent}%` }} />
+            <span
+              className={cx(percent > 40 ? "is-success" : percent > 15 ? "is-warning" : "is-danger")}
+              style={{ width: `${percent}%` }}
+            />
           </div>
 
           <div className="svx-subscription-actions">
@@ -464,7 +428,6 @@ function SubscriptionPanel({ subscription }) {
     </section>
   );
 }
-
 
 function BusinessStatusPanel({ categoryPanel, category, marketplacePublished, marketplaceMissingImages, subscription }) {
   const subscriptionLabel = subscription?.label || subscription?.status || "Not loaded";
@@ -481,7 +444,9 @@ function BusinessStatusPanel({ categoryPanel, category, marketplacePublished, ma
 
         <div className="svx-mobile-status-row">
           <span>Marketplace</span>
-          <strong>{marketplacePublished} live · {marketplaceMissingImages} missing images</strong>
+          <strong>
+            {marketplacePublished} live · {marketplaceMissingImages} missing images
+          </strong>
         </div>
 
         <div className="svx-mobile-status-row">
@@ -490,7 +455,9 @@ function BusinessStatusPanel({ categoryPanel, category, marketplacePublished, ma
         </div>
       </div>
 
-      <Link to="/app/reports" className="svx-mobile-status-link">View business details</Link>
+      <Link to="/app/reports" className="svx-mobile-status-link">
+        View business details
+      </Link>
     </section>
   );
 }
@@ -862,11 +829,13 @@ export default function Dashboard() {
     const merged = [...focusItems, ...fallbackItems];
     const seen = new Set();
 
-    return merged.filter((item) => {
-      if (seen.has(item.title)) return false;
-      seen.add(item.title);
-      return true;
-    }).slice(0, 4);
+    return merged
+      .filter((item) => {
+        if (seen.has(item.title)) return false;
+        seen.add(item.title);
+        return true;
+      })
+      .slice(0, 4);
   }, [focusItems, lowStockCount, marketplaceMissingImages, outOfStockCount]);
 
   const categoryPanel = categoryFocus(
@@ -960,7 +929,9 @@ export default function Dashboard() {
 
           <div className="svx-sales-overview-value">
             <strong>{money(todaySales)}</strong>
-            <span className={cx("svx-sales-change", todaySales > 0 && "is-positive")}>{todaySales > 0 ? "Recorded today" : "No sales yet today"}</span>
+            <span className={cx("svx-sales-change", todaySales > 0 && "is-positive")}>
+              {todaySales > 0 ? "Recorded today" : "No sales yet today"}
+            </span>
             <p>{pendingDeals > 0 ? `${pendingDeals} pending sale${pendingDeals === 1 ? "" : "s"}` : "No pending sales pressure"}</p>
           </div>
 

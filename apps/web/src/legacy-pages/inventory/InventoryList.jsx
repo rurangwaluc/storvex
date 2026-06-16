@@ -1,4 +1,6 @@
+
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import inventoryApi from "../../services/inventoryApi";
@@ -512,7 +514,7 @@ export default function InventoryList() {
   const [stockModalOpen, setStockModalOpen] = useState(false);
   const [stockForm, setStockForm] = useState(DEFAULT_STOCK_FORM);
   const [savingStock, setSavingStock] = useState(false);
-  const [openActionsId, setOpenActionsId] = useState(null);
+  const [actionsMenu, setActionsMenu] = useState(null);
 
   const loadSummary = useCallback(async () => {
     setSummaryLoading(true);
@@ -580,27 +582,66 @@ export default function InventoryList() {
   }, [loadSummary, loadProducts]);
 
   useEffect(() => {
-    if (!openActionsId) return undefined;
+    if (!actionsMenu) return undefined;
 
     function closeActions(event) {
       if (event?.target?.closest?.("[data-inventory-actions-menu]")) return;
-      setOpenActionsId(null);
+      setActionsMenu(null);
     }
 
     function onEscape(event) {
-      if (event.key === "Escape") setOpenActionsId(null);
+      if (event.key === "Escape") setActionsMenu(null);
     }
 
     document.addEventListener("click", closeActions);
     window.addEventListener("scroll", closeActions, true);
+    window.addEventListener("resize", closeActions);
     window.addEventListener("keydown", onEscape);
 
     return () => {
       document.removeEventListener("click", closeActions);
       window.removeEventListener("scroll", closeActions, true);
+      window.removeEventListener("resize", closeActions);
       window.removeEventListener("keydown", onEscape);
     };
-  }, [openActionsId]);
+  }, [actionsMenu]);
+
+  function openActionsMenu(event, product) {
+    event.stopPropagation();
+
+    if (!product?.id || typeof window === "undefined") return;
+
+    const button = event.currentTarget;
+    if (!button) return;
+
+    const rect = button.getBoundingClientRect();
+    const menuWidth = Math.min(304, window.innerWidth - 24);
+    const menuHeight = 202;
+    const gap = 10;
+    const edge = 12;
+
+    const hasRoomBelow = window.innerHeight - rect.bottom >= menuHeight + gap + edge;
+    const top = hasRoomBelow
+      ? Math.min(rect.bottom + gap, window.innerHeight - menuHeight - edge)
+      : Math.max(edge, rect.top - menuHeight - gap);
+
+    const preferredLeft = rect.right - menuWidth;
+    const left = Math.min(
+      Math.max(edge, preferredLeft),
+      window.innerWidth - menuWidth - edge,
+    );
+
+    setActionsMenu((current) => {
+      if (current?.productId === product.id) return null;
+
+      return {
+        productId: product.id,
+        top,
+        left,
+        width: menuWidth,
+      };
+    });
+  }
 
   function openCreatePage() {
     navigate("/app/inventory/new");
@@ -608,18 +649,18 @@ export default function InventoryList() {
 
   function openDetailPage(product) {
     if (!product?.id) return;
-    setOpenActionsId(null);
+    setActionsMenu(null);
     navigate(`/app/inventory/${product.id}`);
   }
 
   function openEditPage(product) {
     if (!product?.id) return;
-    setOpenActionsId(null);
+    setActionsMenu(null);
     navigate(`/app/inventory/${product.id}/edit`);
   }
 
   function openStockModal(product) {
-    setOpenActionsId(null);
+    setActionsMenu(null);
     setSelectedProduct(product);
     setStockForm({
       ...DEFAULT_STOCK_FORM,
@@ -653,7 +694,7 @@ export default function InventoryList() {
       await inventoryApi.adjustStock(selectedProduct.id, payload);
       toast.success("Stock updated");
 
-      setOpenActionsId(null);
+      setActionsMenu(null);
       setStockModalOpen(false);
       await Promise.all([loadSummary(), loadProducts({ append: false })]);
     } catch (error) {
@@ -909,45 +950,54 @@ export default function InventoryList() {
                             <div className="svx-inventory-row-actions" data-inventory-actions-menu>
                               <button
                                 type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setOpenActionsId((current) => (current === product.id ? null : product.id));
-                                }}
+                                onClick={(event) => openActionsMenu(event, product)}
                                 className="svx-inventory-icon-button svx-inventory-icon-button--menu"
                                 title="Product actions"
                                 aria-label={`Open actions for ${product.name}`}
-                                aria-expanded={openActionsId === product.id}
+                                aria-expanded={actionsMenu?.productId === product.id}
                               >
                                 <MoreIcon />
                               </button>
 
-                              {openActionsId === product.id ? (
-                                <div className="svx-inventory-actions-menu" role="menu">
-                                  <button type="button" onClick={() => openDetailPage(product)} role="menuitem">
-                                    <ViewIcon />
-                                    <span>
-                                      <strong>View product</strong>
-                                      <small>Details and marketplace status</small>
-                                    </span>
-                                  </button>
+                              {actionsMenu?.productId === product.id && typeof document !== "undefined"
+                                ? createPortal(
+                                    <div
+                                      className="svx-inventory-actions-menu"
+                                      role="menu"
+                                      data-inventory-actions-menu
+                                      style={{
+                                        top: actionsMenu.top,
+                                        left: actionsMenu.left,
+                                        width: actionsMenu.width,
+                                      }}
+                                    >
+                                      <button type="button" onClick={() => openDetailPage(product)} role="menuitem">
+                                        <ViewIcon />
+                                        <span>
+                                          <strong>View product</strong>
+                                          <small>Open full product details</small>
+                                        </span>
+                                      </button>
 
-                                  <button type="button" onClick={() => openEditPage(product)} role="menuitem">
-                                    <EditIcon />
-                                    <span>
-                                      <strong>Edit product</strong>
-                                      <small>Name, price, category, and images</small>
-                                    </span>
-                                  </button>
+                                      <button type="button" onClick={() => openEditPage(product)} role="menuitem">
+                                        <EditIcon />
+                                        <span>
+                                          <strong>Edit product</strong>
+                                          <small>Change price, category, and images</small>
+                                        </span>
+                                      </button>
 
-                                  <button type="button" onClick={() => openStockModal(product)} role="menuitem">
-                                    <StockIcon />
-                                    <span>
-                                      <strong>Update stock</strong>
-                                      <small>Restock, loss, or correction</small>
-                                    </span>
-                                  </button>
-                                </div>
-                              ) : null}
+                                      <button type="button" onClick={() => openStockModal(product)} role="menuitem">
+                                        <StockIcon />
+                                        <span>
+                                          <strong>Update stock</strong>
+                                          <small>Restock, loss, or correction</small>
+                                        </span>
+                                      </button>
+                                    </div>,
+                                    document.body,
+                                  )
+                                : null}
                             </div>
                           </td>
                         </tr>
