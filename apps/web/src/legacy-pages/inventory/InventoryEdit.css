@@ -1,0 +1,760 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap");
+
+.svx-edit-page {
+  --edit-page: #ffffff;
+  --edit-card: #ffffff;
+  --edit-card-soft: #f8fbff;
+  --edit-text: #0d1b3e;
+  --edit-muted: #64748b;
+  --edit-border: rgba(13, 27, 62, 0.12);
+  --edit-primary: #2563eb;
+  --edit-primary-strong: #0f4fd8;
+  --edit-primary-soft: #eef6ff;
+  --edit-success: #10b981;
+  --edit-warning: #f59e0b;
+  --edit-danger: #ef4444;
+  --edit-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --edit-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --edit-shadow: 0 24px 70px rgba(15, 45, 90, 0.07);
+
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  color: var(--edit-text);
+  font-family: var(--edit-body-font);
+  overflow-x: hidden;
+}
+
+:root[data-theme="dark"] .svx-edit-page {
+  --edit-page: #06111f;
+  --edit-card: #1f1f20;
+  --edit-card-soft: #1c1c1d;
+  --edit-text: #ffffff;
+  --edit-muted: rgba(255, 255, 255, 0.72);
+  --edit-border: rgba(255, 255, 255, 0.12);
+  --edit-primary: #159cff;
+  --edit-primary-strong: #0b86df;
+  --edit-primary-soft: rgba(21, 156, 255, 0.12);
+  --edit-shadow: none;
+}
+
+.svx-edit-page *,
+.svx-edit-page *::before,
+.svx-edit-page *::after {
+  box-sizing: border-box;
+}
+
+.svx-edit-page h1,
+.svx-edit-page h2,
+.svx-edit-page h3,
+.svx-edit-page p {
+  margin: 0;
+}
+
+.svx-edit-page button,
+.svx-edit-page input,
+.svx-edit-page select,
+.svx-edit-page textarea {
+  font-family: inherit;
+}
+
+.svx-edit-shell {
+  width: min(100%, 1440px);
+  margin: 0 auto;
+  padding: clamp(18px, 2vw, 30px) clamp(14px, 1.8vw, 24px) 34px;
+}
+
+.svx-edit-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 22px;
+  align-items: stretch;
+  margin-bottom: 22px;
+}
+
+.svx-edit-back {
+  width: fit-content;
+  min-height: 42px;
+  border: 1px solid var(--edit-border);
+  border-radius: 999px;
+  background: var(--edit-card);
+  color: var(--edit-text);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.svx-edit-kicker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.svx-edit-badge {
+  width: fit-content;
+  min-height: 30px;
+  border-radius: 999px;
+  background: var(--edit-card-soft);
+  color: var(--edit-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 11px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.svx-edit-badge.is-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--edit-success);
+}
+
+.svx-edit-badge.is-warning {
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--edit-warning);
+}
+
+.svx-edit-badge.is-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--edit-danger);
+}
+
+.svx-edit-hero h1 {
+  margin-top: 14px;
+  color: var(--edit-text);
+  font-family: var(--edit-heading-font);
+  font-size: clamp(38px, 5vw, 64px);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.svx-edit-hero-copy > p:last-child {
+  max-width: 720px;
+  margin-top: 14px;
+  color: var(--edit-muted);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.svx-edit-hero-card,
+.svx-edit-card,
+.svx-edit-save-card,
+.svx-edit-mini-card {
+  border: 1px solid var(--edit-border);
+  background: var(--edit-card);
+  box-shadow: var(--edit-shadow);
+}
+
+.svx-edit-hero-card {
+  border-radius: 28px;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  align-self: end;
+}
+
+.svx-edit-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: var(--edit-primary-soft);
+  color: var(--edit-primary);
+  display: grid;
+  place-items: center;
+  font-family: var(--edit-heading-font);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.svx-edit-hero-card p {
+  color: var(--edit-text);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.svx-edit-hero-card span:not(.svx-edit-avatar) {
+  display: block;
+  margin-top: 4px;
+  color: var(--edit-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.svx-edit-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.svx-edit-mini-card {
+  min-width: 0;
+  min-height: 104px;
+  border-radius: 24px;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.svx-edit-mini-card > span {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  background: var(--edit-primary-soft);
+  color: var(--edit-primary);
+}
+
+.svx-edit-mini-card.is-green > span,
+.svx-edit-mini-card.is-success > span {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--edit-success);
+}
+
+.svx-edit-mini-card.is-red > span,
+.svx-edit-mini-card.is-danger > span {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--edit-danger);
+}
+
+.svx-edit-mini-card.is-warning > span {
+  background: rgba(245, 158, 11, 0.14);
+  color: var(--edit-warning);
+}
+
+.svx-edit-mini-card p {
+  color: var(--edit-muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.svx-edit-mini-card strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--edit-text);
+  font-family: var(--edit-heading-font);
+  font-size: clamp(18px, 1.4vw, 23px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.svx-edit-mini-card small {
+  display: block;
+  margin-top: 4px;
+  color: var(--edit-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.svx-edit-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+  gap: 18px;
+  align-items: start;
+}
+
+.svx-edit-main,
+.svx-edit-side {
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+
+.svx-edit-side {
+  position: sticky;
+  top: 96px;
+}
+
+.svx-edit-card {
+  border-radius: 28px;
+  padding: 22px;
+}
+
+.svx-edit-section-head {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+  margin-bottom: 22px;
+}
+
+.svx-edit-section-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: var(--edit-primary-soft);
+  color: var(--edit-primary);
+  display: grid;
+  place-items: center;
+}
+
+.svx-edit-section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.svx-edit-section-title-row h2 {
+  color: var(--edit-text);
+  font-family: var(--edit-heading-font);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.svx-edit-section-title-row span {
+  border-radius: 999px;
+  background: var(--edit-primary-soft);
+  color: var(--edit-primary);
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.svx-edit-section-head p {
+  margin-top: 6px;
+  color: var(--edit-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.svx-edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.svx-edit-grid.is-single {
+  grid-template-columns: 1fr;
+  margin-top: 18px;
+}
+
+.svx-edit-field {
+  min-width: 0;
+  display: block;
+}
+
+.svx-edit-field.is-wide {
+  grid-column: 1 / -1;
+}
+
+.svx-edit-field-label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--edit-text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.svx-edit-field-label strong {
+  color: var(--edit-danger);
+}
+
+.svx-edit-input {
+  width: 100%;
+  height: 52px;
+  border: 1px solid var(--edit-border);
+  border-radius: 16px;
+  background: var(--edit-card-soft);
+  color: var(--edit-text);
+  outline: none;
+  padding: 0 15px;
+  font-size: 15px;
+  font-weight: 700;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.svx-edit-input::placeholder {
+  color: var(--edit-muted);
+  opacity: 0.72;
+}
+
+.svx-edit-input:focus {
+  border-color: rgba(21, 156, 255, 0.72);
+  box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.12);
+}
+
+.svx-edit-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.svx-edit-field-help {
+  display: block;
+  margin-top: 7px;
+  color: var(--edit-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.svx-edit-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.svx-edit-choice {
+  border: 1px solid var(--edit-border);
+  border-radius: 22px;
+  background: var(--edit-card-soft);
+  color: var(--edit-text);
+  padding: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.svx-edit-choice.is-active {
+  border-color: var(--edit-primary);
+  background: var(--edit-primary);
+  color: #ffffff;
+}
+
+.svx-edit-choice strong {
+  display: block;
+  font-family: var(--edit-heading-font);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.svx-edit-choice span {
+  display: block;
+  margin-top: 7px;
+  color: currentColor;
+  opacity: 0.78;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.svx-edit-stock-note {
+  margin-top: 14px;
+  border: 1px solid var(--edit-border);
+  border-radius: 18px;
+  background: var(--edit-card-soft);
+  color: var(--edit-muted);
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 13px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.svx-edit-stock-note svg {
+  color: var(--edit-primary);
+  margin-top: 1px;
+}
+
+.svx-edit-side-card {
+  padding: 20px;
+}
+
+.svx-edit-summary {
+  display: grid;
+  gap: 10px;
+}
+
+.svx-edit-summary-row {
+  min-height: 48px;
+  border-radius: 16px;
+  background: var(--edit-card-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+}
+
+.svx-edit-summary-row span {
+  color: var(--edit-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.svx-edit-summary-row strong {
+  color: var(--edit-text);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.svx-edit-summary-row.is-success strong {
+  color: var(--edit-success);
+}
+
+.svx-edit-summary-row.is-danger strong {
+  color: var(--edit-danger);
+}
+
+.svx-edit-summary-row.is-warning strong {
+  color: var(--edit-warning);
+}
+
+.svx-edit-marketplace-box {
+  display: grid;
+  gap: 10px;
+}
+
+.svx-edit-marketplace-box p {
+  color: var(--edit-text);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.svx-edit-marketplace-box span {
+  color: var(--edit-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.svx-edit-save-card {
+  border-radius: 26px;
+  padding: 14px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.svx-edit-primary,
+.svx-edit-secondary {
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 0 18px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.svx-edit-primary {
+  background: var(--edit-primary);
+  color: #ffffff;
+  box-shadow: 0 18px 36px rgba(21, 156, 255, 0.2);
+}
+
+.svx-edit-secondary {
+  border: 1px solid var(--edit-border);
+  background: var(--edit-card-soft);
+  color: var(--edit-text);
+}
+
+.svx-edit-muted-link {
+  min-height: 44px;
+  border-radius: 15px;
+  color: var(--edit-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.svx-edit-primary:disabled,
+.svx-edit-secondary:disabled,
+.svx-edit-choice:disabled,
+.svx-edit-back:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+@media (max-width: 1360px) {
+  .svx-edit-shell {
+    width: min(100%, 1120px);
+    padding-inline: 20px;
+  }
+
+  .svx-edit-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-edit-side {
+    position: static;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .svx-edit-save-card {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-edit-muted-link {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 1180px) {
+  .svx-edit-shell {
+    padding: 22px 18px 28px;
+  }
+
+  .svx-edit-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-edit-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .svx-edit-shell {
+    padding-inline: 16px;
+  }
+
+  .svx-edit-side {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-edit-save-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-edit-shell {
+    padding: 16px 14px 22px;
+  }
+
+  .svx-edit-hero-card {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .svx-edit-hero-card > svg {
+    display: none;
+  }
+
+  .svx-edit-avatar {
+    width: 52px;
+    height: 52px;
+  }
+
+  .svx-edit-hero h1 {
+    font-size: 42px;
+  }
+
+  .svx-edit-hero-copy > p:last-child {
+    font-size: 15px;
+  }
+
+  .svx-edit-grid,
+  .svx-edit-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-edit-card {
+    border-radius: 24px;
+    padding: 18px;
+  }
+
+  .svx-edit-section-head {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .svx-edit-section-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .svx-edit-section-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (min-width: 420px) and (max-width: 720px) {
+  .svx-edit-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-edit-mini-card {
+    min-height: 108px;
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .svx-edit-mini-card > span {
+    width: 42px;
+    height: 42px;
+  }
+
+  .svx-edit-mini-card strong {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 560px) {
+  .svx-edit-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-edit-summary-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .svx-edit-summary-row strong {
+    text-align: left;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-edit-shell {
+    padding: 12px 10px 18px;
+  }
+
+  .svx-edit-hero h1 {
+    font-size: 36px;
+  }
+
+  .svx-edit-mini-card {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .svx-edit-mini-card > span {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@supports (padding: max(0px)) {
+  @media (max-width: 720px) {
+    .svx-edit-page {
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+  }
+}
