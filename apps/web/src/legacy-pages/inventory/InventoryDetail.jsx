@@ -31,6 +31,9 @@ import {
   adjustStock,
   getProductById,
   getProductStockAdjustments,
+  publishProductListing,
+  unpublishProductListing,
+  updateProductListingDraft,
 } from "../../services/inventoryApi";
 import "./InventoryDetail.css";
 
@@ -169,6 +172,53 @@ function productImageStatus(product) {
     label: "No images",
     tone: "warning",
     text: "Add clear product photos so this item is easy to recognize.",
+  };
+}
+
+function productListingStatus(product) {
+  const raw = cleanString(product?.listingStatus || product?.marketplaceStatus).toUpperCase();
+
+  if (raw === "PUBLISHED" || raw === "LIVE") {
+    return {
+      value: "PUBLISHED",
+      label: "Published",
+      tone: "success",
+      text: "This product is marked ready for future public listing flows.",
+    };
+  }
+
+  if (raw === "DRAFT") {
+    return {
+      value: "DRAFT",
+      label: "Draft",
+      tone: "warning",
+      text: "Listing details are saved but not published.",
+    };
+  }
+
+  return {
+    value: "INTERNAL",
+    label: "Internal only",
+    tone: "neutral",
+    text: "This product is private to inventory and sales.",
+  };
+}
+
+function listingFormFromProduct(product, fallbackCategory) {
+  return {
+    title: cleanString(product?.listingTitle || product?.marketplaceTitle || product?.name),
+    description: cleanString(product?.listingDescription || product?.marketplaceDescription),
+    price: cleanString(product?.listingPrice ?? product?.marketplacePrice ?? product?.sellPrice ?? ""),
+    category: cleanString(product?.listingCategory || product?.marketplaceCategory || fallbackCategory),
+  };
+}
+
+function listingPayloadFromForm(form) {
+  return {
+    listingTitle: cleanString(form.title),
+    listingDescription: cleanString(form.description),
+    listingPrice: Number(form.price || 0),
+    listingCategory: cleanString(form.category),
   };
 }
 
@@ -370,7 +420,7 @@ function Gallery({ product, onViewImage }) {
             <img src={main} alt={product?.name || "Product"} loading="lazy" />
             <span>
               <Eye size={15} strokeWidth={2.35} />
-              View product
+              View product image
             </span>
           </button>
         ) : (
@@ -646,6 +696,13 @@ export default function InventoryDetail() {
   const [refreshing, setRefreshing] = useState(false);
   const [stockDrawerOpen, setStockDrawerOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [listingSaving, setListingSaving] = useState("");
+  const [listingForm, setListingForm] = useState({
+    title: "",
+    description: "",
+    price: "",
+    category: "",
+  });
   const [stockSaving, setStockSaving] = useState(false);
   const [stockForm, setStockForm] = useState({
     type: "RESTOCK",
@@ -724,6 +781,111 @@ export default function InventoryDetail() {
     };
   }, [stockDrawerOpen]);
 
+  useEffect(() => {
+    if (!product) return;
+
+    setListingForm(listingFormFromProduct(product, categoryText(product)));
+  }, [product]);
+
+
+  function updateListingField(name, value) {
+    setListingForm((current) => ({
+      ...current,
+      [name]: value,
+    }));
+  }
+
+  function validateListing({ publishing = false } = {}) {
+    const payload = listingPayloadFromForm(listingForm);
+
+    if (!payload.listingTitle) {
+      toast.error("Listing title is required");
+      return null;
+    }
+
+    if (!payload.listingCategory) {
+      toast.error("Listing category is required");
+      return null;
+    }
+
+    if (!Number.isFinite(payload.listingPrice) || payload.listingPrice < 0) {
+      toast.error("Listing price must be 0 or more");
+      return null;
+    }
+
+    if (publishing && !payload.listingDescription) {
+      toast.error("Listing description is required before publishing");
+      return null;
+    }
+
+    if (publishing && !images.length) {
+      toast.error("Add at least one product image before publishing");
+      return null;
+    }
+
+    return payload;
+  }
+
+  async function saveListingDraft() {
+    const payload = validateListing();
+    if (!payload) return;
+
+    setListingSaving("draft");
+
+    try {
+      const response = await updateProductListingDraft(product.id, payload);
+      const nextProduct = response?.product || response?.data?.product || response?.data || response;
+
+      if (nextProduct?.id) setProduct(nextProduct);
+      else await loadProduct({ quiet: true });
+
+      toast.success("Listing draft saved");
+    } catch (error) {
+      toast.error(error?.message || "Failed to save listing draft");
+    } finally {
+      setListingSaving("");
+    }
+  }
+
+  async function publishListing() {
+    const payload = validateListing({ publishing: true });
+    if (!payload) return;
+
+    setListingSaving("publish");
+
+    try {
+      await updateProductListingDraft(product.id, payload);
+      const response = await publishProductListing(product.id);
+      const nextProduct = response?.product || response?.data?.product || response?.data || response;
+
+      if (nextProduct?.id) setProduct(nextProduct);
+      else await loadProduct({ quiet: true });
+
+      toast.success("Product listing published");
+    } catch (error) {
+      toast.error(error?.message || "Failed to publish product listing");
+    } finally {
+      setListingSaving("");
+    }
+  }
+
+  async function unpublishListing() {
+    setListingSaving("unpublish");
+
+    try {
+      const response = await unpublishProductListing(product.id);
+      const nextProduct = response?.product || response?.data?.product || response?.data || response;
+
+      if (nextProduct?.id) setProduct(nextProduct);
+      else await loadProduct({ quiet: true });
+
+      toast.success("Product listing unpublished");
+    } catch (error) {
+      toast.error(error?.message || "Failed to unpublish product listing");
+    } finally {
+      setListingSaving("");
+    }
+  }
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -826,6 +988,7 @@ export default function InventoryDetail() {
 
   const status = productStatus(product);
   const imageStatus = productImageStatus(product);
+  const listingStatus = productListingStatus(product);
   const attributes = useMemo(() => normalizedCategoryAttributes(product), [product]);
   const images = productImages(product);
 
@@ -876,7 +1039,7 @@ export default function InventoryDetail() {
               <StatusBadge tone={imageStatus.tone}>{imageStatus.label}</StatusBadge>
             </div>
 
-            <h1>{product?.name || "Product"}</h1>
+            <h1 className="svx-detail-product-title">{product?.name || "Product"}</h1>
 
             <div className="svx-detail-hero-meta">
               <span>{product?.brand || "No brand"}</span>
@@ -978,6 +1141,143 @@ export default function InventoryDetail() {
             </DetailSection>
 
             <DetailSection
+              icon={ImagePlus}
+              title="Product setup"
+              text="Use this area to prepare photos and listing details without leaving the product page."
+            >
+              <div className="svx-detail-setup-simple-grid">
+                <article className="svx-detail-setup-panel">
+                  <div className="svx-detail-setup-panel-head">
+                    <div>
+                      <h3>Product photos</h3>
+                      <p>Help staff recognize this product quickly.</p>
+                    </div>
+                    <StatusBadge tone={imageStatus.tone}>{imageStatus.label}</StatusBadge>
+                  </div>
+
+                  <div className="svx-detail-setup-fact">
+                    <strong>{images.length ? `${images.length} image${images.length === 1 ? "" : "s"} attached` : "No images yet"}</strong>
+                    <span>Use clear JPG, PNG, or WEBP images up to 5MB each.</span>
+                  </div>
+
+                  <div className="svx-detail-setup-actions">
+                    {images.length ? (
+                      <button
+                        type="button"
+                        className="svx-detail-secondary-button"
+                        onClick={() => setImagePreview(images.find((image) => image?.isPrimary) || images[0])}
+                      >
+                        <Eye size={16} strokeWidth={2.35} />
+                        <span>View product image</span>
+                      </button>
+                    ) : null}
+
+                    <Link to={`/app/inventory/${product.id}/images`} className="svx-detail-primary-button">
+                      <ImagePlus size={16} strokeWidth={2.35} />
+                      <span>{images.length ? "Manage images" : "Add images"}</span>
+                    </Link>
+                  </div>
+                </article>
+
+                <article className="svx-detail-setup-panel">
+                  <div className="svx-detail-setup-panel-head">
+                    <div>
+                      <h3>Product listing</h3>
+                      <p>Prepare the product before it becomes public later.</p>
+                    </div>
+                    <StatusBadge tone={listingStatus.tone}>{listingStatus.label}</StatusBadge>
+                  </div>
+
+                  <div className="svx-detail-listing-compact-form">
+                    <label className="svx-detail-listing-field">
+                      <span>Listing title</span>
+                      <input
+                        value={listingForm.title}
+                        onChange={(event) => updateListingField("title", event.target.value)}
+                        placeholder="Product name for listing"
+                        disabled={Boolean(listingSaving)}
+                      />
+                    </label>
+
+                    <div className="svx-detail-listing-field-grid">
+                      <label className="svx-detail-listing-field">
+                        <span>Listing price</span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={listingForm.price}
+                          onChange={(event) => updateListingField("price", event.target.value)}
+                          placeholder="0"
+                          disabled={Boolean(listingSaving)}
+                        />
+                      </label>
+
+                      <label className="svx-detail-listing-field">
+                        <span>Listing category</span>
+                        <input
+                          value={listingForm.category}
+                          onChange={(event) => updateListingField("category", event.target.value)}
+                          placeholder="Product category"
+                          disabled={Boolean(listingSaving)}
+                        />
+                      </label>
+                    </div>
+
+                    <label className="svx-detail-listing-field">
+                      <span>Listing description</span>
+                      <textarea
+                        value={listingForm.description}
+                        onChange={(event) => updateListingField("description", event.target.value)}
+                        placeholder="Short owner-approved product description"
+                        disabled={Boolean(listingSaving)}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="svx-detail-setup-actions is-three">
+                    <AsyncButton
+                      type="button"
+                      loading={listingSaving === "draft"}
+                      loadingText="Saving..."
+                      className="svx-detail-secondary-button"
+                      onClick={saveListingDraft}
+                      disabled={Boolean(listingSaving)}
+                    >
+                      <ClipboardList size={16} strokeWidth={2.35} />
+                      <span>Save draft</span>
+                    </AsyncButton>
+
+                    <AsyncButton
+                      type="button"
+                      loading={listingSaving === "publish"}
+                      loadingText="Publishing..."
+                      className="svx-detail-primary-button"
+                      onClick={publishListing}
+                      disabled={Boolean(listingSaving)}
+                    >
+                      <ShoppingCart size={16} strokeWidth={2.35} />
+                      <span>Publish</span>
+                    </AsyncButton>
+
+                    {listingStatus.value === "PUBLISHED" ? (
+                      <AsyncButton
+                        type="button"
+                        loading={listingSaving === "unpublish"}
+                        loadingText="Unpublishing..."
+                        className="svx-detail-secondary-button"
+                        onClick={unpublishListing}
+                        disabled={Boolean(listingSaving)}
+                      >
+                        <X size={16} strokeWidth={2.35} />
+                        <span>Unpublish</span>
+                      </AsyncButton>
+                    ) : null}
+                  </div>
+                </article>
+              </div>
+            </DetailSection>
+
+            <DetailSection
               icon={ClipboardList}
               title="Recent stock movement"
               text="Latest restocks, losses, and corrections for this product."
@@ -1039,39 +1339,6 @@ export default function InventoryDetail() {
                 <InfoRow label="Selling price" value={formatRwf(sellPrice)} />
                 <InfoRow label="Profit per item" value={formatRwf(profitPerItem)} tone={profitPerItem >= 0 ? "success" : "danger"} />
                 <InfoRow label="Possible profit" value={formatRwf(possibleProfit)} tone={possibleProfit >= 0 ? "success" : "danger"} />
-              </div>
-            </DetailSection>
-
-            <DetailSection
-              icon={ImagePlus}
-              title="Product photos"
-              text="Add, view, set primary, or delete images for this product."
-            >
-              <div className="svx-detail-listing-box svx-detail-product-photos-box">
-                <div>
-                  <StatusBadge tone={imageStatus.tone}>{imageStatus.label}</StatusBadge>
-                  <p>{images.length ? `${images.length} image${images.length === 1 ? "" : "s"} attached` : "No product images yet"}</p>
-                </div>
-
-                <span>
-                  Start here when you want to add photos. Use clear JPG, PNG, or WEBP images up to 5MB each.
-                </span>
-
-                {images.length ? (
-                  <button
-                    type="button"
-                    className="svx-detail-listing-button"
-                    onClick={() => setImagePreview(images.find((image) => image?.isPrimary) || images[0])}
-                  >
-                    <Eye size={16} strokeWidth={2.35} />
-                    <span>View product</span>
-                  </button>
-                ) : null}
-
-                <Link to={`/app/inventory/${product.id}/images`} className="svx-detail-listing-button is-secondary">
-                  <ImagePlus size={16} strokeWidth={2.35} />
-                  <span>{images.length ? "Manage images" : "Add images"}</span>
-                </Link>
               </div>
             </DetailSection>
 

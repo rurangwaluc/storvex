@@ -96,10 +96,10 @@
   margin-top: 14px;
   color: var(--detail-text);
   font-family: var(--detail-heading-font);
-  font-size: clamp(38px, 5vw, 64px);
+  font-size: clamp(32px, 3.8vw, 50px);
   font-weight: 800;
-  line-height: 0.98;
-  letter-spacing: -0.055em;
+  line-height: 1.02;
+  letter-spacing: -0.048em;
 }
 
 .svx-detail-hero-meta {
@@ -706,7 +706,7 @@
   }
 
   .svx-detail-hero h1 {
-    font-size: 42px;
+    font-size: 34px;
   }
 
   .svx-detail-hero-copy > p {
@@ -785,7 +785,7 @@
   }
 
   .svx-detail-hero h1 {
-    font-size: 36px;
+    font-size: 30px;
   }
 
   .svx-detail-summary-grid {
@@ -1367,5 +1367,301 @@
 
   .svx-detail-product-viewer-frame img {
     max-height: calc(100dvh - 112px);
+  }
+}
+
+
+/* Product listing draft/publish controls */
+.svx-detail-product-title {
+  max-width: 980px;
+}
+
+.svx-detail-listing-panel {
+  display: grid;
+  gap: 13px;
+}
+
+.svx-detail-listing-status-row {
+  border: 1px solid var(--detail-border);
+  border-radius: 18px;
+  background: var(--detail-soft);
+  padding: 14px;
+}
+
+.svx-detail-listing-status-row p {
+  margin-top: 8px;
+  color: var(--detail-muted);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.svx-detail-listing-field {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.svx-detail-listing-field span {
+  color: var(--detail-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.svx-detail-listing-field input,
+.svx-detail-listing-field textarea {
+  width: 100%;
+  border: 1px solid var(--detail-border);
+  border-radius: 16px;
+  background: var(--detail-soft);
+  color: var(--detail-text);
+  outline: none;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.svx-detail-listing-field input {
+  height: 48px;
+}
+
+.svx-detail-listing-field textarea {
+  min-height: 96px;
+  resize: vertical;
+  padding-top: 12px;
+  line-height: 1.45;
+}
+
+.svx-detail-listing-field input::placeholder,
+.svx-detail-listing-field textarea::placeholder {
+  color: var(--detail-muted);
+  opacity: 0.72;
+}
+
+.svx-detail-listing-field input:focus,
+.svx-detail-listing-field textarea:focus {
+  border-color: rgba(21, 156, 255, 0.72);
+  box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.12);
+}
+
+.svx-detail-listing-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.svx-detail-listing-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.svx-detail-listing-actions .svx-detail-primary-button,
+.svx-detail-listing-actions .svx-detail-secondary-button {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .svx-detail-listing-field-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Product Detail setup row final polish: keep photos/listing as two columns without stretching or overlap. */
+.svx-detail-setup-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 0;
+}
+
+.svx-detail-setup-row > .svx-detail-card {
+  min-width: 0;
+  height: auto;
+  min-height: 0;
+}
+
+.svx-detail-setup-row .svx-detail-section-head {
+  margin-bottom: 16px;
+}
+
+.svx-detail-setup-row .svx-detail-product-photos-box,
+.svx-detail-setup-row .svx-detail-listing-panel {
+  height: auto;
+  min-height: 0;
+}
+
+.svx-detail-setup-row .svx-detail-product-photos-box {
+  gap: 10px;
+}
+
+.svx-detail-setup-row .svx-detail-product-photos-box > span {
+  margin-bottom: 4px;
+}
+
+.svx-detail-setup-row .svx-detail-listing-panel {
+  gap: 10px;
+}
+
+.svx-detail-setup-row .svx-detail-listing-status-row {
+  padding: 12px;
+}
+
+.svx-detail-setup-row .svx-detail-listing-field {
+  gap: 6px;
+}
+
+.svx-detail-setup-row .svx-detail-listing-field input {
+  height: 44px;
+}
+
+.svx-detail-setup-row .svx-detail-listing-field textarea {
+  min-height: 76px;
+}
+
+.svx-detail-setup-row .svx-detail-listing-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.svx-detail-setup-row .svx-detail-listing-actions .svx-detail-primary-button,
+.svx-detail-setup-row .svx-detail-listing-actions .svx-detail-secondary-button {
+  position: static;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  transform: none;
+}
+
+.svx-detail-setup-row + .svx-detail-card {
+  margin-top: 0;
+}
+
+@media (max-width: 980px) {
+  .svx-detail-setup-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Product Detail setup section: one simple section with two clear panels. */
+.svx-detail-setup-simple-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.svx-detail-setup-simple-grid > .svx-detail-setup-panel {
+  min-width: 0;
+}
+
+.svx-detail-setup-panel {
+  height: 100%;
+  border: 1px solid var(--detail-border);
+  border-radius: 22px;
+  background: var(--detail-soft);
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.svx-detail-setup-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.svx-detail-setup-panel-head h3 {
+  color: var(--detail-text);
+  font-family: var(--detail-heading-font);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.svx-detail-setup-panel-head p {
+  margin-top: 4px;
+  color: var(--detail-muted);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.svx-detail-setup-fact {
+  min-height: 94px;
+  border-radius: 18px;
+  background: var(--detail-card);
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 14px;
+}
+
+.svx-detail-setup-fact strong {
+  color: var(--detail-text);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.svx-detail-setup-fact span {
+  color: var(--detail-muted);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.svx-detail-listing-compact-form {
+  display: grid;
+  gap: 10px;
+}
+
+.svx-detail-setup-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.svx-detail-setup-actions.is-three {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.svx-detail-setup-actions.is-three > *:last-child:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.svx-detail-setup-actions .svx-detail-primary-button,
+.svx-detail-setup-actions .svx-detail-secondary-button {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  position: static;
+  transform: none;
+}
+
+.svx-detail-setup-simple-grid .svx-detail-listing-field input {
+  height: 44px;
+}
+
+.svx-detail-setup-simple-grid .svx-detail-listing-field textarea {
+  min-height: 74px;
+}
+
+@media (max-width: 980px) {
+  .svx-detail-setup-simple-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-detail-setup-actions.is-three {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-detail-setup-actions.is-three > *:last-child:nth-child(3) {
+    grid-column: auto;
   }
 }
