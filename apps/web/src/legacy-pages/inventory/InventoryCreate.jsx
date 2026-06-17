@@ -603,7 +603,7 @@ export default function InventoryCreate() {
             <p className="svx-product-kicker">Create product</p>
             <h1>Add a product.</h1>
             <p>
-              Save the product for stock and sales first. Marketplace images are added later only when the owner chooses to publish it.
+              Save the product for stock and sales first. Product images are added later only when the owner chooses to publish it.
             </p>
           </div>
 
@@ -893,15 +893,15 @@ export default function InventoryCreate() {
               </div>
             </section>
 
-            <section className="svx-product-card svx-product-marketplace-note">
+            <section className="svx-product-card svx-product-listing-note">
               <SectionHeader
                 icon={ImagePlus}
-                title="Marketplace images"
+                title="Product images"
                 text="Images are not required for internal stock."
               />
 
               <p>
-                Save the product first. Images become required only when the owner chooses to publish this product to the marketplace.
+                Save the product first. Images can be added after creation and used for product details, listing, and future sales flows.
               </p>
             </section>
 

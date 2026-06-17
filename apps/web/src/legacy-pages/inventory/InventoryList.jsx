@@ -80,7 +80,7 @@ function productInitial(product) {
 function categoryText(product) {
   return (
     cleanString(product?.category) ||
-    cleanString(product?.marketplaceCategory) ||
+    cleanString(product?.listingCategory) ||
     cleanString(product?.subcategory) ||
     "Uncategorized"
   );

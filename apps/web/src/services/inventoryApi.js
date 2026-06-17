@@ -53,8 +53,8 @@ function buildQuery(params = {}) {
     from: params.from,
     to: params.to,
     type: params.type,
-    marketplaceStatus: cleanString(params.marketplaceStatus),
-    marketplaceCategory: cleanString(params.marketplaceCategory),
+    listingStatus: cleanString(params.listingStatus || params.marketplaceStatus),
+    listingCategory: cleanString(params.listingCategory || params.marketplaceCategory),
   });
 }
 
@@ -96,14 +96,14 @@ function normalizeProductImagePayload(payload = {}) {
   });
 }
 
-function normalizeMarketplacePayload(payload = {}) {
+function normalizeListingPayload(payload = {}) {
   return cleanObject({
-    marketplaceTitle: cleanString(payload.marketplaceTitle || payload.title),
-    marketplaceDescription: cleanString(payload.marketplaceDescription || payload.description),
-    marketplacePrice: payload.marketplacePrice ?? payload.price,
-    marketplaceCategory: cleanString(payload.marketplaceCategory || payload.publicCategory),
-    marketplaceAttributes: cleanPlainObject(payload.marketplaceAttributes || payload.attributes),
-    marketplaceSlug: cleanString(payload.marketplaceSlug || payload.slug),
+    listingTitle: cleanString(payload.listingTitle || payload.marketplaceTitle || payload.title),
+    listingDescription: cleanString(payload.listingDescription || payload.marketplaceDescription || payload.description),
+    listingPrice: payload.listingPrice ?? payload.marketplacePrice ?? payload.price,
+    listingCategory: cleanString(payload.listingCategory || payload.marketplaceCategory || payload.publicCategory),
+    listingAttributes: cleanPlainObject(payload.listingAttributes || payload.marketplaceAttributes || payload.attributes),
+    listingSlug: cleanString(payload.listingSlug || payload.marketplaceSlug || payload.slug),
   });
 }
 
@@ -177,7 +177,7 @@ export function searchProducts(params = {}, options = {}) {
  * - branchScope
  * - images
  * - categoryAttributes
- * - marketplaceStatus / marketplace fields
+ * - listingStatus / listing fields
  */
 export function getProductById(productId, options = {}) {
   const id = cleanString(productId);
@@ -196,7 +196,7 @@ export function getProductById(productId, options = {}) {
  * Create product in the active branch.
  *
  * Images are intentionally optional here.
- * Marketplace publishing checks images later when the owner chooses to publish.
+ * Product listing checks images later when the owner chooses to make it public.
  */
 export function createProduct(payload, options = {}) {
   return apiFetch(`${INVENTORY_BASE}/products`, {
@@ -261,10 +261,10 @@ export function activateProduct(productId, options = {}) {
 }
 
 /**
- * Product marketplace images.
+ * Product images.
  *
  * Images are optional for internal inventory/POS products.
- * At least one image is required only when publishing to marketplace.
+ * At least one image is required only when making a product listing public.
  */
 export function uploadProductImage(productId, file, payload = {}, options = {}) {
   const id = cleanString(productId);
@@ -437,7 +437,7 @@ export function setPrimaryProductImage(productId, imageId, options = {}) {
 }
 
 /**
- * Marketplace draft and publish actions.
+ * Product listing draft and publish actions.
  *
  * Draft update saves public-facing listing details.
  * Publish requires backend validation:
@@ -446,44 +446,44 @@ export function setPrimaryProductImage(productId, imageId, options = {}) {
  * - public title
  * - public description
  * - public price
- * - marketplace category
+ * - listing category
  */
-export function updateMarketplaceDraft(productId, payload, options = {}) {
+export function updateProductListingDraft(productId, payload, options = {}) {
   const id = cleanString(productId);
 
   if (!id) {
     return Promise.reject(new Error("Product id is required"));
   }
 
-  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/marketplace`, {
+  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/listing`, {
     method: "PATCH",
-    body: normalizeMarketplacePayload(payload),
+    body: normalizeListingPayload(payload),
     ...withBranchOptions(options),
   });
 }
 
-export function publishProductToMarketplace(productId, payload = {}, options = {}) {
+export function publishProductListing(productId, payload = {}, options = {}) {
   const id = cleanString(productId);
 
   if (!id) {
     return Promise.reject(new Error("Product id is required"));
   }
 
-  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/marketplace/publish`, {
+  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/listing/publish`, {
     method: "PATCH",
-    body: normalizeMarketplacePayload(payload),
+    body: normalizeListingPayload(payload),
     ...withBranchOptions(options),
   });
 }
 
-export function unpublishProductFromMarketplace(productId, options = {}) {
+export function unpublishProductListing(productId, options = {}) {
   const id = cleanString(productId);
 
   if (!id) {
     return Promise.reject(new Error("Product id is required"));
   }
 
-  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/marketplace/unpublish`, {
+  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/listing/unpublish`, {
     method: "PATCH",
     ...withBranchOptions(options),
   });
@@ -661,7 +661,11 @@ export function getStockAdjustmentsExcelBlob(params = {}, options = {}) {
   });
 }
 
-export const inventoryApi = {
+export const updateMarketplaceDraft = updateProductListingDraft;
+export const publishProductToMarketplace = publishProductListing;
+export const unpublishProductFromMarketplace = unpublishProductListing;
+
+const inventoryApi = {
   getProducts,
   searchProducts,
   getProductById,
@@ -677,8 +681,11 @@ export const inventoryApi = {
   addProductImage,
   deleteProductImage,
   setPrimaryProductImage,
+  updateProductListingDraft,
   updateMarketplaceDraft,
+  publishProductListing,
   publishProductToMarketplace,
+  unpublishProductListing,
   unpublishProductFromMarketplace,
 
   adjustStock,

@@ -515,18 +515,18 @@
   color: var(--edit-warning);
 }
 
-.svx-edit-marketplace-box {
+.svx-edit-listing-box {
   display: grid;
   gap: 10px;
 }
 
-.svx-edit-marketplace-box p {
+.svx-edit-listing-box p {
   color: var(--edit-text);
   font-size: 14px;
   font-weight: 800;
 }
 
-.svx-edit-marketplace-box span {
+.svx-edit-listing-box span {
   color: var(--edit-muted);
   font-size: 13px;
   font-weight: 700;

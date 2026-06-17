@@ -541,19 +541,19 @@
   text-decoration: none;
 }
 
-.svx-detail-marketplace-box {
+.svx-detail-listing-box {
   display: grid;
   gap: 14px;
 }
 
-.svx-detail-marketplace-box p {
+.svx-detail-listing-box p {
   margin-top: 8px;
   color: var(--detail-text);
   font-size: 14px;
   font-weight: 800;
 }
 
-.svx-detail-marketplace-box span {
+.svx-detail-listing-box span {
   color: var(--detail-muted);
   font-size: 13px;
   font-weight: 700;
@@ -1143,7 +1143,7 @@
 }
 
 
-.svx-detail-marketplace-button {
+.svx-detail-listing-button {
   width: 100%;
   min-height: 46px;
   border-radius: 15px;
@@ -1161,7 +1161,7 @@
   text-decoration: none;
 }
 
-.svx-detail-marketplace-button:hover {
+.svx-detail-listing-button:hover {
   color: #ffffff;
 }
 
@@ -1179,11 +1179,11 @@
   line-height: 1.45;
 }
 
-.svx-detail-product-photos-box .svx-detail-marketplace-button {
+.svx-detail-product-photos-box .svx-detail-listing-button {
   margin-top: 2px;
 }
 
-.svx-detail-marketplace-button {
+.svx-detail-listing-button {
   width: 100%;
   min-height: 48px;
   border-radius: 15px;
@@ -1200,7 +1200,7 @@
   text-decoration: none;
 }
 
-.svx-detail-marketplace-button:hover {
+.svx-detail-listing-button:hover {
   color: #ffffff;
 }
 
@@ -1256,13 +1256,13 @@
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
-.svx-detail-marketplace-button.is-secondary {
+.svx-detail-listing-button.is-secondary {
   background: var(--detail-card);
   color: var(--detail-text);
   border-color: var(--detail-border);
 }
 
-.svx-detail-marketplace-button.is-secondary:hover {
+.svx-detail-listing-button.is-secondary:hover {
   color: var(--detail-primary);
   border-color: var(--detail-primary);
 }

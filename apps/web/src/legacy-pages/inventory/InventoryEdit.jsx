@@ -292,7 +292,7 @@ function productStatus(product) {
   return { label: "In stock", tone: "success" };
 }
 
-function marketplaceStatus(product) {
+function listingStatus(product) {
   const status = cleanString(product?.marketplaceStatus).toUpperCase();
 
   if (status === "PUBLISHED") return { label: "Published", tone: "success" };
@@ -559,7 +559,7 @@ export default function InventoryEdit() {
   );
 
   const status = productStatus(product);
-  const marketplace = marketplaceStatus(product);
+  const listing = listingStatus(product);
   const images = productImages(product);
   const qty = productStock(product);
   const reserved = productReserved(product);
@@ -710,7 +710,7 @@ export default function InventoryEdit() {
 
             <div className="svx-edit-kicker-row">
               <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
-              <StatusBadge tone={marketplace.tone}>{marketplace.label}</StatusBadge>
+              <StatusBadge tone={listing.tone}>{listing.label}</StatusBadge>
             </div>
 
             <h1>Edit product.</h1>
@@ -737,7 +737,7 @@ export default function InventoryEdit() {
           <MiniCard icon={Warehouse} label="Current stock" value={formatPlain(qty)} note={branchLabel(product)} tone={status.tone} />
           <MiniCard icon={DollarSign} label="Stock value" value={formatRwf(stockValue)} tone="green" />
           <MiniCard icon={ShieldCheck} label="Margin" value={`${Number.isFinite(margin) ? margin : 0}%`} tone={profitPerItem >= 0 ? "green" : "red"} />
-          <MiniCard icon={ImagePlus} label="Images" value={`${images.length}`} note="Marketplace later" tone="blue" />
+          <MiniCard icon={ImagePlus} label="Images" value={`${images.length}`} note="Listing later" tone="blue" />
         </section>
 
         <div className="svx-edit-layout">
@@ -1011,18 +1011,18 @@ export default function InventoryEdit() {
               </div>
             </section>
 
-            <section className="svx-edit-card svx-edit-marketplace-note">
+            <section className="svx-edit-card svx-edit-listing-note">
               <SectionHeader
                 icon={ImagePlus}
-                title="Marketplace"
-                text="Marketplace publishing stays separate."
+                title="Product listing"
+                text="Product listing publishing stays separate."
               />
 
-              <div className="svx-edit-marketplace-box">
-                <StatusBadge tone={marketplace.tone}>{marketplace.label}</StatusBadge>
+              <div className="svx-edit-listing-box">
+                <StatusBadge tone={listing.tone}>{listing.label}</StatusBadge>
                 <p>{images.length ? `${images.length} image${images.length === 1 ? "" : "s"} attached` : "No images attached yet"}</p>
                 <span>
-                  Images and publishing will be managed from the marketplace flow. Editing this product does not force marketplace images.
+                  Images and public visibility are managed separately. Editing this product does not force listing changes.
                 </span>
               </div>
             </section>

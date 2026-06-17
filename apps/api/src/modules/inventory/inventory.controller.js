@@ -242,15 +242,15 @@ function normalizeImageInput(body = {}) {
   };
 }
 
-function normalizeMarketplaceInput(body = {}, product = null, businessCategory = null) {
-  const title = cleanString(body.marketplaceTitle || body.title || product?.marketplaceTitle || product?.name);
+function normalizeListingInput(body = {}, product = null, businessCategory = null) {
+  const title = cleanString(body.listingTitle || body.marketplaceTitle || body.title || product?.marketplaceTitle || product?.name);
   const description = cleanString(
-    body.marketplaceDescription || body.description || product?.marketplaceDescription
+    body.listingDescription || body.marketplaceDescription || body.description || product?.marketplaceDescription
   );
 
   const rawPrice =
-    body.marketplacePrice != null
-      ? body.marketplacePrice
+    body.listingPrice != null || body.marketplacePrice != null
+      ? body.listingPrice ?? body.marketplacePrice
       : body.price != null
         ? body.price
         : product?.marketplacePrice != null
@@ -260,13 +260,13 @@ function normalizeMarketplaceInput(body = {}, product = null, businessCategory =
   const price = toMoney(rawPrice);
 
   const category =
-    cleanString(body.marketplaceCategory || body.publicCategory || product?.marketplaceCategory) ||
+    cleanString(body.listingCategory || body.marketplaceCategory || body.publicCategory || product?.marketplaceCategory) ||
     cleanString(product?.category) ||
     businessCategory ||
     null;
 
   const attributes =
-    normalizePlainObject(body.marketplaceAttributes || body.attributes) ||
+    normalizePlainObject(body.listingAttributes || body.marketplaceAttributes || body.attributes) ||
     normalizePlainObject(product?.marketplaceAttributes) ||
     {};
 
@@ -282,17 +282,17 @@ function normalizeMarketplaceInput(body = {}, product = null, businessCategory =
   };
 }
 
-function marketplaceValidationErrors({ product, imageCount, marketplace }) {
+function listingValidationErrors({ product, imageCount, listing }) {
   const errors = [];
 
   if (!product?.isActive) errors.push("Product must be active before publishing");
   if (!imageCount) errors.push("Add at least one product image before publishing");
-  if (!marketplace.marketplaceTitle) errors.push("Marketplace product name is required");
-  if (!marketplace.marketplaceDescription) errors.push("Marketplace description is required");
-  if (!Number.isFinite(marketplace.marketplacePrice) || marketplace.marketplacePrice < 0) {
-    errors.push("Marketplace price must be 0 or more");
+  if (!listing.marketplaceTitle) errors.push("Listing product name is required");
+  if (!listing.marketplaceDescription) errors.push("Listing description is required");
+  if (!Number.isFinite(listing.marketplacePrice) || listing.marketplacePrice < 0) {
+    errors.push("Listing price must be 0 or more");
   }
-  if (!marketplace.marketplaceCategory) errors.push("Marketplace category is required");
+  if (!listing.marketplaceCategory) errors.push("Listing category is required");
 
   return errors;
 }
@@ -340,6 +340,30 @@ function productSelect() {
     },
   };
 }
+
+
+
+function withListingAliases(product) {
+  if (!product || typeof product !== "object") return product;
+
+  if (Array.isArray(product)) {
+    return product.map((item) => withListingAliases(item));
+  }
+
+  return {
+    ...product,
+    listingStatus: product.marketplaceStatus || null,
+    listingTitle: product.marketplaceTitle || null,
+    listingDescription: product.marketplaceDescription || null,
+    listingPrice: product.marketplacePrice ?? null,
+    listingCategory: product.marketplaceCategory || null,
+    listingAttributes: product.marketplaceAttributes || null,
+    listingSlug: product.marketplaceSlug || null,
+    listingPublishedAt: product.marketplacePublishedAt || null,
+    listingUnpublishedAt: product.marketplaceUnpublishedAt || null,
+  };
+}
+
 
 async function writeAuditLog(tx, { tenantId, userId, branchId, entity, entityId, action, metadata }) {
   try {
@@ -975,7 +999,7 @@ async function getProducts(req, res) {
     const nextCursor = products.length === limit ? products[products.length - 1].id : null;
 
     return res.json({
-      products: filtered,
+      products: withListingAliases(filtered),
       count: filtered.length,
       nextCursor,
       branchScope: scope,
@@ -1046,7 +1070,7 @@ async function searchProducts(req, res) {
       scope.mode === "SINGLE_BRANCH" ? scope.branchId : null,
     );
 
-    return res.json({ products: enriched, count: enriched.length, branchScope: scope });
+    return res.json({ products: withListingAliases(enriched), count: enriched.length, branchScope: scope });
   } catch (err) {
     if (handleBranchError(res, err)) return;
 
@@ -1083,7 +1107,7 @@ async function getProductById(req, res) {
       scope.mode === "SINGLE_BRANCH" ? scope.branchId : null,
     );
 
-    return res.json({ ...enriched, branchScope: scope });
+    return res.json({ ...withListingAliases(enriched), branchScope: scope });
   } catch (err) {
     if (handleBranchError(res, err)) return;
 
@@ -1173,7 +1197,7 @@ async function createProduct(req, res) {
     const [enriched] = attachBranchStock([created], branchMap, activeBranch.id);
 
     return res.status(201).json({
-      ...enriched,
+      ...withListingAliases(enriched),
       branchScope: { mode: "SINGLE_BRANCH", branchId: activeBranch.id },
     });
   } catch (err) {
@@ -1307,7 +1331,7 @@ async function updateProduct(req, res) {
       scope.mode === "SINGLE_BRANCH" ? scope.branchId : null,
     );
 
-    return res.json({ ...enriched, branchScope: scope });
+    return res.json({ ...withListingAliases(enriched), branchScope: scope });
   } catch (err) {
     const code = err?.code;
     const msg = String(err?.message || "");
@@ -2758,7 +2782,7 @@ async function setPrimaryProductImage(req, res) {
   }
 }
 
-async function updateMarketplaceDraft(req, res) {
+async function updateProductListingDraft(req, res) {
   const tenantId = getTenantId(req);
   const userId = getUserId(req);
   if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
@@ -2783,20 +2807,20 @@ async function updateMarketplaceDraft(req, res) {
       marketplaceAttributes: true,
     });
 
-    const marketplace = normalizeMarketplaceInput(req.body || {}, product, businessCategory);
-    const nextSlug = slugify(req.body?.marketplaceSlug || req.body?.slug || marketplace.marketplaceTitle);
+    const listing = normalizeListingInput(req.body || {}, product, businessCategory);
+    const nextSlug = slugify(req.body?.listingSlug || req.body?.marketplaceSlug || req.body?.slug || listing.marketplaceTitle);
 
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.product.update({
         where: { id: product.id },
         data: {
-          marketplaceTitle: marketplace.marketplaceTitle,
-          marketplaceDescription: marketplace.marketplaceDescription,
-          marketplacePrice: Number.isFinite(marketplace.marketplacePrice)
-            ? marketplace.marketplacePrice
+          marketplaceTitle: listing.marketplaceTitle,
+          marketplaceDescription: listing.marketplaceDescription,
+          marketplacePrice: Number.isFinite(listing.marketplacePrice)
+            ? listing.marketplacePrice
             : null,
-          marketplaceCategory: marketplace.marketplaceCategory,
-          marketplaceAttributes: marketplace.marketplaceAttributes,
+          marketplaceCategory: listing.marketplaceCategory,
+          marketplaceAttributes: listing.marketplaceAttributes,
           marketplaceSlug: nextSlug ? `${nextSlug}-${product.id.slice(0, 6)}` : null,
           marketplaceStatus:
             product.marketplaceStatus === "PUBLISHED"
@@ -2830,12 +2854,12 @@ async function updateMarketplaceDraft(req, res) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    console.error("updateMarketplaceDraft error:", err);
-    return res.status(500).json({ message: "Failed to update marketplace details" });
+    console.error("updateProductListingDraft error:", err);
+    return res.status(500).json({ message: "Failed to update listing details" });
   }
 }
 
-async function publishToMarketplace(req, res) {
+async function publishProductListing(req, res) {
   const tenantId = getTenantId(req);
   const userId = getUserId(req);
   if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
@@ -2863,8 +2887,8 @@ async function publishToMarketplace(req, res) {
       where: { tenantId, productId },
     });
 
-    const marketplace = normalizeMarketplaceInput(req.body || {}, product, businessCategory);
-    const errors = marketplaceValidationErrors({ product, imageCount, marketplace });
+    const listing = normalizeListingInput(req.body || {}, product, businessCategory);
+    const errors = listingValidationErrors({ product, imageCount, listing });
 
     if (errors.length) {
       return res.status(400).json({
@@ -2874,18 +2898,18 @@ async function publishToMarketplace(req, res) {
       });
     }
 
-    const nextSlugBase = slugify(req.body?.marketplaceSlug || req.body?.slug || marketplace.marketplaceTitle);
+    const nextSlugBase = slugify(req.body?.listingSlug || req.body?.marketplaceSlug || req.body?.slug || listing.marketplaceTitle);
     const nextSlug = `${nextSlugBase || "product"}-${product.id.slice(0, 6)}`;
 
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.product.update({
         where: { id: product.id },
         data: {
-          marketplaceTitle: marketplace.marketplaceTitle,
-          marketplaceDescription: marketplace.marketplaceDescription,
-          marketplacePrice: marketplace.marketplacePrice,
-          marketplaceCategory: marketplace.marketplaceCategory,
-          marketplaceAttributes: marketplace.marketplaceAttributes,
+          marketplaceTitle: listing.marketplaceTitle,
+          marketplaceDescription: listing.marketplaceDescription,
+          marketplacePrice: listing.marketplacePrice,
+          marketplaceCategory: listing.marketplaceCategory,
+          marketplaceAttributes: listing.marketplaceAttributes,
           marketplaceSlug: nextSlug,
           marketplaceStatus: "PUBLISHED",
           marketplacePublishedAt: new Date(),
@@ -2914,7 +2938,7 @@ async function publishToMarketplace(req, res) {
     });
 
     return res.json({
-      message: "Product published to marketplace",
+      message: "Product listing published",
       product: updated,
     });
   } catch (err) {
@@ -2924,16 +2948,16 @@ async function publishToMarketplace(req, res) {
 
     if (err?.code === "P2002") {
       return res.status(409).json({
-        message: "Marketplace link already exists. Change the marketplace name and try again.",
+        message: "Listing link already exists. Change the listing name and try again.",
       });
     }
 
-    console.error("publishToMarketplace error:", err);
+    console.error("publishProductListing error:", err);
     return res.status(500).json({ message: "Failed to publish product" });
   }
 }
 
-async function unpublishFromMarketplace(req, res) {
+async function unpublishProductListing(req, res) {
   const tenantId = getTenantId(req);
   const userId = getUserId(req);
   if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
@@ -2976,7 +3000,7 @@ async function unpublishFromMarketplace(req, res) {
     });
 
     return res.json({
-      message: "Product removed from marketplace",
+      message: "Product listing removed",
       product: updated,
     });
   } catch (err) {
@@ -2984,7 +3008,7 @@ async function unpublishFromMarketplace(req, res) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    console.error("unpublishFromMarketplace error:", err);
+    console.error("unpublishProductListing error:", err);
     return res.status(500).json({ message: "Failed to unpublish product" });
   }
 }
@@ -3002,9 +3026,12 @@ module.exports = {
   addProductImage,
   deleteProductImage,
   setPrimaryProductImage,
-  updateMarketplaceDraft,
-  publishToMarketplace,
-  unpublishFromMarketplace,
+  updateProductListingDraft,
+  updateMarketplaceDraft: updateProductListingDraft,
+  publishProductListing,
+  publishToMarketplace: publishProductListing,
+  unpublishProductListing,
+  unpublishFromMarketplace: unpublishProductListing,
 
   adjustStock,
   listStockAdjustments,

@@ -392,7 +392,7 @@ function SubscriptionPanel({ subscription }) {
   );
 }
 
-function BusinessStatusPanel({ categoryPanel, category, marketplacePublished, marketplaceMissingImages, subscription }) {
+function BusinessStatusPanel({ categoryPanel, category, listingPublished, listingMissingImages, subscription }) {
   const subscriptionLabel = subscription?.label || subscription?.status || "Not loaded";
 
   return (
@@ -406,9 +406,9 @@ function BusinessStatusPanel({ categoryPanel, category, marketplacePublished, ma
         </div>
 
         <div className="svx-mobile-status-row">
-          <span>Marketplace</span>
+          <span>Product listing</span>
           <strong>
-            {marketplacePublished} live · {marketplaceMissingImages} missing images
+            {listingPublished} live · {listingMissingImages} missing images
           </strong>
         </div>
 
@@ -425,15 +425,15 @@ function BusinessStatusPanel({ categoryPanel, category, marketplacePublished, ma
   );
 }
 
-function categoryFocus(category, activeRepairs, marketplaceMissingImages, lowStockCount) {
+function categoryFocus(category, activeRepairs, listingMissingImages, lowStockCount) {
   const values = {
     ELECTRONICS: {
       title: "Electronics focus",
-      text: "Watch repairs, warranty follow-ups, serial/IMEI records, and marketplace image quality.",
+      text: "Watch repairs, warranty follow-ups, serial/IMEI records, and listing image quality.",
       stats: [
         ["Open repairs", String(activeRepairs)],
         ["Warranty watch", activeRepairs > 0 ? "Review" : "Calm"],
-        ["Images missing", String(marketplaceMissingImages)],
+        ["Images missing", String(listingMissingImages)],
       ],
     },
     HARDWARE: {
@@ -447,9 +447,9 @@ function categoryFocus(category, activeRepairs, marketplaceMissingImages, lowSto
     },
     HOME_KITCHEN: {
       title: "Home & kitchen focus",
-      text: "Watch product sets, color/material variants, room use-cases, and image-ready marketplace products.",
+      text: "Watch product sets, color/material variants, room use-cases, and image-ready listed products.",
       stats: [
-        ["Set readiness", marketplaceMissingImages > 0 ? "Images" : "Ready"],
+        ["Set readiness", listingMissingImages > 0 ? "Images" : "Ready"],
         ["Variants", "Color / size"],
         ["Stock alerts", String(lowStockCount)],
       ],
@@ -621,10 +621,10 @@ export default function Dashboard() {
   const outOfStockCount = Number(dashboard?.outOfStockCount || 0);
   const productCount = Number(dashboard?.productCount || 0);
 
-  const marketplace = dashboard?.marketplace || dashboard?.marketplaceSummary || {};
-  const marketplacePublished = Number(marketplace?.publishedCount || 0);
-  const marketplaceDrafts = Number(marketplace?.draftCount || 0);
-  const marketplaceMissingImages = Number(marketplace?.missingImagesCount || 0);
+  const listing = dashboard?.listing || dashboard?.listingSummary || dashboard?.marketplace || dashboard?.marketplaceSummary || {};
+  const listingPublished = Number(listing?.publishedCount || 0);
+  const listingDrafts = Number(listing?.draftCount || 0);
+  const listingMissingImages = Number(listing?.missingImagesCount || 0);
 
   const paymentSummary = dashboard?.paymentSummary || dashboard?.paymentsToday || dashboard?.payments || {};
   const paymentMethods = [
@@ -645,19 +645,19 @@ export default function Dashboard() {
         title: "Stock needs review",
         text:
           outOfStockCount > 0
-            ? `${outOfStockCount} product${outOfStockCount === 1 ? "" : "s"} out of stock. Hide unavailable marketplace products.`
+            ? `${outOfStockCount} product${outOfStockCount === 1 ? "" : "s"} out of stock. Hide unavailable public listings.`
             : `${lowStockCount} product${lowStockCount === 1 ? "" : "s"} running low.`,
         action: "Open stock",
         to: "/app/inventory",
       });
     }
 
-    if (marketplaceMissingImages > 0) {
+    if (listingMissingImages > 0) {
       items.push({
         icon: PackageCheck,
         tone: "warning",
         title: "Products need images",
-        text: `${marketplaceMissingImages} marketplace product${marketplaceMissingImages === 1 ? "" : "s"} missing images.`,
+        text: `${listingMissingImages} listed product${listingMissingImages === 1 ? "" : "s"} missing images.`,
         action: "Add images",
         to: "/app/inventory",
       });
@@ -701,17 +701,17 @@ export default function Dashboard() {
         icon: Boxes,
         tone: "info",
         title: "Add products",
-        text: "Create stock first so sales, reports, and marketplace visibility become useful.",
+        text: "Create stock first so sales, reports, and listing visibility become useful.",
         action: "Inventory",
         to: "/app/inventory",
       });
     }
 
-    if (marketplacePublished <= 0 && productCount > 0) {
+    if (listingPublished <= 0 && productCount > 0) {
       items.push({
         icon: ShoppingCart,
         tone: "info",
-        title: "Marketplace not live yet",
+        title: "Product listing not live yet",
         text: "Products stay private until the owner chooses what should appear publicly.",
         action: "Review",
         to: "/app/inventory",
@@ -734,7 +734,7 @@ export default function Dashboard() {
         icon: CheckCircle2,
         tone: "success",
         title: "No urgent action",
-        text: "Sales, stock, marketplace, and access look calm for now.",
+        text: "Sales, stock, listing, and access look calm for now.",
         action: null,
         to: null,
       });
@@ -744,12 +744,12 @@ export default function Dashboard() {
   }, [
     activeRepairs,
     lowStockCount,
-    marketplaceMissingImages,
+    listingMissingImages,
     outOfStockCount,
     pendingDeals,
     productCount,
     subscription,
-    marketplacePublished,
+    listingPublished,
     missing,
   ]);
 
@@ -773,8 +773,8 @@ export default function Dashboard() {
       },
       {
         icon: PackageCheck,
-        tone: marketplaceMissingImages > 0 ? "warning" : "info",
-        title: "Prepare marketplace",
+        tone: listingMissingImages > 0 ? "warning" : "info",
+        title: "Prepare listing",
         text: "Add images and choose only products the owner wants public.",
         action: "Review",
         to: "/app/inventory",
@@ -799,12 +799,12 @@ export default function Dashboard() {
         return true;
       })
       .slice(0, 4);
-  }, [focusItems, lowStockCount, marketplaceMissingImages, outOfStockCount]);
+  }, [focusItems, lowStockCount, listingMissingImages, outOfStockCount]);
 
   const categoryPanel = categoryFocus(
     normalizedCategory,
     activeRepairs,
-    marketplaceMissingImages,
+    listingMissingImages,
     lowStockCount + outOfStockCount,
   );
 
@@ -832,17 +832,17 @@ export default function Dashboard() {
         tone: lowStockCount + outOfStockCount > 0 ? "warning" : "success",
       },
       {
-        label: "Marketplace",
-        value: String(marketplacePublished),
-        note: marketplaceMissingImages > 0 ? `${marketplaceMissingImages} missing images` : "Owner-controlled visibility",
+        label: "Product listing",
+        value: String(listingPublished),
+        note: listingMissingImages > 0 ? `${listingMissingImages} missing images` : "Owner-controlled visibility",
         icon: ShoppingCart,
-        tone: marketplaceMissingImages > 0 ? "warning" : marketplacePublished > 0 ? "success" : "neutral",
+        tone: listingMissingImages > 0 ? "warning" : listingPublished > 0 ? "success" : "neutral",
       },
     ],
     [
       lowStockCount,
-      marketplaceMissingImages,
-      marketplacePublished,
+      listingMissingImages,
+      listingPublished,
       outOfStockCount,
       pendingDeals,
       todaySales,
@@ -908,7 +908,7 @@ export default function Dashboard() {
           />
 
           {!productsToWatch.length ? (
-            <EmptyState title="No products need attention" text="Products with low stock, strong movement, or marketplace gaps will appear here." />
+            <EmptyState title="No products need attention" text="Products with low stock, strong movement, or listing gaps will appear here." />
           ) : (
             <div className="svx-row-stack svx-product-watch-list">
               {productsToWatch.slice(0, 5).map((item, index) => (
@@ -922,7 +922,7 @@ export default function Dashboard() {
           <SectionTitle title="Recent business movement" action={<Link to="/app/reports" className="svx-text-link">View all</Link>} />
 
           {!activity.length ? (
-            <EmptyState title="No recent activity" text="Sales, stock, expenses, and marketplace changes will appear here." />
+            <EmptyState title="No recent activity" text="Sales, stock, expenses, and listing changes will appear here." />
           ) : (
             <div className="svx-row-stack">
               {activity.slice(0, 5).map((item) => (
@@ -950,8 +950,8 @@ export default function Dashboard() {
       <BusinessStatusPanel
         categoryPanel={categoryPanel}
         category={businessCategory}
-        marketplacePublished={marketplacePublished}
-        marketplaceMissingImages={marketplaceMissingImages}
+        listingPublished={listingPublished}
+        listingMissingImages={listingMissingImages}
         subscription={subscription}
       />
 
@@ -970,20 +970,20 @@ export default function Dashboard() {
 
         <section className="svx-dashboard-card svx-reveal-card">
           <SectionTitle
-            eyebrow="Marketplace"
-            title="Marketplace readiness"
-            action={<Badge tone={marketplacePublished > 0 ? "success" : "neutral"}>{marketplacePublished} live</Badge>}
+            eyebrow="Product listing"
+            title="Product listing readiness"
+            action={<Badge tone={listingPublished > 0 ? "success" : "neutral"}>{listingPublished} live</Badge>}
           />
 
           <div className="svx-compact-stat-grid is-three">
-            <CompactStat label="Published" value={String(marketplacePublished)} tone={marketplacePublished ? "success" : "neutral"} />
-            <CompactStat label="Drafts" value={String(marketplaceDrafts)} />
-            <CompactStat label="Missing images" value={String(marketplaceMissingImages)} tone={marketplaceMissingImages ? "warning" : "success"} />
+            <CompactStat label="Published" value={String(listingPublished)} tone={listingPublished ? "success" : "neutral"} />
+            <CompactStat label="Drafts" value={String(listingDrafts)} />
+            <CompactStat label="Missing images" value={String(listingMissingImages)} tone={listingMissingImages ? "warning" : "success"} />
           </div>
 
-          <div className="svx-marketplace-note">
+          <div className="svx-listing-note">
             <p>Owner controls visibility</p>
-            <span>Products stay private until you add images, review the public details, and choose what appears in the marketplace.</span>
+            <span>Products stay private until you add images, review the public details, and choose what becomes visible.</span>
           </div>
         </section>
 

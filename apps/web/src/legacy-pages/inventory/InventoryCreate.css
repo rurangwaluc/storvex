@@ -453,7 +453,7 @@
   color: var(--product-danger);
 }
 
-.svx-product-marketplace-note p {
+.svx-product-listing-note p {
   color: var(--product-muted);
   font-size: 14px;
   font-weight: 700;

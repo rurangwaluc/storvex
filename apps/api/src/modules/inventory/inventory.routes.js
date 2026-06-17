@@ -127,26 +127,48 @@ router.patch(
   inventoryController.setPrimaryProductImage
 );
 
-// Marketplace publishing
+// Product listing controls
+router.patch(
+  "/products/:id/listing",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryController.updateProductListingDraft
+);
+
+router.patch(
+  "/products/:id/listing/publish",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryController.publishProductListing
+);
+
+router.patch(
+  "/products/:id/listing/unpublish",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryController.unpublishProductListing
+);
+
+// Backward-compatible route aliases while DB fields still use marketplace* columns.
 router.patch(
   "/products/:id/marketplace",
   ...writeBase,
   requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
-  inventoryController.updateMarketplaceDraft
+  inventoryController.updateProductListingDraft
 );
 
 router.patch(
   "/products/:id/marketplace/publish",
   ...writeBase,
   requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
-  inventoryController.publishToMarketplace
+  inventoryController.publishProductListing
 );
 
 router.patch(
   "/products/:id/marketplace/unpublish",
   ...writeBase,
   requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
-  inventoryController.unpublishFromMarketplace
+  inventoryController.unpublishProductListing
 );
 
 // Get product by ID

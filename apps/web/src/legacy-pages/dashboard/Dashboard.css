@@ -465,7 +465,7 @@
 .svx-product-copy p,
 .svx-focus-copy p,
 .svx-subscription-copy p,
-.svx-marketplace-note p,
+.svx-listing-note p,
 .svx-empty-state p {
   overflow: hidden;
   color: var(--dashboard-text);
@@ -479,7 +479,7 @@
 .svx-product-copy span,
 .svx-focus-copy span,
 .svx-subscription-copy span,
-.svx-marketplace-note span,
+.svx-listing-note span,
 .svx-empty-state span,
 .svx-category-text {
   display: block;
@@ -675,7 +675,7 @@
 
 .svx-category-text { max-width: 720px; margin-top: 0; }
 
-.svx-marketplace-note,
+.svx-listing-note,
 .svx-subscription-box {
   border: 1px solid var(--dashboard-border-soft);
   border-radius: 16px;
@@ -683,7 +683,7 @@
   padding: 14px;
 }
 
-.svx-marketplace-note { margin-top: 14px; }
+.svx-listing-note { margin-top: 14px; }
 
 .svx-subscription-copy {
   display: flex;
@@ -838,7 +838,7 @@
   .svx-product-row,
   .svx-focus-item,
   .svx-activity-row,
-  .svx-marketplace-note,
+  .svx-listing-note,
   .svx-subscription-box,
   .svx-action-center-card,
   .svx-compact-stat { border-radius: 14px; }

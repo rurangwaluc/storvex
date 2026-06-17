@@ -121,7 +121,7 @@ function productInitials(name) {
 function categoryText(product) {
   return (
     cleanString(product?.category) ||
-    cleanString(product?.marketplaceCategory) ||
+    cleanString(product?.listingCategory || product?.marketplaceCategory) ||
     cleanString(product?.subcategory) ||
     "Uncategorized"
   );
@@ -192,6 +192,7 @@ function branchLabel(product) {
 function normalizedCategoryAttributes(product) {
   const raw =
     product?.categoryAttributes ||
+    product?.listingAttributes ||
     product?.marketplaceAttributes ||
     product?.attributes ||
     {};
@@ -1046,7 +1047,7 @@ export default function InventoryDetail() {
               title="Product photos"
               text="Add, view, set primary, or delete images for this product."
             >
-              <div className="svx-detail-marketplace-box svx-detail-product-photos-box">
+              <div className="svx-detail-listing-box svx-detail-product-photos-box">
                 <div>
                   <StatusBadge tone={imageStatus.tone}>{imageStatus.label}</StatusBadge>
                   <p>{images.length ? `${images.length} image${images.length === 1 ? "" : "s"} attached` : "No product images yet"}</p>
@@ -1059,7 +1060,7 @@ export default function InventoryDetail() {
                 {images.length ? (
                   <button
                     type="button"
-                    className="svx-detail-marketplace-button"
+                    className="svx-detail-listing-button"
                     onClick={() => setImagePreview(images.find((image) => image?.isPrimary) || images[0])}
                   >
                     <Eye size={16} strokeWidth={2.35} />
@@ -1067,7 +1068,7 @@ export default function InventoryDetail() {
                   </button>
                 ) : null}
 
-                <Link to={`/app/inventory/${product.id}/images`} className="svx-detail-marketplace-button is-secondary">
+                <Link to={`/app/inventory/${product.id}/images`} className="svx-detail-listing-button is-secondary">
                   <ImagePlus size={16} strokeWidth={2.35} />
                   <span>{images.length ? "Manage images" : "Add images"}</span>
                 </Link>
