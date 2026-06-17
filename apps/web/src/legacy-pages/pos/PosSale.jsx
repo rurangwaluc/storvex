@@ -464,7 +464,7 @@ function PosSaleSkeleton() {
   return (
     <main className="svx-pos-page">
       <section className="svx-pos-shell">
-      <section className={cx(pageCard(), "p-5 sm:p-6")}>
+        <section className={cx(pageCard(), "p-5 sm:p-6")}>
         <SkeletonBlock className="h-4 w-28" />
         <SkeletonBlock className="mt-4 h-10 w-72 max-w-full rounded-[18px]" />
         <SkeletonBlock className="mt-3 h-4 w-full max-w-xl" />
@@ -558,105 +558,21 @@ function EmptyState({ title, text }) {
   );
 }
 
-function MiniStep({ number, title, active }) {
-  return (
-    <div
-      className={cx(
-        "flex items-center gap-2 rounded-full px-3 py-2 text-xs font-black transition",
-        active
-          ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)]"
-          : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
-      )}
-    >
-      <span
-        className={cx(
-          "flex h-5 w-5 items-center justify-center rounded-full text-[10px]",
-          active
-            ? "bg-[var(--color-primary-contrast)]/15 text-[var(--color-primary-contrast)]"
-            : "bg-[var(--color-card)] text-[var(--color-text)]",
-        )}
-      >
-        {number}
-      </span>
-      <span>{title}</span>
-    </div>
-  );
-}
 
 function SaleModeButton({ active, tone, title, text, onClick }) {
-  const activeClass = tone === "success" ? "bg-emerald-600 text-white" : "bg-amber-500 text-white";
-
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cx(
-        "rounded-[24px] p-4 text-left transition hover:-translate-y-0.5",
-        active
-          ? cx(activeClass, "shadow-[var(--shadow-soft)]")
-          : "bg-[var(--color-surface-2)] text-[var(--color-text)] hover:shadow-[var(--shadow-soft)]",
-      )}
+      className={cx("svx-pos-sale-mode-button", active && "is-active", tone === "warning" && "is-warning")}
     >
-      <span className="block text-sm font-black">{title}</span>
-      <span
-        className={cx(
-          "mt-2 block text-xs font-semibold leading-5",
-          active ? "text-white/85" : "text-[var(--color-text-muted)]",
-        )}
-      >
-        {text}
-      </span>
+      <strong>{title}</strong>
+      <span>{text}</span>
     </button>
   );
 }
 
-function PaymentMethodCard({ option, active, onClick }) {
-  const simpleDescription =
-    option.value === "CASH"
-      ? "Customer gives physical cash."
-      : option.value === "MOMO"
-        ? "Customer pays by mobile money."
-        : option.value === "CARD"
-          ? "Customer pays by card."
-          : option.value === "BANK"
-            ? "Customer pays by bank transfer or deposit."
-            : "Use when the payment does not fit the other options.";
 
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cx(
-        "rounded-[22px] p-4 text-left transition hover:-translate-y-0.5",
-        active
-          ? "border border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)]"
-          : "bg-[var(--color-surface-2)] text-[var(--color-text)] hover:shadow-[var(--shadow-soft)]",
-      )}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-black">{option.label}</div>
-          <div
-            className={cx(
-              "mt-2 text-xs font-semibold leading-5",
-              active
-                ? "text-[var(--color-primary-contrast)] opacity-80"
-                : "text-[var(--color-text-muted)]",
-            )}
-          >
-            {simpleDescription}
-          </div>
-        </div>
-
-        {active ? (
-          <span className="rounded-full border border-[var(--color-primary-contrast)]/20 bg-[var(--color-primary-contrast)]/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-primary-contrast)]">
-            Chosen
-          </span>
-        ) : null}
-      </div>
-    </button>
-  );
-}
 
 function ProductRow({ product, onAdd }) {
   const stock = productStock(product);
@@ -1499,15 +1415,87 @@ export default function PosSale() {
         />
       </section>
 
-        <div className="svx-pos-layout">
-        <div className="svx-pos-main">
-          <section className={cx(pageCard(), "p-5 sm:p-6")}>
+        <div className="svx-pos-layout svx-pos-layout--v2">
+          <div className="svx-pos-main">
+            <section className="svx-pos-card svx-pos-card--products">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
+                  1. Add products
+                </h2>
+                <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
+                  Search and add products. {salesDeskCategory.productHint}
+                </p>
+              </div>
+
+              <div className="w-full max-w-md">
+                <input
+                  className={inputClass()}
+                  placeholder="Search product name, code, barcode, category, or brand..."
+                  value={productQuery}
+                  onChange={(event) => setProductQuery(event.target.value)}
+                  onKeyDown={onProductKeyDown}
+                />
+              </div>
+            </div>
+
+            {!showQuickPicks && searching ? (
+              <div className="mt-4">
+                <InlineSpinner label="Searching products..." />
+              </div>
+            ) : null}
+
+            {showQuickPicks ? (
+              quickLoading ? (
+                <div className="mt-5 grid gap-3">
+                  {[1, 2, 3, 4, 5].map((item) => (
+                    <SkeletonBlock key={item} className="h-28 w-full" />
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="text-sm font-black text-[var(--color-text)]">{quickTitle}</div>
+                    <StatusBadge tone="success">Tap to add</StatusBadge>
+                  </div>
+
+                  {quickList.length === 0 ? (
+                    <div className="mt-4">
+                      <EmptyState
+                        title="No suggestions yet"
+                        text="Products will appear here after you create products or start selling."
+                      />
+                    </div>
+                  ) : (
+                    <div className="mt-4 grid gap-3">
+                      {quickList.map((product) => (
+                        <ProductRow key={product.id} product={product} onAdd={addToCart} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            ) : productResults.length === 0 && !searching ? (
+              <div className="mt-5">
+                <EmptyState title="No products found" text="Try another product name, code, barcode, category, or brand." />
+              </div>
+            ) : (
+              <div className="mt-5 grid gap-3">
+                {productResults.map((product) => (
+                  <ProductRow key={product.id} product={product} onAdd={addToCart} />
+                ))}
+              </div>
+            )}
+          </section>
+
+            <div className="svx-pos-options-grid">
+              <section className="svx-pos-card svx-pos-card--setup">
             <div>
               <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                1. How is the customer paying?
+                2. Payment
               </h2>
               <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                Use paid now when money is received today. Use pay later when the customer will owe a balance.
+                Choose paid now or pay later, then choose how the money is received.
               </p>
             </div>
 
@@ -1630,13 +1618,13 @@ export default function PosSale() {
             )}
           </section>
 
-          <section className={cx(pageCard(), "p-5 sm:p-6")}>
+              <section className="svx-pos-card svx-pos-card--setup">
             <div>
               <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                2. Customer
+                3. Customer
               </h2>
               <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                Choose how this customer should appear on the sale.
+                Choose who is buying. Walk-in is best for quick paid-now sales.
               </p>
             </div>
 
@@ -1826,81 +1814,11 @@ export default function PosSale() {
               </div>
             ) : null}
           </section>
-
-          <section className={cx(pageCard(), "p-5 sm:p-6")}>
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                  3. Add products
-                </h2>
-                <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                  Search and add products. {salesDeskCategory.productHint}
-                </p>
-              </div>
-
-              <div className="w-full max-w-md">
-                <input
-                  className={inputClass()}
-                  placeholder="Search product name, code, barcode, category, or brand..."
-                  value={productQuery}
-                  onChange={(event) => setProductQuery(event.target.value)}
-                  onKeyDown={onProductKeyDown}
-                />
-              </div>
             </div>
+          </div>
 
-            {!showQuickPicks && searching ? (
-              <div className="mt-4">
-                <InlineSpinner label="Searching products..." />
-              </div>
-            ) : null}
-
-            {showQuickPicks ? (
-              quickLoading ? (
-                <div className="mt-5 grid gap-3">
-                  {[1, 2, 3, 4, 5].map((item) => (
-                    <SkeletonBlock key={item} className="h-28 w-full" />
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="text-sm font-black text-[var(--color-text)]">{quickTitle}</div>
-                    <StatusBadge tone="success">Tap to add</StatusBadge>
-                  </div>
-
-                  {quickList.length === 0 ? (
-                    <div className="mt-4">
-                      <EmptyState
-                        title="No suggestions yet"
-                        text="Products will appear here after you create products or start selling."
-                      />
-                    </div>
-                  ) : (
-                    <div className="mt-4 grid gap-3">
-                      {quickList.map((product) => (
-                        <ProductRow key={product.id} product={product} onAdd={addToCart} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )
-            ) : productResults.length === 0 && !searching ? (
-              <div className="mt-5">
-                <EmptyState title="No products found" text="Try another product name, code, barcode, category, or brand." />
-              </div>
-            ) : (
-              <div className="mt-5 grid gap-3">
-                {productResults.map((product) => (
-                  <ProductRow key={product.id} product={product} onAdd={addToCart} />
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-
-        <aside className="svx-pos-side">
-          <section className={cx(pageCard(), "p-5 sm:p-6 xl:sticky xl:top-[96px]")}>
+          <aside className="svx-pos-side">
+            <section className="svx-pos-card svx-pos-checkout-card">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
@@ -2050,8 +1968,8 @@ export default function PosSale() {
               </p>
             </div>
           </section>
-        </aside>
-      </div>
+          </aside>
+        </div>
       </section>
     </main>
   );

@@ -843,3 +843,502 @@
     text-align: left;
   }
 }
+
+
+/* =========================================================
+   Sales Desk V2 final layout
+   Cashier-first flow:
+   1. Add products
+   2. Payment
+   3. Customer
+   4. Finish sale
+   Uses the same Inventory visual foundation.
+   ========================================================= */
+
+.svx-pos-layout--v2 {
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 400px);
+  gap: 18px;
+  align-items: start;
+}
+
+.svx-pos-layout--v2 .svx-pos-main {
+  display: grid;
+  gap: 18px;
+}
+
+.svx-pos-options-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.svx-pos-card--products {
+  padding: 24px;
+}
+
+.svx-pos-card--setup {
+  height: 100%;
+  padding: 22px;
+}
+
+.svx-pos-checkout-card {
+  position: sticky;
+  top: 88px;
+  padding: 22px;
+}
+
+.svx-pos-sale-mode-button {
+  min-width: 0;
+  border: 1px solid var(--pos-line-soft);
+  border-radius: 18px;
+  background: var(--pos-soft);
+  color: var(--pos-text);
+  cursor: pointer;
+  padding: 14px;
+  text-align: left;
+  display: grid;
+  gap: 5px;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.svx-pos-sale-mode-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(21, 156, 255, 0.28);
+}
+
+.svx-pos-sale-mode-button.is-active {
+  border-color: rgba(35, 199, 131, 0.36);
+  background: var(--pos-green-soft);
+  color: var(--pos-green);
+}
+
+.svx-pos-sale-mode-button.is-warning.is-active {
+  border-color: rgba(247, 173, 53, 0.38);
+  background: var(--pos-orange-soft);
+  color: var(--pos-orange);
+}
+
+.svx-pos-sale-mode-button strong {
+  color: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.svx-pos-sale-mode-button span {
+  color: var(--pos-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.svx-pos-payment-select-card {
+  padding: 14px;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.svx-pos-payment-note {
+  padding: 10px 12px;
+}
+
+.svx-pos-card--setup .svx-pos-segmented-control {
+  margin-top: 14px;
+  padding: 7px;
+  gap: 8px;
+}
+
+.svx-pos-card--setup .svx-pos-segmented-control button {
+  padding: 12px;
+}
+
+.svx-pos-card--products .svx-pos-product-row {
+  padding: 16px;
+}
+
+.svx-pos-checkout-card .svx-pos-button--primary {
+  min-height: 52px;
+  border-radius: 16px;
+  font-size: 14px;
+}
+
+@media (min-width: 1181px) {
+  .svx-pos-card--products {
+    min-height: 360px;
+  }
+}
+
+@media (max-width: 1280px) {
+  .svx-pos-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1180px) {
+  .svx-pos-layout--v2 {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-pos-checkout-card {
+    position: static;
+  }
+}
+
+@media (max-width: 899px) {
+  .svx-pos-card--products,
+  .svx-pos-card--setup,
+  .svx-pos-checkout-card {
+    padding: 16px;
+  }
+
+  .svx-pos-options-grid {
+    gap: 14px;
+  }
+}
+
+
+/* =========================================================
+   Sales Desk V2 density + alignment polish
+   Keeps the same V2 structure, but tightens the daily cashier view.
+   ========================================================= */
+
+.svx-pos-shell {
+  width: min(100%, 1480px);
+  padding: 24px 32px 32px;
+}
+
+.svx-pos-hero {
+  margin-bottom: 16px;
+  padding: 22px 28px;
+  border-radius: 20px;
+}
+
+.svx-pos-hero-inner {
+  min-height: 128px;
+  align-items: center;
+}
+
+.svx-pos-hero h1 {
+  margin-top: 6px;
+  font-size: clamp(32px, 3.2vw, 46px);
+  line-height: 0.98;
+}
+
+.svx-pos-hero p:not(.svx-pos-kicker) {
+  margin-top: 10px;
+  max-width: 720px;
+  font-size: 15.5px;
+  line-height: 1.5;
+}
+
+.svx-pos-hero-badges {
+  margin-top: 12px;
+}
+
+.svx-pos-hero-actions {
+  gap: 10px;
+}
+
+.svx-pos-hero-actions .svx-pos-button {
+  min-height: 44px;
+  padding-inline: 18px;
+}
+
+.svx-pos-metric-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.svx-pos-metric-grid .svx-pos-card {
+  min-height: 100px;
+  padding: 18px 20px;
+}
+
+.svx-pos-metric-grid .svx-pos-card p:first-child {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+
+.svx-pos-metric-grid .svx-pos-card p:nth-child(2),
+.svx-pos-metric-grid .svx-pos-card .text-2xl {
+  margin-top: 8px;
+}
+
+.svx-pos-layout--v2 {
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 388px);
+  gap: 16px;
+}
+
+.svx-pos-layout--v2 .svx-pos-main {
+  gap: 16px;
+}
+
+.svx-pos-options-grid {
+  gap: 16px;
+  align-items: stretch;
+}
+
+.svx-pos-card--products {
+  padding: 22px;
+}
+
+.svx-pos-card--products > .flex:first-child {
+  align-items: center;
+}
+
+.svx-pos-card--products .w-full.max-w-md {
+  max-width: 500px;
+}
+
+.svx-pos-card--products .svx-pos-input {
+  height: 46px;
+}
+
+.svx-pos-card--products .mt-5 {
+  margin-top: 16px;
+}
+
+.svx-pos-card--products .mt-4 {
+  margin-top: 12px;
+}
+
+.svx-pos-card--setup {
+  min-height: 0;
+  padding: 20px;
+}
+
+.svx-pos-card--setup h2,
+.svx-pos-card--products h2,
+.svx-pos-checkout-card h2 {
+  font-size: 17px;
+}
+
+.svx-pos-card--setup h2 + p,
+.svx-pos-card--products h2 + p,
+.svx-pos-checkout-card h2 + p {
+  margin-top: 4px;
+  font-size: 13.5px;
+  line-height: 1.45;
+}
+
+.svx-pos-sale-mode-button {
+  border-radius: 16px;
+  min-height: 94px;
+  padding: 12px 14px;
+}
+
+.svx-pos-sale-mode-button span {
+  font-size: 11.5px;
+  line-height: 1.32;
+}
+
+.svx-pos-payment-select-card {
+  margin-top: 14px;
+  padding: 12px;
+  border-radius: 18px;
+  gap: 10px;
+}
+
+.svx-pos-payment-select-card h3 {
+  font-size: 14px;
+}
+
+.svx-pos-payment-select-card p {
+  margin-top: 4px;
+  font-size: 12.5px;
+}
+
+.svx-pos-payment-select-wrap {
+  gap: 5px;
+}
+
+.svx-pos-payment-select-card .svx-pos-input,
+.svx-pos-payment-select {
+  height: 44px;
+}
+
+.svx-pos-payment-note {
+  padding: 9px 11px;
+  border-radius: 14px;
+}
+
+.svx-pos-payment-note strong,
+.svx-pos-payment-note span {
+  font-size: 12px;
+}
+
+.svx-pos-card--setup .mt-4 {
+  margin-top: 12px;
+}
+
+.svx-pos-card--setup .mt-5 {
+  margin-top: 14px;
+}
+
+.svx-pos-card--setup .svx-pos-input {
+  height: 44px;
+}
+
+.svx-pos-card--setup .svx-pos-segmented-control {
+  margin-top: 12px;
+  border-radius: 18px;
+}
+
+.svx-pos-card--setup .svx-pos-segmented-control button {
+  min-height: 76px;
+  border-radius: 14px;
+}
+
+.svx-pos-card--setup .svx-pos-segmented-control strong {
+  font-size: 12.5px;
+}
+
+.svx-pos-card--setup .svx-pos-segmented-control span {
+  font-size: 11.5px;
+}
+
+.svx-pos-card--setup .svx-pos-soft-panel {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 16px;
+}
+
+.svx-pos-product-row {
+  min-height: 98px;
+  border-radius: 20px;
+  padding: 14px 16px;
+  align-items: center;
+}
+
+.svx-pos-product-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+}
+
+.svx-pos-product-copy > strong {
+  font-size: 14.5px;
+}
+
+.svx-pos-product-copy > span {
+  font-size: 12.5px;
+}
+
+.svx-pos-product-facts,
+.svx-pos-product-badges {
+  margin-top: 6px;
+}
+
+.svx-pos-product-facts em {
+  padding: 3.5px 8px;
+  font-size: 10.5px;
+}
+
+.svx-pos-add-button {
+  min-height: 38px;
+  min-width: 54px;
+}
+
+.svx-pos-checkout-card {
+  top: 82px;
+  padding: 20px;
+}
+
+.svx-pos-checkout-card .mt-5 {
+  margin-top: 16px;
+}
+
+.svx-pos-checkout-card .rounded-\[26px\] {
+  border-radius: 22px;
+}
+
+.svx-pos-checkout-card .text-\[1\.8rem\] {
+  font-size: 1.65rem;
+}
+
+.svx-pos-checkout-card .svx-pos-button--primary {
+  min-height: 50px;
+}
+
+.svx-pos-cart-item {
+  padding: 14px;
+  border-radius: 18px;
+}
+
+.svx-pos-cart-controls {
+  margin-top: 12px;
+}
+
+.svx-pos-qty-stepper button {
+  width: 36px;
+  height: 36px;
+}
+
+@media (min-width: 1181px) {
+  .svx-pos-card--products {
+    min-height: 318px;
+  }
+
+  .svx-pos-options-grid > .svx-pos-card {
+    height: 100%;
+  }
+}
+
+@media (max-width: 1280px) {
+  .svx-pos-options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1180px) {
+  .svx-pos-shell {
+    padding: 22px;
+  }
+
+  .svx-pos-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-pos-checkout-card {
+    position: static;
+  }
+}
+
+@media (max-width: 899px) {
+  .svx-pos-shell {
+    padding: 16px;
+  }
+
+  .svx-pos-hero {
+    padding: 18px;
+  }
+
+  .svx-pos-hero-inner {
+    min-height: 0;
+  }
+
+  .svx-pos-hero-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .svx-pos-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-pos-card--products > .flex:first-child {
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 480px) {
+  .svx-pos-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-pos-payment-note {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
