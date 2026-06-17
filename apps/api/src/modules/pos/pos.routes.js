@@ -23,6 +23,14 @@ const writeBase = [
   requireWritableSubscription,
 ];
 
+// Sales desk context
+router.get(
+  "/context",
+  ...readBase,
+  requireDbPermission(PERMISSIONS.POS_VIEW),
+  posController.getPosContext
+);
+
 // Quick picks
 router.get(
   "/quick-picks",

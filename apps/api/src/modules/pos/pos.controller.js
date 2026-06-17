@@ -68,6 +68,167 @@ function normalizeRefundMethod(value) {
   return null;
 }
 
+function productCategorySelect(client = prisma) {
+  const productFields = client?.product?.fields || prisma?.product?.fields || {};
+
+  return {
+    id: true,
+    name: true,
+    sku: true,
+    barcode: true,
+    category: true,
+    subcategory: true,
+    subcategoryOther: true,
+    brand: true,
+    serial: true,
+    sellPrice: true,
+    stockQty: true,
+    minStockLevel: true,
+    ...(typeof productFields.categoryAttributes !== "undefined" ? { categoryAttributes: true } : {}),
+    ...(typeof productFields.marketplaceAttributes !== "undefined" ? { marketplaceAttributes: true } : {}),
+    ...(typeof productFields.marketplaceCategory !== "undefined" ? { marketplaceCategory: true } : {}),
+    ...(typeof productFields.marketplaceStatus !== "undefined" ? { marketplaceStatus: true } : {}),
+  };
+}
+
+function normalizeBusinessCategory(value) {
+  const raw = String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  if (raw === "HOME_AND_KITCHEN" || raw === "HOME_KITCHEN_APPLIANCES") return "HOME_KITCHEN";
+  if (raw === "SPARE_PART" || raw === "SPARES" || raw === "PARTS") return "SPARE_PARTS";
+  if (raw === "QUINCAILLERIE") return "HARDWARE";
+
+  const allowed = new Set(["ELECTRONICS", "HARDWARE", "HOME_KITCHEN", "LIGHTING", "SPARE_PARTS"]);
+  return allowed.has(raw) ? raw : "ELECTRONICS";
+}
+
+function categoryDisplayName(value) {
+  const key = normalizeBusinessCategory(value);
+  const labels = {
+    ELECTRONICS: "Electronics",
+    HARDWARE: "Hardware / Quincaillerie",
+    HOME_KITCHEN: "Home & kitchen",
+    LIGHTING: "Lighting",
+    SPARE_PARTS: "Spare parts",
+  };
+
+  return labels[key] || labels.ELECTRONICS;
+}
+
+function categoryAttributeHints(value) {
+  const key = normalizeBusinessCategory(value);
+
+  if (key === "HARDWARE") return ["unit", "size", "material", "grade"];
+  if (key === "HOME_KITCHEN") return ["material", "color", "size", "setPieces"];
+  if (key === "LIGHTING") return ["wattage", "voltage", "fitting", "lightColor"];
+  if (key === "SPARE_PARTS") return ["partNumber", "compatibleModel", "condition", "warranty"];
+
+  return ["ram", "storage", "processor", "warranty"];
+}
+
+function productCategoryAttributes(product) {
+  const raw =
+    product?.categoryAttributes ||
+    product?.listingAttributes ||
+    product?.marketplaceAttributes ||
+    product?.attributes ||
+    {};
+
+  return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+}
+
+function productPosMeta(product) {
+  const attributes = productCategoryAttributes(product);
+  const meta = [];
+
+  for (const key of [
+    "unit",
+    "size",
+    "material",
+    "grade",
+    "color",
+    "setPieces",
+    "wattage",
+    "voltage",
+    "fitting",
+    "lightColor",
+    "partNumber",
+    "compatibleModel",
+    "condition",
+    "warranty",
+    "ram",
+    "storage",
+    "processor",
+  ]) {
+    const value = attributes[key];
+    if (value === undefined || value === null || value === "") continue;
+    if (typeof value === "object") continue;
+
+    meta.push({ key, value: String(value) });
+  }
+
+  return meta.slice(0, 4);
+}
+
+function decoratePosProduct(product) {
+  if (!product || typeof product !== "object") return product;
+
+  const attrs = productCategoryAttributes(product);
+  const listingStatus = product.marketplaceStatus || product.listingStatus || null;
+  const listingCategory = product.marketplaceCategory || product.listingCategory || null;
+
+  return {
+    ...product,
+    categoryAttributes: attrs,
+    listingStatus,
+    listingCategory,
+    posMeta: productPosMeta(product),
+    isTracked: Boolean(product.serial),
+  };
+}
+
+async function getTenantBusinessCategory(client, tenantId) {
+  if (!tenantId) return "ELECTRONICS";
+
+  const tenant = await client.tenant.findUnique({
+    where: { id: tenantId },
+    select: {
+      businessCategory: true,
+      businessType: true,
+    },
+  });
+
+  return normalizeBusinessCategory(tenant?.businessCategory || tenant?.businessType);
+}
+
+// -----------------------------
+// GET /api/pos/context
+// -----------------------------
+async function getPosContext(req, res) {
+  try {
+    const tenantId = req.user?.tenantId;
+
+    if (!tenantId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const businessCategory = await getTenantBusinessCategory(prisma, tenantId);
+
+    return res.json({
+      businessCategory,
+      businessCategoryLabel: categoryDisplayName(businessCategory),
+      categoryAttributeHints: categoryAttributeHints(businessCategory),
+    });
+  } catch (err) {
+    console.error("getPosContext error:", err);
+    return res.status(500).json({ message: "Failed to load sales desk context" });
+  }
+}
+
 function paymentMethodTouchesCashDrawer(method) {
   return String(method || "").toUpperCase() === "CASH";
 }
@@ -866,14 +1027,7 @@ async function quickPicks(req, res) {
           isActive: true,
           id: { in: productIds },
         },
-        select: {
-          id: true,
-          name: true,
-          sku: true,
-          serial: true,
-          sellPrice: true,
-          stockQty: true,
-        },
+        select: productCategorySelect(prisma),
       });
 
       const byId = new Map(products.map((p) => [p.id, p]));
@@ -886,9 +1040,7 @@ async function quickPicks(req, res) {
             id: p.id,
             name: p.name,
             sku: p.sku,
-            serial: p.serial,
-            sellPrice: p.sellPrice,
-            stockQty: p.stockQty,
+            ...decoratePosProduct(p),
             soldQty: Number(g._sum.quantity || 0),
           };
         })
@@ -898,12 +1050,7 @@ async function quickPicks(req, res) {
     const latest = await prisma.product.findMany({
       where: { tenantId, isActive: true },
       select: {
-        id: true,
-        name: true,
-        sku: true,
-        serial: true,
-        sellPrice: true,
-        stockQty: true,
+        ...productCategorySelect(prisma),
         createdAt: true,
       },
       orderBy: { createdAt: "desc" },
@@ -915,7 +1062,7 @@ async function quickPicks(req, res) {
       limit,
       branchScope: scope,
       bestSellers,
-      latest,
+      latest: latest.map(decoratePosProduct),
     });
   } catch (err) {
     if (String(err?.message || "") === "BRANCH_ACCESS_DENIED") {
@@ -1026,6 +1173,12 @@ async function createSale(req, res) {
             name: true,
             sellPrice: true,
             stockQty: true,
+            sku: true,
+            barcode: true,
+            category: true,
+            brand: true,
+            ...(typeof tx.product.fields?.serial !== "undefined" ? { serial: true } : {}),
+            ...(typeof tx.product.fields?.categoryAttributes !== "undefined" ? { categoryAttributes: true } : {}),
           },
         });
 
@@ -2150,8 +2303,18 @@ async function getSaleReceipt(req, res) {
 
     const store = await getReceiptStoreProfile(tenantId, sale.branch);
 
+    const decoratedSale = {
+      ...sale,
+      items: Array.isArray(sale.items)
+        ? sale.items.map((item) => ({
+            ...item,
+            product: decoratePosProduct(item.product),
+          }))
+        : [],
+    };
+
     return res.json({
-      sale,
+      sale: decoratedSale,
 
       // Top-level store object for frontend receipt UI.
       // This is where PosReceipt.jsx reads store.logoUrl.
@@ -2823,6 +2986,7 @@ async function createSaleRefund(req, res) {
 }
 
 module.exports = {
+  getPosContext,
   quickPicks,
   createSale,
   createSaleWarranty,
