@@ -5,7 +5,10 @@ const {
   isConfigured: isStorageConfigured,
 } = require("../../lib/storage/objectStorage");
 const { previewDocumentNumbers } = require("../documents/documentNumber.service");
-const { normalizeBusinessCategory } = require("../../config/businessCategories");
+const {
+  normalizeBusinessCategory,
+  serializeBusinessCategory,
+} = require("../../config/businessCategories");
 
 const DEFAULT_COUNTRY_CODE = "RW";
 const DEFAULT_CURRENCY_CODE = "RWF";
@@ -331,13 +334,18 @@ function buildTrialBanner(subscription, now = new Date()) {
 function serializeStoreProfileRow(tenant) {
   if (!tenant) return null;
 
+  const businessCategory = serializeBusinessCategory(tenant.shopType);
+
   return {
     id: tenant.id,
     name: tenant.name || null,
     email: tenant.email || null,
     phone: tenant.phone || null,
     status: tenant.status || null,
-    shopType: tenant.shopType || null,
+    shopType: businessCategory.value,
+    businessCategory: businessCategory.value,
+    businessCategoryLabel: businessCategory.label,
+    businessCategoryScreenCopy: businessCategory.screenCopy,
     district: tenant.district || null,
     sector: tenant.sector || null,
     address: tenant.address || null,
@@ -738,6 +746,7 @@ async function updateStoreProfile(tenantId, payload) {
   if ("email" in body) data.email = normalizeEmail(body.email);
   if ("phone" in body) data.phone = normalizePhone(body.phone);
   if ("shopType" in body) data.shopType = normalizeShopType(body.shopType);
+  if ("businessCategory" in body) data.shopType = normalizeShopType(body.businessCategory);
   if ("district" in body) data.district = cleanNullableString(body.district, 120);
   if ("sector" in body) data.sector = cleanNullableString(body.sector, 120);
   if ("address" in body) data.address = cleanNullableString(body.address, 255);
@@ -754,6 +763,37 @@ async function updateStoreProfile(tenantId, payload) {
   }
 
   assertRequiredProfileFields(data);
+
+  if ("shopType" in data) {
+    const current = await prisma.tenant.findUnique({
+      where: { id },
+      select: { shopType: true },
+    });
+
+    const currentCategory = normalizeShopType(current?.shopType);
+    const nextCategory = normalizeShopType(data.shopType);
+
+    if (currentCategory && nextCategory && currentCategory !== nextCategory) {
+      const productCount = await prisma.product.count({
+        where: {
+          tenantId: id,
+          isActive: true,
+        },
+      });
+
+      const confirmed = toBool(body.confirmBusinessCategoryChange, false);
+
+      if (productCount > 0 && !confirmed) {
+        const err = new Error(
+          "This business already has products. Confirm before changing the business category because screens and product fields will change.",
+        );
+        err.status = 409;
+        err.code = "BUSINESS_CATEGORY_CHANGE_REQUIRES_CONFIRMATION";
+        throw err;
+      }
+    }
+  }
+
 
   const updated = await prisma.tenant.update({
     where: { id },

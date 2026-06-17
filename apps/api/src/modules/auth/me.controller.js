@@ -2,6 +2,7 @@ const prisma = require("../../config/database");
 const { getGraceDays } = require("../../config/plans");
 const { resolveSubscriptionAccess } = require("../billing/subscriptionAccess");
 const { buildTrialBanner, getSetupChecklist } = require("../store/store.service");
+const { serializeBusinessCategory } = require("../../config/businessCategories");
 
 const ACCESSIBLE_BRANCH_STATUSES = ["ACTIVE", "CLOSED"];
 
@@ -469,6 +470,7 @@ async function me(req, res) {
 
     const branchUsage = computeBranchEntitlement(subscription, activeBranchesCount);
     const activePermissions = activeBranchPermissions(activeBranch, req.user);
+    const businessCategory = serializeBusinessCategory(tenant?.shopType);
 
     return res.json({
       user: {
@@ -499,6 +501,9 @@ async function me(req, res) {
         currencyCode: tenant.currencyCode || "RWF",
         timezone: tenant.timezone || "Africa/Kigali",
         cashDrawerBlockCashSales: Boolean(tenant.cash_drawer_block_cash_sales),
+        businessCategory: businessCategory.value,
+        businessCategoryLabel: businessCategory.label,
+        businessCategoryScreenCopy: businessCategory.screenCopy,
         mainBranch,
       },
 
