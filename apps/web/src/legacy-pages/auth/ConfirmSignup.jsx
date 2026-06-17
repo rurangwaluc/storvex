@@ -8,6 +8,26 @@ import AsyncButton from "../../components/ui/AsyncButton";
 import AuthPageSkeleton from "../../components/ui/AuthPageSkeleton";
 import apiClient from "../../services/apiClient";
 
+function signupCompleted() {
+  try {
+    return (
+      localStorage.getItem("storvex_signupCompleted") === "true" ||
+      sessionStorage.getItem("storvex_signupCompleted") === "true"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function markSignupCompleted() {
+  try {
+    localStorage.setItem("storvex_signupCompleted", "true");
+    sessionStorage.setItem("storvex_signupCompleted", "true");
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 function readOnboardingState() {
   try {
     const raw = localStorage.getItem("storvex_onboarding");
@@ -278,6 +298,11 @@ export default function ConfirmSignup() {
 
   useEffect(() => {
     if (!intentId || !storeName) {
+      if (signupCompleted()) {
+        nav("/login", { replace: true });
+        return;
+      }
+
       toast.error("Missing setup info. Please start again.");
       nav("/signup", { replace: true });
       return;
@@ -381,7 +406,7 @@ export default function ConfirmSignup() {
 
       await apiClient.post("/auth/confirm-signup", payload);
 
-      localStorage.setItem("storvex_signupCompleted", "true");
+      markSignupCompleted();
       clearOnboardingState();
 
       toast.success(resolvedMode === "TRIAL" ? "Trial account created. Please log in." : "Store activated. Please log in.");

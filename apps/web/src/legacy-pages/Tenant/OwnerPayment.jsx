@@ -145,6 +145,36 @@ function clearOnboardingSession() {
   ]);
 }
 
+function signupCompleted() {
+  try {
+    return (
+      localStorage.getItem("storvex_signupCompleted") === "true" ||
+      sessionStorage.getItem("storvex_signupCompleted") === "true"
+    );
+  } catch {
+    return false;
+  }
+}
+
+function markSignupCompleted() {
+  try {
+    localStorage.setItem("storvex_signupCompleted", "true");
+    sessionStorage.setItem("storvex_signupCompleted", "true");
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+function goToLogin(nav) {
+  nav("/login", { replace: true });
+
+  window.setTimeout(() => {
+    if (window.location.pathname !== "/login") {
+      window.location.replace("/login");
+    }
+  }, 0);
+}
+
 function saveOnboardingPatch(patch) {
   const current = readOnboardingState() || {};
   const next = { ...current, ...patch };
@@ -455,7 +485,7 @@ export default function OwnerPayment() {
 
   useEffect(() => {
     if (!intentId || !storeName) {
-      if (localStorage.getItem("storvex_signupCompleted") === "true") {
+      if (signupCompleted()) {
         nav("/login", { replace: true });
         return;
       }
@@ -542,11 +572,11 @@ export default function OwnerPayment() {
 
     await apiClient.post("/auth/confirm-signup", payload);
 
-    localStorage.setItem("storvex_signupCompleted", "true");
+    markSignupCompleted();
     clearOnboardingSession();
 
     toast.success(mode === "TRIAL" ? "Trial account created. Please log in." : "Store account activated. Please log in.");
-    nav("/login", { replace: true });
+    goToLogin(nav);
   }
 
   async function startTrial() {
@@ -617,7 +647,7 @@ export default function OwnerPayment() {
     });
 
     toast.success("Log in after your payment is activated.");
-    nav("/login", { replace: true });
+    goToLogin(nav);
   }
 
   if (booting) {
@@ -785,4 +815,5 @@ export default function OwnerPayment() {
     </OnboardingShell>
   );
 }
+
 

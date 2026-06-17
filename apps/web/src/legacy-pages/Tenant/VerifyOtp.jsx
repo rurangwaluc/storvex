@@ -42,6 +42,17 @@ function contactMatches(savedContact, currentContact) {
   return Boolean(savedContact) && normalizeContact(savedContact) === normalizeContact(currentContact);
 }
 
+function signupCompleted() {
+  try {
+    return (
+      localStorage.getItem("storvex_signupCompleted") === "true" ||
+      sessionStorage.getItem("storvex_signupCompleted") === "true"
+    );
+  } catch {
+    return false;
+  }
+}
+
 function readPasswordDraft() {
   try {
     return sessionStorage.getItem(PASSWORD_DRAFT_KEY) || "";
@@ -628,6 +639,11 @@ export default function VerifyOtp() {
 
   useEffect(() => {
     if (!intentId || !storeName || !ownerEmail || !ownerPhone) {
+      if (signupCompleted()) {
+        nav("/login", { replace: true });
+        return;
+      }
+
       toast.error("Missing setup info. Please start again.");
       nav("/signup", { replace: true });
     }
