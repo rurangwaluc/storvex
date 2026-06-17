@@ -455,6 +455,11 @@ export default function OwnerPayment() {
 
   useEffect(() => {
     if (!intentId || !storeName) {
+      if (localStorage.getItem("storvex_signupCompleted") === "true") {
+        nav("/login", { replace: true });
+        return;
+      }
+
       toast.error("Missing setup info. Please start again.");
       nav("/signup", { replace: true });
       return;
@@ -537,6 +542,7 @@ export default function OwnerPayment() {
 
     await apiClient.post("/auth/confirm-signup", payload);
 
+    localStorage.setItem("storvex_signupCompleted", "true");
     clearOnboardingSession();
 
     toast.success(mode === "TRIAL" ? "Trial account created. Please log in." : "Store account activated. Please log in.");
@@ -779,3 +785,4 @@ export default function OwnerPayment() {
     </OnboardingShell>
   );
 }
+

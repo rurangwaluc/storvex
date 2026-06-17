@@ -379,13 +379,13 @@ export default function ConfirmSignup() {
         payload.planKey = planKeyStored;
       }
 
-      const { data } = await apiClient.post("/auth/confirm-signup", payload);
+      await apiClient.post("/auth/confirm-signup", payload);
 
-      saveAuthSession(data);
+      localStorage.setItem("storvex_signupCompleted", "true");
       clearOnboardingState();
 
-      toast.success(resolvedMode === "TRIAL" ? "Trial started" : "Store activated");
-      nav("/app", { replace: true });
+      toast.success(resolvedMode === "TRIAL" ? "Trial account created. Please log in." : "Store activated. Please log in.");
+      nav("/login", { replace: true });
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to finish signup");
     } finally {

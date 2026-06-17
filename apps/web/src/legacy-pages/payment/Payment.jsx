@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiFetch } from "../../services/apiClient";
 
 export default function Payment() {
+  const navigate = useNavigate();
   const params = new URLSearchParams(window.location.search);
   const intentId = params.get("intentId");
 
@@ -29,7 +31,8 @@ export default function Payment() {
         },
       });
 
-      setMessage("Payment request sent. Please confirm on your phone.");
+      setMessage("Payment request sent. Please confirm on your phone. You will log in after activation.");
+      setTimeout(() => navigate("/login", { replace: true }), 1200);
     } catch (error) {
       setMessage(error?.message || "Payment failed");
     } finally {
@@ -75,3 +78,4 @@ export default function Payment() {
     </form>
   );
 }
+

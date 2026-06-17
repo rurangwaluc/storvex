@@ -179,6 +179,28 @@ function cleanString(value) {
   return s || "";
 }
 
+function skuToken(value) {
+  return cleanString(value)
+    .toUpperCase()
+    .replace(/['"]/g, "")
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function makeSku({ brand, category, name }) {
+  const parts = [
+    skuToken(brand).slice(0, 8),
+    skuToken(category).slice(0, 8),
+    skuToken(name).slice(0, 16),
+  ].filter(Boolean);
+
+  return parts.join("-").replace(/-+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
+}
+
+function isOtherCategory(value) {
+  return cleanString(value).toLowerCase() === "other";
+}
+
 function normalizeBusinessCategory(value) {
   const raw = cleanString(value).toUpperCase();
 
@@ -468,6 +490,7 @@ export default function InventoryCreate() {
     serial: "",
     brand: "",
     category: "",
+    customCategory: "",
     subcategory: "",
     subcategoryOther: "",
     costPrice: "",
@@ -509,10 +532,19 @@ export default function InventoryCreate() {
   const meta = BUSINESS_CATEGORY_META[businessCategory] || DEFAULT_META;
   const trackingCopy = trackingCopyFor(businessCategory);
   const productCategoryOptions = meta.categoryOptions;
-  const subcategoryOptions = ELECTRONICS_SUBCATEGORIES[form.category] || [];
+  const selectedCategory = isOtherCategory(form.category)
+    ? cleanString(form.customCategory)
+    : cleanString(form.category);
+  const displayCategory = selectedCategory || form.category || meta.label;
+  const generatedSku = makeSku({
+    brand: form.brand,
+    category: selectedCategory || meta.label,
+    name: form.name,
+  });
+  const subcategoryOptions = ELECTRONICS_SUBCATEGORIES[selectedCategory || form.category] || [];
   const attributeFields = useMemo(
-    () => attributeFieldsFor(businessCategory, form.category),
-    [businessCategory, form.category],
+    () => attributeFieldsFor(businessCategory, selectedCategory || form.category),
+    [businessCategory, selectedCategory, form.category],
   );
 
   const costPrice = parseNumber(form.costPrice);
@@ -556,6 +588,7 @@ export default function InventoryCreate() {
     setForm((current) => ({
       ...current,
       category: value,
+      customCategory: "",
       subcategory: "",
       subcategoryOther: "",
       categoryAttributes: {},
@@ -564,7 +597,7 @@ export default function InventoryCreate() {
 
   function validateForm() {
     const name = cleanString(form.name);
-    const category = cleanString(form.category);
+    const category = selectedCategory;
 
     if (!name) {
       toast.error("Product name is required");
@@ -626,11 +659,11 @@ export default function InventoryCreate() {
     try {
       const payload = {
         name: cleanString(form.name),
-        sku: cleanString(form.sku),
+        sku: generatedSku,
         barcode: cleanString(form.barcode),
         serial: trackSerial ? cleanString(form.serial) : "",
         brand: cleanString(form.brand),
-        category: cleanString(form.category),
+        category: selectedCategory,
         subcategory: cleanString(form.subcategory),
         subcategoryOther: cleanString(form.subcategoryOther),
         costPrice: Number(form.costPrice),
@@ -687,7 +720,7 @@ export default function InventoryCreate() {
 
             <div>
               <p>{form.name || "New product"}</p>
-              <span>{form.category || meta.label}</span>
+              <span>{displayCategory}</span>
             </div>
 
             <ChevronRight size={18} strokeWidth={2.5} />
@@ -738,6 +771,18 @@ export default function InventoryCreate() {
                   </select>
                 </Field>
 
+                {isOtherCategory(form.category) ? (
+                  <Field label="Custom category" required>
+                    <input
+                      className="svx-product-input"
+                      value={form.customCategory}
+                      onChange={(event) => setField("customCategory", event.target.value)}
+                      placeholder="Write the product category"
+                      disabled={saving}
+                    />
+                  </Field>
+                ) : null}
+
                 <Field label="Brand">
                   <input
                     className="svx-product-input"
@@ -778,13 +823,12 @@ export default function InventoryCreate() {
                   </Field>
                 ) : null}
 
-                <Field label="SKU">
+                <Field label="SKU" help="Generated automatically from brand, category, and product name.">
                   <input
                     className="svx-product-input"
-                    value={form.sku}
-                    onChange={(event) => setField("sku", event.target.value)}
-                    placeholder="Example: DEL-I15"
-                    disabled={saving}
+                    value={generatedSku || "Auto-generated after product name"}
+                    readOnly
+                    disabled
                   />
                 </Field>
 
@@ -957,7 +1001,7 @@ export default function InventoryCreate() {
 
               <div className="svx-product-summary">
                 <SummaryRow label="Product" value={form.name || "Not named"} />
-                <SummaryRow label="Category" value={form.category || meta.label} />
+                <SummaryRow label="Category" value={displayCategory} />
                 <SummaryRow label="Cost" value={formatRwf(costPrice || 0)} />
                 <SummaryRow label="Selling price" value={formatRwf(sellPrice || 0)} />
                 <SummaryRow label="Profit per item" value={formatRwf(profitPerItem)} tone={profitPerItem >= 0 ? "success" : "danger"} />

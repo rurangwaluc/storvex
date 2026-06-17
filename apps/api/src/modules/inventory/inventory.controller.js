@@ -201,6 +201,42 @@ function slugify(value) {
   return base || null;
 }
 
+function skuToken(value) {
+  return String(value || "")
+    .trim()
+    .toUpperCase()
+    .replace(/['"]/g, "")
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function buildSkuBase({ brand, category, name }) {
+  const parts = [
+    skuToken(brand).slice(0, 10),
+    skuToken(category).slice(0, 10),
+    skuToken(name).slice(0, 18),
+  ].filter(Boolean);
+
+  const base = parts.join("-").replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+  return base || `PRD-${Date.now().toString(36).toUpperCase()}`;
+}
+
+async function generateUniqueSku(tx, { tenantId, name, brand, category }) {
+  const base = buildSkuBase({ name, brand, category }).slice(0, 42);
+  const count = await tx.product.count({
+    where: {
+      tenantId,
+      sku: {
+        startsWith: base,
+        mode: "insensitive",
+      },
+    },
+  });
+
+  if (count <= 0) return base;
+  return `${base}-${String(count + 1).padStart(2, "0")}`.slice(0, 64);
+}
+
 async function getTenantBusinessCategory(tenantId) {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
@@ -1124,6 +1160,15 @@ async function createProduct(req, res) {
   try {
     const activeBranch = await ensureWritableBranchAccessOrThrow(req);
     const data = normalizeProductInput(req.body || {}, { isCreate: true });
+
+    if (!data.sku) {
+      data.sku = await generateUniqueSku(prisma, {
+        tenantId,
+        name: data.name,
+        brand: data.brand,
+        category: data.category,
+      });
+    }
 
     await ensureUniqueProductFields({
       tx: prisma,
@@ -3041,3 +3086,4 @@ module.exports = {
   exportInventoryExcel,
   exportStockAdjustmentsExcel,
 };
+

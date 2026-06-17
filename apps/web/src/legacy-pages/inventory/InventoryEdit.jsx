@@ -180,6 +180,44 @@ function cleanString(value) {
   return s || "";
 }
 
+function skuToken(value) {
+  return cleanString(value)
+    .toUpperCase()
+    .replace(/['"]/g, "")
+    .replace(/[^A-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function makeSku({ brand, category, name }) {
+  const parts = [
+    skuToken(brand).slice(0, 8),
+    skuToken(category).slice(0, 8),
+    skuToken(name).slice(0, 16),
+  ].filter(Boolean);
+
+  return parts.join("-").replace(/-+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
+}
+
+function isOtherCategory(value) {
+  return cleanString(value).toLowerCase() === "other";
+}
+
+function allKnownCategoryOptions() {
+  return Array.from(
+    new Set(
+      Object.values(BUSINESS_CATEGORY_META)
+        .flatMap((item) => item.categoryOptions || [])
+        .filter(Boolean),
+    ),
+  );
+}
+
+function categorySelectValue(category, options = allKnownCategoryOptions()) {
+  const clean = cleanString(category);
+  if (!clean) return "";
+  return options.includes(clean) ? clean : "Other";
+}
+
 function parseNumber(value) {
   if (value === "" || value === null || value === undefined) return null;
   const n = Number(value);
@@ -532,6 +570,7 @@ export default function InventoryEdit() {
     serial: "",
     brand: "",
     category: "",
+    customCategory: "",
     subcategory: "",
     subcategoryOther: "",
     costPrice: "",
@@ -564,7 +603,10 @@ export default function InventoryEdit() {
         barcode: cleanString(nextProduct.barcode),
         serial: cleanString(nextProduct.serial),
         brand: cleanString(nextProduct.brand),
-        category: cleanString(nextProduct.category),
+        category: categorySelectValue(cleanString(nextProduct.category)),
+        customCategory: allKnownCategoryOptions().includes(cleanString(nextProduct.category))
+          ? ""
+          : cleanString(nextProduct.category),
         subcategory: cleanString(nextProduct.subcategory),
         subcategoryOther: cleanString(nextProduct.subcategoryOther),
         costPrice: nextProduct.costPrice === null || nextProduct.costPrice === undefined ? "" : String(nextProduct.costPrice),
@@ -625,10 +667,19 @@ export default function InventoryEdit() {
   const meta = BUSINESS_CATEGORY_META[businessCategory] || DEFAULT_META;
   const trackingCopy = trackingCopyFor(businessCategory);
   const productCategoryOptions = meta.categoryOptions;
-  const subcategoryOptions = ELECTRONICS_SUBCATEGORIES[form.category] || [];
+  const selectedCategory = isOtherCategory(form.category)
+    ? cleanString(form.customCategory)
+    : cleanString(form.category);
+  const displayCategory = selectedCategory || form.category || meta.label;
+  const generatedSku = makeSku({
+    brand: form.brand,
+    category: selectedCategory || meta.label,
+    name: form.name,
+  });
+  const subcategoryOptions = ELECTRONICS_SUBCATEGORIES[selectedCategory || form.category] || [];
   const attributeFields = useMemo(
-    () => attributeFieldsFor(businessCategory, form.category),
-    [businessCategory, form.category],
+    () => attributeFieldsFor(businessCategory, selectedCategory || form.category),
+    [businessCategory, selectedCategory, form.category],
   );
 
   const status = productStatus(product);
@@ -669,6 +720,7 @@ export default function InventoryEdit() {
     setForm((current) => ({
       ...current,
       category: value,
+      customCategory: "",
       subcategory: "",
       subcategoryOther: "",
       categoryAttributes: {},
@@ -677,7 +729,7 @@ export default function InventoryEdit() {
 
   function validateForm() {
     const name = cleanString(form.name);
-    const category = cleanString(form.category);
+    const category = selectedCategory;
 
     if (!name) {
       toast.error("Product name is required");
@@ -734,11 +786,11 @@ export default function InventoryEdit() {
     try {
       const payload = {
         name: cleanString(form.name),
-        sku: cleanString(form.sku),
+        sku: generatedSku || cleanString(form.sku),
         barcode: cleanString(form.barcode),
         serial: trackSerial ? cleanString(form.serial) : "",
         brand: cleanString(form.brand),
-        category: cleanString(form.category),
+        category: selectedCategory,
         subcategory: cleanString(form.subcategory),
         subcategoryOther: cleanString(form.subcategoryOther),
         costPrice: Number(form.costPrice),
@@ -799,7 +851,7 @@ export default function InventoryEdit() {
 
             <div>
               <p>{form.name || "Product"}</p>
-              <span>{form.category || meta.label}</span>
+              <span>{displayCategory}</span>
             </div>
 
             <ChevronRight size={18} strokeWidth={2.5} />
@@ -850,6 +902,18 @@ export default function InventoryEdit() {
                   </select>
                 </Field>
 
+                {isOtherCategory(form.category) ? (
+                  <Field label="Custom category" required>
+                    <input
+                      className="svx-edit-input"
+                      value={form.customCategory}
+                      onChange={(event) => setField("customCategory", event.target.value)}
+                      placeholder="Write the product category"
+                      disabled={saving}
+                    />
+                  </Field>
+                ) : null}
+
                 <Field label="Brand">
                   <input
                     className="svx-edit-input"
@@ -890,13 +954,12 @@ export default function InventoryEdit() {
                   </Field>
                 ) : null}
 
-                <Field label="SKU">
+                <Field label="SKU" help="Generated automatically from brand, category, and product name.">
                   <input
                     className="svx-edit-input"
-                    value={form.sku}
-                    onChange={(event) => setField("sku", event.target.value)}
-                    placeholder="Example: HP-PAV15"
-                    disabled={saving}
+                    value={generatedSku || cleanString(form.sku) || "Auto-generated after product name"}
+                    readOnly
+                    disabled
                   />
                 </Field>
 
@@ -1073,7 +1136,7 @@ export default function InventoryEdit() {
 
               <div className="svx-edit-summary">
                 <SummaryRow label="Product" value={form.name || "Not named"} />
-                <SummaryRow label="Category" value={form.category || meta.label} />
+                <SummaryRow label="Category" value={displayCategory} />
                 <SummaryRow label="Current stock" value={formatPlain(qty)} tone={status.tone} />
                 <SummaryRow label="Reserved" value={formatPlain(reserved)} />
                 <SummaryRow label="Cost" value={formatRwf(costPrice || 0)} />
