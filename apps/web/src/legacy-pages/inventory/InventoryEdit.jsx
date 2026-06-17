@@ -386,6 +386,78 @@ function attributeFieldsFor(categoryKey, productCategory) {
   ];
 }
 
+
+function trackingCopyFor(categoryKey) {
+  if (categoryKey === "HARDWARE") {
+    return {
+      title: "Item tracking",
+      text: "Use manufacturer serial only for machines, power tools, pumps, or warranty-controlled items.",
+      normalTitle: "Normal stock",
+      normalText: "Best for paint, cement, fittings, tools, and materials sold as normal stock.",
+      trackedTitle: "Serial number",
+      trackedText: "Use only for hardware items that have a manufacturer serial or warranty card.",
+      inputLabel: "Serial number",
+      inputPlaceholder: "Example: drill or machine serial number",
+      requiredMessage: "Serial number is required when item tracking is on",
+    };
+  }
+
+  if (categoryKey === "HOME_KITCHEN") {
+    return {
+      title: "Item tracking",
+      text: "Use serial tracking only for appliances or warranty-sensitive home products.",
+      normalTitle: "Normal stock",
+      normalText: "Best for cookware, dining, decor, furniture, and everyday home goods.",
+      trackedTitle: "Appliance serial",
+      trackedText: "Use for appliances or warranty items that must be identified one by one.",
+      inputLabel: "Appliance serial",
+      inputPlaceholder: "Example: appliance serial number",
+      requiredMessage: "Appliance serial is required when item tracking is on",
+    };
+  }
+
+  if (categoryKey === "LIGHTING") {
+    return {
+      title: "Item tracking",
+      text: "Use serial or batch tracking only for solar kits, drivers, fixtures, or warranty-controlled lighting.",
+      normalTitle: "Normal stock",
+      normalText: "Best for bulbs, tubes, switches, cables, and common lighting accessories.",
+      trackedTitle: "Serial / batch code",
+      trackedText: "Use for lighting items that need warranty, batch, or installation traceability.",
+      inputLabel: "Serial / batch code",
+      inputPlaceholder: "Example: solar kit serial or batch code",
+      requiredMessage: "Serial or batch code is required when item tracking is on",
+    };
+  }
+
+  if (categoryKey === "SPARE_PARTS") {
+    return {
+      title: "Part tracking",
+      text: "Use tracking only when a part has a serial, batch, or warranty code.",
+      normalTitle: "Normal stock",
+      normalText: "Best for common parts where quantity and compatibility are enough.",
+      trackedTitle: "Serial / batch code",
+      trackedText: "Use for warranty-sensitive parts or parts that must be traced one by one.",
+      inputLabel: "Serial / batch code",
+      inputPlaceholder: "Example: part serial, batch, or warranty code",
+      requiredMessage: "Serial or batch code is required when part tracking is on",
+    };
+  }
+
+  return {
+    title: "Tracking",
+    text: "Use serial or IMEI only when this product must be identified one by one.",
+    normalTitle: "Normal stock",
+    normalText: "Best for products where every unit is the same.",
+    trackedTitle: "Serial / IMEI",
+    trackedText: "Best for phones, laptops, and warranty-sensitive items.",
+    inputLabel: "Serial / IMEI",
+    inputPlaceholder: "Serial or IMEI number",
+    requiredMessage: "Serial or IMEI is required when tracking is on",
+  };
+}
+
+
 function Field({ label, required = false, help, children, wide = false }) {
   return (
     <label className={cx("svx-edit-field", wide && "is-wide")}>
@@ -551,6 +623,7 @@ export default function InventoryEdit() {
 
   const businessCategory = businessCategoryFromWorkspace(workspace);
   const meta = BUSINESS_CATEGORY_META[businessCategory] || DEFAULT_META;
+  const trackingCopy = trackingCopyFor(businessCategory);
   const productCategoryOptions = meta.categoryOptions;
   const subcategoryOptions = ELECTRONICS_SUBCATEGORIES[form.category] || [];
   const attributeFields = useMemo(
@@ -617,7 +690,7 @@ export default function InventoryEdit() {
     }
 
     if (trackSerial && !cleanString(form.serial)) {
-      toast.error("Serial or IMEI is required when tracking is on");
+      toast.error(trackingCopy.requiredMessage);
       return false;
     }
 
@@ -883,8 +956,8 @@ export default function InventoryEdit() {
             <section className="svx-edit-card">
               <SectionHeader
                 icon={BadgeCheck}
-                title="Tracking"
-                text="Use serial or IMEI only when this product must be identified one by one."
+                title={trackingCopy.title}
+                text={trackingCopy.text}
               />
 
               <div className="svx-edit-choice-grid">
@@ -897,8 +970,8 @@ export default function InventoryEdit() {
                   }}
                   disabled={saving}
                 >
-                  <strong>Normal stock</strong>
-                  <span>Best for products where every unit is the same.</span>
+                  <strong>{trackingCopy.normalTitle}</strong>
+                  <span>{trackingCopy.normalText}</span>
                 </button>
 
                 <button
@@ -907,19 +980,19 @@ export default function InventoryEdit() {
                   onClick={() => setTrackSerial(true)}
                   disabled={saving}
                 >
-                  <strong>Serial / IMEI</strong>
-                  <span>Best for phones, laptops, and warranty-sensitive items.</span>
+                  <strong>{trackingCopy.trackedTitle}</strong>
+                  <span>{trackingCopy.trackedText}</span>
                 </button>
               </div>
 
               {trackSerial ? (
                 <div className="svx-edit-grid is-single">
-                  <Field label="Serial / IMEI" required>
+                  <Field label={trackingCopy.inputLabel} required>
                     <input
                       className="svx-edit-input"
                       value={form.serial}
                       onChange={(event) => setField("serial", event.target.value)}
-                      placeholder="Serial or IMEI number"
+                      placeholder={trackingCopy.inputPlaceholder}
                       disabled={saving}
                     />
                   </Field>
