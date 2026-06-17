@@ -238,7 +238,10 @@ function activeBranchNameFromStorage() {
   const name = cleanString(localStorage.getItem("activeBranchName"));
   const code = cleanString(localStorage.getItem("activeBranchCode"));
 
-  if (code && name) return `${code} • ${name}`;
+  /*
+    Product creation should show the branch name only.
+    The branch code/main label is useful internally, but it makes the create screen noisy.
+  */
   if (name) return name;
   if (code) return code;
 
