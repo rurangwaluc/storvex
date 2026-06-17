@@ -7,6 +7,7 @@ import InlineSpinner from "../../components/ui/InlineSpinner";
 
 import {
   createSale,
+  getPosContext,
   getQuickPicks,
   PAYMENT_METHOD_OPTIONS,
   paymentMethodTouchesCashDrawer,
@@ -16,8 +17,10 @@ import { listCustomers } from "../../services/customersApi";
 import { getCashDrawerStatus } from "../../services/cashDrawerApi";
 import { getDocumentSettings } from "../../services/storeApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import "./PosSale.css";
 
 const PAGE_SIZE = 10;
+const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
 
 function formatMoney(value) {
   const n = Number(value || 0);
@@ -144,11 +147,240 @@ function productPrice(product) {
   return Number(product?.sellPrice ?? product?.price ?? 0);
 }
 
+
+function paymentMethodName(value) {
+  const option = PAYMENT_METHOD_OPTIONS.find((item) => item.value === value);
+  return option?.label || cleanString(value) || "This payment";
+}
+
+function drawerCopyForPayment(method, touchesDrawer) {
+  const label = paymentMethodName(method);
+
+  if (touchesDrawer) {
+    return {
+      summaryValue: "Needed",
+      summaryNote: "Open drawer before taking cash",
+      note: "Open the drawer before finishing this cash sale.",
+      sideNote: "Cash will be recorded in the drawer.",
+    };
+  }
+
+  return {
+    summaryValue: "Not needed",
+    summaryNote: `${label} does not need the drawer`,
+    note: `No cash drawer needed for ${label}.`,
+    sideNote: `No cash drawer needed for ${label}.`,
+  };
+}
+
+const BUSINESS_CATEGORY_COPY = {
+  ELECTRONICS: {
+    label: "Electronics",
+    sellerHint: "Show product details only when they help the seller choose the right item.",
+    productHint: "Use model, storage, and warranty details when needed.",
+  },
+  HARDWARE: {
+    label: "Hardware",
+    sellerHint: "Fast quantity selling with unit, size, material, and grade details.",
+    productHint: "Use unit, size, material, and grade to avoid selling the wrong item.",
+  },
+  HOME_KITCHEN: {
+    label: "Home & kitchen",
+    sellerHint: "Use color, material, size, and set details to identify similar products.",
+    productHint: "Show material, size, color, and set pieces when useful.",
+  },
+  LIGHTING: {
+    label: "Lighting",
+    sellerHint: "Show wattage, voltage, fitting, and light color for fast product matching.",
+    productHint: "Use wattage, fitting, voltage, and light color to avoid wrong sales.",
+  },
+  SPARE_PARTS: {
+    label: "Spare parts",
+    sellerHint: "Compatibility matters. Show part number and compatible model clearly.",
+    productHint: "Use part number, compatibility, condition, and warranty details.",
+  },
+};
+
+function normalizeBusinessCategory(value) {
+  const raw = cleanString(value)
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  if (raw === "HOME_AND_KITCHEN" || raw === "HOME_KITCHEN_APPLIANCES") return "HOME_KITCHEN";
+  if (raw === "SPARE_PART" || raw === "SPARES" || raw === "PARTS") return "SPARE_PARTS";
+  if (raw === "QUINCAILLERIE") return "HARDWARE";
+
+  return BUSINESS_CATEGORY_COPY[raw] ? raw : "ELECTRONICS";
+}
+
+
+function readWorkspaceCache() {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const session = window.sessionStorage?.getItem(WORKSPACE_CACHE_KEY);
+    if (session) return JSON.parse(session);
+  } catch {}
+
+  try {
+    const local = window.localStorage?.getItem(WORKSPACE_CACHE_KEY);
+    if (local) return JSON.parse(local);
+  } catch {}
+
+  return null;
+}
+
+function businessCategoryFromWorkspace(workspace) {
+  const tenant = workspace?.tenant || workspace?.business || workspace?.store || {};
+
+  return normalizeBusinessCategory(
+    tenant?.businessCategory ||
+      tenant?.category ||
+      tenant?.businessType ||
+      workspace?.businessCategory ||
+      workspace?.category ||
+      workspace?.businessType,
+  );
+}
+
+function categoryCopy(context, workspace) {
+  const workspaceKey = businessCategoryFromWorkspace(workspace);
+  const apiKey = normalizeBusinessCategory(context?.businessCategory);
+  const hasSpecificApiCategory = Boolean(context?.businessCategory) && apiKey !== "ELECTRONICS";
+  const key = hasSpecificApiCategory ? apiKey : workspaceKey;
+
+  return {
+    key,
+    label:
+      (hasSpecificApiCategory ? context?.businessCategoryLabel : "") ||
+      BUSINESS_CATEGORY_COPY[key]?.label ||
+      "Electronics",
+    sellerHint: BUSINESS_CATEGORY_COPY[key]?.sellerHint || BUSINESS_CATEGORY_COPY.ELECTRONICS.sellerHint,
+    productHint: BUSINESS_CATEGORY_COPY[key]?.productHint || BUSINESS_CATEGORY_COPY.ELECTRONICS.productHint,
+  };
+}
+
+function normalizedProductAttributes(product) {
+  const raw =
+    product?.categoryAttributes ||
+    product?.listingAttributes ||
+    product?.marketplaceAttributes ||
+    product?.attributes ||
+    {};
+
+  return raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+}
+
+function friendlyAttributeLabel(key) {
+  const labels = {
+    unit: "Unit",
+    size: "Size",
+    material: "Material",
+    grade: "Grade",
+    color: "Color",
+    setPieces: "Pieces",
+    wattage: "Wattage",
+    voltage: "Voltage",
+    fitting: "Fitting",
+    lightColor: "Light color",
+    partNumber: "Part no.",
+    compatibleModel: "Fits",
+    condition: "Condition",
+    warranty: "Warranty",
+    ram: "RAM",
+    storage: "Storage",
+    processor: "Processor",
+  };
+
+  if (labels[key]) return labels[key];
+
+  return String(key || "")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^./, (char) => char.toUpperCase());
+}
+
+function friendlyAttributeValue(value) {
+  if (Array.isArray(value)) return value.filter(Boolean).join(", ");
+  if (value && typeof value === "object") return "";
+  return cleanString(value);
+}
+
+function categoryAwareProductFacts(product, limit = 3) {
+  const attributes = normalizedProductAttributes(product);
+  const preferredKeys = [
+    "unit",
+    "size",
+    "material",
+    "grade",
+    "color",
+    "setPieces",
+    "wattage",
+    "voltage",
+    "fitting",
+    "lightColor",
+    "partNumber",
+    "compatibleModel",
+    "condition",
+    "warranty",
+    "ram",
+    "storage",
+    "processor",
+  ];
+
+  const facts = [];
+
+  preferredKeys.forEach((key) => {
+    const value = friendlyAttributeValue(attributes[key]);
+    if (!value) return;
+
+    facts.push({
+      key,
+      label: friendlyAttributeLabel(key),
+      value,
+    });
+  });
+
+  Object.entries(attributes).forEach(([key, value]) => {
+    if (preferredKeys.includes(key)) return;
+
+    const displayValue = friendlyAttributeValue(value);
+    if (!displayValue) return;
+
+    facts.push({
+      key,
+      label: friendlyAttributeLabel(key),
+      value: displayValue,
+    });
+  });
+
+  return facts.slice(0, limit);
+}
+
+function productMetaLine(product) {
+  return [product.brand, product.category, product.sku].filter(Boolean).join(" • ") || "No category";
+}
+
+function productTrackingText(product) {
+  if (!cleanString(product?.serial)) return "";
+  return "Tracked item";
+}
+
+function cartItemMeta(product) {
+  const facts = categoryAwareProductFacts(product, 2)
+    .map((item) => `${item.label}: ${item.value}`)
+    .join(" • ");
+
+  return cleanString(facts || productMetaLine(product));
+}
+
 function activeBranchNameFromStorage() {
   const name = cleanString(localStorage.getItem("activeBranchName"));
   const code = cleanString(localStorage.getItem("activeBranchCode"));
 
-  if (code && name) return `${code} • ${name}`;
   if (name) return name;
   if (code) return code;
 
@@ -156,52 +388,49 @@ function activeBranchNameFromStorage() {
 }
 
 function pageCard() {
-  return "rounded-[30px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+  return "svx-pos-card";
 }
+
 
 function softPanel() {
-  return "rounded-[24px] bg-[var(--color-surface-2)]";
+  return "svx-pos-soft-panel";
 }
+
 
 function inputClass() {
-  return "h-12 w-full rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-ring)] disabled:cursor-not-allowed disabled:opacity-60";
+  return "svx-pos-input";
 }
+
 
 function textareaClass() {
-  return "min-h-[110px] w-full rounded-[20px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-ring)] disabled:cursor-not-allowed disabled:opacity-60";
+  return "svx-pos-textarea";
 }
+
 
 function buttonBase() {
-  return "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-60";
+  return "svx-pos-button";
 }
 
-function secondaryButton() {
-  return cx(
-    buttonBase(),
-    "border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] shadow-[var(--shadow-soft)] hover:-translate-y-0.5 hover:bg-[var(--color-surface-3)]",
-  );
+
+function secondaryButton(className = "") {
+  return cx("svx-pos-button", className);
 }
 
-function primaryButton() {
-  return cx(
-    buttonBase(),
-    "border border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)] hover:-translate-y-0.5 hover:opacity-95",
-  );
+
+function primaryButton(className = "") {
+  return cx("svx-pos-button svx-pos-button--primary", className);
 }
 
-function warningButton() {
-  return cx(
-    buttonBase(),
-    "bg-amber-500 text-white shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
+
+function warningButton(className = "") {
+  return cx("svx-pos-button svx-pos-button--warning", className);
 }
 
-function dangerButton() {
-  return cx(
-    buttonBase(),
-    "bg-red-600 text-white shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
+
+function dangerButton(className = "") {
+  return cx("svx-pos-button svx-pos-button--danger", className);
 }
+
 
 function StatusBadge({ tone = "neutral", children }) {
   const classes =
@@ -233,14 +462,15 @@ function SkeletonBlock({ className = "" }) {
 
 function PosSaleSkeleton() {
   return (
-    <div className="space-y-5">
+    <main className="svx-pos-page">
+      <section className="svx-pos-shell">
       <section className={cx(pageCard(), "p-5 sm:p-6")}>
         <SkeletonBlock className="h-4 w-28" />
         <SkeletonBlock className="mt-4 h-10 w-72 max-w-full rounded-[18px]" />
         <SkeletonBlock className="mt-3 h-4 w-full max-w-xl" />
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="svx-pos-metric-grid">
         {[1, 2, 3, 4].map((item) => (
           <div key={item} className={cx(pageCard(), "p-5")}>
             <SkeletonBlock className="h-3.5 w-24" />
@@ -250,8 +480,8 @@ function PosSaleSkeleton() {
         ))}
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_430px]">
-        <div className="space-y-5">
+      <div className="svx-pos-layout">
+        <div className="svx-pos-main">
           {[1, 2, 3].map((item) => (
             <div key={item} className={cx(pageCard(), "p-5")}>
               <SkeletonBlock className="h-7 w-40" />
@@ -267,7 +497,8 @@ function PosSaleSkeleton() {
           <SkeletonBlock className="mt-4 h-14 w-full" />
         </div>
       </div>
-    </div>
+      </section>
+    </main>
   );
 }
 
@@ -430,53 +661,43 @@ function PaymentMethodCard({ option, active, onClick }) {
 function ProductRow({ product, onAdd }) {
   const stock = productStock(product);
   const disabled = !Number.isFinite(stock) || stock <= 0;
+  const facts = categoryAwareProductFacts(product, 3);
+  const trackingText = productTrackingText(product);
 
   return (
-    <article
-      className={cx(
-        "rounded-[24px] bg-[var(--color-surface-2)] p-4 transition",
-        disabled ? "opacity-60" : "hover:-translate-y-0.5 hover:shadow-[var(--shadow-soft)]",
-      )}
-    >
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <div className="truncate text-base font-black text-[var(--color-text)]">
-            {product.name}
-          </div>
+    <article className={cx("svx-pos-product-row", disabled && "is-disabled")}>
+      <div className="svx-pos-product-main">
+        <span className="svx-pos-product-thumb">{String(product?.name || "P").slice(0, 1).toUpperCase()}</span>
 
-          <div className="mt-1 truncate text-sm font-semibold text-[var(--color-text-muted)]">
-            {[product.brand, product.category, product.sku].filter(Boolean).join(" • ") ||
-              "No category"}
-          </div>
+        <div className="svx-pos-product-copy">
+          <strong>{product.name}</strong>
+          <span>{productMetaLine(product)}</span>
 
-          <div className="mt-2 flex flex-wrap gap-2">
+          {facts.length ? (
+            <div className="svx-pos-product-facts">
+              {facts.map((fact) => (
+                <em key={fact.key}>
+                  {fact.label}: <b>{fact.value}</b>
+                </em>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="svx-pos-product-badges">
             <StatusBadge tone={stock <= 0 ? "danger" : "success"}>
               {stock <= 0 ? "Out" : `${formatNumber(stock)} available`}
             </StatusBadge>
-
-            {product.serial ? <StatusBadge>{product.serial}</StatusBadge> : null}
+            {trackingText ? <StatusBadge>{trackingText}</StatusBadge> : null}
           </div>
         </div>
+      </div>
 
-        <div className="flex shrink-0 flex-col items-start gap-2 sm:items-end">
-          <div className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-            {formatMoney(productPrice(product))}
-          </div>
+      <div className="svx-pos-product-action">
+        <strong>{formatMoney(productPrice(product))}</strong>
 
-          <button
-            type="button"
-            onClick={() => onAdd(product)}
-            disabled={disabled}
-            className={cx(
-              "inline-flex h-10 items-center justify-center rounded-full px-4 text-xs font-black transition disabled:cursor-not-allowed",
-              disabled
-                ? "bg-[var(--color-card)] text-[var(--color-text-muted)]"
-                : "bg-emerald-500/10 text-emerald-600 hover:-translate-y-0.5",
-            )}
-          >
-            {disabled ? "Unavailable" : "Add"}
-          </button>
-        </div>
+        <button type="button" onClick={() => onAdd(product)} disabled={disabled} className="svx-pos-add-button">
+          {disabled ? "Unavailable" : "Add"}
+        </button>
       </div>
     </article>
   );
@@ -534,58 +755,31 @@ function CustomerCard({ customer, active, onClick }) {
 
 function CartItemCard({ item, onDec, onInc, onRemove }) {
   return (
-    <article className="rounded-[24px] bg-[var(--color-surface-2)] p-4">
-      <div className="flex items-start justify-between gap-3">
+    <article className="svx-pos-cart-item">
+      <div className="svx-pos-cart-head">
         <div className="min-w-0">
-          <div className="text-sm font-black text-[var(--color-text)]">{item.name}</div>
-          <div className="mt-1 text-xs font-semibold text-[var(--color-text-muted)]">
-            Price: <span className="text-[var(--color-text)]">{formatMoney(item.price)}</span>
-          </div>
-          <div className="mt-1 text-xs font-semibold text-[var(--color-text-muted)]">
-            Available:{" "}
-            <span className="text-[var(--color-text)]">{formatNumber(item.stockQty)}</span>
-          </div>
+          <strong>{item.name}</strong>
+          {item.meta ? <span>{item.meta}</span> : null}
+          <small>
+            Price: <b>{formatMoney(item.price)}</b> · Available: <b>{formatNumber(item.stockQty)}</b>
+          </small>
         </div>
 
-        <button
-          type="button"
-          onClick={() => onRemove(item.productId)}
-          className="text-xs font-black text-red-600 transition hover:opacity-80"
-        >
+        <button type="button" onClick={() => onRemove(item.productId)}>
           Remove
         </button>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onDec(item.productId)}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--color-card)] text-lg font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5"
-          >
-            −
-          </button>
-
-          <div className="min-w-[2.25rem] text-center text-base font-black text-[var(--color-text)]">
-            {item.quantity}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => onInc(item.productId)}
-            className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--color-card)] text-lg font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5"
-          >
-            +
-          </button>
+      <div className="svx-pos-cart-controls">
+        <div className="svx-pos-qty-stepper">
+          <button type="button" onClick={() => onDec(item.productId)}>−</button>
+          <span>{item.quantity}</span>
+          <button type="button" onClick={() => onInc(item.productId)}>+</button>
         </div>
 
-        <div className="text-right">
-          <div className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
-            Total
-          </div>
-          <div className="mt-1 text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-            {formatMoney(item.price * item.quantity)}
-          </div>
+        <div className="svx-pos-cart-total">
+          <span>Total</span>
+          <strong>{formatMoney(item.price * item.quantity)}</strong>
         </div>
       </div>
     </article>
@@ -597,6 +791,8 @@ export default function PosSale() {
 
   const [bootLoading, setBootLoading] = useState(true);
   const [activeBranchLabel, setActiveBranchLabel] = useState(() => activeBranchNameFromStorage());
+  const [posContext, setPosContext] = useState(null);
+  const [workspaceContext, setWorkspaceContext] = useState(() => readWorkspaceCache());
 
   const [productResults, setProductResults] = useState([]);
   const [productQuery, setProductQuery] = useState("");
@@ -724,6 +920,22 @@ export default function PosSale() {
     }
   }
 
+  async function loadPosContext() {
+    setWorkspaceContext(readWorkspaceCache());
+
+    try {
+      const data = await getPosContext();
+      if (!mountedRef.current) return;
+      setPosContext(data || null);
+    } catch (error) {
+      if (!mountedRef.current) return;
+
+      if (!handleSubscriptionBlockedError(error, { toastId: "pos-context-blocked" })) {
+        setPosContext(null);
+      }
+    }
+  }
+
   async function loadQuickPicks() {
     setQuickLoading(true);
 
@@ -758,6 +970,7 @@ export default function PosSale() {
 
       try {
         await Promise.all([
+          loadPosContext(),
           loadQuickPicks(),
           loadCustomers(),
           loadDrawerStatus({ silent: true }),
@@ -781,6 +994,7 @@ export default function PosSale() {
       setCart([]);
       setProductResults([]);
       setProductQuery("");
+      loadPosContext();
       loadQuickPicks();
       loadDrawerStatus({ silent: true });
       loadDocumentSettings();
@@ -908,10 +1122,17 @@ export default function PosSale() {
   const showQuickPicks = !productQuery.trim();
   const quickList = quickBest.length > 0 ? quickBest : quickLatest;
   const quickTitle = quickBest.length > 0 ? "Best sellers" : "Latest products";
+  const salesDeskCategory = categoryCopy(posContext, workspaceContext);
 
   const drawerOpen = Boolean(drawerStatus?.openSession?.id);
   const blockCashSales = Boolean(drawerStatus?.settings?.blockCashSales ?? true);
   const selectedMethodTouchesDrawer = paymentMethodTouchesCashDrawer(paymentMethod);
+
+  const drawerCopy = drawerCopyForPayment(paymentMethod, selectedMethodTouchesDrawer);
+
+  const selectedPaymentOption =
+    PAYMENT_METHOD_OPTIONS.find((option) => option.value === paymentMethod) ||
+    PAYMENT_METHOD_OPTIONS[0];
 
   const cashAmountTakenNow = selectedMethodTouchesDrawer
     ? saleType === "CASH"
@@ -928,12 +1149,12 @@ export default function PosSale() {
   const drawerSummary = selectedMethodTouchesDrawer
     ? {
         value: drawerLoading ? "Checking..." : drawerOpen ? "Open" : "Closed",
-        note: blockCashSales ? "Needed for cash received now" : "Cash can be recorded",
+        note: blockCashSales ? drawerCopy.summaryNote : "Cash can be recorded",
         tone: drawerOpen ? "success" : "danger",
       }
     : {
-        value: "Not needed",
-        note: "Selected method does not use the drawer",
+        value: drawerCopy.summaryValue,
+        note: drawerCopy.summaryNote,
         tone: "neutral",
       };
 
@@ -1005,6 +1226,7 @@ export default function PosSale() {
           price: productPrice(product),
           quantity: 1,
           stockQty: stock,
+          meta: cartItemMeta(product),
         },
       ];
     });
@@ -1195,28 +1417,27 @@ export default function PosSale() {
   }
 
   return (
-    <div className="space-y-5">
-      <section className={cx(pageCard(), "relative overflow-hidden p-5 sm:p-6")}>
-        <div className="pointer-events-none absolute -right-24 -top-24 h-[260px] w-[260px] rounded-full bg-[var(--color-surface-3)] opacity-40 blur-3xl" />
+    <main className="svx-pos-page">
+      <section className="svx-pos-shell">
+        <section className="svx-pos-hero">
+        <div className="svx-pos-hero-glow" />
 
-        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-              Sales
+        <div className="svx-pos-hero-inner">
+          <div className="svx-pos-hero-copy">
+            <p className="svx-pos-kicker">Sales desk</p>
+
+            <h1>Sales desk</h1>
+
+            <p>
+              Sell from <strong>{activeBranchLabel}</strong>. {salesDeskCategory.sellerHint}
             </p>
 
-            <h1 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)] sm:text-3xl">
-              New sale
-            </h1>
-
-            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-              Sell from{" "}
-              <span className="font-black text-[var(--color-text)]">{activeBranchLabel}</span>.
-              Pick how the customer pays, choose the customer, add products, then finish.
-            </p>
+            <div className="svx-pos-hero-badges">
+              <StatusBadge tone="success">{salesDeskCategory.label}</StatusBadge>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row xl:justify-end">
+          <div className="svx-pos-hero-actions">
             <button type="button" onClick={() => navigate("/app/pos/sales")} className={secondaryButton()}>
               Sales list
             </button>
@@ -1230,16 +1451,9 @@ export default function PosSale() {
             </button>
           </div>
         </div>
-
-        <div className="relative mt-5 flex gap-2 overflow-x-auto pb-1">
-          <MiniStep number="1" title="Payment" active={activeStep === 1} />
-          <MiniStep number="2" title="Customer" active={activeStep === 2} />
-          <MiniStep number="3" title="Products" active={activeStep === 3} />
-          <MiniStep number="4" title="Finish" active={activeStep === 4} />
-        </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="svx-pos-metric-grid">
         <SummaryCard label="Products" value={formatNumber(cartItemsCount)} note="Units in this sale" tone="neutral" />
 
         <SummaryCard
@@ -1285,8 +1499,8 @@ export default function PosSale() {
         />
       </section>
 
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_430px]">
-        <div className="space-y-5">
+        <div className="svx-pos-layout">
+        <div className="svx-pos-main">
           <section className={cx(pageCard(), "p-5 sm:p-6")}>
             <div>
               <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
@@ -1315,22 +1529,34 @@ export default function PosSale() {
               />
             </div>
 
-            <div className="mt-5">
-              <h3 className="text-sm font-black text-[var(--color-text)]">Payment method</h3>
+            <div className="svx-pos-payment-select-card">
+              <div>
+                <h3>Payment method</h3>
+                <p>
+                  Choose how money is received. Only physical cash touches the cash drawer.
+                </p>
+              </div>
 
-              <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                Only physical cash affects the drawer. MoMo, Card, Bank, and Other payments do not touch cash drawer money.
-              </p>
+              <label className="svx-pos-payment-select-wrap">
+                <span>Method</span>
+                <select
+                  value={paymentMethod}
+                  onChange={(event) => setPaymentMethod(event.target.value)}
+                  className="svx-pos-input svx-pos-payment-select"
+                >
+                  {PAYMENT_METHOD_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {PAYMENT_METHOD_OPTIONS.map((option) => (
-                  <PaymentMethodCard
-                    key={option.value}
-                    option={option}
-                    active={paymentMethod === option.value}
-                    onClick={() => setPaymentMethod(option.value)}
-                  />
-                ))}
+              <div className="svx-pos-payment-note">
+                <strong>{selectedPaymentOption?.label || paymentMethod}</strong>
+                <span>
+                  {drawerCopy.note}
+                </span>
               </div>
             </div>
 
@@ -1405,55 +1631,56 @@ export default function PosSale() {
           </section>
 
           <section className={cx(pageCard(), "p-5 sm:p-6")}>
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                  2. Customer
-                </h2>
-                <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                  Walk-in is fine for paid-now sales. Pay-later sales need a known customer.
-                </p>
-              </div>
+            <div>
+              <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
+                2. Customer
+              </h2>
+              <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
+                Choose how this customer should appear on the sale.
+              </p>
+            </div>
 
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (saleType === "CREDIT") {
-                      toast.error("Pay-later sales need a saved customer.");
-                      return;
-                    }
+            <div className="svx-pos-segmented-control">
+              <button
+                type="button"
+                onClick={() => {
+                  if (saleType === "CREDIT") {
+                    toast.error("Pay-later sales need a saved customer.");
+                    return;
+                  }
 
-                    setCustomerMode("WALKIN");
-                    resetCustomerSelection();
-                  }}
-                  className={customerMode === "WALKIN" ? primaryButton() : secondaryButton()}
-                >
-                  Walk-in
-                </button>
+                  setCustomerMode("WALKIN");
+                  resetCustomerSelection();
+                }}
+                className={customerMode === "WALKIN" ? "is-active" : ""}
+              >
+                <strong>Walk-in</strong>
+                <span>Fast paid-now sale</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCustomerMode("PICK");
-                    resetCustomerForm();
-                  }}
-                  className={customerMode === "PICK" ? primaryButton() : secondaryButton()}
-                >
-                  Existing
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomerMode("PICK");
+                  resetCustomerForm();
+                }}
+                className={customerMode === "PICK" ? "is-active" : ""}
+              >
+                <strong>Existing customer</strong>
+                <span>Use saved customer</span>
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCustomerMode("NEW");
-                    resetCustomerSelection();
-                  }}
-                  className={customerMode === "NEW" ? primaryButton() : secondaryButton()}
-                >
-                  New
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomerMode("NEW");
+                  resetCustomerSelection();
+                }}
+                className={customerMode === "NEW" ? "is-active" : ""}
+              >
+                <strong>New customer</strong>
+                <span>Save during sale</span>
+              </button>
             </div>
 
             {customerMode === "WALKIN" ? (
@@ -1607,14 +1834,14 @@ export default function PosSale() {
                   3. Add products
                 </h2>
                 <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                  Search and add products. The first 10 suggestions are shown first.
+                  Search and add products. {salesDeskCategory.productHint}
                 </p>
               </div>
 
               <div className="w-full max-w-md">
                 <input
                   className={inputClass()}
-                  placeholder="Search by name, product code, or serial..."
+                  placeholder="Search product name, code, barcode, category, or brand..."
                   value={productQuery}
                   onChange={(event) => setProductQuery(event.target.value)}
                   onKeyDown={onProductKeyDown}
@@ -1660,7 +1887,7 @@ export default function PosSale() {
               )
             ) : productResults.length === 0 && !searching ? (
               <div className="mt-5">
-                <EmptyState title="No products found" text="Try another product name, code, or serial." />
+                <EmptyState title="No products found" text="Try another product name, code, barcode, category, or brand." />
               </div>
             ) : (
               <div className="mt-5 grid gap-3">
@@ -1672,7 +1899,7 @@ export default function PosSale() {
           </section>
         </div>
 
-        <aside className="space-y-5">
+        <aside className="svx-pos-side">
           <section className={cx(pageCard(), "p-5 sm:p-6 xl:sticky xl:top-[96px]")}>
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -1763,7 +1990,7 @@ export default function PosSale() {
                   </div>
                 ) : (
                   <div className="mt-3 rounded-[20px] bg-[var(--color-card)] px-4 py-3 text-xs font-bold leading-5 text-[var(--color-text-muted)]">
-                    No customer-facing tax will be shown for this sale.
+                    No tax line will be printed on this receipt.
                   </div>
                 )}
 
@@ -1825,6 +2052,7 @@ export default function PosSale() {
           </section>
         </aside>
       </div>
-    </div>
+      </section>
+    </main>
   );
 }

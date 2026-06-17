@@ -1,0 +1,845 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap");
+
+.svx-pos-page {
+  --pos-surface: #ffffff;
+  --pos-soft: #f8fbff;
+  --pos-text: #06122e;
+  --pos-muted: #5d6b85;
+  --pos-line: #dfe7f3;
+  --pos-line-soft: #edf2fa;
+  --pos-blue: #075cff;
+  --pos-blue-soft: #eef5ff;
+  --pos-green: #0cab66;
+  --pos-green-soft: #eafaf3;
+  --pos-orange: #f59e0b;
+  --pos-orange-soft: #fff4df;
+  --pos-red: #ef4444;
+  --pos-red-soft: #fff0f0;
+  --pos-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --pos-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  color: var(--pos-text);
+  font-family: var(--pos-body-font);
+}
+
+:root[data-theme="dark"] .svx-pos-page {
+  --pos-surface: #1f1f20;
+  --pos-soft: #1c1c1d;
+  --pos-text: #ffffff;
+  --pos-muted: rgba(255, 255, 255, 0.72);
+  --pos-line: rgba(255, 255, 255, 0.12);
+  --pos-line-soft: rgba(255, 255, 255, 0.08);
+  --pos-blue: #159cff;
+  --pos-blue-soft: rgba(21, 156, 255, 0.14);
+  --pos-green: #23c783;
+  --pos-green-soft: rgba(35, 199, 131, 0.13);
+  --pos-orange: #f7ad35;
+  --pos-orange-soft: rgba(247, 173, 53, 0.13);
+  --pos-red: #ff6262;
+  --pos-red-soft: rgba(255, 98, 98, 0.14);
+}
+
+.svx-pos-page *,
+.svx-pos-page *::before,
+.svx-pos-page *::after {
+  box-sizing: border-box;
+}
+
+.svx-pos-page h1,
+.svx-pos-page h2,
+.svx-pos-page h3,
+.svx-pos-page p {
+  margin: 0;
+}
+
+.svx-pos-page input,
+.svx-pos-page select,
+.svx-pos-page textarea,
+.svx-pos-page button {
+  font-family: inherit;
+}
+
+.svx-pos-shell {
+  width: min(100%, 1540px);
+  margin: 0 auto;
+  padding: 36px;
+}
+
+.svx-pos-hero,
+.svx-pos-card,
+.svx-pos-product-row,
+.svx-pos-cart-item {
+  border: 1px solid var(--pos-line-soft);
+  background: var(--pos-surface);
+  box-shadow: 0 14px 40px rgba(15, 46, 92, 0.055);
+}
+
+:root[data-theme="dark"] .svx-pos-hero,
+:root[data-theme="dark"] .svx-pos-card,
+:root[data-theme="dark"] .svx-pos-product-row,
+:root[data-theme="dark"] .svx-pos-cart-item {
+  box-shadow: none;
+}
+
+.svx-pos-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  padding: 26px;
+  margin-bottom: 22px;
+}
+
+.svx-pos-hero-glow {
+  pointer-events: none;
+  position: absolute;
+  right: -90px;
+  top: -90px;
+  width: 260px;
+  height: 260px;
+  border-radius: 999px;
+  background: var(--pos-blue-soft);
+  filter: blur(52px);
+  opacity: 0.62;
+}
+
+.svx-pos-hero-inner {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.svx-pos-hero-copy {
+  max-width: 760px;
+}
+
+.svx-pos-kicker {
+  color: var(--pos-blue);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.svx-pos-hero h1 {
+  margin-top: 8px;
+  color: var(--pos-text);
+  font-family: var(--pos-heading-font);
+  font-size: clamp(34px, 4vw, 52px);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+}
+
+.svx-pos-hero p:not(.svx-pos-kicker) {
+  margin-top: 10px;
+  color: var(--pos-muted);
+  font-size: 17px;
+  line-height: 1.6;
+  font-weight: 600;
+}
+
+.svx-pos-hero p strong {
+  color: var(--pos-text);
+  font-weight: 800;
+}
+
+.svx-pos-hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.svx-pos-hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.svx-pos-step-strip {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.svx-pos-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(230px, 1fr));
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.svx-pos-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
+  gap: 22px;
+  align-items: start;
+}
+
+.svx-pos-main {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+
+.svx-pos-side {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+
+.svx-pos-card {
+  border-radius: 22px;
+  padding: 24px;
+}
+
+.svx-pos-soft-panel {
+  border: 1px solid var(--pos-line-soft);
+  border-radius: 18px;
+  background: var(--pos-soft);
+}
+
+.svx-pos-input,
+.svx-pos-textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--pos-line);
+  border-radius: 14px;
+  background: var(--pos-surface);
+  color: var(--pos-text);
+  outline: none;
+  padding: 0 16px;
+  font-size: 14px;
+  font-weight: 700;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.svx-pos-input {
+  height: 48px;
+}
+
+.svx-pos-textarea {
+  min-height: 108px;
+  padding-top: 14px;
+  resize: vertical;
+}
+
+.svx-pos-input::placeholder,
+.svx-pos-textarea::placeholder {
+  color: var(--pos-muted);
+  opacity: 0.75;
+}
+
+.svx-pos-input:focus,
+.svx-pos-textarea:focus {
+  border-color: rgba(7, 92, 255, 0.6);
+  box-shadow: 0 0 0 4px rgba(7, 92, 255, 0.12);
+}
+
+.svx-pos-button {
+  min-height: 48px;
+  border: 1px solid var(--pos-line);
+  border-radius: 14px;
+  background: var(--pos-surface);
+  color: var(--pos-text);
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.svx-pos-button:hover {
+  transform: translateY(-1px);
+}
+
+.svx-pos-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+  transform: none;
+}
+
+.svx-pos-button--primary {
+  min-width: 150px;
+  border-color: var(--pos-blue);
+  background: var(--pos-blue);
+  color: #ffffff;
+  box-shadow: 0 16px 30px rgba(7, 92, 255, 0.22);
+}
+
+.svx-pos-button--warning {
+  border-color: var(--pos-orange);
+  background: var(--pos-orange);
+  color: #111827;
+}
+
+.svx-pos-button--danger {
+  border-color: var(--pos-red);
+  background: var(--pos-red);
+  color: #ffffff;
+}
+
+.svx-pos-product-row {
+  border-radius: 22px;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.svx-pos-product-row:not(.is-disabled):hover {
+  transform: translateY(-1px);
+}
+
+.svx-pos-product-row.is-disabled {
+  opacity: 0.62;
+}
+
+.svx-pos-product-main {
+  min-width: 0;
+  display: flex;
+  gap: 14px;
+}
+
+.svx-pos-product-thumb {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  background: var(--pos-blue-soft);
+  color: var(--pos-blue);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  font-weight: 900;
+}
+
+.svx-pos-product-copy {
+  min-width: 0;
+}
+
+.svx-pos-product-copy > strong,
+.svx-pos-cart-head strong {
+  display: block;
+  color: var(--pos-text);
+  font-size: 15px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-pos-product-copy > span,
+.svx-pos-cart-head span,
+.svx-pos-cart-head small {
+  display: block;
+  color: var(--pos-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.svx-pos-product-facts,
+.svx-pos-product-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.svx-pos-product-facts em {
+  border-radius: 999px;
+  background: var(--pos-soft);
+  color: var(--pos-muted);
+  padding: 4px 9px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.svx-pos-product-facts b {
+  color: var(--pos-text);
+}
+
+.svx-pos-product-action {
+  flex: 0 0 auto;
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.svx-pos-product-action > strong {
+  color: var(--pos-text);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.svx-pos-add-button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--pos-green-soft);
+  color: var(--pos-green);
+  padding: 0 16px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.svx-pos-add-button:disabled {
+  background: var(--pos-soft);
+  color: var(--pos-muted);
+  cursor: not-allowed;
+}
+
+.svx-pos-cart-item {
+  border-radius: 20px;
+  padding: 15px;
+}
+
+.svx-pos-cart-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.svx-pos-cart-head button {
+  border: 0;
+  background: transparent;
+  color: var(--pos-red);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.svx-pos-cart-head b {
+  color: var(--pos-text);
+}
+
+.svx-pos-cart-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.svx-pos-qty-stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.svx-pos-qty-stepper button {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--pos-line-soft);
+  border-radius: 13px;
+  background: var(--pos-surface);
+  color: var(--pos-text);
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.svx-pos-qty-stepper span {
+  min-width: 34px;
+  text-align: center;
+  color: var(--pos-text);
+  font-weight: 900;
+}
+
+.svx-pos-cart-total {
+  text-align: right;
+}
+
+.svx-pos-cart-total span {
+  display: block;
+  color: var(--pos-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.svx-pos-cart-total strong {
+  color: var(--pos-text);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+@media (max-width: 1180px) {
+  .svx-pos-shell {
+    padding: 24px;
+  }
+
+  .svx-pos-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-pos-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-pos-side {
+    position: static;
+  }
+}
+
+@media (max-width: 899px) {
+  .svx-pos-page {
+    margin-inline: calc(var(--app-mobile-edge, 0px) * -1);
+  }
+
+  .svx-pos-shell {
+    padding: 18px;
+  }
+
+  .svx-pos-hero-inner,
+  .svx-pos-cart-head,
+  .svx-pos-cart-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .svx-pos-hero h1 {
+    font-size: 34px;
+  }
+
+  .svx-pos-hero p:not(.svx-pos-kicker) {
+    font-size: 14.5px;
+  }
+
+  .svx-pos-hero-actions,
+  .svx-pos-button,
+  .svx-pos-button--primary {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .svx-pos-metric-grid {
+    grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+    gap: 12px;
+  }
+
+  .svx-pos-card {
+    border-radius: 20px;
+    padding: 16px;
+  }
+
+  .svx-pos-product-row {
+    flex-direction: column;
+  }
+
+  .svx-pos-product-action {
+    justify-items: stretch;
+  }
+
+  .svx-pos-add-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-pos-shell {
+    padding: 12px;
+  }
+
+  .svx-pos-metric-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Sales Desk clarity pass: inventory structure, fewer chips, cleaner customer choice. */
+.svx-pos-page {
+  --color-text: var(--pos-text);
+  --color-text-muted: var(--pos-muted);
+  --color-border: var(--pos-line);
+  --color-surface-2: var(--pos-soft);
+  --color-surface-3: var(--pos-soft);
+  --color-card: var(--pos-surface);
+  --color-primary: var(--pos-blue);
+  --color-primary-contrast: #ffffff;
+  --shadow-soft: 0 14px 40px rgba(15, 46, 92, 0.08);
+}
+
+:root[data-theme="dark"] .svx-pos-page {
+  --shadow-soft: none;
+}
+
+.svx-pos-hero {
+  padding: 32px;
+}
+
+.svx-pos-hero-inner {
+  align-items: center;
+}
+
+.svx-pos-hero-badges {
+  margin-top: 14px;
+}
+
+.svx-pos-step-strip {
+  display: none;
+}
+
+.svx-pos-segmented-control {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+  padding: 8px;
+  border: 1px solid var(--pos-line-soft);
+  border-radius: 20px;
+  background: var(--pos-soft);
+}
+
+.svx-pos-segmented-control button {
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--pos-text);
+  cursor: pointer;
+  padding: 13px 14px;
+  text-align: left;
+  transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.svx-pos-segmented-control button:hover {
+  transform: translateY(-1px);
+  background: var(--pos-surface);
+}
+
+.svx-pos-segmented-control button.is-active {
+  border-color: var(--pos-blue);
+  background: var(--pos-blue);
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(7, 92, 255, 0.18);
+}
+
+.svx-pos-segmented-control strong,
+.svx-pos-segmented-control span {
+  display: block;
+}
+
+.svx-pos-segmented-control strong {
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.svx-pos-segmented-control span {
+  margin-top: 4px;
+  color: var(--pos-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.25;
+}
+
+.svx-pos-segmented-control button.is-active span {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.svx-pos-main > .svx-pos-card {
+  padding: 24px;
+}
+
+.svx-pos-side .svx-pos-card {
+  position: sticky;
+  top: 96px;
+}
+
+.svx-pos-product-row {
+  background: var(--pos-surface);
+}
+
+.svx-pos-product-thumb {
+  text-transform: uppercase;
+}
+
+@media (max-width: 1180px) {
+  .svx-pos-side .svx-pos-card {
+    position: static;
+  }
+}
+
+@media (max-width: 899px) {
+  .svx-pos-hero {
+    padding: 20px;
+  }
+
+  .svx-pos-segmented-control {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* Sales Desk button and payment polish: no mixed dark/blue button blocks. */
+.svx-pos-hero-glow {
+  display: none;
+}
+
+.svx-pos-hero {
+  background: var(--pos-surface);
+}
+
+.svx-pos-button,
+.svx-pos-button--primary,
+.svx-pos-button--warning,
+.svx-pos-button--danger {
+  border-color: var(--pos-line);
+  background: var(--pos-surface);
+  color: var(--pos-text);
+  box-shadow: none;
+}
+
+.svx-pos-button--primary {
+  border-color: rgba(21, 156, 255, 0.34);
+  color: var(--pos-blue);
+}
+
+.svx-pos-button--warning {
+  border-color: rgba(247, 173, 53, 0.36);
+  color: var(--pos-orange);
+}
+
+.svx-pos-button--danger {
+  border-color: rgba(255, 98, 98, 0.36);
+  color: var(--pos-red);
+}
+
+.svx-pos-button:hover,
+.svx-pos-button--primary:hover,
+.svx-pos-button--warning:hover,
+.svx-pos-button--danger:hover {
+  background: var(--pos-soft);
+  border-color: var(--pos-blue);
+  color: var(--pos-blue);
+}
+
+.svx-pos-segmented-control button.is-active {
+  border-color: rgba(21, 156, 255, 0.42);
+  background: var(--pos-blue-soft);
+  color: var(--pos-blue);
+  box-shadow: none;
+}
+
+.svx-pos-segmented-control button.is-active span {
+  color: var(--pos-muted);
+}
+
+.svx-pos-payment-select-card {
+  margin-top: 20px;
+  border: 1px solid var(--pos-line-soft);
+  border-radius: 20px;
+  background: var(--pos-soft);
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 240px);
+  gap: 14px;
+  align-items: end;
+}
+
+.svx-pos-payment-select-card h3 {
+  color: var(--pos-text);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.svx-pos-payment-select-card p {
+  margin-top: 6px;
+  color: var(--pos-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.svx-pos-payment-select-wrap {
+  display: grid;
+  gap: 6px;
+}
+
+.svx-pos-payment-select-wrap > span {
+  color: var(--pos-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.svx-pos-payment-select {
+  appearance: auto;
+  background: var(--pos-surface);
+}
+
+.svx-pos-payment-note {
+  grid-column: 1 / -1;
+  border: 1px solid var(--pos-line-soft);
+  border-radius: 16px;
+  background: var(--pos-surface);
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.svx-pos-payment-note strong {
+  color: var(--pos-text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.svx-pos-payment-note span {
+  color: var(--pos-muted);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.35;
+  text-align: right;
+}
+
+.svx-pos-side .svx-pos-button--primary {
+  background: var(--pos-blue);
+  border-color: var(--pos-blue);
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(7, 92, 255, 0.18);
+}
+
+.svx-pos-side .svx-pos-button--primary:hover {
+  background: var(--pos-blue);
+  color: #ffffff;
+}
+
+@media (max-width: 899px) {
+  .svx-pos-payment-select-card {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-pos-payment-note {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .svx-pos-payment-note span {
+    text-align: left;
+  }
+}

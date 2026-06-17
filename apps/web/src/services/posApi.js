@@ -274,6 +274,23 @@ function normalizeWarrantyPayload(payload = {}) {
 }
 
 /**
+ * Sales desk context.
+ *
+ * Backend returns:
+ * {
+ *   businessCategory,
+ *   businessCategoryLabel,
+ *   categoryAttributeHints
+ * }
+ */
+export function getPosContext(options = {}) {
+  return apiFetch(`${POS_BASE}/context`, {
+    method: "GET",
+    ...withBranchOptions(options),
+  });
+}
+
+/**
  * Quick product picks for POS.
  */
 export function getQuickPicks(params = {}, options = {}) {
@@ -511,6 +528,7 @@ export const posApi = {
   SALE_PAYMENT_METHODS,
   PAYMENT_METHOD_OPTIONS,
 
+  getPosContext,
   getQuickPicks,
 
   createSale,
