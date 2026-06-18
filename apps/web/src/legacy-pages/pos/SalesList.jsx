@@ -329,7 +329,7 @@ function SalesListSkeleton() {
   );
 }
 
-function SaleRow({ sale, onOpenCancel, cancelBusy }) {
+function SaleRow({ sale, onOpenSale, onOpenCancel, cancelBusy }) {
   const status = saleStatus(sale);
   const cancelEnabled = canCancelFromList(sale);
   const total = saleTotal(sale);
@@ -339,9 +339,32 @@ function SaleRow({ sale, onOpenCancel, cancelBusy }) {
   const isPayLater = saleType === "CREDIT" || balance > 0;
   const phone = customerPhone(sale);
   const due = saleDueMeta(sale);
+  const saleUrl = `/app/pos/sales/${sale.id}`;
+
+  function handleRowOpen() {
+    onOpenSale(sale.id);
+  }
+
+  function handleRowKeyDown(event) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    onOpenSale(sale.id);
+  }
+
+  function stopRowOpen(event) {
+    event.stopPropagation();
+  }
 
   return (
-    <article className={cx("svx-sales-row", `is-${status.tone}`, isPayLater && "is-pay-later", due.tone === "danger" && "is-overdue")}>
+    <article
+      className={cx("svx-sales-row", `is-${status.tone}`, isPayLater && "is-pay-later", due.tone === "danger" && "is-overdue")}
+      role="button"
+      tabIndex={0}
+      aria-label={`Open sale ${receiptCode(sale)}`}
+      onClick={handleRowOpen}
+      onKeyDown={handleRowKeyDown}
+    >
       <SaleField className="is-sale" label="Sale">
         <b>{receiptCode(sale)}</b>
         <span>{isPayLater ? `${formatMoney(balance)} still unpaid` : status.note}</span>
@@ -373,14 +396,17 @@ function SaleRow({ sale, onOpenCancel, cancelBusy }) {
         {balance > 0 ? <em>Balance {formatMoney(balance)}</em> : <em>Balance Rwf 0</em>}
       </SaleField>
 
-      <div className="svx-sales-actions">
-        <Link to={`/app/pos/sales/${sale.id}`} className="svx-sales-button secondary">
+      <div className="svx-sales-actions" onClick={stopRowOpen}>
+        <Link to={saleUrl} className="svx-sales-button secondary">
           View
         </Link>
 
         <button
           type="button"
-          onClick={() => onOpenCancel(sale.id)}
+          onClick={(event) => {
+            event.stopPropagation();
+            onOpenCancel(sale.id);
+          }}
           disabled={!cancelEnabled || cancelBusy}
           className={cancelEnabled && !cancelBusy ? "svx-sales-button danger" : "svx-sales-button disabled"}
           title={!cancelEnabled ? "Only active paid-now sales can be cancelled here." : ""}
@@ -691,6 +717,7 @@ export default function SalesList() {
                     <SaleRow
                       key={sale.id}
                       sale={sale}
+                      onOpenSale={(saleId) => navigate(`/app/pos/sales/${saleId}`)}
                       onOpenCancel={openCancel}
                       cancelBusy={cancelBusy}
                     />
