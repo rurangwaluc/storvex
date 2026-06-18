@@ -904,3 +904,365 @@
     margin: 0;
   }
 }
+
+
+/* =========================================================
+   Sales List V4 PWA listing polish
+   Only improves the sales records listing at 920px and below.
+   ========================================================= */
+
+@media (max-width: 920px) {
+  .svx-sales-list-card {
+    padding: 16px;
+  }
+
+  .svx-sales-list-body {
+    margin-top: 16px;
+  }
+
+  .svx-sales-rows {
+    gap: 12px;
+  }
+
+  .svx-sales-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    min-height: 0;
+    padding: 16px 16px 16px 20px;
+    border-radius: 20px;
+  }
+
+  .svx-sales-row::before {
+    width: 4px;
+  }
+
+  .svx-sales-field {
+    min-height: 0;
+  }
+
+  .svx-sales-field small {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--sales-muted);
+    font-size: 9px;
+    font-weight: 900;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .svx-sales-field b {
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  .svx-sales-field span,
+  .svx-sales-field em {
+    margin-top: 4px;
+    font-size: 12px;
+    line-height: 1.25;
+  }
+
+  .svx-sales-field.is-sale,
+  .svx-sales-field.is-customer,
+  .svx-sales-field.is-date,
+  .svx-sales-field.is-payment {
+    display: block;
+    text-align: left !important;
+    align-items: stretch !important;
+  }
+
+  .svx-sales-field.is-payment .svx-sales-payment-pills {
+    width: 100%;
+    min-height: 0;
+    justify-content: flex-start !important;
+  }
+
+  .svx-sales-field.is-payment .svx-sales-badge {
+    min-height: 30px;
+    min-width: 104px;
+    margin: 0;
+  }
+
+  .svx-sales-field.is-money {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    border: 1px solid var(--sales-line-soft);
+    border-radius: 18px;
+    background: var(--sales-soft);
+    padding: 10px;
+  }
+
+  .svx-sales-field.is-money small {
+    grid-column: 1 / -1;
+    margin-bottom: 0;
+  }
+
+  .svx-sales-field.is-money b,
+  .svx-sales-field.is-money span,
+  .svx-sales-field.is-money em {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
+    border-radius: 14px;
+    background: var(--sales-surface);
+    padding: 8px;
+    text-align: center;
+    white-space: normal;
+  }
+
+  .svx-sales-field.is-money b {
+    color: var(--sales-text);
+    font-size: 15px;
+  }
+
+  .svx-sales-field.is-money span {
+    color: var(--sales-green);
+  }
+
+  .svx-sales-field.is-money em {
+    color: var(--sales-muted);
+  }
+
+  .svx-sales-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .svx-sales-actions .svx-sales-button {
+    min-height: 42px;
+    border-radius: 15px;
+    font-size: 12px;
+  }
+
+  .svx-sales-list-footer {
+    margin-top: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .svx-sales-list-footer p,
+  .svx-sales-list-footer span {
+    display: flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    background: var(--sales-surface);
+    padding: 8px 10px;
+    text-align: center;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 560px) {
+  .svx-sales-list-card {
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .svx-sales-row {
+    gap: 10px;
+    padding: 15px 15px 15px 19px;
+  }
+
+  .svx-sales-field.is-money {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-sales-field.is-money small {
+    grid-column: 1 / -1;
+  }
+
+  .svx-sales-field.is-money b {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    padding-inline: 12px;
+    text-align: left;
+  }
+
+  .svx-sales-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-sales-row {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-sales-field.is-money {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-sales-actions,
+  .svx-sales-list-footer {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================================
+   Sales List V4 ultra-small PWA polish
+   390px and below: keep premium density without making every field one long column.
+   ========================================================= */
+
+@media (max-width: 390px) {
+  .svx-sales-list-card {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .svx-sales-list-body {
+    margin-top: 12px;
+  }
+
+  .svx-sales-rows {
+    gap: 10px;
+  }
+
+  .svx-sales-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px;
+    padding: 14px 12px 14px 17px;
+    border-radius: 18px;
+  }
+
+  .svx-sales-row::before {
+    width: 3px;
+  }
+
+  .svx-sales-field small {
+    margin-bottom: 5px;
+    font-size: 8px;
+    letter-spacing: 0.14em;
+  }
+
+  .svx-sales-field b {
+    font-size: 12px;
+    line-height: 1.18;
+  }
+
+  .svx-sales-field span,
+  .svx-sales-field em {
+    margin-top: 3px;
+    font-size: 11px;
+    line-height: 1.22;
+  }
+
+  .svx-sales-field.is-sale,
+  .svx-sales-field.is-customer,
+  .svx-sales-field.is-date,
+  .svx-sales-field.is-payment {
+    grid-column: span 1;
+    min-width: 0;
+  }
+
+  .svx-sales-field.is-sale b,
+  .svx-sales-field.is-customer b,
+  .svx-sales-field.is-date b {
+    white-space: normal;
+  }
+
+  .svx-sales-field.is-sale span,
+  .svx-sales-field.is-customer span,
+  .svx-sales-field.is-date span {
+    white-space: normal;
+  }
+
+  .svx-sales-field.is-payment .svx-sales-payment-pills {
+    justify-content: flex-start !important;
+  }
+
+  .svx-sales-field.is-payment .svx-sales-badge {
+    min-width: 0;
+    min-height: 28px;
+    padding-inline: 11px;
+    font-size: 9px;
+  }
+
+  .svx-sales-field.is-money {
+    grid-column: 1 / -1 !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px;
+    padding: 8px;
+    border-radius: 16px;
+  }
+
+  .svx-sales-field.is-money small {
+    grid-column: 1 / -1;
+  }
+
+  .svx-sales-field.is-money b {
+    grid-column: 1 / -1;
+    min-height: 40px;
+    justify-content: flex-start;
+    padding-inline: 12px;
+    font-size: 15px;
+    text-align: left;
+  }
+
+  .svx-sales-field.is-money span,
+  .svx-sales-field.is-money em {
+    min-height: 36px;
+    padding: 8px;
+    font-size: 10.5px;
+  }
+
+  .svx-sales-actions {
+    grid-column: 1 / -1 !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px;
+  }
+
+  .svx-sales-actions .svx-sales-button {
+    min-height: 40px;
+    border-radius: 14px;
+    font-size: 11px;
+  }
+
+  .svx-sales-list-footer {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .svx-sales-list-footer p,
+  .svx-sales-list-footer span {
+    min-height: 38px;
+    border-radius: 14px;
+    padding: 8px;
+    font-size: 11.5px;
+  }
+}
+
+@media (max-width: 330px) {
+  .svx-sales-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-sales-field.is-sale,
+  .svx-sales-field.is-customer,
+  .svx-sales-field.is-date,
+  .svx-sales-field.is-payment,
+  .svx-sales-field.is-money,
+  .svx-sales-actions {
+    grid-column: auto !important;
+  }
+
+  .svx-sales-field.is-money {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-sales-actions,
+  .svx-sales-list-footer {
+    grid-template-columns: 1fr !important;
+  }
+}
