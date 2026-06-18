@@ -2843,3 +2843,111 @@
   }
 }
 
+
+
+/* =========================================================
+   Pay Later / Credit Sales V1 polish
+   Makes pay-later setup clear without adding a separate workflow.
+   ========================================================= */
+
+.svx-pos-pay-later-panel {
+  display: grid;
+  gap: 14px;
+  margin-top: 14px;
+  border: 1px solid color-mix(in srgb, var(--pos-orange) 24%, var(--pos-line));
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--pos-orange) 8%, transparent), transparent 58%),
+    var(--pos-soft);
+  padding: 14px;
+}
+
+.svx-pos-pay-later-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+
+.svx-pos-pay-later-head strong {
+  display: block;
+  color: var(--pos-text);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.svx-pos-pay-later-head span {
+  display: block;
+  margin-top: 4px;
+  color: var(--pos-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.svx-pos-pay-later-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.svx-pos-pay-later-summary > div {
+  min-width: 0;
+  border: 1px solid var(--pos-line-soft);
+  border-radius: 16px;
+  background: var(--pos-surface);
+  padding: 11px 12px;
+}
+
+.svx-pos-pay-later-summary small {
+  display: block;
+  color: var(--pos-muted);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.svx-pos-pay-later-summary b {
+  display: block;
+  margin-top: 7px;
+  overflow: hidden;
+  color: var(--pos-text);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-pos-pay-later-summary > div:last-child b {
+  color: var(--pos-orange);
+}
+
+@media (max-width: 760px) {
+  .svx-pos-pay-later-head,
+  .svx-pos-pay-later-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-pos-pay-later-head > div {
+    grid-column: 1 / -1;
+  }
+
+  .svx-pos-pay-later-summary > div:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-pos-pay-later-panel {
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .svx-pos-pay-later-summary {
+    grid-template-columns: 1fr;
+  }
+}

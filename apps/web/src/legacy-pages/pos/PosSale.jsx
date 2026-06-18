@@ -1138,6 +1138,21 @@ export default function PosSale() {
   }, [subtotal, documentSettings]);
 
   const total = taxPreview.total;
+  const depositPaidToday = saleType === "CREDIT" ? Number(amountPaid || 0) : total;
+  const safeDepositPaidToday = Number.isFinite(depositPaidToday)
+    ? Math.max(0, Math.min(total, depositPaidToday))
+    : 0;
+  const payLaterBalance = saleType === "CREDIT" ? Math.max(0, total - safeDepositPaidToday) : 0;
+  const payLaterCustomerLabel =
+    customerMode === "PICK"
+      ? selectedCustomer?.name || "Choose customer"
+      : customerMode === "NEW"
+        ? cleanString(customerForm.name) || "New customer"
+        : "Customer needed";
+  const payLaterCustomerReady =
+    saleType !== "CREDIT" ||
+    (customerMode === "PICK" && Boolean(selectedCustomerId)) ||
+    (customerMode === "NEW" && Boolean(cleanString(customerForm.name)) && Boolean(cleanString(customerForm.phone)));
 
   const cartItemsCount = useMemo(() => {
     return cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
@@ -1312,7 +1327,7 @@ export default function PosSale() {
   function validateCustomerForSale() {
     if (customerMode === "WALKIN") {
       if (saleType === "CREDIT") {
-        return { ok: false, message: "Pay-later sales need a saved customer." };
+        return { ok: false, message: "Choose an existing customer or save a new customer for pay later." };
       }
 
       return { ok: true };
@@ -1682,7 +1697,11 @@ export default function PosSale() {
                 <div className="svx-pos-setup-head">
                   <div>
                     <h2>Sale setup</h2>
-                    <p>Choose only what this sale needs.</p>
+                    <p>
+                      {saleType === "CREDIT"
+                        ? "Save who owes, when they should pay, and any deposit received today."
+                        : "Choose only what this sale needs."}
+                    </p>
                   </div>
                 </div>
 
@@ -1708,7 +1727,7 @@ export default function PosSale() {
                   </label>
 
                   <label className="svx-pos-setup-field">
-                    <span>Payment</span>
+                    <span>{saleType === "CREDIT" ? "Deposit method" : "Payment"}</span>
                     <select
                       value={paymentMethod}
                       onChange={(event) => setPaymentMethod(event.target.value)}
@@ -1730,7 +1749,7 @@ export default function PosSale() {
                         const nextMode = event.target.value;
 
                         if (nextMode === "WALKIN" && saleType === "CREDIT") {
-                          toast.error("Pay-later sales need a saved customer.");
+                          toast.error("Choose an existing customer or save a new customer for pay later.");
                           return;
                         }
 
@@ -1760,7 +1779,7 @@ export default function PosSale() {
                       className={inputClass()}
                       value={paymentReference}
                       onChange={(event) => setPaymentReference(event.target.value)}
-                      placeholder="MoMo code or bank slip"
+                      placeholder={saleType === "CREDIT" ? "Deposit note or reference" : "MoMo code or bank slip"}
                     />
                   </label>
                 </div>
@@ -1788,27 +1807,54 @@ export default function PosSale() {
                 )}
 
                 {saleType === "CREDIT" ? (
-                  <div className="svx-pos-setup-grid svx-pos-setup-grid--two">
-                    <label className="svx-pos-setup-field">
-                      <span>Deposit paid now</span>
-                      <input
-                        inputMode="numeric"
-                        className={inputClass()}
-                        value={amountPaid}
-                        onChange={(event) => setAmountPaid(normalizeDigits(event.target.value))}
-                        placeholder="0"
-                      />
-                    </label>
+                  <div className="svx-pos-pay-later-panel">
+                    <div className="svx-pos-pay-later-head">
+                      <div>
+                        <strong>Pay later</strong>
+                        <span>Use this only when a known customer will pay after leaving with the products.</span>
+                      </div>
+                      <StatusBadge tone={payLaterCustomerReady ? "success" : "warning"}>
+                        {payLaterCustomerReady ? "Customer ready" : "Choose customer"}
+                      </StatusBadge>
+                    </div>
 
-                    <label className="svx-pos-setup-field">
-                      <span>Pay-by date</span>
-                      <input
-                        type="date"
-                        className={inputClass()}
-                        value={dueDate}
-                        onChange={(event) => setDueDate(event.target.value)}
-                      />
-                    </label>
+                    <div className="svx-pos-setup-grid svx-pos-setup-grid--two">
+                      <label className="svx-pos-setup-field">
+                        <span>Deposit paid today</span>
+                        <input
+                          inputMode="numeric"
+                          className={inputClass()}
+                          value={amountPaid}
+                          onChange={(event) => setAmountPaid(normalizeDigits(event.target.value))}
+                          placeholder="0"
+                        />
+                      </label>
+
+                      <label className="svx-pos-setup-field">
+                        <span>Pay-by date</span>
+                        <input
+                          type="date"
+                          className={inputClass()}
+                          value={dueDate}
+                          onChange={(event) => setDueDate(event.target.value)}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="svx-pos-pay-later-summary" aria-label="Pay later summary">
+                      <div>
+                        <small>Customer</small>
+                        <b>{payLaterCustomerLabel}</b>
+                      </div>
+                      <div>
+                        <small>Paid today</small>
+                        <b>{formatMoney(safeDepositPaidToday)}</b>
+                      </div>
+                      <div>
+                        <small>Balance due</small>
+                        <b>{formatMoney(payLaterBalance)}</b>
+                      </div>
+                    </div>
                   </div>
                 ) : null}
 
@@ -2030,3 +2076,4 @@ export default function PosSale() {
     </main>
   );
 }
+
