@@ -84,6 +84,19 @@ function productCategorySelect(client = prisma) {
     sellPrice: true,
     stockQty: true,
     minStockLevel: true,
+    images: {
+      orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+      take: 3,
+      select: {
+        id: true,
+        url: true,
+        key: true,
+        altText: true,
+        sortOrder: true,
+        isPrimary: true,
+        createdAt: true,
+      },
+    },
     ...(typeof productFields.categoryAttributes !== "undefined" ? { categoryAttributes: true } : {}),
     ...(typeof productFields.marketplaceAttributes !== "undefined" ? { marketplaceAttributes: true } : {}),
     ...(typeof productFields.marketplaceCategory !== "undefined" ? { marketplaceCategory: true } : {}),
@@ -197,12 +210,11 @@ async function getTenantBusinessCategory(client, tenantId) {
   const tenant = await client.tenant.findUnique({
     where: { id: tenantId },
     select: {
-      businessCategory: true,
-      businessType: true,
+      shopType: true,
     },
   });
 
-  return normalizeBusinessCategory(tenant?.businessCategory || tenant?.businessType);
+  return normalizeBusinessCategory(tenant?.shopType);
 }
 
 // -----------------------------

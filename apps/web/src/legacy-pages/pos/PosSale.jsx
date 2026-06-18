@@ -20,6 +20,7 @@ import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./PosSale.css";
 
 const PAGE_SIZE = 10;
+const DEFAULT_PRODUCT_DISPLAY_LIMIT = 6;
 const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
 
 function formatMoney(value) {
@@ -361,12 +362,57 @@ function categoryAwareProductFacts(product, limit = 3) {
 }
 
 function productMetaLine(product) {
-  return [product.brand, product.category, product.sku].filter(Boolean).join(" • ") || "No category";
+  return [product.brand, product.category, product.sku].filter(Boolean).join(" ") || "No category";
+}
+
+function productMetaItems(product) {
+  const items = [];
+
+  if (cleanString(product?.brand)) {
+    items.push({ key: "brand", label: "Brand", value: cleanString(product.brand) });
+  }
+
+  if (cleanString(product?.category)) {
+    items.push({ key: "category", label: "Category", value: cleanString(product.category) });
+  }
+
+  if (cleanString(product?.sku)) {
+    items.push({ key: "code", label: "Code", value: cleanString(product.sku) });
+  }
+
+  return items;
+}
+
+function cartItemMetaParts(product) {
+  const facts = categoryAwareProductFacts(product, 3).map((item) => ({
+    key: item.key,
+    label: item.label,
+    value: item.value,
+  }));
+
+  if (facts.length) return facts;
+
+  return productMetaItems(product).slice(0, 3);
 }
 
 function productTrackingText(product) {
   if (!cleanString(product?.serial)) return "";
   return "Tracked item";
+}
+
+function productImages(product) {
+  return Array.isArray(product?.images) ? product.images : [];
+}
+
+function productImageUrl(product) {
+  const images = productImages(product);
+  const primary = images.find((image) => image?.isPrimary) || images[0];
+
+  return (
+    cleanString(primary?.url) ||
+    cleanString(primary?.imageUrl) ||
+    cleanString(primary?.publicUrl)
+  );
 }
 
 function cartItemMeta(product) {
@@ -579,15 +625,57 @@ function ProductRow({ product, onAdd }) {
   const disabled = !Number.isFinite(stock) || stock <= 0;
   const facts = categoryAwareProductFacts(product, 3);
   const trackingText = productTrackingText(product);
+  const imageUrl = productImageUrl(product);
+  const metaItems = productMetaItems(product);
+
+  function handleAdd(event) {
+    event?.stopPropagation?.();
+    if (disabled) return;
+    onAdd(product);
+  }
+
+  function handleKeyDown(event) {
+    if (disabled) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+
+    event.preventDefault();
+    onAdd(product);
+  }
 
   return (
-    <article className={cx("svx-pos-product-row", disabled && "is-disabled")}>
+    <article
+      className={cx("svx-pos-product-row", disabled && "is-disabled")}
+      role="button"
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
+      aria-label={disabled ? `${product.name} is unavailable` : `Add ${product.name} to sale`}
+      onClick={handleAdd}
+      onKeyDown={handleKeyDown}
+    >
       <div className="svx-pos-product-main">
-        <span className="svx-pos-product-thumb">{String(product?.name || "P").slice(0, 1).toUpperCase()}</span>
+        <span className={cx("svx-pos-product-thumb", imageUrl && "has-image")}>
+          {imageUrl ? (
+            <img src={imageUrl} alt={product?.name || "Product image"} loading="lazy" />
+          ) : (
+            String(product?.name || "P").slice(0, 1).toUpperCase()
+          )}
+        </span>
 
         <div className="svx-pos-product-copy">
           <strong>{product.name}</strong>
-          <span>{productMetaLine(product)}</span>
+
+          {metaItems.length ? (
+            <div className="svx-pos-product-meta-stack" aria-label="Product details">
+              {metaItems.map((item) => (
+                <span key={item.key}>
+                  <small>{item.label}</small>
+                  <b>{item.value}</b>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <span>No category saved</span>
+          )}
 
           {facts.length ? (
             <div className="svx-pos-product-facts">
@@ -611,7 +699,7 @@ function ProductRow({ product, onAdd }) {
       <div className="svx-pos-product-action">
         <strong>{formatMoney(productPrice(product))}</strong>
 
-        <button type="button" onClick={() => onAdd(product)} disabled={disabled} className="svx-pos-add-button">
+        <button type="button" onClick={handleAdd} disabled={disabled} className="svx-pos-add-button">
           {disabled ? "Unavailable" : "Add"}
         </button>
       </div>
@@ -670,14 +758,32 @@ function CustomerCard({ customer, active, onClick }) {
 }
 
 function CartItemCard({ item, onDec, onInc, onRemove }) {
+  const metaParts = Array.isArray(item.metaParts) ? item.metaParts : [];
+
   return (
     <article className="svx-pos-cart-item">
       <div className="svx-pos-cart-head">
         <div className="min-w-0">
           <strong>{item.name}</strong>
-          {item.meta ? <span>{item.meta}</span> : null}
+
+          {metaParts.length ? (
+            <div className="svx-pos-cart-meta-pills" aria-label="Cart item details">
+              {metaParts.map((part) => (
+                <span key={`${part.label}-${part.value}`}>
+                  <small>{part.label}</small>
+                  <b>{part.value}</b>
+                </span>
+              ))}
+            </div>
+          ) : item.meta ? (
+            <span>{item.meta}</span>
+          ) : null}
+
           <small>
-            Price: <b>{formatMoney(item.price)}</b> · Available: <b>{formatNumber(item.stockQty)}</b>
+            Price: <b>{formatMoney(item.price)}</b>
+          </small>
+          <small>
+            Available: <b>{formatNumber(item.stockQty)}</b>
           </small>
         </div>
 
@@ -712,6 +818,7 @@ export default function PosSale() {
 
   const [productResults, setProductResults] = useState([]);
   const [productQuery, setProductQuery] = useState("");
+  const [selectedProductCategory, setSelectedProductCategory] = useState("ALL");
   const [searching, setSearching] = useState(false);
 
   const [quickBest, setQuickBest] = useState([]);
@@ -910,6 +1017,7 @@ export default function PosSale() {
       setCart([]);
       setProductResults([]);
       setProductQuery("");
+      setSelectedProductCategory("ALL");
       loadPosContext();
       loadQuickPicks();
       loadDrawerStatus({ silent: true });
@@ -1040,6 +1148,27 @@ export default function PosSale() {
   const quickTitle = quickBest.length > 0 ? "Best sellers" : "Latest products";
   const salesDeskCategory = categoryCopy(posContext, workspaceContext);
 
+  const productSourceList = showQuickPicks
+    ? quickList.slice(0, DEFAULT_PRODUCT_DISPLAY_LIMIT)
+    : productResults;
+
+  const productCategoryTabs = useMemo(() => {
+    const seen = new Set();
+
+    productSourceList.forEach((product) => {
+      const category = cleanString(product?.category);
+      if (category) seen.add(category);
+    });
+
+    return ["ALL", ...Array.from(seen).slice(0, 6)];
+  }, [productSourceList]);
+
+  const visibleProducts = useMemo(() => {
+    if (selectedProductCategory === "ALL") return productSourceList;
+
+    return productSourceList.filter((product) => cleanString(product?.category) === selectedProductCategory);
+  }, [productSourceList, selectedProductCategory]);
+
   const drawerOpen = Boolean(drawerStatus?.openSession?.id);
   const blockCashSales = Boolean(drawerStatus?.settings?.blockCashSales ?? true);
   const selectedMethodTouchesDrawer = paymentMethodTouchesCashDrawer(paymentMethod);
@@ -1143,6 +1272,7 @@ export default function PosSale() {
           quantity: 1,
           stockQty: stock,
           meta: cartItemMeta(product),
+          metaParts: cartItemMetaParts(product),
         },
       ];
     });
@@ -1415,16 +1545,16 @@ export default function PosSale() {
         />
       </section>
 
-        <div className="svx-pos-layout svx-pos-layout--v2">
-          <div className="svx-pos-main">
-            <section className="svx-pos-card svx-pos-card--products">
+        <div className="svx-pos-terminal-layout">
+          <div className="svx-pos-terminal-main">
+            <section className="svx-pos-card svx-pos-catalog">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                  1. Add products
+                  Products
                 </h2>
                 <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                  Search and add products. {salesDeskCategory.productHint}
+                  {salesDeskCategory.productHint}
                 </p>
               </div>
 
@@ -1437,6 +1567,19 @@ export default function PosSale() {
                   onKeyDown={onProductKeyDown}
                 />
               </div>
+            </div>
+
+            <div className="svx-pos-product-tabs">
+              {productCategoryTabs.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setSelectedProductCategory(category)}
+                  className={selectedProductCategory === category ? "is-active" : ""}
+                >
+                  {category === "ALL" ? "All" : category}
+                </button>
+              ))}
             </div>
 
             {!showQuickPicks && searching ? (
@@ -1454,12 +1597,17 @@ export default function PosSale() {
                 </div>
               ) : (
                 <div className="mt-5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <div className="text-sm font-black text-[var(--color-text)]">{quickTitle}</div>
+                  <div className="svx-pos-products-heading-row">
+                    <div>
+                      <div className="text-sm font-black text-[var(--color-text)]">{quickTitle}</div>
+                      {showQuickPicks ? (
+                        <p>Showing the best {Math.min(DEFAULT_PRODUCT_DISPLAY_LIMIT, visibleProducts.length)} products for a clean selling view.</p>
+                      ) : null}
+                    </div>
                     <StatusBadge tone="success">Tap to add</StatusBadge>
                   </div>
 
-                  {quickList.length === 0 ? (
+                  {visibleProducts.length === 0 ? (
                     <div className="mt-4">
                       <EmptyState
                         title="No suggestions yet"
@@ -1467,365 +1615,37 @@ export default function PosSale() {
                       />
                     </div>
                   ) : (
-                    <div className="mt-4 grid gap-3">
-                      {quickList.map((product) => (
+                    <div className="svx-pos-product-grid">
+                      {visibleProducts.map((product) => (
                         <ProductRow key={product.id} product={product} onAdd={addToCart} />
                       ))}
                     </div>
                   )}
                 </div>
               )
-            ) : productResults.length === 0 && !searching ? (
+            ) : visibleProducts.length === 0 && !searching ? (
               <div className="mt-5">
                 <EmptyState title="No products found" text="Try another product name, code, barcode, category, or brand." />
               </div>
             ) : (
-              <div className="mt-5 grid gap-3">
-                {productResults.map((product) => (
+              <div className="svx-pos-product-grid">
+                {visibleProducts.map((product) => (
                   <ProductRow key={product.id} product={product} onAdd={addToCart} />
                 ))}
               </div>
             )}
           </section>
-
-            <div className="svx-pos-options-grid">
-              <section className="svx-pos-card svx-pos-card--setup">
-            <div>
-              <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                2. Payment
-              </h2>
-              <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                Choose paid now or pay later, then choose how the money is received.
-              </p>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <SaleModeButton
-                active={saleType === "CASH"}
-                tone="success"
-                title="Paid now"
-                text="Money is received today. Cash needs an open drawer. MoMo, Card, Bank, and Other do not."
-                onClick={() => setSaleType("CASH")}
-              />
-
-              <SaleModeButton
-                active={saleType === "CREDIT"}
-                tone="warning"
-                title="Pay later"
-                text="Use when a saved customer will pay all or part of the balance later."
-                onClick={() => setSaleType("CREDIT")}
-              />
-            </div>
-
-            <div className="svx-pos-payment-select-card">
-              <div>
-                <h3>Payment method</h3>
-                <p>
-                  Choose how money is received. Only physical cash touches the cash drawer.
-                </p>
-              </div>
-
-              <label className="svx-pos-payment-select-wrap">
-                <span>Method</span>
-                <select
-                  value={paymentMethod}
-                  onChange={(event) => setPaymentMethod(event.target.value)}
-                  className="svx-pos-input svx-pos-payment-select"
-                >
-                  {PAYMENT_METHOD_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="svx-pos-payment-note">
-                <strong>{selectedPaymentOption?.label || paymentMethod}</strong>
-                <span>
-                  {drawerCopy.note}
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <label className="block">
-                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                  Payment note
-                </span>
-                <input
-                  className={inputClass()}
-                  value={paymentReference}
-                  onChange={(event) => setPaymentReference(event.target.value)}
-                  placeholder="Example: MoMo code or bank slip"
-                />
-              </label>
-
-              {saleType === "CREDIT" ? (
-                <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                    Deposit paid now
-                  </span>
-                  <input
-                    inputMode="numeric"
-                    className={inputClass()}
-                    value={amountPaid}
-                    onChange={(event) => setAmountPaid(normalizeDigits(event.target.value))}
-                    placeholder="0"
-                  />
-                </label>
-              ) : null}
-            </div>
-
-            {saleType === "CREDIT" ? (
-              <div className="mt-4">
-                <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                    Pay-by date
-                  </span>
-                  <input
-                    type="date"
-                    className={inputClass()}
-                    value={dueDate}
-                    onChange={(event) => setDueDate(event.target.value)}
-                  />
-                </label>
-              </div>
-            ) : null}
-
-            {hasCashDrawerRisk ? (
-              <div className="mt-4 rounded-[24px] bg-red-500/10 px-4 py-3 text-sm font-bold leading-6 text-red-600">
-                Cash is being received, but the drawer is closed. Open the drawer before finishing this sale.
-              </div>
-            ) : null}
-
-            {selectedMethodTouchesDrawer ? (
-              <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-                <AsyncButton loading={drawerRefreshBusy} onClick={() => loadDrawerStatus({ silent: false })} variant="secondary">
-                  Check drawer
-                </AsyncButton>
-
-                {!drawerOpen ? (
-                  <button type="button" onClick={() => navigate("/app/pos/drawer")} className={dangerButton()}>
-                    Open drawer page
-                  </button>
-                ) : null}
-              </div>
-            ) : (
-              <div className="mt-4 rounded-[24px] bg-[var(--color-surface-2)] px-4 py-3 text-sm font-bold leading-6 text-[var(--color-text-muted)]">
-                This payment method does not use the cash drawer.
-              </div>
-            )}
-          </section>
-
-              <section className="svx-pos-card svx-pos-card--setup">
-            <div>
-              <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                3. Customer
-              </h2>
-              <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                Choose who is buying. Walk-in is best for quick paid-now sales.
-              </p>
-            </div>
-
-            <div className="svx-pos-segmented-control">
-              <button
-                type="button"
-                onClick={() => {
-                  if (saleType === "CREDIT") {
-                    toast.error("Pay-later sales need a saved customer.");
-                    return;
-                  }
-
-                  setCustomerMode("WALKIN");
-                  resetCustomerSelection();
-                }}
-                className={customerMode === "WALKIN" ? "is-active" : ""}
-              >
-                <strong>Walk-in</strong>
-                <span>Fast paid-now sale</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setCustomerMode("PICK");
-                  resetCustomerForm();
-                }}
-                className={customerMode === "PICK" ? "is-active" : ""}
-              >
-                <strong>Existing customer</strong>
-                <span>Use saved customer</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setCustomerMode("NEW");
-                  resetCustomerSelection();
-                }}
-                className={customerMode === "NEW" ? "is-active" : ""}
-              >
-                <strong>New customer</strong>
-                <span>Save during sale</span>
-              </button>
-            </div>
-
-            {customerMode === "WALKIN" ? (
-              <div className={cx(softPanel(), "mt-5 p-4")}>
-                <div className="text-sm font-black text-[var(--color-text)]">Walk-in customer selected</div>
-                <div className="mt-2 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                  Best for quick paid-now sales when customer details do not need to be saved.
-                </div>
-              </div>
-            ) : null}
-
-            {customerMode === "PICK" ? (
-              <div className="mt-5">
-                <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                    Find customer
-                  </span>
-
-                  <input
-                    className={inputClass()}
-                    placeholder="Search by name, phone, email, TIN, or ID..."
-                    value={customerQuery}
-                    onChange={(event) => setCustomerQuery(event.target.value)}
-                  />
-                </label>
-
-                <div className="mt-4">
-                  {customersLoading ? (
-                    <div className="grid gap-3 md:grid-cols-2">
-                      {[1, 2, 3, 4].map((item) => (
-                        <SkeletonBlock key={item} className="h-28 w-full" />
-                      ))}
-                    </div>
-                  ) : filteredCustomers.length === 0 ? (
-                    <EmptyState title="No customer found" text="Try another name, phone, or email." />
-                  ) : (
-                    <>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {filteredCustomers.map((customer) => (
-                          <CustomerCard
-                            key={customer.id}
-                            customer={customer}
-                            active={selectedCustomerId === customer.id}
-                            onClick={() => setSelectedCustomerId(customer.id)}
-                          />
-                        ))}
-                      </div>
-
-                      <p className="mt-3 text-xs font-bold text-[var(--color-text-muted)]">
-                        Showing the best {PAGE_SIZE} matches. Search to find more.
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-            ) : null}
-
-            {customerMode === "NEW" ? (
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                    Full name
-                  </span>
-                  <input
-                    className={inputClass()}
-                    value={customerForm.name}
-                    onChange={(event) => setCustomerField("name", event.target.value)}
-                    placeholder="Customer name"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                    Phone
-                  </span>
-                  <input
-                    className={inputClass()}
-                    value={customerForm.phone}
-                    onChange={(event) => setCustomerField("phone", event.target.value)}
-                    placeholder="Phone number"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                    Email
-                  </span>
-                  <input
-                    className={inputClass()}
-                    value={customerForm.email}
-                    onChange={(event) => setCustomerField("email", event.target.value)}
-                    placeholder="Optional"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                    Address
-                  </span>
-                  <input
-                    className={inputClass()}
-                    value={customerForm.address}
-                    onChange={(event) => setCustomerField("address", event.target.value)}
-                    placeholder="Optional"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                    TIN number
-                  </span>
-                  <input
-                    className={inputClass()}
-                    value={customerForm.tinNumber}
-                    onChange={(event) => setCustomerField("tinNumber", event.target.value)}
-                    placeholder="Optional"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                    ID number
-                  </span>
-                  <input
-                    className={inputClass()}
-                    value={customerForm.idNumber}
-                    onChange={(event) => setCustomerField("idNumber", event.target.value)}
-                    placeholder="Optional"
-                  />
-                </label>
-
-                <label className="block md:col-span-2">
-                  <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                    Notes
-                  </span>
-                  <textarea
-                    className={textareaClass()}
-                    value={customerForm.notes}
-                    onChange={(event) => setCustomerField("notes", event.target.value)}
-                    placeholder="Optional customer notes"
-                  />
-                </label>
-              </div>
-            ) : null}
-          </section>
-            </div>
           </div>
 
-          <aside className="svx-pos-side">
-            <section className="svx-pos-card svx-pos-checkout-card">
+          <aside className="svx-pos-terminal-side">
+            <section className="svx-pos-checkout-card">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                  4. Finish sale
+                  Checkout
                 </h2>
                 <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-                  Review products before saving.
+                  Review the cart, payment, and customer before finishing.
                 </p>
               </div>
 
@@ -1841,7 +1661,7 @@ export default function PosSale() {
 
             {!cart.length ? (
               <div className="mt-5">
-                <EmptyState title="Cart is empty" text="Add products from the left side to start the sale." />
+                <EmptyState title="Cart is empty" text="Add products to start the sale." />
               </div>
             ) : (
               <div className="mt-5 space-y-3">
@@ -1856,6 +1676,240 @@ export default function PosSale() {
                 ))}
               </div>
             )}
+
+            <div className="svx-pos-checkout-setup svx-pos-checkout-setup--minimal">
+              <section className="svx-pos-checkout-subcard svx-pos-checkout-subcard--minimal">
+                <div className="svx-pos-setup-head">
+                  <div>
+                    <h2>Sale setup</h2>
+                    <p>Choose only what this sale needs.</p>
+                  </div>
+                </div>
+
+                <div className="svx-pos-setup-grid">
+                  <label className="svx-pos-setup-field">
+                    <span>Sale type</span>
+                    <select
+                      value={saleType}
+                      onChange={(event) => {
+                        const nextType = event.target.value;
+                        setSaleType(nextType);
+
+                        if (nextType === "CREDIT" && customerMode === "WALKIN") {
+                          setCustomerMode("PICK");
+                          resetCustomerForm();
+                        }
+                      }}
+                      className="svx-pos-input"
+                    >
+                      <option value="CASH">Paid now</option>
+                      <option value="CREDIT">Pay later</option>
+                    </select>
+                  </label>
+
+                  <label className="svx-pos-setup-field">
+                    <span>Payment</span>
+                    <select
+                      value={paymentMethod}
+                      onChange={(event) => setPaymentMethod(event.target.value)}
+                      className="svx-pos-input"
+                    >
+                      {PAYMENT_METHOD_OPTIONS.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="svx-pos-setup-field">
+                    <span>Customer</span>
+                    <select
+                      value={customerMode}
+                      onChange={(event) => {
+                        const nextMode = event.target.value;
+
+                        if (nextMode === "WALKIN" && saleType === "CREDIT") {
+                          toast.error("Pay-later sales need a saved customer.");
+                          return;
+                        }
+
+                        setCustomerMode(nextMode);
+
+                        if (nextMode === "WALKIN") {
+                          resetCustomerSelection();
+                        } else if (nextMode === "PICK") {
+                          resetCustomerForm();
+                        } else {
+                          resetCustomerSelection();
+                        }
+                      }}
+                      className="svx-pos-input"
+                    >
+                      <option value="WALKIN" disabled={saleType === "CREDIT"}>
+                        Walk-in
+                      </option>
+                      <option value="PICK">Existing customer</option>
+                      <option value="NEW">New customer</option>
+                    </select>
+                  </label>
+
+                  <label className="svx-pos-setup-field">
+                    <span>Payment note</span>
+                    <input
+                      className={inputClass()}
+                      value={paymentReference}
+                      onChange={(event) => setPaymentReference(event.target.value)}
+                      placeholder="MoMo code or bank slip"
+                    />
+                  </label>
+                </div>
+
+                {selectedMethodTouchesDrawer ? (
+                  <div className="svx-pos-drawer-compact">
+                    <span>{drawerCopy.note}</span>
+
+                    <div>
+                      <AsyncButton loading={drawerRefreshBusy} onClick={() => loadDrawerStatus({ silent: false })} variant="secondary">
+                        Check drawer
+                      </AsyncButton>
+
+                      {!drawerOpen ? (
+                        <button type="button" onClick={() => navigate("/app/pos/drawer")} className={dangerButton()}>
+                          Open drawer
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="svx-pos-drawer-compact is-muted">
+                    <span>{drawerCopy.note}</span>
+                  </div>
+                )}
+
+                {saleType === "CREDIT" ? (
+                  <div className="svx-pos-setup-grid svx-pos-setup-grid--two">
+                    <label className="svx-pos-setup-field">
+                      <span>Deposit paid now</span>
+                      <input
+                        inputMode="numeric"
+                        className={inputClass()}
+                        value={amountPaid}
+                        onChange={(event) => setAmountPaid(normalizeDigits(event.target.value))}
+                        placeholder="0"
+                      />
+                    </label>
+
+                    <label className="svx-pos-setup-field">
+                      <span>Pay-by date</span>
+                      <input
+                        type="date"
+                        className={inputClass()}
+                        value={dueDate}
+                        onChange={(event) => setDueDate(event.target.value)}
+                      />
+                    </label>
+                  </div>
+                ) : null}
+
+                {hasCashDrawerRisk ? (
+                  <div className="svx-pos-warning-strip">
+                    Cash is being received, but the drawer is closed.
+                  </div>
+                ) : null}
+              </section>
+
+              {customerMode === "PICK" ? (
+                <section className="svx-pos-checkout-subcard svx-pos-checkout-subcard--minimal">
+                  <div className="svx-pos-setup-head">
+                    <div>
+                      <h2>Choose customer</h2>
+                      <p>Search saved customer records.</p>
+                    </div>
+                  </div>
+
+                  <label className="svx-pos-setup-field">
+                    <span>Find customer</span>
+                    <input
+                      className={inputClass()}
+                      placeholder="Name, phone, email, TIN, or ID"
+                      value={customerQuery}
+                      onChange={(event) => setCustomerQuery(event.target.value)}
+                    />
+                  </label>
+
+                  <div className="svx-pos-customer-results">
+                    {customersLoading ? (
+                      <SkeletonBlock className="h-20 w-full" />
+                    ) : filteredCustomers.length === 0 ? (
+                      <EmptyState title="No customer found" text="Try another name, phone, or email." />
+                    ) : (
+                      filteredCustomers.slice(0, 4).map((customer) => (
+                        <CustomerCard
+                          key={customer.id}
+                          customer={customer}
+                          active={selectedCustomerId === customer.id}
+                          onClick={() => setSelectedCustomerId(customer.id)}
+                        />
+                      ))
+                    )}
+                  </div>
+                </section>
+              ) : null}
+
+              {customerMode === "NEW" ? (
+                <section className="svx-pos-checkout-subcard svx-pos-checkout-subcard--minimal">
+                  <div className="svx-pos-setup-head">
+                    <div>
+                      <h2>New customer</h2>
+                      <p>Only name and phone are required.</p>
+                    </div>
+                  </div>
+
+                  <div className="svx-pos-setup-grid svx-pos-setup-grid--two">
+                    <label className="svx-pos-setup-field">
+                      <span>Full name</span>
+                      <input
+                        className={inputClass()}
+                        value={customerForm.name}
+                        onChange={(event) => setCustomerField("name", event.target.value)}
+                        placeholder="Customer name"
+                      />
+                    </label>
+
+                    <label className="svx-pos-setup-field">
+                      <span>Phone</span>
+                      <input
+                        className={inputClass()}
+                        value={customerForm.phone}
+                        onChange={(event) => setCustomerField("phone", event.target.value)}
+                        placeholder="Phone number"
+                      />
+                    </label>
+
+                    <label className="svx-pos-setup-field">
+                      <span>Email</span>
+                      <input
+                        className={inputClass()}
+                        value={customerForm.email}
+                        onChange={(event) => setCustomerField("email", event.target.value)}
+                        placeholder="Optional"
+                      />
+                    </label>
+
+                    <label className="svx-pos-setup-field">
+                      <span>Address</span>
+                      <input
+                        className={inputClass()}
+                        value={customerForm.address}
+                        onChange={(event) => setCustomerField("address", event.target.value)}
+                        placeholder="Optional"
+                      />
+                    </label>
+                  </div>
+                </section>
+              ) : null}
+            </div>
 
             <div className="mt-5 border-t border-[var(--color-border)] pt-5">
               <div className="rounded-[26px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
@@ -1948,22 +2002,24 @@ export default function PosSale() {
                 </div>
               ) : null}
 
-              <AsyncButton
-                loading={savingSale}
-                onClick={completeSale}
-                disabled={!cart.length || hasCashDrawerRisk}
-                className={cx("mt-5 w-full", saleType === "CREDIT" ? warningButton() : primaryButton())}
-              >
-                {saleType === "CREDIT" ? "Finish pay-later sale" : "Finish sale"}
-              </AsyncButton>
+              <div className={cx("svx-pos-final-actions", hasCashDrawerRisk && "has-drawer-risk")}>
+                <AsyncButton
+                  loading={savingSale}
+                  onClick={completeSale}
+                  disabled={!cart.length || hasCashDrawerRisk}
+                  className={saleType === "CREDIT" ? warningButton() : primaryButton()}
+                >
+                  {saleType === "CREDIT" ? "Finish pay-later sale" : "Finish sale"}
+                </AsyncButton>
 
-              {hasCashDrawerRisk ? (
-                <button type="button" onClick={() => navigate("/app/pos/drawer")} className={cx(dangerButton(), "mt-3 w-full")}>
-                  Open cash drawer
-                </button>
-              ) : null}
+                {hasCashDrawerRisk ? (
+                  <button type="button" onClick={() => navigate("/app/pos/drawer")} className={dangerButton()}>
+                    Open cash drawer
+                  </button>
+                ) : null}
+              </div>
 
-              <p className="mt-4 text-center text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
+              <p className="svx-pos-stock-note">
                 Stock will reduce from {activeBranchLabel} after the sale is completed.
               </p>
             </div>

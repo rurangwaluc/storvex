@@ -1,5 +1,4 @@
-const prisma = require("../../config/database");
-const PDFDocument = require("pdfkit");
+const prisma = require("../../config/database");const PDFDocument = require("pdfkit");
 const ExcelJS = require("exceljs");
 
 const INVENTORY_AUDIT_ACTIONS = {
@@ -1089,6 +1088,19 @@ async function searchProducts(req, res) {
         minStockLevel: true,
         sellPrice: true,
         stockQty: true,
+        images: {
+          orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+          take: 3,
+          select: {
+            id: true,
+            url: true,
+            key: true,
+            altText: true,
+            sortOrder: true,
+            isPrimary: true,
+            createdAt: true,
+          },
+        },
         ...(typeof prisma.product.fields?.categoryAttributes !== "undefined" ? { categoryAttributes: true } : {}),
         ...(typeof prisma.product.fields?.marketplaceAttributes !== "undefined" ? { marketplaceAttributes: true } : {}),
         ...(typeof prisma.product.fields?.marketplaceCategory !== "undefined" ? { marketplaceCategory: true } : {}),
@@ -3090,4 +3102,3 @@ module.exports = {
   exportInventoryExcel,
   exportStockAdjustmentsExcel,
 };
-
