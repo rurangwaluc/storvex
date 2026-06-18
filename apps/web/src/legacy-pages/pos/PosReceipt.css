@@ -1022,3 +1022,106 @@
     border-radius: 18px;
   }
 }
+
+
+/* =========================================================
+   Receipt detail V1 polish
+   Removes duplicate paid badges in the store card and improves
+   mid-size/PWA money summary readability.
+   ========================================================= */
+
+.svx-receipt-store-status {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 150px));
+  gap: 10px;
+}
+
+.svx-receipt-store-status .svx-receipt-detail-line {
+  background: var(--receipt-soft);
+}
+
+.svx-receipt-total-grid b {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+@media (max-width: 1320px) and (min-width: 1181px) {
+  .svx-receipt-total-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-receipt-total-grid > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .svx-receipt-total-grid b {
+    margin-top: 0;
+    text-align: right;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-receipt-store-status {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: stretch;
+  }
+
+  .svx-receipt-total-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-receipt-total-grid > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .svx-receipt-total-grid b {
+    margin-top: 0;
+    text-align: right;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-receipt-store-status {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-receipt-total-grid > div {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-receipt-total-grid b {
+    margin-top: 8px;
+    text-align: left;
+  }
+}
+
+
+/* =========================================================
+   Receipt manage actions spacing polish
+   Adds breathing room between "Manage receipt" heading and actions.
+   ========================================================= */
+
+.svx-receipt-section .svx-receipt-side-actions {
+  margin-top: 18px;
+}
+
+.svx-receipt-section .svx-receipt-section-head + .svx-receipt-side-actions {
+  margin-top: 20px;
+}
+
+.svx-receipt-action-note {
+  margin-top: 12px;
+}
+
+@media (max-width: 760px) {
+  .svx-receipt-section .svx-receipt-side-actions {
+    margin-top: 16px;
+  }
+}

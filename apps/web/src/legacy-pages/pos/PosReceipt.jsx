@@ -1243,10 +1243,8 @@ export default function PosReceipt() {
         </div>
 
         <div className="svx-receipt-store-status">
-          <StatusBadge tone={receipt.saleType === "CREDIT" ? "warning" : "success"}>
-            {receipt.saleType === "CREDIT" ? "Pay later" : "Paid now"}
-          </StatusBadge>
-          <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+          <DetailLine label="Sale type" value={receipt.saleType === "CREDIT" ? "Pay later" : "Paid now"} />
+          <DetailLine label="Status" value={status.label} />
         </div>
       </section>
 
