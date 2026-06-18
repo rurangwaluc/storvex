@@ -1125,3 +1125,88 @@
     margin-top: 16px;
   }
 }
+
+
+/* =========================================================
+   Pay Later visibility — Receipt Detail
+   Shows who owes, what is due, and where to record later payment.
+   ========================================================= */
+
+.svx-receipt-credit-alert {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  align-items: center;
+  border: 1px solid var(--receipt-line-soft);
+  border-radius: 24px;
+  background: var(--receipt-surface);
+  padding: 22px;
+  box-shadow: 0 14px 40px rgba(15, 46, 92, 0.055);
+}
+
+:root[data-theme="dark"] .svx-receipt-credit-alert {
+  box-shadow: none;
+}
+
+.svx-receipt-credit-alert.is-warning {
+  border-color: color-mix(in srgb, var(--receipt-orange) 28%, var(--receipt-line-soft));
+}
+
+.svx-receipt-credit-alert.is-danger {
+  border-color: color-mix(in srgb, var(--receipt-red) 34%, var(--receipt-line-soft));
+}
+
+.svx-receipt-credit-alert.is-success {
+  border-color: color-mix(in srgb, var(--receipt-green) 28%, var(--receipt-line-soft));
+}
+
+.svx-receipt-credit-alert-copy h2 {
+  margin-top: 8px;
+  color: var(--receipt-text);
+  font-family: var(--receipt-heading-font);
+  font-size: clamp(24px, 2.4vw, 34px);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+}
+
+.svx-receipt-credit-alert-copy p:not(.svx-receipt-kicker) {
+  margin-top: 8px;
+  color: var(--receipt-muted);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.svx-receipt-credit-alert-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.svx-receipt-credit-alert-grid .svx-receipt-detail-line {
+  background: var(--receipt-soft);
+}
+
+@media (max-width: 1180px) {
+  .svx-receipt-credit-alert {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-receipt-credit-alert-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-receipt-credit-alert {
+    border-radius: 20px;
+    padding: 18px;
+  }
+
+  .svx-receipt-credit-alert-grid {
+    grid-template-columns: 1fr;
+  }
+}

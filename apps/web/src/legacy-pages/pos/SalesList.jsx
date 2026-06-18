@@ -48,6 +48,93 @@ function formatDateTime(value) {
   }
 }
 
+function formatDateOnly(value) {
+  if (!value) return "—";
+
+  try {
+    return new Date(value).toLocaleDateString("en-RW", {
+      dateStyle: "medium",
+    });
+  } catch {
+    return "—";
+  }
+}
+
+function daysUntil(value) {
+  if (!value) return null;
+
+  const due = new Date(value);
+  if (Number.isNaN(due.getTime())) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+
+  return Math.round((due.getTime() - today.getTime()) / 86400000);
+}
+
+function saleDueMeta(sale) {
+  const saleType = String(sale?.saleType || "").toUpperCase();
+  const balance = saleBalance(sale);
+
+  if (saleType !== "CREDIT" && balance <= 0) {
+    return {
+      label: "No follow-up",
+      tone: "neutral",
+      dueText: "Not needed",
+    };
+  }
+
+  if (balance <= 0) {
+    return {
+      label: "Fully paid",
+      tone: "success",
+      dueText: "Paid off",
+    };
+  }
+
+  const dueDate = sale?.dueDate;
+  const days = daysUntil(dueDate);
+
+  if (!dueDate || days === null) {
+    return {
+      label: "No due date",
+      tone: "warning",
+      dueText: "Set follow-up date",
+    };
+  }
+
+  if (days < 0) {
+    return {
+      label: `${Math.abs(days)}d overdue`,
+      tone: "danger",
+      dueText: formatDateOnly(dueDate),
+    };
+  }
+
+  if (days === 0) {
+    return {
+      label: "Due today",
+      tone: "warning",
+      dueText: formatDateOnly(dueDate),
+    };
+  }
+
+  if (days === 1) {
+    return {
+      label: "Due tomorrow",
+      tone: "warning",
+      dueText: formatDateOnly(dueDate),
+    };
+  }
+
+  return {
+    label: `Due in ${days}d`,
+    tone: "neutral",
+    dueText: formatDateOnly(dueDate),
+  };
+}
+
 function activeBranchNameFromStorage() {
   const name = cleanString(localStorage.getItem("activeBranchName"));
   const code = cleanString(localStorage.getItem("activeBranchCode"));
@@ -249,13 +336,15 @@ function SaleRow({ sale, onOpenCancel, cancelBusy }) {
   const paid = salePaid(sale) || (saleBalance(sale) <= 0 ? total : 0);
   const balance = saleBalance(sale);
   const saleType = String(sale?.saleType || "").toUpperCase();
+  const isPayLater = saleType === "CREDIT" || balance > 0;
   const phone = customerPhone(sale);
+  const due = saleDueMeta(sale);
 
   return (
-    <article className={cx("svx-sales-row", `is-${status.tone}`)}>
+    <article className={cx("svx-sales-row", `is-${status.tone}`, isPayLater && "is-pay-later", due.tone === "danger" && "is-overdue")}>
       <SaleField className="is-sale" label="Sale">
         <b>{receiptCode(sale)}</b>
-        <span>{status.note}</span>
+        <span>{isPayLater ? `${formatMoney(balance)} still unpaid` : status.note}</span>
       </SaleField>
 
       <SaleField className="is-customer" label="Customer">
@@ -263,9 +352,10 @@ function SaleRow({ sale, onOpenCancel, cancelBusy }) {
         <span>{phone || "No phone saved"}</span>
       </SaleField>
 
-      <SaleField className="is-date" label="Date">
-        <b>{formatDateTime(sale.createdAt)}</b>
-        <span>{cashierName(sale)}</span>
+      <SaleField className="is-date" label={isPayLater ? "Follow-up" : "Date"}>
+        <b>{isPayLater ? due.label : formatDateTime(sale.createdAt)}</b>
+        <span>{isPayLater ? `Due: ${due.dueText}` : cashierName(sale)}</span>
+        {isPayLater ? <em>Cashier {cashierName(sale)}</em> : null}
       </SaleField>
 
       <SaleField className="is-payment" label="Payment">
@@ -273,6 +363,7 @@ function SaleRow({ sale, onOpenCancel, cancelBusy }) {
           <StatusBadge tone={status.tone === "danger" ? "danger" : saleType === "CREDIT" ? "warning" : "success"}>
             {status.tone === "danger" ? status.label : saleTypeLabel(saleType)}
           </StatusBadge>
+          {isPayLater ? <span className={cx("svx-sales-due-chip", `is-${due.tone}`)}>{due.label}</span> : null}
         </div>
       </SaleField>
 
@@ -554,7 +645,7 @@ export default function SalesList() {
           <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
             <option value="ALL">All statuses</option>
             <option value="PAID">Paid</option>
-            <option value="BALANCE">Balance due</option>
+            <option value="BALANCE">Needs payment</option>
             <option value="OVERDUE">Overdue</option>
             <option value="CANCELLED">Cancelled</option>
           </select>
@@ -562,7 +653,7 @@ export default function SalesList() {
           <select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
             <option value="ALL">All sale types</option>
             <option value="CASH">Paid now</option>
-            <option value="CREDIT">Pay later</option>
+            <option value="CREDIT">Pay later only</option>
           </select>
         </div>
 
@@ -667,3 +758,4 @@ export default function SalesList() {
     </main>
   );
 }
+

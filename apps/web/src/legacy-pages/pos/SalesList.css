@@ -1266,3 +1266,71 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* =========================================================
+   Pay Later visibility — Sales List
+   Makes balance, due date, and follow-up impossible to miss.
+   ========================================================= */
+
+.svx-sales-row.is-pay-later {
+  border-color: color-mix(in srgb, var(--sales-orange) 26%, var(--sales-line-soft));
+}
+
+.svx-sales-row.is-overdue {
+  border-color: color-mix(in srgb, var(--sales-red) 34%, var(--sales-line-soft));
+}
+
+.svx-sales-field.is-date em {
+  display: block;
+  margin-top: 3px;
+  color: var(--sales-muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 750;
+  line-height: 1.22;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-sales-due-chip {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: var(--sales-soft);
+  color: var(--sales-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.svx-sales-due-chip.is-warning {
+  background: var(--sales-orange-soft);
+  color: var(--sales-orange);
+}
+
+.svx-sales-due-chip.is-danger {
+  background: var(--sales-red-soft);
+  color: var(--sales-red);
+}
+
+.svx-sales-due-chip.is-success {
+  background: var(--sales-green-soft);
+  color: var(--sales-green);
+}
+
+@media (max-width: 920px) {
+  .svx-sales-field.is-date em {
+    white-space: normal;
+  }
+
+  .svx-sales-payment-pills {
+    gap: 7px;
+  }
+}

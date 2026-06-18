@@ -444,6 +444,107 @@ function saleStatus(receipt) {
   };
 }
 
+function creditFollowUpMeta(receipt, balance) {
+  if (!receipt || receipt.saleType !== "CREDIT") {
+    return {
+      label: "Not needed",
+      tone: "neutral",
+      dueText: "Not needed",
+      message: "This sale was paid now.",
+    };
+  }
+
+  if (Number(balance || 0) <= 0) {
+    return {
+      label: "Fully paid",
+      tone: "success",
+      dueText: "Paid off",
+      message: "This pay-later sale is fully paid.",
+    };
+  }
+
+  const dueDate = receipt.dueDate;
+  if (!dueDate) {
+    return {
+      label: "No due date",
+      tone: "warning",
+      dueText: "No due date saved",
+      message: `${formatMoney(balance)} is still unpaid.`,
+    };
+  }
+
+  const due = new Date(dueDate);
+  if (Number.isNaN(due.getTime())) {
+    return {
+      label: "Check due date",
+      tone: "warning",
+      dueText: "Invalid due date",
+      message: `${formatMoney(balance)} is still unpaid.`,
+    };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+
+  const days = Math.round((due.getTime() - today.getTime()) / 86400000);
+
+  if (days < 0) {
+    return {
+      label: `${Math.abs(days)}d overdue`,
+      tone: "danger",
+      dueText: formatDateOnly(dueDate),
+      message: `${formatMoney(balance)} is overdue. Follow up with the customer.`,
+    };
+  }
+
+  if (days === 0) {
+    return {
+      label: "Due today",
+      tone: "warning",
+      dueText: formatDateOnly(dueDate),
+      message: `${formatMoney(balance)} is due today.`,
+    };
+  }
+
+  if (days === 1) {
+    return {
+      label: "Due tomorrow",
+      tone: "warning",
+      dueText: formatDateOnly(dueDate),
+      message: `${formatMoney(balance)} is due tomorrow.`,
+    };
+  }
+
+  return {
+    label: `Due in ${days}d`,
+    tone: "neutral",
+    dueText: formatDateOnly(dueDate),
+    message: `${formatMoney(balance)} is still unpaid.`,
+  };
+}
+
+function CreditFollowUpCard({ receipt, balance, paid, customerNameValue, meta }) {
+  if (!receipt || receipt.saleType !== "CREDIT") return null;
+
+  return (
+    <section className={cx("svx-receipt-credit-alert", `is-${meta.tone}`)}>
+      <div className="svx-receipt-credit-alert-copy">
+        <p className="svx-receipt-kicker">Pay later follow-up</p>
+        <h2>{meta.label}</h2>
+        <p>{meta.message}</p>
+      </div>
+
+      <div className="svx-receipt-credit-alert-grid">
+        <DetailLine label="Customer" value={customerNameValue || "Walk-in customer"} />
+        <DetailLine label="Due date" value={meta.dueText} />
+        <DetailLine label="Paid so far" value={formatMoney(paid)} />
+        <DetailLine label="Balance" value={formatMoney(balance)} />
+      </div>
+    </section>
+  );
+}
+
 function StatusBadge({ tone = "neutral", children }) {
   return <span className={cx("svx-receipt-badge", `is-${tone}`)}>{children}</span>;
 }
@@ -934,6 +1035,11 @@ export default function PosReceipt() {
         : "No payment recorded";
 
   const status = saleStatus(receipt);
+  const followUp = creditFollowUpMeta(receipt, balance);
+  const receiptCustomerName =
+    cleanString(receipt?.customer?.name) ||
+    cleanString(receipt?.customerName) ||
+    "Walk-in customer";
 
   const canAddPayment = useMemo(() => {
     if (!receipt) return false;
@@ -1248,6 +1354,14 @@ export default function PosReceipt() {
         </div>
       </section>
 
+      <CreditFollowUpCard
+        receipt={receipt}
+        balance={balance}
+        paid={paid}
+        customerNameValue={receiptCustomerName}
+        meta={followUp}
+      />
+
       <div className="svx-receipt-main-grid">
         <section className="svx-receipt-left">
           <section className="svx-receipt-section">
@@ -1285,7 +1399,7 @@ export default function PosReceipt() {
             </div>
 
             <div className="svx-receipt-detail-grid">
-              <DetailLine label="Name" value={receipt.customer?.name || receipt.customerName || "Walk-in customer"} />
+              <DetailLine label="Name" value={receiptCustomerName} />
               <DetailLine label="Phone" value={receipt.customer?.phone || receipt.customerPhone || "Not saved"} />
               <DetailLine label="Email" value={receipt.customer?.email || "Not saved"} />
               <DetailLine label="TIN" value={receipt.customer?.tinNumber || "Not saved"} />
@@ -1323,9 +1437,9 @@ export default function PosReceipt() {
             <form onSubmit={submitPayment} className="svx-receipt-section">
               <div className="svx-receipt-section-head">
                 <div>
-                  <p className="svx-receipt-kicker">Payment</p>
-                  <h2>Add payment</h2>
-                  <span>Use this when the customer pays part or all of the balance.</span>
+                  <p className="svx-receipt-kicker">Later payment</p>
+                  <h2>Record customer payment</h2>
+                  <span>{receiptCustomerName} still owes {formatMoney(balance)}. Save the money received today.</span>
                 </div>
               </div>
 
@@ -1336,7 +1450,7 @@ export default function PosReceipt() {
                     value={payAmount}
                     onChange={(event) => setPayAmount(event.target.value)}
                     inputMode="numeric"
-                    placeholder="Example: 50000"
+                    placeholder={`Up to ${formatMoney(balance)}`}
                     disabled={paymentBusy}
                   />
                 </label>
@@ -1368,7 +1482,7 @@ export default function PosReceipt() {
               </div>
 
               <button type="submit" disabled={paymentBusy} className="svx-receipt-button primary is-full">
-                {paymentBusy ? "Saving..." : "Save payment"}
+                {paymentBusy ? "Saving..." : "Save later payment"}
               </button>
             </form>
           ) : null}
