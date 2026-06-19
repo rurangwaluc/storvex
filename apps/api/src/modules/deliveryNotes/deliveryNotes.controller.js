@@ -3,6 +3,7 @@
 const prisma = require("../../config/database");
 const { renderDeliveryNoteHtml } = require("../documents/documentRender.service");
 const { buildTenantDocumentBranding } = require("../documents/documentBranding.service");
+const { reserveDeliveryDocumentNumberTx } = require("../documents/documentNumber.service");
 const {
   parsePagination,
   buildPaginationMeta,
@@ -339,14 +340,12 @@ async function listDeliveryNotes(req, res) {
     where = applyDeliveryBranchScope(where, scope);
 
     if (q) {
-      const maybeNumber = Number(q);
-
       where.OR = [
+        { number: { contains: q, mode: "insensitive" } },
         { customerName: { contains: q, mode: "insensitive" } },
         { customerPhone: { contains: q, mode: "insensitive" } },
         { receivedBy: { contains: q, mode: "insensitive" } },
         { deliveredBy: { contains: q, mode: "insensitive" } },
-        ...(Number.isFinite(maybeNumber) ? [{ number: maybeNumber }] : []),
       ];
     }
 
@@ -438,56 +437,54 @@ async function createDeliveryNote(req, res) {
       return res.status(400).json({ message: "At least one delivery item is required" });
     }
 
-    const counter = await prisma.deliveryNoteCounter.upsert({
-      where: { tenantId },
-      update: { nextNumber: { increment: 1 } },
-      create: { tenantId, nextNumber: 2 },
-      select: { nextNumber: true },
-    });
+    const note = await prisma.$transaction(async (tx) => {
+      const { deliveryNumber } = await reserveDeliveryDocumentNumberTx(tx, {
+        tenantId,
+        createdAt: new Date(),
+      });
 
-    const number = Number(counter.nextNumber) - 1;
-
-    const createData = {
-      tenantId,
-      number,
-      saleId,
-      customerName,
-      customerPhone,
-      customerAddress,
-      deliveredBy,
-      receivedBy,
-      receivedByPhone,
-      notes,
-      createdById: userId,
-      items: {
-        create: items,
-      },
-    };
-
-    if (typeof prisma.deliveryNote.fields?.branchId !== "undefined") {
-      createData.branchId = activeBranch.id;
-    }
-
-    const note = await prisma.deliveryNote.create({
-      data: createData,
-      include: {
-        ...(typeof prisma.deliveryNote.fields?.branchId !== "undefined"
-          ? {
-              branch: {
-                select: {
-                  id: true,
-                  name: true,
-                  code: true,
-                  status: true,
-                  isMain: true,
-                },
-              },
-            }
-          : {}),
+      const createData = {
+        tenantId,
+        number: deliveryNumber,
+        saleId,
+        customerName,
+        customerPhone,
+        customerAddress,
+        deliveredBy,
+        receivedBy,
+        receivedByPhone,
+        notes,
+        createdById: userId,
         items: {
-          orderBy: [{ createdAt: "asc" }],
+          create: items,
         },
-      },
+      };
+
+      if (typeof prisma.deliveryNote.fields?.branchId !== "undefined") {
+        createData.branchId = activeBranch.id;
+      }
+
+      return tx.deliveryNote.create({
+        data: createData,
+        include: {
+          ...(typeof prisma.deliveryNote.fields?.branchId !== "undefined"
+            ? {
+                branch: {
+                  select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                    status: true,
+                    isMain: true,
+                  },
+                },
+              }
+            : {}),
+          items: {
+            orderBy: [{ createdAt: "asc" }],
+          },
+        },
+      });
     });
 
     return res.status(201).json({
@@ -775,9 +772,8 @@ async function printDeliveryNoteHtml(req, res) {
         address: note.customerAddress,
       },
       items,
-      totals: {
-        currency: "RWF",
-        _itemCount: items.length,
+      summary: {
+        itemCount: items.length,
       },
       extra: {
         deliveredBy: oneLine(note.deliveredBy) || "Store staff",

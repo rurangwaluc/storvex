@@ -176,7 +176,6 @@ model Tenant {
 
   documentSettings     TenantDocumentSettings?
   documentCounter      TenantDocumentCounter?
-  deliveryNoteCounters DeliveryNoteCounter?
   subscription         Subscription?
 
   proformas            Proforma[]
@@ -318,6 +317,9 @@ model TenantDocumentSettings {
   pricesIncludeTax            Boolean @default(false)
   showTaxOnCustomerDocuments  Boolean @default(false)
   
+  deliveryPrefix  String @default("DLV") @db.Text
+  deliveryPadding Int    @default(6)
+
   @@map("TenantDocumentSettings")
 }
 
@@ -332,6 +334,8 @@ model TenantDocumentCounter {
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   nextProformaSeq BigInt @default(1)
+
+  nextDeliverySeq BigInt @default(1)
 
   @@map("TenantDocumentCounter")
 }
@@ -1277,17 +1281,13 @@ model SupplierSupplyItem {
   @@index([tenantId, createdAt])
 }
 
-model DeliveryNoteCounter {
-  tenantId   String @id
-  nextNumber Int    @default(1)
-  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-}
+
 
 model DeliveryNote {
   id              String   @id @default(dbgenerated("(gen_random_uuid())::text"))
   tenantId        String
   branchId        String?  @db.Text
-  number          Int
+  number          String   @db.Text
   date            DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
   saleId          String?
   customerName    String

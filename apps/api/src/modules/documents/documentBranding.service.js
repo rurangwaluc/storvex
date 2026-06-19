@@ -37,6 +37,14 @@ function buildDocumentSettingsSelect(prisma) {
       ? { deliveryNoteTerms: true }
       : {}),
 
+    ...(hasField(prisma.tenantDocumentSettings, "deliveryPrefix")
+      ? { deliveryPrefix: true }
+      : {}),
+
+    ...(hasField(prisma.tenantDocumentSettings, "deliveryPadding")
+      ? { deliveryPadding: true }
+      : {}),
+
     ...(hasField(prisma.tenantDocumentSettings, "documentPrimaryColor")
       ? { documentPrimaryColor: true }
       : {}),
@@ -347,11 +355,13 @@ async function buildTenantDocumentBranding(prisma, tenantId, locationId = null) 
     invoicePrefix: settings.invoicePrefix || "INV",
     warrantyPrefix: settings.warrantyPrefix || "WAR",
     proformaPrefix: settings.proformaPrefix || "PRF",
+    deliveryPrefix: settings.deliveryPrefix || "DLV",
 
     receiptPadding: Number(settings.receiptPadding || 3),
     invoicePadding: Number(settings.invoicePadding || 3),
     warrantyPadding: Number(settings.warrantyPadding || 3),
     proformaPadding: Number(settings.proformaPadding || 3),
+    deliveryPadding: Number(settings.deliveryPadding || 3),
 
     locationId: location.id,
     locationName: location.locationName,

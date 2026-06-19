@@ -27,16 +27,6 @@ function normalizePadding(value, fallback = 3) {
   return Math.min(Math.max(Math.floor(n), 3), 12);
 }
 
-
-
-function documentYear(date) {
-  const d = new Date(date || new Date());
-  if (Number.isNaN(d.getTime())) return new Date().getFullYear();
-  return d.getFullYear();
-}
-
-
-
 async function ensureSettingsTx(tx, tenantId) {
   const cleanTenantId = cleanString(tenantId);
 
@@ -87,24 +77,26 @@ function padSeq(seq, padding) {
 
 function docYear(date) {
   const d = new Date(date || new Date());
-  return String(d.getUTCFullYear());
+  return String(Number.isNaN(d.getTime()) ? new Date().getUTCFullYear() : d.getUTCFullYear());
 }
 
 function formatDocumentNumber(prefix, seq, padding, date) {
-  return `${prefix}-${docYear(date)}-${padSeq(seq, padding)}`;
+  return `${normalizePrefix(prefix, "DOC")}-${docYear(date)}-${padSeq(seq, padding)}`;
 }
 
 function normalizeSettings(settings) {
   return {
-    receiptPrefix: settings?.receiptPrefix || "RCT",
-    invoicePrefix: settings?.invoicePrefix || "INV",
-    warrantyPrefix: settings?.warrantyPrefix || "WAR",
-    proformaPrefix: settings?.proformaPrefix || "PRF",
+    receiptPrefix: normalizePrefix(settings?.receiptPrefix, "RCT"),
+    invoicePrefix: normalizePrefix(settings?.invoicePrefix, "INV"),
+    warrantyPrefix: normalizePrefix(settings?.warrantyPrefix, "WAR"),
+    proformaPrefix: normalizePrefix(settings?.proformaPrefix, "PRF"),
+    deliveryPrefix: normalizePrefix(settings?.deliveryPrefix, "DLV"),
 
-    receiptPadding: Number(settings?.receiptPadding || 3),
-    invoicePadding: Number(settings?.invoicePadding || 3),
-    warrantyPadding: Number(settings?.warrantyPadding || 3),
-    proformaPadding: Number(settings?.proformaPadding || 3),
+    receiptPadding: normalizePadding(settings?.receiptPadding, 3),
+    invoicePadding: normalizePadding(settings?.invoicePadding, 3),
+    warrantyPadding: normalizePadding(settings?.warrantyPadding, 3),
+    proformaPadding: normalizePadding(settings?.proformaPadding, 3),
+    deliveryPadding: normalizePadding(settings?.deliveryPadding, 3),
   };
 }
 
@@ -114,6 +106,7 @@ function normalizeCounter(counter) {
     nextInvoiceSeq: toBigIntSafe(counter?.nextInvoiceSeq, 1n),
     nextWarrantySeq: toBigIntSafe(counter?.nextWarrantySeq, 1n),
     nextProformaSeq: toBigIntSafe(counter?.nextProformaSeq, 1n),
+    nextDeliverySeq: toBigIntSafe(counter?.nextDeliverySeq, 1n),
   };
 }
 
@@ -126,6 +119,7 @@ async function previewDocumentNumbers(prisma, tenantId, date = new Date()) {
       invoiceNumberPreview: "INV-2026-001",
       warrantyNumberPreview: "WAR-2026-001",
       proformaNumberPreview: "PRF-2026-001",
+      deliveryNumberPreview: "DLV-2026-001",
     };
   }
 
@@ -146,25 +140,31 @@ async function previewDocumentNumbers(prisma, tenantId, date = new Date()) {
       settings.receiptPrefix,
       counter.nextReceiptSeq,
       settings.receiptPadding,
-      date
+      date,
     ),
     invoiceNumberPreview: formatDocumentNumber(
       settings.invoicePrefix,
       counter.nextInvoiceSeq,
       settings.invoicePadding,
-      date
+      date,
     ),
     warrantyNumberPreview: formatDocumentNumber(
       settings.warrantyPrefix,
       counter.nextWarrantySeq,
       settings.warrantyPadding,
-      date
+      date,
     ),
     proformaNumberPreview: formatDocumentNumber(
       settings.proformaPrefix,
       counter.nextProformaSeq,
       settings.proformaPadding,
-      date
+      date,
+    ),
+    deliveryNumberPreview: formatDocumentNumber(
+      settings.deliveryPrefix,
+      counter.nextDeliverySeq,
+      settings.deliveryPadding,
+      date,
     ),
   };
 }
@@ -185,14 +185,14 @@ async function reserveSaleDocumentNumbersTx(tx, { tenantId, createdAt = new Date
     settings.receiptPrefix,
     receiptSeq,
     settings.receiptPadding,
-    createdAt
+    createdAt,
   );
 
   const invoiceNumber = formatDocumentNumber(
     settings.invoicePrefix,
     invoiceSeq,
     settings.invoicePadding,
-    createdAt
+    createdAt,
   );
 
   await tx.tenantDocumentCounter.update({
@@ -224,7 +224,7 @@ async function reserveWarrantyDocumentNumberTx(tx, { tenantId, createdAt = new D
     settings.warrantyPrefix,
     warrantySeq,
     settings.warrantyPadding,
-    createdAt
+    createdAt,
   );
 
   await tx.tenantDocumentCounter.update({
@@ -254,7 +254,7 @@ async function reserveProformaDocumentNumberTx(tx, { tenantId, createdAt = new D
     settings.proformaPrefix,
     proformaSeq,
     settings.proformaPadding,
-    createdAt
+    createdAt,
   );
 
   await tx.tenantDocumentCounter.update({
@@ -269,10 +269,41 @@ async function reserveProformaDocumentNumberTx(tx, { tenantId, createdAt = new D
   };
 }
 
+async function reserveDeliveryDocumentNumberTx(tx, { tenantId, createdAt = new Date() }) {
+  const cleanTenantId = cleanString(tenantId);
+
+  const settingsRaw = await ensureSettingsTx(tx, cleanTenantId);
+  const counterRaw = await ensureCounterTx(tx, cleanTenantId);
+
+  const settings = normalizeSettings(settingsRaw);
+  const counter = normalizeCounter(counterRaw);
+
+  const deliverySeq = counter.nextDeliverySeq;
+
+  const deliveryNumber = formatDocumentNumber(
+    settings.deliveryPrefix,
+    deliverySeq,
+    settings.deliveryPadding,
+    createdAt,
+  );
+
+  await tx.tenantDocumentCounter.update({
+    where: { tenantId: cleanTenantId },
+    data: {
+      nextDeliverySeq: deliverySeq + 1n,
+    },
+  });
+
+  return {
+    deliveryNumber,
+  };
+}
+
 module.exports = {
   previewDocumentNumbers,
   reserveSaleDocumentNumbersTx,
   reserveWarrantyDocumentNumberTx,
   reserveProformaDocumentNumberTx,
+  reserveDeliveryDocumentNumberTx,
   formatDocumentNumber,
 };
