@@ -12,6 +12,7 @@ import {
   recordCashDrawerMovement,
 } from "../../services/cashDrawerApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import "./CashDrawer.css";
 
 const PAGE_SIZE = 10;
 const RECENT_SESSION_INITIAL_COUNT = 5;
@@ -517,23 +518,23 @@ function SummaryCard({ label, value, note, tone = "neutral" }) {
           : "bg-[var(--color-primary)]";
 
   return (
-    <article className={cx(pageCard(), "relative overflow-hidden p-5")}>
-      <div className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-[rgba(74,163,255,0.08)] blur-2xl" />
+    <article className={cx(pageCard(), "relative overflow-hidden p-4")}>
+      <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[rgba(74,163,255,0.06)] blur-2xl" />
 
       <div className="relative">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-[9px] font-black uppercase leading-4 tracking-[0.16em] text-[var(--color-text-muted)]">
             {label}
           </p>
-          <span className={cx("h-2.5 w-2.5 rounded-full", dot)} />
+          <span className={cx("mt-1 h-2 w-2 shrink-0 rounded-full", dot)} />
         </div>
 
-        <p className="mt-3 truncate text-2xl font-black tracking-[-0.03em] text-[var(--color-text)]">
+        <p className="mt-2 text-[15px] font-black leading-[1.08] tracking-[-0.025em] text-[var(--color-text)] sm:text-base">
           {value}
         </p>
 
         {note ? (
-          <p className="mt-1 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
+          <p className="mt-1.5 text-[10px] font-semibold leading-4 text-[var(--color-text-muted)]">
             {note}
           </p>
         ) : null}
@@ -1316,6 +1317,16 @@ export default function CashDrawer() {
   const visibleSessions = sessions.slice(0, visibleSessionCount);
   const hasMoreSessions =
     visibleSessionCount < sessions.length && visibleSessionCount < RECENT_SESSION_MAX_COUNT;
+  const latestSession = status?.latestSession || sessions[0] || null;
+  const latestDifference = latestSession ? sessionCashDifference(latestSession) : 0;
+  const currentMovementCount = movements.length;
+  const controlWarnings = [
+    !drawerOpen && blockCashSales ? "Cash sales are blocked until this branch drawer is opened." : "",
+    drawerOpen && expectedCash < 0 ? "Expected cash is below zero. Review money-out entries before closing." : "",
+    !drawerOpen && latestSession && latestDifference !== 0
+      ? `Last drawer closed ${varianceLabel(latestDifference).toLowerCase()} by ${signedMoney(latestDifference)}.`
+      : "",
+  ].filter(Boolean);
 
   function resetOpenForm() {
     setOpenAmount("");
@@ -1522,7 +1533,7 @@ export default function CashDrawer() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="svx-cash-page space-y-5">
       <OpenDrawerModal
         open={openModal}
         amount={openAmount}
@@ -1571,7 +1582,7 @@ export default function CashDrawer() {
         onSubmit={submitMovement}
       />
 
-      <section className={cx(pageCard(), "relative overflow-hidden p-5 sm:p-6")}>
+      <section className={cx(pageCard(), "svx-cash-hero relative overflow-hidden p-5 sm:p-6")}>
         <div className="pointer-events-none absolute -right-24 -top-24 h-[260px] w-[260px] rounded-full bg-[rgba(74,163,255,0.10)] blur-3xl" />
 
         <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
@@ -1613,7 +1624,7 @@ export default function CashDrawer() {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="svx-cash-summary-grid grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
           label="Drawer status"
           value={drawerOpen ? "Open" : "Closed"}
@@ -1643,7 +1654,46 @@ export default function CashDrawer() {
         />
       </section>
 
-      <section className={cx(pageCard(), "overflow-hidden")}>
+      <section className={cx(pageCard(), "svx-cash-control-panel overflow-hidden p-5 sm:p-6")}>
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,420px)] xl:items-stretch">
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
+              Owner control
+            </p>
+
+            <h2 className="mt-2 text-xl font-black tracking-[-0.035em] text-[var(--color-text)]">
+              Cash truth before closing
+            </h2>
+
+            <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
+              Use this panel to check whether physical drawer cash should match the system before the shop closes.
+            </p>
+
+            {controlWarnings.length > 0 ? (
+              <div className="mt-4 grid gap-2">
+                {controlWarnings.map((warning) => (
+                  <div key={warning} className="svx-cash-warning rounded-[22px] px-4 py-3 text-sm font-black leading-6">
+                    {warning}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-4 rounded-[22px] bg-emerald-500/10 px-4 py-3 text-sm font-black leading-6 text-emerald-700">
+                No drawer warning right now. Count cash carefully before closing.
+              </div>
+            )}
+          </div>
+
+          <div className="svx-cash-audit-grid grid gap-3 sm:grid-cols-2">
+            <InfoTile label="Opened by" value={drawerOpen ? drawerOpenedBy(openSession) : "—"} />
+            <InfoTile label="Opening cash" value={drawerOpen ? formatMoney(sessionOpeningCash(openSession)) : "—"} />
+            <InfoTile label="Manual entries" value={formatNumber(currentMovementCount)} />
+            <InfoTile label="Expected at count" value={formatMoney(expectedCash)} tone={drawerOpen ? "success" : "neutral"} />
+          </div>
+        </div>
+      </section>
+
+      <section className={cx(pageCard(), "svx-cash-session-card overflow-hidden")}>
         <div className="border-b border-[var(--color-border)] p-5 sm:p-6">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div>
@@ -1783,7 +1833,7 @@ export default function CashDrawer() {
         </div>
       </section>
 
-      <section className={cx(pageCard(), "overflow-hidden")}>
+      <section className={cx(pageCard(), "svx-cash-history-card overflow-hidden")}>
         <div className="border-b border-[var(--color-border)] p-5 sm:p-6">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div>

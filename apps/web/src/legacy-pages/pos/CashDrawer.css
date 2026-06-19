@@ -1,0 +1,783 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap");
+
+.svx-cash-page {
+  --cash-surface: #ffffff;
+  --cash-soft: #f8fbff;
+  --cash-text: #06122e;
+  --cash-muted: #5d6b85;
+  --cash-line: #dfe7f3;
+  --cash-line-soft: #edf2fa;
+  --cash-blue: #075cff;
+  --cash-green: #0cab66;
+  --cash-green-soft: #eafaf3;
+  --cash-orange: #f59e0b;
+  --cash-orange-soft: #fff4df;
+  --cash-red: #ef4444;
+  --cash-red-soft: #fff0f0;
+  --cash-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --cash-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  display: grid;
+  gap: 22px;
+  width: min(100%, 1480px);
+  margin: 0 auto;
+  padding: 36px clamp(22px, 3vw, 34px);
+  color: var(--cash-text);
+  font-family: var(--cash-body-font);
+}
+
+:root[data-theme="dark"] .svx-cash-page {
+  --cash-surface: #1f1f20;
+  --cash-soft: #1c1c1d;
+  --cash-text: #ffffff;
+  --cash-muted: rgba(255, 255, 255, 0.72);
+  --cash-line: rgba(255, 255, 255, 0.12);
+  --cash-line-soft: rgba(255, 255, 255, 0.08);
+  --cash-blue: #159cff;
+  --cash-green: #23c783;
+  --cash-green-soft: rgba(35, 199, 131, 0.13);
+  --cash-orange: #f7ad35;
+  --cash-orange-soft: rgba(247, 173, 53, 0.13);
+  --cash-red: #ff6262;
+  --cash-red-soft: rgba(255, 98, 98, 0.14);
+}
+
+.svx-cash-page *,
+.svx-cash-page *::before,
+.svx-cash-page *::after {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.svx-cash-page input,
+.svx-cash-page select,
+.svx-cash-page textarea,
+.svx-cash-page button {
+  font-family: inherit;
+}
+
+.svx-cash-page h1,
+.svx-cash-page h2,
+.svx-cash-page h3,
+.svx-cash-page p {
+  margin: 0;
+}
+
+.svx-cash-page section {
+  isolation: isolate;
+}
+
+.svx-cash-page .border-\[var\(--color-border\)\] {
+  border-color: var(--cash-line-soft) !important;
+}
+
+.svx-cash-page .bg-\[var\(--color-card\)\],
+.svx-cash-page .bg-\[var\(--color-surface-2\)\] {
+  background: var(--cash-surface) !important;
+}
+
+.svx-cash-page .text-\[var\(--color-text\)\] {
+  color: var(--cash-text) !important;
+}
+
+.svx-cash-page .text-\[var\(--color-text-muted\)\] {
+  color: var(--cash-muted) !important;
+}
+
+.svx-cash-page .text-\[var\(--color-primary\)\] {
+  color: var(--cash-blue) !important;
+}
+
+.svx-cash-page [class*="shadow-"] {
+  box-shadow: none !important;
+}
+
+.svx-cash-page .rounded-\[30px\],
+.svx-cash-page .rounded-\[34px\] {
+  border-radius: 24px !important;
+}
+
+.svx-cash-page .rounded-\[28px\],
+.svx-cash-page .rounded-\[26px\],
+.svx-cash-page .rounded-\[24px\] {
+  border-radius: 20px !important;
+}
+
+.svx-cash-page .rounded-\[22px\] {
+  border-radius: 18px !important;
+}
+
+.svx-cash-page .rounded-\[18px\],
+.svx-cash-page .rounded-2xl {
+  border-radius: 16px !important;
+}
+
+.svx-cash-hero,
+.svx-cash-summary-grid > article,
+.svx-cash-control-panel,
+.svx-cash-session-card,
+.svx-cash-history-card,
+.svx-cash-page article.rounded-\[30px\] {
+  border: 1px solid var(--cash-line-soft) !important;
+  background: var(--cash-surface) !important;
+  box-shadow: 0 14px 40px rgba(15, 46, 92, 0.055) !important;
+}
+
+:root[data-theme="dark"] .svx-cash-hero,
+:root[data-theme="dark"] .svx-cash-summary-grid > article,
+:root[data-theme="dark"] .svx-cash-control-panel,
+:root[data-theme="dark"] .svx-cash-session-card,
+:root[data-theme="dark"] .svx-cash-history-card,
+:root[data-theme="dark"] .svx-cash-page article.rounded-\[30px\] {
+  box-shadow: none !important;
+}
+
+.svx-cash-hero {
+  border-radius: 24px !important;
+  padding: 28px !important;
+}
+
+.svx-cash-hero > .pointer-events-none {
+  display: none;
+}
+
+.svx-cash-hero > .relative {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 24px;
+}
+
+.svx-cash-hero h1 {
+  margin-top: 8px;
+  color: var(--cash-text) !important;
+  font-family: var(--cash-heading-font);
+  font-size: clamp(28px, 2.6vw, 40px) !important;
+  font-weight: 800 !important;
+  line-height: 1.04 !important;
+  letter-spacing: -0.055em !important;
+}
+
+.svx-cash-hero p:not(:first-child) {
+  margin-top: 12px !important;
+  max-width: 520px !important;
+  color: var(--cash-muted) !important;
+  font-size: 14px !important;
+  line-height: 1.55 !important;
+  font-weight: 700 !important;
+}
+
+.svx-cash-hero .flex.flex-col.gap-3.sm\:flex-row {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, auto));
+  gap: 10px;
+}
+
+.svx-cash-hero .inline-flex,
+.svx-cash-session-card .inline-flex,
+.svx-cash-history-card .inline-flex,
+.svx-cash-page button.inline-flex {
+  min-height: 46px;
+  border-radius: 16px !important;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.svx-cash-hero a.bg-\[var\(--color-surface-2\)\],
+.svx-cash-hero button.bg-\[var\(--color-surface-2\)\],
+.svx-cash-page button.bg-\[var\(--color-card\)\],
+.svx-cash-page span.bg-\[var\(--color-card\)\] {
+  border: 1px solid var(--cash-line) !important;
+  background: var(--cash-surface) !important;
+  color: var(--cash-text) !important;
+}
+
+.svx-cash-page .bg-emerald-600 {
+  background: var(--cash-green) !important;
+}
+
+.svx-cash-page .bg-red-600 {
+  background: #b91c1c !important;
+}
+
+.svx-cash-page .bg-red-500\/10 {
+  border: 1px solid rgba(255, 98, 98, 0.32) !important;
+  background: var(--cash-red-soft) !important;
+  color: var(--cash-red) !important;
+}
+
+.svx-cash-page .bg-amber-500\/10 {
+  background: var(--cash-orange-soft) !important;
+}
+
+.svx-cash-page .bg-emerald-500\/10 {
+  background: var(--cash-green-soft) !important;
+}
+
+.svx-cash-page .text-amber-600,
+.svx-cash-page .text-amber-700 {
+  color: var(--cash-orange) !important;
+}
+
+.svx-cash-page .text-red-600 {
+  color: var(--cash-red) !important;
+}
+
+.svx-cash-page .text-emerald-600,
+.svx-cash-page .text-emerald-700 {
+  color: var(--cash-green) !important;
+}
+
+.svx-cash-summary-grid {
+  grid-template-columns: repeat(4, minmax(190px, 1fr));
+  gap: 18px !important;
+}
+
+.svx-cash-summary-grid > article {
+  position: relative;
+  min-height: 104px;
+  border-radius: 20px !important;
+  padding: 16px !important;
+  overflow: hidden;
+}
+
+.svx-cash-summary-grid > article > .pointer-events-none {
+  display: none;
+}
+
+.svx-cash-summary-grid > article p:first-of-type {
+  color: var(--cash-muted) !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.16em !important;
+  line-height: 1.25 !important;
+  text-transform: uppercase;
+}
+
+.svx-cash-summary-grid > article p:nth-of-type(2) {
+  display: block;
+  margin-top: 10px !important;
+  color: var(--cash-text) !important;
+  font-family: var(--cash-heading-font);
+  font-size: clamp(14px, 0.95vw, 17px) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.svx-cash-summary-grid > article p:nth-of-type(3) {
+  margin-top: 5px !important;
+  color: var(--cash-muted) !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+}
+
+.svx-cash-control-panel {
+  border-radius: 24px !important;
+  padding: 20px !important;
+}
+
+.svx-cash-control-panel h2,
+.svx-cash-session-card h2,
+.svx-cash-history-card h2 {
+  color: var(--cash-text) !important;
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.03em !important;
+}
+
+.svx-cash-warning {
+  border: 1px solid rgba(245, 158, 11, 0.24) !important;
+  background: var(--cash-orange-soft) !important;
+  color: var(--cash-orange) !important;
+}
+
+.svx-cash-audit-grid > div,
+.svx-cash-session-card .mt-5.grid.gap-3 > div,
+.svx-cash-history-card article .grid > div,
+.svx-cash-page article .mt-3.grid > div {
+  border: 1px solid var(--cash-line-soft) !important;
+  background: var(--cash-soft) !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+}
+
+.svx-cash-session-card,
+.svx-cash-history-card {
+  border-radius: 24px !important;
+  overflow: hidden;
+}
+
+.svx-cash-session-card > div:first-child,
+.svx-cash-history-card > div:first-child {
+  border-color: var(--cash-line-soft) !important;
+  padding: 20px !important;
+}
+
+.svx-cash-session-card .p-4.sm\:p-5,
+.svx-cash-history-card .p-4.sm\:p-5 {
+  padding: 20px !important;
+}
+
+.svx-cash-session-card input,
+.svx-cash-session-card select,
+.svx-cash-page input,
+.svx-cash-page select,
+.svx-cash-page textarea {
+  border: 1px solid var(--cash-line) !important;
+  background: var(--cash-soft) !important;
+  color: var(--cash-text) !important;
+  font-weight: 800 !important;
+}
+
+.svx-cash-page input:focus,
+.svx-cash-page select:focus,
+.svx-cash-page textarea:focus {
+  border-color: rgba(7, 92, 255, 0.5) !important;
+  box-shadow: 0 0 0 4px rgba(7, 92, 255, 0.1) !important;
+}
+
+.svx-cash-page .border-dashed {
+  min-height: 280px;
+  border-color: var(--cash-line) !important;
+  background: var(--cash-soft) !important;
+}
+
+.svx-cash-page article .absolute.left-0.top-0 {
+  width: 4px !important;
+}
+
+.svx-cash-page article.rounded-\[30px\] {
+  border-radius: 18px !important;
+  padding: 16px !important;
+}
+
+@media (max-width: 1100px) {
+  .svx-cash-page {
+    padding: 28px 18px;
+  }
+
+  .svx-cash-hero > .relative {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-cash-hero .flex.flex-col.gap-3.sm\:flex-row {
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .svx-cash-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .svx-cash-page {
+    width: min(100%, 760px);
+    gap: 18px;
+    padding: 22px 18px 28px;
+  }
+
+  .svx-cash-hero {
+    gap: 20px;
+    border-radius: 24px !important;
+    padding: 24px !important;
+  }
+
+  .svx-cash-hero h1 {
+    max-width: 680px;
+    font-size: clamp(28px, 4.8vw, 38px) !important;
+    line-height: 0.98 !important;
+  }
+
+  .svx-cash-hero p:not(:first-child) {
+    max-width: 520px !important;
+    font-size: 14px !important;
+    line-height: 1.55 !important;
+    font-weight: 700 !important;
+  }
+
+  .svx-cash-control-panel > div {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-cash-audit-grid,
+  .svx-cash-session-card .mt-5.grid.gap-3.md\:grid-cols-2.xl\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-cash-session-card .flex.flex-col.gap-2.sm\:flex-row.xl\:justify-end {
+    display: grid !important;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .svx-cash-session-card .grid.gap-3.xl\:grid-cols-\[1fr_180px\] {
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 220px) !important;
+  }
+
+  .svx-cash-page article.rounded-\[30px\] {
+    border-radius: 22px !important;
+    padding: 18px !important;
+  }
+
+  .svx-cash-session-card article .flex.flex-col.gap-4.lg\:flex-row,
+  .svx-cash-history-card article .flex.flex-col.gap-4.xl\:flex-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 260px) !important;
+    gap: 14px 18px !important;
+  }
+
+  .svx-cash-history-card article .grid.min-w-full.gap-3.sm\:grid-cols-2.xl\:min-w-\[440px\] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .svx-cash-page {
+    width: 100%;
+    gap: 16px;
+    padding: 18px 14px 26px;
+  }
+
+  .svx-cash-hero,
+  .svx-cash-control-panel,
+  .svx-cash-session-card,
+  .svx-cash-history-card {
+    border-radius: 22px !important;
+  }
+
+  .svx-cash-hero {
+    padding: 18px !important;
+  }
+
+  .svx-cash-hero .flex.flex-col.gap-3.sm\:flex-row,
+  .svx-cash-session-card .flex.flex-col.gap-2.sm\:flex-row.xl\:justify-end,
+  .svx-cash-page .mt-6.flex.flex-col.items-center.justify-between.gap-3.rounded-\[26px\].bg-\[var\(--color-surface-2\)\].px-4.py-4.sm\:flex-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100%;
+  }
+
+  .svx-cash-summary-grid,
+  .svx-cash-audit-grid,
+  .svx-cash-session-card .mt-5.grid.gap-3.md\:grid-cols-2.xl\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .svx-cash-summary-grid > article {
+    min-height: 92px;
+    padding: 14px !important;
+  }
+
+  .svx-cash-summary-grid > article p:nth-of-type(2) {
+    font-size: 14px !important;
+    line-height: 1.08 !important;
+    white-space: normal !important;
+  }
+
+  .svx-cash-summary-grid > article p:nth-of-type(3) {
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+  }
+
+  .svx-cash-session-card .grid.gap-3.xl\:grid-cols-\[1fr_180px\] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-cash-session-card > div:first-child,
+  .svx-cash-history-card > div:first-child,
+  .svx-cash-session-card .p-4.sm\:p-5,
+  .svx-cash-history-card .p-4.sm\:p-5 {
+    padding: 18px !important;
+  }
+
+  .svx-cash-page button,
+  .svx-cash-page a.inline-flex {
+    width: 100%;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-cash-page {
+    padding-inline: 12px;
+  }
+
+  .svx-cash-hero h1 {
+    font-size: 28px !important;
+  }
+
+  .svx-cash-summary-grid,
+  .svx-cash-audit-grid,
+  .svx-cash-session-card .mt-5.grid.gap-3.md\:grid-cols-2.xl\:grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* =========================================================
+   FINAL: Cash Drawer PWA column polish
+   Keep Cash Drawer in the same premium family as Customer Credit.
+   Use columns whenever the screen can safely support them.
+   ========================================================= */
+
+.svx-cash-page {
+  width: min(100%, 1180px);
+}
+
+.svx-cash-hero > .relative {
+  grid-template-columns: minmax(0, 1fr) minmax(300px, auto);
+}
+
+.svx-cash-hero .flex.flex-col.gap-3.sm\:flex-row {
+  align-self: end;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: min(100%, 390px);
+}
+
+.svx-cash-hero .inline-flex,
+.svx-cash-session-card .inline-flex,
+.svx-cash-page button.inline-flex {
+  white-space: nowrap;
+}
+
+.svx-cash-session-card > div:first-child > .flex.flex-col.gap-5.xl\:flex-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end !important;
+  gap: 18px;
+}
+
+.svx-cash-session-card .flex.flex-col.gap-2.sm\:flex-row.xl\:justify-end {
+  display: grid !important;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(132px, auto);
+  justify-content: end;
+  gap: 10px;
+}
+
+.svx-cash-control-panel > div {
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 420px) !important;
+}
+
+.svx-cash-audit-grid {
+  align-content: stretch;
+}
+
+.svx-cash-audit-grid > div,
+.svx-cash-session-card .mt-5.grid.gap-3 > div {
+  min-height: 70px;
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .svx-cash-page {
+    width: min(100%, 840px);
+    padding: 22px 18px 28px;
+  }
+
+  .svx-cash-hero > .relative {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 320px) !important;
+    align-items: end;
+  }
+
+  .svx-cash-hero h1 {
+    font-size: clamp(28px, 4.4vw, 36px) !important;
+  }
+
+  .svx-cash-hero .flex.flex-col.gap-3.sm\:flex-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .svx-cash-hero .inline-flex,
+  .svx-cash-hero button.inline-flex,
+  .svx-cash-hero a.inline-flex {
+    min-height: 44px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+
+  .svx-cash-summary-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .svx-cash-summary-grid > article {
+    min-height: 98px;
+    border-radius: 18px !important;
+    padding: 14px !important;
+  }
+
+  .svx-cash-summary-grid > article p:first-of-type {
+    font-size: 9px !important;
+    letter-spacing: 0.16em !important;
+  }
+
+  .svx-cash-summary-grid > article p:nth-of-type(2) {
+    margin-top: 9px !important;
+    font-size: clamp(13px, 1.7vw, 16px) !important;
+    line-height: 1.08 !important;
+    white-space: normal !important;
+  }
+
+  .svx-cash-summary-grid > article p:nth-of-type(3) {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+
+  .svx-cash-control-panel > div {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 330px) !important;
+    align-items: stretch;
+    gap: 18px;
+  }
+
+  .svx-cash-audit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-cash-session-card > div:first-child > .flex.flex-col.gap-5.xl\:flex-row {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, auto) !important;
+  }
+
+  .svx-cash-session-card .flex.flex-col.gap-2.sm\:flex-row.xl\:justify-end {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .svx-cash-session-card .flex.flex-col.gap-2.sm\:flex-row.xl\:justify-end > *:only-child {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+
+  .svx-cash-session-card .flex.flex-col.gap-2.sm\:flex-row.xl\:justify-end > *:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .svx-cash-session-card .mt-5.grid.gap-3.md\:grid-cols-2.xl\:grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .svx-cash-session-card .mt-5.grid.gap-3.md\:grid-cols-2.xl\:grid-cols-4 > div {
+    padding: 13px !important;
+  }
+
+  .svx-cash-session-card .mt-5.grid.gap-3.md\:grid-cols-2.xl\:grid-cols-4 > div p:first-child {
+    font-size: 9px !important;
+    letter-spacing: 0.13em !important;
+  }
+
+  .svx-cash-session-card .mt-5.grid.gap-3.md\:grid-cols-2.xl\:grid-cols-4 > div p:nth-child(2) {
+    font-size: 12px !important;
+    line-height: 1.35 !important;
+  }
+
+  .svx-cash-session-card .grid.gap-3.xl\:grid-cols-\[1fr_180px\] {
+    grid-template-columns: minmax(0, 1fr) minmax(190px, 230px) !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .svx-cash-hero > .relative {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-cash-hero .flex.flex-col.gap-3.sm\:flex-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .svx-cash-hero .inline-flex,
+  .svx-cash-hero button.inline-flex,
+  .svx-cash-hero a.inline-flex {
+    width: auto !important;
+    min-height: 42px;
+    padding-inline: 10px;
+    font-size: 12px;
+  }
+
+  .svx-cash-control-panel > div,
+  .svx-cash-session-card > div:first-child > .flex.flex-col.gap-5.xl\:flex-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-cash-session-card .flex.flex-col.gap-2.sm\:flex-row.xl\:justify-end {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-cash-session-card .flex.flex-col.gap-2.sm\:flex-row.xl\:justify-end > *:only-child,
+  .svx-cash-session-card .flex.flex-col.gap-2.sm\:flex-row.xl\:justify-end > *:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .svx-cash-session-card .flex.flex-col.gap-2.sm\:flex-row.xl\:justify-end button {
+    width: auto !important;
+  }
+}
+
+/* =========================================================
+   FINAL micro PWA polish: 520px and below
+   Keep hero actions in usable columns and reduce KPI type.
+   ========================================================= */
+
+@media (max-width: 520px) {
+  .svx-cash-hero .flex.flex-col.gap-3.sm\:flex-row {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .svx-cash-hero .inline-flex,
+  .svx-cash-hero button.inline-flex,
+  .svx-cash-hero a.inline-flex {
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 40px !important;
+    padding-inline: 8px !important;
+    border-radius: 14px !important;
+    font-size: 11px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+  }
+
+  .svx-cash-summary-grid > article {
+    min-height: 90px !important;
+    padding: 13px !important;
+  }
+
+  .svx-cash-summary-grid > article p:first-of-type {
+    font-size: 8px !important;
+    letter-spacing: 0.14em !important;
+    line-height: 1.2 !important;
+  }
+
+  .svx-cash-summary-grid > article p:nth-of-type(2) {
+    margin-top: 8px !important;
+    font-size: clamp(13px, 3.3vw, 15px) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.025em !important;
+    white-space: normal !important;
+  }
+
+  .svx-cash-summary-grid > article p:nth-of-type(3) {
+    margin-top: 5px !important;
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .svx-cash-hero .flex.flex-col.gap-3.sm\:flex-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-cash-hero .flex.flex-col.gap-3.sm\:flex-row > *:last-child {
+    grid-column: 1 / -1;
+  }
+}
