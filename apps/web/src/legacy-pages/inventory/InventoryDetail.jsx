@@ -4,10 +4,7 @@ import toast from "react-hot-toast";
 import {
   AlertTriangle,
   ArrowLeft,
-  BadgeCheck,
-  Barcode,
   Boxes,
-  CheckCircle2,
   ChevronRight,
   ClipboardList,
   DollarSign,
@@ -17,9 +14,7 @@ import {
   Layers3,
   PackageCheck,
   RefreshCw,
-  ShieldCheck,
   ShoppingCart,
-  Store,
   Tags,
   Warehouse,
   X,
@@ -38,14 +33,6 @@ import {
 import "./InventoryDetail.css";
 
 const PAGE_SIZE = 6;
-
-const CATEGORY_LABELS = {
-  ELECTRONICS: "Electronics",
-  HARDWARE: "Hardware",
-  HOME_KITCHEN: "Home & kitchen",
-  LIGHTING: "Lighting",
-  SPARE_PARTS: "Spare parts",
-};
 
 function cx(...items) {
   return items.filter(Boolean).join(" ");
@@ -103,22 +90,6 @@ function productImages(product) {
       return image;
     })
     .filter((image) => cleanString(image?.url || image?.imageUrl));
-}
-
-function primaryImage(product) {
-  const images = productImages(product);
-  const primary = images.find((image) => image?.isPrimary) || images[0];
-
-  return primary?.url || primary?.imageUrl || "";
-}
-
-function productInitials(name) {
-  const parts = cleanString(name).split(/\s+/).filter(Boolean);
-
-  if (!parts.length) return "P";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
 function categoryText(product) {
@@ -230,11 +201,11 @@ function branchLabel(product) {
     cleanString(localStorage.getItem("activeBranchName"));
   const storedCode = cleanString(localStorage.getItem("activeBranchCode"));
 
-  if (code && name) return `${code} • ${name}`;
-  if (storedCode && name) return `${storedCode} • ${name}`;
-  if (name) return name;
-  if (code) return code;
-  if (storedCode) return storedCode;
+  if (code && name) return `Branch: ${code} - ${name}`;
+  if (storedCode && name) return `Branch: ${storedCode} - ${name}`;
+  if (name) return `Branch: ${name}`;
+  if (code) return `Branch: ${code}`;
+  if (storedCode) return `Branch: ${storedCode}`;
 
   return "Current branch";
 }
@@ -450,7 +421,6 @@ function Gallery({ product, onViewImage }) {
   );
 }
 
-
 function ProductImageViewer({ image, productName, onClose }) {
   useEffect(() => {
     if (!image) return undefined;
@@ -503,7 +473,6 @@ function ProductImageViewer({ image, productName, onClose }) {
     </div>
   );
 }
-
 
 function StockUpdateDrawer({
   open,
@@ -787,7 +756,6 @@ export default function InventoryDetail() {
     setListingForm(listingFormFromProduct(product, categoryText(product)));
   }, [product]);
 
-
   function updateListingField(name, value) {
     setListingForm((current) => ({
       ...current,
@@ -985,7 +953,6 @@ export default function InventoryDetail() {
     }
   }
 
-
   const status = productStatus(product);
   const imageStatus = productImageStatus(product);
   const listingStatus = productListingStatus(product);
@@ -1042,8 +1009,8 @@ export default function InventoryDetail() {
             <h1 className="svx-detail-product-title">{product?.name || "Product"}</h1>
 
             <div className="svx-detail-hero-meta">
-              <span>{product?.brand || "No brand"}</span>
-              <span>{category}</span>
+              <span>Brand: {product?.brand || "No brand"}</span>
+              <span>Category: {category}</span>
               <span>{branchLabel(product)}</span>
             </div>
 

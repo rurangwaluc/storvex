@@ -317,9 +317,13 @@ function itemCode(item) {
   return (
     cleanString(item?.sku) ||
     cleanString(item?.barcode) ||
-    cleanString(item?.serial) ||
+    cleanString(item?.partNumber) ||
+    cleanString(item?.partNo) ||
     cleanString(item?.product?.sku) ||
     cleanString(item?.product?.barcode) ||
+    cleanString(item?.product?.partNumber) ||
+    cleanString(item?.product?.partNo) ||
+    cleanString(item?.serial) ||
     cleanString(item?.product?.serial) ||
     ""
   );
@@ -652,7 +656,7 @@ function ReceiptItem({ item }) {
     <article className="svx-receipt-item">
       <div className="svx-receipt-item-main">
         <h3>{itemName(item)}</h3>
-        <p>{itemCode(item) || "No product code shown"}</p>
+        <p>{itemCode(item) || "No item reference shown"}</p>
 
         <div className="svx-receipt-item-tags">
           <span>{formatNumber(quantity)} sold</span>
@@ -724,7 +728,7 @@ function MoneyBreakdown({ receipt, items }) {
         ) : (
           <>
             <div className="svx-receipt-total-line">
-              <span>Products subtotal</span>
+              <span>Items subtotal</span>
               <b>{formatMoney(tax.subtotalAmount)}</b>
             </div>
             {tax.showTaxLine ? (
@@ -762,16 +766,16 @@ function WarrantyBlock({ receipt, saleDate, store }) {
     <section className="svx-receipt-section">
       <div className="svx-receipt-section-head">
         <div>
-          <p className="svx-receipt-kicker">Warranty</p>
-          <h2>Warranty coverage</h2>
-          <span>Keep this record for product support and service verification.</span>
+          <p className="svx-receipt-kicker">Support record</p>
+          <h2>Support / warranty coverage</h2>
+          <span>Keep this record for after-sale support, warranty, service, or return verification.</span>
         </div>
       </div>
 
       {!warranties.length ? (
         <div className="svx-receipt-muted-box">
-          <b>No warranty recorded</b>
-          <p>When warranties are added, this section will show reference number, active dates, and support notes.</p>
+          <b>No support or warranty recorded</b>
+          <p>When support terms, warranty, or service notes are added, this section will show reference number, active dates, and notes.</p>
         </div>
       ) : (
         <div className="svx-receipt-warranty-list">
@@ -783,7 +787,7 @@ function WarrantyBlock({ receipt, saleDate, store }) {
               <div key={warranty.id || index} className="svx-receipt-warranty-card">
                 <div>
                   <b>{warranty.warrantyNumber || `Warranty ${index + 1}`}</b>
-                  <p>{warranty.policy || "Support coverage recorded for this sale."}</p>
+                  <p>{warranty.policy || "After-sale support coverage recorded for this sale."}</p>
                 </div>
                 <div>
                   <span>Start: {starts ? formatDateOnly(starts) : "—"}</span>
@@ -1368,8 +1372,8 @@ export default function PosReceipt() {
             <div className="svx-receipt-section-head">
               <div>
                 <p className="svx-receipt-kicker">Items sold</p>
-                <h2>Products on this receipt</h2>
-                <span>Quantity, selling price, and line total for each product.</span>
+                <h2>Items on this receipt</h2>
+                <span>Quantity, selling price, and line total for each item.</span>
               </div>
             </div>
 

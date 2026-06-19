@@ -91,9 +91,9 @@
 
 .svx-receipt-kicker {
   color: var(--receipt-blue);
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 900;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
@@ -236,17 +236,17 @@
 .svx-receipt-metric {
   position: relative;
   min-width: 0;
-  min-height: 118px;
-  border-radius: 22px;
-  padding: 22px;
+  min-height: 96px;
+  border-radius: 20px;
+  padding: 18px;
 }
 
 .svx-receipt-dot {
   position: absolute;
-  right: 22px;
-  top: 22px;
-  width: 10px;
-  height: 10px;
+  right: 18px;
+  top: 18px;
+  width: 8px;
+  height: 8px;
   border-radius: 999px;
   background: var(--receipt-blue);
 }
@@ -273,21 +273,22 @@
 
 .svx-receipt-metric strong {
   display: block;
-  margin-top: 16px;
+  margin-top: 12px;
   color: var(--receipt-text);
   font-family: var(--receipt-heading-font);
-  font-size: clamp(22px, 1.85vw, 26px);
+  font-size: clamp(15px, 1.15vw, 18px);
   font-weight: 800;
   line-height: 1.08;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.025em;
 }
 
 .svx-receipt-metric > span:not(.svx-receipt-dot) {
   display: block;
-  margin-top: 4px;
+  margin-top: 5px;
   color: var(--receipt-muted);
-  font-size: 13px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .svx-receipt-store-card,
@@ -408,15 +409,16 @@
 
 .svx-receipt-item h3 {
   color: var(--receipt-text);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 900;
 }
 
 .svx-receipt-item p {
-  margin-top: 4px;
+  margin-top: 5px;
   color: var(--receipt-muted);
-  font-size: 13px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.3;
 }
 
 .svx-receipt-item-tags {
@@ -496,7 +498,7 @@
 .svx-receipt-total-line span,
 .svx-receipt-payment-row span {
   color: var(--receipt-muted);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 750;
 }
 
@@ -647,10 +649,11 @@
 .svx-receipt-warranty-card p,
 .svx-receipt-warranty-card span,
 .svx-receipt-warranty-foot {
-  margin-top: 4px;
+  margin-top: 5px;
   color: var(--receipt-muted);
-  font-size: 13px;
-  font-weight: 750;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.3;
   line-height: 1.45;
 }
 
@@ -954,13 +957,25 @@
   }
 
   .svx-receipt-metric {
-    min-height: 110px;
-    border-radius: 20px;
-    padding: 16px;
+    min-height: 92px;
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .svx-receipt-metric p {
+    font-size: 8px;
+    letter-spacing: 0.13em;
   }
 
   .svx-receipt-metric strong {
-    font-size: 22px;
+    margin-top: 10px;
+    font-size: 15px;
+    line-height: 1.08;
+  }
+
+  .svx-receipt-metric > span:not(.svx-receipt-dot) {
+    font-size: 10px;
+    line-height: 1.25;
   }
 
   .svx-receipt-store-info {
@@ -1208,5 +1223,68 @@
 
   .svx-receipt-credit-alert-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+
+/* =========================================================
+   FINAL: category-safe receipt typography lock
+   Receipt is an operational record, not a dashboard headline.
+   Keep KPI cards compact on desktop, tablet, and PWA screens.
+   ========================================================= */
+.svx-receipt-metric {
+  min-height: 96px !important;
+  padding: 18px !important;
+}
+
+.svx-receipt-metric p {
+  font-size: 9px !important;
+  letter-spacing: 0.15em !important;
+}
+
+.svx-receipt-metric strong {
+  margin-top: 12px !important;
+  font-size: clamp(15px, 1.15vw, 18px) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.025em !important;
+}
+
+.svx-receipt-metric > span:not(.svx-receipt-dot) {
+  margin-top: 5px !important;
+  font-size: 10px !important;
+  line-height: 1.3 !important;
+  font-weight: 700 !important;
+}
+
+@media (max-width: 760px) {
+  .svx-receipt-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .svx-receipt-metric {
+    min-height: 92px !important;
+    padding: 14px !important;
+  }
+
+  .svx-receipt-metric p {
+    font-size: 8px !important;
+    letter-spacing: 0.13em !important;
+  }
+
+  .svx-receipt-metric strong {
+    margin-top: 10px !important;
+    font-size: 15px !important;
+  }
+
+  .svx-receipt-metric > span:not(.svx-receipt-dot) {
+    font-size: 10px !important;
+    line-height: 1.25 !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-receipt-metrics {
+    grid-template-columns: 1fr !important;
   }
 }
