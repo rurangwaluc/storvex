@@ -1,0 +1,1477 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800&display=swap");
+
+.svx-dues-page {
+  --dues-surface: #ffffff;
+  --dues-soft: #f8fbff;
+  --dues-text: #06122e;
+  --dues-muted: #5d6b85;
+  --dues-line: #dfe7f3;
+  --dues-line-soft: #edf2fa;
+  --dues-blue: #075cff;
+  --dues-green: #0cab66;
+  --dues-green-soft: #eafaf3;
+  --dues-orange: #f59e0b;
+  --dues-orange-soft: #fff4df;
+  --dues-red: #ef4444;
+  --dues-red-soft: #fff0f0;
+  --dues-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --dues-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  display: grid;
+  gap: 22px;
+  width: min(100%, 1480px);
+  margin: 0 auto;
+  padding: 36px clamp(22px, 3vw, 34px);
+  color: var(--dues-text);
+  font-family: var(--dues-body-font);
+}
+
+:root[data-theme="dark"] .svx-dues-page {
+  --dues-surface: #1f1f20;
+  --dues-soft: #1c1c1d;
+  --dues-text: #ffffff;
+  --dues-muted: rgba(255, 255, 255, 0.72);
+  --dues-line: rgba(255, 255, 255, 0.12);
+  --dues-line-soft: rgba(255, 255, 255, 0.08);
+  --dues-blue: #159cff;
+  --dues-green: #23c783;
+  --dues-green-soft: rgba(35, 199, 131, 0.13);
+  --dues-orange: #f7ad35;
+  --dues-orange-soft: rgba(247, 173, 53, 0.13);
+  --dues-red: #ff6262;
+  --dues-red-soft: rgba(255, 98, 98, 0.14);
+}
+
+.svx-dues-page *,
+.svx-dues-page *::before,
+.svx-dues-page *::after {
+  box-sizing: border-box;
+}
+
+.svx-dues-page h1,
+.svx-dues-page h2,
+.svx-dues-page h3,
+.svx-dues-page p {
+  margin: 0;
+}
+
+.svx-dues-page input,
+.svx-dues-page select,
+.svx-dues-page textarea,
+.svx-dues-page button {
+  font-family: inherit;
+}
+
+.svx-dues-hero,
+.svx-dues-metric,
+.svx-dues-list-card,
+.svx-dues-row,
+.svx-dues-modal {
+  border: 1px solid var(--dues-line-soft);
+  background: var(--dues-surface);
+  box-shadow: 0 14px 40px rgba(15, 46, 92, 0.055);
+}
+
+:root[data-theme="dark"] .svx-dues-hero,
+:root[data-theme="dark"] .svx-dues-metric,
+:root[data-theme="dark"] .svx-dues-list-card,
+:root[data-theme="dark"] .svx-dues-row,
+:root[data-theme="dark"] .svx-dues-modal {
+  box-shadow: none;
+}
+
+.svx-dues-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 24px;
+  border-radius: 24px;
+  padding: 28px;
+}
+
+.svx-dues-kicker {
+  color: var(--dues-blue);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.svx-dues-hero h1 {
+  margin-top: 8px;
+  color: var(--dues-text);
+  font-family: var(--dues-heading-font);
+  font-size: clamp(34px, 3.4vw, 50px);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.055em;
+}
+
+.svx-dues-hero-copy > p:not(.svx-dues-kicker) {
+  margin-top: 12px;
+  max-width: 760px;
+  color: var(--dues-muted);
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 650;
+}
+
+.svx-dues-hero-copy strong {
+  color: var(--dues-text);
+  font-weight: 900;
+}
+
+.svx-dues-hero-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, auto));
+  gap: 10px;
+}
+
+.svx-dues-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  padding: 0 18px;
+  color: var(--dues-text);
+  font-size: 14px;
+  font-weight: 900;
+  text-decoration: none;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+  cursor: pointer;
+}
+
+.svx-dues-button svg,
+.svx-dues-search svg,
+.svx-dues-icon-button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.svx-dues-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.svx-dues-button.primary {
+  background: var(--dues-blue);
+  color: #ffffff;
+}
+
+.svx-dues-button.secondary {
+  border-color: var(--dues-line);
+  background: var(--dues-surface);
+}
+
+.svx-dues-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.svx-dues-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: var(--dues-soft);
+  color: var(--dues-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.svx-dues-badge.is-success {
+  background: var(--dues-green-soft);
+  color: var(--dues-green);
+}
+
+.svx-dues-badge.is-warning {
+  background: var(--dues-orange-soft);
+  color: var(--dues-orange);
+}
+
+.svx-dues-badge.is-danger {
+  background: var(--dues-red-soft);
+  color: var(--dues-red);
+}
+
+.svx-dues-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(190px, 1fr));
+  gap: 18px;
+}
+
+.svx-dues-metric {
+  position: relative;
+  min-width: 0;
+  min-height: 118px;
+  border-radius: 22px;
+  padding: 22px;
+}
+
+.svx-dues-metric-dot {
+  position: absolute;
+  right: 22px;
+  top: 22px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--dues-blue);
+}
+
+.svx-dues-metric-dot.is-success {
+  background: var(--dues-green);
+}
+
+.svx-dues-metric-dot.is-warning {
+  background: var(--dues-orange);
+}
+
+.svx-dues-metric-dot.is-danger {
+  background: var(--dues-red);
+}
+
+.svx-dues-metric p {
+  color: var(--dues-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.svx-dues-metric strong {
+  display: block;
+  margin-top: 16px;
+  color: var(--dues-text);
+  font-family: var(--dues-heading-font);
+  font-size: clamp(22px, 1.85vw, 26px);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.svx-dues-metric > span:not(.svx-dues-metric-dot) {
+  display: block;
+  margin-top: 4px;
+  color: var(--dues-muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.svx-dues-list-card {
+  border-radius: 24px;
+  padding: 20px;
+}
+
+.svx-dues-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.svx-dues-search {
+  position: relative;
+  min-width: 0;
+}
+
+.svx-dues-search svg {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  color: var(--dues-muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.svx-dues-search input,
+.svx-dues-toolbar select,
+.svx-dues-payment-form input,
+.svx-dues-payment-form select,
+.svx-dues-payment-form textarea {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--dues-line);
+  border-radius: 16px;
+  background: var(--dues-soft);
+  color: var(--dues-text);
+  padding: 0 14px;
+  outline: none;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.svx-dues-search input {
+  padding-left: 46px;
+}
+
+.svx-dues-payment-form textarea {
+  min-height: 118px;
+  padding-top: 12px;
+  resize: vertical;
+}
+
+.svx-dues-search input:focus,
+.svx-dues-toolbar select:focus,
+.svx-dues-payment-form input:focus,
+.svx-dues-payment-form select:focus,
+.svx-dues-payment-form textarea:focus {
+  border-color: rgba(7, 92, 255, 0.5);
+  box-shadow: 0 0 0 4px rgba(7, 92, 255, 0.1);
+}
+
+.svx-dues-rows {
+  display: grid;
+  gap: 12px;
+}
+
+.svx-dues-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(260px, 1.2fr) 170px minmax(330px, 0.95fr) minmax(250px, auto);
+  gap: 14px;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 22px;
+  padding: 16px;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.svx-dues-row::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--dues-blue);
+}
+
+.svx-dues-row.is-warning::before {
+  background: var(--dues-orange);
+}
+
+.svx-dues-row.is-danger::before {
+  background: var(--dues-red);
+}
+
+.svx-dues-row.is-success::before {
+  background: var(--dues-green);
+}
+
+.svx-dues-row:hover,
+.svx-dues-row:focus-visible {
+  border-color: rgba(7, 92, 255, 0.35);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.svx-dues-row-customer {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+  padding-left: 6px;
+}
+
+.svx-dues-avatar {
+  display: flex;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--dues-line);
+  border-radius: 17px;
+  background: var(--dues-soft);
+  color: var(--dues-text);
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.svx-dues-customer-copy {
+  min-width: 0;
+}
+
+.svx-dues-customer-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.svx-dues-customer-head h3 {
+  min-width: 0;
+  color: var(--dues-text);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.svx-dues-customer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 7px;
+}
+
+.svx-dues-customer-meta span,
+.svx-dues-row-due span {
+  color: var(--dues-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.svx-dues-row-due {
+  min-width: 0;
+}
+
+.svx-dues-row-due small,
+.svx-dues-money-field small,
+.svx-dues-payment-form label > span {
+  display: block;
+  color: var(--dues-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.svx-dues-row-due b {
+  display: block;
+  margin-top: 7px;
+  color: var(--dues-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.svx-dues-row-money {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.8fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
+.svx-dues-money-field {
+  min-width: 0;
+  border: 1px solid var(--dues-line-soft);
+  border-radius: 16px;
+  background: var(--dues-soft);
+  padding: 12px;
+}
+
+.svx-dues-money-field b {
+  display: block;
+  margin-top: 7px;
+  color: var(--dues-text);
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.svx-dues-money-field.is-success b {
+  color: var(--dues-green);
+}
+
+.svx-dues-money-field.is-warning b {
+  color: var(--dues-orange);
+}
+
+.svx-dues-money-field.is-danger b {
+  color: var(--dues-red);
+}
+
+.svx-dues-row-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.svx-dues-list-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  border-radius: 20px;
+  background: var(--dues-soft);
+  padding: 14px 16px;
+}
+
+.svx-dues-list-footer p,
+.svx-dues-list-footer span {
+  color: var(--dues-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.svx-dues-empty {
+  display: flex;
+  min-height: 280px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--dues-line);
+  border-radius: 24px;
+  background: var(--dues-soft);
+  padding: 32px;
+  text-align: center;
+}
+
+.svx-dues-empty h3 {
+  color: var(--dues-text);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.svx-dues-empty p {
+  margin-top: 8px;
+  max-width: 440px;
+  color: var(--dues-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.svx-dues-empty-action {
+  margin-top: 18px;
+}
+
+.svx-dues-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 8, 23, 0.58);
+  padding: 18px;
+  backdrop-filter: blur(10px);
+}
+
+.svx-dues-modal {
+  width: min(100%, 780px);
+  max-height: 94dvh;
+  overflow: hidden;
+  border-radius: 28px;
+}
+
+.svx-dues-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--dues-line);
+  padding: 20px;
+}
+
+.svx-dues-modal-head h2 {
+  margin-top: 6px;
+  color: var(--dues-text);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.svx-dues-modal-head p {
+  margin-top: 6px;
+  color: var(--dues-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.svx-dues-icon-button {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--dues-line);
+  border-radius: 15px;
+  background: var(--dues-soft);
+  color: var(--dues-text);
+  cursor: pointer;
+}
+
+.svx-dues-modal-body {
+  max-height: calc(94dvh - 92px);
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.svx-dues-payment-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.svx-dues-payment-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.svx-dues-payment-form label.is-wide {
+  grid-column: 1 / -1;
+}
+
+.svx-dues-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.svx-dues-skeleton {
+  border-radius: 22px;
+  background: var(--dues-soft);
+  animation: svx-dues-pulse 1.3s ease-in-out infinite;
+}
+
+.svx-dues-skeleton.is-kicker {
+  height: 14px;
+  width: 110px;
+}
+
+.svx-dues-skeleton.is-title {
+  height: 44px;
+  width: min(100%, 420px);
+  margin-top: 16px;
+}
+
+.svx-dues-skeleton.is-copy {
+  height: 18px;
+  width: min(100%, 720px);
+  margin-top: 14px;
+}
+
+.svx-dues-skeleton.is-metric {
+  height: 118px;
+}
+
+.svx-dues-skeleton.is-control {
+  height: 48px;
+  margin-bottom: 16px;
+}
+
+.svx-dues-skeleton.is-row {
+  height: 118px;
+}
+
+@keyframes svx-dues-pulse {
+  0%,
+  100% {
+    opacity: 0.62;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 1260px) {
+  .svx-dues-row {
+    grid-template-columns: minmax(0, 1fr) 170px;
+  }
+
+  .svx-dues-row-money,
+  .svx-dues-row-actions {
+    grid-column: 1 / -1;
+  }
+
+  .svx-dues-row-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .svx-dues-page {
+    padding: 28px 18px;
+  }
+
+  .svx-dues-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-dues-hero-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .svx-dues-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-dues-toolbar,
+  .svx-dues-row,
+  .svx-dues-payment-summary,
+  .svx-dues-payment-form {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-dues-row {
+    padding: 16px;
+  }
+
+  .svx-dues-row-money {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-dues-row-money .svx-dues-money-field:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .svx-dues-modal-backdrop {
+    align-items: flex-end;
+    padding: 10px;
+  }
+
+  .svx-dues-modal {
+    border-radius: 24px;
+  }
+}
+
+@media (max-width: 520px) {
+  .svx-dues-page {
+    gap: 16px;
+    padding: 18px;
+  }
+
+  .svx-dues-hero,
+  .svx-dues-list-card {
+    border-radius: 20px;
+    padding: 18px;
+  }
+
+  .svx-dues-hero-actions,
+  .svx-dues-row-actions,
+  .svx-dues-modal-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-dues-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .svx-dues-metric {
+    min-height: 110px;
+    border-radius: 20px;
+    padding: 16px;
+  }
+
+  .svx-dues-metric strong {
+    font-size: 22px;
+  }
+
+  .svx-dues-row-money {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-dues-list-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .svx-dues-list-footer .svx-dues-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-dues-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-dues-button {
+    min-height: 42px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+
+  .svx-dues-row-customer {
+    align-items: flex-start;
+  }
+
+  .svx-dues-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 15px;
+  }
+}
+
+
+/* =========================================================
+   FINAL: Dues list must match Sales records listing
+   Desktop/tablet: compact row table.
+   Small PWA: card layout only when genuinely narrow.
+   ========================================================= */
+
+.svx-dues-button.danger {
+  border-color: rgba(255, 98, 98, 0.32);
+  background: var(--dues-red-soft);
+  color: var(--dues-red);
+}
+
+.svx-dues-table {
+  display: grid;
+  width: 100%;
+  gap: 10px;
+  overflow: visible;
+}
+
+.svx-dues-table-head,
+.svx-dues-row {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1.16fr)
+    minmax(0, 1.02fr)
+    minmax(0, 1.08fr)
+    minmax(0, 1.12fr)
+    minmax(0, 0.74fr);
+  gap: 12px;
+}
+
+.svx-dues-table-head {
+  padding: 0 14px 2px 20px;
+  color: var(--dues-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.svx-dues-table-head span {
+  display: flex;
+  min-width: 0;
+  min-height: 28px;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-dues-table-head span:nth-child(5) {
+  justify-content: center;
+  text-align: center;
+}
+
+.svx-dues-row {
+  position: relative;
+  min-height: 72px;
+  align-items: center;
+  overflow: visible;
+  border-radius: 18px;
+  padding: 11px 12px 11px 20px;
+  cursor: pointer;
+}
+
+.svx-dues-row::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--dues-orange);
+}
+
+.svx-dues-row.is-neutral::before {
+  background: var(--dues-blue);
+}
+
+.svx-dues-row.is-warning::before {
+  background: var(--dues-orange);
+}
+
+.svx-dues-row.is-danger::before {
+  background: var(--dues-red);
+}
+
+.svx-dues-row.is-success::before {
+  background: var(--dues-green);
+}
+
+.svx-dues-row:hover,
+.svx-dues-row:focus-visible {
+  border-color: rgba(7, 92, 255, 0.35);
+  background: color-mix(in srgb, var(--dues-surface) 90%, var(--dues-blue) 10%);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.svx-dues-field {
+  display: flex;
+  min-width: 0;
+  min-height: 46px;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.svx-dues-field small {
+  display: none;
+  color: var(--dues-muted);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.svx-dues-field b,
+.svx-dues-field span,
+.svx-dues-field em {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-dues-field b {
+  color: var(--dues-text);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.22;
+  font-style: normal;
+}
+
+.svx-dues-field span,
+.svx-dues-field em {
+  display: block;
+  margin-top: 3px;
+  color: var(--dues-muted);
+  font-size: 11.5px;
+  font-weight: 750;
+  line-height: 1.25;
+  font-style: normal;
+}
+
+.svx-dues-field.is-customer,
+.svx-dues-field.is-follow-up {
+  text-align: left;
+  align-items: flex-start;
+}
+
+.svx-dues-field.is-money b {
+  color: var(--dues-orange);
+  font-family: var(--dues-heading-font);
+  font-size: 16px;
+  letter-spacing: -0.025em;
+}
+
+.svx-dues-field.is-money span {
+  color: var(--dues-green);
+}
+
+.svx-dues-row.is-danger .svx-dues-field.is-money b {
+  color: var(--dues-red);
+}
+
+.svx-dues-row.is-success .svx-dues-field.is-money b {
+  color: var(--dues-green);
+}
+
+.svx-dues-row-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 7px;
+}
+
+.svx-dues-row-actions .svx-dues-button {
+  min-height: 36px;
+  border-radius: 14px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.svx-dues-row-actions .svx-dues-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Override previous 1260px card rule so laptop/tablet stays like Sales List. */
+@media (min-width: 901px) {
+  .svx-dues-table-head {
+    display: grid !important;
+  }
+
+  .svx-dues-row {
+    grid-template-columns:
+      minmax(0, 1.16fr)
+      minmax(0, 1.02fr)
+      minmax(0, 1.08fr)
+      minmax(0, 1.12fr)
+      minmax(0, 0.74fr) !important;
+  }
+
+  .svx-dues-row-actions {
+    grid-column: auto !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-dues-field small {
+    display: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .svx-dues-table-head {
+    display: none;
+  }
+
+  .svx-dues-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    padding: 16px 16px 16px 20px;
+  }
+
+  .svx-dues-field small {
+    display: block;
+  }
+
+  .svx-dues-field.is-customer,
+  .svx-dues-field.is-money,
+  .svx-dues-row-actions {
+    grid-column: 1 / -1;
+  }
+
+  .svx-dues-row-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-dues-row-actions .svx-dues-button {
+    min-height: 42px;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-dues-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-dues-field,
+  .svx-dues-row-actions {
+    grid-column: 1 / -1;
+  }
+
+  .svx-dues-field b,
+  .svx-dues-field span,
+  .svx-dues-field em {
+    white-space: normal;
+  }
+
+  .svx-dues-row-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* =========================================================
+   Dues PWA premium polish for 900px and below
+   Makes the dues cards feel intentional instead of stretched.
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .svx-dues-page {
+    width: min(100%, 760px);
+    gap: 18px;
+    padding: 22px 18px 28px;
+  }
+
+  .svx-dues-hero {
+    gap: 20px;
+    border-radius: 24px;
+    padding: 24px;
+  }
+
+  .svx-dues-hero h1 {
+    max-width: 680px;
+    font-size: clamp(36px, 6.4vw, 48px);
+    line-height: 0.98;
+  }
+
+  .svx-dues-hero-copy > p:not(.svx-dues-kicker) {
+    max-width: 680px;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .svx-dues-hero-actions {
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .svx-dues-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .svx-dues-metric {
+    min-height: 116px;
+    border-radius: 22px;
+    padding: 20px;
+  }
+
+  .svx-dues-list-card {
+    border-radius: 24px;
+    padding: 18px;
+  }
+
+  .svx-dues-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .svx-dues-table {
+    gap: 12px;
+  }
+
+  .svx-dues-rows {
+    gap: 12px;
+  }
+
+  .svx-dues-row {
+    grid-template-columns: minmax(0, 1.04fr) minmax(0, 0.96fr) !important;
+    gap: 14px 16px;
+    align-items: stretch;
+    min-height: auto;
+    border-radius: 22px;
+    padding: 18px 18px 18px 22px;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--dues-surface) 92%, var(--dues-blue) 8%), var(--dues-surface));
+  }
+
+  .svx-dues-row::before {
+    width: 5px;
+    border-radius: 999px;
+    inset: 18px auto 18px 0;
+  }
+
+  .svx-dues-field {
+    min-height: auto;
+    border: 1px solid var(--dues-line-soft);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--dues-soft) 74%, transparent);
+    padding: 14px;
+  }
+
+  .svx-dues-field small {
+    display: block;
+    margin-bottom: 7px;
+  }
+
+  .svx-dues-field b {
+    font-size: 14px;
+    line-height: 1.22;
+  }
+
+  .svx-dues-field span,
+  .svx-dues-field em {
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .svx-dues-field.is-customer {
+    grid-column: 1 / 2;
+  }
+
+  .svx-dues-field.is-money {
+    grid-column: 2 / 3;
+  }
+
+  .svx-dues-field.is-money b {
+    font-size: 20px;
+    white-space: normal;
+  }
+
+  .svx-dues-field.is-receipt {
+    grid-column: 1 / 2;
+  }
+
+  .svx-dues-field.is-follow-up {
+    grid-column: 2 / 3;
+  }
+
+  .svx-dues-row-actions {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px;
+  }
+
+  .svx-dues-row-actions .svx-dues-button {
+    min-height: 46px;
+    border-radius: 16px;
+    font-size: 13px;
+  }
+
+  .svx-dues-list-footer {
+    margin-top: 14px;
+    border-radius: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .svx-dues-page {
+    width: 100%;
+    padding: 18px 14px 26px;
+  }
+
+  .svx-dues-hero,
+  .svx-dues-list-card {
+    border-radius: 22px;
+    padding: 18px;
+  }
+
+  .svx-dues-hero-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-dues-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .svx-dues-metric {
+    min-height: 104px;
+    padding: 16px;
+  }
+
+  .svx-dues-metric strong {
+    font-size: 21px;
+    white-space: normal;
+  }
+
+  .svx-dues-metric > span:not(.svx-dues-metric-dot) {
+    font-size: 12px;
+  }
+
+  .svx-dues-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-dues-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px;
+    border-radius: 20px;
+    padding: 16px 14px 16px 18px;
+  }
+
+  .svx-dues-field {
+    border-radius: 16px;
+    padding: 12px;
+  }
+
+  .svx-dues-field.is-customer,
+  .svx-dues-field.is-money,
+  .svx-dues-row-actions {
+    grid-column: 1 / -1;
+  }
+
+  .svx-dues-field.is-receipt {
+    grid-column: 1 / 2;
+  }
+
+  .svx-dues-field.is-follow-up {
+    grid-column: 2 / 3;
+  }
+
+  .svx-dues-row-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-dues-list-footer {
+    align-items: stretch;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .svx-dues-list-footer .svx-dues-button {
+    width: 100%;
+  }
+
+  .svx-dues-modal {
+    border-radius: 24px;
+  }
+
+  .svx-dues-payment-summary,
+  .svx-dues-payment-form {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-dues-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-dues-page {
+    padding-inline: 12px;
+  }
+
+  .svx-dues-hero h1 {
+    font-size: 34px;
+  }
+
+  .svx-dues-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-dues-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-dues-field,
+  .svx-dues-row-actions,
+  .svx-dues-field.is-receipt,
+  .svx-dues-field.is-follow-up {
+    grid-column: 1 / -1;
+  }
+
+  .svx-dues-field b,
+  .svx-dues-field span,
+  .svx-dues-field em {
+    white-space: normal;
+  }
+
+  .svx-dues-row-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* =========================================================
+   FINAL 641px–900px dues row: premium collection record
+   Avoids the awkward mini-table squeeze and keeps the phone
+   layout below 641px untouched.
+   ========================================================= */
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .svx-dues-row {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 260px) !important;
+    grid-template-areas:
+      "customer money"
+      "receipt money"
+      "followup actions";
+    gap: 12px 18px;
+    align-items: stretch;
+    border-radius: 22px;
+    padding: 18px 18px 18px 24px;
+    background: var(--dues-surface);
+  }
+
+  .svx-dues-row::before {
+    inset: 18px auto 18px 0;
+    width: 5px;
+    border-radius: 999px;
+  }
+
+  .svx-dues-field {
+    min-height: auto;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+  }
+
+  .svx-dues-field small {
+    display: block;
+    margin-bottom: 7px;
+    color: var(--dues-muted);
+  }
+
+  .svx-dues-field b {
+    font-size: 15px;
+    line-height: 1.2;
+    white-space: normal;
+  }
+
+  .svx-dues-field span,
+  .svx-dues-field em {
+    font-size: 12px;
+    line-height: 1.35;
+    white-space: normal;
+  }
+
+  .svx-dues-field.is-customer {
+    grid-area: customer;
+    grid-column: auto;
+    justify-content: end;
+    min-height: 58px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--dues-line-soft);
+  }
+
+  .svx-dues-field.is-receipt {
+    grid-area: receipt;
+    grid-column: auto;
+    min-height: 58px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--dues-line-soft);
+  }
+
+  .svx-dues-field.is-follow-up {
+    grid-area: followup;
+    grid-column: auto;
+    min-height: 58px;
+  }
+
+  .svx-dues-field.is-money {
+    grid-area: money;
+    grid-column: auto;
+    min-height: 100%;
+    justify-content: center;
+    border: 1px solid color-mix(in srgb, var(--dues-orange) 38%, var(--dues-line) 62%);
+    border-radius: 20px;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--dues-orange-soft) 38%, transparent), transparent 68%),
+      var(--dues-soft);
+    padding: 16px;
+  }
+
+  .svx-dues-field.is-money b {
+    color: var(--dues-orange);
+    font-size: clamp(24px, 3.25vw, 30px);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+    white-space: normal;
+  }
+
+  .svx-dues-field.is-money span {
+    margin-top: 8px;
+    color: var(--dues-green);
+    font-size: 13px;
+  }
+
+  .svx-dues-field.is-money em {
+    color: var(--dues-muted);
+    font-size: 13px;
+  }
+
+  .svx-dues-row-actions {
+    grid-area: actions;
+    grid-column: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px;
+    align-self: end;
+  }
+
+  .svx-dues-row-actions .svx-dues-button {
+    min-height: 44px;
+    border-radius: 16px;
+    padding-inline: 10px;
+    font-size: 13px;
+  }
+}

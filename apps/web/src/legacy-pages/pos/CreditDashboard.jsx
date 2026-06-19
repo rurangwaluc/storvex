@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
@@ -10,6 +10,7 @@ import {
   PAYMENT_METHOD_OPTIONS,
 } from "../../services/posApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import "./CreditDashboard.css";
 
 const PAGE_SIZE = 10;
 
@@ -76,63 +77,26 @@ function dueText(value) {
   return `Due in ${days} days`;
 }
 
+function dueTone(value, balance = 0, status = "") {
+  const days = daysUntil(value);
+  const normalizedStatus = String(status || "").toUpperCase();
+
+  if (Number(balance || 0) <= 0) return "success";
+  if (normalizedStatus === "OVERDUE") return "danger";
+  if (days !== null && days < 0) return "danger";
+  if (days === 0 || days === 1) return "warning";
+
+  return "neutral";
+}
+
 function activeBranchNameFromStorage() {
   const name = cleanString(localStorage.getItem("activeBranchName"));
   const code = cleanString(localStorage.getItem("activeBranchCode"));
 
-  if (code && name) return `${code} • ${name}`;
   if (name) return name;
   if (code) return code;
 
   return "this branch";
-}
-
-function pageCard() {
-  return "rounded-[30px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-}
-
-function softPanel() {
-  return "rounded-[24px] bg-[var(--color-surface-2)]";
-}
-
-function inputClass() {
-  return "h-12 w-full rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(74,163,255,0.12)] disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function textareaClass() {
-  return "min-h-[110px] w-full rounded-[20px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(74,163,255,0.12)] disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function buttonBase() {
-  return "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function primaryBtn() {
-  return cx(
-    buttonBase(),
-    "bg-[var(--color-primary)] text-white shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
-}
-
-function secondaryBtn() {
-  return cx(
-    buttonBase(),
-    "bg-[var(--color-surface-2)] text-[var(--color-text)] shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
-}
-
-function successBtn() {
-  return cx(
-    buttonBase(),
-    "bg-emerald-600 text-white shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
-}
-
-function warningBtn() {
-  return cx(
-    buttonBase(),
-    "bg-amber-500 text-white shadow-[var(--shadow-soft)] hover:-translate-y-0.5",
-  );
 }
 
 function saleBalance(sale) {
@@ -140,7 +104,7 @@ function saleBalance(sale) {
 }
 
 function saleTotal(sale) {
-  return Number(sale?.total ?? sale?.amount ?? 0);
+  return Number(sale?.total ?? sale?.amount ?? sale?.grandTotal ?? 0);
 }
 
 function salePaid(sale) {
@@ -163,6 +127,10 @@ function customerPhone(sale) {
   );
 }
 
+function cashierName(sale) {
+  return cleanString(sale?.cashier?.name) || cleanString(sale?.cashierName) || "—";
+}
+
 function receiptCode(sale) {
   return (
     cleanString(sale?.receiptNumber) ||
@@ -177,7 +145,6 @@ function branchLabel(sale) {
   const code = cleanString(sale?.branch?.code);
   const name = cleanString(sale?.branch?.name);
 
-  if (code && name) return `${code} • ${name}`;
   if (name) return name;
   if (code) return code;
 
@@ -189,7 +156,15 @@ function statusForSale(sale) {
   const days = daysUntil(sale?.dueDate);
   const status = String(sale?.status || "").toUpperCase();
 
-  if (status === "OVERDUE" || (days !== null && days < 0 && balance > 0)) {
+  if (balance <= 0) {
+    return {
+      label: "Paid off",
+      tone: "success",
+      text: "No balance left.",
+    };
+  }
+
+  if (status === "OVERDUE" || (days !== null && days < 0)) {
     return {
       label: "Late",
       tone: "danger",
@@ -197,7 +172,7 @@ function statusForSale(sale) {
     };
   }
 
-  if (days === 0 && balance > 0) {
+  if (days === 0) {
     return {
       label: "Due today",
       tone: "warning",
@@ -205,228 +180,184 @@ function statusForSale(sale) {
     };
   }
 
+  if (days === 1) {
+    return {
+      label: "Due tomorrow",
+      tone: "warning",
+      text: "Follow up tomorrow.",
+    };
+  }
+
   return {
     label: "Open",
-    tone: "warning",
+    tone: "neutral",
     text: dueText(sale?.dueDate),
   };
 }
 
-function StatusBadge({ tone = "neutral", children }) {
-  const cls =
-    tone === "danger"
-      ? "bg-red-500/10 text-red-600"
-      : tone === "warning"
-        ? "bg-amber-500/10 text-amber-600"
-        : tone === "success"
-          ? "bg-emerald-500/10 text-emerald-600"
-          : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
-
-  return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em]",
-        cls,
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
-function SkeletonBlock({ className = "" }) {
-  return (
-    <div className={cx("animate-pulse rounded-[22px] bg-[var(--color-surface-2)]", className)} />
-  );
-}
-
-function CreditDashboardSkeleton() {
-  return (
-    <div className="space-y-5">
-      <section className={cx(pageCard(), "p-5 sm:p-6")}>
-        <SkeletonBlock className="h-4 w-28" />
-        <SkeletonBlock className="mt-4 h-10 w-72 max-w-full rounded-[18px]" />
-        <SkeletonBlock className="mt-3 h-4 w-full max-w-xl" />
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {[1, 2, 3, 4].map((item) => (
-          <div key={item} className={cx(pageCard(), "p-5")}>
-            <SkeletonBlock className="h-3.5 w-24" />
-            <SkeletonBlock className="mt-4 h-8 w-28" />
-            <SkeletonBlock className="mt-2 h-4 w-36" />
-          </div>
-        ))}
-      </section>
-
-      <section className={cx(pageCard(), "p-5")}>
-        <SkeletonBlock className="h-12 w-full rounded-[18px]" />
-        <div className="mt-5 grid gap-3">
-          {[1, 2, 3, 4].map((item) => (
-            <SkeletonBlock key={item} className="h-48 w-full rounded-[28px]" />
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function SummaryCard({ label, value, note, tone = "neutral" }) {
-  const dot =
-    tone === "danger"
-      ? "bg-red-500"
-      : tone === "warning"
-        ? "bg-amber-500"
-        : tone === "success"
-          ? "bg-emerald-500"
-          : "bg-[var(--color-primary)]";
-
-  return (
-    <article className={cx(pageCard(), "relative overflow-hidden p-5")}>
-      <div className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-[rgba(74,163,255,0.08)] blur-2xl" />
-
-      <div className="relative">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
-            {label}
-          </p>
-          <span className={cx("h-2.5 w-2.5 rounded-full", dot)} />
-        </div>
-
-        <p className="mt-3 truncate text-2xl font-black tracking-[-0.03em] text-[var(--color-text)]">
-          {value}
-        </p>
-
-        {note ? (
-          <p className="mt-1 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
-            {note}
-          </p>
-        ) : null}
-      </div>
-    </article>
-  );
-}
-
-function InfoTile({ label, value, tone = "neutral" }) {
-  const valueClass =
-    tone === "danger"
-      ? "text-red-600"
-      : tone === "warning"
-        ? "text-amber-600"
-        : tone === "success"
-          ? "text-emerald-600"
-          : "text-[var(--color-text)]";
-
-  return (
-    <div className={cx(softPanel(), "p-4 shadow-[var(--shadow-soft)]")}>
-      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
-        {label}
-      </p>
-      <p className={cx("mt-2 break-words text-sm font-black leading-6", valueClass)}>
-        {value || "—"}
-      </p>
-    </div>
-  );
-}
-
-function EmptyState({ title, text, action = null }) {
-  return (
-    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-[30px] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-2)] p-8 text-center">
-      <h3 className="text-lg font-black text-[var(--color-text)]">{title}</h3>
-
-      <p className="mt-2 max-w-md text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-        {text}
-      </p>
-
-      {action ? <div className="mt-5">{action}</div> : null}
-    </div>
-  );
-}
-
 function SearchIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" strokeLinecap="round" />
+      <path d="m20 20-3.5-3.5" />
     </svg>
   );
 }
 
 function PlusIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2">
-      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" />
     </svg>
   );
 }
 
 function PaymentIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4 7h16a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
       <path d="M2 10h20" />
     </svg>
   );
 }
 
-function CustomerBalanceCard({ sale, onPay }) {
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 6l12 12M18 6 6 18" />
+    </svg>
+  );
+}
+
+function StatusBadge({ tone = "neutral", children }) {
+  return <span className={cx("svx-dues-badge", `is-${tone}`)}>{children}</span>;
+}
+
+function SkeletonBlock({ className = "" }) {
+  return <div className={cx("svx-dues-skeleton", className)} />;
+}
+
+function CreditDashboardSkeleton() {
+  return (
+    <main className="svx-dues-page">
+      <section className="svx-dues-hero">
+        <SkeletonBlock className="is-kicker" />
+        <SkeletonBlock className="is-title" />
+        <SkeletonBlock className="is-copy" />
+      </section>
+
+      <section className="svx-dues-metrics">
+        {[1, 2, 3, 4].map((item) => (
+          <SkeletonBlock key={item} className="is-metric" />
+        ))}
+      </section>
+
+      <section className="svx-dues-list-card">
+        <SkeletonBlock className="is-control" />
+        <div className="svx-dues-rows">
+          {[1, 2, 3, 4].map((item) => (
+            <SkeletonBlock key={item} className="is-row" />
+          ))}
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function SummaryCard({ label, value, note, tone = "neutral" }) {
+  return (
+    <article className="svx-dues-metric">
+      <span className={cx("svx-dues-metric-dot", `is-${tone}`)} />
+      <p>{label}</p>
+      <strong>{value}</strong>
+      <span>{note}</span>
+    </article>
+  );
+}
+
+function EmptyState({ title, text, action = null }) {
+  return (
+    <div className="svx-dues-empty">
+      <h3>{title}</h3>
+      <p>{text}</p>
+      {action ? <div className="svx-dues-empty-action">{action}</div> : null}
+    </div>
+  );
+}
+
+function MoneyField({ label, value, tone = "neutral" }) {
+  return (
+    <div className={cx("svx-dues-money-field", `is-${tone}`)}>
+      <small>{label}</small>
+      <b>{value || "—"}</b>
+    </div>
+  );
+}
+
+function CustomerDueRow({ sale, onOpen, onPay }) {
   const status = statusForSale(sale);
   const balance = saleBalance(sale);
   const total = saleTotal(sale);
   const paid = salePaid(sale);
+  const due = dueText(sale?.dueDate);
+  const receipt = receiptCode(sale);
+  const receiptUrl = `/app/pos/sales/${sale.id}`;
+  const returnUrl = `${receiptUrl}?refund=1`;
+
+  function stopRowOpen(event) {
+    event.stopPropagation();
+  }
+
+  function handleKeyDown(event) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    onOpen(sale.id);
+  }
 
   return (
-    <article className={cx(pageCard(), "relative overflow-hidden p-4 sm:p-5")}>
-      <div
-        className={cx(
-          "absolute left-0 top-0 h-full w-1.5",
-          status.tone === "danger" ? "bg-red-500" : "bg-amber-500",
-        )}
-      />
+    <article
+      className={cx("svx-dues-row", `is-${status.tone}`)}
+      role="button"
+      tabIndex={0}
+      aria-label={`Open dues for ${customerName(sale)}`}
+      onClick={() => onOpen(sale.id)}
+      onKeyDown={handleKeyDown}
+    >
+      <div className="svx-dues-field is-customer">
+        <small>Customer</small>
+        <b>{customerName(sale)}</b>
+        <span>{customerPhone(sale)}</span>
+      </div>
 
-      <div className="pl-3">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-xl font-black tracking-[-0.03em] text-[var(--color-text)]">
-                {customerName(sale)}
-              </h3>
+      <div className="svx-dues-field is-receipt">
+        <small>Receipt</small>
+        <b>{receipt}</b>
+        <span>{branchLabel(sale)}</span>
+      </div>
 
-              <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
-            </div>
+      <div className="svx-dues-field is-follow-up">
+        <small>Follow-up</small>
+        <b>{status.label}</b>
+        <span>{formatDate(sale?.dueDate)}</span>
+        <em>{due}</em>
+      </div>
 
-            <p className="mt-2 text-sm font-semibold text-[var(--color-text-muted)]">
-              {customerPhone(sale)}
-            </p>
+      <div className="svx-dues-field is-money">
+        <small>Balance</small>
+        <b>{formatMoney(balance)}</b>
+        <span>Paid {formatMoney(paid)}</span>
+        <em>Total {formatMoney(total)}</em>
+      </div>
 
-            <p className="mt-1 text-xs font-bold text-[var(--color-text-muted)]">
-              Receipt: {receiptCode(sale)}
-            </p>
-          </div>
+      <div className="svx-dues-row-actions" onClick={stopRowOpen}>
+        <button type="button" onClick={() => onPay(sale)} className="svx-dues-button primary">
+          <PaymentIcon />
+          Record
+        </button>
 
-          <div className="flex flex-col gap-2 sm:flex-row xl:justify-end">
-            <Link to={`/app/pos/sales/${sale.id}`} className={secondaryBtn()}>
-              View receipt
-            </Link>
-
-            <button type="button" onClick={() => onPay(sale)} className={successBtn()}>
-              <PaymentIcon />
-              Record payment
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <InfoTile label="Balance" value={formatMoney(balance)} tone={status.tone} />
-          <InfoTile label="Paid" value={formatMoney(paid)} tone={paid > 0 ? "success" : "neutral"} />
-          <InfoTile label="Sale total" value={formatMoney(total)} />
-          <InfoTile label="Pay-by date" value={`${formatDate(sale?.dueDate)} • ${status.text}`} tone={status.tone} />
-        </div>
-
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <InfoTile label="Branch" value={branchLabel(sale)} />
-          <InfoTile label="Created" value={formatDate(sale?.createdAt)} />
-        </div>
+        <Link to={returnUrl} className="svx-dues-button danger">
+          Return
+        </Link>
       </div>
     </article>
   );
@@ -452,48 +383,32 @@ function PaymentModal({
   const afterPayment = Math.max(0, balance - cleanedAmount);
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-slate-950/55 px-3 pb-3 pt-10 backdrop-blur-sm sm:items-center sm:p-6">
-      <div className="max-h-[94dvh] w-full max-w-3xl overflow-hidden rounded-[34px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[0_30px_100px_rgba(15,23,42,0.25)]">
-        <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
+    <div className="svx-dues-modal-backdrop">
+      <div className="svx-dues-modal">
+        <header className="svx-dues-modal-head">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-              Customer payment
-            </p>
-
-            <h2 className="mt-1 text-xl font-black tracking-[-0.03em] text-[var(--color-text)]">
-              Record payment
-            </h2>
-
-            <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-              Record money received from {customerName(sale)}.
-            </p>
+            <p className="svx-dues-kicker">Customer payment</p>
+            <h2>Record payment</h2>
+            <p>Record money received from {customerName(sale)}.</p>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] text-[var(--color-text)] transition hover:-translate-y-0.5 disabled:opacity-60"
-          >
-            ×
+          <button type="button" onClick={onClose} disabled={saving} className="svx-dues-icon-button">
+            <CloseIcon />
           </button>
-        </div>
+        </header>
 
-        <div className="p-5 sm:p-6">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <InfoTile label="Current balance" value={formatMoney(balance)} tone="warning" />
-            <InfoTile label="This payment" value={formatMoney(cleanedAmount)} tone={cleanedAmount > 0 ? "success" : "neutral"} />
-            <InfoTile label="Balance after" value={formatMoney(afterPayment)} tone={afterPayment > 0 ? "warning" : "success"} />
-          </div>
+        <div className="svx-dues-modal-body">
+          <section className="svx-dues-payment-summary">
+            <MoneyField label="Current balance" value={formatMoney(balance)} tone="warning" />
+            <MoneyField label="This payment" value={formatMoney(cleanedAmount)} tone={cleanedAmount > 0 ? "success" : "neutral"} />
+            <MoneyField label="Balance after" value={formatMoney(afterPayment)} tone={afterPayment > 0 ? "warning" : "success"} />
+          </section>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <label className="block">
-              <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                Amount received
-              </span>
+          <section className="svx-dues-payment-form">
+            <label>
+              <span>Amount received</span>
               <input
                 inputMode="numeric"
-                className={inputClass()}
                 value={amount}
                 onChange={(event) => setAmount(event.target.value.replace(/[^\d]/g, ""))}
                 placeholder="Amount"
@@ -501,12 +416,9 @@ function PaymentModal({
               />
             </label>
 
-            <label className="block">
-              <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                Payment method
-              </span>
+            <label>
+              <span>Payment method</span>
               <select
-                className={inputClass()}
                 value={method}
                 onChange={(event) => setMethod(event.target.value)}
                 disabled={saving}
@@ -519,29 +431,26 @@ function PaymentModal({
               </select>
             </label>
 
-            <label className="block sm:col-span-2">
-              <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-                Note
-              </span>
+            <label className="is-wide">
+              <span>Note</span>
               <textarea
-                className={textareaClass()}
                 value={note}
                 onChange={(event) => setNote(event.target.value)}
                 placeholder="Optional note, MoMo code, bank slip, or reminder"
                 disabled={saving}
               />
             </label>
-          </div>
+          </section>
 
-          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <button type="button" onClick={onClose} disabled={saving} className={secondaryBtn()}>
+          <footer className="svx-dues-modal-actions">
+            <button type="button" onClick={onClose} disabled={saving} className="svx-dues-button secondary">
               Cancel
             </button>
 
-            <AsyncButton loading={saving} onClick={onSubmit} className={successBtn()}>
+            <AsyncButton loading={saving} onClick={onSubmit} className="svx-dues-button primary">
               Save payment
             </AsyncButton>
-          </div>
+          </footer>
         </div>
       </div>
     </div>
@@ -549,6 +458,8 @@ function PaymentModal({
 }
 
 export default function CreditDashboard() {
+  const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -646,7 +557,7 @@ export default function CreditDashboard() {
   }, []);
 
   const overdueIds = useMemo(() => {
-    return new Set(overdue.map((sale) => sale.id));
+    return new Set(overdue.map((sale) => sale.id).filter(Boolean));
   }, [overdue]);
 
   const allBalances = useMemo(() => {
@@ -660,28 +571,36 @@ export default function CreditDashboard() {
       if (sale?.id) map.set(sale.id, sale);
     }
 
-    return Array.from(map.values()).sort((a, b) => {
-      const aLate = overdueIds.has(a.id) ? 1 : 0;
-      const bLate = overdueIds.has(b.id) ? 1 : 0;
+    return Array.from(map.values())
+      .filter((sale) => saleBalance(sale) > 0)
+      .sort((a, b) => {
+        const aLate = overdueIds.has(a.id) ? 1 : 0;
+        const bLate = overdueIds.has(b.id) ? 1 : 0;
 
-      if (aLate !== bLate) return bLate - aLate;
+        if (aLate !== bLate) return bLate - aLate;
 
-      const aDue = a?.dueDate ? new Date(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
-      const bDue = b?.dueDate ? new Date(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+        const aDue = a?.dueDate ? new Date(a.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+        const bDue = b?.dueDate ? new Date(b.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
 
-      return aDue - bDue;
-    });
+        return aDue - bDue;
+      });
   }, [outstanding, overdue, overdueIds]);
 
   const filtered = useMemo(() => {
     const search = q.trim().toLowerCase();
 
     return allBalances.filter((sale) => {
-      const isLate = overdueIds.has(sale.id) || String(sale?.status || "").toUpperCase() === "OVERDUE";
+      const isLate =
+        overdueIds.has(sale.id) ||
+        String(sale?.status || "").toUpperCase() === "OVERDUE" ||
+        dueTone(sale?.dueDate, saleBalance(sale), sale?.status) === "danger";
+
       const dueToday = daysUntil(sale?.dueDate) === 0;
+      const dueSoon = [0, 1, 2, 3].includes(daysUntil(sale?.dueDate));
 
       if (statusFilter === "LATE" && !isLate) return false;
       if (statusFilter === "DUE_TODAY" && !dueToday) return false;
+      if (statusFilter === "DUE_SOON" && !dueSoon) return false;
       if (statusFilter === "OPEN" && isLate) return false;
 
       if (!search) return true;
@@ -690,10 +609,12 @@ export default function CreditDashboard() {
         sale?.id,
         sale?.receiptNumber,
         sale?.invoiceNumber,
+        sale?.number,
         customerName(sale),
         customerPhone(sale),
         sale?.customer?.email,
         branchLabel(sale),
+        cashierName(sale),
       ]
         .map((item) => String(item || "").toLowerCase())
         .join(" ");
@@ -711,20 +632,33 @@ export default function CreditDashboard() {
 
   const summary = useMemo(() => {
     const totalBalance = allBalances.reduce((sum, sale) => sum + saleBalance(sale), 0);
-    const overdueBalance = allBalances
-      .filter((sale) => overdueIds.has(sale.id) || String(sale?.status || "").toUpperCase() === "OVERDUE")
-      .reduce((sum, sale) => sum + saleBalance(sale), 0);
+    const overdueList = allBalances.filter((sale) => {
+      return (
+        overdueIds.has(sale.id) ||
+        String(sale?.status || "").toUpperCase() === "OVERDUE" ||
+        dueTone(sale?.dueDate, saleBalance(sale), sale?.status) === "danger"
+      );
+    });
 
-    const dueTodayBalance = allBalances
-      .filter((sale) => daysUntil(sale?.dueDate) === 0)
-      .reduce((sum, sale) => sum + saleBalance(sale), 0);
+    const dueTodayList = allBalances.filter((sale) => daysUntil(sale?.dueDate) === 0);
+    const customerKeys = new Set(
+      allBalances.map((sale) => {
+        return (
+          cleanString(sale?.customer?.id) ||
+          cleanString(sale?.customerId) ||
+          customerPhone(sale) ||
+          customerName(sale)
+        );
+      }),
+    );
 
     return {
       count: allBalances.length,
+      customerCount: customerKeys.size,
       totalBalance,
-      overdueCount: overdueIds.size,
-      overdueBalance,
-      dueTodayBalance,
+      overdueCount: overdueList.length,
+      overdueBalance: overdueList.reduce((sum, sale) => sum + saleBalance(sale), 0),
+      dueTodayBalance: dueTodayList.reduce((sum, sale) => sum + saleBalance(sale), 0),
     };
   }, [allBalances, overdueIds]);
 
@@ -794,7 +728,7 @@ export default function CreditDashboard() {
   }
 
   return (
-    <div className="space-y-5">
+    <main className="svx-dues-page">
       <PaymentModal
         open={payOpen}
         sale={selectedSale}
@@ -809,48 +743,37 @@ export default function CreditDashboard() {
         onSubmit={submitPayment}
       />
 
-      <section className={cx(pageCard(), "relative overflow-hidden p-5 sm:p-6")}>
-        <div className="pointer-events-none absolute -right-24 -top-24 h-[260px] w-[260px] rounded-full bg-[rgba(74,163,255,0.10)] blur-3xl" />
+      <section className="svx-dues-hero">
+        <div className="svx-dues-hero-copy">
+          <p className="svx-dues-kicker">Dues</p>
+          <h1>Pay later balances</h1>
+          <p>
+            See who owes money in <strong>{activeBranchLabel}</strong>, what is late, what is due today,
+            and where to collect payment.
+          </p>
+        </div>
 
-        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-              Pay later
-            </p>
+        <div className="svx-dues-hero-actions">
+          <Link to="/app/pos/sales" className="svx-dues-button secondary">
+            Sales list
+          </Link>
 
-            <h1 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)] sm:text-3xl">
-              Customer balances
-            </h1>
+          <AsyncButton loading={refreshing} onClick={() => load({ silent: true })} className="svx-dues-button secondary">
+            Refresh
+          </AsyncButton>
 
-            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--color-text-muted)]">
-              Follow up money still owed in{" "}
-              <span className="font-black text-[var(--color-text)]">{activeBranchLabel}</span>.
-              The first 10 balances are shown first. Search, filter, or load more to find the rest.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row xl:justify-end">
-            <Link to="/app/pos/sales" className={secondaryBtn()}>
-              Sales list
-            </Link>
-
-            <AsyncButton loading={refreshing} onClick={() => load({ silent: true })} className={secondaryBtn()}>
-              Refresh
-            </AsyncButton>
-
-            <Link to="/app/pos" className={primaryBtn()}>
-              <PlusIcon />
-              New sale
-            </Link>
-          </div>
+          <Link to="/app/pos" className="svx-dues-button primary">
+            <PlusIcon />
+            New sale
+          </Link>
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="svx-dues-metrics">
         <SummaryCard
-          label="Open balances"
+          label="Open dues"
           value={formatNumber(summary.count)}
-          note="Customers who still owe money"
+          note={`${formatNumber(summary.customerCount)} customer${summary.customerCount === 1 ? "" : "s"} owing`}
           tone={summary.count > 0 ? "warning" : "success"}
         />
 
@@ -876,76 +799,76 @@ export default function CreditDashboard() {
         />
       </section>
 
-      <section className={cx(pageCard(), "p-4 sm:p-5")}>
-        <div className="grid gap-3 xl:grid-cols-[1fr_190px]">
-          <div className="relative">
-            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">
-              <SearchIcon />
-            </span>
-
+      <section className="svx-dues-list-card">
+        <div className="svx-dues-toolbar">
+          <div className="svx-dues-search">
+            <SearchIcon />
             <input
-              className={cx(inputClass(), "pl-11")}
               value={q}
               onChange={(event) => setQ(event.target.value)}
-              placeholder="Search by customer, phone, receipt, or branch..."
+              placeholder="Search customer, phone, receipt, cashier, or branch..."
             />
           </div>
 
-          <select
-            className={inputClass()}
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
-          >
-            <option value="ALL">All balances</option>
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            <option value="ALL">All dues</option>
             <option value="LATE">Late only</option>
             <option value="DUE_TODAY">Due today</option>
+            <option value="DUE_SOON">Due soon</option>
             <option value="OPEN">Open, not late</option>
           </select>
         </div>
 
-        <div className="mt-5">
-          {visibleRows.length === 0 ? (
-            <EmptyState
-              title="No customer balances found"
-              text="Pay-later sales with unpaid balances will appear here. Try changing the search or filter."
-              action={
-                <Link to="/app/pos" className={primaryBtn()}>
-                  Start sale
-                </Link>
-              }
-            />
-          ) : (
-            <>
-              <div className="grid gap-3">
+        {visibleRows.length === 0 ? (
+          <EmptyState
+            title="No dues found"
+            text="Pay-later sales with unpaid balances will appear here. Try changing the search or filter."
+            action={
+              <Link to="/app/pos" className="svx-dues-button primary">
+                Start sale
+              </Link>
+            }
+          />
+        ) : (
+          <>
+            <div className="svx-dues-table">
+              <div className="svx-dues-table-head" aria-hidden="true">
+                <span>Customer</span>
+                <span>Receipt</span>
+                <span>Follow-up</span>
+                <span>Balance</span>
+                <span>Actions</span>
+              </div>
+
+              <div className="svx-dues-rows">
                 {visibleRows.map((sale) => (
-                  <CustomerBalanceCard key={sale.id} sale={sale} onPay={openPayModal} />
+                  <CustomerDueRow
+                    key={sale.id}
+                    sale={sale}
+                    onOpen={(saleId) => navigate(`/app/pos/sales/${saleId}`)}
+                    onPay={openPayModal}
+                  />
                 ))}
               </div>
+            </div>
 
-              <div className="mt-6 flex flex-col items-center justify-between gap-3 rounded-[26px] bg-[var(--color-surface-2)] px-4 py-4 sm:flex-row">
-                <p className="text-center text-sm font-bold text-[var(--color-text-muted)] sm:text-left">
-                  Showing {formatNumber(visibleRows.length)} of {formatNumber(filtered.length)} balance
-                  {filtered.length === 1 ? "" : "s"}.
-                </p>
+            <footer className="svx-dues-list-footer">
+              <p>
+                Showing {formatNumber(visibleRows.length)} of {formatNumber(filtered.length)} due
+                {filtered.length === 1 ? "" : "s"}.
+              </p>
 
-                {hasMore ? (
-                  <button
-                    type="button"
-                    onClick={loadMore}
-                    className="inline-flex h-11 w-full items-center justify-center rounded-2xl bg-[var(--color-card)] px-5 text-sm font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 sm:w-auto"
-                  >
-                    Load 10 more
-                  </button>
-                ) : (
-                  <span className="rounded-full bg-[var(--color-card)] px-3 py-2 text-xs font-black text-[var(--color-text-muted)] shadow-[var(--shadow-soft)]">
-                    End of list
-                  </span>
-                )}
-              </div>
-            </>
-          )}
-        </div>
+              {hasMore ? (
+                <button type="button" onClick={loadMore} className="svx-dues-button secondary">
+                  Load 10 more
+                </button>
+              ) : (
+                <span>End of list</span>
+              )}
+            </footer>
+          </>
+        )}
       </section>
-    </div>
+    </main>
   );
 }
