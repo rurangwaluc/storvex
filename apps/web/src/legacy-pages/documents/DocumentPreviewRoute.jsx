@@ -7,66 +7,30 @@ import { buildDocumentPrintUrl, openDocumentPrint } from "../../services/documen
 import { deleteDeliveryNote } from "../../services/deliveryNotesApi";
 import { deleteProforma } from "../../services/proformasApi";
 import { deleteWarranty } from "../../services/warrantiesApi";
+import "./DocumentPreviewRoute.css";
 
 function cx(...classes) {
   return classes.filter(Boolean).join(" ");
-}
-
-function shell() {
-  return "rounded-[28px] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-}
-
-function panel() {
-  return "rounded-[22px] bg-[var(--color-surface-2)]";
-}
-
-function strongText() {
-  return "text-[var(--color-text)]";
-}
-
-function mutedText() {
-  return "text-[var(--color-text-muted)]";
-}
-
-function softButtonClass() {
-  return "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] px-4 text-sm font-semibold text-[var(--color-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function dangerButtonClass() {
-  return "inline-flex h-11 items-center justify-center rounded-2xl bg-[rgba(219,80,74,0.12)] px-4 text-sm font-semibold text-[var(--color-danger)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
-}
-
-function PillLink({ to, children }) {
-  return (
-    <Link
-      to={to}
-      className="inline-flex items-center rounded-full bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-muted)] transition hover:opacity-90"
-    >
-      {children}
-    </Link>
-  );
-}
-
-function CurrentPill({ children }) {
-  return (
-    <span className="inline-flex items-center rounded-full bg-[var(--color-card)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] ring-1 ring-[var(--color-border)]">
-      {children}
-    </span>
-  );
 }
 
 function ConfirmDeleteModal({ open, title, body, deleting, onCancel, onConfirm }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={deleting ? undefined : onCancel} />
+    <div className="svx-doc-preview-modal" role="dialog" aria-modal="true">
+      <button
+        type="button"
+        className="svx-doc-preview-modal-backdrop"
+        aria-label="Close delete confirmation"
+        onClick={deleting ? undefined : onCancel}
+      />
 
-      <div className={cx(shell(), "relative z-10 w-full max-w-md p-5")}>
-        <h3 className={cx("text-lg font-black tracking-tight", strongText())}>{title}</h3>
-        <p className={cx("mt-2 text-sm leading-6", mutedText())}>{body}</p>
+      <div className="svx-doc-preview-modal-card">
+        <p className="svx-doc-preview-eyebrow">Confirm action</p>
+        <h3>{title}</h3>
+        <p>{body}</p>
 
-        <div className="mt-5 grid grid-cols-2 gap-2">
+        <div className="svx-doc-preview-modal-actions">
           <AsyncButton type="button" onClick={onCancel} disabled={deleting} variant="secondary">
             Cancel
           </AsyncButton>
@@ -76,7 +40,7 @@ function ConfirmDeleteModal({ open, title, body, deleting, onCancel, onConfirm }
             onClick={onConfirm}
             loading={deleting}
             loadingText="Deleting..."
-            className={dangerButtonClass()}
+            className="svx-doc-preview-button is-danger"
           >
             Delete
           </AsyncButton>
@@ -88,7 +52,7 @@ function ConfirmDeleteModal({ open, title, body, deleting, onCancel, onConfirm }
 
 const RESOURCE_META = {
   receipts: {
-    title: "Receipt Preview",
+    title: "Receipt preview",
     backTo: "/app/documents/receipts",
     backLabel: "Receipts",
     editTo: null,
@@ -97,10 +61,12 @@ const RESOURCE_META = {
     canDelete: false,
     singularLabel: "receipt",
     eyebrow: "Sales document",
+    badge: "Payment proof",
+    tone: "success",
     description: "Preview the branded receipt with customer details, payment record, and store document settings.",
   },
   invoices: {
-    title: "Invoice Preview",
+    title: "Invoice preview",
     backTo: "/app/documents/invoices",
     backLabel: "Invoices",
     editTo: null,
@@ -109,43 +75,52 @@ const RESOURCE_META = {
     canDelete: false,
     singularLabel: "invoice",
     eyebrow: "Billing document",
+    badge: "Formal billing",
+    tone: "primary",
     description: "Preview the formal invoice with customer details, billing record, and store document settings.",
   },
   proformas: {
-    title: "Proforma Preview",
+    title: "Proforma preview",
     backTo: "/app/documents/proformas",
     backLabel: "Proformas",
     editTo: (id) => `/app/documents/proformas/${encodeURIComponent(id)}/edit`,
     createTo: "/app/documents/proformas/create",
-    createLabel: "Create Proforma",
+    createLabel: "Create proforma",
     canDelete: true,
     singularLabel: "proforma",
     eyebrow: "Pre-sale document",
+    badge: "Quotation",
+    tone: "neutral",
     description: "Preview the branded proforma before it becomes a final sale or invoice.",
   },
   warranties: {
-    title: "Warranty Preview",
+    title: "Warranty preview",
     backTo: "/app/documents/warranties",
     backLabel: "Warranties",
     editTo: (id) => `/app/documents/warranties/${encodeURIComponent(id)}/edit`,
     createTo: "/app/documents/warranties/create",
-    createLabel: "Create Warranty",
+    createLabel: "Create warranty",
     canDelete: true,
     singularLabel: "warranty",
     eyebrow: "After-sales document",
+    badge: "Coverage proof",
+    tone: "success",
     description: "Preview the warranty proof with covered items, customer details, and warranty terms.",
   },
   "delivery-notes": {
-    title: "Delivery Note Preview",
+    title: "Delivery note preview",
     backTo: "/app/documents/delivery-notes",
-    backLabel: "Delivery Notes",
+    backLabel: "Delivery notes",
     editTo: (id) => `/app/documents/delivery-notes/${encodeURIComponent(id)}/edit`,
     createTo: "/app/documents/delivery-notes/create",
-    createLabel: "Create Delivery Note",
+    createLabel: "Create delivery note",
     canDelete: true,
     singularLabel: "delivery note",
     eyebrow: "Goods movement document",
-    description: "Preview delivered items, receiver details, handover notes, and signatures. Delivery notes must not show prices or payment information.",
+    badge: "No money fields",
+    tone: "warning",
+    description:
+      "Preview delivered items, receiver details, handover notes, and signatures. Delivery notes must not show prices, totals, tax, or payment information.",
   },
 };
 
@@ -165,7 +140,7 @@ export default function DocumentPreviewRoute() {
   const [deleting, setDeleting] = useState(false);
 
   const meta = RESOURCE_META[resource] || {
-    title: "Document Preview",
+    title: "Document preview",
     backTo: "/app/documents",
     backLabel: "Documents",
     editTo: null,
@@ -174,6 +149,8 @@ export default function DocumentPreviewRoute() {
     canDelete: false,
     singularLabel: "document",
     eyebrow: "Document",
+    badge: "Preview",
+    tone: "neutral",
     description: "Preview the printable document with your store branding and document settings.",
   };
 
@@ -205,7 +182,7 @@ export default function DocumentPreviewRoute() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="svx-doc-preview-page">
       <ConfirmDeleteModal
         open={showDelete}
         title={`Delete ${meta.singularLabel}?`}
@@ -217,78 +194,99 @@ export default function DocumentPreviewRoute() {
         onConfirm={handleDelete}
       />
 
-      <section className={cx(shell(), "overflow-hidden")}>
-        <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <PillLink to="/app/documents">Document Centre</PillLink>
-              <PillLink to={meta.backTo}>{meta.backLabel}</PillLink>
-              <CurrentPill>Preview</CurrentPill>
+      <section className="svx-doc-preview-hero">
+        <div className="svx-doc-preview-breadcrumbs">
+          <Link to="/app/documents">Document center</Link>
+          <Link to={meta.backTo}>{meta.backLabel}</Link>
+          <span>Preview</span>
+        </div>
+
+        <div className="svx-doc-preview-hero-main">
+          <div className="svx-doc-preview-title-block">
+            <p className="svx-doc-preview-eyebrow">{meta.eyebrow}</p>
+            <h1>{meta.title}</h1>
+            <p>{meta.description}</p>
+
+            <div className="svx-doc-preview-status-row">
+              <span className={cx("svx-doc-preview-status", `is-${meta.tone}`)}>
+                {meta.badge}
+              </span>
+              <span className="svx-doc-preview-status is-neutral">Printable layout</span>
             </div>
+          </div>
 
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-              <div className="min-w-0 max-w-3xl">
-                <div className={cx("text-[11px] font-semibold uppercase tracking-[0.18em]", mutedText())}>
-                  {meta.eyebrow}
-                </div>
+          <div className="svx-doc-preview-actions">
+            <Link to={meta.backTo} className="svx-doc-preview-button">
+              Back to list
+            </Link>
 
-                <h1 className={cx("mt-3 text-[1.6rem] font-black tracking-tight sm:text-[1.9rem]", strongText())}>
-                  {meta.title}
-                </h1>
+            {editUrl ? (
+              <Link to={editUrl} className="svx-doc-preview-button">
+                Edit
+              </Link>
+            ) : null}
 
-                <p className={cx("mt-2 text-sm leading-6", mutedText())}>
-                  {meta.description}
-                </p>
-              </div>
+            {meta.createTo && meta.createLabel ? (
+              <Link to={meta.createTo} className="svx-doc-preview-button">
+                {meta.createLabel}
+              </Link>
+            ) : null}
 
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
-                <button type="button" onClick={() => navigate(-1)} className={softButtonClass()}>
-                  Go back
-                </button>
+            {meta.canDelete ? (
+              <button
+                type="button"
+                onClick={() => setShowDelete(true)}
+                className="svx-doc-preview-button is-danger"
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete"}
+              </button>
+            ) : null}
 
-                {editUrl ? (
-                  <Link to={editUrl} className={softButtonClass()}>
-                    Edit
-                  </Link>
-                ) : null}
+            <AsyncButton
+              type="button"
+              variant="primary"
+              onClick={() => openDocumentPrint(resource, id)}
+              className="svx-doc-preview-primary-action"
+            >
+              Open print page
+            </AsyncButton>
+          </div>
+        </div>
+      </section>
 
-                {meta.createTo && meta.createLabel ? (
-                  <Link to={meta.createTo} className={softButtonClass()}>
-                    {meta.createLabel}
-                  </Link>
-                ) : null}
+      <section className="svx-doc-preview-stage">
+        <div className="svx-doc-preview-stage-head">
+          <div>
+            <p className="svx-doc-preview-eyebrow">Live preview</p>
+            <h2>Customer document</h2>
+          </div>
 
-                {meta.canDelete ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowDelete(true)}
-                    className={dangerButtonClass()}
-                    disabled={deleting}
-                  >
-                    {deleting ? "Deleting..." : "Delete"}
-                  </button>
-                ) : null}
+          <div className="svx-doc-preview-stage-actions">
+            <button type="button" onClick={() => navigate(-1)} className="svx-doc-preview-button">
+              Go back
+            </button>
 
-                <AsyncButton type="button" variant="primary" onClick={() => openDocumentPrint(resource, id)}>
-                  Open print page
-                </AsyncButton>
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={() => openDocumentPrint(resource, id)}
+              className="svx-doc-preview-button is-primary"
+            >
+              Print document
+            </button>
           </div>
         </div>
 
-        <div className="p-3 sm:p-4">
-          <div className={cx(panel(), "overflow-hidden p-2 sm:p-3")}>
-            {printUrl ? (
-              <iframe
-                title={`${meta.title} ${id}`}
-                src={printUrl}
-                className="h-[76vh] w-full rounded-[18px] bg-white"
-              />
-            ) : (
-              <div className={cx("p-8 text-sm", mutedText())}>Preview is not available.</div>
-            )}
-          </div>
+        <div className="svx-doc-preview-frame-shell">
+          {printUrl ? (
+            <iframe
+              title={`${meta.title} ${id}`}
+              src={printUrl}
+              className="svx-doc-preview-frame"
+            />
+          ) : (
+            <div className="svx-doc-preview-unavailable">Preview is not available.</div>
+          )}
         </div>
       </section>
     </div>
