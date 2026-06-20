@@ -1,0 +1,518 @@
+/* Proformas.css
+   Storvex proforma workspace.
+   Custom CSS only. Premium real-world quotation workflow.
+*/
+
+.svx-proforma-page {
+  --pf-card: #ffffff;
+  --pf-surface: #ffffff;
+  --pf-soft: #f8fbff;
+  --pf-text: #06122e;
+  --pf-muted: #5d6b85;
+  --pf-line: #dfe7f3;
+  --pf-line-soft: #edf2fa;
+  --pf-blue: #075cff;
+  --pf-blue-soft: #eef5ff;
+  --pf-green: #0cab66;
+  --pf-green-soft: #eafaf3;
+  --pf-orange: #f59e0b;
+  --pf-orange-soft: #fff4df;
+  --pf-red: #ef4444;
+  --pf-red-soft: #fff0f0;
+
+  display: grid;
+  gap: 22px;
+  color: var(--pf-text);
+}
+
+:root[data-theme="dark"] .svx-proforma-page {
+  --pf-card: #1f1f20;
+  --pf-surface: #1f1f20;
+  --pf-soft: #1c1c1d;
+  --pf-text: #ffffff;
+  --pf-muted: rgba(255, 255, 255, 0.72);
+  --pf-line: rgba(255, 255, 255, 0.12);
+  --pf-line-soft: rgba(255, 255, 255, 0.08);
+  --pf-blue: #159cff;
+  --pf-blue-soft: rgba(21, 156, 255, 0.14);
+  --pf-green: #23c783;
+  --pf-green-soft: rgba(35, 199, 131, 0.13);
+  --pf-orange: #f7ad35;
+  --pf-orange-soft: rgba(247, 173, 53, 0.13);
+  --pf-red: #ff6262;
+  --pf-red-soft: rgba(255, 98, 98, 0.14);
+}
+
+.svx-proforma-page *,
+.svx-proforma-page *::before,
+.svx-proforma-page *::after {
+  box-sizing: border-box;
+}
+
+.svx-proforma-hero,
+.svx-proforma-panel,
+.svx-proforma-summary {
+  border: 1px solid var(--pf-line-soft);
+  border-radius: 28px;
+  background: var(--pf-card);
+  box-shadow: 0 14px 40px rgba(15, 46, 92, 0.055);
+}
+
+:root[data-theme="dark"] .svx-proforma-hero,
+:root[data-theme="dark"] .svx-proforma-panel,
+:root[data-theme="dark"] .svx-proforma-summary {
+  box-shadow: none;
+}
+
+.svx-proforma-hero,
+.svx-proforma-panel,
+.svx-proforma-summary {
+  padding: 20px;
+}
+
+.svx-proforma-hero-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: end;
+}
+
+.svx-proforma-eyebrow {
+  margin: 0;
+  color: var(--pf-blue);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.svx-proforma-hero h1 {
+  margin: 8px 0 0;
+  color: var(--pf-text);
+  font-size: clamp(30px, 3vw, 46px);
+  font-weight: 950;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.svx-proforma-hero p:not(.svx-proforma-eyebrow),
+.svx-proforma-section-head span,
+.svx-proforma-summary > div > span,
+.svx-proforma-footnote {
+  color: var(--pf-muted);
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.55;
+}
+
+.svx-proforma-hero p:not(.svx-proforma-eyebrow) {
+  max-width: 780px;
+  margin: 14px 0 0;
+}
+
+.svx-proforma-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.svx-proforma-badges span {
+  display: inline-flex;
+  min-height: 26px;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--pf-blue-soft);
+  color: var(--pf-blue);
+  padding: 0 10px;
+  font-size: 9.5px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.svx-proforma-hero-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.svx-proforma-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(360px, 0.9fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.svx-proforma-main {
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+}
+
+.svx-proforma-side {
+  position: sticky;
+  top: 20px;
+  min-width: 0;
+}
+
+.svx-proforma-section-head {
+  margin-bottom: 18px;
+}
+
+.svx-proforma-section-head.is-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.svx-proforma-section-head h2,
+.svx-proforma-summary h2 {
+  margin: 7px 0 0;
+  color: var(--pf-text);
+  font-size: 19px;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.svx-proforma-grid,
+.svx-proforma-item-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.svx-proforma-span-2 {
+  grid-column: 1 / -1;
+}
+
+.svx-proforma-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.svx-proforma-field span {
+  color: var(--pf-text);
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.svx-proforma-field input,
+.svx-proforma-field textarea {
+  width: 100%;
+  border: 1px solid var(--pf-line);
+  border-radius: 15px;
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  outline: none;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 820;
+}
+
+.svx-proforma-field input {
+  min-height: 46px;
+}
+
+.svx-proforma-field textarea {
+  min-height: 118px;
+  resize: vertical;
+  padding-top: 13px;
+  padding-bottom: 13px;
+  line-height: 1.55;
+}
+
+.svx-proforma-field input::placeholder,
+.svx-proforma-field textarea::placeholder {
+  color: var(--pf-muted);
+  opacity: 0.72;
+}
+
+.svx-proforma-field input:focus,
+.svx-proforma-field textarea:focus {
+  border-color: var(--pf-blue);
+  box-shadow: 0 0 0 4px var(--pf-blue-soft);
+}
+
+.svx-proforma-button {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--pf-line);
+  border-radius: 14px;
+  background: var(--pf-surface);
+  color: var(--pf-text);
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
+}
+
+.svx-proforma-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--pf-blue);
+  background: var(--pf-soft);
+  color: var(--pf-blue);
+}
+
+.svx-proforma-button.is-danger {
+  border-color: rgba(239, 68, 68, 0.34);
+  background: var(--pf-red-soft);
+  color: var(--pf-red);
+}
+
+.svx-proforma-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.svx-proforma-items {
+  display: grid;
+  gap: 14px;
+}
+
+.svx-proforma-item {
+  border: 1px solid var(--pf-line-soft);
+  border-radius: 22px;
+  background: var(--pf-soft);
+  padding: 16px;
+}
+
+.svx-proforma-item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.svx-proforma-item-head strong {
+  display: block;
+  color: var(--pf-text);
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.svx-proforma-item-head span {
+  display: block;
+  margin-top: 4px;
+  color: var(--pf-muted);
+  font-size: 11.5px;
+  font-weight: 780;
+}
+
+.svx-proforma-line-total {
+  display: grid;
+  align-content: center;
+  gap: 5px;
+  border: 1px solid var(--pf-line);
+  border-radius: 15px;
+  background: var(--pf-surface);
+  padding: 10px 14px;
+}
+
+.svx-proforma-line-total span {
+  color: var(--pf-muted);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.svx-proforma-line-total strong {
+  color: var(--pf-text);
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.svx-proforma-summary {
+  display: grid;
+  gap: 18px;
+}
+
+.svx-proforma-checks,
+.svx-proforma-summary-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.svx-proforma-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--pf-line-soft);
+  border-radius: 14px;
+  background: var(--pf-soft);
+  padding: 10px;
+}
+
+.svx-proforma-check span {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--pf-surface);
+  color: var(--pf-muted);
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.svx-proforma-check strong {
+  color: var(--pf-muted);
+  font-size: 11.5px;
+  font-weight: 880;
+}
+
+.svx-proforma-check.is-active {
+  border-color: rgba(35, 199, 131, 0.24);
+  background: var(--pf-green-soft);
+}
+
+.svx-proforma-check.is-active span {
+  background: var(--pf-green);
+  color: #ffffff;
+}
+
+.svx-proforma-check.is-active strong {
+  color: var(--pf-green);
+}
+
+.svx-proforma-summary-list {
+  border-top: 1px solid var(--pf-line-soft);
+  padding-top: 14px;
+}
+
+.svx-proforma-summary-row {
+  display: grid;
+  gap: 7px;
+  border: 1px solid var(--pf-line-soft);
+  border-radius: 15px;
+  background: var(--pf-soft);
+  padding: 12px;
+}
+
+.svx-proforma-summary-row span {
+  color: var(--pf-muted);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.svx-proforma-summary-row strong {
+  color: var(--pf-text);
+  font-size: 13px;
+  font-weight: 900;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.svx-proforma-summary-row strong.is-strong {
+  color: var(--pf-text);
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.svx-proforma-summary-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.svx-proforma-summary-actions .svx-proforma-button,
+.svx-proforma-summary-actions button {
+  width: 100%;
+  min-height: 46px;
+}
+
+.svx-proforma-footnote {
+  margin: 0;
+  border-top: 1px solid var(--pf-line-soft);
+  padding-top: 14px;
+}
+
+@media (max-width: 1180px) {
+  .svx-proforma-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-proforma-side {
+    position: static;
+  }
+}
+
+@media (max-width: 820px) {
+  .svx-proforma-page {
+    gap: 16px;
+  }
+
+  .svx-proforma-hero,
+  .svx-proforma-panel,
+  .svx-proforma-summary {
+    border-radius: 22px;
+    padding: 18px;
+  }
+
+  .svx-proforma-hero-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-proforma-section-head.is-row {
+    flex-direction: column;
+  }
+
+  .svx-proforma-hero-actions,
+  .svx-proforma-grid,
+  .svx-proforma-item-grid,
+  .svx-proforma-checks,
+  .svx-proforma-summary-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-proforma-span-2 {
+    grid-column: 1 / -1;
+  }
+
+  .svx-proforma-hero h1 {
+    font-size: clamp(26px, 8vw, 36px);
+  }
+}
+
+@media (max-width: 380px) {
+  .svx-proforma-grid,
+  .svx-proforma-item-grid,
+  .svx-proforma-checks,
+  .svx-proforma-summary-list,
+  .svx-proforma-hero-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-proforma-span-2 {
+    grid-column: auto;
+  }
+
+  .svx-proforma-hero,
+  .svx-proforma-panel,
+  .svx-proforma-summary {
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .svx-proforma-item {
+    border-radius: 18px;
+    padding: 13px;
+  }
+}
