@@ -320,6 +320,26 @@ model TenantDocumentSettings {
   deliveryPrefix  String @default("DLV") @db.Text
   deliveryPadding Int    @default(6)
 
+  deliveryRequireReceiverName  Boolean @default(true)
+  deliveryRequireReceiverPhone Boolean @default(false)
+  deliveryRequireSignature     Boolean @default(true)
+  deliveryRequireDeliveredBy   Boolean @default(true)
+  deliveryRequireLocation      Boolean @default(true)
+  deliveryShowSerialNumbers    Boolean @default(true)
+  deliveryAllowPartialDelivery Boolean @default(false)
+
+  showDocumentLogo             Boolean @default(true)
+  showDocumentQr               Boolean @default(false)
+  showDocumentWatermark        Boolean @default(false)
+  showPrintedDate              Boolean @default(true)
+  showBusinessContacts         Boolean @default(true)
+
+  autoReceiptNumbering         Boolean @default(true)
+  autoInvoiceNumbering         Boolean @default(true)
+  autoWarrantyNumbering        Boolean @default(true)
+  autoProformaNumbering        Boolean @default(true)
+  autoDeliveryNumbering        Boolean @default(true)
+
   @@map("TenantDocumentSettings")
 }
 

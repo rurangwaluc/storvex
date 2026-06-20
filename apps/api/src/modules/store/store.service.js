@@ -59,6 +59,28 @@ const TAX_DISPLAY_MODES = new Set([
   "INTERNAL_ONLY",
 ]);
 
+const DOCUMENT_GOVERNANCE_DEFAULTS = Object.freeze({
+  deliveryRequireReceiverName: true,
+  deliveryRequireReceiverPhone: false,
+  deliveryRequireSignature: true,
+  deliveryRequireDeliveredBy: true,
+  deliveryRequireLocation: true,
+  deliveryShowSerialNumbers: true,
+  deliveryAllowPartialDelivery: false,
+
+  showDocumentLogo: true,
+  showDocumentQr: false,
+  showDocumentWatermark: false,
+  showPrintedDate: true,
+  showBusinessContacts: true,
+
+  autoReceiptNumbering: true,
+  autoInvoiceNumbering: true,
+  autoWarrantyNumbering: true,
+  autoProformaNumbering: true,
+  autoDeliveryNumbering: true,
+});
+
 function cleanString(value) {
   const s = String(value ?? "").trim();
   return s || null;
@@ -377,11 +399,13 @@ function serializeDocumentSettingsRow(settings, previews, tenantId) {
     invoicePrefix: settings.invoicePrefix || "INV",
     warrantyPrefix: settings.warrantyPrefix || "WAR",
     proformaPrefix: settings.proformaPrefix || "PRF",
+    deliveryPrefix: settings.deliveryPrefix || "DLV",
 
     receiptPadding: Number(settings.receiptPadding || 6),
     invoicePadding: Number(settings.invoicePadding || 6),
     warrantyPadding: Number(settings.warrantyPadding || 6),
     proformaPadding: Number(settings.proformaPadding || 6),
+    deliveryPadding: Number(settings.deliveryPadding || 6),
 
     invoiceTerms: settings.invoiceTerms || null,
     warrantyTerms: settings.warrantyTerms || null,
@@ -406,6 +430,77 @@ function serializeDocumentSettingsRow(settings, previews, tenantId) {
       Number(settings.taxRateBps || defaultTaxRateBpsForMode(taxMode)) / 100,
     pricesIncludeTax: Boolean(settings.pricesIncludeTax),
     showTaxOnCustomerDocuments: Boolean(settings.showTaxOnCustomerDocuments),
+
+    deliveryRequireReceiverName:
+      typeof settings.deliveryRequireReceiverName === "boolean"
+        ? settings.deliveryRequireReceiverName
+        : DOCUMENT_GOVERNANCE_DEFAULTS.deliveryRequireReceiverName,
+    deliveryRequireReceiverPhone:
+      typeof settings.deliveryRequireReceiverPhone === "boolean"
+        ? settings.deliveryRequireReceiverPhone
+        : DOCUMENT_GOVERNANCE_DEFAULTS.deliveryRequireReceiverPhone,
+    deliveryRequireSignature:
+      typeof settings.deliveryRequireSignature === "boolean"
+        ? settings.deliveryRequireSignature
+        : DOCUMENT_GOVERNANCE_DEFAULTS.deliveryRequireSignature,
+    deliveryRequireDeliveredBy:
+      typeof settings.deliveryRequireDeliveredBy === "boolean"
+        ? settings.deliveryRequireDeliveredBy
+        : DOCUMENT_GOVERNANCE_DEFAULTS.deliveryRequireDeliveredBy,
+    deliveryRequireLocation:
+      typeof settings.deliveryRequireLocation === "boolean"
+        ? settings.deliveryRequireLocation
+        : DOCUMENT_GOVERNANCE_DEFAULTS.deliveryRequireLocation,
+    deliveryShowSerialNumbers:
+      typeof settings.deliveryShowSerialNumbers === "boolean"
+        ? settings.deliveryShowSerialNumbers
+        : DOCUMENT_GOVERNANCE_DEFAULTS.deliveryShowSerialNumbers,
+    deliveryAllowPartialDelivery:
+      typeof settings.deliveryAllowPartialDelivery === "boolean"
+        ? settings.deliveryAllowPartialDelivery
+        : DOCUMENT_GOVERNANCE_DEFAULTS.deliveryAllowPartialDelivery,
+
+    showDocumentLogo:
+      typeof settings.showDocumentLogo === "boolean"
+        ? settings.showDocumentLogo
+        : DOCUMENT_GOVERNANCE_DEFAULTS.showDocumentLogo,
+    showDocumentQr:
+      typeof settings.showDocumentQr === "boolean"
+        ? settings.showDocumentQr
+        : DOCUMENT_GOVERNANCE_DEFAULTS.showDocumentQr,
+    showDocumentWatermark:
+      typeof settings.showDocumentWatermark === "boolean"
+        ? settings.showDocumentWatermark
+        : DOCUMENT_GOVERNANCE_DEFAULTS.showDocumentWatermark,
+    showPrintedDate:
+      typeof settings.showPrintedDate === "boolean"
+        ? settings.showPrintedDate
+        : DOCUMENT_GOVERNANCE_DEFAULTS.showPrintedDate,
+    showBusinessContacts:
+      typeof settings.showBusinessContacts === "boolean"
+        ? settings.showBusinessContacts
+        : DOCUMENT_GOVERNANCE_DEFAULTS.showBusinessContacts,
+
+    autoReceiptNumbering:
+      typeof settings.autoReceiptNumbering === "boolean"
+        ? settings.autoReceiptNumbering
+        : DOCUMENT_GOVERNANCE_DEFAULTS.autoReceiptNumbering,
+    autoInvoiceNumbering:
+      typeof settings.autoInvoiceNumbering === "boolean"
+        ? settings.autoInvoiceNumbering
+        : DOCUMENT_GOVERNANCE_DEFAULTS.autoInvoiceNumbering,
+    autoWarrantyNumbering:
+      typeof settings.autoWarrantyNumbering === "boolean"
+        ? settings.autoWarrantyNumbering
+        : DOCUMENT_GOVERNANCE_DEFAULTS.autoWarrantyNumbering,
+    autoProformaNumbering:
+      typeof settings.autoProformaNumbering === "boolean"
+        ? settings.autoProformaNumbering
+        : DOCUMENT_GOVERNANCE_DEFAULTS.autoProformaNumbering,
+    autoDeliveryNumbering:
+      typeof settings.autoDeliveryNumbering === "boolean"
+        ? settings.autoDeliveryNumbering
+        : DOCUMENT_GOVERNANCE_DEFAULTS.autoDeliveryNumbering,
 
     taxSummary: buildTaxSummary({
       taxMode,
@@ -915,6 +1010,7 @@ async function getDocumentSettings(tenantId) {
         taxRateBps: 0,
         pricesIncludeTax: false,
         showTaxOnCustomerDocuments: false,
+        ...DOCUMENT_GOVERNANCE_DEFAULTS,
       },
     }),
     previewDocumentNumbers(prisma, id),
@@ -933,11 +1029,13 @@ async function updateDocumentSettings(tenantId, payload) {
     invoicePrefix: sanitizePrefix(body.invoicePrefix, "INV"),
     warrantyPrefix: sanitizePrefix(body.warrantyPrefix, "WAR"),
     proformaPrefix: sanitizePrefix(body.proformaPrefix, "PRF"),
+    deliveryPrefix: sanitizePrefix(body.deliveryPrefix, "DLV"),
 
     receiptPadding: clampPadding(body.receiptPadding, 6),
     invoicePadding: clampPadding(body.invoicePadding, 6),
     warrantyPadding: clampPadding(body.warrantyPadding, 6),
     proformaPadding: clampPadding(body.proformaPadding, 6),
+    deliveryPadding: clampPadding(body.deliveryPadding, 6),
 
     invoiceTerms: cleanNullableString(body.invoiceTerms, 4000),
     warrantyTerms: cleanNullableString(body.warrantyTerms, 4000),
@@ -956,6 +1054,77 @@ async function updateDocumentSettings(tenantId, payload) {
     taxRateBps: tax.taxRateBps,
     pricesIncludeTax: tax.pricesIncludeTax,
     showTaxOnCustomerDocuments: tax.showTaxOnCustomerDocuments,
+
+    deliveryRequireReceiverName: toBool(
+      body.deliveryRequireReceiverName,
+      DOCUMENT_GOVERNANCE_DEFAULTS.deliveryRequireReceiverName,
+    ),
+    deliveryRequireReceiverPhone: toBool(
+      body.deliveryRequireReceiverPhone,
+      DOCUMENT_GOVERNANCE_DEFAULTS.deliveryRequireReceiverPhone,
+    ),
+    deliveryRequireSignature: toBool(
+      body.deliveryRequireSignature,
+      DOCUMENT_GOVERNANCE_DEFAULTS.deliveryRequireSignature,
+    ),
+    deliveryRequireDeliveredBy: toBool(
+      body.deliveryRequireDeliveredBy,
+      DOCUMENT_GOVERNANCE_DEFAULTS.deliveryRequireDeliveredBy,
+    ),
+    deliveryRequireLocation: toBool(
+      body.deliveryRequireLocation,
+      DOCUMENT_GOVERNANCE_DEFAULTS.deliveryRequireLocation,
+    ),
+    deliveryShowSerialNumbers: toBool(
+      body.deliveryShowSerialNumbers,
+      DOCUMENT_GOVERNANCE_DEFAULTS.deliveryShowSerialNumbers,
+    ),
+    deliveryAllowPartialDelivery: toBool(
+      body.deliveryAllowPartialDelivery,
+      DOCUMENT_GOVERNANCE_DEFAULTS.deliveryAllowPartialDelivery,
+    ),
+
+    showDocumentLogo: toBool(
+      body.showDocumentLogo,
+      DOCUMENT_GOVERNANCE_DEFAULTS.showDocumentLogo,
+    ),
+    showDocumentQr: toBool(
+      body.showDocumentQr,
+      DOCUMENT_GOVERNANCE_DEFAULTS.showDocumentQr,
+    ),
+    showDocumentWatermark: toBool(
+      body.showDocumentWatermark,
+      DOCUMENT_GOVERNANCE_DEFAULTS.showDocumentWatermark,
+    ),
+    showPrintedDate: toBool(
+      body.showPrintedDate,
+      DOCUMENT_GOVERNANCE_DEFAULTS.showPrintedDate,
+    ),
+    showBusinessContacts: toBool(
+      body.showBusinessContacts,
+      DOCUMENT_GOVERNANCE_DEFAULTS.showBusinessContacts,
+    ),
+
+    autoReceiptNumbering: toBool(
+      body.autoReceiptNumbering,
+      DOCUMENT_GOVERNANCE_DEFAULTS.autoReceiptNumbering,
+    ),
+    autoInvoiceNumbering: toBool(
+      body.autoInvoiceNumbering,
+      DOCUMENT_GOVERNANCE_DEFAULTS.autoInvoiceNumbering,
+    ),
+    autoWarrantyNumbering: toBool(
+      body.autoWarrantyNumbering,
+      DOCUMENT_GOVERNANCE_DEFAULTS.autoWarrantyNumbering,
+    ),
+    autoProformaNumbering: toBool(
+      body.autoProformaNumbering,
+      DOCUMENT_GOVERNANCE_DEFAULTS.autoProformaNumbering,
+    ),
+    autoDeliveryNumbering: toBool(
+      body.autoDeliveryNumbering,
+      DOCUMENT_GOVERNANCE_DEFAULTS.autoDeliveryNumbering,
+    ),
   };
 
   const updated = await prisma.tenantDocumentSettings.upsert({

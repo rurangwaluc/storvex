@@ -143,10 +143,12 @@ function documentSnapshot(value) {
     invoicePrefix: value?.invoicePrefix || "INV",
     warrantyPrefix: value?.warrantyPrefix || "WAR",
     proformaPrefix: value?.proformaPrefix || "PRF",
+    deliveryPrefix: value?.deliveryPrefix || "DLV",
     receiptPadding: value?.receiptPadding || 6,
     invoicePadding: value?.invoicePadding || 6,
     warrantyPadding: value?.warrantyPadding || 6,
     proformaPadding: value?.proformaPadding || 6,
+    deliveryPadding: value?.deliveryPadding || 6,
     invoiceTerms: value?.invoiceTerms || "",
     warrantyTerms: value?.warrantyTerms || "",
     proformaTerms: value?.proformaTerms || "",
@@ -161,6 +163,61 @@ function documentSnapshot(value) {
     taxRateBps: Number(value?.taxRateBps || 0),
     pricesIncludeTax: Boolean(value?.pricesIncludeTax),
     showTaxOnCustomerDocuments: Boolean(value?.showTaxOnCustomerDocuments),
+
+    deliveryRequireReceiverName:
+      value?.deliveryRequireReceiverName === undefined
+        ? true
+        : Boolean(value?.deliveryRequireReceiverName),
+    deliveryRequireReceiverPhone: Boolean(value?.deliveryRequireReceiverPhone),
+    deliveryRequireSignature:
+      value?.deliveryRequireSignature === undefined
+        ? true
+        : Boolean(value?.deliveryRequireSignature),
+    deliveryRequireDeliveredBy:
+      value?.deliveryRequireDeliveredBy === undefined
+        ? true
+        : Boolean(value?.deliveryRequireDeliveredBy),
+    deliveryRequireLocation:
+      value?.deliveryRequireLocation === undefined
+        ? true
+        : Boolean(value?.deliveryRequireLocation),
+    deliveryShowSerialNumbers:
+      value?.deliveryShowSerialNumbers === undefined
+        ? true
+        : Boolean(value?.deliveryShowSerialNumbers),
+    deliveryAllowPartialDelivery: Boolean(value?.deliveryAllowPartialDelivery),
+
+    showDocumentLogo:
+      value?.showDocumentLogo === undefined ? true : Boolean(value?.showDocumentLogo),
+    showDocumentQr: Boolean(value?.showDocumentQr),
+    showDocumentWatermark: Boolean(value?.showDocumentWatermark),
+    showPrintedDate:
+      value?.showPrintedDate === undefined ? true : Boolean(value?.showPrintedDate),
+    showBusinessContacts:
+      value?.showBusinessContacts === undefined
+        ? true
+        : Boolean(value?.showBusinessContacts),
+
+    autoReceiptNumbering:
+      value?.autoReceiptNumbering === undefined
+        ? true
+        : Boolean(value?.autoReceiptNumbering),
+    autoInvoiceNumbering:
+      value?.autoInvoiceNumbering === undefined
+        ? true
+        : Boolean(value?.autoInvoiceNumbering),
+    autoWarrantyNumbering:
+      value?.autoWarrantyNumbering === undefined
+        ? true
+        : Boolean(value?.autoWarrantyNumbering),
+    autoProformaNumbering:
+      value?.autoProformaNumbering === undefined
+        ? true
+        : Boolean(value?.autoProformaNumbering),
+    autoDeliveryNumbering:
+      value?.autoDeliveryNumbering === undefined
+        ? true
+        : Boolean(value?.autoDeliveryNumbering),
   };
 }
 
@@ -424,9 +481,11 @@ export default function SettingsDocuments() {
     },
     {
       title: "Delivery Note",
+      prefix: docForm.deliveryPrefix,
+      padding: docForm.deliveryPadding,
       preview: documentSettings?.deliveryNoteNumberPreview,
       terms: docForm.deliveryNoteTerms,
-      previewLabel: "Document preview",
+      previewLabel: "Next number",
       previewFallback: "Delivery note theme preview",
     },
   ];
@@ -458,6 +517,7 @@ export default function SettingsDocuments() {
           invoicePadding: Number(docForm.invoicePadding),
           warrantyPadding: Number(docForm.warrantyPadding),
           proformaPadding: Number(docForm.proformaPadding),
+          deliveryPadding: Number(docForm.deliveryPadding),
           taxRateBps: Number(docForm.taxRateBps),
           taxName: cleanString(docForm.taxName) || null,
         });
@@ -543,11 +603,16 @@ export default function SettingsDocuments() {
             <label className={fieldLabel()}>Proforma prefix</label>
             <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.proformaPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("proformaPrefix", event.target.value)} />
           </div>
+          <div>
+            <label className={fieldLabel()}>Delivery note prefix</label>
+            <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.deliveryPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("deliveryPrefix", event.target.value)} />
+          </div>
 
           <NumberField label="Receipt digits" value={docForm.receiptPadding} disabled={isReadOnly} onChange={(event) => updateDocField("receiptPadding", event.target.value)} />
           <NumberField label="Invoice digits" value={docForm.invoicePadding} disabled={isReadOnly} onChange={(event) => updateDocField("invoicePadding", event.target.value)} />
           <NumberField label="Warranty digits" value={docForm.warrantyPadding} disabled={isReadOnly} onChange={(event) => updateDocField("warrantyPadding", event.target.value)} />
           <NumberField label="Proforma digits" value={docForm.proformaPadding} disabled={isReadOnly} onChange={(event) => updateDocField("proformaPadding", event.target.value)} />
+          <NumberField label="Delivery note digits" value={docForm.deliveryPadding} disabled={isReadOnly} onChange={(event) => updateDocField("deliveryPadding", event.target.value)} />
         </div>
 
         <div className="svx-settings-form-grid mt-5 svx-documents-color-grid">
@@ -604,6 +669,151 @@ export default function SettingsDocuments() {
               onClick={() => updateDocField("documentSizeMode", option.value)}
             />
           ))}
+        </div>
+      </section>
+
+      <section className={cardClass()}>
+        <SectionHeading
+          eyebrow="Governance"
+          title="Document rules"
+          subtitle="Set the owner rules that staff must follow when documents are created, printed, or handed to customers."
+        />
+
+        <div className="svx-settings-switch-grid svx-documents-option-grid">
+          <SwitchRow
+            title="Show logo"
+            text="Print the business logo on customer documents when available."
+            checked={docForm.showDocumentLogo}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("showDocumentLogo", value)}
+          />
+          <SwitchRow
+            title="Show business contacts"
+            text="Print phone, address, and other business contact details."
+            checked={docForm.showBusinessContacts}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("showBusinessContacts", value)}
+          />
+          <SwitchRow
+            title="Show printed date"
+            text="Show when the document was printed or generated."
+            checked={docForm.showPrintedDate}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("showPrintedDate", value)}
+          />
+          <SwitchRow
+            title="Show QR code"
+            text="Reserve space for future document verification."
+            checked={docForm.showDocumentQr}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("showDocumentQr", value)}
+          />
+          <SwitchRow
+            title="Show watermark"
+            text="Use a light watermark on formal document layouts."
+            checked={docForm.showDocumentWatermark}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("showDocumentWatermark", value)}
+          />
+        </div>
+
+        <div className="svx-settings-switch-grid svx-documents-option-grid">
+          <SwitchRow
+            title="Auto receipt numbering"
+            text="Let Storvex assign receipt numbers automatically."
+            checked={docForm.autoReceiptNumbering}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("autoReceiptNumbering", value)}
+          />
+          <SwitchRow
+            title="Auto invoice numbering"
+            text="Let Storvex assign invoice numbers automatically."
+            checked={docForm.autoInvoiceNumbering}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("autoInvoiceNumbering", value)}
+          />
+          <SwitchRow
+            title="Auto warranty numbering"
+            text="Let Storvex assign warranty numbers automatically."
+            checked={docForm.autoWarrantyNumbering}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("autoWarrantyNumbering", value)}
+          />
+          <SwitchRow
+            title="Auto proforma numbering"
+            text="Let Storvex assign proforma numbers automatically."
+            checked={docForm.autoProformaNumbering}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("autoProformaNumbering", value)}
+          />
+          <SwitchRow
+            title="Auto delivery note numbering"
+            text="Let Storvex assign delivery note numbers automatically."
+            checked={docForm.autoDeliveryNumbering}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("autoDeliveryNumbering", value)}
+          />
+        </div>
+      </section>
+
+      <section className={cardClass()}>
+        <SectionHeading
+          eyebrow="Delivery notes"
+          title="Delivery note rules"
+          subtitle="Delivery notes are goods movement proof. Keep money out and require the handover details that protect the business."
+          action={<Badge tone="warning">No money fields</Badge>}
+        />
+
+        <div className="svx-settings-switch-grid svx-documents-option-grid">
+          <SwitchRow
+            title="Require receiver name"
+            text="Staff must record who received the goods."
+            checked={docForm.deliveryRequireReceiverName}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("deliveryRequireReceiverName", value)}
+          />
+          <SwitchRow
+            title="Require receiver phone"
+            text="Ask for receiver phone when the business needs stronger proof."
+            checked={docForm.deliveryRequireReceiverPhone}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("deliveryRequireReceiverPhone", value)}
+          />
+          <SwitchRow
+            title="Require signature"
+            text="Receiver signature is required before the handover is complete."
+            checked={docForm.deliveryRequireSignature}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("deliveryRequireSignature", value)}
+          />
+          <SwitchRow
+            title="Require delivered by"
+            text="Staff must record who delivered or handed over the goods."
+            checked={docForm.deliveryRequireDeliveredBy}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("deliveryRequireDeliveredBy", value)}
+          />
+          <SwitchRow
+            title="Require delivery location"
+            text="Delivery location or customer address should be recorded."
+            checked={docForm.deliveryRequireLocation}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("deliveryRequireLocation", value)}
+          />
+          <SwitchRow
+            title="Show serial numbers"
+            text="Display serial numbers on delivery notes when products have them."
+            checked={docForm.deliveryShowSerialNumbers}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("deliveryShowSerialNumbers", value)}
+          />
+          <SwitchRow
+            title="Allow partial delivery"
+            text="Allow a delivery note to cover only part of an order."
+            checked={docForm.deliveryAllowPartialDelivery}
+            disabled={isReadOnly}
+            onChange={(value) => updateDocField("deliveryAllowPartialDelivery", value)}
+          />
         </div>
       </section>
 
