@@ -375,7 +375,7 @@ export default function ProformaCreate() {
                 />
               </label>
 
-              <label className="svx-proforma-field svx-proforma-span-2">
+              <label className="svx-proforma-field">
                 <span>Address</span>
                 <input
                   value={form.customerAddress}
@@ -384,7 +384,7 @@ export default function ProformaCreate() {
                 />
               </label>
 
-              <label className="svx-proforma-field svx-proforma-span-2">
+              <label className="svx-proforma-field">
                 <span>Valid until</span>
                 <input
                   value={form.validUntil}

@@ -3,85 +3,44 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
-import { cn } from "../../lib/cn";
 import { getProformaById, updateProforma } from "../../services/proformasApi";
+import { searchProducts } from "../../services/inventoryApi";
+import "./Proformas.css";
 
-const strong = () => "text-[var(--color-text)]";
-const muted = () => "text-[var(--color-text-muted)]";
-const soft = () => "text-[var(--color-text-soft)]";
-const shell = () => "rounded-[28px] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-const panel = () => "rounded-[24px] bg-[var(--color-surface-2)]";
-
-function labelClass() {
-  return "mb-1.5 block text-sm font-medium text-[var(--color-text)]";
+function makeEmptyItem() {
+  return {
+    key: `new-${Math.random().toString(36).slice(2, 10)}`,
+    id: null,
+    productId: "",
+    productName: "",
+    sku: "",
+    category: "",
+    stockQty: 0,
+    description: "",
+    quantity: 1,
+    unitPrice: "",
+    discountPercent: "",
+  };
 }
 
-function inputClass() {
-  return "app-input";
+function cleanText(value) {
+  return String(value || "").trim();
 }
 
-function textareaClass() {
-  return [
-    "w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)]",
-    "min-h-[120px] resize-y px-4 py-3 text-sm leading-6 text-[var(--color-text)]",
-    "outline-none transition placeholder:text-[var(--color-text-muted)]",
-    "focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-ring)]",
-    "shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]",
-  ].join(" ");
+function toNumber(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : 0;
 }
 
-function smallBtn() {
-  return "inline-flex h-9 items-center justify-center rounded-xl bg-[var(--color-card)] px-3 text-sm font-medium text-[var(--color-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
+function money(value, currency = "RWF") {
+  return `${currency} ${Number(value || 0).toLocaleString()}`;
 }
 
-function SummaryRow({ label, value, strongValue = false }) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-2">
-      <span className={cn("text-sm", muted())}>{label}</span>
-      <span
-        className={cn(
-          "text-right text-sm",
-          strongValue ? "font-semibold" : "font-medium",
-          strongValue ? strong() : muted()
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function badgeClass(kind = "neutral") {
-  if (kind === "success") {
-    return "inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300";
-  }
-
-  if (kind === "warning") {
-    return "inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-700 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-300";
-  }
-
-  if (kind === "danger") {
-    return "inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-rose-700 dark:border-rose-900/40 dark:bg-rose-950/20 dark:text-rose-300";
-  }
-
-  return "inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-card)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]";
-}
-
-function statusKind(status) {
-  const value = String(status || "").toUpperCase();
-
-  if (["SENT", "CONVERTED", "ACTIVE"].includes(value)) return "success";
-  if (["DRAFT", "PENDING"].includes(value)) return "warning";
-  if (["CANCELLED", "EXPIRED"].includes(value)) return "danger";
-
-  return "neutral";
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString();
+function clampPercent(value) {
+  const number = toNumber(value);
+  if (number < 0) return 0;
+  if (number > 100) return 100;
+  return number;
 }
 
 function toInputDate(value) {
@@ -91,20 +50,19 @@ function toInputDate(value) {
   return date.toISOString().slice(0, 10);
 }
 
-function money(value, currency = "RWF") {
-  return `${currency} ${Number(value || 0).toLocaleString()}`;
+function productPrice(product) {
+  return (
+    product?.sellPrice ??
+    product?.sellingPrice ??
+    product?.listingPrice ??
+    product?.price ??
+    product?.unitPrice ??
+    0
+  );
 }
 
-function emptyItem() {
-  return {
-    key: `new-${Math.random().toString(36).slice(2, 10)}`,
-    id: null,
-    productId: "",
-    productName: "",
-    serial: "",
-    quantity: 1,
-    unitPrice: 0,
-  };
+function productStock(product) {
+  return product?.effectiveStockQty ?? product?.branchStockQty ?? product?.stockQty ?? 0;
 }
 
 function normalizeProforma(raw) {
@@ -121,8 +79,6 @@ function normalizeProforma(raw) {
     customerAddress: doc?.customerAddress || "",
     currency: doc?.currency || "RWF",
     validUntil: doc?.validUntil || null,
-    preparedBy: doc?.preparedBy || "",
-    reference: doc?.reference || "",
     notes: doc?.notes || "",
     createdAt: doc?.createdAt || null,
     convertedToSaleId: doc?.convertedToSaleId || null,
@@ -131,42 +87,51 @@ function normalizeProforma(raw) {
       id: item?.id || null,
       productId: item?.productId || "",
       productName: item?.productName || item?.product?.name || "",
-      serial: item?.serial || item?.product?.serial || "",
+      sku: item?.product?.sku || item?.sku || "",
+      category: item?.product?.category || item?.category || "",
+      stockQty: productStock(item?.product || item),
+      description: item?.serial || item?.description || "",
       quantity: Number(item?.quantity || 1),
       unitPrice: Number(item?.unitPrice || 0),
+      discountPercent: Number(item?.discountPercent || 0),
     })),
   };
 }
 
-function EditSkeleton() {
+function SummaryRow({ label, value, strong = false }) {
   return (
-    <div className="space-y-6">
-      <section className={cn(shell(), "p-5 md:p-6")}>
-        <div className="h-3 w-28 animate-pulse rounded-full bg-[var(--color-surface)]" />
-        <div className="mt-4 h-8 w-56 animate-pulse rounded-full bg-[var(--color-surface)]" />
-        <div className="mt-3 h-4 w-full max-w-[560px] animate-pulse rounded-full bg-[var(--color-surface)]" />
+    <div className="svx-proforma-summary-row">
+      <span>{label}</span>
+      <strong className={strong ? "is-strong" : ""}>{value || "—"}</strong>
+    </div>
+  );
+}
+
+function StatusCheck({ active, children }) {
+  return (
+    <div className={`svx-proforma-check ${active ? "is-active" : ""}`}>
+      <span>{active ? "✓" : "•"}</span>
+      <strong>{children}</strong>
+    </div>
+  );
+}
+
+function ProductResult({ product, onPick }) {
+  return (
+    <button type="button" onClick={onPick} className="svx-proforma-button">
+      {product?.name || "Unnamed product"} · Stock {productStock(product)} ·{" "}
+      {money(productPrice(product))}
+    </button>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="svx-proforma-page">
+      <section className="svx-proforma-hero">
+        <p className="svx-proforma-eyebrow">Loading</p>
+        <h1>Loading proforma...</h1>
       </section>
-
-      <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="space-y-5">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <section key={i} className={cn(panel(), "p-4 md:p-5")}>
-              <div className="h-5 w-40 animate-pulse rounded-full bg-[var(--color-surface)]" />
-              <div className="mt-2 h-4 w-72 animate-pulse rounded-full bg-[var(--color-surface)]" />
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                {Array.from({ length: 4 }).map((__, j) => (
-                  <div key={j}>
-                    <div className="mb-2 h-3 w-24 animate-pulse rounded-full bg-[var(--color-surface)]" />
-                    <div className="h-11 animate-pulse rounded-2xl bg-[var(--color-surface)]" />
-                  </div>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-
-        <section className={cn(shell(), "h-[300px] animate-pulse p-4 md:p-5")} />
-      </div>
     </div>
   );
 }
@@ -175,6 +140,7 @@ export default function ProformaEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
   const mountedRef = useRef(true);
+  const debounceRef = useRef(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -185,20 +151,19 @@ export default function ProformaEdit() {
     customerPhone: "",
     customerEmail: "",
     customerAddress: "",
-    currency: "RWF",
     validUntil: "",
-    preparedBy: "",
-    reference: "",
     notes: "",
-    status: "DRAFT",
   });
-  const [items, setItems] = useState([emptyItem()]);
+
+  const [items, setItems] = useState([makeEmptyItem()]);
+  const [searchState, setSearchState] = useState({});
 
   useEffect(() => {
     mountedRef.current = true;
 
     return () => {
       mountedRef.current = false;
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, []);
 
@@ -220,14 +185,10 @@ export default function ProformaEdit() {
           customerPhone: doc.customerPhone || "",
           customerEmail: doc.customerEmail || "",
           customerAddress: doc.customerAddress || "",
-          currency: doc.currency || "RWF",
           validUntil: toInputDate(doc.validUntil),
-          preparedBy: doc.preparedBy || "",
-          reference: doc.reference || "",
           notes: doc.notes || "",
-          status: doc.status || "DRAFT",
         });
-        setItems(doc.items?.length ? doc.items : [emptyItem()]);
+        setItems(doc.items?.length ? doc.items : [makeEmptyItem()]);
       } catch (err) {
         console.error(err);
         toast.error(err?.message || "Failed to load proforma");
@@ -246,19 +207,13 @@ export default function ProformaEdit() {
   function updateItem(index, key, value) {
     setItems((prev) =>
       prev.map((item, itemIndex) =>
-        itemIndex === index
-          ? {
-              ...item,
-              [key]:
-                key === "quantity" || key === "unitPrice" ? Number(value || 0) : value,
-            }
-          : item
+        itemIndex === index ? { ...item, [key]: value } : item
       )
     );
   }
 
   function addItem() {
-    setItems((prev) => [...prev, emptyItem()]);
+    setItems((prev) => [...prev, makeEmptyItem()]);
   }
 
   function removeItem(index) {
@@ -268,32 +223,132 @@ export default function ProformaEdit() {
     });
   }
 
-  const normalizedItems = useMemo(() => {
-    return items.filter(
-      (item) =>
-        String(item.productName || "").trim() &&
-        Number(item.quantity || 0) > 0 &&
-        Number(item.unitPrice || 0) >= 0
+  function setItemSearch(key, patch) {
+    setSearchState((prev) => ({
+      ...prev,
+      [key]: {
+        q: "",
+        results: [],
+        searching: false,
+        ...(prev[key] || {}),
+        ...patch,
+      },
+    }));
+  }
+
+  async function runSearch(itemKey, q) {
+    try {
+      setItemSearch(itemKey, { searching: true });
+
+      const data = await searchProducts({
+        q,
+        limit: 20,
+      });
+
+      setItemSearch(itemKey, {
+        searching: false,
+        results: Array.isArray(data?.products) ? data.products : [],
+      });
+    } catch (error) {
+      console.error(error);
+      setItemSearch(itemKey, {
+        searching: false,
+        results: [],
+      });
+    }
+  }
+
+  function handleSearchChange(itemKey, value) {
+    setItemSearch(itemKey, { q: value });
+
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+      setItemSearch(itemKey, { results: [], searching: false });
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      return;
+    }
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => runSearch(itemKey, trimmed), 250);
+  }
+
+  function pickProduct(index, product) {
+    setItems((prev) =>
+      prev.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              productId: product?.id || "",
+              productName: product?.name || "",
+              sku: product?.sku || "",
+              category: product?.category || "",
+              stockQty: productStock(product),
+              unitPrice: productPrice(product),
+            }
+          : item
+      )
     );
+
+    const itemKey = items[index]?.key;
+    if (itemKey) {
+      setItemSearch(itemKey, { q: "", results: [], searching: false });
+    }
+  }
+
+  const calculatedItems = useMemo(() => {
+    return items.map((item) => {
+      const quantity = Math.max(1, parseInt(item.quantity || 1, 10) || 1);
+      const unitPrice = Math.max(0, toNumber(item.unitPrice));
+      const discountPercent = clampPercent(item.discountPercent);
+
+      const gross = quantity * unitPrice;
+      const discount = gross * (discountPercent / 100);
+      const total = Math.max(0, gross - discount);
+
+      return {
+        ...item,
+        quantity,
+        unitPrice,
+        discountPercent,
+        gross,
+        discount,
+        total,
+      };
+    });
   }, [items]);
 
-  const subtotal = useMemo(() => {
-    return normalizedItems.reduce(
-      (sum, item) => sum + Number(item.quantity || 0) * Number(item.unitPrice || 0),
-      0
-    );
-  }, [normalizedItems]);
+  const validItems = useMemo(() => {
+    return calculatedItems.filter((item) => cleanText(item.productName));
+  }, [calculatedItems]);
+
+  const subtotal = useMemo(
+    () => validItems.reduce((sum, item) => sum + Number(item.gross || 0), 0),
+    [validItems]
+  );
+
+  const discountTotal = useMemo(
+    () => validItems.reduce((sum, item) => sum + Number(item.discount || 0), 0),
+    [validItems]
+  );
+
+  const grandTotal = useMemo(
+    () => validItems.reduce((sum, item) => sum + Number(item.total || 0), 0),
+    [validItems]
+  );
+
+  const readyToSave = Boolean(cleanText(form.customerName)) && validItems.length > 0;
 
   async function onSubmit(e) {
     e.preventDefault();
 
-    if (!form.customerName.trim()) {
+    if (!cleanText(form.customerName)) {
       toast.error("Customer name is required");
       return;
     }
 
-    if (!normalizedItems.length) {
-      toast.error("Add at least one valid proforma item");
+    if (!validItems.length) {
+      toast.error("Add at least one product");
       return;
     }
 
@@ -301,22 +356,19 @@ export default function ProformaEdit() {
       setSaving(true);
 
       await updateProforma(id, {
-        customerName: form.customerName.trim(),
-        customerPhone: form.customerPhone.trim() || undefined,
-        customerEmail: form.customerEmail.trim() || undefined,
-        customerAddress: form.customerAddress.trim() || undefined,
-        currency: form.currency.trim() || "RWF",
+        customerName: cleanText(form.customerName),
+        customerPhone: cleanText(form.customerPhone) || undefined,
+        customerEmail: cleanText(form.customerEmail) || undefined,
+        customerAddress: cleanText(form.customerAddress) || undefined,
         validUntil: form.validUntil || null,
-        preparedBy: form.preparedBy.trim() || undefined,
-        reference: form.reference.trim() || undefined,
-        notes: form.notes.trim() || undefined,
-        status: form.status,
-        items: normalizedItems.map((item) => ({
+        notes: cleanText(form.notes) || undefined,
+        currency: documentData?.currency || "RWF",
+        items: validItems.map((item) => ({
           productId: item.productId || undefined,
-          productName: item.productName.trim(),
-          serial: String(item.serial || "").trim() || undefined,
-          quantity: Number(item.quantity || 1),
-          unitPrice: Number(item.unitPrice || 0),
+          productName: cleanText(item.productName),
+          serial: cleanText(item.description) || undefined,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
         })),
       });
 
@@ -331,35 +383,36 @@ export default function ProformaEdit() {
   }
 
   if (loading) {
-    return <EditSkeleton />;
+    return <LoadingState />;
   }
 
   return (
-    <div className="space-y-6">
-      <section className={cn(shell(), "relative overflow-hidden p-5 md:p-6")}>
-        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="min-w-0">
-            <div className={cn("text-[11px] font-semibold uppercase tracking-[0.16em]", soft())}>
-              Document editing
-            </div>
-
-            <h1 className={cn("mt-2 text-2xl font-semibold tracking-tight md:text-3xl", strong())}>
-              Edit Proforma
-            </h1>
-
-            <p className={cn("mt-3 max-w-3xl text-sm leading-6 md:text-[15px]", muted())}>
-              Revise customer details, quotation items, validity, and commercial notes without
-              losing the premium document flow.
+    <div className="svx-proforma-page">
+      <section className="svx-proforma-hero">
+        <div className="svx-proforma-hero-main">
+          <div>
+            <p className="svx-proforma-eyebrow">Document editing</p>
+            <h1>Edit proforma</h1>
+            <p>
+              Update the quotation while keeping Storvex document rules intact. Numbering,
+              staff identity, tax behavior, and final document governance stay system-controlled.
             </p>
+
+            <div className="svx-proforma-badges">
+              <span>{documentData?.number || "Auto numbered"}</span>
+              <span>{documentData?.status || "DRAFT"}</span>
+              <span>No payment recorded</span>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Link to="/app/documents/proformas" className={smallBtn()}>
-              Back to Proformas
+          <div className="svx-proforma-hero-actions">
+            <Link to="/app/documents/proformas" className="svx-proforma-button">
+              Proformas
             </Link>
+
             <Link
               to={`/app/documents/proformas/${encodeURIComponent(id)}/preview`}
-              className={smallBtn()}
+              className="svx-proforma-button"
             >
               Preview
             </Link>
@@ -367,290 +420,261 @@ export default function ProformaEdit() {
         </div>
       </section>
 
-      <form onSubmit={onSubmit} className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
-        <div className="space-y-5">
-          <section className={cn(panel(), "p-4 md:p-5")}>
-            <h2 className={cn("text-base font-semibold", strong())}>Document summary</h2>
-            <p className={cn("mt-1 text-sm", muted())}>
-              Review the quotation reference and current commercial state.
-            </p>
-
-            <div className="mt-5 rounded-[20px] border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
-                    Proforma
-                  </div>
-                  <div className="mt-1 text-sm text-emerald-700 dark:text-emerald-200">
-                    {documentData?.number || "Proforma"}
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-emerald-700/80 dark:text-emerald-200/80">
-                    <span>Date: {formatDate(documentData?.createdAt)}</span>
-                    <span>{documentData?.convertedToSaleId ? "Converted: Yes" : "Converted: No"}</span>
-                  </div>
-                </div>
-
-                <span className={badgeClass(statusKind(form.status))}>
-                  {form.status || "DRAFT"}
-                </span>
+      <form onSubmit={onSubmit} className="svx-proforma-layout">
+        <main className="svx-proforma-main">
+          <section className="svx-proforma-panel">
+            <div className="svx-proforma-section-head">
+              <div>
+                <p className="svx-proforma-eyebrow">Customer quotation</p>
+                <h2>Customer details</h2>
+                <span>Keep only customer details needed for the quotation.</span>
               </div>
             </div>
-          </section>
 
-          <section className={cn(panel(), "p-4 md:p-5")}>
-            <h2 className={cn("text-base font-semibold", strong())}>
-              Customer and commercial details
-            </h2>
-            <p className={cn("mt-1 text-sm", muted())}>
-              Keep the quotation details clear, credible, and ready for approval.
-            </p>
-
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <div>
-                <label className={labelClass()}>Customer name</label>
+            <div className="svx-proforma-grid">
+              <label className="svx-proforma-field svx-proforma-span-2">
+                <span>Customer name</span>
                 <input
                   value={form.customerName}
                   onChange={(e) => updateField("customerName", e.target.value)}
-                  className={inputClass()}
-                  placeholder="Customer name"
+                  placeholder="Customer or business name"
                   required
                 />
-              </div>
+              </label>
 
-              <div>
-                <label className={labelClass()}>Customer phone</label>
+              <label className="svx-proforma-field">
+                <span>Phone</span>
                 <input
                   value={form.customerPhone}
                   onChange={(e) => updateField("customerPhone", e.target.value)}
-                  className={inputClass()}
-                  placeholder="Phone number"
+                  placeholder="Customer phone"
                 />
-              </div>
+              </label>
 
-              <div>
-                <label className={labelClass()}>Customer email</label>
+              <label className="svx-proforma-field">
+                <span>Email</span>
                 <input
                   value={form.customerEmail}
                   onChange={(e) => updateField("customerEmail", e.target.value)}
-                  className={inputClass()}
-                  placeholder="Email address"
+                  placeholder="Customer email"
+                  type="email"
                 />
-              </div>
+              </label>
 
-              <div>
-                <label className={labelClass()}>Valid until</label>
-                <input
-                  type="date"
-                  value={form.validUntil}
-                  onChange={(e) => updateField("validUntil", e.target.value)}
-                  className={inputClass()}
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className={labelClass()}>Customer address</label>
+              <label className="svx-proforma-field">
+                <span>Address</span>
                 <input
                   value={form.customerAddress}
                   onChange={(e) => updateField("customerAddress", e.target.value)}
-                  className={inputClass()}
-                  placeholder="Address"
+                  placeholder="Customer address"
                 />
-              </div>
+              </label>
 
-              <div>
-                <label className={labelClass()}>Prepared by</label>
+              <label className="svx-proforma-field">
+                <span>Valid until</span>
                 <input
-                  value={form.preparedBy}
-                  onChange={(e) => updateField("preparedBy", e.target.value)}
-                  className={inputClass()}
-                  placeholder="Staff member"
+                  value={form.validUntil}
+                  onChange={(e) => updateField("validUntil", e.target.value)}
+                  type="date"
                 />
-              </div>
+              </label>
 
-              <div>
-                <label className={labelClass()}>Reference</label>
-                <input
-                  value={form.reference}
-                  onChange={(e) => updateField("reference", e.target.value)}
-                  className={inputClass()}
-                  placeholder="Reference"
-                />
-              </div>
-
-              <div>
-                <label className={labelClass()}>Currency</label>
-                <input
-                  value={form.currency}
-                  onChange={(e) => updateField("currency", e.target.value.toUpperCase())}
-                  className={inputClass()}
-                  placeholder="RWF"
-                />
-              </div>
-
-              <div>
-                <label className={labelClass()}>Status</label>
-                <select
-                  value={form.status}
-                  onChange={(e) => updateField("status", e.target.value)}
-                  className={inputClass()}
-                >
-                  <option value="DRAFT">DRAFT</option>
-                  <option value="SENT">SENT</option>
-                  <option value="CANCELLED">CANCELLED</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className={labelClass()}>Notes / terms</label>
+              <label className="svx-proforma-field svx-proforma-span-2">
+                <span>Terms and notes</span>
                 <textarea
                   value={form.notes}
                   onChange={(e) => updateField("notes", e.target.value)}
-                  className={textareaClass()}
-                  placeholder="Commercial notes or terms"
-                  rows={4}
+                  placeholder="Quotation conditions, availability, delivery note, or special remarks..."
+                  rows={5}
                 />
-              </div>
+              </label>
             </div>
           </section>
 
-          <section className={cn(panel(), "p-4 md:p-5")}>
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <section className="svx-proforma-panel">
+            <div className="svx-proforma-section-head is-row">
               <div>
-                <h2 className={cn("text-base font-semibold", strong())}>Quotation items</h2>
-                <p className={cn("mt-1 text-sm", muted())}>
-                  Keep the quotation clean, accurate, and easy to validate.
-                </p>
+                <p className="svx-proforma-eyebrow">Commercial lines</p>
+                <h2>Quoted products</h2>
+                <span>Search inventory inside each product card, then adjust quantity and discount.</span>
               </div>
 
-              <button type="button" onClick={addItem} className={smallBtn()}>
-                Add item
+              <button type="button" onClick={addItem} className="svx-proforma-button">
+                Add product
               </button>
             </div>
 
-            <div className="mt-5 space-y-4">
-              {items.map((item, index) => (
-                <div
-                  key={item.key}
-                  className="rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-4"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className={cn("text-sm font-semibold", strong())}>
-                        Item {index + 1}
+            <div className="svx-proforma-items">
+              {calculatedItems.map((item, index) => {
+                const itemSearch = searchState[item.key] || {
+                  q: "",
+                  results: [],
+                  searching: false,
+                };
+
+                return (
+                  <article key={item.key} className="svx-proforma-item">
+                    <div className="svx-proforma-item-head">
+                      <div>
+                        <strong>Product {index + 1}</strong>
+                        <span>
+                          {cleanText(item.productName)
+                            ? `${item.sku || "No SKU"} · ${item.category || "No category"} · Stock ${
+                                item.stockQty ?? 0
+                              }`
+                            : "Search product first"}
+                        </span>
                       </div>
-                      <div className={cn("mt-1 text-xs", soft())}>
-                        This line appears on the proforma.
+
+                      <button
+                        type="button"
+                        onClick={() => removeItem(index)}
+                        className="svx-proforma-button is-danger"
+                        disabled={calculatedItems.length === 1}
+                      >
+                        Remove
+                      </button>
+                    </div>
+
+                    <div className="svx-proforma-field svx-proforma-span-2">
+                      <span>Search inventory</span>
+                      <input
+                        value={itemSearch.q}
+                        onChange={(e) => handleSearchChange(item.key, e.target.value)}
+                        placeholder="Type product name, SKU, brand, model, or part number..."
+                      />
+
+                      {itemSearch.q.trim() ? (
+                        <div className="svx-proforma-items" style={{ marginTop: 12 }}>
+                          {itemSearch.searching ? (
+                            <div className="svx-proforma-line-total">
+                              <span>Status</span>
+                              <strong>Searching...</strong>
+                            </div>
+                          ) : itemSearch.results.length === 0 ? (
+                            <div className="svx-proforma-line-total">
+                              <span>Status</span>
+                              <strong>No products found</strong>
+                            </div>
+                          ) : (
+                            itemSearch.results.map((product) => (
+                              <ProductResult
+                                key={product.id}
+                                product={product}
+                                onPick={() => pickProduct(index, product)}
+                              />
+                            ))
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="svx-proforma-item-grid">
+                      <label className="svx-proforma-field svx-proforma-span-2">
+                        <span>Product</span>
+                        <input
+                          value={item.productName}
+                          readOnly
+                          placeholder="Select product from search above"
+                        />
+                      </label>
+
+                      <label className="svx-proforma-field">
+                        <span>Quantity</span>
+                        <input
+                          value={item.quantity}
+                          onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                          type="number"
+                          min="1"
+                        />
+                      </label>
+
+                      <label className="svx-proforma-field">
+                        <span>Selling price</span>
+                        <input value={money(item.unitPrice, documentData?.currency || "RWF")} readOnly />
+                      </label>
+
+                      <label className="svx-proforma-field">
+                        <span>Discount %</span>
+                        <input
+                          value={item.discountPercent}
+                          onChange={(e) => updateItem(index, "discountPercent", e.target.value)}
+                          type="number"
+                          min="0"
+                          max="100"
+                          placeholder="0"
+                        />
+                      </label>
+
+                      <div className="svx-proforma-line-total">
+                        <span>Line total</span>
+                        <strong>{money(item.total, documentData?.currency || "RWF")}</strong>
                       </div>
-                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => removeItem(index)}
-                      className={smallBtn()}
-                      disabled={items.length <= 1}
-                    >
-                      Remove
-                    </button>
-                  </div>
-
-                  <div className="mt-4 grid gap-4 md:grid-cols-4">
-                    <div className="md:col-span-2">
-                      <label className={labelClass()}>Product name</label>
-                      <input
-                        value={item.productName}
-                        onChange={(e) => updateItem(index, "productName", e.target.value)}
-                        className={inputClass()}
-                        placeholder="Quoted product"
-                      />
+                      <label className="svx-proforma-field svx-proforma-span-2">
+                        <span>Product note</span>
+                        <input
+                          value={item.description}
+                          onChange={(e) => updateItem(index, "description", e.target.value)}
+                          placeholder="Serial, model, condition, compatibility, or warranty note"
+                        />
+                      </label>
                     </div>
-
-                    <div>
-                      <label className={labelClass()}>Quantity</label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => updateItem(index, "quantity", e.target.value)}
-                        className={inputClass()}
-                        placeholder="1"
-                      />
-                    </div>
-
-                    <div>
-                      <label className={labelClass()}>Unit price</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.unitPrice}
-                        onChange={(e) => updateItem(index, "unitPrice", e.target.value)}
-                        className={inputClass()}
-                        placeholder="0"
-                      />
-                    </div>
-
-                    <div className="md:col-span-3">
-                      <label className={labelClass()}>Serial / identifier</label>
-                      <input
-                        value={item.serial}
-                        onChange={(e) => updateItem(index, "serial", e.target.value)}
-                        className={inputClass()}
-                        placeholder="Serial number or identifier"
-                      />
-                    </div>
-
-                    <div>
-                      <label className={labelClass()}>Line total</label>
-                      <div className="flex h-11 items-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3.5 text-sm font-medium text-[var(--color-text)]">
-                        {money(
-                          Number(item.quantity || 0) * Number(item.unitPrice || 0),
-                          form.currency || "RWF"
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           </section>
-        </div>
+        </main>
 
-        <div className="space-y-5">
-          <section className={cn(shell(), "p-4 md:p-5 xl:sticky xl:top-5")}>
+        <aside className="svx-proforma-side">
+          <section className="svx-proforma-summary">
             <div>
-              <h2 className={cn("text-base font-semibold", strong())}>Summary</h2>
-              <p className={cn("mt-1 text-sm", muted())}>
-                Review before saving proforma changes.
-              </p>
+              <p className="svx-proforma-eyebrow">Live quotation</p>
+              <h2>Edit summary</h2>
+              <span>Review what changed before saving the proforma.</span>
             </div>
 
-            <div className="mt-5 divide-y divide-[var(--color-border)]">
+            <div className="svx-proforma-checks">
+              <StatusCheck active={Boolean(cleanText(form.customerName))}>Customer selected</StatusCheck>
+              <StatusCheck active={Boolean(form.validUntil)}>Validity date set</StatusCheck>
+              <StatusCheck active={validItems.length > 0}>At least one product</StatusCheck>
+              <StatusCheck active={readyToSave}>Ready to save</StatusCheck>
+            </div>
+
+            <div className="svx-proforma-summary-list">
               <SummaryRow label="Document" value={documentData?.number || "—"} />
-              <SummaryRow label="Customer" value={form.customerName || "—"} />
-              <SummaryRow label="Prepared by" value={form.preparedBy || "—"} />
-              <SummaryRow label="Status" value={form.status || "DRAFT"} />
-              <SummaryRow label="Validity" value={form.validUntil || "—"} />
-              <SummaryRow label="Items" value={String(normalizedItems.length)} />
+              <SummaryRow label="Customer" value={form.customerName} />
+              <SummaryRow label="Valid until" value={form.validUntil} />
+              <SummaryRow label="Products" value={String(validItems.length)} />
+              <SummaryRow label="Subtotal" value={money(subtotal, documentData?.currency || "RWF")} />
+              <SummaryRow label="Discount" value={money(discountTotal, documentData?.currency || "RWF")} />
+              <SummaryRow label="Tax" value="From settings" />
               <SummaryRow
-                label="Subtotal"
-                value={money(subtotal, form.currency || "RWF")}
-                strongValue
+                label="Grand total"
+                value={money(grandTotal, documentData?.currency || "RWF")}
+                strong
               />
             </div>
 
-            <div className="mt-5 flex flex-col gap-2">
+            <div className="svx-proforma-summary-actions">
               <AsyncButton type="submit" loading={saving} loadingText="Saving..." variant="primary">
-                Save Proforma
+                Save proforma
               </AsyncButton>
 
               <Link
                 to={`/app/documents/proformas/${encodeURIComponent(id)}/preview`}
-                className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] px-5 text-sm font-medium text-[var(--color-text)] transition hover:opacity-90"
+                className="svx-proforma-button"
               >
                 Cancel
               </Link>
             </div>
+
+            <p className="svx-proforma-footnote">
+              Editing does not record payment. It only updates the customer quotation.
+            </p>
           </section>
-        </div>
+        </aside>
       </form>
     </div>
   );
