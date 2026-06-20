@@ -3,28 +3,16 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
-import { cn } from "../../lib/cn";
 import { listDeliveryNotes, deleteDeliveryNote } from "../../services/deliveryNotesApi";
 import { listInvoices } from "../../services/invoicesApi";
 import { listProformas, deleteProforma } from "../../services/proformasApi";
 import { listReceipts } from "../../services/receiptsApi";
 import { listWarranties, deleteWarranty } from "../../services/warrantiesApi";
 import { buildDocumentPrintUrl, openDocumentPrint } from "../../services/documentPrint";
+import "./DocumentCenterPage.css";
 
 const TYPE_KEYS = ["receipts", "invoices", "delivery-notes", "proformas", "warranties"];
-const PAGE_TITLE = "Document Centre • Storvex";
-
-function textStrong() {
-  return "text-[var(--color-text)]";
-}
-
-function textMuted() {
-  return "text-[var(--color-text-muted)]";
-}
-
-function cardClass() {
-  return "rounded-[28px] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-}
+const PAGE_TITLE = "Document Centre - Storvex";
 
 function formatAmount(value) {
   return Number(value || 0).toLocaleString();
@@ -32,16 +20,16 @@ function formatAmount(value) {
 
 function formatMoney(value) {
   if (value == null) return null;
-  return `${formatAmount(value)} RWF`;
+  return `Rwf ${formatAmount(value)}`;
 }
 
 function formatDate(value) {
   if (!value) return "—";
 
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
 
-  return d.toLocaleDateString("en-GB", {
+  return date.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -51,32 +39,83 @@ function formatDate(value) {
 function formatDateShort(value) {
   if (!value) return "";
 
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
 
-  return d.toLocaleDateString("en-GB", {
+  return date.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
 }
 
+function getCurrentMonthValue() {
+  const date = new Date();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${date.getFullYear()}-${month}`;
+}
+
+function formatMonthLabel(value) {
+  if (!value) return "All dates";
+
+  const date = new Date(`${value}-01T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "All dates";
+
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function isSameMonth(value, monthValue) {
+  if (!monthValue) return true;
+  if (!value) return false;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${date.getFullYear()}-${month}` === monthValue;
+}
+
 function statusClass(status) {
   const value = String(status || "").toUpperCase();
 
   if (["PAID", "DELIVERED", "ACTIVE", "COMPLETED", "CONVERTED", "SENT"].includes(value)) {
-    return "badge-success";
+    return "svx-doc-status is-success";
   }
 
   if (["PARTIAL", "DRAFT", "PENDING", "EXPIRING", "EXPIRING SOON", "PROFORMA", "INVOICE"].includes(value)) {
-    return "badge-warning";
+    return "svx-doc-status is-warning";
   }
 
   if (["OVERDUE", "EXPIRED", "CANCELLED", "RETURNED"].includes(value)) {
-    return "badge-danger";
+    return "svx-doc-status is-danger";
   }
 
-  return "badge-neutral";
+  return "svx-doc-status is-neutral";
+}
+
+function isFinancialType(type) {
+  return type === "receipts" || type === "invoices" || type === "proformas";
+}
+
+function getDocumentMeta(document) {
+  const pieces = [];
+
+  if (document.customerName) {
+    pieces.push({ label: "Customer", value: document.customerName });
+  }
+
+  if (document.customerPhone) {
+    pieces.push({ label: "Phone", value: document.customerPhone });
+  }
+
+  if (document.date) {
+    pieces.push({ label: "Date", value: formatDateShort(document.date) });
+  }
+
+  return pieces;
 }
 
 async function deleteDocument(type, id) {
@@ -92,8 +131,6 @@ const TYPE_CONFIG = {
     label: "Receipts",
     shortLabel: "RC",
     tabLabel: "Receipts",
-    iconBg: "bg-emerald-500/10",
-    iconText: "text-emerald-600 dark:text-emerald-400",
     resource: "receipts",
     canCreate: false,
     canEdit: false,
@@ -101,6 +138,8 @@ const TYPE_CONFIG = {
     singular: "receipt",
     createTo: null,
     editTo: () => null,
+    tone: "success",
+    description: "Sales proof and branded payment records.",
     fetch: (query) => listReceipts(query),
     normalize: (response) =>
       (Array.isArray(response?.receipts) ? response.receipts : []).map((item) => ({
@@ -112,15 +151,13 @@ const TYPE_CONFIG = {
         status: item.status || item.saleType || "PAID",
         amount: Number(item.total || 0),
         date: item.createdAt || item.date || null,
-        note: Number(item.balanceDue || 0) > 0 ? `Balance: ${formatAmount(item.balanceDue)} RWF` : null,
+        note: Number(item.balanceDue || 0) > 0 ? `Balance ${formatMoney(item.balanceDue)}` : null,
       })),
   },
   invoices: {
     label: "Invoices",
     shortLabel: "IN",
     tabLabel: "Invoices",
-    iconBg: "bg-[var(--color-primary-soft)]",
-    iconText: "text-[var(--color-primary)]",
     resource: "invoices",
     canCreate: false,
     canEdit: false,
@@ -128,6 +165,8 @@ const TYPE_CONFIG = {
     singular: "invoice",
     createTo: null,
     editTo: () => null,
+    tone: "info",
+    description: "Formal billing records and printable invoice layouts.",
     fetch: (query) => listInvoices(query),
     normalize: (response) =>
       (Array.isArray(response?.invoices) ? response.invoices : []).map((item) => ({
@@ -139,15 +178,13 @@ const TYPE_CONFIG = {
         status: item.status || "INVOICE",
         amount: Number(item.total || 0),
         date: item.createdAt || item.date || null,
-        note: Number(item.balanceDue || 0) > 0 ? `Balance: ${formatAmount(item.balanceDue)} RWF` : null,
+        note: Number(item.balanceDue || 0) > 0 ? `Balance ${formatMoney(item.balanceDue)}` : null,
       })),
   },
   "delivery-notes": {
     label: "Delivery Notes",
     shortLabel: "DN",
-    tabLabel: "Delivery",
-    iconBg: "bg-amber-500/10",
-    iconText: "text-amber-600 dark:text-amber-400",
+    tabLabel: "Delivery Notes",
     resource: "delivery-notes",
     canCreate: true,
     canEdit: true,
@@ -155,6 +192,8 @@ const TYPE_CONFIG = {
     singular: "delivery note",
     createTo: "/app/documents/delivery-notes/create",
     editTo: (id) => `/app/documents/delivery-notes/${encodeURIComponent(id)}/edit`,
+    tone: "warning",
+    description: "Delivered items, receivers, quantities and signatures. No money fields.",
     fetch: (query) => listDeliveryNotes(query),
     normalize: (response) =>
       (Array.isArray(response?.deliveryNotes) ? response.deliveryNotes : []).map((item) => ({
@@ -166,15 +205,13 @@ const TYPE_CONFIG = {
         status: item.status || "DELIVERED",
         amount: null,
         date: item.createdAt || item.date || null,
-        note: item.itemsCount ? `${item.itemsCount} item(s)` : null,
+        note: item.itemsCount ? `${item.itemsCount} item${Number(item.itemsCount) === 1 ? "" : "s"}` : null,
       })),
   },
   proformas: {
     label: "Proformas",
     shortLabel: "PF",
     tabLabel: "Proformas",
-    iconBg: "bg-purple-500/10",
-    iconText: "text-purple-600 dark:text-purple-400",
     resource: "proformas",
     canCreate: true,
     canEdit: true,
@@ -182,6 +219,8 @@ const TYPE_CONFIG = {
     singular: "proforma",
     createTo: "/app/documents/proformas/create",
     editTo: (id) => `/app/documents/proformas/${encodeURIComponent(id)}/edit`,
+    tone: "purple",
+    description: "Pre-sale documents before final billing.",
     fetch: (query) => listProformas(query),
     normalize: (response) =>
       (Array.isArray(response?.proformas) ? response.proformas : []).map((item) => ({
@@ -199,9 +238,7 @@ const TYPE_CONFIG = {
   warranties: {
     label: "Warranties",
     shortLabel: "WR",
-    tabLabel: "Warranty",
-    iconBg: "bg-teal-500/10",
-    iconText: "text-teal-600 dark:text-teal-400",
+    tabLabel: "Warranties",
     resource: "warranties",
     canCreate: true,
     canEdit: true,
@@ -209,6 +246,8 @@ const TYPE_CONFIG = {
     singular: "warranty",
     createTo: "/app/documents/warranties/create",
     editTo: (id) => `/app/documents/warranties/${encodeURIComponent(id)}/edit`,
+    tone: "teal",
+    description: "After-sales coverage records and warranty proof.",
     fetch: (query) => listWarranties(query),
     normalize: (response) =>
       (Array.isArray(response?.warranties) ? response.warranties : []).map((item) => ({
@@ -225,119 +264,133 @@ const TYPE_CONFIG = {
   },
 };
 
+function IconDocument() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M7 3h7l4 4v14H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M14 3v5h5" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M8.5 12h7M8.5 15.5h7M8.5 19h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconRefresh({ spinning }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={spinning ? "is-spinning" : ""} aria-hidden="true">
+      <path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconSearch() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconPrint() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function RowSkeleton({ count = 8 }) {
   return (
-    <div className="divide-y divide-[var(--color-border)]">
+    <div className="svx-doc-list-skeleton" aria-label="Loading documents">
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="flex animate-pulse items-start gap-3 px-4 py-4 sm:px-5">
-          <div className="h-[38px] w-[38px] shrink-0 rounded-[10px] bg-[var(--color-surface)]" />
-          <div className="min-w-0 flex-1 space-y-2 pt-0.5">
-            <div className="h-3.5 w-32 rounded-full bg-[var(--color-surface)]" />
-            <div className="h-3 w-44 max-w-full rounded-full bg-[var(--color-surface)]" />
-            <div className="h-5 w-16 rounded-full bg-[var(--color-surface)]" />
+        <div key={index} className="svx-doc-skeleton-row">
+          <span />
+          <div>
+            <i />
+            <b />
+            <em />
           </div>
-          <div className="w-20 shrink-0 space-y-2 pt-0.5 text-right">
-            <div className="ml-auto h-3.5 w-20 rounded-full bg-[var(--color-surface)]" />
-            <div className="ml-auto h-3 w-14 rounded-full bg-[var(--color-surface)]" />
-          </div>
+          <small />
         </div>
       ))}
     </div>
   );
 }
 
+function DocumentTypeCard({ item, active, count, loading, onClick }) {
+  return (
+    <button
+      type="button"
+      className={`svx-doc-type-card is-${item.tone}${active ? " is-active" : ""}`}
+      onClick={onClick}
+    >
+      <span className="svx-doc-type-icon">{item.shortLabel}</span>
+      <span className="svx-doc-type-copy">
+        <strong>{item.label}</strong>
+        <small>{item.description}</small>
+      </span>
+      <span className="svx-doc-type-count">{loading ? "…" : count}</span>
+    </button>
+  );
+}
+
 function DocumentRow({ document, selected, onClick }) {
   const config = TYPE_CONFIG[document.type];
+  const meta = getDocumentMeta(document);
+  const showMoney = isFinancialType(document.type) && document.amount != null && document.amount > 0;
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        "relative flex w-full min-w-0 items-start gap-3 border-b border-[var(--color-border)] px-4 py-4 text-left transition-colors sm:px-5",
-        selected ? "bg-[var(--color-primary-soft)]" : "hover:bg-[var(--color-surface-2)]"
-      )}
+      className={`svx-doc-row${selected ? " is-selected" : ""} is-${config.tone}`}
     >
-      {selected ? (
-        <div className="absolute left-0 top-0 h-full w-[3px] rounded-r-full bg-[var(--color-primary)]" />
-      ) : null}
+      <span className="svx-doc-row-icon">{config.shortLabel}</span>
 
-      <div
-        className={cn(
-          "flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] text-[11px] font-black",
-          config.iconBg,
-          config.iconText
-        )}
-      >
-        {config.shortLabel}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className={cn("truncate text-[13.5px] font-bold leading-snug", textStrong())}>
-          {document.number}
-        </div>
-
-        <div className={cn("mt-0.5 truncate text-xs leading-snug", textMuted())}>
-          {document.customerName}
-          {document.customerPhone ? ` · ${document.customerPhone}` : ""}
-        </div>
-
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+      <span className="svx-doc-row-main">
+        <strong>{document.number}</strong>
+        <span className="svx-doc-row-meta">
+          {meta.map((item) => (
+            <span key={`${item.label}-${item.value}`}>
+              <b>{item.label}</b>
+              <i>{item.value}</i>
+            </span>
+          ))}
+        </span>
+        <span className="svx-doc-row-status-line">
           <span className={statusClass(document.status)}>{document.status}</span>
-          {document.note ? (
-            <span className={cn("text-[11px] font-medium", textMuted())}>{document.note}</span>
-          ) : null}
-        </div>
-      </div>
+          {document.note ? <small>{document.note}</small> : null}
+        </span>
+      </span>
 
-      <div className="w-[92px] shrink-0 text-right">
-        {document.amount != null && document.amount > 0 ? (
-          <div className={cn("truncate text-sm font-bold tabular-nums", textStrong())}>
-            {formatMoney(document.amount)}
-          </div>
-        ) : document.note && document.amount == null ? (
-          <div className={cn("truncate text-[12px] font-semibold", textMuted())}>{document.note}</div>
-        ) : null}
-
-        <div className={cn("mt-0.5 text-[11px]", textMuted())}>{formatDateShort(document.date)}</div>
-      </div>
+      <span className="svx-doc-row-side">
+        {showMoney ? <strong>{formatMoney(document.amount)}</strong> : <strong className="is-muted">{config.label}</strong>}
+        <small>{formatDateShort(document.date)}</small>
+      </span>
     </button>
   );
 }
 
 function EmptyList({ query }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] text-2xl">
-        📄
-      </div>
-
-      <div className={cn("text-sm font-bold", textStrong())}>
-        {query ? `No results for "${query}"` : "No documents yet"}
-      </div>
-
-      <div className={cn("mt-1 text-xs leading-5", textMuted())}>
-        {query ? "Try a different search term." : "Documents will appear here once they are created."}
-      </div>
+    <div className="svx-doc-empty-list">
+      <span aria-hidden="true">
+        <IconDocument />
+      </span>
+      <strong>{query ? `No results for "${query}"` : "No documents yet"}</strong>
+      <p>{query ? "Try another customer name, phone number, or document number." : "Documents will appear here once they are created."}</p>
     </div>
   );
 }
 
 function PreviewPlaceholder() {
   return (
-    <div className="flex h-full items-center justify-center p-8 text-center">
+    <div className="svx-doc-preview-placeholder">
       <div>
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] text-3xl">
-          📄
-        </div>
-
-        <div className={cn("text-base font-black tracking-tight", textStrong())}>
-          Select a document to preview
-        </div>
-
-        <div className={cn("mx-auto mt-2 max-w-[260px] text-sm leading-6", textMuted())}>
-          Open any row from the list to preview the printable document with your store branding.
-        </div>
+        <span aria-hidden="true">
+          <IconDocument />
+        </span>
+        <strong>Select a document to preview</strong>
+        <p>Choose a row from the list to preview the printable document with your store branding.</p>
       </div>
     </div>
   );
@@ -347,33 +400,30 @@ function ConfirmModal({ open, title, body, loading, onCancel, onConfirm }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+    <div className="svx-doc-modal-layer" role="dialog" aria-modal="true" aria-label={title}>
+      <button
+        type="button"
+        className="svx-doc-modal-backdrop"
         onClick={() => {
           if (!loading) onCancel();
         }}
+        aria-label="Cancel delete"
       />
 
-      <div className={cn(cardClass(), "relative z-10 w-full max-w-md space-y-4 p-6")}>
-        <div className={cn("text-base font-black tracking-tight", textStrong())}>{title}</div>
-        <div className={cn("text-sm leading-6", textMuted())}>{body}</div>
+      <section className="svx-doc-modal-card">
+        <h2>{title}</h2>
+        <p>{body}</p>
 
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <div className="svx-doc-modal-actions">
           <AsyncButton variant="secondary" onClick={onCancel} disabled={loading}>
             Cancel
           </AsyncButton>
 
-          <AsyncButton
-            loading={loading}
-            loadingText="Deleting…"
-            onClick={onConfirm}
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-danger)] px-5 text-sm font-semibold text-white transition hover:opacity-95 disabled:opacity-60"
-          >
+          <AsyncButton loading={loading} loadingText="Deleting…" onClick={onConfirm} className="svx-doc-danger-button">
             Delete
           </AsyncButton>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
@@ -383,66 +433,35 @@ function PreviewBar({ document, onBack, onDelete, deleting }) {
   const editUrl = config.editTo?.(document.id);
 
   return (
-    <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 sm:px-5">
-      <div className="mr-auto min-w-0">
-        <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <span className={cn("truncate text-sm font-bold", textStrong())}>{document.number}</span>
-          <span className={cn("hidden text-xs md:inline", textMuted())}>
-            {config.label} Preview · Printable layout
-          </span>
-        </div>
+    <div className="svx-doc-preview-bar">
+      <div className="svx-doc-preview-title">
+        <strong>{document.number}</strong>
+        <span>{config.label}</span>
+        <span>Printable layout</span>
       </div>
 
-      <button
-        type="button"
-        onClick={onBack}
-        className={cn(
-          "inline-flex h-9 items-center gap-1 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-xs font-semibold transition hover:opacity-90",
-          textMuted()
-        )}
-      >
-        ← Back to list
-      </button>
+      <div className="svx-doc-preview-actions">
+        <button type="button" onClick={onBack} className="svx-doc-secondary-action">
+          Back to list
+        </button>
 
-      {editUrl ? (
-        <Link
-          to={editUrl}
-          className={cn(
-            "inline-flex h-9 items-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 text-xs font-semibold transition hover:opacity-90",
-            textStrong()
-          )}
-        >
-          Edit
-        </Link>
-      ) : null}
+        {editUrl ? (
+          <Link to={editUrl} className="svx-doc-secondary-action">
+            Edit
+          </Link>
+        ) : null}
 
-      {config.canDelete ? (
-        <AsyncButton
-          loading={deleting}
-          loadingText=""
-          onClick={() => onDelete(document)}
-          className="h-9 rounded-2xl bg-[rgba(219,80,74,0.1)] px-3 text-xs font-semibold text-[var(--color-danger)] transition hover:opacity-90 disabled:opacity-60"
-        >
-          Delete
+        {config.canDelete ? (
+          <AsyncButton loading={deleting} loadingText="" onClick={() => onDelete(document)} className="svx-doc-delete-action">
+            Delete
+          </AsyncButton>
+        ) : null}
+
+        <AsyncButton loading={false} variant="primary" onClick={() => openDocumentPrint(config.resource, document.id)} className="svx-doc-print-action">
+          <IconPrint />
+          <span>Print</span>
         </AsyncButton>
-      ) : null}
-
-      <AsyncButton
-        loading={false}
-        variant="primary"
-        onClick={() => openDocumentPrint(config.resource, document.id)}
-        className="h-9 gap-1.5 rounded-2xl px-4 text-xs font-semibold"
-      >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path
-            d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6z"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinejoin="round"
-          />
-        </svg>
-        Print
-      </AsyncButton>
+      </div>
     </div>
   );
 }
@@ -454,15 +473,15 @@ function PreviewPanel({ selected, onBack, onDelete, deleting }) {
   const printUrl = buildDocumentPrintUrl(config.resource, selected.id);
 
   return (
-    <div className="flex h-full min-w-0 flex-col">
+    <div className="svx-doc-preview-panel">
       <PreviewBar document={selected} onBack={onBack} onDelete={onDelete} deleting={deleting} />
 
-      <div className="min-h-0 flex-1 overflow-hidden p-3 sm:p-4">
+      <div className="svx-doc-preview-frame-wrap">
         <iframe
           key={printUrl}
           title={`${config.label} ${selected.id}`}
           src={printUrl}
-          className="h-full w-full rounded-[18px] border border-[var(--color-border)] bg-white"
+          className="svx-doc-preview-frame"
           loading="lazy"
         />
       </div>
@@ -474,6 +493,7 @@ export default function DocumentCenterPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [query, setQuery] = useState("");
   const [draftQuery, setDraftQuery] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [allDocuments, setAllDocuments] = useState({});
   const [counts, setCounts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -483,6 +503,12 @@ export default function DocumentCenterPage() {
   const [deleting, setDeleting] = useState(false);
 
   const mountedRef = useRef(true);
+  const selectedRef = useRef(null);
+  const hasLoadedRef = useRef(false);
+
+  useEffect(() => {
+    selectedRef.current = selected;
+  }, [selected]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -495,8 +521,13 @@ export default function DocumentCenterPage() {
 
   const load = useCallback(
     async ({ silent = false } = {}) => {
-      if (!silent) setLoading(true);
-      else setRefreshing(true);
+      const shouldShowFullLoader = !silent && !hasLoadedRef.current;
+
+      if (shouldShowFullLoader) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
 
       try {
         const results = await Promise.allSettled(TYPE_KEYS.map((key) => TYPE_CONFIG[key].fetch(query)));
@@ -512,10 +543,13 @@ export default function DocumentCenterPage() {
 
         setAllDocuments(next);
         setCounts(Object.fromEntries(TYPE_KEYS.map((key) => [key, next[key].length])));
+        hasLoadedRef.current = true;
 
-        if (selected) {
+        const currentSelected = selectedRef.current;
+
+        if (currentSelected) {
           const freshSelected = TYPE_KEYS.flatMap((key) => next[key]).find(
-            (item) => item.id === selected.id && item.type === selected.type
+            (item) => item.id === currentSelected.id && item.type === currentSelected.type
           );
 
           setSelected(freshSelected || null);
@@ -530,7 +564,7 @@ export default function DocumentCenterPage() {
         setRefreshing(false);
       }
     },
-    [query, selected]
+    [query]
   );
 
   useEffect(() => {
@@ -543,18 +577,14 @@ export default function DocumentCenterPage() {
   }, [draftQuery]);
 
   const visibleDocuments = useMemo(() => {
-    const source =
-      activeTab === "all"
-        ? TYPE_KEYS.flatMap((key) => allDocuments[key] || [])
-        : allDocuments[activeTab] || [];
+    const source = activeTab === "all" ? TYPE_KEYS.flatMap((key) => allDocuments[key] || []) : allDocuments[activeTab] || [];
 
-    return [...source].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-  }, [allDocuments, activeTab]);
+    return source
+      .filter((document) => isSameMonth(document.date, selectedMonth))
+      .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  }, [allDocuments, activeTab, selectedMonth]);
 
-  const totalCount = useMemo(
-    () => TYPE_KEYS.reduce((sum, key) => sum + (counts[key] || 0), 0),
-    [counts]
-  );
+  const totalCount = useMemo(() => TYPE_KEYS.reduce((sum, key) => sum + (counts[key] || 0), 0), [counts]);
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -580,152 +610,111 @@ export default function DocumentCenterPage() {
   }
 
   const tabs = [
-    { key: "all", label: "All", count: totalCount },
-    { key: "receipts", label: "Receipts", count: counts.receipts || 0 },
-    { key: "invoices", label: "Invoices", count: counts.invoices || 0 },
-    { key: "delivery-notes", label: "Delivery", count: counts["delivery-notes"] || 0 },
-    { key: "proformas", label: "Proformas", count: counts.proformas || 0 },
-    { key: "warranties", label: "Warranty", count: counts.warranties || 0 },
+    { key: "all", label: "All documents", count: totalCount, description: "Every document type", tone: "neutral" },
+    ...TYPE_KEYS.map((key) => ({
+      key,
+      label: TYPE_CONFIG[key].label,
+      count: counts[key] || 0,
+      description: TYPE_CONFIG[key].description,
+      tone: TYPE_CONFIG[key].tone,
+    })),
   ];
 
   const activeConfig = activeTab !== "all" ? TYPE_CONFIG[activeTab] : null;
   const showCreate = Boolean(activeConfig?.canCreate && activeConfig?.createTo);
 
-  const monthChip = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthLabel = formatMonthLabel(selectedMonth);
+
+  const activeTitle = activeTab === "all" ? "All documents" : TYPE_CONFIG[activeTab]?.label || "Documents";
+  const activeDescription =
+    activeTab === "all"
+      ? "Search receipts, invoices, delivery notes, proformas, and warranties from one owner workspace."
+      : TYPE_CONFIG[activeTab]?.description || "Search and preview documents.";
 
   return (
-    <div className={cn(cardClass(), "h-[calc(100vh-84px)] overflow-hidden")}>
-      <div className="flex h-full min-w-0 overflow-hidden">
-        <div
-          className={cn(
-            "min-w-0 flex-col border-r border-[var(--color-border)]",
-            selected ? "hidden md:flex md:w-[380px] xl:w-[420px]" : "flex w-full md:w-[380px] xl:w-[420px]"
-          )}
-        >
-          <div className="border-b border-[var(--color-border)] px-4 py-4 sm:px-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h1 className={cn("text-xl font-black tracking-tight", textStrong())}>Document Centre</h1>
-                <p className={cn("mt-0.5 text-xs", textMuted())}>
-                  Receipts, invoices, delivery notes, proformas, and warranties
-                </p>
-              </div>
+    <main className="svx-doc-center-page">
+      <section className="svx-doc-hero">
+        <div>
+          <span>Document center</span>
+          <h1>Document center</h1>
+          <p>
+            Search, preview, print, and manage receipts, invoices, delivery notes, proformas, and warranties.
+            Delivery notes stay focused on goods movement only.
+          </p>
+        </div>
 
-              <div className="flex shrink-0 items-center gap-1.5">
-                <AsyncButton
-                  loading={refreshing}
-                  loadingText=""
-                  variant="secondary"
-                  onClick={() => load({ silent: true })}
-                  className="h-8 w-8 justify-center rounded-[10px] px-0 text-xs"
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    className={refreshing ? "animate-spin" : ""}
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M20 12a8 8 0 10-2.34 5.66M20 12V6m0 6h-6"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                </AsyncButton>
+        <div className="svx-doc-hero-actions">
+          <AsyncButton loading={refreshing} loadingText="Refreshing…" variant="secondary" onClick={() => load({ silent: true })}>
+            <IconRefresh spinning={refreshing} />
+            <span>Refresh</span>
+          </AsyncButton>
 
-                {showCreate ? (
-                  <Link
-                    to={activeConfig.createTo}
-                    className="inline-flex h-8 items-center rounded-[10px] bg-[var(--color-primary)] px-3 text-xs font-semibold text-white transition hover:opacity-95"
-                  >
-                    + New
-                  </Link>
-                ) : null}
-              </div>
+          <Link to="/app/documents/delivery-notes/create" className="svx-doc-primary-link">
+            Create delivery note
+          </Link>
+        </div>
+      </section>
+
+      <section className="svx-doc-type-grid" aria-label="Document type summary">
+        {tabs.map((tab) => (
+          <DocumentTypeCard
+            key={tab.key}
+            item={{ ...tab, shortLabel: tab.key === "all" ? "ALL" : TYPE_CONFIG[tab.key]?.shortLabel || "DC" }}
+            active={activeTab === tab.key}
+            count={tab.count}
+            loading={loading}
+            onClick={() => {
+              setActiveTab(tab.key);
+              setSelected(null);
+            }}
+          />
+        ))}
+      </section>
+
+      <section className={`svx-doc-workspace${selected ? " has-selection" : ""}`}>
+        <div className={`svx-doc-list-panel${selected ? " has-selection" : ""}`}>
+          <header className="svx-doc-list-header">
+            <div>
+              <span>{activeTitle}</span>
+              <h2>{activeDescription}</h2>
             </div>
+
+            <div className="svx-doc-list-header-actions">
+              {showCreate ? (
+                <Link to={activeConfig.createTo} className="svx-doc-compact-primary">
+                  New {activeConfig.singular}
+                </Link>
+              ) : null}
+
+              <button type="button" className="svx-doc-icon-button" onClick={() => load({ silent: true })} aria-label="Refresh documents">
+                <IconRefresh spinning={refreshing} />
+              </button>
+            </div>
+          </header>
+
+          <div className="svx-doc-filter-row">
+            <label className="svx-doc-search-field">
+              <IconSearch />
+              <input
+                placeholder="Search customer, phone, or document number"
+                value={draftQuery}
+                onChange={(event) => setDraftQuery(event.target.value)}
+              />
+            </label>
+
+            <label className="svx-doc-month-chip" title="Filter documents by month">
+              <span>Month</span>
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(event) => setSelectedMonth(event.target.value)}
+                aria-label="Filter documents by month"
+              />
+              <strong>{monthLabel}</strong>
+            </label>
           </div>
 
-          <div className="border-b border-[var(--color-border)] px-3 py-2 sm:px-4">
-            <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  type="button"
-                  onClick={() => setActiveTab(tab.key)}
-                  className={cn(
-                    "flex min-w-0 items-center justify-between gap-2 rounded-2xl border px-3 py-2 text-[12px] font-semibold transition",
-                    activeTab === tab.key
-                      ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
-                      : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-                  )}
-                >
-                  <span className="truncate">{tab.label}</span>
-                  <span
-                    className={cn(
-                      "shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                      activeTab === tab.key
-                        ? "bg-[var(--color-primary)] text-white"
-                        : "bg-[var(--color-card)] text-[var(--color-text-muted)]"
-                    )}
-                  >
-                    {loading ? "…" : tab.count}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="border-b border-[var(--color-border)] px-4 py-2.5 sm:px-5">
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <div className="relative min-w-0 flex-1">
-                <svg
-                  className={cn(
-                    "pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2",
-                    textMuted()
-                  )}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-
-                <input
-                  className={cn(
-                    "h-10 w-full rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-2)] pl-9 pr-3 text-xs",
-                    "text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] outline-none transition",
-                    "focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-ring)]"
-                  )}
-                  placeholder="Search by customer or document number..."
-                  value={draftQuery}
-                  onChange={(event) => setDraftQuery(event.target.value)}
-                />
-              </div>
-
-              <div
-                className={cn(
-                  "flex shrink-0 items-center justify-center gap-1.5 rounded-[12px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-[11px] font-medium",
-                  textMuted()
-                )}
-              >
-                📅 {monthChip}
-              </div>
-            </div>
-          </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+          <div className="svx-doc-list-body">
             {loading ? (
               <RowSkeleton count={9} />
             ) : visibleDocuments.length === 0 ? (
@@ -743,18 +732,14 @@ export default function DocumentCenterPage() {
           </div>
 
           {!loading && visibleDocuments.length > 0 ? (
-            <div className={cn("border-t border-[var(--color-border)] px-4 py-2 text-[11px] sm:px-5", textMuted())}>
-              {visibleDocuments.length} document(s) · Select any row to preview
-            </div>
+            <footer className="svx-doc-list-footer">
+              <span>Showing {visibleDocuments.length} document{visibleDocuments.length === 1 ? "" : "s"}</span>
+              <span>{monthLabel}</span>
+            </footer>
           ) : null}
         </div>
 
-        <div
-          className={cn(
-            "min-w-0 flex-1 overflow-hidden",
-            !selected ? "hidden md:flex md:flex-col" : "flex flex-col"
-          )}
-        >
+        <div className={`svx-doc-preview-shell${selected ? " has-selection" : ""}`}>
           <PreviewPanel
             selected={selected}
             onBack={() => setSelected(null)}
@@ -762,7 +747,7 @@ export default function DocumentCenterPage() {
             deleting={deleting && deleteTarget?.id === selected?.id}
           />
         </div>
-      </div>
+      </section>
 
       <ConfirmModal
         open={Boolean(deleteTarget)}
@@ -774,6 +759,6 @@ export default function DocumentCenterPage() {
         }}
         onConfirm={handleDelete}
       />
-    </div>
+    </main>
   );
 }
