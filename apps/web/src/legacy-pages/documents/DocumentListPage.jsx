@@ -279,7 +279,7 @@ function buildCards(type, rows) {
       status: item.policy || item.status || "Warranty",
       amount: item.endsAt ? `Ends ${formatDate(item.endsAt)}` : "No end date",
       createdAt: item.createdAt,
-      note: item.unitsCount ? `${item.unitsCount} covered unit(s)` : "Coverage record",
+      note: item.unitsCount ? `${item.unitsCount} covered units` : "Coverage record",
     }));
   }
 
@@ -305,7 +305,7 @@ function buildCards(type, rows) {
       contact: item.customerPhone || item.customer?.phone || "—",
       staff: item.deliveredBy || item.cashierName || "—",
       status: item.status || "DELIVERED",
-      amount: item.itemsCount ? `${item.itemsCount} item(s)` : "Document",
+      amount: item.itemsCount ? `${item.itemsCount} items` : "Delivery proof",
       createdAt: item.createdAt || item.date,
       note: item.receivedBy ? `Received by ${item.receivedBy}` : "Delivery proof",
     }));
@@ -615,7 +615,7 @@ export default function DocumentListPage({ type, title, subtitle, listFn }) {
 
       {!loading && cards.length > 0 ? (
         <div className={cn("px-1 text-xs", textMuted())}>
-          {cards.length} {title.toLowerCase()} · Click Preview to see the full branded document · Click Print for the printable layout
+          {cards.length} {title.toLowerCase()}. Preview opens the full branded document. Print opens the printable layout.
         </div>
       ) : null}
 
