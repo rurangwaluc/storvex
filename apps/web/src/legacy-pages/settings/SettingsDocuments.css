@@ -606,3 +606,255 @@
   background-color: #1c1c1d !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
+
+
+/* Top 1% premium refinement for Settings > Documents.
+   This layer reduces visual noise, groups decisions, and keeps PWA layouts compact. */
+.svx-settings-documents-page {
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.svx-documents-identity-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  padding: 0 var(--docs-section-pad) var(--docs-section-pad);
+}
+
+.svx-documents-identity-panel,
+.svx-documents-rule-group {
+  border: 1px solid var(--settings-border);
+  border-radius: var(--docs-panel-radius);
+  background: var(--settings-panel);
+  padding: 16px;
+  min-width: 0;
+}
+
+.svx-documents-mini-head,
+.svx-documents-rule-group-head {
+  margin-bottom: 14px;
+}
+
+.svx-documents-mini-head strong,
+.svx-documents-rule-group-head strong {
+  display: block;
+  color: var(--settings-text);
+  font-size: 14px;
+  font-weight: 950;
+  letter-spacing: -0.02em;
+}
+
+.svx-documents-mini-head p,
+.svx-documents-rule-group-head p {
+  margin-top: 4px;
+  color: var(--settings-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.svx-documents-rule-shell {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  padding: 0 var(--docs-section-pad) var(--docs-section-pad);
+}
+
+.svx-documents-rule-group.is-primary {
+  border-color: rgba(21, 156, 255, 0.28);
+  background:
+    linear-gradient(180deg, rgba(21, 156, 255, 0.08), transparent 130px),
+    var(--settings-panel);
+}
+
+.svx-documents-rule-group-body {
+  display: grid;
+  gap: 9px;
+}
+
+.svx-documents-rule-group .svx-settings-switch-row,
+.svx-documents-delivery-grid .svx-settings-switch-row {
+  min-height: 74px;
+  padding: 12px;
+}
+
+.svx-documents-rule-group .svx-settings-switch-row strong,
+.svx-documents-delivery-grid .svx-settings-switch-row strong {
+  font-size: 12.5px;
+}
+
+.svx-documents-rule-group .svx-settings-switch-row small,
+.svx-documents-delivery-grid .svx-settings-switch-row small {
+  font-size: 11.2px;
+  line-height: 1.35;
+}
+
+.svx-documents-delivery-zone {
+  position: relative;
+  overflow: hidden;
+}
+
+.svx-documents-delivery-zone::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: linear-gradient(180deg, #fbbf24, rgba(251, 191, 36, 0));
+  opacity: 0.9;
+}
+
+.svx-documents-delivery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0 var(--docs-section-pad) var(--docs-section-pad);
+}
+
+.svx-documents-partial-delivery {
+  grid-column: 1 / -1;
+}
+
+.svx-documents-partial-delivery .svx-settings-switch-row {
+  border-color: rgba(251, 191, 36, 0.28);
+  background: rgba(251, 191, 36, 0.07) !important;
+}
+
+.svx-documents-number-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 var(--docs-section-pad) var(--docs-section-pad);
+}
+
+.svx-documents-number-preview-card {
+  display: grid;
+  gap: 14px;
+  min-height: 126px;
+  border: 1px solid var(--settings-border);
+  border-radius: var(--docs-panel-radius);
+  background:
+    linear-gradient(180deg, rgba(21, 156, 255, 0.06), transparent 95px),
+    var(--settings-panel);
+  padding: 16px;
+}
+
+.svx-documents-number-preview-card span {
+  display: block;
+  color: var(--settings-muted);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.svx-documents-number-preview-card strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--settings-text);
+  font-size: clamp(17px, 2vw, 24px);
+  font-weight: 950;
+  letter-spacing: -0.04em;
+  line-height: 1.06;
+}
+
+.svx-documents-number-preview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+:root[data-theme="dark"] .svx-settings-documents-page .svx-documents-identity-panel,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-documents-rule-group,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-documents-number-preview-card {
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  background-color: #1f1f20 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-settings-documents-page .svx-documents-rule-group.is-primary,
+:root[data-theme="dark"] .svx-settings-documents-page .svx-documents-number-preview-card {
+  background:
+    linear-gradient(180deg, rgba(21, 156, 255, 0.08), transparent 110px),
+    #1f1f20 !important;
+}
+
+@media (max-width: 1180px) {
+  .svx-documents-rule-shell,
+  .svx-documents-number-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-documents-rule-group.is-primary {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 920px) {
+  .svx-documents-identity-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 390px) and (max-width: 720px) {
+  .svx-documents-identity-shell,
+  .svx-documents-rule-shell,
+  .svx-documents-delivery-grid,
+  .svx-documents-number-preview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-bottom: 16px !important;
+  }
+
+  .svx-documents-rule-group.is-primary,
+  .svx-documents-partial-delivery {
+    grid-column: 1 / -1;
+  }
+
+  .svx-documents-identity-panel,
+  .svx-documents-rule-group,
+  .svx-documents-number-preview-card {
+    border-radius: 15px;
+    padding: 13px;
+  }
+
+  .svx-documents-number-preview-card {
+    min-height: 108px;
+  }
+
+  .svx-documents-number-preview-card strong {
+    font-size: clamp(14px, 4vw, 18px);
+  }
+
+  .svx-documents-number-preview-card span {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 389px) {
+  .svx-documents-identity-shell,
+  .svx-documents-rule-shell,
+  .svx-documents-delivery-grid,
+  .svx-documents-number-preview-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    padding-bottom: 14px !important;
+  }
+
+  .svx-documents-identity-panel,
+  .svx-documents-rule-group,
+  .svx-documents-number-preview-card {
+    border-radius: 15px;
+    padding: 12px;
+  }
+}

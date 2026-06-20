@@ -2,83 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import AsyncButton from "../../components/ui/AsyncButton";
-import { cn } from "../../lib/cn";
+import "./DocumentsHome.css";
 
-function textStrong() {
-  return "text-[var(--color-text)]";
-}
-
-function textMuted() {
-  return "text-[var(--color-text-muted)]";
-}
-
-function cardClass() {
-  return "rounded-[28px] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-}
-
-function panelClass() {
-  return "rounded-[22px] bg-[var(--color-surface-2)]";
+function cx(...classes) {
+  return classes.filter(Boolean).join(" ");
 }
 
 function Pill({ children, tone = "neutral" }) {
-  const className =
-    {
-      success: "bg-[#7cfcc6] text-[#0b3b2e]",
-      info: "bg-[var(--color-primary-soft)] text-[var(--color-primary)]",
-      warning: "bg-[#ff9f43] text-[#402100]",
-      neutral: "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
-    }[tone] || "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
-
-  return (
-    <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold", className)}>
-      {children}
-    </span>
-  );
-}
-
-function KpiStrip() {
-  return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <div className={cn(panelClass(), "relative overflow-hidden p-4")}>
-        <div className="absolute left-0 top-0 h-full w-1.5 bg-emerald-500" />
-        <div className="pl-2">
-          <div className={cn("text-[11px] font-semibold uppercase tracking-[0.16em]", textMuted())}>
-            Document flow
-          </div>
-          <div className={cn("mt-2 text-xl font-black", textStrong())}>Unified</div>
-          <div className={cn("mt-1 text-xs leading-5", textMuted())}>
-            One place for operational documents
-          </div>
-        </div>
-      </div>
-
-      <div className={cn(panelClass(), "relative overflow-hidden p-4")}>
-        <div className="absolute left-0 top-0 h-full w-1.5 bg-[var(--color-primary)]" />
-        <div className="pl-2">
-          <div className={cn("text-[11px] font-semibold uppercase tracking-[0.16em]", textMuted())}>
-            Branding
-          </div>
-          <div className={cn("mt-2 text-xl font-black", textStrong())}>Live</div>
-          <div className={cn("mt-1 text-xs leading-5", textMuted())}>
-            Print colors and logo follow store settings
-          </div>
-        </div>
-      </div>
-
-      <div className={cn(panelClass(), "relative overflow-hidden p-4")}>
-        <div className="absolute left-0 top-0 h-full w-1.5 bg-amber-500" />
-        <div className="pl-2">
-          <div className={cn("text-[11px] font-semibold uppercase tracking-[0.16em]", textMuted())}>
-            Owner control
-          </div>
-          <div className={cn("mt-2 text-xl font-black", textStrong())}>Clear</div>
-          <div className={cn("mt-1 text-xs leading-5", textMuted())}>
-            Professional output with consistent document standards
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <span className={cx("svx-doc-home-pill", `is-${tone}`)}>{children}</span>;
 }
 
 function DocumentIcon({ type }) {
@@ -143,109 +74,167 @@ function DocumentIcon({ type }) {
         />
       </svg>
     ),
+    settings: (
+      <svg {...props}>
+        <path
+          d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+        <path
+          d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .92l-.03.08a2 2 0 0 1-3.86 0l-.03-.08A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.92-1l-.08-.03a2 2 0 0 1 0-3.86l.08-.03A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.92l.03-.08a2 2 0 0 1 3.86 0l.03.08A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 .92 1l.08.03a2 2 0 0 1 0 3.86l-.08.03a1.7 1.7 0 0 0-.92 1Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
   };
 
   return icons[type] || null;
 }
 
-const SECTIONS = [
+const DOCUMENTS = [
   {
     title: "Receipts",
     path: "/app/documents/receipts",
     createPath: null,
-    createLabel: null,
     type: "receipt",
-    note: "Sales payment records and branded receipt previews.",
-    badge: "High volume",
+    note: "Payment proof created from completed sales.",
+    ownerUse: "Review and print receipt records.",
+    badge: "Sales proof",
     badgeTone: "success",
+    priority: "Daily",
   },
   {
     title: "Invoices",
     path: "/app/documents/invoices",
     createPath: null,
-    createLabel: null,
     type: "invoice",
-    note: "Formal billing documents with owner branding and payment terms.",
-    badge: "Financial",
+    note: "Formal billing records from sales and customer balances.",
+    ownerUse: "Track billing documents and customer payment proof.",
+    badge: "Billing",
     badgeTone: "info",
+    priority: "Daily",
   },
   {
     title: "Delivery Notes",
     path: "/app/documents/delivery-notes",
     createPath: "/app/documents/delivery-notes/create",
-    createLabel: "Create",
     type: "delivery",
-    note: "Goods handover confirmation with branded print layout.",
-    badge: "Logistics",
+    note: "Goods handover proof with receiver details and signatures.",
+    ownerUse: "Confirm what left the store. No money fields.",
+    badge: "No money",
     badgeTone: "warning",
+    priority: "Operations",
   },
   {
     title: "Proformas",
     path: "/app/documents/proformas",
     createPath: "/app/documents/proformas/create",
-    createLabel: "Create",
     type: "proforma",
-    note: "Preliminary quotations before final billing.",
+    note: "Pre-sale quotations before final billing.",
+    ownerUse: "Prepare quotes before the customer commits.",
     badge: "Pre-sale",
     badgeTone: "neutral",
+    priority: "Sales",
   },
   {
     title: "Warranties",
     path: "/app/documents/warranties",
     createPath: "/app/documents/warranties/create",
-    createLabel: "Create",
     type: "warranty",
-    note: "After-sales warranty certificates and coverage records.",
+    note: "After-sales coverage proof and warranty records.",
+    ownerUse: "Support customers after purchase.",
     badge: "After-sales",
     badgeTone: "neutral",
+    priority: "Support",
   },
 ];
 
-const QUICK_LINKS = [
-  { label: "Delivery Notes", to: "/app/documents/delivery-notes" },
-  { label: "Proformas", to: "/app/documents/proformas" },
-  { label: "Warranties", to: "/app/documents/warranties" },
-  { label: "Create Proforma", to: "/app/documents/proformas/create" },
-  { label: "Create Warranty", to: "/app/documents/warranties/create" },
-  { label: "Create Delivery Note", to: "/app/documents/delivery-notes/create" },
+const HEALTH_ITEMS = [
+  {
+    label: "Document flow",
+    value: "Unified",
+    note: "Every document type is in one workspace.",
+    tone: "success",
+  },
+  {
+    label: "Print layout",
+    value: "Branded",
+    note: "Documents use store identity and document settings.",
+    tone: "primary",
+  },
+  {
+    label: "Delivery notes",
+    value: "Protected",
+    note: "Goods movement stays separate from money fields.",
+    tone: "warning",
+  },
+  {
+    label: "Owner control",
+    value: "Central",
+    note: "Prefixes, tax, colors, and terms are controlled in settings.",
+    tone: "neutral",
+  },
 ];
 
-function DocumentCard({ item }) {
+function HealthCard({ item }) {
   return (
-    <div className={cn(cardClass(), "flex flex-col p-5 transition hover:-translate-y-0.5")}>
-      <div className="flex items-start justify-between gap-4">
-        <div
-          className={cn(
-            "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
-            "border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)]"
-          )}
-        >
+    <article className={cx("svx-doc-home-health-card", `is-${item.tone}`)}>
+      <span>{item.label}</span>
+      <strong>{item.value}</strong>
+      <p>{item.note}</p>
+    </article>
+  );
+}
+
+function DocumentCard({ item, featured = false }) {
+  return (
+    <article className={cx("svx-doc-home-card", featured && "is-featured")}>
+      <div className="svx-doc-home-card-top">
+        <div className="svx-doc-home-icon">
           <DocumentIcon type={item.type} />
         </div>
 
-        <Pill tone={item.badgeTone}>{item.badge}</Pill>
+        <div className="svx-doc-home-card-badges">
+          <Pill tone={item.badgeTone}>{item.badge}</Pill>
+          <Pill>{item.priority}</Pill>
+        </div>
       </div>
 
-      <h2 className={cn("mt-5 text-lg font-black tracking-tight", textStrong())}>{item.title}</h2>
-      <p className={cn("mt-2 flex-1 text-sm leading-6", textMuted())}>{item.note}</p>
+      <div className="svx-doc-home-card-body">
+        <h2>{item.title}</h2>
+        <p>{item.note}</p>
+        <small>{item.ownerUse}</small>
+      </div>
 
-      <div className="mt-5 flex flex-wrap gap-2">
-        <Link
-          to={item.path}
-          className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-4 text-sm font-semibold text-white transition hover:opacity-95"
-        >
-          Open section
+      <div className="svx-doc-home-card-actions">
+        <Link to={item.path} className="svx-doc-home-button is-primary">
+          Open
         </Link>
 
-        {item.createPath && item.createLabel ? (
-          <Link
-            to={item.createPath}
-            className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] px-4 text-sm font-semibold text-[var(--color-text)] transition hover:opacity-90"
-          >
-            {item.createLabel}
+        {item.createPath ? (
+          <Link to={item.createPath} className="svx-doc-home-button">
+            Create
           </Link>
         ) : null}
       </div>
+    </article>
+  );
+}
+
+function SkeletonGrid() {
+  return (
+    <div className="svx-doc-home-grid">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <div key={index} className="svx-doc-home-skeleton-card">
+          <div className="svx-doc-home-skeleton-icon" />
+          <div className="svx-doc-home-skeleton-line is-title" />
+          <div className="svx-doc-home-skeleton-line" />
+          <div className="svx-doc-home-skeleton-line is-short" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -259,89 +248,81 @@ export default function DocumentsHome() {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <div className={cn(cardClass(), "overflow-hidden")}>
-        <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-            <div className="min-w-0">
-              <div className={cn("text-[11px] font-semibold uppercase tracking-[0.18em]", textMuted())}>
-                Unified workspace
-              </div>
-
-              <h1 className={cn("mt-3 text-[1.6rem] font-black tracking-tight sm:text-[1.9rem]", textStrong())}>
-                Document Centre
-              </h1>
-
-              <p className={cn("mt-2 max-w-3xl text-sm leading-6", textMuted())}>
-                One premium home for receipts, invoices, delivery notes, proformas, and warranties.
-                Preview branded documents, verify terms, and keep every business proof easy to find.
-              </p>
-            </div>
-
-            <div className="flex shrink-0 flex-wrap gap-2">
-              <AsyncButton loading={false} variant="primary" onClick={() => navigate("/app/documents/receipts")}>
-                Open Receipts
-              </AsyncButton>
-
-              <AsyncButton loading={false} variant="secondary" onClick={() => navigate("/app/documents/invoices")}>
-                Open Invoices
-              </AsyncButton>
-            </div>
-          </div>
-        </div>
-
-        <div className="px-5 py-5 sm:px-6">
-          <KpiStrip />
-        </div>
-      </div>
-
-      {!mounted ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {[0, 1, 2, 3, 4].map((item) => (
-            <div
-              key={item}
-              className="space-y-4 rounded-[28px] bg-[var(--color-card)] p-5 shadow-[var(--shadow-card)]"
-            >
-              <div className="h-12 w-12 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
-              <div className="h-5 w-28 animate-pulse rounded-full bg-[var(--color-surface-2)]" />
-              <div className="h-4 w-full animate-pulse rounded-full bg-[var(--color-surface-2)]" />
-              <div className="h-4 w-4/5 animate-pulse rounded-full bg-[var(--color-surface-2)]" />
-              <div className="h-11 w-32 animate-pulse rounded-2xl bg-[var(--color-surface-2)]" />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {SECTIONS.map((item) => (
-            <DocumentCard key={item.path} item={item} />
-          ))}
-        </div>
-      )}
-
-      <div className={cn(cardClass(), "p-5 sm:p-6")}>
-        <div className="grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+    <div className="svx-doc-home">
+      <section className="svx-doc-home-hero">
+        <div className="svx-doc-home-hero-main">
           <div>
-            <div className={cn("text-lg font-black tracking-tight", textStrong())}>Why this matters</div>
-
-            <p className={cn("mt-2 text-sm leading-6", textMuted())}>
-              Real stores need proof, billing, delivery, and after-sales accountability in one place.
-              Document Centre keeps those records branded, print-ready, and easy for owners and staff to follow.
+            <p className="svx-doc-home-eyebrow">Document center</p>
+            <h1>Business documents</h1>
+            <p>
+              Search, preview, print, and control receipts, invoices, delivery notes, proformas,
+              and warranties from one clean Storvex workspace.
             </p>
           </div>
 
-          <div className={cn(panelClass(), "border border-[var(--color-border)] p-4")}>
-            <div className={cn("text-sm font-bold", textStrong())}>Quick access</div>
+          <div className="svx-doc-home-hero-actions">
+            <AsyncButton loading={false} variant="secondary" onClick={() => navigate("/app/settings/documents")}>
+              Document settings
+            </AsyncButton>
 
-            <div className="mt-3 grid gap-2">
-              {QUICK_LINKS.map((link) => (
-                <Link key={link.to} to={link.to} className={cn("text-sm transition hover:opacity-80 hover:underline", textMuted())}>
-                  {link.label}
-                </Link>
-              ))}
-            </div>
+            <AsyncButton loading={false} variant="primary" onClick={() => navigate("/app/documents/delivery-notes/create")}>
+              Create delivery note
+            </AsyncButton>
           </div>
         </div>
-      </div>
+
+        <div className="svx-doc-home-health-grid">
+          {HEALTH_ITEMS.map((item) => (
+            <HealthCard key={item.label} item={item} />
+          ))}
+        </div>
+      </section>
+
+      <section className="svx-doc-home-section">
+        <div className="svx-doc-home-section-head">
+          <div>
+            <p className="svx-doc-home-eyebrow">Daily documents</p>
+            <h2>Open the document you need</h2>
+          </div>
+
+          <Link to="/app/settings/documents" className="svx-doc-home-settings-link">
+            <DocumentIcon type="settings" />
+            Settings
+          </Link>
+        </div>
+
+        {!mounted ? (
+          <SkeletonGrid />
+        ) : (
+          <div className="svx-doc-home-grid">
+            {DOCUMENTS.map((item) => (
+              <DocumentCard key={item.path} item={item} featured={item.type === "delivery"} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="svx-doc-home-bottom">
+        <div>
+          <p className="svx-doc-home-eyebrow">Owner workflow</p>
+          <h2>Documents follow the business flow</h2>
+          <p>
+            Sales create receipts and invoices. Goods movement uses delivery notes. Pre-sale work
+            uses proformas. After-sales support uses warranties. Settings control the shared
+            document identity.
+          </p>
+        </div>
+
+        <div className="svx-doc-home-workflow">
+          <Link to="/app/pos/sales">Sales desk</Link>
+          <span>→</span>
+          <Link to="/app/documents/receipts">Receipts</Link>
+          <span>→</span>
+          <Link to="/app/documents/delivery-notes">Delivery proof</Link>
+          <span>→</span>
+          <Link to="/app/settings/documents">Document settings</Link>
+        </div>
+      </section>
     </div>
   );
 }

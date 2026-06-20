@@ -8,6 +8,7 @@ import { deleteDeliveryNote } from "../../services/deliveryNotesApi";
 import { deleteProforma } from "../../services/proformasApi";
 import { deleteWarranty } from "../../services/warrantiesApi";
 import { openDocumentPrint } from "../../services/documentPrint";
+import "../deliveryNotes/DeliveryNotes.css";
 
 function textStrong() {
   return "text-[var(--color-text)]";
@@ -32,7 +33,24 @@ function safeDate(value) {
 
 function formatDate(value) {
   const date = safeDate(value);
-  return date ? date.toLocaleDateString() : "—";
+  return date ? date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }) : "—";
+}
+
+function isToday(value) {
+  const date = safeDate(value);
+  if (!date) return false;
+
+  const today = new Date();
+
+  return (
+    date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear()
+  );
 }
 
 function formatMoney(value, currency = "RWF") {
@@ -96,6 +114,20 @@ function DocumentSkeleton({ rows = 6 }) {
   );
 }
 
+function DeliveryListSkeleton({ rows = 6 }) {
+  return (
+    <div className="svx-delivery-list">
+      {Array.from({ length: rows }).map((_, index) => (
+        <div key={index} className="svx-delivery-list-card is-loading">
+          <div className="svx-delivery-skeleton-line" style={{ width: "34%" }} />
+          <div className="svx-delivery-skeleton-line" style={{ width: "58%" }} />
+          <div className="svx-delivery-skeleton-line" style={{ width: "46%" }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function KpiStrip({ total, active, flagged, label, loading }) {
   function StatBlock({ label: statLabel, value, tone }) {
     return (
@@ -137,6 +169,15 @@ function KpiStrip({ total, active, flagged, label, loading }) {
   );
 }
 
+function DeliveryKpiCard({ label, value, loading, tone = "neutral" }) {
+  return (
+    <article className={`svx-delivery-list-kpi is-${tone}`}>
+      <span>{label}</span>
+      {loading ? <i /> : <strong>{value}</strong>}
+    </article>
+  );
+}
+
 function EmptyState({ title, note, linkTo, linkLabel }) {
   return (
     <div className={cn(cardClass(), "px-5 py-12 text-center")}>
@@ -154,6 +195,23 @@ function EmptyState({ title, note, linkTo, linkLabel }) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function DeliveryEmptyState({ query }) {
+  return (
+    <section className="svx-delivery-empty-state">
+      <div className="svx-delivery-empty-icon">DN</div>
+      <h2>{query ? "No delivery notes found" : "No delivery notes yet"}</h2>
+      <p>
+        {query
+          ? `No delivery notes match "${query}". Try another customer name, phone, or note number.`
+          : "Create a delivery note when goods leave the store and receiver proof is needed."}
+      </p>
+      <Link to="/app/documents/delivery-notes/create" className="svx-delivery-link-button is-primary">
+        Create delivery note
+      </Link>
+    </section>
   );
 }
 
@@ -268,6 +326,15 @@ function getTypeMeta(type) {
   };
 }
 
+function getItemCount(item) {
+  const direct = Number(item?.itemsCount ?? item?.itemCount ?? item?._count?.items ?? 0);
+
+  if (Number.isFinite(direct) && direct > 0) return direct;
+  if (Array.isArray(item?.items)) return item.items.length;
+
+  return 0;
+}
+
 function buildCards(type, rows) {
   if (type === "warranties") {
     return rows.map((item) => ({
@@ -298,17 +365,27 @@ function buildCards(type, rows) {
   }
 
   if (type === "delivery-notes") {
-    return rows.map((item) => ({
-      id: item.id,
-      title: item.number || "Delivery Note",
-      subtitle: item.customerName || item.customer?.name || "Customer",
-      contact: item.customerPhone || item.customer?.phone || "—",
-      staff: item.deliveredBy || item.cashierName || "—",
-      status: item.status || "DELIVERED",
-      amount: item.itemsCount ? `${item.itemsCount} items` : "Delivery proof",
-      createdAt: item.createdAt || item.date,
-      note: item.receivedBy ? `Received by ${item.receivedBy}` : "Delivery proof",
-    }));
+    return rows.map((item) => {
+      const receivedBy = item.receivedBy || item.receiverName || "";
+      const itemCount = getItemCount(item);
+
+      return {
+        id: item.id,
+        title: item.number || "Delivery note",
+        subtitle: item.customerName || item.customer?.name || "Customer",
+        contact: item.customerPhone || item.customer?.phone || "—",
+        staff: item.deliveredBy || item.cashierName || "—",
+        status: item.status || "DELIVERED",
+        amount: itemCount ? `${itemCount} items` : "Delivery proof",
+        itemCount,
+        createdAt: item.date || item.createdAt,
+        receiver: receivedBy || "—",
+        receiverPhone: item.receivedByPhone || item.receiverPhone || "—",
+        location: item.customerAddress || item.deliveryLocation || "—",
+        signed: Boolean(receivedBy),
+        note: receivedBy ? `Received by ${receivedBy}` : "Receiver not recorded",
+      };
+    });
   }
 
   return rows.map((item) => ({
@@ -402,6 +479,87 @@ function DocumentRow({ row, typeMeta, type, onDelete, deleting }) {
   );
 }
 
+function DeliveryNoteRow({ row, onDelete, deleting }) {
+  const previewPath = `/app/documents/delivery-notes/${encodeURIComponent(row.id)}/preview`;
+  const editPath = `/app/documents/delivery-notes/${encodeURIComponent(row.id)}/edit`;
+
+  return (
+    <article className="svx-delivery-list-card">
+      <Link to={previewPath} className="svx-delivery-list-main">
+        <div className="svx-delivery-list-icon">DN</div>
+
+        <div className="svx-delivery-list-content">
+          <div className="svx-delivery-list-top">
+            <h3>{row.title}</h3>
+            <span className={`svx-delivery-badge ${row.signed ? "is-success" : "is-warning"}`}>
+              {row.signed ? "Received" : "Receiver missing"}
+            </span>
+          </div>
+
+          <div className="svx-delivery-list-fields">
+            <span>
+              <b>Customer</b>
+              {row.subtitle}
+            </span>
+            <span>
+              <b>Phone</b>
+              {row.contact}
+            </span>
+            <span>
+              <b>Delivered by</b>
+              {row.staff}
+            </span>
+            <span>
+              <b>Date</b>
+              {formatDate(row.createdAt)}
+            </span>
+            <span>
+              <b>Received by</b>
+              {row.receiver}
+            </span>
+            <span>
+              <b>Items</b>
+              {row.itemCount || "—"}
+            </span>
+          </div>
+
+          <div className="svx-delivery-list-location">
+            <b>Location</b>
+            <span>{row.location}</span>
+          </div>
+        </div>
+      </Link>
+
+      <div className="svx-delivery-list-actions">
+        <Link to={previewPath} className="svx-delivery-link-button is-primary">
+          Preview
+        </Link>
+
+        <Link to={editPath} className="svx-delivery-link-button">
+          Edit
+        </Link>
+
+        <button
+          type="button"
+          onClick={() => openDocumentPrint("delivery-notes", row.id)}
+          className="svx-delivery-button"
+        >
+          Print
+        </button>
+
+        <AsyncButton
+          loading={deleting}
+          loadingText=""
+          onClick={() => onDelete(row)}
+          className="svx-delivery-button is-danger"
+        >
+          Delete
+        </AsyncButton>
+      </div>
+    </article>
+  );
+}
+
 export default function DocumentListPage({ type, title, subtitle, listFn }) {
   const [query, setQuery] = useState("");
   const [draftQuery, setDraftQuery] = useState("");
@@ -413,6 +571,7 @@ export default function DocumentListPage({ type, title, subtitle, listFn }) {
 
   const mountedRef = useRef(true);
   const typeMeta = useMemo(() => getTypeMeta(type), [type]);
+  const isDeliveryNotes = type === "delivery-notes";
 
   useEffect(() => {
     mountedRef.current = true;
@@ -474,6 +633,12 @@ export default function DocumentListPage({ type, title, subtitle, listFn }) {
     ["PARTIAL", "UNPAID", "PENDING", "EXPIRED", "OVERDUE"].includes(String(item.status || "").toUpperCase())
   ).length;
 
+  const deliveryTodayCount = cards.filter((item) => isToday(item.createdAt)).length;
+  const deliveryUnsignedCount = cards.filter((item) => !item.signed).length;
+  const deliveryCustomerCount = new Set(
+    cards.map((item) => String(item.subtitle || "").trim()).filter(Boolean)
+  ).size;
+
   async function handleConfirmDelete() {
     if (!deleteTarget?.id) return;
 
@@ -490,6 +655,132 @@ export default function DocumentListPage({ type, title, subtitle, listFn }) {
     } finally {
       if (mountedRef.current) setDeletingId("");
     }
+  }
+
+  if (isDeliveryNotes) {
+    return (
+      <div className="svx-delivery-page svx-delivery-list-page">
+        <section className="svx-delivery-hero">
+          <div className="svx-delivery-hero-inner">
+            <div>
+              <Link
+                to="/app/documents"
+                className="svx-delivery-back-link"
+              >
+                ← Back to document center
+              </Link>
+
+              <p className="svx-delivery-eyebrow">
+                Document center
+              </p>
+
+              <h1 className="svx-delivery-title">
+                {title}
+              </h1>
+
+              <p className="svx-delivery-subtitle">
+                {subtitle ||
+                  "Track goods handover proof, receiver details, delivered items, and signatures. Delivery notes do not show money, prices, tax, totals, or payment fields."}
+              </p>
+            </div>
+
+            <div className="svx-delivery-actions">
+              <button
+                type="button"
+                onClick={() => load(query, { silent: true })}
+                className="svx-delivery-button"
+                disabled={refreshing}
+              >
+                {refreshing ? "Refreshing..." : "Refresh"}
+              </button>
+
+              <Link to="/app/documents/delivery-notes/create" className="svx-delivery-link-button is-primary">
+                Create delivery note
+              </Link>
+            </div>
+          </div>
+
+          <div className="svx-delivery-list-kpis">
+            <DeliveryKpiCard label="Total notes" value={totalCount} loading={loading} tone="primary" />
+            <DeliveryKpiCard label="Today's deliveries" value={deliveryTodayCount} loading={loading} tone="success" />
+            <DeliveryKpiCard label="Unsigned" value={deliveryUnsignedCount} loading={loading} tone={deliveryUnsignedCount > 0 ? "warning" : "neutral"} />
+            <DeliveryKpiCard label="Customers" value={deliveryCustomerCount} loading={loading} tone="neutral" />
+          </div>
+        </section>
+
+        <section className="svx-delivery-list-search-card">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              setQuery(draftQuery);
+              void load(draftQuery);
+            }}
+            className="svx-delivery-list-search"
+          >
+            <input
+              className="svx-delivery-input"
+              placeholder="Search delivery notes by number, customer, or phone..."
+              value={draftQuery}
+              onChange={(event) => setDraftQuery(event.target.value)}
+            />
+
+            <div className="svx-delivery-list-search-actions">
+              <AsyncButton type="submit" loading={loading && Boolean(draftQuery)} loadingText="Searching…" variant="primary">
+                Search
+              </AsyncButton>
+
+              {draftQuery ? (
+                <button
+                  type="button"
+                  className="svx-delivery-button"
+                  onClick={() => {
+                    setDraftQuery("");
+                    setQuery("");
+                    void load("");
+                  }}
+                >
+                  Clear
+                </button>
+              ) : null}
+            </div>
+          </form>
+        </section>
+
+        {loading ? (
+          <DeliveryListSkeleton rows={6} />
+        ) : cards.length === 0 ? (
+          <DeliveryEmptyState query={query} />
+        ) : (
+          <section className="svx-delivery-list">
+            {cards.map((row) => (
+              <DeliveryNoteRow
+                key={row.id}
+                row={row}
+                onDelete={setDeleteTarget}
+                deleting={deletingId === row.id}
+              />
+            ))}
+          </section>
+        )}
+
+        {!loading && cards.length > 0 ? (
+          <div className="svx-delivery-list-note">
+            {cards.length} delivery notes. Preview opens the branded document. Print opens the printable handover layout.
+          </div>
+        ) : null}
+
+        <ConfirmDeleteModal
+          open={Boolean(deleteTarget)}
+          title="Delete delivery note?"
+          body={`"${deleteTarget?.title || "This delivery note"}" will be permanently removed. This cannot be undone.`}
+          deleting={Boolean(deletingId)}
+          onCancel={() => {
+            if (!deletingId) setDeleteTarget(null);
+          }}
+          onConfirm={handleConfirmDelete}
+        />
+      </div>
+    );
   }
 
   return (

@@ -278,6 +278,35 @@ function SwitchRow({ title, text, checked, disabled, onChange, tone = "neutral" 
   );
 }
 
+function SwitchGroup({ title, text, children, tone = "neutral" }) {
+  return (
+    <div className={cx("svx-documents-rule-group", `is-${tone}`)}>
+      <div className="svx-documents-rule-group-head">
+        <strong>{title}</strong>
+        {text ? <p>{text}</p> : null}
+      </div>
+      <div className="svx-documents-rule-group-body">{children}</div>
+    </div>
+  );
+}
+
+function NumberPreviewCard({ label, preview, prefix, autoNumbering }) {
+  return (
+    <article className="svx-documents-number-preview-card">
+      <div>
+        <span>{label}</span>
+        <strong>{preview || "Preview unavailable"}</strong>
+      </div>
+      <div className="svx-documents-number-preview-meta">
+        {prefix ? <Badge tone="strong">{prefix}</Badge> : null}
+        <Badge tone={autoNumbering ? "primary" : "neutral"}>
+          {autoNumbering ? "Auto numbering" : "Manual numbering"}
+        </Badge>
+      </div>
+    </article>
+  );
+}
+
 function NumberField({ label, value, disabled, onChange, help }) {
   return (
     <div>
@@ -455,6 +484,8 @@ export default function SettingsDocuments() {
       preview: documentSettings?.receiptNumberPreview,
       terms: copyForm.receiptFooter,
       taxLabel: taxIsCustomerFacing ? docForm.taxName || "Tax shown" : "",
+      autoNumbering: docForm.autoReceiptNumbering,
+      priority: true,
     },
     {
       title: "Invoice",
@@ -463,21 +494,8 @@ export default function SettingsDocuments() {
       preview: documentSettings?.invoiceNumberPreview,
       terms: docForm.invoiceTerms,
       taxLabel: taxIsCustomerFacing ? docForm.taxName || "Tax shown" : "",
-    },
-    {
-      title: "Warranty",
-      prefix: docForm.warrantyPrefix,
-      padding: docForm.warrantyPadding,
-      preview: documentSettings?.warrantyNumberPreview,
-      terms: docForm.warrantyTerms,
-    },
-    {
-      title: "Proforma",
-      prefix: docForm.proformaPrefix,
-      padding: docForm.proformaPadding,
-      preview: documentSettings?.proformaNumberPreview,
-      terms: docForm.proformaTerms,
-      taxLabel: taxIsCustomerFacing ? docForm.taxName || "Tax shown" : "",
+      autoNumbering: docForm.autoInvoiceNumbering,
+      priority: true,
     },
     {
       title: "Delivery Note",
@@ -487,10 +505,31 @@ export default function SettingsDocuments() {
       terms: docForm.deliveryNoteTerms,
       previewLabel: "Next number",
       previewFallback: "Delivery note theme preview",
+      autoNumbering: docForm.autoDeliveryNumbering,
+      priority: true,
+    },
+    {
+      title: "Warranty",
+      prefix: docForm.warrantyPrefix,
+      padding: docForm.warrantyPadding,
+      preview: documentSettings?.warrantyNumberPreview,
+      terms: docForm.warrantyTerms,
+      autoNumbering: docForm.autoWarrantyNumbering,
+      priority: false,
+    },
+    {
+      title: "Proforma",
+      prefix: docForm.proformaPrefix,
+      padding: docForm.proformaPadding,
+      preview: documentSettings?.proformaNumberPreview,
+      terms: docForm.proformaTerms,
+      taxLabel: taxIsCustomerFacing ? docForm.taxName || "Tax shown" : "",
+      autoNumbering: docForm.autoProformaNumbering,
+      priority: false,
     },
   ];
 
-  const visiblePreviews = showAllPreviews ? previewItems : previewItems.slice(0, 3);
+  const visiblePreviews = showAllPreviews ? previewItems : previewItems.filter((item) => item.priority);
 
   function updateDocField(key, value) {
     setDocForm((current) => ({ ...current, [key]: value }));
@@ -583,36 +622,54 @@ export default function SettingsDocuments() {
         <SectionHeading
           eyebrow="Identity"
           title="Document identity"
-          subtitle="Keep document prefixes short, clear, and easy to recognize on printed receipts, invoices, warranties, and proformas."
+          subtitle="Keep document prefixes and numbering easy to recognize on receipts, invoices, delivery notes, warranties, and proformas."
         />
 
-        <div className="svx-settings-form-grid is-four svx-documents-number-grid">
-          <div>
-            <label className={fieldLabel()}>Receipt prefix</label>
-            <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.receiptPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("receiptPrefix", event.target.value)} />
-          </div>
-          <div>
-            <label className={fieldLabel()}>Invoice prefix</label>
-            <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.invoicePrefix} disabled={isReadOnly} onChange={(event) => updateDocField("invoicePrefix", event.target.value)} />
-          </div>
-          <div>
-            <label className={fieldLabel()}>Warranty prefix</label>
-            <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.warrantyPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("warrantyPrefix", event.target.value)} />
-          </div>
-          <div>
-            <label className={fieldLabel()}>Proforma prefix</label>
-            <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.proformaPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("proformaPrefix", event.target.value)} />
-          </div>
-          <div>
-            <label className={fieldLabel()}>Delivery note prefix</label>
-            <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.deliveryPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("deliveryPrefix", event.target.value)} />
+        <div className="svx-documents-identity-shell">
+          <div className="svx-documents-identity-panel">
+            <div className="svx-documents-mini-head">
+              <strong>Document prefixes</strong>
+              <p>Short codes printed before each document number.</p>
+            </div>
+
+            <div className="svx-settings-form-grid is-two">
+              <div>
+                <label className={fieldLabel()}>Receipt prefix</label>
+                <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.receiptPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("receiptPrefix", event.target.value)} />
+              </div>
+              <div>
+                <label className={fieldLabel()}>Invoice prefix</label>
+                <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.invoicePrefix} disabled={isReadOnly} onChange={(event) => updateDocField("invoicePrefix", event.target.value)} />
+              </div>
+              <div>
+                <label className={fieldLabel()}>Delivery note prefix</label>
+                <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.deliveryPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("deliveryPrefix", event.target.value)} />
+              </div>
+              <div>
+                <label className={fieldLabel()}>Warranty prefix</label>
+                <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.warrantyPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("warrantyPrefix", event.target.value)} />
+              </div>
+              <div>
+                <label className={fieldLabel()}>Proforma prefix</label>
+                <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.proformaPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("proformaPrefix", event.target.value)} />
+              </div>
+            </div>
           </div>
 
-          <NumberField label="Receipt digits" value={docForm.receiptPadding} disabled={isReadOnly} onChange={(event) => updateDocField("receiptPadding", event.target.value)} />
-          <NumberField label="Invoice digits" value={docForm.invoicePadding} disabled={isReadOnly} onChange={(event) => updateDocField("invoicePadding", event.target.value)} />
-          <NumberField label="Warranty digits" value={docForm.warrantyPadding} disabled={isReadOnly} onChange={(event) => updateDocField("warrantyPadding", event.target.value)} />
-          <NumberField label="Proforma digits" value={docForm.proformaPadding} disabled={isReadOnly} onChange={(event) => updateDocField("proformaPadding", event.target.value)} />
-          <NumberField label="Delivery note digits" value={docForm.deliveryPadding} disabled={isReadOnly} onChange={(event) => updateDocField("deliveryPadding", event.target.value)} />
+          <div className="svx-documents-identity-panel">
+            <div className="svx-documents-mini-head">
+              <strong>Document numbering</strong>
+              <p>Digit length for clean, predictable document numbers.</p>
+            </div>
+
+            <div className="svx-settings-form-grid is-two">
+              <NumberField label="Receipt digits" value={docForm.receiptPadding} disabled={isReadOnly} onChange={(event) => updateDocField("receiptPadding", event.target.value)} />
+              <NumberField label="Invoice digits" value={docForm.invoicePadding} disabled={isReadOnly} onChange={(event) => updateDocField("invoicePadding", event.target.value)} />
+              <NumberField label="Delivery note digits" value={docForm.deliveryPadding} disabled={isReadOnly} onChange={(event) => updateDocField("deliveryPadding", event.target.value)} />
+              <NumberField label="Warranty digits" value={docForm.warrantyPadding} disabled={isReadOnly} onChange={(event) => updateDocField("warrantyPadding", event.target.value)} />
+              <NumberField label="Proforma digits" value={docForm.proformaPadding} disabled={isReadOnly} onChange={(event) => updateDocField("proformaPadding", event.target.value)} />
+            </div>
+          </div>
         </div>
 
         <div className="svx-settings-form-grid mt-5 svx-documents-color-grid">
@@ -676,95 +733,100 @@ export default function SettingsDocuments() {
         <SectionHeading
           eyebrow="Governance"
           title="Document rules"
-          subtitle="Set the owner rules that staff must follow when documents are created, printed, or handed to customers."
+          subtitle="Set owner-level rules once so every document stays consistent across the business."
         />
 
-        <div className="svx-settings-switch-grid svx-documents-option-grid">
-          <SwitchRow
-            title="Show logo"
-            text="Print the business logo on customer documents when available."
-            checked={docForm.showDocumentLogo}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("showDocumentLogo", value)}
-          />
-          <SwitchRow
-            title="Show business contacts"
-            text="Print phone, address, and other business contact details."
-            checked={docForm.showBusinessContacts}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("showBusinessContacts", value)}
-          />
-          <SwitchRow
-            title="Show printed date"
-            text="Show when the document was printed or generated."
-            checked={docForm.showPrintedDate}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("showPrintedDate", value)}
-          />
-          <SwitchRow
-            title="Show QR code"
-            text="Reserve space for future document verification."
-            checked={docForm.showDocumentQr}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("showDocumentQr", value)}
-          />
-          <SwitchRow
-            title="Show watermark"
-            text="Use a light watermark on formal document layouts."
-            checked={docForm.showDocumentWatermark}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("showDocumentWatermark", value)}
-          />
-        </div>
+        <div className="svx-documents-rule-shell">
+          <SwitchGroup title="Document visibility" text="What customers should see on printed documents.">
+            <SwitchRow
+              title="Show logo"
+              text="Print the business logo when available."
+              checked={docForm.showDocumentLogo}
+              disabled={isReadOnly}
+              onChange={(value) => updateDocField("showDocumentLogo", value)}
+            />
+            <SwitchRow
+              title="Show business contacts"
+              text="Print phone, address, and business contact details."
+              checked={docForm.showBusinessContacts}
+              disabled={isReadOnly}
+              onChange={(value) => updateDocField("showBusinessContacts", value)}
+            />
+            <SwitchRow
+              title="Show printed date"
+              text="Show when the document was generated."
+              checked={docForm.showPrintedDate}
+              disabled={isReadOnly}
+              onChange={(value) => updateDocField("showPrintedDate", value)}
+            />
+          </SwitchGroup>
 
-        <div className="svx-settings-switch-grid svx-documents-option-grid">
-          <SwitchRow
-            title="Auto receipt numbering"
-            text="Let Storvex assign receipt numbers automatically."
-            checked={docForm.autoReceiptNumbering}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("autoReceiptNumbering", value)}
-          />
-          <SwitchRow
-            title="Auto invoice numbering"
-            text="Let Storvex assign invoice numbers automatically."
-            checked={docForm.autoInvoiceNumbering}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("autoInvoiceNumbering", value)}
-          />
-          <SwitchRow
-            title="Auto warranty numbering"
-            text="Let Storvex assign warranty numbers automatically."
-            checked={docForm.autoWarrantyNumbering}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("autoWarrantyNumbering", value)}
-          />
-          <SwitchRow
-            title="Auto proforma numbering"
-            text="Let Storvex assign proforma numbers automatically."
-            checked={docForm.autoProformaNumbering}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("autoProformaNumbering", value)}
-          />
-          <SwitchRow
-            title="Auto delivery note numbering"
-            text="Let Storvex assign delivery note numbers automatically."
-            checked={docForm.autoDeliveryNumbering}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("autoDeliveryNumbering", value)}
-          />
+          <SwitchGroup title="Verification" text="Controls for future document verification and formal layouts.">
+            <SwitchRow
+              title="Show QR code"
+              text="Reserve space for future document verification."
+              checked={docForm.showDocumentQr}
+              disabled={isReadOnly}
+              onChange={(value) => updateDocField("showDocumentQr", value)}
+            />
+            <SwitchRow
+              title="Show watermark"
+              text="Use a light watermark on formal document layouts."
+              checked={docForm.showDocumentWatermark}
+              disabled={isReadOnly}
+              onChange={(value) => updateDocField("showDocumentWatermark", value)}
+            />
+          </SwitchGroup>
+
+          <SwitchGroup title="Automatic numbering" text="Let Storvex assign clean document numbers automatically." tone="primary">
+            <SwitchRow
+              title="Receipts"
+              text="Auto-generate receipt numbers."
+              checked={docForm.autoReceiptNumbering}
+              disabled={isReadOnly}
+              onChange={(value) => updateDocField("autoReceiptNumbering", value)}
+            />
+            <SwitchRow
+              title="Invoices"
+              text="Auto-generate invoice numbers."
+              checked={docForm.autoInvoiceNumbering}
+              disabled={isReadOnly}
+              onChange={(value) => updateDocField("autoInvoiceNumbering", value)}
+            />
+            <SwitchRow
+              title="Warranties"
+              text="Auto-generate warranty numbers."
+              checked={docForm.autoWarrantyNumbering}
+              disabled={isReadOnly}
+              onChange={(value) => updateDocField("autoWarrantyNumbering", value)}
+            />
+            <SwitchRow
+              title="Proformas"
+              text="Auto-generate proforma numbers."
+              checked={docForm.autoProformaNumbering}
+              disabled={isReadOnly}
+              onChange={(value) => updateDocField("autoProformaNumbering", value)}
+            />
+            <SwitchRow
+              title="Delivery notes"
+              text="Auto-generate delivery note numbers."
+              checked={docForm.autoDeliveryNumbering}
+              disabled={isReadOnly}
+              onChange={(value) => updateDocField("autoDeliveryNumbering", value)}
+            />
+          </SwitchGroup>
         </div>
       </section>
 
-      <section className={cardClass()}>
+      <section className={cx(cardClass(), "svx-documents-delivery-zone")}>
         <SectionHeading
           eyebrow="Delivery notes"
-          title="Delivery note rules"
-          subtitle="Delivery notes are goods movement proof. Keep money out and require the handover details that protect the business."
-          action={<Badge tone="warning">No money fields</Badge>}
+          title="Goods movement protection"
+          subtitle="Delivery notes prove what left the store, who delivered it, and who received it. They must stay separate from money, prices, totals, tax, or payment language."
+          action={<Badge tone="warning">No money allowed</Badge>}
         />
 
-        <div className="svx-settings-switch-grid svx-documents-option-grid">
+        <div className="svx-documents-delivery-grid">
           <SwitchRow
             title="Require receiver name"
             text="Staff must record who received the goods."
@@ -807,13 +869,16 @@ export default function SettingsDocuments() {
             disabled={isReadOnly}
             onChange={(value) => updateDocField("deliveryShowSerialNumbers", value)}
           />
-          <SwitchRow
-            title="Allow partial delivery"
-            text="Allow a delivery note to cover only part of an order."
-            checked={docForm.deliveryAllowPartialDelivery}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("deliveryAllowPartialDelivery", value)}
-          />
+          <div className="svx-documents-partial-delivery">
+            <SwitchRow
+              title="Allow partial delivery"
+              text="Use only when the business intentionally delivers part of an order."
+              checked={docForm.deliveryAllowPartialDelivery}
+              disabled={isReadOnly}
+              onChange={(value) => updateDocField("deliveryAllowPartialDelivery", value)}
+              tone="warning"
+            />
+          </div>
         </div>
       </section>
 
@@ -917,31 +982,23 @@ export default function SettingsDocuments() {
       <section className={cardClass()}>
         <SectionHeading
           eyebrow="Preview"
-          title="Document preview"
-          subtitle="Check the main documents first. Open all previews only when you need to review every document type."
+          title="Next document numbers"
+          subtitle="Show the numbers the owner cares about first. Full visual previews remain available from the document print pages."
           action={
             <button type="button" className="svx-settings-secondary-button" onClick={() => setShowAllPreviews((current) => !current)}>
-              {showAllPreviews ? "Show fewer" : "View all previews"}
+              {showAllPreviews ? "Show fewer" : "View all numbers"}
             </button>
           }
         />
 
-        <div className="svx-document-preview-grid svx-document-preview-grid-compact">
+        <div className="svx-documents-number-preview-grid">
           {visiblePreviews.map((item) => (
-            <PreviewDocument
+            <NumberPreviewCard
               key={item.title}
-              title={item.title}
-              prefix={item.prefix}
-              padding={item.padding}
+              label={item.title}
               preview={item.preview}
-              terms={item.terms}
-              primaryColor={docForm.documentPrimaryColor}
-              accentColor={docForm.documentAccentColor}
-              headerMode={docForm.documentHeaderDisplay}
-              sizeMode={docForm.documentSizeMode}
-              taxLabel={item.taxLabel}
-              previewLabel={item.previewLabel}
-              previewFallback={item.previewFallback}
+              prefix={item.prefix}
+              autoNumbering={item.autoNumbering}
             />
           ))}
         </div>

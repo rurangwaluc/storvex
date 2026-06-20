@@ -4,12 +4,7 @@ import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import { getDeliveryNoteById, openDeliveryNotePrint } from "../../services/deliveryNotesApi";
-
-const strong = () => "text-[var(--color-text)]";
-const muted = () => "text-[var(--color-text-muted)]";
-const soft = () => "text-[var(--color-text-soft)]";
-const shell = () => "rounded-[28px] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-const panel = () => "rounded-[24px] bg-[var(--color-surface-2)]";
+import "./DeliveryNotes.css";
 
 function safeStr(value) {
   return value == null ? "" : String(value);
@@ -19,87 +14,44 @@ function formatDate(value) {
   if (!value) return "—";
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString();
+
+  return d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
-function smallBtn() {
-  return "inline-flex h-10 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] px-4 text-sm font-medium text-[var(--color-text)] transition hover:opacity-90";
-}
-
-function badgeClass(kind = "neutral") {
-  if (kind === "success") {
-    return "inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300";
-  }
-
-  return "inline-flex items-center rounded-full border border-[var(--color-border)] bg-[var(--color-card)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-muted)]";
+function SmallLink({ to, children, primary = false }) {
+  return (
+    <Link to={to} className={`svx-delivery-link-button${primary ? " is-primary" : ""}`}>
+      {children}
+    </Link>
+  );
 }
 
 function SummaryRow({ label, value }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-2">
-      <span className="text-sm text-[var(--color-text-muted)]">{label}</span>
-      <span className="text-right text-sm font-medium text-[var(--color-text)]">
-        {value}
-      </span>
+    <div className="svx-delivery-summary-row">
+      <span>{label}</span>
+      <strong>{value || "—"}</strong>
     </div>
   );
 }
 
 function ViewSkeleton() {
   return (
-    <div className="space-y-6">
-      <section className={`${shell()} overflow-hidden p-5 md:p-6`}>
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div className="min-w-0 flex-1">
-            <div className="h-3 w-28 animate-pulse rounded-full bg-[var(--color-surface)]" />
-            <div className="mt-4 h-8 w-60 animate-pulse rounded-full bg-[var(--color-surface)]" />
-            <div className="mt-3 h-4 w-full max-w-[420px] animate-pulse rounded-full bg-[var(--color-surface)]" />
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <div className="h-10 w-28 animate-pulse rounded-2xl bg-[var(--color-surface)]" />
-            <div className="h-10 w-32 animate-pulse rounded-2xl bg-[var(--color-surface)]" />
-            <div className="h-10 w-36 animate-pulse rounded-2xl bg-[var(--color-surface)]" />
-          </div>
+    <div className="svx-delivery-page">
+      <section className="svx-delivery-hero">
+        <div className="svx-delivery-skeleton">
+          <div className="svx-delivery-skeleton-line" style={{ width: 140 }} />
+          <div className="svx-delivery-skeleton-line" style={{ width: 280, height: 32 }} />
+          <div className="svx-delivery-skeleton-line" style={{ width: "72%" }} />
         </div>
       </section>
 
-      <section className={`${shell()} overflow-hidden p-5 md:p-6`}>
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-2">
-            <div className="h-6 w-40 animate-pulse rounded-full bg-[var(--color-surface)]" />
-            <div className="h-4 w-28 animate-pulse rounded-full bg-[var(--color-surface)]" />
-          </div>
-
-          <div className="space-y-2">
-            <div className="ml-auto h-4 w-16 animate-pulse rounded-full bg-[var(--color-surface)]" />
-            <div className="ml-auto h-6 w-24 animate-pulse rounded-full bg-[var(--color-surface)]" />
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className={`${panel()} p-4`}>
-              <div className="h-3 w-24 animate-pulse rounded-full bg-[var(--color-surface)]" />
-              <div className="mt-3 h-4 w-40 animate-pulse rounded-full bg-[var(--color-surface)]" />
-              <div className="mt-2 h-4 w-32 animate-pulse rounded-full bg-[var(--color-surface)]" />
-              <div className="mt-2 h-4 w-48 animate-pulse rounded-full bg-[var(--color-surface)]" />
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-6 space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className={`${panel()} p-4`}>
-              <div className="grid grid-cols-[40px_minmax(0,1fr)_140px_80px] gap-3">
-                <div className="h-4 w-6 animate-pulse rounded-full bg-[var(--color-surface)]" />
-                <div className="h-4 w-full animate-pulse rounded-full bg-[var(--color-surface)]" />
-                <div className="h-4 w-full animate-pulse rounded-full bg-[var(--color-surface)]" />
-                <div className="h-4 w-full animate-pulse rounded-full bg-[var(--color-surface)]" />
-              </div>
-            </div>
-          ))}
-        </div>
+      <section className="svx-delivery-print-card">
+        <div className="svx-delivery-skeleton-card" />
       </section>
     </div>
   );
@@ -169,16 +121,19 @@ export default function DeliveryNoteView() {
 
   if (!note) {
     return (
-      <div className="space-y-6">
-        <section className={`${shell()} p-6 text-center`}>
-          <div className={`text-base font-semibold ${strong()}`}>Delivery note not found</div>
-          <div className={`mt-2 text-sm ${muted()}`}>
-            The document may have been removed or is no longer available.
-          </div>
-          <div className="mt-5">
-            <Link to="/app/documents/delivery-notes" className={smallBtn()}>
-              Back to Delivery Notes
-            </Link>
+      <div className="svx-delivery-page">
+        <section className="svx-delivery-hero">
+          <div className="svx-delivery-hero-inner">
+            <div>
+              <p className="svx-delivery-eyebrow">Delivery document</p>
+              <h1 className="svx-delivery-title">Delivery note not found</h1>
+              <p className="svx-delivery-subtitle">
+                The document may have been removed or is no longer available.
+              </p>
+            </div>
+            <div className="svx-delivery-actions">
+              <SmallLink to="/app/documents/delivery-notes">Back to delivery notes</SmallLink>
+            </div>
           </div>
         </section>
       </div>
@@ -186,44 +141,22 @@ export default function DeliveryNoteView() {
   }
 
   return (
-    <div className="space-y-6">
-      <style>{`
-        @media print {
-          .no-print { display: none !important; }
-          body { background: #fff !important; }
-          .print-card {
-            box-shadow: none !important;
-            border: none !important;
-            border-radius: 0 !important;
-          }
-        }
-      `}</style>
-
-      <section className={`${shell()} overflow-hidden p-5 md:p-6 no-print`}>
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="min-w-0">
-            <div className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${soft()}`}>
-              Delivery document
-            </div>
-            <h1 className={`mt-2 text-2xl font-semibold tracking-tight md:text-3xl ${strong()}`}>
-              Delivery Note Preview
-            </h1>
-            <p className={`mt-3 max-w-3xl text-sm leading-6 md:text-[15px] ${muted()}`}>
-              Review, print, or go back to update the handover details and delivered items.
+    <div className="svx-delivery-page">
+      <section className="svx-delivery-hero svx-delivery-no-print">
+        <div className="svx-delivery-hero-inner">
+          <div>
+            <p className="svx-delivery-eyebrow">Delivery document</p>
+            <h1 className="svx-delivery-title">Delivery note preview</h1>
+            <p className="svx-delivery-subtitle">
+              Review the handover, delivered items, receiver details, and signatures before printing.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Link to="/app/documents/delivery-notes" className={smallBtn()}>
-              Back to Delivery Notes
-            </Link>
-
-            <Link
-              to={`/app/documents/delivery-notes/${encodeURIComponent(id)}/edit`}
-              className={smallBtn()}
-            >
-              Edit Delivery Note
-            </Link>
+          <div className="svx-delivery-actions">
+            <SmallLink to="/app/documents/delivery-notes">Delivery notes</SmallLink>
+            <SmallLink to={`/app/documents/delivery-notes/${encodeURIComponent(id)}/edit`}>
+              Edit
+            </SmallLink>
 
             <AsyncButton
               type="button"
@@ -232,7 +165,7 @@ export default function DeliveryNoteView() {
               variant="secondary"
               onClick={handleProfessionalPrint}
             >
-              Professional Print
+              Professional print
             </AsyncButton>
 
             <AsyncButton type="button" variant="primary" onClick={() => window.print()}>
@@ -242,131 +175,91 @@ export default function DeliveryNoteView() {
         </div>
       </section>
 
-      <section className={`${shell()} print-card overflow-hidden p-5 md:p-6`}>
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+      <section className="svx-delivery-print-card">
+        <div className="svx-delivery-print-head">
           <div>
-            <div className={`text-xl font-black tracking-tight ${strong()}`}>STORVEX</div>
-            <div className={`mt-1 text-sm ${muted()}`}>Delivery Note</div>
+            <div className="svx-delivery-brand-title">Storvex</div>
+            <div className="svx-delivery-brand-subtitle">Delivery note</div>
           </div>
 
-          <div className="text-left lg:text-right">
-            <div className={`text-xs uppercase tracking-[0.14em] ${soft()}`}>Number</div>
-            <div className={`mt-1 text-lg font-semibold ${strong()}`}>
-              {note.number || "—"}
-            </div>
-            <div className={`mt-3 text-xs uppercase tracking-[0.14em] ${soft()}`}>Date</div>
-            <div className={`mt-1 text-sm ${strong()}`}>
-              {formatDate(note.date || note.createdAt)}
-            </div>
+          <div className="svx-delivery-print-meta">
+            <label>Number</label>
+            <strong>{note.number || "—"}</strong>
+            <label>Date</label>
+            <strong>{formatDate(note.date || note.createdAt)}</strong>
           </div>
         </div>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          <div className={`${panel()} p-4`}>
-            <div className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${soft()}`}>
-              Deliver To
-            </div>
-            <div className={`mt-3 text-sm font-semibold ${strong()}`}>
-              {note.customerName || "—"}
-            </div>
-            <div className={`mt-1 text-sm ${muted()}`}>{note.customerPhone || "—"}</div>
-            <div className={`mt-1 text-sm leading-6 ${muted()}`}>
-              {note.customerAddress || "—"}
-            </div>
-          </div>
+        <div className="svx-delivery-view-grid">
+          <article className="svx-delivery-info-card">
+            <p className="svx-delivery-info-label">Deliver to</p>
+            <div className="svx-delivery-info-value">{note.customerName || "—"}</div>
+            <div className="svx-delivery-info-muted">{note.customerPhone || "—"}</div>
+            <div className="svx-delivery-info-muted">{note.customerAddress || "—"}</div>
+          </article>
 
-          <div className={`${panel()} p-4`}>
-            <div className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${soft()}`}>
-              Delivery Info
+          <article className="svx-delivery-info-card">
+            <p className="svx-delivery-info-label">Delivery info</p>
+            <div className="svx-delivery-summary-list">
+              <SummaryRow label="Delivered by" value={note.deliveredBy} />
+              <SummaryRow label="Received by" value={note.receivedBy} />
+              <SummaryRow label="Receiver phone" value={note.receivedByPhone} />
             </div>
-
-            <div className="mt-3 space-y-2">
-              <SummaryRow label="Delivered by" value={note.deliveredBy || "—"} />
-              <SummaryRow label="Received by" value={note.receivedBy || "—"} />
-              <SummaryRow label="Receiver phone" value={note.receivedByPhone || "—"} />
-            </div>
-          </div>
+          </article>
         </div>
 
-        <div className="mt-6">
-          <div className={`mb-3 flex items-center gap-2 text-base font-semibold ${strong()}`}>
-            <span>Items</span>
-            <span className={badgeClass("success")}>{items.length} item(s)</span>
-          </div>
+        <div className="svx-delivery-items-head">
+          <h2>Delivered items</h2>
+          <span className="svx-delivery-badge is-success">{items.length} items</span>
+        </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full border-separate border-spacing-0 overflow-hidden rounded-[20px]">
-              <thead>
-                <tr className="bg-[var(--color-surface-2)]">
-                  <th className={`px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] ${muted()}`}>
-                    #
-                  </th>
-                  <th className={`px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] ${muted()}`}>
-                    Product
-                  </th>
-                  <th className={`px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] ${muted()}`}>
-                    Serial / Identifier
-                  </th>
-                  <th className={`px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-[0.16em] ${muted()}`}>
-                    Qty
-                  </th>
-                </tr>
-              </thead>
+        <div className="svx-delivery-table-wrap">
+          <table className="svx-delivery-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>Serial or identifier</th>
+                <th className="is-right">Qty</th>
+              </tr>
+            </thead>
 
-              <tbody>
-                {items.length ? (
-                  items.map((item, index) => (
-                    <tr
-                      key={item.id || index}
-                      className="border-b border-[var(--color-border)] bg-[var(--color-card)]"
-                    >
-                      <td className={`px-4 py-3 text-sm ${muted()}`}>{index + 1}</td>
-                      <td className={`px-4 py-3 text-sm font-medium ${strong()}`}>
-                        {safeStr(item.productName) || "—"}
-                      </td>
-                      <td className={`px-4 py-3 text-sm ${muted()}`}>
-                        {item.serial || "—"}
-                      </td>
-                      <td className={`px-4 py-3 text-right text-sm font-medium ${strong()}`}>
-                        {item.quantity ?? 1}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr className="bg-[var(--color-card)]">
-                    <td colSpan={4} className={`px-4 py-6 text-sm ${muted()}`}>
-                      No items found.
-                    </td>
+            <tbody>
+              {items.length ? (
+                items.map((item, index) => (
+                  <tr key={item.id || index}>
+                    <td>{index + 1}</td>
+                    <td><strong>{safeStr(item.productName) || "—"}</strong></td>
+                    <td>{item.serial || "—"}</td>
+                    <td className="is-right"><strong>{item.quantity ?? 1}</strong></td>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={4}>No items found.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="svx-delivery-notes-box">
+          <label>Notes</label>
+          <div>{note.notes || "—"}</div>
+        </div>
+
+        <div className="svx-delivery-signatures">
+          <div className="svx-delivery-signature-line">
+            <span>Delivered by signature</span>
           </div>
 
-          <div className="mt-5">
-            <div className={`text-[11px] font-semibold uppercase tracking-[0.16em] ${soft()}`}>
-              Notes
-            </div>
-            <div className={`mt-2 rounded-[20px] bg-[var(--color-surface-2)] px-4 py-4 text-sm leading-6 ${strong()}`}>
-              {note.notes || "—"}
-            </div>
+          <div className="svx-delivery-signature-line">
+            <span>Received by signature</span>
           </div>
         </div>
 
-        <div className="mt-8 grid gap-8 md:grid-cols-2">
-          <div>
-            <div className={`text-sm ${muted()}`}>Delivered by signature</div>
-            <div className="mt-10 border-t border-[var(--color-border)]" />
-          </div>
-
-          <div>
-            <div className={`text-sm ${muted()}`}>Received by signature</div>
-            <div className="mt-10 border-t border-[var(--color-border)]" />
-          </div>
-        </div>
-
-        <div className={`mt-6 text-xs ${soft()}`}>
-          Generated by Storvex • Keep this document for proof of delivery.
+        <div className="svx-delivery-footer-note">
+          Generated by Storvex. Keep this document as proof of delivery.
         </div>
       </section>
     </div>

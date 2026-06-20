@@ -3,37 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
-import { cn } from "../../lib/cn";
 import { createDeliveryNote } from "../../services/deliveryNotesApi";
 import { searchProducts } from "../../services/inventoryApi";
-
-const strong = () => "text-[var(--color-text)]";
-const muted = () => "text-[var(--color-text-muted)]";
-const soft = () => "text-[var(--color-text-soft)]";
-const shell = () => "rounded-[28px] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-const panel = () => "rounded-[24px] bg-[var(--color-surface-2)]";
-
-function labelClass() {
-  return cn("mb-1.5 block text-sm font-medium", strong());
-}
-
-function inputClass() {
-  return "app-input";
-}
-
-function textareaClass() {
-  return [
-    "w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)]",
-    "min-h-[132px] resize-y px-4 py-3 text-sm leading-6 text-[var(--color-text)]",
-    "outline-none transition placeholder:text-[var(--color-text-muted)]",
-    "focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-ring)]",
-    "shadow-[inset_0_1px_0_rgba(255,255,255,0.02)]",
-  ].join(" ");
-}
-
-function smallBtn() {
-  return "inline-flex h-9 items-center justify-center rounded-xl bg-[var(--color-card)] px-3 text-sm font-semibold text-[var(--color-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
-}
+import "./DeliveryNotes.css";
 
 function emptyItem() {
   return {
@@ -45,34 +17,34 @@ function emptyItem() {
   };
 }
 
-function SummaryRow({ label, value, strongValue = false }) {
+function cleanText(value) {
+  return String(value || "").trim();
+}
+
+function SmallLink({ to, children, primary = false }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-2">
-      <span className={cn("text-sm", muted())}>{label}</span>
-      <span
-        className={cn(
-          "text-right text-sm",
-          strongValue ? "font-semibold" : "font-medium",
-          strongValue ? strong() : muted()
-        )}
-      >
-        {value}
-      </span>
+    <Link to={to} className={`svx-delivery-link-button${primary ? " is-primary" : ""}`}>
+      {children}
+    </Link>
+  );
+}
+
+function SummaryRow({ label, value, strong = false }) {
+  return (
+    <div className="svx-delivery-summary-row">
+      <span>{label}</span>
+      <strong>{strong ? value : value || "—"}</strong>
     </div>
   );
 }
 
 function ProductSearchResult({ product, onPick }) {
   return (
-    <button
-      type="button"
-      onClick={onPick}
-      className="block w-full border-b border-[var(--color-border)] px-4 py-3 text-left transition last:border-b-0 hover:bg-[var(--color-surface-2)]"
-    >
-      <div className={cn("text-sm font-semibold", strong())}>{product.name}</div>
-      <div className={cn("mt-1 text-xs", muted())}>
-        {product.category || "No category"} • Available stock: {product.stockQty ?? 0}
-      </div>
+    <button type="button" onClick={onPick} className="svx-delivery-result-button">
+      <strong>{product.name || "Unnamed product"}</strong>
+      <span>
+        {product.category || "No category"} | Available stock: {product.stockQty ?? 0}
+      </span>
     </button>
   );
 }
@@ -90,7 +62,6 @@ export default function DeliveryNoteCreate() {
   const [receivedBy, setReceivedBy] = useState("");
   const [receivedByPhone, setReceivedByPhone] = useState("");
   const [notes, setNotes] = useState("");
-
   const [items, setItems] = useState([emptyItem()]);
 
   const [searchQ, setSearchQ] = useState("");
@@ -169,8 +140,8 @@ export default function DeliveryNoteCreate() {
     return items
       .map((item) => ({
         productId: item.productId || null,
-        productName: String(item.productName || "").trim(),
-        serial: String(item.serial || "").trim() || null,
+        productName: cleanText(item.productName),
+        serial: cleanText(item.serial) || null,
         quantity: Number(item.quantity),
       }))
       .filter((item) => item.productName);
@@ -180,7 +151,7 @@ export default function DeliveryNoteCreate() {
     e.preventDefault();
     if (saving) return;
 
-    if (!customerName.trim()) {
+    if (!cleanText(customerName)) {
       toast.error("Customer name is required");
       return;
     }
@@ -201,21 +172,21 @@ export default function DeliveryNoteCreate() {
       setSaving(true);
 
       const data = await createDeliveryNote({
-        customerName: customerName.trim(),
-        customerPhone: customerPhone.trim() || null,
-        customerAddress: customerAddress.trim() || null,
-        deliveredBy: deliveredBy.trim() || null,
-        receivedBy: receivedBy.trim() || null,
-        receivedByPhone: receivedByPhone.trim() || null,
-        notes: notes.trim() || null,
+        customerName: cleanText(customerName),
+        customerPhone: cleanText(customerPhone) || null,
+        customerAddress: cleanText(customerAddress) || null,
+        deliveredBy: cleanText(deliveredBy) || null,
+        receivedBy: cleanText(receivedBy) || null,
+        receivedByPhone: cleanText(receivedByPhone) || null,
+        notes: cleanText(notes) || null,
         items: normalizedItems,
       });
 
       toast.success("Delivery note created");
 
-      const id = data?.deliveryNote?.id;
-      if (id) {
-        nav(`/app/documents/delivery-notes/${encodeURIComponent(id)}/preview`);
+      const noteId = data?.deliveryNote?.id;
+      if (noteId) {
+        nav(`/app/documents/delivery-notes/${encodeURIComponent(noteId)}/preview`);
         return;
       }
 
@@ -229,48 +200,41 @@ export default function DeliveryNoteCreate() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className={cn(shell(), "overflow-hidden p-5 md:p-6")}>
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-          <div className="min-w-0">
-            <div className={cn("text-[11px] font-semibold uppercase tracking-[0.16em]", soft())}>
-              Document creation
-            </div>
-
-            <h1 className={cn("mt-2 text-2xl font-semibold tracking-tight md:text-3xl", strong())}>
-              New Delivery Note
-            </h1>
-
-            <p className={cn("mt-3 max-w-3xl text-sm leading-6 md:text-[15px]", muted())}>
-              Create proof that goods moved from your store to the customer. Keep the
-              handover clean, traceable, and print-ready.
+    <div className="svx-delivery-page">
+      <section className="svx-delivery-hero">
+        <div className="svx-delivery-hero-inner">
+          <div>
+            <p className="svx-delivery-eyebrow">Document creation</p>
+            <h1 className="svx-delivery-title">New delivery note</h1>
+            <p className="svx-delivery-subtitle">
+              Create proof that goods moved from your store to the customer. Keep the handover clean,
+              traceable, and print-ready. No money, prices, totals, tax, or payment fields belong here.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Link to="/app/documents/delivery-notes" className={smallBtn()}>
-              Back to Delivery Notes
-            </Link>
-            <Link to="/app/documents" className={smallBtn()}>
-              Document Centre
-            </Link>
+          <div className="svx-delivery-actions">
+            <SmallLink to="/app/documents/delivery-notes">Delivery notes</SmallLink>
+            <SmallLink to="/app/documents">Document center</SmallLink>
           </div>
         </div>
       </section>
 
-      <form onSubmit={submit} className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="space-y-5">
-          <section className={cn(panel(), "p-4 md:p-5")}>
-            <h2 className={cn("text-base font-semibold", strong())}>Recipient details</h2>
-            <p className={cn("mt-1 text-sm", muted())}>
-              These details appear on the delivery note and confirm who received the goods.
-            </p>
+      <form onSubmit={submit} className="svx-delivery-layout">
+        <div className="svx-delivery-main">
+          <section className="svx-delivery-panel">
+            <div className="svx-delivery-section-head">
+              <div>
+                <h2>Recipient details</h2>
+                <p>These details confirm where the goods went and who received them.</p>
+              </div>
+              <span className="svx-delivery-badge is-warning">No money fields</span>
+            </div>
 
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <div className="md:col-span-2">
-                <label className={labelClass()}>Customer name</label>
+            <div className="svx-delivery-form-grid">
+              <div className="svx-delivery-field svx-delivery-span-2">
+                <label>Customer name</label>
                 <input
-                  className={inputClass()}
+                  className="svx-delivery-input"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
                   placeholder="Customer or recipient"
@@ -278,93 +242,92 @@ export default function DeliveryNoteCreate() {
                 />
               </div>
 
-              <div>
-                <label className={labelClass()}>Customer phone</label>
+              <div className="svx-delivery-field">
+                <label>Customer phone</label>
                 <input
-                  className={inputClass()}
+                  className="svx-delivery-input"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
                   placeholder="+2507..."
                 />
               </div>
 
-              <div>
-                <label className={labelClass()}>Customer address</label>
+              <div className="svx-delivery-field">
+                <label>Delivery location</label>
                 <input
-                  className={inputClass()}
+                  className="svx-delivery-input"
                   value={customerAddress}
                   onChange={(e) => setCustomerAddress(e.target.value)}
-                  placeholder="Kigali..."
+                  placeholder="Kigali, shop, site, or customer address"
                 />
               </div>
 
-              <div>
-                <label className={labelClass()}>Delivered by</label>
+              <div className="svx-delivery-field">
+                <label>Delivered by</label>
                 <input
-                  className={inputClass()}
+                  className="svx-delivery-input"
                   value={deliveredBy}
                   onChange={(e) => setDeliveredBy(e.target.value)}
                   placeholder="Staff member"
                 />
               </div>
 
-              <div>
-                <label className={labelClass()}>Received by</label>
+              <div className="svx-delivery-field">
+                <label>Received by</label>
                 <input
-                  className={inputClass()}
+                  className="svx-delivery-input"
                   value={receivedBy}
                   onChange={(e) => setReceivedBy(e.target.value)}
                   placeholder="Customer or representative"
                 />
               </div>
 
-              <div>
-                <label className={labelClass()}>Receiver phone</label>
+              <div className="svx-delivery-field">
+                <label>Receiver phone</label>
                 <input
-                  className={inputClass()}
+                  className="svx-delivery-input"
                   value={receivedByPhone}
                   onChange={(e) => setReceivedByPhone(e.target.value)}
                   placeholder="Receiver phone"
                 />
               </div>
 
-              <div className="md:col-span-2">
-                <label className={labelClass()}>Notes</label>
+              <div className="svx-delivery-field svx-delivery-span-2">
+                <label>Delivery notes</label>
                 <textarea
-                  className={textareaClass()}
+                  className="svx-delivery-textarea"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Example: deliver before 5pm, fragile package, signed on arrival..."
+                  placeholder="Example: fragile package, signed on arrival, leave with store manager..."
                   rows={5}
                 />
               </div>
             </div>
           </section>
 
-          <section className={cn(panel(), "p-4 md:p-5")}>
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <section className="svx-delivery-panel">
+            <div className="svx-delivery-section-head">
               <div>
-                <h2 className={cn("text-base font-semibold", strong())}>Items</h2>
-                <p className={cn("mt-1 text-sm", muted())}>
-                  Choose the row first, then use search to fill it faster from inventory.
-                </p>
+                <h2>Delivered items</h2>
+                <p>Choose the row first, then use search to fill it faster from inventory.</p>
               </div>
 
-              <button type="button" onClick={addRow} className={smallBtn()}>
+              <button type="button" onClick={addRow} className="svx-delivery-button">
                 Add item
               </button>
             </div>
 
-            <div className="mt-5 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-4">
-              <div>
-                <label className={labelClass()}>Find product</label>
-                <div className={cn("-mt-1 text-xs", soft())}>
-                  Fill item <span className="font-semibold">#{targetRow + 1}</span>
+            <div className="svx-delivery-search-box">
+              <div className="svx-delivery-search-top">
+                <div>
+                  <label className="svx-delivery-label">Find product</label>
+                  <p className="svx-delivery-help">Search fills item #{targetRow + 1}</p>
                 </div>
+                <span className="svx-delivery-target-pill">Target row {targetRow + 1}</span>
               </div>
 
               <input
-                className={cn(inputClass(), "mt-3")}
+                className="svx-delivery-input"
                 value={searchQ}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -380,134 +343,109 @@ export default function DeliveryNoteCreate() {
                   if (debounceRef.current) clearTimeout(debounceRef.current);
                   debounceRef.current = setTimeout(() => runSearch(trimmed), 250);
                 }}
-                placeholder="Type product name, model, or brand..."
+                placeholder="Type product name, model, code, or brand..."
               />
 
               {canSearch ? (
-                <div className="mt-3">
+                <div className="svx-delivery-result-list">
                   {searching ? (
-                    <div className={cn("text-sm", muted())}>Searching...</div>
+                    <div className="svx-delivery-empty">Searching...</div>
                   ) : results.length === 0 ? (
-                    <div className={cn("text-sm", muted())}>No results.</div>
+                    <div className="svx-delivery-empty">No products found.</div>
                   ) : (
-                    <div className="max-h-56 overflow-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)]">
-                      {results.map((product) => (
-                        <ProductSearchResult
-                          key={product.id}
-                          product={product}
-                          onPick={() => pickProduct(targetRow, product)}
-                        />
-                      ))}
-                    </div>
+                    results.map((product) => (
+                      <ProductSearchResult
+                        key={product.id}
+                        product={product}
+                        onPick={() => pickProduct(targetRow, product)}
+                      />
+                    ))
                   )}
                 </div>
               ) : null}
             </div>
 
-            <div className="mt-5 space-y-4">
+            <div className="svx-delivery-lines">
               {items.map((item, index) => (
-                <div
-                  key={item.key}
-                  className="rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-4"
-                >
-                  <div className="flex items-start justify-between gap-4">
+                <article key={item.key} className="svx-delivery-line-card">
+                  <div className="svx-delivery-line-head">
                     <div>
-                      <div className={cn("text-sm font-semibold", strong())}>
-                        Item {index + 1}
-                      </div>
-                      <div className={cn("mt-1 text-xs", soft())}>
-                        This line will appear on the delivery note.
-                      </div>
+                      <strong>Item {index + 1}</strong>
+                      <p>{item.productId ? "Selected from inventory" : "Manual delivery item"}</p>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => removeRow(index)}
-                      className={smallBtn()}
+                      className="svx-delivery-button is-danger"
                       disabled={items.length <= 1}
                     >
                       Remove
                     </button>
                   </div>
 
-                  <div className="mt-4 grid gap-4 md:grid-cols-3">
-                    <div className="md:col-span-2">
-                      <label className={labelClass()}>Product name</label>
+                  <div className="svx-delivery-line-grid">
+                    <div className="svx-delivery-field">
+                      <label>Product name</label>
                       <input
-                        className={cn(
-                          inputClass(),
-                          index === targetRow &&
-                            "border-emerald-400 ring-2 ring-emerald-100 dark:ring-emerald-900/20"
-                        )}
+                        className={`svx-delivery-input${index === targetRow ? " is-active" : ""}`}
                         value={item.productName}
                         onFocus={() => setTargetRow(index)}
                         onChange={(e) => setItem(index, "productName", e.target.value)}
                         placeholder="Delivered item name"
                       />
-                      <div className={cn("mt-1 text-xs", soft())}>
-                        {item.productId ? "Selected from inventory" : "Manual item"}
-                      </div>
                     </div>
 
-                    <div>
-                      <label className={labelClass()}>Quantity</label>
+                    <div className="svx-delivery-field">
+                      <label>Quantity</label>
                       <input
                         type="number"
                         min="1"
-                        className={inputClass()}
+                        className="svx-delivery-input"
                         value={item.quantity}
                         onChange={(e) => setItem(index, "quantity", Number(e.target.value || 1))}
                       />
                     </div>
 
-                    <div className="md:col-span-3">
-                      <label className={labelClass()}>Serial / identifier</label>
+                    <div className="svx-delivery-field is-full">
+                      <label>Serial or identifier</label>
                       <input
-                        className={inputClass()}
+                        className="svx-delivery-input"
                         value={item.serial}
                         onChange={(e) => setItem(index, "serial", e.target.value)}
-                        placeholder="Only if item has serial or unique identifier"
+                        placeholder="Only when the item has a serial number or unique identifier"
                       />
                     </div>
                   </div>
-                </div>
+                </article>
               ))}
             </div>
           </section>
         </div>
 
-        <div className="space-y-5">
-          <section className={cn(shell(), "p-4 md:p-5 xl:sticky xl:top-5")}>
-            <div>
-              <h2 className={cn("text-base font-semibold", strong())}>Summary</h2>
-              <p className={cn("mt-1 text-sm", muted())}>
-                Review before creating the delivery note.
-              </p>
+        <aside className="svx-delivery-side">
+          <section className="svx-delivery-summary">
+            <h2>Review before creating</h2>
+            <p>Confirm the handover information before saving the delivery note.</p>
+
+            <div className="svx-delivery-summary-list">
+              <SummaryRow label="Customer" value={customerName} />
+              <SummaryRow label="Customer phone" value={customerPhone} />
+              <SummaryRow label="Delivered by" value={deliveredBy} />
+              <SummaryRow label="Received by" value={receivedBy} />
+              <SummaryRow label="Receiver phone" value={receivedByPhone} />
+              <SummaryRow label="Items" value={String(normalizedItems.length)} strong />
             </div>
 
-            <div className="mt-5 divide-y divide-[var(--color-border)]">
-              <SummaryRow label="Customer" value={customerName || "—"} />
-              <SummaryRow label="Customer phone" value={customerPhone || "—"} />
-              <SummaryRow label="Delivered by" value={deliveredBy || "—"} />
-              <SummaryRow label="Received by" value={receivedBy || "—"} />
-              <SummaryRow label="Receiver phone" value={receivedByPhone || "—"} />
-              <SummaryRow label="Items" value={String(normalizedItems.length)} strongValue />
-            </div>
-
-            <div className="mt-5 flex flex-col gap-2">
+            <div className="svx-delivery-submit-actions">
               <AsyncButton type="submit" loading={saving} loadingText="Saving..." variant="primary">
-                Create Delivery Note
+                Create delivery note
               </AsyncButton>
 
-              <Link
-                to="/app/documents/delivery-notes"
-                className="inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] px-5 text-sm font-medium text-[var(--color-text)] transition hover:opacity-90"
-              >
-                Cancel
-              </Link>
+              <SmallLink to="/app/documents/delivery-notes">Cancel</SmallLink>
             </div>
           </section>
-        </div>
+        </aside>
       </form>
     </div>
   );
