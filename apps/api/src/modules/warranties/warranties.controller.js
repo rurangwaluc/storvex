@@ -827,7 +827,11 @@ async function createWarranty(req, res) {
         };
 
         if (hasField(tx.saleWarranty, "branchId")) {
-          createData.branchId = sale.branchId || activeLocation.id;
+          createData.branch = {
+            connect: {
+              id: sale.branchId || activeLocation.id,
+            },
+          };
         }
 
         const warranty = await tx.saleWarranty.create({

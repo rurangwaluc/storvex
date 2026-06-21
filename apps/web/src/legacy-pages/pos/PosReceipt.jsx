@@ -774,9 +774,27 @@ function WarrantyBlock({ receipt, saleDate, store }) {
 
       {!warranties.length ? (
         <div className="svx-receipt-muted-box">
-          <b>No support or warranty recorded</b>
-          <p>When support terms, warranty, or service notes are added, this section will show reference number, active dates, and notes.</p>
-        </div>
+
+            <b>No warranty attached</b>
+
+            <p>
+              Create an after-sale warranty for products sold in this
+              receipt. Customer, products and branch will be loaded
+              automatically.
+            </p>
+
+            <div className="svx-receipt-warranty-actions">
+
+              <Link
+                to={`/app/documents/warranties/create?saleId=${receipt.id}`}
+                className="svx-receipt-button primary"
+              >
+                Create warranty
+              </Link>
+
+            </div>
+
+          </div>
       ) : (
         <div className="svx-receipt-warranty-list">
           {warranties.map((warranty, index) => {
@@ -793,6 +811,17 @@ function WarrantyBlock({ receipt, saleDate, store }) {
                   <span>Start: {starts ? formatDateOnly(starts) : "—"}</span>
                   <span>End: {ends ? formatDateOnly(ends) : "—"}</span>
                 </div>
+
+                <div className="svx-receipt-warranty-actions">
+
+                <Link
+                  to={`/app/documents/warranties/${encodeURIComponent(warranty.id)}/preview`}
+                  className="svx-receipt-button secondary"
+                >
+                  Open warranty
+                </Link>
+
+              </div>
               </div>
             );
           })}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
@@ -82,19 +82,19 @@ function activeStoreLocationFromStorage() {
 }
 
 function pageCard() {
-  return "rounded-[30px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+  return "rounded-[30px] border border-[var(--doc-line-soft)] bg-[var(--doc-surface)] shadow-[0_14px_40px_rgba(15,46,92,0.055)] dark:shadow-none";
 }
 
 function softPanel() {
-  return "rounded-[24px] bg-[var(--color-surface-2)]";
+  return "rounded-[24px] border border-[var(--doc-line-soft)] bg-[var(--doc-soft)]";
 }
 
 function inputClass() {
-  return "h-12 w-full rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(74,163,255,0.12)] disabled:cursor-not-allowed disabled:opacity-60";
+  return "h-12 w-full rounded-[18px] border border-[var(--doc-line-soft)] bg-[var(--doc-soft)] px-4 text-sm font-bold text-[var(--doc-text)] outline-none transition placeholder:text-[var(--doc-muted)] focus:border-[var(--doc-blue)] focus:ring-4 focus:ring-[rgba(7, 92, 255, 0.12)] disabled:cursor-not-allowed disabled:opacity-60";
 }
 
 function textareaClass() {
-  return "min-h-[132px] w-full rounded-[20px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm font-bold text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(74,163,255,0.12)] disabled:cursor-not-allowed disabled:opacity-60";
+  return "min-h-[132px] w-full rounded-[20px] border border-[var(--doc-line-soft)] bg-[var(--doc-soft)] px-4 py-3 text-sm font-bold text-[var(--doc-text)] outline-none transition placeholder:text-[var(--doc-muted)] focus:border-[var(--doc-blue)] focus:ring-4 focus:ring-[rgba(7, 92, 255, 0.12)] disabled:cursor-not-allowed disabled:opacity-60";
 }
 
 function buttonBase() {
@@ -104,21 +104,21 @@ function buttonBase() {
 function primaryBtn() {
   return cx(
     buttonBase(),
-    "bg-[var(--color-primary)] text-white shadow-[var(--shadow-soft)] hover:-translate-y-0.5"
+    "border border-[var(--doc-blue)] bg-[var(--doc-blue)] text-white shadow-[0_14px_28px_rgba(7,92,255,0.18)] hover:-translate-y-0.5"
   );
 }
 
 function secondaryBtn() {
   return cx(
     buttonBase(),
-    "bg-[var(--color-surface-2)] text-[var(--color-text)] shadow-[var(--shadow-soft)] hover:-translate-y-0.5"
+    "border border-[var(--doc-line)] bg-[var(--doc-surface)] text-[var(--doc-text)] shadow-none hover:-translate-y-0.5 hover:border-[var(--doc-blue)] hover:bg-[var(--doc-soft)] hover:text-[var(--doc-blue)]"
   );
 }
 
 function successBtn() {
   return cx(
     buttonBase(),
-    "bg-emerald-600 text-white shadow-[var(--shadow-soft)] hover:-translate-y-0.5"
+    "border border-[var(--doc-green)] bg-[var(--doc-green)] text-white shadow-[0_14px_28px_rgba(12,171,102,0.16)] hover:-translate-y-0.5"
   );
 }
 
@@ -263,12 +263,12 @@ function buildSelectableItemsFromSaleDetail(detail) {
 function StatusBadge({ tone = "neutral", children }) {
   const cls =
     tone === "danger"
-      ? "bg-red-500/10 text-red-600"
+      ? "bg-[var(--doc-red-soft)] text-[var(--doc-red)]"
       : tone === "warning"
-        ? "bg-amber-500/10 text-amber-600"
+        ? "bg-[var(--doc-orange-soft)] text-[var(--doc-orange)]"
         : tone === "success"
-          ? "bg-emerald-500/10 text-emerald-600"
-          : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
+          ? "bg-[var(--doc-green-soft)] text-[var(--doc-green)]"
+          : "bg-[var(--doc-soft)] text-[var(--doc-muted)]";
 
   return (
     <span
@@ -284,13 +284,13 @@ function StatusBadge({ tone = "neutral", children }) {
 
 function SkeletonBlock({ className = "" }) {
   return (
-    <div className={cx("animate-pulse rounded-[22px] bg-[var(--color-surface-2)]", className)} />
+    <div className={cx("animate-pulse rounded-[22px] bg-[var(--doc-soft)]", className)} />
   );
 }
 
 function CreateSkeleton() {
   return (
-    <div className="space-y-5">
+    <div className="svx-doc-center-page space-y-5">
       <section className={cx(pageCard(), "p-5 sm:p-6")}>
         <SkeletonBlock className="h-4 w-28" />
         <SkeletonBlock className="mt-4 h-10 w-72 max-w-full rounded-[18px]" />
@@ -352,12 +352,12 @@ function ShieldIcon() {
 function SummaryCard({ label, value, note, tone = "neutral" }) {
   const dot =
     tone === "danger"
-      ? "bg-red-500"
+      ? "bg-[var(--doc-red)]"
       : tone === "warning"
-        ? "bg-amber-500"
+        ? "bg-[var(--doc-orange)]"
         : tone === "success"
-          ? "bg-emerald-500"
-          : "bg-[var(--color-primary)]";
+          ? "bg-[var(--doc-green)]"
+          : "bg-[var(--doc-blue)]";
 
   return (
     <article className={cx(pageCard(), "relative overflow-hidden p-5")}>
@@ -365,18 +365,18 @@ function SummaryCard({ label, value, note, tone = "neutral" }) {
 
       <div className="relative">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
+          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--doc-muted)]">
             {label}
           </p>
           <span className={cx("h-2.5 w-2.5 rounded-full", dot)} />
         </div>
 
-        <p className="mt-3 truncate text-2xl font-black tracking-[-0.03em] text-[var(--color-text)]">
+        <p className="mt-3 truncate text-2xl font-black tracking-[-0.03em] text-[var(--doc-text)]">
           {value}
         </p>
 
         {note ? (
-          <p className="mt-1 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
+          <p className="mt-1 text-xs font-semibold leading-5 text-[var(--doc-muted)]">
             {note}
           </p>
         ) : null}
@@ -388,16 +388,16 @@ function SummaryCard({ label, value, note, tone = "neutral" }) {
 function InfoTile({ label, value, tone = "neutral" }) {
   const valueClass =
     tone === "danger"
-      ? "text-red-600"
+      ? "text-[var(--doc-red)]"
       : tone === "warning"
-        ? "text-amber-600"
+        ? "text-[var(--doc-orange)]"
         : tone === "success"
-          ? "text-emerald-600"
-          : "text-[var(--color-text)]";
+          ? "text-[var(--doc-green)]"
+          : "text-[var(--doc-text)]";
 
   return (
-    <div className={cx(softPanel(), "p-4 shadow-[var(--shadow-soft)]")}>
-      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-text-muted)]">
+    <div className={cx(softPanel(), "p-4 shadow-[0_14px_28px_rgba(7,92,255,0.10)]")}>
+      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--doc-muted)]">
         {label}
       </p>
 
@@ -414,14 +414,14 @@ function SaleOption({ sale, selected, onClick }) {
       type="button"
       onClick={onClick}
       className={cx(
-        "w-full border-b border-[var(--color-border)] px-4 py-4 text-left transition last:border-b-0",
-        selected ? "bg-[var(--color-surface-2)]" : "hover:bg-[var(--color-surface-2)]"
+        "w-full border-b border-[var(--doc-line-soft)] px-4 py-4 text-left transition last:border-b-0",
+        selected ? "bg-[var(--doc-soft)]" : "hover:bg-[var(--doc-soft)]"
       )}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="truncate text-sm font-black text-[var(--color-text)]">
+            <div className="truncate text-sm font-black text-[var(--doc-text)]">
               {saleReferenceLabel(sale)}
             </div>
 
@@ -430,16 +430,16 @@ function SaleOption({ sale, selected, onClick }) {
             </StatusBadge>
           </div>
 
-          <p className="mt-1 truncate text-sm font-semibold text-[var(--color-text-muted)]">
+          <p className="mt-1 truncate text-sm font-semibold text-[var(--doc-muted)]">
             {customerName(sale)} • {customerPhone(sale)}
           </p>
 
-          <p className="mt-1 text-xs font-bold text-[var(--color-text-muted)]">
+          <p className="mt-1 text-xs font-bold text-[var(--doc-muted)]">
             {formatDate(sale?.createdAt)} • Staff: {cashierName(sale)}
           </p>
         </div>
 
-        <div className="shrink-0 text-sm font-black text-[var(--color-text)]">
+        <div className="shrink-0 text-sm font-black text-[var(--doc-text)]">
           {formatMoney(sale?.total || 0)}
         </div>
       </div>
@@ -449,10 +449,10 @@ function SaleOption({ sale, selected, onClick }) {
 
 function EmptyState({ title, text }) {
   return (
-    <div className="rounded-[28px] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-2)] p-8 text-center">
-      <h3 className="text-base font-black text-[var(--color-text)]">{title}</h3>
+    <div className="rounded-[28px] border border-dashed border-[var(--doc-line-soft)] bg-[var(--doc-soft)] p-8 text-center">
+      <h3 className="text-base font-black text-[var(--doc-text)]">{title}</h3>
 
-      <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-[var(--color-text-muted)]">
+      <p className="mx-auto mt-2 max-w-md text-sm font-medium leading-6 text-[var(--doc-muted)]">
         {text}
       </p>
     </div>
@@ -465,8 +465,8 @@ function CoveredItemCard({ item, index, onChange }) {
       className={cx(
         "rounded-[24px] border p-4 transition",
         item.checked
-          ? "border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)]"
-          : "border-[var(--color-border)] bg-[var(--color-surface-2)] opacity-75"
+          ? "border-[var(--doc-line-soft)] bg-[var(--doc-surface)] shadow-[0_14px_28px_rgba(7,92,255,0.10)]"
+          : "border-[var(--doc-line-soft)] bg-[var(--doc-soft)] opacity-75"
       )}
     >
       <div className="flex items-start gap-3">
@@ -474,12 +474,12 @@ function CoveredItemCard({ item, index, onChange }) {
           type="checkbox"
           checked={item.checked}
           onChange={(event) => onChange(index, "checked", event.target.checked)}
-          className="mt-1 h-4 w-4 rounded border-[var(--color-border)]"
+          className="mt-1 h-4 w-4 rounded border-[var(--doc-line-soft)]"
         />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-sm font-black text-[var(--color-text)]">
+            <h3 className="text-sm font-black text-[var(--doc-text)]">
               {item.unitLabel || `Sold product ${index + 1}`}
             </h3>
 
@@ -488,14 +488,14 @@ function CoveredItemCard({ item, index, onChange }) {
             </StatusBadge>
           </div>
 
-          <p className="mt-1 text-xs font-bold text-[var(--color-text-muted)]">
+          <p className="mt-1 text-xs font-bold text-[var(--doc-muted)]">
             Qty: {formatNumber(item.quantity || 1)} • Sold for {formatMoney(item.price || 0)}
           </p>
 
           {item.checked ? (
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--doc-muted)]">
                   Product label
                 </span>
                 <input
@@ -507,7 +507,7 @@ function CoveredItemCard({ item, index, onChange }) {
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--doc-muted)]">
                   Serial
                 </span>
                 <input
@@ -519,7 +519,7 @@ function CoveredItemCard({ item, index, onChange }) {
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--doc-muted)]">
                   IMEI 1
                 </span>
                 <input
@@ -531,7 +531,7 @@ function CoveredItemCard({ item, index, onChange }) {
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--doc-muted)]">
                   IMEI 2
                 </span>
                 <input
@@ -543,7 +543,7 @@ function CoveredItemCard({ item, index, onChange }) {
               </label>
             </div>
           ) : (
-            <p className="mt-3 text-sm font-medium text-[var(--color-text-muted)]">
+            <p className="mt-3 text-sm font-medium text-[var(--doc-muted)]">
               This product will not appear on the warranty certificate.
             </p>
           )}
@@ -555,6 +555,9 @@ function CoveredItemCard({ item, index, onChange }) {
 
 export default function WarrantyCreate() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const saleIdFromQuery = cleanString(searchParams.get("saleId"));
+
   const dropdownRef = useRef(null);
   const mountedRef = useRef(true);
 
@@ -637,6 +640,17 @@ export default function WarrantyCreate() {
       setInitialLoading(false);
     }
   }
+
+  useEffect(() => {
+  if (!saleIdFromQuery || !allSales.length || selectedSale || selectedSaleLoading) return;
+
+  const saleRow = allSales.find((sale) => String(sale.id) === saleIdFromQuery);
+
+  if (saleRow) {
+    void applySelectedSale(saleRow);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [saleIdFromQuery, allSales.length, selectedSale?.id, selectedSaleLoading]);
 
   useEffect(() => {
     void loadSales();
@@ -795,23 +809,23 @@ export default function WarrantyCreate() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="svx-doc-center-page space-y-5">
       <section className={cx(pageCard(), "relative overflow-hidden p-5 sm:p-6")}>
-        <div className="pointer-events-none absolute -right-24 -top-24 h-[260px] w-[260px] rounded-full bg-[rgba(74,163,255,0.10)] blur-3xl" />
+        <div className="pointer-events-none absolute -right-24 -top-24 h-[260px] w-[260px] rounded-full bg-[rgba(7, 92, 255, 0.10)] blur-3xl" />
 
         <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--doc-blue)]">
               Warranty
             </p>
 
-            <h1 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)] sm:text-3xl">
+            <h1 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--doc-text)] sm:text-3xl">
               Create warranty
             </h1>
 
-            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--color-text-muted)]">
+            <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--doc-muted)]">
               Choose a real sale from{" "}
-              <span className="font-black text-[var(--color-text)]">
+              <span className="font-black text-[var(--doc-text)]">
                 {activeStoreLocation}
               </span>
               , select the sold products to cover, and issue a clean warranty certificate.
@@ -827,16 +841,14 @@ export default function WarrantyCreate() {
               Documents
             </Link>
 
-            <Link to="/app/pos/sales" className={primaryBtn()}>
-              Sales list
-            </Link>
+            
           </div>
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
-          label="Selected sale"
+          label="Sale"
           value={selectedSale ? saleReferenceLabel(selectedSale) : "None"}
           note={
             selectedSale
@@ -847,22 +859,22 @@ export default function WarrantyCreate() {
         />
 
         <SummaryCard
-          label="Sold products"
+          label="Products"
           value={formatNumber(totalSoldItems)}
-          note="Products loaded from the sale"
+          note="Products in sale"
         />
 
         <SummaryCard
           label="Covered"
           value={formatNumber(totalCoveredItems)}
-          note="Products that will appear on warranty"
+          note="Included on warranty"
           tone={totalCoveredItems > 0 ? "success" : "warning"}
         />
 
         <SummaryCard
           label="Excluded"
           value={formatNumber(excludedItems)}
-          note="Products not covered"
+          note="Excluded from warranty"
           tone={excludedItems > 0 ? "warning" : "neutral"}
         />
       </section>
@@ -871,17 +883,17 @@ export default function WarrantyCreate() {
         <div className="space-y-5">
           <section className={cx(pageCard(), "p-5 sm:p-6")}>
             <div>
-              <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                1. Choose sale
+              <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--doc-text)]">
+                Select sale
               </h2>
 
-              <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
+              <p className="mt-1 text-sm font-medium leading-6 text-[var(--doc-muted)]">
                 Search by receipt, customer, phone, staff member, or store location.
               </p>
             </div>
 
             <div className="relative mt-5" ref={dropdownRef}>
-              <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-[var(--color-text-muted)]">
+              <span className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-[var(--doc-muted)]">
                 <SearchIcon />
               </span>
 
@@ -897,13 +909,13 @@ export default function WarrantyCreate() {
               />
 
               {showDropdown ? (
-                <div className="absolute z-40 mt-2 max-h-96 w-full overflow-auto rounded-[24px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[0_22px_70px_rgba(15,23,42,0.18)]">
+                <div className="absolute z-40 mt-2 max-h-96 w-full overflow-auto rounded-[24px] border border-[var(--doc-line-soft)] bg-[var(--doc-surface)] shadow-[0_14px_40px_rgba(15,46,92,0.055)] dark:shadow-none">
                   {salesLoading || selectedSaleLoading ? (
-                    <div className="p-4 text-sm font-bold text-[var(--color-text-muted)]">
+                    <div className="p-4 text-sm font-bold text-[var(--doc-muted)]">
                       Loading sales...
                     </div>
                   ) : filteredSales.length === 0 ? (
-                    <div className="p-4 text-sm font-bold text-[var(--color-text-muted)]">
+                    <div className="p-4 text-sm font-bold text-[var(--doc-muted)]">
                       No sales found.
                     </div>
                   ) : (
@@ -921,22 +933,22 @@ export default function WarrantyCreate() {
             </div>
 
             {selectedSale ? (
-              <div className="mt-5 rounded-[26px] border border-emerald-500/20 bg-emerald-500/10 p-5">
+              <div className="mt-5 rounded-[26px] border border-[var(--doc-green)]/25 bg-[var(--doc-green-soft)] p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="min-w-0">
-                    <p className="text-sm font-black text-emerald-700 dark:text-emerald-300">
+                    <p className="text-sm font-black text-[var(--doc-green)]">
                       Sale selected
                     </p>
 
-                    <h3 className="mt-1 text-base font-black text-[var(--color-text)]">
+                    <h3 className="mt-1 text-base font-black text-[var(--doc-text)]">
                       {saleReferenceLabel(selectedSale)}
                     </h3>
 
-                    <p className="mt-1 text-sm font-semibold text-[var(--color-text-muted)]">
+                    <p className="mt-1 text-sm font-semibold text-[var(--doc-muted)]">
                       {customerName(selectedSale)} • {customerPhone(selectedSale)}
                     </p>
 
-                    <p className="mt-2 text-xs font-bold text-[var(--color-text-muted)]">
+                    <p className="mt-2 text-xs font-bold text-[var(--doc-muted)]">
                       {formatDate(selectedSale?.createdAt)} • {formatMoney(selectedSale?.total)} •
                       Staff: {cashierName(selectedSale)}
                     </p>
@@ -961,18 +973,18 @@ export default function WarrantyCreate() {
 
           <section className={cx(pageCard(), "p-5 sm:p-6")}>
             <div>
-              <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                2. Warranty terms
+              <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--doc-text)]">
+                Warranty details
               </h2>
 
-              <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
+              <p className="mt-1 text-sm font-medium leading-6 text-[var(--doc-muted)]">
                 Choose coverage dates and write clear terms the customer can understand.
               </p>
             </div>
 
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--doc-muted)]">
                   Starts
                 </span>
                 <input
@@ -984,7 +996,7 @@ export default function WarrantyCreate() {
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--doc-muted)]">
                   Ends
                 </span>
                 <input
@@ -996,7 +1008,7 @@ export default function WarrantyCreate() {
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--doc-muted)]">
                   Months
                 </span>
                 <input
@@ -1011,7 +1023,7 @@ export default function WarrantyCreate() {
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--doc-muted)]">
                   Extra days
                 </span>
                 <input
@@ -1026,7 +1038,7 @@ export default function WarrantyCreate() {
               </label>
 
               <label className="block md:col-span-2">
-                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
+                <span className="mb-1.5 block text-[12px] font-black uppercase tracking-[0.12em] text-[var(--doc-muted)]">
                   Warranty terms
                 </span>
                 <textarea
@@ -1043,11 +1055,11 @@ export default function WarrantyCreate() {
           <section className={cx(pageCard(), "p-5 sm:p-6")}>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
-                  3. Covered products
+                <h2 className="text-lg font-black tracking-[-0.02em] text-[var(--doc-text)]">
+                  Products covered
                 </h2>
 
-                <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
+                <p className="mt-1 text-sm font-medium leading-6 text-[var(--doc-muted)]">
                   Keep checked only the products that should be covered by this warranty.
                 </p>
               </div>
@@ -1059,7 +1071,7 @@ export default function WarrantyCreate() {
                   </button>
 
                   <button type="button" onClick={() => toggleAllCovered(false)} className={secondaryBtn()}>
-                    Clear all
+                    Unselect all
                   </button>
                 </div>
               ) : null}
@@ -1096,15 +1108,15 @@ export default function WarrantyCreate() {
 
         <aside className="space-y-5">
           <section className={cx(pageCard(), "p-5 sm:p-6 xl:sticky xl:top-[96px]")}>
-            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--doc-blue)]">
               Review
             </p>
 
-            <h2 className="mt-2 text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">
+            <h2 className="mt-2 text-lg font-black tracking-[-0.02em] text-[var(--doc-text)]">
               Warranty summary
             </h2>
 
-            <p className="mt-1 text-sm font-medium leading-6 text-[var(--color-text-muted)]">
+            <p className="mt-1 text-sm font-medium leading-6 text-[var(--doc-muted)]">
               Check everything before creating the certificate.
             </p>
 
