@@ -622,6 +622,18 @@ export default function DocumentCenterPage() {
 
   const activeConfig = activeTab !== "all" ? TYPE_CONFIG[activeTab] : null;
   const showCreate = Boolean(activeConfig?.canCreate && activeConfig?.createTo);
+  
+
+  const listRoutes = {
+    receipts: "/app/documents/receipts",
+    invoices: "/app/documents/invoices",
+    "delivery-notes": "/app/documents/delivery-notes",
+    proformas: "/app/documents/proformas",
+    warranties: "/app/documents/warranties",
+  };
+
+  const showListButton = activeTab !== "all" && Boolean(listRoutes[activeTab]);
+
 
   const monthLabel = formatMonthLabel(selectedMonth);
 
@@ -652,6 +664,10 @@ export default function DocumentCenterPage() {
           <Link to="/app/documents/delivery-notes/create" className="svx-doc-primary-link">
             Create delivery note
           </Link>
+
+          <Link to="/app/documents/proformas/create" className="svx-doc-primary-link">
+            Create proforma
+          </Link>
         </div>
       </section>
 
@@ -679,16 +695,41 @@ export default function DocumentCenterPage() {
               <h2>{activeDescription}</h2>
             </div>
 
-            <div className="svx-doc-list-header-actions">
+            <div
+              className={`svx-doc-list-header-actions${
+                activeTab === "delivery-notes" && !selected
+                  ? " is-vertical"
+                  : ""
+              }`}
+            >
+
               {showCreate ? (
-                <Link to={activeConfig.createTo} className="svx-doc-compact-primary">
+                <Link
+                  to={activeConfig.createTo}
+                  className="svx-doc-compact-primary"
+                >
                   New {activeConfig.singular}
                 </Link>
               ) : null}
 
-              <button type="button" className="svx-doc-icon-button" onClick={() => load({ silent: true })} aria-label="Refresh documents">
+              {showListButton ? (
+                <Link
+                  to={listRoutes[activeTab]}
+                  className="svx-doc-secondary-action"
+                >
+                  {activeConfig.label} list
+                </Link>
+              ) : null}
+
+              <button
+                type="button"
+                className="svx-doc-icon-button"
+                onClick={() => load({ silent: true })}
+                aria-label="Refresh documents"
+              >
                 <IconRefresh spinning={refreshing} />
               </button>
+
             </div>
           </header>
 
@@ -762,3 +803,4 @@ export default function DocumentCenterPage() {
     </main>
   );
 }
+

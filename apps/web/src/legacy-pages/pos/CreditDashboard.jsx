@@ -352,7 +352,7 @@ function CustomerDueRow({ sale, onOpen, onPay }) {
       <div className="svx-dues-row-actions" onClick={stopRowOpen}>
         <button type="button" onClick={() => onPay(sale)} className="svx-dues-button primary">
           <PaymentIcon />
-          Record
+          Collect payment
         </button>
 
         <Link to={returnUrl} className="svx-dues-button danger">

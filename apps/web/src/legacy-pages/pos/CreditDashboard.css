@@ -256,10 +256,10 @@
   margin-top: 16px;
   color: var(--dues-text);
   font-family: var(--dues-heading-font);
-  font-size: clamp(22px, 1.85vw, 26px);
-  font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -0.04em;
+  font-size: clamp(28px, 2.3vw, 42px);
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: -0.055em;
 }
 
 .svx-dues-metric > span:not(.svx-dues-metric-dot) {
@@ -302,7 +302,7 @@
 .svx-dues-payment-form select,
 .svx-dues-payment-form textarea {
   width: 100%;
-  min-height: 46px;
+  min-height: 52px;
   border: 1px solid var(--dues-line);
   border-radius: 16px;
   background: var(--dues-soft);
@@ -876,7 +876,7 @@
   align-items: center;
   overflow: visible;
   border-radius: 18px;
-  padding: 11px 12px 11px 20px;
+  padding: 18px 16px 18px 22px;
   cursor: pointer;
 }
 
@@ -967,8 +967,9 @@
 .svx-dues-field.is-money b {
   color: var(--dues-orange);
   font-family: var(--dues-heading-font);
-  font-size: 16px;
-  letter-spacing: -0.025em;
+  font-size: clamp(24px, 2vw, 30px);
+  font-weight: 950;
+  letter-spacing: -0.04em;
 }
 
 .svx-dues-field.is-money span {
@@ -990,10 +991,11 @@
 }
 
 .svx-dues-row-actions .svx-dues-button {
-  min-height: 36px;
-  border-radius: 14px;
-  padding: 0 12px;
-  font-size: 12px;
+  min-height: 46px;
+  border-radius: 16px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .svx-dues-row-actions .svx-dues-button svg {
