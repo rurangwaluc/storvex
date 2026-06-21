@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import AsyncButton from "../../components/ui/AsyncButton";
 import { listDeliveryNotes, deleteDeliveryNote } from "../../services/deliveryNotesApi";
 import { listInvoices } from "../../services/invoicesApi";
-import { listProformas, deleteProforma } from "../../services/proformasApi";
+import { listProformas, deleteProforma, duplicateProforma } from "../../services/proformasApi";
 import { listReceipts } from "../../services/receiptsApi";
 import { listWarranties, deleteWarranty } from "../../services/warrantiesApi";
 import { buildDocumentPrintUrl, openDocumentPrint } from "../../services/documentPrint";
@@ -116,6 +116,13 @@ function getDocumentMeta(document) {
   }
 
   return pieces;
+}
+
+
+async function duplicateDocument(type, id) {
+  if (type === "proformas") return duplicateProforma(id);
+
+  throw new Error("Only proformas can be duplicated from this screen");
 }
 
 async function deleteDocument(type, id) {
@@ -428,7 +435,7 @@ function ConfirmModal({ open, title, body, loading, onCancel, onConfirm }) {
   );
 }
 
-function PreviewBar({ document, onBack, onDelete, deleting }) {
+function PreviewBar({ document, onBack, onDelete, onDuplicate, deleting, duplicating }) {
   const config = TYPE_CONFIG[document.type];
   const editUrl = config.editTo?.(document.id);
 
@@ -451,11 +458,23 @@ function PreviewBar({ document, onBack, onDelete, deleting }) {
           </Link>
         ) : null}
 
+
+        {document.type === "proformas" ? (
+          <AsyncButton loading={duplicating} loadingText="Duplicating…" onClick={() => onDuplicate(document)} className="svx-doc-secondary-action">
+            Duplicate
+          </AsyncButton>
+        ) : null}
+
         {config.canDelete ? (
           <AsyncButton loading={deleting} loadingText="" onClick={() => onDelete(document)} className="svx-doc-delete-action">
             Delete
           </AsyncButton>
         ) : null}
+
+
+        <AsyncButton loading={false} variant="secondary" onClick={() => openDocumentPrint(config.resource, document.id)} className="svx-doc-secondary-action">
+          Download PDF
+        </AsyncButton>
 
         <AsyncButton loading={false} variant="primary" onClick={() => openDocumentPrint(config.resource, document.id)} className="svx-doc-print-action">
           <IconPrint />
@@ -466,7 +485,7 @@ function PreviewBar({ document, onBack, onDelete, deleting }) {
   );
 }
 
-function PreviewPanel({ selected, onBack, onDelete, deleting }) {
+function PreviewPanel({ selected, onBack, onDelete, onDuplicate, deleting, duplicating }) {
   if (!selected) return <PreviewPlaceholder />;
 
   const config = TYPE_CONFIG[selected.type];
@@ -474,7 +493,7 @@ function PreviewPanel({ selected, onBack, onDelete, deleting }) {
 
   return (
     <div className="svx-doc-preview-panel">
-      <PreviewBar document={selected} onBack={onBack} onDelete={onDelete} deleting={deleting} />
+      <PreviewBar document={selected} onBack={onBack} onDelete={onDelete} onDuplicate={onDuplicate} deleting={deleting} duplicating={duplicating} />
 
       <div className="svx-doc-preview-frame-wrap">
         <iframe
@@ -501,6 +520,7 @@ export default function DocumentCenterPage() {
   const [selected, setSelected] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   const mountedRef = useRef(true);
   const selectedRef = useRef(null);
@@ -585,6 +605,37 @@ export default function DocumentCenterPage() {
   }, [allDocuments, activeTab, selectedMonth]);
 
   const totalCount = useMemo(() => TYPE_KEYS.reduce((sum, key) => sum + (counts[key] || 0), 0), [counts]);
+
+
+  async function handleDuplicate(document) {
+    if (!document || document.type !== "proformas") return;
+
+    setDuplicating(true);
+
+    try {
+      const result = await duplicateDocument(document.type, document.id);
+      const duplicated = result?.proforma;
+
+      toast.success("Proforma duplicated");
+
+      await load({ silent: true });
+
+      if (duplicated?.id) {
+        setSelected({
+          ...document,
+          id: duplicated.id,
+          number: duplicated.number || "Duplicated proforma",
+          status: duplicated.status || "DRAFT",
+          date: duplicated.createdAt || new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.message || "Failed to duplicate proforma");
+    } finally {
+      if (mountedRef.current) setDuplicating(false);
+    }
+  }
 
   async function handleDelete() {
     if (!deleteTarget) return;
@@ -785,7 +836,9 @@ export default function DocumentCenterPage() {
             selected={selected}
             onBack={() => setSelected(null)}
             onDelete={setDeleteTarget}
+            onDuplicate={handleDuplicate}
             deleting={deleting && deleteTarget?.id === selected?.id}
+            duplicating={duplicating && selected?.type === "proformas"}
           />
         </div>
       </section>
@@ -803,4 +856,3 @@ export default function DocumentCenterPage() {
     </main>
   );
 }
-

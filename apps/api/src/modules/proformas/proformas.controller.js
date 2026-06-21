@@ -499,6 +499,22 @@ async function listProformas(req, res) {
       ];
     }
 
+
+    await prisma.proforma.updateMany({
+      where: {
+        tenantId,
+        status: {
+          in: ["DRAFT", "SENT"],
+        },
+        validUntil: {
+          lt: new Date(),
+        },
+      },
+      data: {
+        status: "EXPIRED",
+      },
+    });
+
     const [total, rows] = await prisma.$transaction([
       prisma.proforma.count({ where }),
       prisma.proforma.findMany({
@@ -1070,6 +1086,138 @@ async function deleteProforma(req, res) {
   }
 }
 
+
+async function duplicateProforma(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    const userId = getUserId(req);
+
+    if (!tenantId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const activeLocation = await ensureWritableBranchAccessOrThrow(req);
+    const scope = resolveProformaBranchScope(req);
+    const id = String(req.params.id || "").trim();
+
+    if (!id) {
+      return res.status(400).json({ message: "Proforma reference is required" });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const source = await tx.proforma.findFirst({
+        where: applyProformaBranchScope(
+          {
+            tenantId,
+            OR: [{ id }, { number: id }],
+          },
+          scope,
+        ),
+        include: {
+          items: {
+            orderBy: [{ createdAt: "asc" }],
+          },
+        },
+      });
+
+      if (!source) {
+        throw new Error("PROFORMA_NOT_FOUND");
+      }
+
+      if (!Array.isArray(source.items) || source.items.length === 0) {
+        throw new Error("PROFORMA_HAS_NO_ITEMS");
+      }
+
+      const createdAt = new Date();
+      const documentNumber = await reserveProformaDocumentNumberTx(tx, {
+        tenantId,
+        createdAt,
+      });
+
+      const created = await tx.proforma.create({
+        data: {
+          tenantId,
+          branchId: typeof tx.proforma.fields?.branchId !== "undefined"
+            ? source.branchId || activeLocation.id
+            : undefined,
+          customerId: source.customerId || null,
+          createdById: userId || source.createdById || null,
+
+          number: documentNumber.proformaNumber,
+          status: "DRAFT",
+
+          customerName: source.customerName,
+          customerPhone: source.customerPhone || null,
+          customerEmail: source.customerEmail || null,
+          customerAddress: source.customerAddress || null,
+
+          subtotal: Number(source.subtotal || 0),
+          total: Number(source.total || 0),
+          currency: source.currency || "RWF",
+
+          validUntil: source.validUntil || null,
+          preparedBy: source.preparedBy || req.user?.name || req.user?.email || "Store staff",
+          reference: source.reference || null,
+          notes: source.notes || null,
+        },
+        select: {
+          id: true,
+          number: true,
+          status: true,
+          customerName: true,
+          customerPhone: true,
+          customerEmail: true,
+          customerAddress: true,
+          subtotal: true,
+          total: true,
+          currency: true,
+          validUntil: true,
+          preparedBy: true,
+          reference: true,
+          notes: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      await tx.proformaItem.createMany({
+        data: source.items.map((item) => ({
+          proformaId: created.id,
+          productId: item.productId || null,
+          productName: polishedProductName(item.productName),
+          serial: item.serial || null,
+          quantity: Number(item.quantity || 1),
+          unitPrice: Number(item.unitPrice || 0),
+          total: Number(item.total || 0),
+        })),
+      });
+
+      return created;
+    });
+
+    return res.status(201).json({
+      duplicated: true,
+      proforma: result,
+    });
+  } catch (error) {
+    const handled = sendLocationError(res, error);
+    if (handled) return handled;
+
+    const msg = String(error?.message || "");
+
+    if (msg === "PROFORMA_NOT_FOUND") {
+      return res.status(404).json({ message: "Proforma not found" });
+    }
+
+    if (msg === "PROFORMA_HAS_NO_ITEMS") {
+      return res.status(400).json({ message: "This proforma has no products to duplicate" });
+    }
+
+    console.error("duplicateProforma error:", error);
+    return res.status(500).json({ message: "Failed to duplicate proforma" });
+  }
+}
+
 async function printProformaHtml(req, res) {
   try {
     const tenantId = getTenantId(req);
@@ -1464,6 +1612,7 @@ module.exports = {
   getProforma,
   updateProforma,
   deleteProforma,
+  duplicateProforma,
   printProformaHtml,
   convertProformaToSale,
 };

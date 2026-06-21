@@ -83,6 +83,14 @@ export function deleteProforma(id, options = {}) {
   });
 }
 
+
+export function duplicateProforma(id, options = {}) {
+  return apiFetch(`/proformas/${encodeURIComponent(normalizeId(id))}/duplicate`, {
+    method: "POST",
+    ...(options || {}),
+  });
+}
+
 export function convertProformaToSale(id, options = {}) {
   return apiFetch(`/proformas/${encodeURIComponent(normalizeId(id))}/convert-to-sale`, {
     method: "POST",
@@ -105,6 +113,7 @@ export default {
   createProforma,
   updateProforma,
   deleteProforma,
+  duplicateProforma,
   convertProformaToSale,
   getProformaPrintUrl,
   openProformaPrint,

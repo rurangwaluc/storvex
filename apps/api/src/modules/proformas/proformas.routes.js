@@ -49,6 +49,15 @@ router.post(
   controller.createProforma
 );
 
+
+router.post(
+  "/:id/duplicate",
+  express.json(),
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.POS_CREATE_SALE),
+  controller.duplicateProforma
+);
+
 // -----------------------
 // GET /api/proformas/:id
 // -----------------------
