@@ -59,6 +59,14 @@ router.get(
   controller.getProforma
 );
 
+router.post(
+  "/:id/convert-to-sale",
+  express.json(),
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.POS_CREATE_SALE),
+  controller.convertProformaToSale
+);
+
 // -----------------------
 // PATCH /api/proformas/:id
 // -----------------------

@@ -2,7 +2,10 @@
 
 const prisma = require("../../config/database");
 const { renderProformaHtml } = require("../documents/documentRender.service");
-const { reserveProformaDocumentNumberTx } = require("../documents/documentNumber.service");
+const {
+  reserveProformaDocumentNumberTx,
+  reserveSaleDocumentNumbersTx,
+} = require("../documents/documentNumber.service");
 const { buildTenantDocumentBranding } = require("../documents/documentBranding.service");
 const {
   parsePagination,
@@ -1223,6 +1226,238 @@ async function printProformaHtml(req, res) {
   }
 }
 
+async function convertProformaToSale(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    const userId = getUserId(req);
+
+    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+    const activeLocation = await ensureWritableBranchAccessOrThrow(req);
+    const id = String(req.params.id || "").trim();
+
+    if (!id) {
+      return res.status(400).json({ message: "Proforma reference is required" });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const proforma = await tx.proforma.findFirst({
+        where: {
+          tenantId,
+          OR: [{ id }, { number: id }],
+        },
+        include: {
+          customer: true,
+          items: true,
+        },
+      });
+
+      if (!proforma) throw new Error("PROFORMA_NOT_FOUND");
+      if (proforma.status === "CONVERTED" || proforma.convertedToSaleId) {
+        throw new Error("PROFORMA_ALREADY_CONVERTED");
+      }
+      if (proforma.status === "CANCELLED") throw new Error("PROFORMA_CANCELLED");
+      if (!Array.isArray(proforma.items) || proforma.items.length === 0) {
+        throw new Error("PROFORMA_HAS_NO_ITEMS");
+      }
+
+      let customerId = proforma.customerId || null;
+
+      if (!customerId && proforma.customerName && proforma.customerPhone) {
+        const existingCustomer = await tx.customer.findFirst({
+          where: {
+            tenantId,
+            phone: proforma.customerPhone,
+          },
+          select: { id: true },
+        });
+
+        if (existingCustomer) {
+          customerId = existingCustomer.id;
+        } else {
+          const createdCustomer = await tx.customer.create({
+            data: {
+              tenantId,
+              name: proforma.customerName,
+              phone: proforma.customerPhone,
+              email: proforma.customerEmail || null,
+              address: proforma.customerAddress || null,
+            },
+            select: { id: true },
+          });
+
+          customerId = createdCustomer.id;
+        }
+      }
+
+      const productIds = proforma.items
+        .map((item) => item.productId)
+        .filter(Boolean)
+        .map(String);
+
+      if (productIds.length !== proforma.items.length) {
+        throw new Error("PROFORMA_ITEM_PRODUCT_REQUIRED");
+      }
+
+      const products = await tx.product.findMany({
+        where: {
+          tenantId,
+          id: { in: productIds },
+          isActive: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          stockQty: true,
+        },
+      });
+
+      const productById = new Map(products.map((product) => [product.id, product]));
+
+      for (const item of proforma.items) {
+        const product = productById.get(String(item.productId));
+        if (!product) throw new Error("PRODUCT_NOT_FOUND");
+
+        const quantity = Number(item.quantity || 0);
+        if (quantity <= 0) throw new Error("INVALID_QUANTITY");
+
+        const updated = await tx.product.updateMany({
+          where: {
+            id: product.id,
+            tenantId,
+            isActive: true,
+            stockQty: { gte: quantity },
+          },
+          data: {
+            stockQty: { decrement: quantity },
+          },
+        });
+
+        if (!updated || updated.count !== 1) {
+          throw new Error(`INSUFFICIENT_STOCK:${product.name || product.id}`);
+        }
+      }
+
+      const createdAt = new Date();
+      const numbers = await reserveSaleDocumentNumbersTx(tx, {
+        tenantId,
+        createdAt,
+      });
+
+      const subtotal = Number(proforma.subtotal || proforma.total || 0);
+      const total = Number(proforma.total || subtotal || 0);
+
+      const sale = await tx.sale.create({
+        data: {
+          tenantId,
+          branchId: proforma.branchId || activeLocation.id,
+          cashierId: userId,
+          customerId,
+          total,
+          subtotalAmount: subtotal,
+          taxableAmount: subtotal,
+          taxMode: "NONE",
+          taxDisplayMode: "HIDDEN",
+          taxRateBps: 0,
+          taxAmount: 0,
+          pricesIncludeTax: false,
+          showTaxOnCustomerDocuments: false,
+          saleType: "CREDIT",
+          amountPaid: 0,
+          balanceDue: total,
+          status: "UNPAID",
+          dueDate: proforma.validUntil || null,
+          receiptNumber: numbers.receiptNumber,
+          invoiceNumber: numbers.invoiceNumber,
+          createdAt,
+          isDraft: false,
+          draftSource: `PROFORMA:${proforma.number || proforma.id}`,
+          finalizedAt: createdAt,
+        },
+        select: {
+          id: true,
+          invoiceNumber: true,
+          receiptNumber: true,
+          total: true,
+          status: true,
+        },
+      });
+
+      await tx.saleItem.createMany({
+        data: proforma.items.map((item) => ({
+          saleId: sale.id,
+          productId: String(item.productId),
+          quantity: Number(item.quantity || 1),
+          price: Number(item.unitPrice || 0),
+        })),
+      });
+
+      const updatedProforma = await tx.proforma.update({
+        where: { id: proforma.id },
+        data: {
+          status: "CONVERTED",
+          convertedToSaleId: sale.id,
+          convertedAt: createdAt,
+        },
+        select: {
+          id: true,
+          number: true,
+          status: true,
+          convertedToSaleId: true,
+          convertedAt: true,
+        },
+      });
+
+      return { sale, proforma: updatedProforma };
+    });
+
+    return res.status(201).json({
+      converted: true,
+      saleId: result.sale.id,
+      invoiceNumber: result.sale.invoiceNumber,
+      receiptNumber: result.sale.receiptNumber,
+      sale: result.sale,
+      proforma: result.proforma,
+    });
+  } catch (error) {
+    const handled = sendLocationError(res, error);
+    if (handled) return handled;
+
+    const msg = String(error?.message || "");
+
+    if (msg === "PROFORMA_NOT_FOUND") {
+      return res.status(404).json({ message: "Proforma not found" });
+    }
+
+    if (msg === "PROFORMA_ALREADY_CONVERTED") {
+      return res.status(400).json({ message: "This proforma is already converted" });
+    }
+
+    if (msg === "PROFORMA_CANCELLED") {
+      return res.status(400).json({ message: "Cancelled proformas cannot be converted" });
+    }
+
+    if (msg === "PROFORMA_HAS_NO_ITEMS") {
+      return res.status(400).json({ message: "This proforma has no products" });
+    }
+
+    if (msg === "PROFORMA_ITEM_PRODUCT_REQUIRED") {
+      return res.status(400).json({
+        message: "Every proforma item must be linked to an inventory product before conversion",
+      });
+    }
+
+    if (msg.startsWith("INSUFFICIENT_STOCK:")) {
+      return res.status(400).json({
+        message: msg.replace("INSUFFICIENT_STOCK:", "Insufficient stock for "),
+      });
+    }
+
+    console.error("convertProformaToSale error:", error);
+    return res.status(500).json({ message: "Failed to convert proforma to sale" });
+  }
+}
+
 module.exports = {
   listProformas,
   createProforma,
@@ -1230,4 +1465,5 @@ module.exports = {
   updateProforma,
   deleteProforma,
   printProformaHtml,
+  convertProformaToSale,
 };

@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import AsyncButton from "../../components/ui/AsyncButton";
 import { buildDocumentPrintUrl, openDocumentPrint } from "../../services/documentPrint";
 import { deleteDeliveryNote } from "../../services/deliveryNotesApi";
-import { deleteProforma } from "../../services/proformasApi";
+import { convertProformaToSale, deleteProforma } from "../../services/proformasApi";
 import { deleteWarranty } from "../../services/warrantiesApi";
 import "./DocumentPreviewRoute.css";
 
@@ -13,7 +13,18 @@ function cx(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
-function ConfirmDeleteModal({ open, title, body, deleting, onCancel, onConfirm }) {
+function ConfirmActionModal({
+  open,
+  eyebrow = "Confirm action",
+  title,
+  body,
+  busy,
+  confirmLabel,
+  busyLabel,
+  danger = false,
+  onCancel,
+  onConfirm,
+}) {
   if (!open) return null;
 
   return (
@@ -21,28 +32,28 @@ function ConfirmDeleteModal({ open, title, body, deleting, onCancel, onConfirm }
       <button
         type="button"
         className="svx-doc-preview-modal-backdrop"
-        aria-label="Close delete confirmation"
-        onClick={deleting ? undefined : onCancel}
+        aria-label="Close confirmation"
+        onClick={busy ? undefined : onCancel}
       />
 
       <div className="svx-doc-preview-modal-card">
-        <p className="svx-doc-preview-eyebrow">Confirm action</p>
+        <p className="svx-doc-preview-eyebrow">{eyebrow}</p>
         <h3>{title}</h3>
         <p>{body}</p>
 
         <div className="svx-doc-preview-modal-actions">
-          <AsyncButton type="button" onClick={onCancel} disabled={deleting} variant="secondary">
+          <AsyncButton type="button" onClick={onCancel} disabled={busy} variant="secondary">
             Cancel
           </AsyncButton>
 
           <AsyncButton
             type="button"
             onClick={onConfirm}
-            loading={deleting}
-            loadingText="Deleting..."
-            className="svx-doc-preview-button is-danger"
+            loading={busy}
+            loadingText={busyLabel}
+            className={danger ? "svx-doc-preview-button is-danger" : "svx-doc-preview-button is-primary"}
           >
-            Delete
+            {confirmLabel}
           </AsyncButton>
         </div>
       </div>
@@ -59,6 +70,7 @@ const RESOURCE_META = {
     createTo: null,
     createLabel: null,
     canDelete: false,
+    canConvertToSale: false,
     singularLabel: "receipt",
     eyebrow: "Sales document",
     badge: "Payment proof",
@@ -73,6 +85,7 @@ const RESOURCE_META = {
     createTo: null,
     createLabel: null,
     canDelete: false,
+    canConvertToSale: false,
     singularLabel: "invoice",
     eyebrow: "Billing document",
     badge: "Formal billing",
@@ -84,9 +97,10 @@ const RESOURCE_META = {
     backTo: "/app/documents/proformas",
     backLabel: "Proformas",
     editTo: (id) => `/app/documents/proformas/${encodeURIComponent(id)}/edit`,
-    createTo: "/app/documents/proformas/create",
-    createLabel: "Create proforma",
+    createTo: null,
+    createLabel: null,
     canDelete: true,
+    canConvertToSale: true,
     singularLabel: "proforma",
     eyebrow: "Pre-sale document",
     badge: "Quotation",
@@ -101,6 +115,7 @@ const RESOURCE_META = {
     createTo: "/app/documents/warranties/create",
     createLabel: "Create warranty",
     canDelete: true,
+    canConvertToSale: false,
     singularLabel: "warranty",
     eyebrow: "After-sales document",
     badge: "Coverage proof",
@@ -115,6 +130,7 @@ const RESOURCE_META = {
     createTo: "/app/documents/delivery-notes/create",
     createLabel: "Create delivery note",
     canDelete: true,
+    canConvertToSale: false,
     singularLabel: "delivery note",
     eyebrow: "Goods movement document",
     badge: "No money fields",
@@ -139,6 +155,9 @@ export default function DocumentPreviewRoute() {
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  const [showConvert, setShowConvert] = useState(false);
+  const [converting, setConverting] = useState(false);
+
   const meta = RESOURCE_META[resource] || {
     title: "Document preview",
     backTo: "/app/documents",
@@ -147,6 +166,7 @@ export default function DocumentPreviewRoute() {
     createTo: null,
     createLabel: null,
     canDelete: false,
+    canConvertToSale: false,
     singularLabel: "document",
     eyebrow: "Document",
     badge: "Preview",
@@ -181,17 +201,63 @@ export default function DocumentPreviewRoute() {
     }
   }
 
+  async function handleConvertToSale() {
+    if (resource !== "proformas" || !id) return;
+
+    try {
+      setConverting(true);
+
+      const result = await convertProformaToSale(id);
+      const saleId = result?.saleId || result?.sale?.id;
+
+      toast.success("Proforma converted to sale");
+
+      if (saleId) {
+        navigate(`/app/documents/invoices/${encodeURIComponent(saleId)}/preview`, {
+          replace: true,
+        });
+        return;
+      }
+
+      navigate("/app/documents/invoices", { replace: true });
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.message || "Failed to convert proforma to sale");
+    } finally {
+      setConverting(false);
+      setShowConvert(false);
+    }
+  }
+
   return (
     <div className="svx-doc-preview-page">
-      <ConfirmDeleteModal
+      <ConfirmActionModal
         open={showDelete}
+        eyebrow="Confirm delete"
         title={`Delete ${meta.singularLabel}?`}
         body={`You are about to permanently delete this ${meta.singularLabel}. This action cannot be undone.`}
-        deleting={deleting}
+        busy={deleting}
+        confirmLabel="Delete"
+        busyLabel="Deleting..."
+        danger
         onCancel={() => {
           if (!deleting) setShowDelete(false);
         }}
         onConfirm={handleDelete}
+      />
+
+      <ConfirmActionModal
+        open={showConvert}
+        eyebrow="Create financial record"
+        title="Convert proforma to sale?"
+        body="This will create a credit sale from this proforma. Storvex will generate invoice and receipt numbers, keep payment unpaid, and move you to the invoice preview. No payment is recorded now."
+        busy={converting}
+        confirmLabel="Convert to sale"
+        busyLabel="Converting..."
+        onCancel={() => {
+          if (!converting) setShowConvert(false);
+        }}
+        onConfirm={handleConvertToSale}
       />
 
       <section className="svx-doc-preview-hero">
@@ -226,6 +292,17 @@ export default function DocumentPreviewRoute() {
               </Link>
             ) : null}
 
+            {meta.canConvertToSale ? (
+              <button
+                type="button"
+                onClick={() => setShowConvert(true)}
+                className="svx-doc-preview-button is-primary"
+                disabled={converting}
+              >
+                {converting ? "Converting..." : "Convert to sale"}
+              </button>
+            ) : null}
+
             {meta.createTo && meta.createLabel ? (
               <Link to={meta.createTo} className="svx-doc-preview-button">
                 {meta.createLabel}
@@ -237,7 +314,7 @@ export default function DocumentPreviewRoute() {
                 type="button"
                 onClick={() => setShowDelete(true)}
                 className="svx-doc-preview-button is-danger"
-                disabled={deleting}
+                disabled={deleting || converting}
               >
                 {deleting ? "Deleting..." : "Delete"}
               </button>

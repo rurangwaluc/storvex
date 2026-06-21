@@ -745,11 +745,14 @@ export default function CreditDashboard() {
 
       <section className="svx-dues-hero">
         <div className="svx-dues-hero-copy">
-          <p className="svx-dues-kicker">Dues</p>
-          <h1>Pay later balances</h1>
+          <p className="svx-dues-kicker">Collections</p>
+
+          <h1>Customer collections</h1>
+
           <p>
-            See who owes money in <strong>{activeBranchLabel}</strong>, what is late, what is due today,
-            and where to collect payment.
+            Track outstanding invoices in <strong>{activeBranchLabel}</strong>,
+            collect customer payments, monitor overdue balances,
+            and manage business receivables.
           </p>
         </div>
 
@@ -771,7 +774,7 @@ export default function CreditDashboard() {
 
       <section className="svx-dues-metrics">
         <SummaryCard
-          label="Open dues"
+          label="Customers owing"
           value={formatNumber(summary.count)}
           note={`${formatNumber(summary.customerCount)} customer${summary.customerCount === 1 ? "" : "s"} owing`}
           tone={summary.count > 0 ? "warning" : "success"}
@@ -785,7 +788,7 @@ export default function CreditDashboard() {
         />
 
         <SummaryCard
-          label="Late"
+         label="Overdue invoices"
           value={formatNumber(summary.overdueCount)}
           note={formatMoney(summary.overdueBalance)}
           tone={summary.overdueCount > 0 ? "danger" : "success"}
