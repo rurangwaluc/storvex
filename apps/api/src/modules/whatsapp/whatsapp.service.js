@@ -290,24 +290,81 @@ async function sendTemplate({ account, to, templateName, languageCode, bodyParam
   }
 }
 
-function buildNotFoundReply({ businessName, query, aiUsed }) {
+function buildNotFoundReply({
+  businessName,
+  query,
+  aiUsed,
+}) {
   const lines = [];
+
   lines.push(`❌ *${businessName}*`);
-  lines.push(`I could not find a matching in-stock product for "${query}".`);
-  if (aiUsed) lines.push(`I also tried a clearer interpretation of your message.`);
-  lines.push(`Reply with a clearer model, SKU, barcode, brand, or product type.`);
+
+  lines.push("");
+
+  lines.push(
+    `I could not find "${query}" in our catalog.`
+  );
+
+  if (aiUsed) {
+    lines.push(
+      `I also tried a smarter interpretation of your message.`
+    );
+  }
+
+  lines.push("");
+
+  lines.push(`Please send one of:`);
+
+  lines.push(`• Product name`);
+
+  lines.push(`• Brand`);
+
+  lines.push(`• Model`);
+
+  lines.push(`• Part number`);
+
+  lines.push(`• Photo (if available)`);
+
+  lines.push("");
+
+  lines.push(`Examples:`);
+
+  lines.push(`• Samsung A16`);
+
+  lines.push(`• Stanley hammer`);
+
+  lines.push(`• LED bulb 12W`);
+
+  lines.push(`• Toyota brake pads`);
+
   return lines.join("\n");
 }
 
 function buildWelcomeReply({ businessName }) {
-  return (
-    `👋 Welcome to *${businessName}*.\n` +
-    `Send a product name to get price and stock.\n\n` +
-    `Examples:\n` +
-    `- "A14"\n` +
-    `- "price iPhone 13"\n` +
-    `- "Type-C charger"\n`
-  );
+  return [
+    `👋 Welcome to *${businessName}*`,
+    "",
+    `I can help you find products quickly.`,
+    "",
+    `📂 Categories`,
+    `1️⃣ Electronics`,
+    `2️⃣ Hardware`,
+    `3️⃣ Home & Kitchen`,
+    `4️⃣ Lighting`,
+    `5️⃣ Spare Parts`,
+    "",
+    `💬 Examples`,
+    `• Samsung A16`,
+    `• Hammer`,
+    `• Blender`,
+    `• LED bulb`,
+    `• Toyota brake pads`,
+    "",
+    `You can also ask:`,
+    `• Price of Samsung A16`,
+    `• Do you have LED bulb 12W?`,
+    `• I need 2 hammers`,
+  ].join("\n");
 }
 
 function buildPayReply({ businessName, amount, method, reference, updatedSale }) {
@@ -1457,6 +1514,34 @@ async function handleProductQueryIntent({
     directQuery,
   });
 
+  if (result.aiMeta?.needsHumanReview) {
+  const reply = [
+    `🤝 *${businessName}*`,
+    "",
+    `A staff member will help you shortly.`,
+    "",
+    `Please send:`,
+    `• Product name`,
+    `• Brand`,
+    `• Model`,
+    `• Quantity`,
+    `• Photo (if available)`,
+  ].join("\n");
+
+  await safeSendAndLog({
+    account,
+    tenantId,
+    convoId: convo.id,
+    to: from,
+    text: reply,
+    auditAction: "WHATSAPP_HUMAN_HELP_REQUESTED",
+  });
+
+  await bumpConvo(convo.id);
+
+  return;
+}
+
   if (Array.isArray(result.products) && result.products.length > 0) {
     let reply;
 
@@ -1628,7 +1713,14 @@ async function handleInboundWebhook({ account, payload, inbound }) {
         continue;
       }
 
-      if (intent.type === "PRODUCT_QUERY") {
+      if (
+          intent.type === "PRODUCT_QUERY" ||
+          intent.type === "PRODUCT_SEARCH" ||
+          intent.type === "PRICE_CHECK" ||
+          intent.type === "STOCK_CHECK" ||
+          intent.type === "ORDER_REQUEST"
+        )
+         {
         const directQuery = normalizeText(intent.payload?.query || text);
 
         await handleProductQueryIntent({

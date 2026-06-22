@@ -1,3 +1,29 @@
+const {
+  inferCategoryFromText,
+  getCategoryContext,
+  shouldAskCategoryClarifier,
+} = require("./whatsapp.category.service");
+
+const INTENTS = Object.freeze({
+  EMPTY: "EMPTY",
+  GREETING: "GREETING",
+  PRODUCT_SEARCH: "PRODUCT_SEARCH",
+  PRICE_CHECK: "PRICE_CHECK",
+  STOCK_CHECK: "STOCK_CHECK",
+  ORDER_REQUEST: "ORDER_REQUEST",
+  WARRANTY: "WARRANTY",
+  DELIVERY: "DELIVERY",
+  REPAIR: "REPAIR",
+  PROMOTION: "PROMOTION",
+  HUMAN_HELP: "HUMAN_HELP",
+  PAY: "PAY",
+  UNKNOWN: "UNKNOWN",
+
+  // Backward-compatible aliases used by older WhatsApp services.
+  BUY: "BUY",
+  PRODUCT_QUERY: "PRODUCT_QUERY",
+});
+
 function normalizeText(value) {
   return String(value || "").trim();
 }
@@ -112,13 +138,18 @@ const HUMAN_HELP_WORDS = [
   "complaint",
 ];
 
-const PRODUCT_INTENT_WORDS = [
+const PRICE_WORDS = [
   "price",
   "how much",
   "combien",
   "igiciro",
   "angahe",
   "cost",
+  "frw",
+  "rwf",
+];
+
+const STOCK_WORDS = [
   "stock",
   "available",
   "availability",
@@ -127,80 +158,114 @@ const PRODUCT_INTENT_WORDS = [
   "have",
   "do you have",
   "have you got",
+  "is there",
+  "hari",
+  "iraboneka",
+  "zirahari",
+];
+
+const ORDER_WORDS = [
   "buy",
   "order",
   "reserve",
   "book",
   "need",
   "want",
+  "i want",
+  "i need",
   "nkeneye",
   "ndashaka",
   "ndayishaka",
   "nabona",
+  "mfatira",
+  "mumpe",
+  "ngurisha",
+  "gura",
+];
+
+const PRODUCT_SEARCH_WORDS = [
   "looking for",
   "searching for",
   "show me",
   "send me",
+  "mbwira",
+  "ndashaka kureba",
+  "ndashaka kumenya",
 ];
 
-const PRODUCT_CATEGORY_HINTS = [
-  "iphone",
-  "samsung",
-  "tecno",
-  "infinix",
-  "itel",
-  "nokia",
-  "xiaomi",
-  "redmi",
-  "oppo",
-  "vivo",
-  "google pixel",
-  "pixel",
-  "hp",
-  "dell",
-  "lenovo",
-  "asus",
-  "acer",
-  "macbook",
-  "laptop",
-  "computer",
-  "phone",
-  "smartphone",
-  "charger",
-  "adapter",
-  "type c",
-  "type-c",
-  "usb c",
-  "usb-c",
-  "cable",
-  "lightning",
-  "airpods",
-  "earbuds",
-  "earphones",
-  "headphones",
-  "headset",
-  "speaker",
-  "power bank",
-  "powerbank",
-  "router",
-  "wifi",
-  "printer",
-  "ssd",
-  "hard drive",
-  "hdd",
-  "flash",
-  "usb drive",
-  "memory card",
-  "mouse",
-  "keyboard",
-  "screen protector",
-  "protector",
-  "case",
-  "cover",
+const WARRANTY_WORDS = [
+  "warranty",
+  "guarantee",
+  "garantie",
+  "waranti",
+  "warante",
+  "repair under warranty",
+  "void warranty",
+  "covered",
+  "coverage",
+  "factory fault",
+  "defect",
+];
+
+const DELIVERY_WORDS = [
+  "delivery",
+  "deliver",
+  "ship",
+  "transport",
+  "bring",
+  "send to me",
+  "where do you deliver",
+  "mwohereza",
+  "delivery fee",
+  "delivery price",
+  "location",
+];
+
+const REPAIR_WORDS = [
+  "repair",
+  "fix",
+  "service",
+  "technician",
+  "maintenance",
+  "screen repair",
+  "diagnose",
+  "broken",
+  "not working",
+  "gusana",
+  "gukora",
+];
+
+const PROMOTION_WORDS = [
+  "promotion",
+  "promo",
+  "discount",
+  "deal",
+  "offer",
+  "sale offer",
+  "special price",
+  "coupon",
+  "igabanyirizwa",
+];
+
+const PRODUCT_INTENT_WORDS = [
+  ...PRICE_WORDS,
+  ...STOCK_WORDS,
+  ...ORDER_WORDS,
+  ...PRODUCT_SEARCH_WORDS,
 ];
 
 const LEADING_INTENT_PREFIX =
   /^(price|stock|available|availability|how much|cost|murafite|murafite se|mufite|igiciro|angahe|do you have|have you got|looking for|searching for|show me|send me)\s*[:\-]?\s*/i;
+
+function includesAny(text, words = []) {
+  const t = normalizeLower(text);
+  if (!t) return false;
+
+  return words.some((word) => {
+    const escaped = String(word || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(^|\\s)${escaped}(\\s|$|[!.?,:;])`, "i").test(t);
+  });
+}
 
 function removeNoiseWords(text) {
   return collapseSpaces(
@@ -214,13 +279,7 @@ function removeNoiseWords(text) {
 }
 
 function looksLikeGreeting(text) {
-  const t = normalizeLower(text);
-  if (!t) return false;
-
-  return GREETING_WORDS.some((word) => {
-    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return new RegExp(`(^|\\s)${escaped}(\\s|$|[!.?])`, "i").test(t);
-  });
+  return includesAny(text, GREETING_WORDS);
 }
 
 function looksLikeHumanHelp(text) {
@@ -235,7 +294,9 @@ function hasProductSignal(text) {
   if (!t) return false;
 
   if (PRODUCT_INTENT_WORDS.some((w) => t.includes(w))) return true;
-  if (PRODUCT_CATEGORY_HINTS.some((w) => t.includes(w))) return true;
+
+  const inferredCategory = inferCategoryFromText(t, null);
+  if (inferredCategory) return true;
 
   const hasModelPattern =
     /\b[a-z]{1,8}\d{1,5}[a-z]?\b/i.test(t) ||
@@ -245,7 +306,8 @@ function hasProductSignal(text) {
     /\busb[-\s]?c\b/i.test(t) ||
     /\ba\d{1,3}\b/i.test(t) ||
     /\bs\d{1,3}\b/i.test(t) ||
-    /\bnote\s?\d{1,3}\b/i.test(t);
+    /\bnote\s?\d{1,3}\b/i.test(t) ||
+    /\b\d+\s?(pcs|pieces|piece|set|sets|w|watts|mm|cm|kg|inch|inches)\b/i.test(t);
 
   return hasModelPattern;
 }
@@ -371,7 +433,7 @@ function extractQuantityFromText(text) {
 
   const directPatterns = [
     /\b(?:qty|quantity|x)\s*[:#-]?\s*(\d{1,4})\b/i,
-    /\b(\d{1,4})\s*(?:pcs|pieces|piece|items|units|phones|laptops|chargers|cables)\b/i,
+    /\b(\d{1,4})\s*(?:pcs|pieces|piece|items|units|phones|laptops|chargers|cables|bulbs|plates|cups|sets|bags|boxes)\b/i,
   ];
 
   for (const pattern of directPatterns) {
@@ -394,7 +456,7 @@ function removeQuantityWords(text) {
   return collapseSpaces(
     String(text || "")
       .replace(/\b(?:qty|quantity|x)\s*[:#-]?\s*\d{1,4}\b/gi, " ")
-      .replace(/\b\d{1,4}\s*(?:pcs|pieces|piece|items|units|phones|laptops|chargers|cables)\b/gi, " ")
+      .replace(/\b\d{1,4}\s*(?:pcs|pieces|piece|items|units|phones|laptops|chargers|cables|bulbs|plates|cups|sets|bags|boxes)\b/gi, " ")
       .replace(/\b(two|couple|three|four|five)\b/gi, " ")
   );
 }
@@ -482,6 +544,30 @@ function parseSimpleQuantityFirstBuy(text) {
   };
 }
 
+function classifyProductIntent(text) {
+  const raw = normalizeLower(text);
+
+  if (includesAny(raw, PRICE_WORDS)) return INTENTS.PRICE_CHECK;
+  if (includesAny(raw, STOCK_WORDS)) return INTENTS.STOCK_CHECK;
+  if (includesAny(raw, ORDER_WORDS)) return INTENTS.ORDER_REQUEST;
+
+  return INTENTS.PRODUCT_SEARCH;
+}
+
+function buildCategoryPayload(raw, payload = {}) {
+  const query = payload.query || payload.rawText || raw;
+  const category = inferCategoryFromText(query || raw);
+  const categoryContext = getCategoryContext(category, query || raw);
+
+  return {
+    ...payload,
+    category,
+    categoryLabel: categoryContext.label,
+    categoryContext,
+    needsClarification: shouldAskCategoryClarifier(category, query || raw),
+  };
+}
+
 function detectProductQueryIntent(text) {
   const raw = normalizeLower(text);
   if (!raw) return null;
@@ -496,17 +582,13 @@ function detectProductQueryIntent(text) {
 
   const productQuery = extractProductQuery(text);
 
-  if (hasQueryVerb && productQuery) {
-    return {
-      type: "PRODUCT_QUERY",
-      payload: { query: productQuery },
-    };
-  }
+  if ((hasQueryVerb || hasProductSignal(raw)) && productQuery) {
+    const type = classifyProductIntent(raw);
 
-  if (hasProductSignal(raw) && productQuery) {
     return {
-      type: "PRODUCT_QUERY",
-      payload: { query: productQuery },
+      type,
+      legacyType: INTENTS.PRODUCT_QUERY,
+      payload: buildCategoryPayload(raw, { query: productQuery, rawText: text }),
     };
   }
 
@@ -515,8 +597,9 @@ function detectProductQueryIntent(text) {
   if (words.length >= 1 && words.length <= 8 && productQuery) {
     if (!looksLikeGreeting(raw) && !looksLikeHumanHelp(raw)) {
       return {
-        type: "PRODUCT_QUERY",
-        payload: { query: productQuery },
+        type: INTENTS.PRODUCT_SEARCH,
+        legacyType: INTENTS.PRODUCT_QUERY,
+        payload: buildCategoryPayload(raw, { query: productQuery, rawText: text }),
       };
     }
   }
@@ -524,67 +607,166 @@ function detectProductQueryIntent(text) {
   return null;
 }
 
+function detectBusinessSupportIntent(raw) {
+  if (includesAny(raw, WARRANTY_WORDS)) {
+    return { type: INTENTS.WARRANTY, raw, payload: { rawText: raw } };
+  }
+
+  if (includesAny(raw, DELIVERY_WORDS)) {
+    return { type: INTENTS.DELIVERY, raw, payload: { rawText: raw } };
+  }
+
+  if (includesAny(raw, REPAIR_WORDS)) {
+    return { type: INTENTS.REPAIR, raw, payload: { rawText: raw } };
+  }
+
+  if (includesAny(raw, PROMOTION_WORDS)) {
+    return { type: INTENTS.PROMOTION, raw, payload: { rawText: raw } };
+  }
+
+  return null;
+}
+
+function withLegacyShape(intent) {
+  if (!intent || !intent.type) return intent;
+
+  if (intent.type === INTENTS.ORDER_REQUEST) {
+    return {
+      ...intent,
+      legacyType: INTENTS.BUY,
+    };
+  }
+
+  return intent;
+}
+
 function detectIntent(text) {
   const raw = normalizeText(text);
 
   if (!raw) {
-    return { type: "EMPTY", raw, payload: {} };
+    return { type: INTENTS.EMPTY, raw, payload: {} };
   }
 
   const pay = parsePayCommand(raw);
   if (pay) {
-    return { type: "PAY", raw, payload: pay };
+    return { type: INTENTS.PAY, raw, payload: pay };
   }
 
   const explicitBuy = parseBuyCommand(raw);
   if (explicitBuy) {
-    return { type: "BUY", raw, payload: explicitBuy };
+    return withLegacyShape({
+      type: INTENTS.ORDER_REQUEST,
+      legacyType: INTENTS.BUY,
+      raw,
+      payload: buildCategoryPayload(raw, explicitBuy),
+    });
   }
 
   const implicitBuy = parseImplicitBuyIntent(raw);
   if (implicitBuy) {
-    return { type: "BUY", raw, payload: implicitBuy };
+    return withLegacyShape({
+      type: INTENTS.ORDER_REQUEST,
+      legacyType: INTENTS.BUY,
+      raw,
+      payload: buildCategoryPayload(raw, implicitBuy),
+    });
   }
 
   const quantityFirstBuy = parseSimpleQuantityFirstBuy(raw);
   if (quantityFirstBuy) {
-    return { type: "BUY", raw, payload: quantityFirstBuy };
+    return withLegacyShape({
+      type: INTENTS.ORDER_REQUEST,
+      legacyType: INTENTS.BUY,
+      raw,
+      payload: buildCategoryPayload(raw, quantityFirstBuy),
+    });
   }
 
   if (looksLikeGreeting(raw)) {
-    return { type: "GREETING", raw, payload: { rawText: raw } };
-  }
+    const category = inferCategoryFromText(raw);
+    const categoryContext = getCategoryContext(category, raw);
 
-  if (looksLikeHumanHelp(raw)) {
-    return { type: "HUMAN_HELP", raw, payload: { rawText: raw } };
-  }
-
-  const productQuery = detectProductQueryIntent(raw);
-  if (productQuery) {
     return {
-      type: "PRODUCT_QUERY",
+      type: INTENTS.GREETING,
       raw,
       payload: {
-        ...productQuery.payload,
         rawText: raw,
+        category,
+        categoryLabel: categoryContext.label,
+        categoryContext,
       },
     };
   }
 
-  return { type: "UNKNOWN", raw, payload: { rawText: raw } };
+  if (looksLikeHumanHelp(raw)) {
+    return { type: INTENTS.HUMAN_HELP, raw, payload: { rawText: raw } };
+  }
+
+  const businessSupport = detectBusinessSupportIntent(raw);
+  if (businessSupport) return businessSupport;
+
+  const productQuery = detectProductQueryIntent(raw);
+  if (productQuery) {
+    return {
+      ...productQuery,
+      raw,
+    };
+  }
+
+  return { type: INTENTS.UNKNOWN, raw, payload: { rawText: raw } };
+}
+
+function toLegacyIntent(intent) {
+  if (!intent) return intent;
+
+  if (intent.legacyType) {
+    return {
+      ...intent,
+      type: intent.legacyType,
+      modernType: intent.type,
+    };
+  }
+
+  if (
+    [
+      INTENTS.PRODUCT_SEARCH,
+      INTENTS.PRICE_CHECK,
+      INTENTS.STOCK_CHECK,
+    ].includes(intent.type)
+  ) {
+    return {
+      ...intent,
+      type: INTENTS.PRODUCT_QUERY,
+      modernType: intent.type,
+    };
+  }
+
+  if (intent.type === INTENTS.ORDER_REQUEST) {
+    return {
+      ...intent,
+      type: INTENTS.BUY,
+      modernType: intent.type,
+    };
+  }
+
+  return intent;
 }
 
 module.exports = {
+  INTENTS,
+
   extractProductQuery,
   parsePayCommand,
   parseBuyCommand,
   parseImplicitBuyIntent,
   parseSimpleQuantityFirstBuy,
   detectIntent,
+  toLegacyIntent,
 
   // helpful for Postman/manual testing
   extractPaymentAmount,
   extractPaymentReference,
   extractSaleCode,
   extractQuantityFromText,
+  digitsOnly,
 };
