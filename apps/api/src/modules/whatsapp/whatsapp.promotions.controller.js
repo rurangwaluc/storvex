@@ -34,6 +34,38 @@ function clampLimit(value, fallback = 50, max = 200) {
   return Math.min(max, Math.max(1, Math.floor(n)));
 }
 
+async function createAuditLogSafe({
+  tenantId,
+  userId = null,
+  entity = "WHATSAPP_PROMOTION",
+  entityId = null,
+  action,
+  metadata = null,
+}) {
+  try {
+    if (
+      !tenantId ||
+      !action ||
+      typeof prisma.auditLog?.create !== "function"
+    ) {
+      return;
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        userId,
+        entity,
+        entityId,
+        action,
+        metadata,
+      },
+    });
+  } catch (err) {
+    console.error("Promotion audit log error:", err?.message || err);
+  }
+}
+
 function buildPublicPromotion(promotion) {
   if (!promotion) return null;
 
@@ -65,6 +97,7 @@ function buildPublicPromotion(promotion) {
           name: promotion.product.name,
           sku: promotion.product.sku || null,
           serial: promotion.product.serial || null,
+          businessCategory: promotion.product.businessCategory || null,
           sellPrice: Number(promotion.product.sellPrice || 0),
           stockQty: Number(promotion.product.stockQty || 0),
         }
@@ -80,10 +113,11 @@ function buildPublicPromotion(promotion) {
       : null,
 
     strategy: {
+      categoryAware: true,
       mode: "ONE_STORE_NUMBER",
       customerFacingLabel: "One WhatsApp number for the store",
       note:
-        "Promotion content is store-level. Branch targeting is selected later when creating or sending a broadcast.",
+        "Promotion content is store-level. Broadcasts decide which customers receive it, including branch and category targeting.",
     },
   };
 }
@@ -96,6 +130,7 @@ function promotionInclude() {
         name: true,
         sku: true,
         serial: true,
+        businessCategory: true,
         sellPrice: true,
         stockQty: true,
       },
@@ -345,6 +380,17 @@ async function createPromotion(req, res) {
       include: promotionInclude(),
     });
 
+    await createAuditLogSafe({
+      tenantId,
+      userId,
+      entityId: promotion.id,
+      action: "WHATSAPP_PROMOTION_CREATED",
+      metadata: {
+        title,
+        productId: finalProductId,
+      },
+    });
+
     return res.status(201).json({
       ok: true,
       created: true,
@@ -360,6 +406,7 @@ async function createPromotion(req, res) {
 async function updatePromotion(req, res) {
   try {
     const tenantId = getTenantId(req);
+    const userId = getUserId(req);
 
     if (!tenantId) {
       const err = new Error("UNAUTHORIZED");
@@ -435,6 +482,17 @@ async function updatePromotion(req, res) {
       include: promotionInclude(),
     });
 
+    await createAuditLogSafe({
+      tenantId,
+      userId,
+      entityId: updated.id,
+      action: "WHATSAPP_PROMOTION_UPDATED",
+      metadata: {
+        title: nextTitle,
+        productId: finalProductId,
+      },
+    });
+
     return res.json({
       ok: true,
       updated: true,
@@ -450,6 +508,7 @@ async function updatePromotion(req, res) {
 async function deletePromotion(req, res) {
   try {
     const tenantId = getTenantId(req);
+    const userId = getUserId(req);
 
     if (!tenantId) {
       const err = new Error("UNAUTHORIZED");
@@ -484,6 +543,16 @@ async function deletePromotion(req, res) {
       err.code = "PROMOTION_USED_IN_BROADCAST";
       throw err;
     }
+
+    await createAuditLogSafe({
+      tenantId,
+      userId,
+      entityId: existing.id,
+      action: "WHATSAPP_PROMOTION_DELETED",
+      metadata: {
+        title: existing.title,
+      },
+    });
 
     await prisma.promotion.delete({
       where: {
