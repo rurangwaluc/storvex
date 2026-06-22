@@ -16,6 +16,7 @@ function getTargetingFromRequest(req) {
     targetMode: body.targetMode || body.mode || body.targeting?.targetMode || body.targeting?.mode,
     branchId: body.branchId || body.targeting?.branchId,
     productId: body.productId || body.targeting?.productId,
+    category: body.category || body.businessCategory || body.targeting?.category || body.targeting?.businessCategory,
     customerIds: body.customerIds || body.targeting?.customerIds,
   };
 }
@@ -175,6 +176,14 @@ function mapBroadcastError(err, res, fallbackMessage) {
       code,
     });
   }
+
+  if (code === "CATEGORY_REQUIRED") {
+  return res.status(400).json({
+    ok: false,
+    message: "Choose a business category for this broadcast target",
+    code,
+  });
+}
 
   console.error("WhatsApp broadcast unhandled error:", err);
 

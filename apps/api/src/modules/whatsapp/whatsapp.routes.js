@@ -2,6 +2,7 @@
 
 const express = require("express");
 const router = express.Router();
+const os = require("os");
 
 const webhookController = require("./whatsapp.controller");
 
@@ -51,5 +52,33 @@ router.use("/", inboxRoutes);
 router.use("/", accountRoutes);
 router.use("/", broadcastRoutes);
 router.use("/", promotionRoutes);
+
+router.get("/health", (req, res) => {
+  return res.json({
+    ok: true,
+
+    module: "WHATSAPP",
+
+    version: 1,
+
+    categoryAware: true,
+
+    storeStrategy: "ONE_STORE_NUMBER",
+
+    supportedCategories: [
+      "ELECTRONICS",
+      "HARDWARE",
+      "HOME_KITCHEN",
+      "LIGHTING",
+      "SPARE_PARTS",
+    ],
+
+    uptimeSeconds: Math.floor(process.uptime()),
+
+    hostname: os.hostname(),
+
+    timestamp: new Date().toISOString(),
+  });
+});
 
 module.exports = router;
