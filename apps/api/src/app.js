@@ -34,8 +34,6 @@ const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
 const employeeRoutes = require("./modules/employees/employee.routes");
 
 const whatsappRoutes = require("./modules/whatsapp/whatsapp.routes");
-const whatsappAccountsRoutes = require("./modules/whatsapp/whatsapp.accounts.routes");
-const whatsappInboxRoutes = require("./modules/whatsapp/whatsapp.inbox.routes");
 
 const deliveryNotesRoutes = require("./modules/deliveryNotes/deliveryNotes.routes");
 const receiptsRoutes = require("./modules/receipts/receipts.routes");
@@ -169,17 +167,6 @@ app.use(
   whatsappRoutes
 );
 
-// WhatsApp account management (OWNER only for now)
-app.use(
-  "/api/whatsapp",
-  authenticate,
-  requireTenant,
-  requireRole("OWNER"),
-  whatsappAccountsRoutes
-);
-
-// WhatsApp inbox / protected actions inside its own route layer
-app.use("/api/whatsapp", whatsappInboxRoutes);
 
 // Settings
 app.use("/api/settings/security", securityRoutes);

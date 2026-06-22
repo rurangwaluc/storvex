@@ -42,10 +42,14 @@ function getWebhookBody(req, rawBody) {
   return parseJsonFromRawBody(rawBody);
 }
 
+function normalizeErrorCode(err) {
+  return String(err?.code || err?.message || "WHATSAPP_WEBHOOK_ERROR").trim();
+}
+
 function mapWebhookError(err, res) {
-  const message = err?.message || err?.code || "Webhook processing failed";
+  const code = normalizeErrorCode(err);
 
-  if (message === "Missing WHATSAPP_APP_SECRET") {
+  if (code === "Missing WHATSAPP_APP_SECRET" || code === "WHATSAPP_APP_SECRET_MISSING") {
     return res.status(500).json({
       ok: false,
       message: "WhatsApp app secret is not configured",
@@ -53,7 +57,7 @@ function mapWebhookError(err, res) {
     });
   }
 
-  if (message === "Missing WHATSAPP_VERIFY_TOKEN") {
+  if (code === "Missing WHATSAPP_VERIFY_TOKEN" || code === "WHATSAPP_VERIFY_TOKEN_MISSING") {
     return res.status(500).json({
       ok: false,
       message: "WhatsApp verify token is not configured",
@@ -61,19 +65,19 @@ function mapWebhookError(err, res) {
     });
   }
 
-  if (message === "Missing WHATSAPP_APP_SECRET" || message === "WHATSAPP_APP_SECRET_MISSING") {
-    return res.status(500).json({
+  if (code === "INVALID_WEBHOOK_SIGNATURE") {
+    return res.status(403).json({
       ok: false,
-      message: "WhatsApp app secret is not configured",
-      code: "WHATSAPP_APP_SECRET_MISSING",
+      message: "Invalid WhatsApp webhook signature",
+      code,
     });
   }
 
-  if (message === "Missing WHATSAPP_VERIFY_TOKEN" || message === "WHATSAPP_VERIFY_TOKEN_MISSING") {
-    return res.status(500).json({
+  if (code === "WHATSAPP_ACCOUNT_NOT_FOUND") {
+    return res.status(404).json({
       ok: false,
-      message: "WhatsApp verify token is not configured",
-      code: "WHATSAPP_VERIFY_TOKEN_MISSING",
+      message: "WhatsApp account not found",
+      code,
     });
   }
 
@@ -82,7 +86,7 @@ function mapWebhookError(err, res) {
   return res.status(500).json({
     ok: false,
     message: "Webhook processing failed",
-    code: "WHATSAPP_WEBHOOK_ERROR",
+    code: code || "WHATSAPP_WEBHOOK_ERROR",
   });
 }
 
@@ -101,13 +105,21 @@ async function verifyWebhook(req, res) {
       return res.status(400).send("Invalid hub.mode");
     }
 
+    if (!token) {
+      return res.status(400).send("Missing hub.verify_token");
+    }
+
+    if (challenge === undefined || challenge === null) {
+      return res.status(400).send("Missing hub.challenge");
+    }
+
     const ok = whatsappService.verifyToken(token);
 
     if (!ok) {
       return res.status(403).send("Forbidden");
     }
 
-    return res.status(200).send(String(challenge || ""));
+    return res.status(200).send(String(challenge));
   } catch (err) {
     console.error("verifyWebhook error:", err);
     return mapWebhookError(err, res);
