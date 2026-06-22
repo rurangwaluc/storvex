@@ -47,15 +47,19 @@ router.get("/broadcasts", controller.listBroadcasts);
  *   "templateName": "promo_template",
  *   "languageCode": "en_US",
  *   "targeting": {
- *     "mode": "ALL_OPTED_IN" |
- *             "BRANCH_CUSTOMERS" |
- *             "CREDIT_CUSTOMERS" |
- *             "OVERDUE_CREDIT_CUSTOMERS" |
- *             "PRODUCT_BUYERS" |
- *             "MANUAL_CUSTOMERS",
- *     "branchId": "optional",
- *     "productId": "optional",
- *     "customerIds": []
+ *    "mode": "ALL_OPTED_IN" |
+        "BRANCH_CUSTOMERS" |
+        "CATEGORY_CUSTOMERS" |
+        "CREDIT_CUSTOMERS" |
+        "OVERDUE_CREDIT_CUSTOMERS" |
+        "PRODUCT_BUYERS" |
+        "MANUAL_CUSTOMERS",
+
+"category": "ELECTRONICS" |
+            "HARDWARE" |
+            "HOME_KITCHEN" |
+            "LIGHTING" |
+            "SPARE_PARTS",
  *   }
  * }
  */
@@ -87,14 +91,19 @@ router.post("/broadcasts/:id/queue", controller.queueBroadcast);
  *
  * Body can include:
  * {
- *   "limit": 50,
- *   "targeting": {
- *     "mode": "ALL_OPTED_IN",
- *     "branchId": null,
- *     "productId": null,
- *     "customerIds": []
- *   }
- * }
+  "limit": 50,
+  "targeting": {
+    "mode": "CATEGORY_CUSTOMERS",
+
+    "category": "ELECTRONICS",
+
+    "branchId": null,
+
+    "productId": null,
+
+    "customerIds": []
+  }
+}
  */
 router.post("/broadcasts/:id/send", controller.sendBroadcastNow);
 

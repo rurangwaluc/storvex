@@ -183,17 +183,6 @@ async function listConversations(req, res) {
 
     return res.json({
   ok: true,
-
-  categoryAware: true,
-
-  supportedCategories: [
-    "ELECTRONICS",
-    "HARDWARE",
-    "HOME_KITCHEN",
-    "LIGHTING",
-    "SPARE_PARTS",
-  ],
-
   conversations,
 });
 
@@ -287,12 +276,7 @@ async function updateStatus(req, res) {
       });
     }
 
-    if (code === "CATEGORY_REQUIRED") {
-  return res.status(400).json({
-    message: "Choose a business category",
-    code,
-  });
-}
+  
 
     const updated = await service.updateStatus({
       tenantId,

@@ -43,8 +43,16 @@ router.get("/promotions", controller.listPromotions);
  * Body:
  * {
  *   "title": "Weekend offer",
+ *
  *   "message": "Get a special discount today.",
- *   "productId": "optional"
+ *
+ *   "productId": "optional",
+ *
+ *   "category": "ELECTRONICS" |
+ *               "HARDWARE" |
+ *               "HOME_KITCHEN" |
+ *               "LIGHTING" |
+ *               "SPARE_PARTS"
  * }
  */
 router.post("/promotions", controller.createPromotion);
