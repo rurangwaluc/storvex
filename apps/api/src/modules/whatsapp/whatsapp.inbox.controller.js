@@ -70,6 +70,13 @@ function mapServiceError(err, res, fallbackMessage) {
     });
   }
 
+  if (code === "INVALID_BUSINESS_CATEGORY") {
+  return res.status(400).json({
+    message: "Invalid business category",
+    code,
+  });
+}
+
   if (code === "INVALID_DUE_DATE") {
     return res.status(400).json({ message: "Invalid due date", code });
   }
@@ -175,9 +182,21 @@ async function listConversations(req, res) {
     });
 
     return res.json({
-      ok: true,
-      conversations,
-    });
+  ok: true,
+
+  categoryAware: true,
+
+  supportedCategories: [
+    "ELECTRONICS",
+    "HARDWARE",
+    "HOME_KITCHEN",
+    "LIGHTING",
+    "SPARE_PARTS",
+  ],
+
+  conversations,
+});
+
   } catch (err) {
     console.error("listConversations error:", err);
     return mapServiceError(err, res, "Failed to list conversations");
@@ -267,6 +286,13 @@ async function updateStatus(req, res) {
         code: "INVALID_STATUS",
       });
     }
+
+    if (code === "CATEGORY_REQUIRED") {
+  return res.status(400).json({
+    message: "Choose a business category",
+    code,
+  });
+}
 
     const updated = await service.updateStatus({
       tenantId,
