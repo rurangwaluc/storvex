@@ -12,11 +12,17 @@ const {
   buildBudgetProductsReply,
   buildBuyCreatedReply,
   buildBuyMultipleReply,
+  buildClarifierReply,
+  buildHumanEscalationReply,
 } = require("./whatsapp.catalog.service");
 const {
   extractProductIntent,
   shouldUseAiFallback,
 } = require("./whatsapp.ai.service");
+const {
+  inferCategoryFromText,
+  shouldAskCategoryClarifier,
+} = require("./whatsapp.category.service");
 
 const API_VERSION = process.env.WHATSAPP_API_VERSION || "v24.0";
 const APP_SECRET = process.env.WHATSAPP_APP_SECRET;
@@ -934,11 +940,21 @@ async function createOrUpdateWhatsAppDraftFromBuy({
   });
 }
 
-async function tryAiCatalogFallback({ tenantId, text, directQuery }) {
+async function tryAiCatalogFallback({
+  tenantId,
+  text,
+  directQuery,
+  category = null,
+  branchId = null,
+}) {
+  const detectedCategory = category || inferCategoryFromText(directQuery || text);
+
   const directProducts = await searchProducts({
     tenantId,
     q: directQuery,
     take: 3,
+    branchId,
+    category: detectedCategory,
   });
 
   if (Array.isArray(directProducts) && directProducts.length > 0) {
@@ -946,6 +962,7 @@ async function tryAiCatalogFallback({ tenantId, text, directQuery }) {
       mode: "DIRECT",
       usedAi: false,
       queryUsed: directQuery,
+      category: detectedCategory,
       products: directProducts,
       aiMeta: null,
       budgetMeta: null,
@@ -962,9 +979,14 @@ async function tryAiCatalogFallback({ tenantId, text, directQuery }) {
 
   if (useAi) {
     try {
-      const ai = await extractProductIntent({ messageText: text });
+      const ai = await extractProductIntent({
+        messageText: text,
+        businessCategory: detectedCategory,
+      });
       aiMeta = ai || null;
+
       const aiQuery = normalizeText(ai?.normalizedQuery);
+      const aiCategory = ai?.category || detectedCategory;
 
       if (
         aiQuery &&
@@ -974,6 +996,8 @@ async function tryAiCatalogFallback({ tenantId, text, directQuery }) {
           tenantId,
           q: aiQuery,
           take: 3,
+          branchId,
+          category: aiCategory,
         });
 
         if (Array.isArray(aiProducts) && aiProducts.length > 0) {
@@ -981,6 +1005,7 @@ async function tryAiCatalogFallback({ tenantId, text, directQuery }) {
             mode: "AI",
             usedAi: true,
             queryUsed: aiQuery,
+            category: aiCategory,
             products: aiProducts,
             aiMeta,
             budgetMeta: null,
@@ -996,6 +1021,8 @@ async function tryAiCatalogFallback({ tenantId, text, directQuery }) {
     tenantId,
     text,
     take: 3,
+    branchId,
+    category: detectedCategory,
   });
 
   if (Array.isArray(budgetFallback.products) && budgetFallback.products.length > 0) {
@@ -1003,6 +1030,7 @@ async function tryAiCatalogFallback({ tenantId, text, directQuery }) {
       mode: "BUDGET",
       usedAi: false,
       queryUsed: directQuery,
+      category: budgetFallback.meta?.category || detectedCategory,
       products: budgetFallback.products,
       aiMeta,
       budgetMeta: budgetFallback.meta,
@@ -1013,6 +1041,7 @@ async function tryAiCatalogFallback({ tenantId, text, directQuery }) {
     mode: "DIRECT",
     usedAi: false,
     queryUsed: directQuery,
+    category: detectedCategory,
     products: directProducts,
     aiMeta,
     budgetMeta: null,
@@ -1336,15 +1365,20 @@ async function handleBuyIntent({
   payload,
 }) {
   const { quantity, query } = payload;
+  const category = payload?.category || inferCategoryFromText(query || payload?.rawText);
 
   try {
-    const match = await findBestProductMatch({ tenantId, query });
+    const match = await findBestProductMatch({
+      tenantId,
+      query,
+      category,
+    });
 
     if (match.kind === "NONE") {
-      const reply =
-        `❌ *${businessName}*\n` +
-        `I could not find "${query}" in stock.\n` +
-        `Reply with a clearer model, SKU, or barcode.`;
+      const reply = buildHumanEscalationReply({
+        businessName,
+        text: query,
+      });
 
       await safeSendAndLog({
         account,
@@ -1352,7 +1386,7 @@ async function handleBuyIntent({
         convoId: convo.id,
         to: from,
         text: reply,
-        auditAction: "WHATSAPP_AUTO_REPLY_SENT",
+        auditAction: "WHATSAPP_BUY_PRODUCT_NOT_FOUND_ESCALATED",
       });
 
       await bumpConvo(convo.id);
@@ -1364,6 +1398,7 @@ async function handleBuyIntent({
         businessName,
         query,
         candidates: match.candidates,
+        category,
       });
 
       await safeSendAndLog({
@@ -1409,6 +1444,7 @@ async function handleBuyIntent({
           productId: product.id,
           productName: product.name,
           quantity,
+          category,
           branchRequired: true,
         },
       });
@@ -1491,7 +1527,10 @@ async function handleProductQueryIntent({
   businessName,
   text,
   directQuery,
+  category = null,
 }) {
+  const detectedCategory = category || inferCategoryFromText(directQuery || text);
+
   if (!directQuery) {
     const reply = buildWelcomeReply({ businessName });
 
@@ -1508,39 +1547,35 @@ async function handleProductQueryIntent({
     return;
   }
 
+  if (shouldAskCategoryClarifier(detectedCategory, directQuery) && String(directQuery).split(/\s+/).length <= 1) {
+    const reply = buildClarifierReply({
+      businessName,
+      category: detectedCategory,
+      text: directQuery,
+    });
+
+    await safeSendAndLog({
+      account,
+      tenantId,
+      convoId: convo.id,
+      to: from,
+      text: reply,
+      auditAction: "WHATSAPP_CATEGORY_CLARIFIER_SENT",
+    });
+
+    await bumpConvo(convo.id);
+    return;
+  }
+
+  const branchId = await resolveConversationBranchId(convo);
+
   const result = await tryAiCatalogFallback({
     tenantId,
     text,
     directQuery,
+    category: detectedCategory,
+    branchId,
   });
-
-  if (result.aiMeta?.needsHumanReview) {
-  const reply = [
-    `🤝 *${businessName}*`,
-    "",
-    `A staff member will help you shortly.`,
-    "",
-    `Please send:`,
-    `• Product name`,
-    `• Brand`,
-    `• Model`,
-    `• Quantity`,
-    `• Photo (if available)`,
-  ].join("\n");
-
-  await safeSendAndLog({
-    account,
-    tenantId,
-    convoId: convo.id,
-    to: from,
-    text: reply,
-    auditAction: "WHATSAPP_HUMAN_HELP_REQUESTED",
-  });
-
-  await bumpConvo(convo.id);
-
-  return;
-}
 
   if (Array.isArray(result.products) && result.products.length > 0) {
     let reply;
@@ -1557,6 +1592,7 @@ async function handleProductQueryIntent({
         businessName,
         q: result.queryUsed,
         products: result.products,
+        category: result.category || detectedCategory,
       });
     }
 
@@ -1567,6 +1603,25 @@ async function handleProductQueryIntent({
       to: from,
       text: reply,
       auditAction: "WHATSAPP_PRODUCT_REPLY_SENT",
+    });
+
+    await bumpConvo(convo.id);
+    return;
+  }
+
+  if (result.aiMeta?.needsHumanReview) {
+    const reply = buildHumanEscalationReply({
+      businessName,
+      text: directQuery || text,
+    });
+
+    await safeSendAndLog({
+      account,
+      tenantId,
+      convoId: convo.id,
+      to: from,
+      text: reply,
+      auditAction: "WHATSAPP_HUMAN_HELP_REQUESTED",
     });
 
     await bumpConvo(convo.id);
@@ -1597,12 +1652,33 @@ async function handleGreetingOrUnknownIntent({
   convo,
   from,
   businessName,
+  text = "",
+  intentType = "UNKNOWN",
 }) {
+  if (intentType === "HUMAN_HELP") {
+    const reply = buildHumanEscalationReply({
+      businessName,
+      text,
+    });
+
+    await safeSendAndLog({
+      account,
+      tenantId,
+      convoId: convo.id,
+      to: from,
+      text: reply,
+      auditAction: "WHATSAPP_HUMAN_HELP_REQUESTED",
+    });
+
+    await bumpConvo(convo.id);
+    return;
+  }
+
   const outboundCount = await prisma.whatsAppMessage.count({
     where: { conversationId: convo.id, direction: "OUTBOUND" },
   });
 
-  if (outboundCount === 0) {
+  if (outboundCount === 0 || intentType === "GREETING" || intentType === "EMPTY") {
     const welcome = buildWelcomeReply({ businessName });
 
     await safeSendAndLog({
@@ -1613,7 +1689,24 @@ async function handleGreetingOrUnknownIntent({
       text: welcome,
       auditAction: "WHATSAPP_WELCOME_SENT",
     });
+
+    await bumpConvo(convo.id);
+    return;
   }
+
+  const reply = buildHumanEscalationReply({
+    businessName,
+    text,
+  });
+
+  await safeSendAndLog({
+    account,
+    tenantId,
+    convoId: convo.id,
+    to: from,
+    text: reply,
+    auditAction: "WHATSAPP_UNKNOWN_ESCALATED",
+  });
 
   await bumpConvo(convo.id);
 }
@@ -1687,8 +1780,10 @@ async function handleInboundWebhook({ account, payload, inbound }) {
       if (message?.id && !saved) continue;
 
       const intent = detectIntent(text);
+      const modernType = intent.modernType || intent.type;
+      const category = intent.payload?.category || inferCategoryFromText(text);
 
-      if (intent.type === "PAY") {
+      if (intent.type === "PAY" || modernType === "PAY") {
         await handlePayIntent({
           tenantId,
           account,
@@ -1700,7 +1795,11 @@ async function handleInboundWebhook({ account, payload, inbound }) {
         continue;
       }
 
-      if (intent.type === "BUY") {
+      if (
+        intent.type === "BUY" ||
+        intent.type === "ORDER_REQUEST" ||
+        modernType === "ORDER_REQUEST"
+      ) {
         await handleBuyIntent({
           tenantId,
           account,
@@ -1714,13 +1813,14 @@ async function handleInboundWebhook({ account, payload, inbound }) {
       }
 
       if (
-          intent.type === "PRODUCT_QUERY" ||
-          intent.type === "PRODUCT_SEARCH" ||
-          intent.type === "PRICE_CHECK" ||
-          intent.type === "STOCK_CHECK" ||
-          intent.type === "ORDER_REQUEST"
-        )
-         {
+        intent.type === "PRODUCT_QUERY" ||
+        intent.type === "PRODUCT_SEARCH" ||
+        intent.type === "PRICE_CHECK" ||
+        intent.type === "STOCK_CHECK" ||
+        modernType === "PRODUCT_SEARCH" ||
+        modernType === "PRICE_CHECK" ||
+        modernType === "STOCK_CHECK"
+      ) {
         const directQuery = normalizeText(intent.payload?.query || text);
 
         await handleProductQueryIntent({
@@ -1731,7 +1831,36 @@ async function handleInboundWebhook({ account, payload, inbound }) {
           businessName,
           text,
           directQuery,
+          category,
         });
+        continue;
+      }
+
+      if (
+        intent.type === "WARRANTY" ||
+        intent.type === "DELIVERY" ||
+        intent.type === "REPAIR" ||
+        intent.type === "PROMOTION" ||
+        modernType === "WARRANTY" ||
+        modernType === "DELIVERY" ||
+        modernType === "REPAIR" ||
+        modernType === "PROMOTION"
+      ) {
+        const reply = buildHumanEscalationReply({
+          businessName,
+          text,
+        });
+
+        await safeSendAndLog({
+          account,
+          tenantId,
+          convoId: convo.id,
+          to: from,
+          text: reply,
+          auditAction: "WHATSAPP_BUSINESS_SUPPORT_ESCALATED",
+        });
+
+        await bumpConvo(convo.id);
         continue;
       }
 
@@ -1747,6 +1876,8 @@ async function handleInboundWebhook({ account, payload, inbound }) {
           convo,
           from,
           businessName,
+          text,
+          intentType: intent.type,
         });
       }
     } catch (err) {
