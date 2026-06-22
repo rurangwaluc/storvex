@@ -1,6 +1,77 @@
 const prisma = require("../../config/database");
 const whatsappService = require("./whatsapp.service");
 
+
+const BROADCAST_SEND_DELAY_MS = 300;
+
+const BUSINESS_CATEGORIES = Object.freeze({
+  ELECTRONICS: "ELECTRONICS",
+  HARDWARE: "HARDWARE",
+  HOME_KITCHEN: "HOME_KITCHEN",
+  LIGHTING: "LIGHTING",
+  SPARE_PARTS: "SPARE_PARTS",
+});
+
+const CATEGORY_KEYWORDS = Object.freeze({
+  ELECTRONICS: [
+    "phone", "smartphone", "mobile", "iphone", "samsung", "tecno", "infinix",
+    "itel", "nokia", "xiaomi", "redmi", "oppo", "vivo", "tablet", "ipad",
+    "laptop", "computer", "charger", "adapter", "cable", "usb", "type c",
+    "usb-c", "earphones", "earbuds", "headphones", "speaker", "printer",
+    "router", "wifi", "keyboard", "mouse", "power bank", "powerbank",
+    "screen protector", "case", "cover", "ssd", "hdd", "flash", "memory card",
+  ],
+
+  HARDWARE: [
+    "cement", "nail", "nails", "screw", "screws", "bolt", "paint", "brush",
+    "roller", "hinge", "lock", "padlock", "pipe", "pvc", "wire", "hammer",
+    "drill", "grinder", "spanner", "wrench", "saw", "glue", "silicone",
+    "sealant", "tile", "tiles", "tap", "faucet", "timber", "wood", "plywood",
+    "roofing", "iron sheet",
+  ],
+
+  HOME_KITCHEN: [
+    "plate", "plates", "cup", "cups", "mug", "spoon", "fork", "knife",
+    "pot", "pots", "pan", "pans", "saucepan", "kettle", "flask", "jug",
+    "bottle", "bowl", "glass", "cooker", "stove", "gas cooker", "blender",
+    "toaster", "rice cooker", "microwave", "fridge", "freezer", "chair",
+    "table", "bucket", "basin", "rack", "curtain", "bed sheet",
+  ],
+
+  LIGHTING: [
+    "bulb", "bulbs", "ampoule", "led", "tube", "tube light", "downlight",
+    "spotlight", "floodlight", "panel light", "ceiling light", "wall light",
+    "chandelier", "lamp", "solar light", "street light", "strip light",
+    "warm white", "cool white", "daylight", "socket", "holder", "switch",
+    "driver", "emergency light", "sensor light",
+  ],
+
+  SPARE_PARTS: [
+    "brake", "brake pad", "brake pads", "filter", "oil filter", "air filter",
+    "fuel filter", "spark plug", "belt", "timing belt", "bearing", "shock",
+    "shock absorber", "clutch", "battery", "radiator", "bumper", "mirror",
+    "headlight", "tail light", "indicator", "wiper", "tyre", "tire", "rim",
+    "engine oil", "gear oil", "toyota", "hyundai", "nissan", "suzuki",
+    "honda", "mazda", "benz", "bmw", "volkswagen",
+  ],
+});
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizeBusinessCategory(value) {
+  const v = String(value || "").trim().toUpperCase();
+
+  if (BUSINESS_CATEGORIES[v]) return BUSINESS_CATEGORIES[v];
+
+  if (v === "HOME" || v === "KITCHEN" || v === "HOME_AND_KITCHEN") return "HOME_KITCHEN";
+  if (v === "SPARES" || v === "SPARE_PART" || v === "AUTO_PARTS") return "SPARE_PARTS";
+  if (v === "LIGHT" || v === "LIGHTS") return "LIGHTING";
+
+  return null;
+}
+
 function appError(code, extra = {}) {
   const err = new Error(code);
   err.code = code;
@@ -97,6 +168,7 @@ function normalizeTargetMode(value) {
 
   if (v === "ALL_OPTED_IN") return "ALL_OPTED_IN";
   if (v === "BRANCH_CUSTOMERS") return "BRANCH_CUSTOMERS";
+  if (v === "CATEGORY_CUSTOMERS") return "CATEGORY_CUSTOMERS";
   if (v === "CREDIT_CUSTOMERS") return "CREDIT_CUSTOMERS";
   if (v === "OVERDUE_CREDIT_CUSTOMERS") return "OVERDUE_CREDIT_CUSTOMERS";
   if (v === "PRODUCT_BUYERS") return "PRODUCT_BUYERS";
@@ -269,6 +341,38 @@ async function ensureTenantExists(tenantId) {
   return tenant;
 }
 
+async function createAuditLogSafe({
+  tenantId,
+  userId = null,
+  entity = "WHATSAPP_BROADCAST",
+  entityId = null,
+  action,
+  metadata = null,
+}) {
+  try {
+    if (
+      !tenantId ||
+      !action ||
+      typeof prisma.auditLog?.create !== "function"
+    ) {
+      return;
+    }
+
+    await prisma.auditLog.create({
+      data: {
+        tenantId,
+        userId,
+        entity,
+        entityId,
+        action,
+        metadata,
+      },
+    });
+  } catch (err) {
+    console.error("WHATSAPP broadcast audit log error:", err?.message || err);
+  }
+}
+
 async function assertBranchBelongsToTenant(tenantId, branchId) {
   if (!branchId) throw appError("BRANCH_REQUIRED");
 
@@ -382,6 +486,7 @@ function normalizeTargeting(body = {}) {
 
   const branchId = normalizeText(target.branchId || body.branchId);
   const productId = normalizeText(target.productId || body.productId);
+  const category = normalizeBusinessCategory(target.category || body.category);
 
   const manualCustomerIds = Array.isArray(target.customerIds || body.customerIds)
     ? (target.customerIds || body.customerIds).map(normalizeText).filter(Boolean)
@@ -391,6 +496,7 @@ function normalizeTargeting(body = {}) {
     mode,
     branchId,
     productId,
+    category,
     manualCustomerIds,
   };
 }
@@ -470,6 +576,10 @@ async function createBroadcast({ tenantId, userId, body }) {
     throw appError("PRODUCT_ID_REQUIRED_FOR_TARGET");
   }
 
+  if (targeting.mode === "CATEGORY_CUSTOMERS" && !targeting.category) {
+    throw appError("CATEGORY_REQUIRED");
+  }
+
   if (targeting.mode === "MANUAL_CUSTOMERS" && targeting.manualCustomerIds.length === 0) {
     throw appError("CUSTOMER_IDS_REQUIRED_FOR_TARGET");
   }
@@ -489,9 +599,26 @@ async function createBroadcast({ tenantId, userId, body }) {
     }),
   );
 
+  await createAuditLogSafe({
+    tenantId,
+    userId,
+    entityId: created.id,
+    action: "WHATSAPP_BROADCAST_CREATED",
+    metadata: {
+      templateName,
+      languageCode,
+      targetMode: targeting.mode,
+      branchId: targeting.branchId || null,
+      productId: targeting.productId || promotion?.productId || null,
+      category: targeting.category || null,
+      manualCustomerCount: targeting.manualCustomerIds.length,
+    },
+  });
+
   return {
     ...buildPublicBroadcast(created),
     targetingPreview: {
+      category: targeting.category || null,
       mode: targeting.mode,
       branchId: targeting.branchId,
       productId: targeting.productId || promotion?.productId || null,
@@ -547,6 +674,10 @@ async function updateBroadcast({ tenantId, broadcastId, body }) {
     await assertBranchBelongsToTenant(tenantId, targeting.branchId);
   }
 
+  if (targeting.mode === "CATEGORY_CUSTOMERS" && !targeting.category) {
+    throw appError("CATEGORY_REQUIRED");
+  }
+
   const updated = await withPrismaRetry(() =>
     prisma.whatsAppBroadcast.update({
       where: { id: existing.id },
@@ -563,6 +694,7 @@ async function updateBroadcast({ tenantId, broadcastId, body }) {
   return {
     ...buildPublicBroadcast(updated),
     targetingPreview: {
+      category: targeting.category || null,
       mode: targeting.mode,
       branchId: targeting.branchId,
       productId: targeting.productId || null,
@@ -591,6 +723,16 @@ async function queueBroadcast({ tenantId, broadcastId }) {
       include: broadcastIncludeShape(),
     }),
   );
+
+  await createAuditLogSafe({
+    tenantId,
+    entityId: updated.id,
+    action: "WHATSAPP_BROADCAST_QUEUED",
+    metadata: {
+      previousStatus: existing.status,
+      nextStatus: "QUEUED",
+    },
+  });
 
   return buildPublicBroadcast(updated);
 }
@@ -697,6 +839,65 @@ async function getProductBuyerCustomerIds({ tenantId, productId, limit }) {
   return [...new Set(rows.map((row) => row.sale?.customerId).filter(Boolean))].slice(0, limit);
 }
 
+async function getCategoryCustomerIds({ tenantId, category, limit }) {
+  const normalizedCategory = normalizeBusinessCategory(category);
+  if (!normalizedCategory) throw appError("CATEGORY_REQUIRED");
+
+  const productFields = getModelFields(prisma.product);
+  const keywords = CATEGORY_KEYWORDS[normalizedCategory] || [];
+
+  const productWhereOr = [];
+
+  if (typeof productFields.businessCategory !== "undefined") {
+    productWhereOr.push({ businessCategory: normalizedCategory });
+  }
+
+  if (typeof productFields.category !== "undefined") {
+    productWhereOr.push({ category: { contains: normalizedCategory, mode: "insensitive" } });
+
+    for (const keyword of keywords) {
+      productWhereOr.push({ category: { contains: keyword, mode: "insensitive" } });
+    }
+  }
+
+  if (typeof productFields.subcategory !== "undefined") {
+    for (const keyword of keywords) {
+      productWhereOr.push({ subcategory: { contains: keyword, mode: "insensitive" } });
+    }
+  }
+
+  for (const keyword of keywords) {
+    productWhereOr.push({ name: { contains: keyword, mode: "insensitive" } });
+  }
+
+  const rows = await withPrismaRetry(() =>
+    prisma.saleItem.findMany({
+      where: {
+        sale: {
+          tenantId,
+          customerId: { not: null },
+          isDraft: false,
+          isCancelled: false,
+        },
+        product: {
+          OR: productWhereOr.length ? productWhereOr : [{ name: { contains: normalizedCategory, mode: "insensitive" } }],
+        },
+      },
+      select: {
+        sale: {
+          select: {
+            customerId: true,
+          },
+        },
+      },
+      orderBy: [{ id: "desc" }],
+      take: Math.min(1000, Math.max(limit * 4, limit)),
+    }),
+  );
+
+  return [...new Set(rows.map((row) => row.sale?.customerId).filter(Boolean))].slice(0, limit);
+}
+
 async function getRecipients({ tenantId, targeting, promotion, limit }) {
   const customerFields = getModelFields(prisma.customer);
   const take = clampLimit(limit, 50, 200);
@@ -732,6 +933,14 @@ async function getRecipients({ tenantId, targeting, promotion, limit }) {
     customerIds = await getProductBuyerCustomerIds({
       tenantId,
       productId: targeting.productId || promotion?.productId,
+      limit: take,
+    });
+  }
+
+  if (targeting.mode === "CATEGORY_CUSTOMERS") {
+    customerIds = await getCategoryCustomerIds({
+      tenantId,
+      category: targeting.category,
       limit: take,
     });
   }
@@ -963,6 +1172,8 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
         message: friendlySendFailure(err),
       });
     }
+
+    await sleep(BROADCAST_SEND_DELAY_MS);
   }
 
   const nextStatus = delivered > 0 ? "SENT" : "FAILED";
@@ -980,6 +1191,23 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
     }),
   );
 
+  await createAuditLogSafe({
+    tenantId,
+    userId: broadcast.createdById || null,
+    entityId: updated.id,
+    action: delivered > 0 ? "WHATSAPP_BROADCAST_SENT" : "WHATSAPP_BROADCAST_FAILED",
+    metadata: {
+      targetMode: targeting.mode,
+      branchId: targeting.branchId || null,
+      productId: targeting.productId || broadcast.promotion?.productId || null,
+      category: targeting.category || null,
+      attempted,
+      delivered,
+      failed,
+      skippedDuplicate,
+    },
+  });
+
   if (delivered > 0 && broadcast.promotion && !broadcast.promotion.sentAt) {
     await withPrismaRetry(() =>
       prisma.promotion.update({
@@ -992,6 +1220,7 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
   return {
     broadcast: buildPublicBroadcast(updated),
     summary: {
+      category: targeting.category || null,
       targetMode: targeting.mode,
       branchId: targeting.branchId || null,
       productId: targeting.productId || broadcast.promotion?.productId || null,

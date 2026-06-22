@@ -868,11 +868,12 @@ function mapConversationListItem(conversation) {
 
 async function listConversations({ tenantId, userId = null }) {
   const where = await buildConversationBranchWhere({ tenantId, userId });
+  const WHATSAPP_CONVERSATION_LIMIT = 50;
 
   const conversations = await prisma.whatsAppConversation.findMany({
     where,
     orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-    take: 50,
+    take: WHATSAPP_CONVERSATION_LIMIT,
     select: {
       ...buildConversationSelectShape(prisma.whatsAppConversation),
       messages: {
