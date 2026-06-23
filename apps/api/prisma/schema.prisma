@@ -990,6 +990,11 @@ model WhatsAppMessage {
   textContent    String?
   mediaUrl       String?
   messageId      String?              @unique
+  status         WhatsAppMessageStatus @default(SENT)
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  failedAt       DateTime?
+  failureReason  String?
   sentById       String?
   createdAt      DateTime             @default(now())
   account        WhatsAppAccount?     @relation(fields: [accountId], references: [id])
@@ -1841,6 +1846,13 @@ enum WhatsAppMessageType {
 enum WhatsAppDirection {
   INBOUND
   OUTBOUND
+}
+
+enum WhatsAppMessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
 }
 
 enum ConversationStatus {

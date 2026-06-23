@@ -169,6 +169,87 @@ function extractInboundMessages(payload) {
   return out;
 }
 
+function extractMessageStatuses(payload) {
+  const out = [];
+  const entries = Array.isArray(payload?.entry) ? payload.entry : [];
+
+  for (const entry of entries) {
+    const changes = Array.isArray(entry?.changes) ? entry.changes : [];
+
+    for (const ch of changes) {
+      const value = ch?.value || {};
+      const statuses = Array.isArray(value?.statuses) ? value.statuses : [];
+
+      for (const status of statuses) {
+        out.push({
+          id: status?.id || null,
+          status: String(status?.status || "").toLowerCase(),
+          timestamp: status?.timestamp || null,
+          recipientId: status?.recipient_id || null,
+          errors: Array.isArray(status?.errors) ? status.errors : [],
+          raw: status,
+        });
+      }
+    }
+  }
+
+  return out;
+}
+
+function normalizeMessageStatus(value) {
+  const status = String(value || "").trim().toLowerCase();
+
+  if (status === "read") return "READ";
+  if (status === "delivered") return "DELIVERED";
+  if (status === "failed") return "FAILED";
+  if (status === "sent") return "SENT";
+
+  return null;
+}
+
+function whatsappTimestampToDate(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return new Date();
+  return new Date(n * 1000);
+}
+
+async function handleMessageStatuses({ tenantId, statuses }) {
+  if (!Array.isArray(statuses) || statuses.length === 0) return;
+
+  for (const item of statuses) {
+    const messageId = normalizeText(item?.id);
+    const nextStatus = normalizeMessageStatus(item?.status);
+
+    if (!messageId || !nextStatus) continue;
+
+    const at = whatsappTimestampToDate(item?.timestamp);
+    const firstError = item?.errors?.[0] || null;
+    const failureReason = firstError
+      ? firstError.message || firstError.title || JSON.stringify(firstError)
+      : null;
+
+    const data = {
+      status: nextStatus,
+      ...(nextStatus === "DELIVERED" ? { deliveredAt: at } : {}),
+      ...(nextStatus === "READ" ? { deliveredAt: at, readAt: at } : {}),
+      ...(nextStatus === "FAILED" ? { failedAt: at, failureReason } : {}),
+    };
+
+    try {
+      await prisma.whatsAppMessage.updateMany({
+        where: {
+          tenantId,
+          messageId,
+          direction: "OUTBOUND",
+        },
+        data,
+      });
+    } catch (err) {
+      console.error("WHATSAPP: message status update failed:", err?.message || err);
+    }
+  }
+}
+
 function computeSaleStatus({ saleType, total, amountPaid, dueDate }) {
   const t = Number(total) || 0;
   const paid = Number(amountPaid) || 0;
@@ -234,6 +315,10 @@ async function sendText({ account, to, text }) {
   if (!account?.phoneNumberId) throw appError("ACCOUNT_MISSING_PHONE_NUMBER_ID");
   if (!account?.accessToken) throw appError("ACCOUNT_MISSING_ACCESS_TOKEN");
 
+  const isDevToken =
+    process.env.NODE_ENV !== "production" &&
+    String(account.accessToken || "").startsWith("DEV_");
+
   const cleanText = normalizeText(text);
   if (!cleanText) throw appError("TEXT_REQUIRED");
 
@@ -243,6 +328,18 @@ async function sendText({ account, to, text }) {
     type: "text",
     text: { body: cleanText },
   };
+
+  if (isDevToken) {
+    return {
+      messaging_product: "whatsapp",
+      contacts: [{ input: String(to), wa_id: String(to) }],
+      messages: [
+        {
+          id: `DEV_WA_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        },
+      ],
+    };
+  }
 
   try {
     const resp = await axios.post(`${graphBase()}/${account.phoneNumberId}/messages`, payload, {
@@ -1743,11 +1840,13 @@ async function processWebhookPayload({ headers, rawBody, body }) {
   }
 
   const inbound = extractInboundMessages(body);
+  const statuses = extractMessageStatuses(body);
 
   console.log(
-    `WHATSAPP: webhook accepted. tenant=${account.tenantId} inbound_count=${inbound.length}`
+    `WHATSAPP: webhook accepted. tenant=${account.tenantId} inbound_count=${inbound.length} status_count=${statuses.length}`
   );
 
+  await handleMessageStatuses({ tenantId: account.tenantId, statuses });
   await handleInboundWebhook({ account, payload: body, inbound });
 }
 
