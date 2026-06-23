@@ -1900,8 +1900,9 @@
 }
 
 /* -------------------------------------------------------------------------- */
-/* Storvex WhatsApp mobile/PWA no-horizontal-scroll responsive layer           */
-/* Based on the current working file. Keep this as the final CSS layer.        */
+/* Storvex WhatsApp completion layer                                           */
+/* Desktop stays 3-column. Mobile/PWA has no horizontal scroll.                */
+/* Keep this at the very bottom of WhatsAppInbox.css.                          */
 /* -------------------------------------------------------------------------- */
 
 .svx-wa-workspace {
@@ -1915,36 +1916,24 @@
   box-sizing: border-box;
 }
 
-@media (max-width: 1280px) {
+/* Keep the real WhatsApp workspace layout on normal laptops/desktops. */
+@media (max-width: 1440px) {
   .svx-wa-inbox-grid {
-    grid-template-columns: minmax(300px, 0.82fr) minmax(0, 1.18fr);
+    grid-template-columns: minmax(330px, 0.82fr) minmax(0, 1.25fr) minmax(300px, 0.7fr);
     gap: 14px;
+    min-height: 680px;
   }
 
   .svx-wa-side-panel {
-    grid-column: 1 / -1;
+    grid-column: auto;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    min-height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    min-height: 0;
   }
 }
 
-@media (max-width: 1024px) {
-  .svx-wa-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-  }
-
-  .svx-wa-hero-actions {
-    justify-content: flex-start;
-  }
-
-  .svx-wa-metrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-
+@media (max-width: 1180px) {
   .svx-wa-inbox-grid {
     grid-template-columns: minmax(0, 1fr);
     min-height: 0;
@@ -1959,6 +1948,10 @@
   }
 
   .svx-wa-side-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-wa-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2011,7 +2004,10 @@
   }
 
   .svx-wa-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
+    gap: 12px;
     border: 1px solid var(--wa-border-soft);
     border-radius: 18px;
     background: var(--wa-card);
@@ -2213,7 +2209,11 @@
 
   .svx-wa-conversation-main,
   .svx-wa-conversation-topline,
-  .svx-wa-conversation-preview {
+  .svx-wa-conversation-preview,
+  .svx-wa-chat-person,
+  .svx-wa-chat-person > div,
+  .svx-wa-customer-card,
+  .svx-wa-customer-card > div {
     min-width: 0;
   }
 
@@ -2252,14 +2252,6 @@
   .svx-wa-chat-head {
     min-height: 66px;
     padding: 12px;
-  }
-
-  .svx-wa-chat-person {
-    min-width: 0;
-  }
-
-  .svx-wa-chat-person > div {
-    min-width: 0;
   }
 
   .svx-wa-chat-person .svx-wa-avatar.is-large {
@@ -2361,13 +2353,8 @@
   }
 
   .svx-wa-customer-card {
-    min-width: 0;
     border-radius: 14px;
     padding: 11px;
-  }
-
-  .svx-wa-customer-card > div {
-    min-width: 0;
   }
 
   .svx-wa-button-grid,
