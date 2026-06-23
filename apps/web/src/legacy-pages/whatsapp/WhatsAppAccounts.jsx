@@ -192,6 +192,86 @@ function BranchIcon() {
   );
 }
 
+function TokenIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M8 15a4 4 0 114.9-3.9L21 3m-5 5l2 2m-4 0l2 2"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8 15v4m-2-2h4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function CalendarIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M7 3v3m10-3v3M4 9h16M6 5h12a2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V7a2 2 0 012-2z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MegaphoneIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 13h3l9 4V7l-9 4H4v2zM7 13v5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CopyIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M8 8h10v12H8zM6 16H5a2 2 0 01-2-2V5a2 2 0 012-2h9a2 2 0 012 2v1"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function EyeIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 15a3 3 0 100-6 3 3 0 000 6z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+
 function Badge({ children, tone = "neutral" }) {
   return <span className={cx("svx-wa-badge", `is-${tone}`)}>{children}</span>;
 }
@@ -305,6 +385,101 @@ function DetailStat({ label, value }) {
   );
 }
 
+function AccountDetailRow({ icon, label, value, secure = false }) {
+  return (
+    <div className="svx-wa-account-detail-row">
+      <span className="svx-wa-detail-icon">{icon}</span>
+      <span>{label}</span>
+      <strong>{secure ? "••••••••••••••••••••" : value || "—"}</strong>
+      {secure ? (
+        <span className="svx-wa-detail-tools" aria-hidden="true">
+          <EyeIcon />
+          <CopyIcon />
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function AccountDetailsPanel({ account, onEdit, onCreate }) {
+  if (!account) {
+    return (
+      <section className="svx-wa-card svx-wa-details-panel">
+        <div className="svx-wa-section-head">
+          <div>
+            <p>Account details</p>
+            <h2>No account selected</h2>
+          </div>
+          <Badge tone="neutral">Waiting</Badge>
+        </div>
+
+        <EmptyState
+          title="Choose an account"
+          text="Select an account from the list to view setup details, tokens, status and account actions."
+        />
+
+        <div className="svx-wa-form-actions is-details">
+          <button type="button" onClick={onCreate} className="svx-wa-primary-button">
+            Connect WhatsApp
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  const ready = isAccountReady(account);
+
+  return (
+    <section className="svx-wa-card svx-wa-details-panel">
+      <div className="svx-wa-section-head">
+        <div>
+          <p>Account details</p>
+          <h2>{account.businessName || "WhatsApp account"}</h2>
+        </div>
+        <Badge tone={ready ? "success" : account.isActive ? "warning" : "neutral"}>
+          {ready ? "Active" : account.isActive ? "Needs setup" : "Inactive"}
+        </Badge>
+      </div>
+
+      <div className="svx-wa-detail-profile">
+        <IconShell tone={ready ? "success" : "info"}>
+          <ChannelIcon />
+        </IconShell>
+        <div>
+          <strong>{account.businessName || "Store WhatsApp"}</strong>
+          <span>{account.phoneNumber || "No phone number saved"}</span>
+          <small>
+            {ready
+              ? "Ready for inbox, replies and broadcasts"
+              : "Complete missing setup values before live use"}
+          </small>
+        </div>
+      </div>
+
+      <div className="svx-wa-account-detail-list">
+        <AccountDetailRow icon={<ChannelIcon />} label="Business phone" value={account.phoneNumber} />
+        <AccountDetailRow icon={<ShieldIcon />} label="Phone number ID" value={account.phoneNumberId} />
+        <AccountDetailRow icon={<UsersIcon />} label="WABA ID" value={account.wabaId} />
+        <AccountDetailRow icon={<TokenIcon />} label="Access token" value={account.hasAccessToken ? "Saved" : ""} secure={account.hasAccessToken} />
+        <AccountDetailRow icon={<TokenIcon />} label="Webhook verify token" value={account.webhookVerifyToken} secure={Boolean(account.webhookVerifyToken)} />
+        <AccountDetailRow icon={<ShieldIcon />} label="App secret" value={account.appSecret} secure={Boolean(account.appSecret)} />
+        <AccountDetailRow icon={<CalendarIcon />} label="Created" value={formatDateTime(account.createdAt)} />
+        <AccountDetailRow icon={<CalendarIcon />} label="Last updated" value={formatDateTime(account.updatedAt || account.createdAt)} />
+      </div>
+
+      <div className="svx-wa-form-actions is-details">
+        <button type="button" onClick={() => onEdit(account)} className="svx-wa-secondary-button">
+          Edit account
+        </button>
+        <button type="button" onClick={onCreate} className="svx-wa-primary-button">
+          Connect new
+        </button>
+      </div>
+    </section>
+  );
+}
+
+
 export default function WhatsAppAccounts() {
   const mountedRef = useRef(true);
 
@@ -416,13 +591,19 @@ export default function WhatsAppAccounts() {
     return accounts.find((item) => item.id === selectedAccountId) || null;
   }, [accounts, selectedAccountId]);
 
+  const displayAccount = selectedAccount || accounts[0] || null;
+
   const summary = useMemo(() => {
     const total = accounts.length;
     const active = accounts.filter((item) => item.isActive).length;
     const ready = accounts.filter(isAccountReady).length;
     const needsSetup = accounts.filter((item) => item.isActive && !isAccountReady(item)).length;
+    const lastActivity = accounts
+      .map((item) => item.updatedAt || item.createdAt)
+      .filter(Boolean)
+      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
 
-    return { total, active, ready, needsSetup };
+    return { total, active, ready, needsSetup, lastActivity };
   }, [accounts]);
 
   function updateField(key, value) {
@@ -551,10 +732,10 @@ export default function WhatsAppAccounts() {
       <section className="svx-wa-hero">
         <div className="svx-wa-hero-copy">
           <Badge tone="info">WhatsApp</Badge>
-          <h1>WhatsApp business setup</h1>
+          <h1>WhatsApp Accounts</h1>
           <p>
-            Connect the store WhatsApp number used for customer conversations, staff replies,
-            promotions, broadcasts, and sale drafts.
+            Manage the official store WhatsApp number used for customer conversations, team replies,
+            sale drafts, promotions and broadcasts.
           </p>
         </div>
 
@@ -588,8 +769,8 @@ export default function WhatsAppAccounts() {
           <div>
             <strong>WhatsApp in Storvex</strong>
             <span>
-              Customers use one store number. Storvex keeps staff work, branches, sales and
-              broadcasts organized behind the scenes.
+              One WhatsApp number for your business. Customers chat with one official store number
+              while your team collaborates internally.
             </span>
           </div>
         </div>
@@ -597,20 +778,26 @@ export default function WhatsAppAccounts() {
         <div className="svx-wa-rule-grid">
           <RuleCard
             icon={<ShieldIcon />}
-            title="One store number"
-            text="Customers always message the official store WhatsApp number."
+            title="One number for the whole business"
+            text="Customers always message one official store WhatsApp number."
             tone="success"
           />
           <RuleCard
             icon={<UsersIcon />}
-            title="Team inbox"
-            text="Owners and permitted staff work from one shared inbox."
+            title="Team collaboration in one inbox"
+            text="Owners and permitted staff work from one shared workspace."
             tone="info"
           />
           <RuleCard
             icon={<BranchIcon />}
-            title="Branch-aware sales"
-            text="Sale drafts and final sales still respect branches, stock and cash drawer rules."
+            title="Sales respect branches and staff"
+            text="Sale drafts and final sales still follow branch, stock and cash drawer rules."
+            tone="warning"
+          />
+          <RuleCard
+            icon={<MegaphoneIcon />}
+            title="Promotions and broadcasts from one place"
+            text="Run campaigns from the same connected store account."
             tone="warning"
           />
         </div>
@@ -618,11 +805,11 @@ export default function WhatsAppAccounts() {
 
       <section className="svx-wa-metric-grid">
         <MetricCard
-          label="Accounts"
+          label="WhatsApp accounts"
           value={summary.total}
-          note="Saved WhatsApp accounts"
+          note="Total connected accounts"
           icon={<ChannelIcon />}
-          tone="info"
+          tone="success"
         />
         <MetricCard
           label="Ready"
@@ -635,15 +822,15 @@ export default function WhatsAppAccounts() {
           label="Active"
           value={summary.active}
           note="Currently enabled"
-          icon={<ChannelIcon />}
-          tone={summary.active > 0 ? "success" : "neutral"}
+          icon={<UsersIcon />}
+          tone={summary.active > 0 ? "info" : "neutral"}
         />
         <MetricCard
-          label="Needs setup"
-          value={summary.needsSetup}
-          note="Active but missing setup"
-          icon={<ShieldIcon />}
-          tone={summary.needsSetup > 0 ? "warning" : "neutral"}
+          label="Last activity"
+          value={formatTimeAgo(summary.lastActivity)}
+          note="Latest account update"
+          icon={<CalendarIcon />}
+          tone={summary.lastActivity ? "warning" : "neutral"}
         />
       </section>
 
@@ -651,19 +838,25 @@ export default function WhatsAppAccounts() {
         <div className="svx-wa-card svx-wa-list-panel">
           <div className="svx-wa-section-head">
             <div>
-              <p>Accounts</p>
-              <h2>Store WhatsApp accounts</h2>
+              <p>Your WhatsApp accounts</p>
+              <h2>Store number setup</h2>
             </div>
             <Badge tone="neutral">{filteredAccounts.length} shown</Badge>
           </div>
 
-          <div className="svx-wa-search">
-            <SearchIcon />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search name, phone, status, or account ID..."
-            />
+          <div className="svx-wa-list-actions">
+            <div className="svx-wa-search">
+              <SearchIcon />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search by name or number..."
+              />
+            </div>
+
+            <button type="button" className="svx-wa-primary-button" onClick={startCreate}>
+              Connect WhatsApp
+            </button>
           </div>
 
           <div className="svx-wa-account-list">
@@ -685,193 +878,195 @@ export default function WhatsAppAccounts() {
           </div>
         </div>
 
-        <div className="svx-wa-card svx-wa-form-panel">
-          <div className="svx-wa-section-head">
-            <div>
-              <p>{mode === "edit" ? "Edit account" : "New account"}</p>
-              <h2>{mode === "edit" ? "Update WhatsApp setup" : "Connect WhatsApp"}</h2>
-            </div>
+        <AccountDetailsPanel account={displayAccount} onEdit={startEdit} onCreate={startCreate} />
+      </section>
 
-            {mode === "edit" && selectedAccount ? (
-              <Badge tone={isAccountReady(selectedAccount) ? "success" : "warning"}>
-                {isAccountReady(selectedAccount) ? "Ready" : "Needs setup"}
-              </Badge>
-            ) : (
-              <Badge tone="info">One store number</Badge>
-            )}
+      <section className="svx-wa-card svx-wa-form-panel">
+        <div className="svx-wa-section-head">
+          <div>
+            <p>{mode === "edit" ? "Edit account" : "New account"}</p>
+            <h2>{mode === "edit" ? "Update WhatsApp setup" : "Connect WhatsApp"}</h2>
           </div>
 
-          <form className="svx-wa-form" onSubmit={handleSubmit}>
+          {mode === "edit" && selectedAccount ? (
+            <Badge tone={isAccountReady(selectedAccount) ? "success" : "warning"}>
+              {isAccountReady(selectedAccount) ? "Ready" : "Needs setup"}
+            </Badge>
+          ) : (
+            <Badge tone="info">One store number</Badge>
+          )}
+        </div>
+
+        <form className="svx-wa-form" onSubmit={handleSubmit}>
+          <div className="svx-wa-form-grid">
+            <Field label="Business phone number">
+              <input
+                className="svx-wa-input"
+                value={form.phoneNumber}
+                onChange={(event) => updateField("phoneNumber", event.target.value)}
+                placeholder="e.g. 2507XXXXXXXX"
+              />
+            </Field>
+
+            <Field label="Business name">
+              <input
+                className="svx-wa-input"
+                value={form.businessName}
+                onChange={(event) => updateField("businessName", event.target.value)}
+                placeholder="Store name shown for this account"
+              />
+            </Field>
+
+            <Field label="Phone number ID" hint="Required before activating WhatsApp.">
+              <input
+                className="svx-wa-input"
+                value={form.phoneNumberId}
+                onChange={(event) => updateField("phoneNumberId", event.target.value)}
+                placeholder="Meta phone number ID"
+              />
+            </Field>
+
+            <Field label="WABA ID">
+              <input
+                className="svx-wa-input"
+                value={form.wabaId}
+                onChange={(event) => updateField("wabaId", event.target.value)}
+                placeholder="WhatsApp business account ID"
+              />
+            </Field>
+          </div>
+
+          <section className="svx-wa-card-soft">
+            <div className="svx-wa-secure-intro">
+              <IconShell tone="info">
+                <ShieldIcon />
+              </IconShell>
+              <div>
+                <strong>Private setup values</strong>
+                <span>
+                  These values are sensitive. When editing, leave a secret field empty to keep
+                  the current saved value.
+                </span>
+              </div>
+            </div>
+
+            <SecureTextarea
+              label="Access token"
+              value={form.accessToken}
+              onChange={(event) => updateField("accessToken", event.target.value)}
+              placeholder={
+                mode === "edit"
+                  ? "Paste a new access token only if you want to replace the current saved token"
+                  : "Paste the WhatsApp access token"
+              }
+              helper={
+                mode === "edit"
+                  ? "Leave empty to keep the current saved token"
+                  : "Needed for live sending and receiving"
+              }
+            />
+
             <div className="svx-wa-form-grid">
-              <Field label="Business phone number">
+              <Field
+                label="Webhook verify token"
+                hint="Used when Meta verifies the webhook."
+              >
                 <input
                   className="svx-wa-input"
-                  value={form.phoneNumber}
-                  onChange={(event) => updateField("phoneNumber", event.target.value)}
-                  placeholder="e.g. 2507XXXXXXXX"
+                  value={form.webhookVerifyToken}
+                  onChange={(event) => updateField("webhookVerifyToken", event.target.value)}
+                  placeholder={
+                    mode === "edit"
+                      ? "Leave empty to keep current saved verify token"
+                      : "Webhook verify token"
+                  }
                 />
               </Field>
 
-              <Field label="Business name">
+              <Field label="App secret" hint="Used to verify trusted incoming requests.">
                 <input
                   className="svx-wa-input"
-                  value={form.businessName}
-                  onChange={(event) => updateField("businessName", event.target.value)}
-                  placeholder="Store name shown for this account"
-                />
-              </Field>
-
-              <Field label="Phone number ID" hint="Required before activating WhatsApp.">
-                <input
-                  className="svx-wa-input"
-                  value={form.phoneNumberId}
-                  onChange={(event) => updateField("phoneNumberId", event.target.value)}
-                  placeholder="Meta phone number ID"
-                />
-              </Field>
-
-              <Field label="WABA ID">
-                <input
-                  className="svx-wa-input"
-                  value={form.wabaId}
-                  onChange={(event) => updateField("wabaId", event.target.value)}
-                  placeholder="WhatsApp business account ID"
+                  value={form.appSecret}
+                  onChange={(event) => updateField("appSecret", event.target.value)}
+                  placeholder={
+                    mode === "edit"
+                      ? "Leave empty to keep current saved app secret"
+                      : "App secret"
+                  }
                 />
               </Field>
             </div>
+          </section>
 
+          <label className="svx-wa-toggle-card">
+            <input
+              type="checkbox"
+              checked={Boolean(form.isActive)}
+              onChange={(event) => updateField("isActive", event.target.checked)}
+            />
+            <span>
+              <strong>Account is active</strong>
+              <small>
+                Active accounts are expected to be ready for live customer messages, replies and
+                sale draft workflows.
+              </small>
+            </span>
+          </label>
+
+          <div className="svx-wa-bottom-grid">
             <section className="svx-wa-card-soft">
-              <div className="svx-wa-secure-intro">
-                <IconShell tone="info">
-                  <ShieldIcon />
-                </IconShell>
-                <div>
-                  <strong>Private setup values</strong>
-                  <span>
-                    These values are sensitive. When editing, leave a secret field empty to keep
-                    the current saved value.
-                  </span>
-                </div>
-              </div>
-
-              <SecureTextarea
-                label="Access token"
-                value={form.accessToken}
-                onChange={(event) => updateField("accessToken", event.target.value)}
-                placeholder={
-                  mode === "edit"
-                    ? "Paste a new access token only if you want to replace the current saved token"
-                    : "Paste the WhatsApp access token"
-                }
-                helper={
-                  mode === "edit"
-                    ? "Leave empty to keep the current saved token"
-                    : "Needed for live sending and receiving"
-                }
-              />
-
-              <div className="svx-wa-form-grid">
-                <Field
-                  label="Webhook verify token"
-                  hint="Used when Meta verifies the webhook."
-                >
-                  <input
-                    className="svx-wa-input"
-                    value={form.webhookVerifyToken}
-                    onChange={(event) => updateField("webhookVerifyToken", event.target.value)}
-                    placeholder={
-                      mode === "edit"
-                        ? "Leave empty to keep current saved verify token"
-                        : "Webhook verify token"
-                    }
-                  />
-                </Field>
-
-                <Field label="App secret" hint="Used to verify trusted incoming requests.">
-                  <input
-                    className="svx-wa-input"
-                    value={form.appSecret}
-                    onChange={(event) => updateField("appSecret", event.target.value)}
-                    placeholder={
-                      mode === "edit"
-                        ? "Leave empty to keep current saved app secret"
-                        : "App secret"
-                    }
-                  />
-                </Field>
+              <div className="svx-wa-subtitle">What this account controls</div>
+              <div className="svx-wa-mini-grid">
+                <DetailStat label="Inbox" value="Customer chats" />
+                <DetailStat label="Replies" value="Staff responses" />
+                <DetailStat label="Drafts" value="WhatsApp sales" />
+                <DetailStat label="Broadcasts" value="Store campaigns" />
               </div>
             </section>
 
-            <label className="svx-wa-toggle-card">
-              <input
-                type="checkbox"
-                checked={Boolean(form.isActive)}
-                onChange={(event) => updateField("isActive", event.target.checked)}
-              />
-              <span>
-                <strong>Account is active</strong>
-                <small>
-                  Active accounts are expected to be ready for live customer messages, replies and
-                  sale draft workflows.
-                </small>
-              </span>
-            </label>
-
-            <div className="svx-wa-bottom-grid">
-              <section className="svx-wa-card-soft">
-                <div className="svx-wa-subtitle">What this account controls</div>
+            <section className="svx-wa-card-soft">
+              <div className="svx-wa-subtitle">Current selection</div>
+              {mode === "edit" && selectedAccount ? (
                 <div className="svx-wa-mini-grid">
-                  <DetailStat label="Inbox" value="Customer chats" />
-                  <DetailStat label="Replies" value="Staff responses" />
-                  <DetailStat label="Drafts" value="WhatsApp sales" />
-                  <DetailStat label="Broadcasts" value="Store campaigns" />
+                  <DetailStat label="Business" value={selectedAccount.businessName || "—"} />
+                  <DetailStat label="Phone" value={selectedAccount.phoneNumber || "—"} />
+                  <DetailStat
+                    label="Connection"
+                    value={selectedAccount.hasAccessToken ? "Token saved" : "Token missing"}
+                  />
+                  <DetailStat
+                    label="Last update"
+                    value={formatDateTime(selectedAccount.updatedAt || selectedAccount.createdAt)}
+                  />
                 </div>
-              </section>
+              ) : (
+                <p className="svx-wa-help-text">
+                  Create a new account, or choose an existing account from the list to edit it.
+                </p>
+              )}
+            </section>
+          </div>
 
-              <section className="svx-wa-card-soft">
-                <div className="svx-wa-subtitle">Current selection</div>
-                {mode === "edit" && selectedAccount ? (
-                  <div className="svx-wa-mini-grid">
-                    <DetailStat label="Business" value={selectedAccount.businessName || "—"} />
-                    <DetailStat label="Phone" value={selectedAccount.phoneNumber || "—"} />
-                    <DetailStat
-                      label="Connection"
-                      value={selectedAccount.hasAccessToken ? "Token saved" : "Token missing"}
-                    />
-                    <DetailStat
-                      label="Last update"
-                      value={formatDateTime(selectedAccount.updatedAt || selectedAccount.createdAt)}
-                    />
-                  </div>
-                ) : (
-                  <p className="svx-wa-help-text">
-                    Create a new account, or choose an existing account from the list to edit it.
-                  </p>
-                )}
-              </section>
-            </div>
+          <div className="svx-wa-form-actions">
+            <button
+              type="button"
+              onClick={startCreate}
+              className="svx-wa-secondary-button"
+              disabled={saving}
+            >
+              Clear form
+            </button>
 
-            <div className="svx-wa-form-actions">
-              <button
-                type="button"
-                onClick={startCreate}
-                className="svx-wa-secondary-button"
-                disabled={saving}
-              >
-                Clear form
-              </button>
-
-              <AsyncButton
-                type="submit"
-                loading={saving}
-                loadingText={mode === "edit" ? "Updating..." : "Creating..."}
-                className="svx-wa-primary-button"
-              >
-                {mode === "edit" ? "Update account" : "Create account"}
-              </AsyncButton>
-            </div>
-          </form>
-        </div>
+            <AsyncButton
+              type="submit"
+              loading={saving}
+              loadingText={mode === "edit" ? "Updating..." : "Creating..."}
+              className="svx-wa-primary-button"
+            >
+              {mode === "edit" ? "Update account" : "Create account"}
+            </AsyncButton>
+          </div>
+        </form>
       </section>
     </main>
   );

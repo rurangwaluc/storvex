@@ -890,3 +890,432 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Storvex WhatsApp accounts final workspace layer                            */
+/* Matches the approved WhatsApp workspace structure and PWA rules.           */
+/* -------------------------------------------------------------------------- */
+
+.svx-wa-accounts {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.svx-wa-accounts *,
+.svx-wa-accounts *::before,
+.svx-wa-accounts *::after {
+  box-sizing: border-box;
+}
+
+.svx-wa-accounts svg {
+  display: block;
+}
+
+.svx-wa-icon,
+.svx-wa-account-mark,
+.svx-wa-detail-icon {
+  display: grid;
+  place-items: center;
+  line-height: 0;
+}
+
+.svx-wa-guide {
+  padding: 22px;
+  border-radius: 20px;
+}
+
+.svx-wa-guide-head {
+  align-items: center;
+}
+
+.svx-wa-rule-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.svx-wa-rule {
+  align-items: center;
+  min-height: 86px;
+}
+
+.svx-wa-metric-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.svx-wa-metric {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 102px;
+  padding: 16px;
+}
+
+.svx-wa-metric-top {
+  flex: 0 0 auto;
+}
+
+.svx-wa-metric-top .svx-wa-status-dot {
+  display: none;
+}
+
+.svx-wa-metric p {
+  margin-top: 0;
+  color: var(--wa-muted);
+  font-size: 12.5px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.svx-wa-metric strong {
+  margin-top: 4px;
+  font-size: clamp(24px, 2vw, 32px);
+}
+
+.svx-wa-metric > span:last-child {
+  margin-top: 4px;
+}
+
+.svx-wa-workspace-grid {
+  grid-template-columns: minmax(360px, 1.05fr) minmax(340px, 0.72fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.svx-wa-list-panel,
+.svx-wa-form-panel,
+.svx-wa-details-panel {
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.svx-wa-list-panel,
+.svx-wa-details-panel {
+  min-height: 520px;
+}
+
+.svx-wa-list-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.svx-wa-list-actions .svx-wa-search {
+  min-width: 0;
+}
+
+.svx-wa-account-row {
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: center;
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.svx-wa-account-row.is-selected {
+  box-shadow: inset 4px 0 0 var(--wa-success);
+}
+
+.svx-wa-account-mark {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  background: var(--wa-success-soft);
+  color: var(--wa-success);
+}
+
+.svx-wa-details-panel {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.svx-wa-detail-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 16px;
+  background: var(--wa-soft);
+  padding: 14px;
+}
+
+.svx-wa-detail-profile > div {
+  min-width: 0;
+}
+
+.svx-wa-detail-profile strong {
+  display: block;
+  overflow: hidden;
+  color: var(--wa-text);
+  font-size: 15px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-detail-profile span,
+.svx-wa-detail-profile small {
+  display: block;
+  margin-top: 4px;
+  color: var(--wa-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.svx-wa-account-detail-list {
+  display: grid;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.svx-wa-account-detail-row {
+  display: grid;
+  grid-template-columns: 28px minmax(120px, 0.62fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  border-bottom: 1px solid var(--wa-border-soft);
+  padding: 11px 12px;
+}
+
+.svx-wa-account-detail-row:last-child {
+  border-bottom: 0;
+}
+
+.svx-wa-detail-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--wa-soft);
+  color: var(--wa-muted);
+}
+
+.svx-wa-detail-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.svx-wa-account-detail-row > span:nth-child(2) {
+  color: var(--wa-muted);
+  font-size: 12.5px;
+  font-weight: 800;
+}
+
+.svx-wa-account-detail-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--wa-text);
+  font-size: 12.5px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-detail-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--wa-muted-2);
+}
+
+.svx-wa-detail-tools svg {
+  width: 16px;
+  height: 16px;
+}
+
+.svx-wa-form-actions.is-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 2px;
+}
+
+.svx-wa-form-panel {
+  margin-top: 0;
+}
+
+.svx-wa-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.svx-wa-bottom-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+@media (max-width: 1180px) {
+  .svx-wa-rule-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-wa-workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-wa-list-panel,
+  .svx-wa-details-panel {
+    min-height: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  html,
+  body,
+  #root,
+  #__next {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .svx-wa-accounts {
+    width: 100%;
+    max-width: 100%;
+    gap: 12px;
+    overflow-x: hidden;
+    padding: 8px 0 calc(28px + env(safe-area-inset-bottom));
+  }
+
+  .svx-wa-accounts > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .svx-wa-hero,
+  .svx-wa-guide,
+  .svx-wa-metric-grid,
+  .svx-wa-workspace-grid,
+  .svx-wa-list-panel,
+  .svx-wa-details-panel,
+  .svx-wa-form-panel {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .svx-wa-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    border: 1px solid var(--wa-border-soft);
+    border-radius: 18px;
+    background: var(--wa-card);
+    padding: 16px;
+    overflow: hidden;
+  }
+
+  .svx-wa-hero-copy h1 {
+    max-width: 100%;
+    font-size: clamp(28px, 9vw, 36px);
+    line-height: 1.02;
+    letter-spacing: -0.06em;
+  }
+
+  .svx-wa-hero-copy p {
+    max-width: 100%;
+    font-size: 13.5px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .svx-wa-hero-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-wa-rule-grid,
+  .svx-wa-metric-grid,
+  .svx-wa-form-grid,
+  .svx-wa-bottom-grid,
+  .svx-wa-mini-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-wa-guide,
+  .svx-wa-list-panel,
+  .svx-wa-form-panel,
+  .svx-wa-details-panel {
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .svx-wa-guide-head {
+    align-items: flex-start;
+  }
+
+  .svx-wa-rule {
+    align-items: flex-start;
+    min-height: 0;
+    padding: 12px;
+  }
+
+  .svx-wa-metric {
+    min-height: 92px;
+    padding: 12px;
+  }
+
+  .svx-wa-metric .svx-wa-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .svx-wa-metric p {
+    font-size: 11.5px;
+  }
+
+  .svx-wa-metric strong {
+    font-size: 24px;
+  }
+
+  .svx-wa-list-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-wa-account-row {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .svx-wa-account-status {
+    grid-column: 2;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .svx-wa-account-detail-row {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 8px 10px;
+  }
+
+  .svx-wa-account-detail-row strong,
+  .svx-wa-detail-tools {
+    grid-column: 2;
+  }
+
+  .svx-wa-form-actions,
+  .svx-wa-form-actions.is-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-wa-hero-actions,
+  .svx-wa-rule-grid,
+  .svx-wa-metric-grid,
+  .svx-wa-form-grid,
+  .svx-wa-bottom-grid,
+  .svx-wa-mini-grid,
+  .svx-wa-form-actions,
+  .svx-wa-form-actions.is-details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-wa-card,
+  .svx-wa-metric,
+  .svx-wa-rule,
+  .svx-wa-card-soft,
+  .svx-wa-secure-field,
+  .svx-wa-toggle-card,
+  .svx-wa-detail-stat,
+  .svx-wa-empty,
+  .svx-wa-account-row {
+    border-radius: 14px;
+  }
+}
