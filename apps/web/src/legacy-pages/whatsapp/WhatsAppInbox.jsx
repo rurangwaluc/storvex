@@ -12,7 +12,6 @@ import {
   createWhatsAppBroadcast,
   createWhatsAppPromotion,
   createWhatsAppSaleDraft,
-  deleteWhatsAppPromotion,
   finalizeWhatsAppSaleDraft,
   listAssignableWhatsAppStaff,
   listWhatsAppAccounts,
@@ -27,8 +26,8 @@ import {
   setWhatsAppAccountActive,
   updateWhatsAppAccount,
   updateWhatsAppConversationStatus,
-  updateWhatsAppPromotion,
 } from "../../services/whatsappApi";
+import "./WhatsAppInbox.css";
 
 const WHATSAPP_WORKSPACE_ROLES = [
   "OWNER",
@@ -42,14 +41,27 @@ const WHATSAPP_WORKSPACE_ROLES = [
 const WHATSAPP_MANAGER_ROLES = ["OWNER", "MANAGER"];
 const DEFAULT_MESSAGE_FORMAT = "promo_template";
 const DEFAULT_MESSAGE_LANGUAGE = "en_US";
-const PROMOTION_LIST_LIMIT = 4;
-const BROADCAST_LIST_LIMIT = 3;
+const PROMOTION_LIST_LIMIT = 6;
+const BROADCAST_LIST_LIMIT = 5;
+
+const BUSINESS_CATEGORIES = [
+  ["ELECTRONICS", "Electronics"],
+  ["HARDWARE", "Hardware"],
+  ["HOME_KITCHEN", "Home & kitchen"],
+  ["LIGHTING", "Lighting"],
+  ["SPARE_PARTS", "Spare parts"],
+];
 
 const AUDIENCE_OPTIONS = [
   {
     value: "ALL_OPTED_IN",
     label: "All WhatsApp customers",
-    helper: "Customers who can receive WhatsApp updates.",
+    helper: "Every customer allowed to receive updates.",
+  },
+  {
+    value: "CATEGORY_CUSTOMERS",
+    label: "Category customers",
+    helper: "Customers matched to one business category.",
   },
   {
     value: "CREDIT_CUSTOMERS",
@@ -96,13 +108,17 @@ function canUseWhatsAppInbox(role) {
 }
 
 function money(value) {
-  const n = Number(value || 0);
-  return `${Math.round(Number.isFinite(n) ? n : 0).toLocaleString("en-US")} RWF`;
+  const amount = Number(value || 0);
+  const safe = Number.isFinite(amount) ? amount : 0;
+
+  return `${Math.round(safe).toLocaleString("en-US")} RWF`;
 }
 
 function initials(value) {
   const text = String(value || "").trim();
+
   if (!text) return "WA";
+
   return (
     text
       .split(/\s+/)
@@ -138,6 +154,7 @@ function safeError(err, fallback) {
   if (code === "WHATSAPP_ACCOUNT_PHONE_NUMBER_ID_MISSING") return "The WhatsApp store number needs setup before sending.";
   if (code === "WHATSAPP_ACCOUNT_ACCESS_TOKEN_MISSING") return "The WhatsApp store number needs setup before sending.";
   if (code === "PRODUCT_ID_REQUIRED_FOR_TARGET") return "This audience needs a promotion connected to a product.";
+  if (code === "CATEGORY_REQUIRED") return "Choose a business category for this audience.";
   if (code === "NO_BROADCAST_RECIPIENTS") return "No matching customers were found for this audience.";
   if (code === "PROMOTION_NOT_FOUND") return "The selected promotion could not be found.";
   if (code === "CASH_DRAWER_CLOSED") return "Open the cash drawer before completing this sale.";
@@ -147,6 +164,7 @@ function safeError(err, fallback) {
 
 function statusLabel(value) {
   const status = String(value || "").trim().toUpperCase();
+
   if (status === "DRAFT") return "Draft";
   if (status === "QUEUED") return "Queued";
   if (status === "SENT") return "Sent";
@@ -158,20 +176,28 @@ function statusLabel(value) {
   if (status === "PARTIAL") return "Partial";
   if (status === "CASH") return "Cash";
   if (status === "CREDIT") return "Credit";
+
   return status || "Record";
 }
 
 function formatTime(value) {
   if (!value) return "—";
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(date);
+
+  return new Intl.DateTimeFormat("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }
 
 function formatDay(value) {
   if (!value) return "Today";
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Today";
+
   return new Intl.DateTimeFormat("en-GB", {
     weekday: "short",
     day: "2-digit",
@@ -182,8 +208,10 @@ function formatDay(value) {
 
 function dateLabel(value) {
   if (!value) return "Not available";
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Not available";
+
   return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "short",
@@ -192,30 +220,40 @@ function dateLabel(value) {
 }
 
 function customerName(conversation) {
-  return conversation?.customer?.name || conversation?.phone || conversation?.assignedTo?.name || "WhatsApp customer";
+  return (
+    conversation?.customer?.name ||
+    conversation?.phone ||
+    conversation?.assignedTo?.name ||
+    "WhatsApp customer"
+  );
 }
 
 function latestPreview(conversation) {
-  const msg = conversation?.latestMessage;
-  if (!msg) return "No messages yet";
-  return `${msg.direction === "OUTBOUND" ? "You: " : ""}${msg.textContent || "Message"}`;
+  const message = conversation?.latestMessage;
+  if (!message) return "No messages yet";
+
+  return `${message.direction === "OUTBOUND" ? "You: " : ""}${message.textContent || "Message"}`;
 }
 
 function unreadCount(conversation, active) {
   if (active) return 0;
+
   const explicit =
     conversation?.unreadCount ??
     conversation?.unreadMessages ??
     conversation?.unreadMessageCount ??
     conversation?.unseenCount ??
     null;
+
   if (explicit === null || explicit === undefined) return 0;
-  const n = Number(explicit);
-  return Number.isFinite(n) && n > 0 ? Math.round(n) : 0;
+
+  const value = Number(explicit);
+  return Number.isFinite(value) && value > 0 ? Math.round(value) : 0;
 }
 
 function markConversationOpened(conversation) {
   if (!conversation) return conversation;
+
   return {
     ...conversation,
     unreadCount: 0,
@@ -227,44 +265,129 @@ function markConversationOpened(conversation) {
 
 function toneForStatus(status) {
   const value = String(status || "").toUpperCase();
-  if (["SENT", "PAID", "ACTIVE", "READY", "OPEN"].includes(value)) return "bg-[var(--color-primary-soft)] text-[var(--color-primary)]";
-  if (["PARTIAL", "QUEUED", "DRAFT"].includes(value)) return "bg-amber-50 text-amber-700";
-  if (["FAILED", "OVERDUE", "MISSING"].includes(value)) return "bg-rose-50 text-rose-700";
-  return "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
+
+  if (["SENT", "PAID", "ACTIVE", "READY", "OPEN"].includes(value)) return "success";
+  if (["PARTIAL", "QUEUED", "DRAFT"].includes(value)) return "warning";
+  if (["FAILED", "OVERDUE", "MISSING", "CLOSED"].includes(value)) return "danger";
+
+  return "neutral";
 }
 
-function Pill({ children, className = "" }) {
+function Badge({ children, tone = "neutral" }) {
+  return <span className={cx("svx-wa-badge", `is-${tone}`)}>{children}</span>;
+}
+
+function IconShell({ children, tone = "info" }) {
+  return <span className={cx("svx-wa-icon", `is-${tone}`)}>{children}</span>;
+}
+
+function ChatIcon() {
   return (
-    <span className={cx("inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-black", className)}>
-      {children}
-    </span>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M6 18l1.2-3.4A7 7 0 1119 12a7 7 0 01-10.52 6L6 18z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
-function Icon({ children, active = false, onClick, title }) {
+function DraftIcon() {
   return (
-    <button
-      type="button"
-      title={title}
-      onClick={onClick}
-      className={cx(
-        "flex h-10 w-10 items-center justify-center rounded-lg text-lg transition",
-        active ? "bg-[var(--color-primary-soft)] text-[var(--color-primary)] shadow-sm" : "text-[var(--color-text-muted)] hover:bg-[var(--color-surface-2)] hover:text-[var(--color-text)]",
-      )}
-    >
-      {children}
-    </button>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M7 3h10a2 2 0 012 2v15l-3-1.5L12 20l-4-1.5L5 20V5a2 2 0 012-2zM9 8h6M9 12h6M9 16h3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function CampaignIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M4 13l13-7v12L4 13zm0 0v5l4-3M17 8h3M18 12h3M17 16h3"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TeamIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M16 11a4 4 0 10-8 0m8 0a4 4 0 01-8 0m8 0c2.76 0 5 2.02 5 4.5V18H3v-2.5C3 13.02 5.24 11 8 11"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function SettingsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M12 8a4 4 0 100 8 4 4 0 000-8zm8 4a8 8 0 01-.16 1.6l2.02 1.56-2 3.46-2.39-.96a8.3 8.3 0 01-2.77 1.6L14.35 22h-4.7l-.35-2.74a8.3 8.3 0 01-2.77-1.6l-2.39.96-2-3.46 2.02-1.56A8 8 0 014 12c0-.55.05-1.08.16-1.6L2.14 8.84l2-3.46 2.39.96a8.3 8.3 0 012.77-1.6L9.65 2h4.7l.35 2.74a8.3 8.3 0 012.77 1.6l2.39-.96 2 3.46-2.02 1.56c.11.52.16 1.05.16 1.6z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SearchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M21 21l-4.35-4.35M10.5 18a7.5 7.5 0 100-15 7.5 7.5 0 000 15z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function MetricCard({ label, value, note, icon, tone = "info" }) {
+  return (
+    <article className="svx-wa-metric">
+      <IconShell tone={tone}>{icon}</IconShell>
+      <div>
+        <strong>{value}</strong>
+        <span>{label}</span>
+        <small>{note}</small>
+      </div>
+    </article>
   );
 }
 
 function EmptyState({ title, body }) {
   return (
-    <div className="flex min-h-[260px] items-center justify-center rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-card)]/70 p-8 text-center">
-      <div className="max-w-sm">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-lg bg-[var(--color-primary-soft)] text-2xl">💬</div>
-        <h3 className="mt-4 text-lg font-black text-[var(--color-text)]">{title}</h3>
-        <p className="mt-2 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">{body}</p>
-      </div>
+    <div className="svx-wa-empty">
+      <IconShell tone="info">
+        <ChatIcon />
+      </IconShell>
+      <strong>{title}</strong>
+      <span>{body}</span>
     </div>
   );
 }
@@ -278,65 +401,28 @@ function ConversationRow({ conversation, active, draft, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className={cx(
-        "group w-full border-l-2 px-4 py-3 text-left transition duration-200",
-        active
-          ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]/90"
-          : "border-transparent hover:bg-[var(--color-surface-2)]/85",
-      )}
+      className={cx("svx-wa-conversation-row", active && "is-active")}
     >
-      <div className="flex items-start gap-3">
-        <div
-          className={cx(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-black text-[var(--color-primary-contrast)] shadow-sm ring-1 ring-white/5",
-            active ? "bg-[var(--color-primary)]" : "bg-[var(--color-primary)]/90",
-          )}
-        >
-          {initials(name)}
-        </div>
+      <span className="svx-wa-avatar">{initials(name)}</span>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="truncate text-sm font-black tracking-[-0.01em] text-[var(--color-text)]">{name}</div>
-              <div
-                className={cx(
-                  "mt-1 truncate text-xs leading-5",
-                  count ? "font-black text-[var(--color-text)]" : "font-semibold text-[var(--color-text-muted)]",
-                )}
-              >
-                {latestPreview(conversation)}
-              </div>
-            </div>
+      <span className="svx-wa-conversation-main">
+        <span className="svx-wa-conversation-topline">
+          <strong>{name}</strong>
+          <small>{formatTime(conversation.updatedAt)}</small>
+        </span>
 
-            <div className="shrink-0 text-right">
-              <div className="text-[11px] font-bold text-[var(--color-text-muted)]">{formatTime(conversation.updatedAt)}</div>
-              {count > 0 ? (
-                <div className="ml-auto mt-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-[var(--color-primary)] px-1.5 text-[10px] font-black text-[var(--color-primary-contrast)] shadow-sm">
-                  {count > 99 ? "99+" : count}
-                </div>
-              ) : null}
-            </div>
-          </div>
+        <span className={cx("svx-wa-conversation-preview", count && "is-unread")}>
+          {latestPreview(conversation)}
+        </span>
 
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <Pill className={cx("border border-[var(--color-border)] px-2 py-0.5 text-[10px]", toneForStatus(conversation.status))}>
-              {statusLabel(conversation.status)}
-            </Pill>
-            {draft ? (
-              <Pill className="border border-amber-500/20 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-600 dark:text-amber-300">
-                Draft sale
-              </Pill>
-            ) : null}
-            {needsLocation ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/15 bg-amber-500/7 px-2 py-0.5 text-[10px] font-black text-amber-600 dark:text-amber-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-500/80" />
-                Location needed
-              </span>
-            ) : null}
-          </div>
-        </div>
-      </div>
+        <span className="svx-wa-conversation-tags">
+          <Badge tone={toneForStatus(conversation.status)}>{statusLabel(conversation.status)}</Badge>
+          {draft ? <Badge tone="warning">Draft sale</Badge> : null}
+          {needsLocation ? <Badge tone="warning">Location needed</Badge> : null}
+        </span>
+      </span>
+
+      {count > 0 ? <span className="svx-wa-unread">{count > 99 ? "99+" : count}</span> : null}
     </button>
   );
 }
@@ -345,154 +431,107 @@ function MessageBubble({ message }) {
   const outbound = message.direction === "OUTBOUND";
 
   return (
-    <div className={cx("flex", outbound ? "justify-end" : "justify-start")}>
-      <div
-        className={cx(
-          "max-w-[min(74%,720px)] border px-4 py-3 shadow-[0_10px_26px_rgba(0,0,0,0.10)]",
-          outbound
-            ? "rounded-2xl rounded-br-md border-[var(--color-primary)]/20 bg-[var(--color-primary-soft)] text-[var(--color-text)]"
-            : "rounded-2xl rounded-bl-md border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)]",
-        )}
-      >
-        <div className="whitespace-pre-wrap text-[14px] font-semibold leading-6 tracking-[-0.005em]">
-          {message.textContent || "Message"}
-        </div>
-        <div className="mt-2 flex items-center justify-end gap-1 text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+    <div className={cx("svx-wa-message-line", outbound ? "is-outbound" : "is-inbound")}>
+      <article className={cx("svx-wa-message", outbound && "is-outbound")}>
+        <p>{message.textContent || "Message"}</p>
+        <span>
           {formatTime(message.createdAt)}
-          {outbound ? <span className="text-[var(--color-primary)]">✓</span> : null}
-        </div>
-      </div>
+          {outbound ? " · Sent" : ""}
+        </span>
+      </article>
     </div>
   );
 }
 
 function ChatSkeleton() {
   return (
-    <div className="space-y-5 p-4">
-      <div className="mx-auto h-8 w-36 animate-pulse rounded-full bg-[var(--color-card)]" />
-      <div className="h-16 w-2/3 animate-pulse rounded-lg bg-[var(--color-card)]" />
-      <div className="ml-auto h-20 w-1/2 animate-pulse rounded-lg bg-[var(--color-primary-soft)]" />
-      <div className="h-16 w-3/5 animate-pulse rounded-lg bg-[var(--color-card)]" />
+    <div className="svx-wa-chat-skeleton">
+      <span />
+      <span />
+      <span />
     </div>
   );
 }
 
-function DraftSummaryCard({ draft, onFinalize, finalizing = false }) {
-  if (!draft) {
-    return (
-      <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/75 p-4">
-        <div className="text-sm font-black text-[var(--color-text)]">No linked draft sale</div>
-        <p className="mt-2 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
-          Create a draft only after the customer asks to buy.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-4 shadow-[0_14px_34px_rgba(0,0,0,0.12)]">
-      <Pill className="border border-amber-500/20 bg-amber-500/15 text-amber-700 dark:text-amber-300">Draft pending</Pill>
-      <div className="mt-3 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)]">{money(draft.total)}</div>
-      <div className="mt-1 text-xs font-bold text-[var(--color-text-muted)]">
-        {draft.items?.length || 0} item{draft.items?.length === 1 ? "" : "s"} · {statusLabel(draft.saleType)} sale
-      </div>
-      <AsyncButton onClick={onFinalize} loading={finalizing} loadingText="Finalizing..." className="mt-4 w-full">
-        Finalize sale
-      </AsyncButton>
-    </div>
-  );
-}
-
-function WorkspaceTop({ activeTab, setActiveTab, canManageTools, refreshing, onRefresh }) {
+function WorkspaceTabs({ value, onChange, canManageTools }) {
   const tabs = [
-    ["inbox", "Inbox"],
-    ["drafts", "Drafts"],
-    ...(canManageTools ? [["broadcasts", "Broadcasts"], ["setup", "Setup"]] : []),
+    ["inbox", "Inbox", <ChatIcon />],
+    ["drafts", "Orders", <DraftIcon />],
+    ...(canManageTools
+      ? [
+          ["broadcasts", "Campaigns", <CampaignIcon />],
+          ["activity", "Activity", <TeamIcon />],
+          ["setup", "Settings", <SettingsIcon />],
+        ]
+      : []),
   ];
 
   return (
-    <header className="flex h-12 shrink-0 items-center justify-end border-b border-[var(--color-border)] bg-[var(--color-card)] px-3">
-      <nav className="flex items-center gap-1.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/60 p-1">
-        {tabs.map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setActiveTab(key)}
-            className={cx(
-              "h-9 rounded-lg px-3.5 text-xs font-black transition duration-200",
-              activeTab === key
-                ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)]"
-                : "text-[var(--color-text-muted)] hover:bg-[var(--color-card)] hover:text-[var(--color-text)]",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-
+    <nav className="svx-wa-module-tabs" aria-label="WhatsApp workspace">
+      {tabs.map(([key, label, icon]) => (
         <button
+          key={key}
           type="button"
-          onClick={onRefresh}
-          className="h-9 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-3.5 text-xs font-black text-[var(--color-text)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]"
+          onClick={() => onChange(key)}
+          className={cx("svx-wa-module-tab", value === key && "is-active")}
         >
-          {refreshing ? "Refreshing..." : "Refresh"}
+          <span>{icon}</span>
+          <strong>{label}</strong>
         </button>
-      </nav>
-    </header>
-  );
-}
-
-function LeftRail({ activeTab, setActiveTab, canManageTools }) {
-  return (
-    <aside className="flex w-[64px] shrink-0 flex-col items-center border-r border-[var(--color-border)] bg-[var(--color-card)] py-4">
-      <div className="mb-8 flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--color-primary)] text-xl font-black text-[var(--color-primary-contrast)]">W</div>
-      <div className="flex flex-1 flex-col items-center gap-3">
-        <Icon title="Inbox" active={activeTab === "inbox"} onClick={() => setActiveTab("inbox")}>💬</Icon>
-        <Icon title="Drafts" active={activeTab === "drafts"} onClick={() => setActiveTab("drafts")}>🧾</Icon>
-        {canManageTools ? <Icon title="Broadcasts" active={activeTab === "broadcasts"} onClick={() => setActiveTab("broadcasts")}>📣</Icon> : null}
-        {canManageTools ? <Icon title="Setup" active={activeTab === "setup"} onClick={() => setActiveTab("setup")}>⚙️</Icon> : null}
-      </div>
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-surface-2)] text-sm font-black text-[var(--color-text)]">LR</div>
-    </aside>
+      ))}
+    </nav>
   );
 }
 
 function ConversationList({ conversations, drafts, selectedId, onSelect, search, setSearch }) {
   const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const query = search.trim().toLowerCase();
+
     return conversations.filter((item) => {
-      if (!q) return true;
+      if (!query) return true;
+
       return [customerName(item), item.phone, item.latestMessage?.textContent, item.assignedTo?.name]
         .join(" ")
         .toLowerCase()
-        .includes(q);
+        .includes(query);
     });
   }, [conversations, search]);
 
   return (
-    <aside className="flex w-[320px] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-card)]">
-      <div className="border-b border-[var(--color-border)] p-4">
-        <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]">🔍</span>
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search conversations..."
-            className="h-11 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] pl-11 pr-4 text-sm font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-ring)]"
-          />
+    <aside className="svx-wa-conversation-panel">
+      <div className="svx-wa-panel-head">
+        <div>
+          <p>Conversations</p>
+          <h2>Customer inbox</h2>
         </div>
-
-        <div className="mt-3 flex items-center justify-between border-b border-[var(--color-border)] pb-2">
-          <div className="text-sm font-black text-[var(--color-primary)]">Inbox</div>
-          <Pill className="bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
-            {conversations.length}
-          </Pill>
-        </div>
+        <Badge tone="info">{conversations.length}</Badge>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto [scrollbar-width:thin]">
+      <div className="svx-wa-search">
+        <SearchIcon />
+        <input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search by name or phone..."
+        />
+      </div>
+
+      <div className="svx-wa-filter-row">
+        <Badge tone="info">All</Badge>
+        <Badge tone="neutral">Unread</Badge>
+        <Badge tone="neutral">Open</Badge>
+        <Badge tone="neutral">Groups</Badge>
+      </div>
+
+      <div className="svx-wa-conversation-list">
         {filtered.length ? (
           filtered.map((conversation) => {
-            const draft = drafts.find((item) => item.conversationId === conversation.id || (item.customerId && item.customerId === conversation.customerId));
+            const draft = drafts.find(
+              (item) =>
+                item.conversationId === conversation.id ||
+                (item.customerId && item.customerId === conversation.customerId)
+            );
+
             return (
               <ConversationRow
                 key={conversation.id}
@@ -504,72 +543,133 @@ function ConversationList({ conversations, drafts, selectedId, onSelect, search,
             );
           })
         ) : (
-          <div className="p-4 text-sm font-semibold text-[var(--color-text-muted)]">No conversations found.</div>
+          <EmptyState
+            title="No conversations found"
+            body="Clear search or wait for new WhatsApp messages."
+          />
         )}
       </div>
     </aside>
   );
 }
 
-function CustomerProfile({ conversation, draft, canManageTools, onCreateDraft, onAssign, onToggleStatus, onFinalize, finalizing }) {
+function DraftSummaryCard({ draft, onFinalize, finalizing = false }) {
+  if (!draft) {
+    return (
+      <section className="svx-wa-side-card">
+        <div className="svx-wa-side-title">Recent draft sale</div>
+        <p className="svx-wa-help-text">
+          Create a draft sale only when the customer asks to buy.
+        </p>
+      </section>
+    );
+  }
+
   return (
-    <aside className="w-[330px] shrink-0 overflow-y-auto border-l border-[var(--color-border)] bg-[var(--color-card)] p-4 [scrollbar-width:thin]">
-      <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-primary)]">Customer profile</div>
+    <section className="svx-wa-side-card is-highlight">
+      <div className="svx-wa-side-title">Recent draft sale</div>
+      <div className="svx-wa-draft-value">{money(draft.total)}</div>
+      <p className="svx-wa-help-text">
+        {draft.items?.length || 0} item{draft.items?.length === 1 ? "" : "s"} ·{" "}
+        {statusLabel(draft.saleType)} sale
+      </p>
+      <AsyncButton
+        onClick={onFinalize}
+        loading={finalizing}
+        loadingText="Finalizing..."
+        className="svx-wa-full-button"
+      >
+        Finalize sale
+      </AsyncButton>
+    </section>
+  );
+}
 
-      {conversation ? (
-        <>
-          <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/80 p-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--color-primary)] text-base font-black text-[var(--color-primary-contrast)] shadow-sm">
-                {initials(customerName(conversation))}
-              </div>
-              <div className="min-w-0">
-                <div className="truncate text-sm font-black text-[var(--color-text)]">{customerName(conversation)}</div>
-                <div className="mt-1 truncate text-xs font-bold text-[var(--color-text-muted)]">{cleanPhone(conversation.phone)}</div>
-              </div>
-            </div>
-          </div>
+function CustomerPanel({
+  conversation,
+  draft,
+  canManageTools,
+  onCreateDraft,
+  onAssign,
+  onToggleStatus,
+  onFinalize,
+  finalizing,
+}) {
+  if (!conversation) {
+    return (
+      <aside className="svx-wa-side-panel">
+        <EmptyState
+          title="No customer selected"
+          body="Choose a conversation to view customer details and actions."
+        />
+      </aside>
+    );
+  }
 
-          <div className="mt-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)]/45 p-1">
-            {[
-              ["Name", customerName(conversation)],
-              ["Phone", cleanPhone(conversation.phone)],
-              ["Assigned to", conversation.assignedTo?.name || "Unassigned"],
-              ["Selling location", conversation.branchId ? "Ready" : "Location needed"],
-              ["WhatsApp", conversation.customer?.whatsappOptIn === false ? "Not opted in" : "Opted in"],
-            ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5">
-                <div className="text-xs font-bold text-[var(--color-text-muted)]">{label}</div>
-                <div className="max-w-[178px] text-right text-xs font-black leading-5 text-[var(--color-text)]">{value}</div>
-              </div>
-            ))}
+  return (
+    <aside className="svx-wa-side-panel">
+      <section className="svx-wa-side-card">
+        <div className="svx-wa-side-title">Customer details</div>
+        <div className="svx-wa-customer-card">
+          <span className="svx-wa-avatar is-large">{initials(customerName(conversation))}</span>
+          <div>
+            <strong>{customerName(conversation)}</strong>
+            <span>{cleanPhone(conversation.phone)}</span>
+            <small>Customer since {dateLabel(conversation.createdAt)}</small>
           </div>
+        </div>
 
-          <div className="mt-4">
-            <div className="mb-3 text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">Linked Draft Sale</div>
-            <DraftSummaryCard draft={draft} onFinalize={onFinalize} finalizing={finalizing} />
-          </div>
+        <div className="svx-wa-button-grid">
+          <button type="button">View profile</button>
+          <button type="button" onClick={onCreateDraft}>
+            New sale
+          </button>
+          <button type="button" onClick={onToggleStatus}>
+            {conversation.status === "OPEN" ? "Close" : "Reopen"}
+          </button>
+        </div>
+      </section>
 
-          <div className="mt-4">
-            <div className="mb-3 text-lg font-black tracking-[-0.02em] text-[var(--color-text)]">Quick Actions</div>
-            <div className="space-y-2">
-              <button type="button" onClick={onCreateDraft} className="h-11 w-full rounded-xl bg-[var(--color-primary)] text-sm font-black text-[var(--color-primary-contrast)] shadow-sm transition hover:brightness-110">
-                Create New Draft
-              </button>
-              {canManageTools ? (
-                <button type="button" onClick={onAssign} className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-sm font-black text-[var(--color-text)] transition hover:border-[var(--color-primary)]">
-                  Assign
-                </button>
-              ) : null}
-              <button type="button" onClick={onToggleStatus} className="h-11 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-sm font-black text-[var(--color-text)] transition hover:border-[var(--color-primary)]">
-                {conversation.status === "OPEN" ? "Close" : "Reopen"}
-              </button>
-            </div>
-          </div>
-        </>
-      ) : (
-        <p className="mt-4 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">Select a customer conversation to see details and quick actions.</p>
-      )}
+      <section className="svx-wa-side-card">
+        <div className="svx-wa-side-title">Quick actions</div>
+        <div className="svx-wa-action-list">
+          <button type="button" onClick={onCreateDraft}>
+            <strong>Create draft sale</strong>
+            <span>Create a sale from this chat</span>
+          </button>
+
+          {canManageTools ? (
+            <button type="button" onClick={onAssign}>
+              <strong>Assign conversation</strong>
+              <span>Give this customer to a staff member</span>
+            </button>
+          ) : null}
+
+          <button type="button" onClick={onToggleStatus}>
+            <strong>{conversation.status === "OPEN" ? "Close conversation" : "Reopen conversation"}</strong>
+            <span>Control whether this chat still needs work</span>
+          </button>
+        </div>
+      </section>
+
+      <DraftSummaryCard draft={draft} onFinalize={onFinalize} finalizing={finalizing} />
+
+      <section className="svx-wa-side-card">
+        <div className="svx-wa-side-title">Conversation info</div>
+        <div className="svx-wa-info-list">
+          <span>Status</span>
+          <strong>{statusLabel(conversation.status)}</strong>
+
+          <span>Assigned to</span>
+          <strong>{conversation.assignedTo?.name || "Unassigned"}</strong>
+
+          <span>Location</span>
+          <strong>{conversation.branchId ? "Ready" : "Location needed"}</strong>
+
+          <span>Last message</span>
+          <strong>{formatDay(conversation.updatedAt)}</strong>
+        </div>
+      </section>
     </aside>
   );
 }
@@ -585,13 +685,17 @@ function ChatPanel({
   sending,
   onSend,
   onCreateDraft,
-  onAssign,
-  onToggleStatus,
-  canManageTools,
   messagesEndRef,
 }) {
   if (!conversation) {
-    return <main className="flex min-w-0 flex-1 items-center justify-center bg-[var(--color-surface-2)]"><EmptyState title="Choose a conversation" body="Pick a customer on the left to view messages, reply, and create a sale draft." /></main>;
+    return (
+      <main className="svx-wa-chat-panel">
+        <EmptyState
+          title="Choose a conversation"
+          body="Pick a customer on the left to view messages, reply, and create a sale draft."
+        />
+      </main>
+    );
   }
 
   const hasCurrentMessages = messagesConversationId === conversation.id;
@@ -599,68 +703,66 @@ function ChatPanel({
   const openingDifferentConversation = messagesLoading && !hasCurrentMessages;
 
   return (
-    <main className="flex min-w-0 flex-1 flex-col bg-[var(--color-surface-2)]">
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-card)] px-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-primary)] text-sm font-black text-[var(--color-primary-contrast)] shadow-sm">
-            {initials(customerName(conversation))}
-          </div>
+    <main className="svx-wa-chat-panel">
+      <header className="svx-wa-chat-head">
+        <div className="svx-wa-chat-person">
+          <span className="svx-wa-avatar is-large">{initials(customerName(conversation))}</span>
           <div>
-            <div className="text-base font-black tracking-[-0.02em] text-[var(--color-text)]">{customerName(conversation)}</div>
-            <div className="text-xs font-semibold text-[var(--color-text-muted)]">
-              <span className="text-[var(--color-primary)]">●</span> {statusLabel(conversation.status)} · {cleanPhone(conversation.phone)}
-            </div>
+            <strong>{customerName(conversation)}</strong>
+            <span>
+              <i /> {statusLabel(conversation.status)} · {cleanPhone(conversation.phone)}
+            </span>
           </div>
         </div>
 
-        <div className="hidden items-center gap-2 lg:flex">
-          <Pill className={cx("border border-[var(--color-border)]", toneForStatus(conversation.status))}>
-            {statusLabel(conversation.status)}
-          </Pill>
+        <div className="svx-wa-chat-actions">
+          <Badge tone={toneForStatus(conversation.status)}>{statusLabel(conversation.status)}</Badge>
+          <button type="button" onClick={onCreateDraft}>
+            New sale
+          </button>
         </div>
-      </div>
+      </header>
 
-      <div
-        className="relative min-h-0 flex-1 overflow-y-auto p-4 [scrollbar-width:thin]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--color-text) 7%, transparent) 1px, transparent 0)",
-          backgroundSize: "28px 28px",
-        }}
-      >
+      <section className="svx-wa-message-area">
         {messagesLoading && hasCurrentMessages && visibleMessages.length > 0 ? (
-          <div className="absolute left-1/2 top-4 z-20 -translate-x-1/2 rounded-full border border-[var(--color-border)] bg-[var(--color-card)]/95 px-3 py-1.5 text-[11px] font-black text-[var(--color-text-muted)] shadow-sm backdrop-blur">
-            Loading conversation…
-          </div>
+          <div className="svx-wa-loading-chip">Loading conversation…</div>
         ) : null}
 
-        <div className="mb-6 text-center">
-          <Pill className="border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text-muted)] shadow-sm">{formatDay(visibleMessages[0]?.createdAt || conversation.createdAt)}</Pill>
+        <div className="svx-wa-date-pill">
+          <Badge tone="neutral">{formatDay(visibleMessages[0]?.createdAt || conversation.createdAt)}</Badge>
         </div>
 
         {(showMessagesSkeleton || openingDifferentConversation) && visibleMessages.length === 0 ? (
           <ChatSkeleton />
         ) : visibleMessages.length ? (
-          <div className="space-y-4">
-            {visibleMessages.map((message) => <MessageBubble key={message.id} message={message} />)}
+          <div className="svx-wa-message-stack">
+            {visibleMessages.map((message) => (
+              <MessageBubble key={message.id} message={message} />
+            ))}
             <div ref={messagesEndRef} />
           </div>
         ) : messagesLoading ? (
-          <div className="flex min-h-[320px] items-center justify-center"><div className="rounded-full border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm font-black text-[var(--color-text)] shadow-sm">Opening conversation…</div></div>
+          <EmptyState title="Opening conversation…" body="Messages are loading." />
         ) : (
-          <EmptyState title="No customer messages yet" body="This conversation is ready. New WhatsApp messages from this customer will appear here." />
+          <EmptyState
+            title="No customer messages yet"
+            body="This conversation is ready. New WhatsApp messages will appear here."
+          />
         )}
-      </div>
+      </section>
 
-      <form onSubmit={onSend} className="flex h-14 shrink-0 items-center gap-3 border-t border-[var(--color-border)] bg-[var(--color-card)] px-4">
+      <form onSubmit={onSend} className="svx-wa-reply-bar">
         <input
           value={replyText}
           onChange={(event) => setReplyText(event.target.value)}
-          placeholder={`Send a reply to ${customerName(conversation)}...`}
-          className="h-11 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-semibold text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-ring)]"
+          placeholder={`Type your reply to ${customerName(conversation)}...`}
         />
-        <button type="button" className="flex h-10 w-10 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text-muted)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]">📎</button>
-        <AsyncButton type="submit" loading={sending} loadingText="Sending...">Send</AsyncButton>
+        <button type="button" className="svx-wa-attach-button">
+          +
+        </button>
+        <AsyncButton type="submit" loading={sending} loadingText="Sending..." className="svx-wa-send-button">
+          Send
+        </AsyncButton>
       </form>
     </main>
   );
@@ -670,51 +772,68 @@ function DraftsWorkspace({ drafts, conversations, onOpenConversation, onFinalize
   const totalValue = drafts.reduce((sum, draft) => sum + Number(draft.total || 0), 0);
 
   return (
-    <div className="h-full overflow-y-auto bg-[var(--color-surface-2)] p-4 [scrollbar-width:thin]">
-      <div className="mb-4 flex items-end justify-between">
-        <div>
-          <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-primary)]">WhatsApp orders</div>
-          <h2 className="mt-2 text-2xl font-black text-[var(--color-text)]">Draft sales waiting for action</h2>
-          <p className="mt-2 text-sm font-semibold text-[var(--color-text-muted)]">Customer orders prepared from WhatsApp conversations.</p>
-        </div>
-        <Pill className="bg-[var(--color-card)] text-[var(--color-text-muted)] shadow-sm">{money(totalValue)}</Pill>
+    <section className="svx-wa-page-panel">
+      <div className="svx-wa-section-title">
+        <p>WhatsApp orders</p>
+        <h2>Draft sales waiting for action</h2>
+        <span>{money(totalValue)} prepared from customer chats.</span>
       </div>
 
       {drafts.length ? (
-        <div className="grid gap-3 xl:grid-cols-2">
+        <div className="svx-wa-draft-grid">
           {drafts.map((draft) => {
-            const conversation = conversations.find((item) => item.id === draft.conversationId) || null;
+            const conversation =
+              conversations.find((item) => item.id === draft.conversationId) || null;
+
             return (
-              <article key={draft.id} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4 shadow-sm">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <Pill className={toneForStatus(draft.status || "DRAFT")}>{statusLabel(draft.status || "DRAFT")}</Pill>
-                    <h3 className="mt-4 text-lg font-black text-[var(--color-text)]">{draft.customer?.name || draft.conversation?.phone || "WhatsApp customer"}</h3>
-                    <p className="mt-1 text-sm font-semibold text-[var(--color-text-muted)]">{cleanPhone(draft.customer?.phone || draft.conversation?.phone)}</p>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-black text-[var(--color-text)]">{money(draft.total)}</div>
-                    <div className="text-xs font-bold text-[var(--color-text-muted)]">{draft.items?.length || 0} items</div>
-                  </div>
+              <article key={draft.id} className="svx-wa-order-card">
+                <div>
+                  <Badge tone={toneForStatus(draft.status || "DRAFT")}>
+                    {statusLabel(draft.status || "DRAFT")}
+                  </Badge>
+                  <h3>{draft.customer?.name || draft.conversation?.phone || "WhatsApp customer"}</h3>
+                  <p>{cleanPhone(draft.customer?.phone || draft.conversation?.phone)}</p>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <AsyncButton onClick={() => onFinalize(draft)} loading={finalizingDraftId === draft.id} loadingText="Finalizing...">Finalize sale</AsyncButton>
-                  {conversation ? <button type="button" onClick={() => onOpenConversation(conversation)} className="h-11 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-4 text-sm font-black text-[var(--color-text)]">Open conversation</button> : null}
+
+                <strong>{money(draft.total)}</strong>
+                <span>{draft.items?.length || 0} item{draft.items?.length === 1 ? "" : "s"}</span>
+
+                <div className="svx-wa-card-actions">
+                  <AsyncButton
+                    onClick={() => onFinalize(draft)}
+                    loading={finalizingDraftId === draft.id}
+                    loadingText="Finalizing..."
+                  >
+                    Finalize sale
+                  </AsyncButton>
+
+                  {conversation ? (
+                    <button type="button" onClick={() => onOpenConversation(conversation)}>
+                      Open conversation
+                    </button>
+                  ) : null}
                 </div>
               </article>
             );
           })}
         </div>
-      ) : <EmptyState title="No WhatsApp draft sales" body="When a customer asks to buy through WhatsApp, staff can create a draft sale and finalize it from here." />}
-    </div>
+      ) : (
+        <EmptyState
+          title="No WhatsApp draft sales"
+          body="When a customer asks to buy through WhatsApp, staff can create a draft sale here."
+        />
+      )}
+    </section>
   );
 }
 
 function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   const [promotionTitle, setPromotionTitle] = useState("");
   const [promotionMessage, setPromotionMessage] = useState("");
+  const [promotionCategory, setPromotionCategory] = useState("ELECTRONICS");
   const [promotionId, setPromotionId] = useState("");
   const [targetMode, setTargetMode] = useState("ALL_OPTED_IN");
+  const [targetCategory, setTargetCategory] = useState("ELECTRONICS");
   const [savingPromotion, setSavingPromotion] = useState(false);
   const [savingBroadcast, setSavingBroadcast] = useState(false);
   const [promotionLimit, setPromotionLimit] = useState(PROMOTION_LIST_LIMIT);
@@ -723,14 +842,24 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
 
   async function savePromotion(event) {
     event.preventDefault();
+
     if (!promotionTitle.trim()) return toast.error("Promotion title is required");
     if (!promotionMessage.trim()) return toast.error("Customer message is required");
+
     setSavingPromotion(true);
+
     try {
-      await createWhatsAppPromotion({ title: promotionTitle.trim(), message: promotionMessage.trim(), productId: null });
+      await createWhatsAppPromotion({
+        title: promotionTitle.trim(),
+        message: promotionMessage.trim(),
+        productId: null,
+        category: promotionCategory,
+      });
+
       toast.success("Promotion created");
       setPromotionTitle("");
       setPromotionMessage("");
+      setPromotionCategory("ELECTRONICS");
       await onRefresh?.();
     } catch (err) {
       toast.error(safeError(err, "Promotion could not be saved"));
@@ -741,9 +870,13 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
 
   async function saveBroadcast(event) {
     event.preventDefault();
+
     if (!promotionId) return toast.error("Choose a promotion first");
+
     const selectedPromotion = promotions.find((item) => item.id === promotionId);
+
     setSavingBroadcast(true);
+
     try {
       await createWhatsAppBroadcast({
         accountId: accounts[0]?.id || undefined,
@@ -753,13 +886,17 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
         targeting: {
           mode: targetMode,
           branchId: null,
-          productId: targetMode === "PRODUCT_BUYERS" ? selectedPromotion?.productId || null : null,
+          category: targetMode === "CATEGORY_CUSTOMERS" ? targetCategory : null,
+          productId:
+            targetMode === "PRODUCT_BUYERS" ? selectedPromotion?.productId || null : null,
           customerIds: [],
         },
       });
+
       toast.success("Broadcast draft created");
       setPromotionId("");
       setTargetMode("ALL_OPTED_IN");
+      setTargetCategory("ELECTRONICS");
       await onRefresh?.();
     } catch (err) {
       toast.error(safeError(err, "Broadcast could not be created"));
@@ -770,8 +907,13 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
 
   async function sendBroadcast(id) {
     setBusyBroadcastId(id);
+
     try {
-      const result = await sendWhatsAppBroadcastNow(id, { limit: 50, targeting: { mode: "ALL_OPTED_IN" } });
+      const result = await sendWhatsAppBroadcastNow(id, {
+        limit: 50,
+        targeting: { mode: "ALL_OPTED_IN" },
+      });
+
       toast.success(result.summary?.delivered ? "Broadcast sent" : "Broadcast checked");
       await onRefresh?.();
     } catch (err) {
@@ -783,6 +925,7 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
 
   async function queueBroadcast(id) {
     setBusyBroadcastId(id);
+
     try {
       await queueWhatsAppBroadcast(id);
       toast.success("Broadcast queued");
@@ -795,78 +938,200 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-[var(--color-surface-2)] p-4 [scrollbar-width:thin]">
-      <div className="mb-4">
-        <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-primary)]">Customer growth</div>
-        <h2 className="mt-2 text-2xl font-black text-[var(--color-text)]">Promotions and broadcasts</h2>
-        <p className="mt-2 text-sm font-semibold text-[var(--color-text-muted)]">Create customer offers, choose the audience, and send through the store WhatsApp number.</p>
+    <section className="svx-wa-page-panel">
+      <div className="svx-wa-section-title">
+        <p>Customer growth</p>
+        <h2>Promotions and broadcasts</h2>
+        <span>Create customer offers, choose an audience, and send from the store number.</span>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-[380px_minmax(0,1fr)]">
-        <div className="space-y-4">
-          <form onSubmit={savePromotion} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4 shadow-sm">
-            <h3 className="text-lg font-black text-[var(--color-text)]">Create promotion</h3>
-            <input value={promotionTitle} onChange={(event) => setPromotionTitle(event.target.value)} placeholder="Weekend laptop offer" className="mt-4 h-11 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-semibold outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-ring)]" />
-            <textarea value={promotionMessage} onChange={(event) => setPromotionMessage(event.target.value)} placeholder="Write the customer message..." rows={4} className="mt-3 w-full resize-none rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-sm font-semibold outline-none focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-ring)]" />
-            <AsyncButton type="submit" loading={savingPromotion} loadingText="Saving..." className="mt-3 w-full">Create promotion</AsyncButton>
-          </form>
+      <div className="svx-wa-campaign-grid">
+        <form onSubmit={savePromotion} className="svx-wa-form-card">
+          <h3>Create promotion</h3>
 
-          <form onSubmit={saveBroadcast} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4 shadow-sm">
-            <h3 className="text-lg font-black text-[var(--color-text)]">Create broadcast</h3>
-            <select value={promotionId} onChange={(event) => setPromotionId(event.target.value)} className="mt-4 h-11 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-black text-[var(--color-text)] outline-none">
-              <option value="">Choose promotion</option>
-              {promotions.map((promotion) => <option key={promotion.id} value={promotion.id}>{promotion.title}</option>)}
+          <label>
+            <span>Promotion title</span>
+            <input
+              value={promotionTitle}
+              onChange={(event) => setPromotionTitle(event.target.value)}
+              placeholder="Weekend laptop offer"
+            />
+          </label>
+
+          <label>
+            <span>Business category</span>
+            <select
+              value={promotionCategory}
+              onChange={(event) => setPromotionCategory(event.target.value)}
+            >
+              {BUSINESS_CATEGORIES.map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </select>
-            <div className="mt-3 grid gap-2">
-              {AUDIENCE_OPTIONS.map((option) => (
-                <button key={option.value} type="button" onClick={() => setTargetMode(option.value)} className={cx("rounded-lg border p-3 text-left", targetMode === option.value ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]" : "border-[var(--color-border)] bg-[var(--color-surface-2)]")}> 
-                  <div className="text-sm font-black text-[var(--color-text)]">{option.label}</div>
-                  <div className="mt-1 text-xs font-semibold text-[var(--color-text-muted)]">{option.helper}</div>
-                </button>
-              ))}
-            </div>
-            <AsyncButton type="submit" loading={savingBroadcast} loadingText="Creating..." className="mt-3 w-full">Create broadcast</AsyncButton>
-          </form>
-        </div>
+          </label>
 
-        <div className="space-y-4">
-          <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4 shadow-sm">
-            <div className="flex items-center justify-between"><h3 className="text-lg font-black text-[var(--color-text)]">Promotions</h3><Pill className="bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">{promotions.length}</Pill></div>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {promotions.slice(0, promotionLimit).map((promotion) => (
-                <article key={promotion.id} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-                  <div className="flex justify-between gap-3"><div className="font-black text-[var(--color-text)]">{promotion.title}</div><Pill className={toneForStatus(promotion.sentAt ? "SENT" : "DRAFT")}>{promotion.sentAt ? "Sent" : "Draft"}</Pill></div>
-                  <p className="mt-2 line-clamp-3 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">{promotion.message || "No message"}</p>
-                  <div className="mt-3 text-xs font-black text-[var(--color-text-muted)]">Used in {Number(promotion.usage?.broadcastCount || 0).toLocaleString()} broadcast(s)</div>
-                </article>
-              ))}
-            </div>
-            {promotions.length > promotionLimit ? <button type="button" onClick={() => setPromotionLimit((v) => v + PROMOTION_LIST_LIMIT)} className="mt-4 h-11 rounded-lg border border-[var(--color-border)] px-4 text-sm font-black text-[var(--color-text)]">Load more promotions</button> : null}
-          </section>
+          <label>
+            <span>Customer message</span>
+            <textarea
+              value={promotionMessage}
+              onChange={(event) => setPromotionMessage(event.target.value)}
+              placeholder="Write the customer message..."
+              rows={5}
+            />
+          </label>
 
-          <section className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4 shadow-sm">
-            <div className="flex items-center justify-between"><h3 className="text-lg font-black text-[var(--color-text)]">Broadcasts</h3><Pill className="bg-[var(--color-surface-2)] text-[var(--color-text-muted)]">{broadcasts.length}</Pill></div>
-            <div className="mt-4 space-y-3">
-              {broadcasts.slice(0, broadcastLimit).map((broadcast) => (
-                <article key={broadcast.id} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div><Pill className={toneForStatus(broadcast.status)}>{statusLabel(broadcast.status)}</Pill><div className="mt-3 font-black text-[var(--color-text)]">{broadcast.promotion?.title || "Customer broadcast"}</div><p className="mt-1 line-clamp-2 text-xs font-semibold text-[var(--color-text-muted)]">{broadcast.promotion?.message || "No promotion message attached"}</p></div>
-                    <div className="grid grid-cols-2 gap-2 text-center"><div className="rounded-lg bg-[var(--color-card)] px-4 py-3"><div className="text-[10px] font-black text-[var(--color-text-muted)]">CUSTOMERS</div><div className="font-black">{Number(broadcast.recipientCount || 0)}</div></div><div className="rounded-lg bg-[var(--color-card)] px-4 py-3"><div className="text-[10px] font-black text-[var(--color-text-muted)]">SENT</div><div className="font-black">{Number(broadcast.deliveredCount || 0)}</div></div></div>
-                  </div>
-                  <div className="mt-3 flex gap-2"><AsyncButton onClick={() => queueBroadcast(broadcast.id)} loading={busyBroadcastId === broadcast.id} loadingText="Working..." variant="secondary">Queue</AsyncButton><AsyncButton onClick={() => sendBroadcast(broadcast.id)} loading={busyBroadcastId === broadcast.id} loadingText="Sending...">Send now</AsyncButton></div>
-                </article>
+          <AsyncButton type="submit" loading={savingPromotion} loadingText="Saving...">
+            Create promotion
+          </AsyncButton>
+        </form>
+
+        <form onSubmit={saveBroadcast} className="svx-wa-form-card">
+          <h3>Create broadcast</h3>
+
+          <label>
+            <span>Promotion</span>
+            <select value={promotionId} onChange={(event) => setPromotionId(event.target.value)}>
+              <option value="">Choose promotion</option>
+              {promotions.map((promotion) => (
+                <option key={promotion.id} value={promotion.id}>
+                  {promotion.title}
+                </option>
               ))}
-            </div>
-            {broadcasts.length > broadcastLimit ? <button type="button" onClick={() => setBroadcastLimit((v) => v + BROADCAST_LIST_LIMIT)} className="mt-4 h-11 rounded-lg border border-[var(--color-border)] px-4 text-sm font-black text-[var(--color-text)]">Load more broadcasts</button> : null}
-          </section>
-        </div>
+            </select>
+          </label>
+
+          <div className="svx-wa-audience-list">
+            {AUDIENCE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setTargetMode(option.value)}
+                className={cx(targetMode === option.value && "is-active")}
+              >
+                <strong>{option.label}</strong>
+                <span>{option.helper}</span>
+              </button>
+            ))}
+          </div>
+
+          {targetMode === "CATEGORY_CUSTOMERS" ? (
+            <label>
+              <span>Target category</span>
+              <select
+                value={targetCategory}
+                onChange={(event) => setTargetCategory(event.target.value)}
+              >
+                {BUSINESS_CATEGORIES.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          <AsyncButton type="submit" loading={savingBroadcast} loadingText="Creating...">
+            Create broadcast
+          </AsyncButton>
+        </form>
+
+        <section className="svx-wa-campaign-list">
+          <div className="svx-wa-list-head">
+            <h3>Promotions</h3>
+            <Badge tone="neutral">{promotions.length}</Badge>
+          </div>
+
+          {promotions.slice(0, promotionLimit).map((promotion) => (
+            <article key={promotion.id} className="svx-wa-campaign-card">
+              <div>
+                <strong>{promotion.title}</strong>
+                <p>{promotion.message || "No message"}</p>
+                <span>Used in {Number(promotion.usage?.broadcastCount || 0)} broadcast(s)</span>
+              </div>
+              <Badge tone={promotion.sentAt ? "success" : "warning"}>
+                {promotion.sentAt ? "Sent" : "Draft"}
+              </Badge>
+            </article>
+          ))}
+
+          {promotions.length > promotionLimit ? (
+            <button
+              type="button"
+              className="svx-wa-secondary-action"
+              onClick={() => setPromotionLimit((value) => value + PROMOTION_LIST_LIMIT)}
+            >
+              Load more promotions
+            </button>
+          ) : null}
+        </section>
+
+        <section className="svx-wa-campaign-list">
+          <div className="svx-wa-list-head">
+            <h3>Broadcasts</h3>
+            <Badge tone="neutral">{broadcasts.length}</Badge>
+          </div>
+
+          {broadcasts.slice(0, broadcastLimit).map((broadcast) => (
+            <article key={broadcast.id} className="svx-wa-broadcast-card">
+              <div>
+                <Badge tone={toneForStatus(broadcast.status)}>
+                  {statusLabel(broadcast.status)}
+                </Badge>
+                <strong>{broadcast.promotion?.title || "Customer broadcast"}</strong>
+                <p>{broadcast.promotion?.message || "No promotion message attached"}</p>
+              </div>
+
+              <div className="svx-wa-broadcast-stats">
+                <span>
+                  <small>Customers</small>
+                  <strong>{Number(broadcast.recipientCount || 0)}</strong>
+                </span>
+                <span>
+                  <small>Sent</small>
+                  <strong>{Number(broadcast.deliveredCount || 0)}</strong>
+                </span>
+              </div>
+
+              <div className="svx-wa-card-actions">
+                <AsyncButton
+                  onClick={() => queueBroadcast(broadcast.id)}
+                  loading={busyBroadcastId === broadcast.id}
+                  loadingText="Working..."
+                  variant="secondary"
+                >
+                  Queue
+                </AsyncButton>
+                <AsyncButton
+                  onClick={() => sendBroadcast(broadcast.id)}
+                  loading={busyBroadcastId === broadcast.id}
+                  loadingText="Sending..."
+                >
+                  Send now
+                </AsyncButton>
+              </div>
+            </article>
+          ))}
+
+          {broadcasts.length > broadcastLimit ? (
+            <button
+              type="button"
+              className="svx-wa-secondary-action"
+              onClick={() => setBroadcastLimit((value) => value + BROADCAST_LIST_LIMIT)}
+            >
+              Load more broadcasts
+            </button>
+          ) : null}
+        </section>
       </div>
-    </div>
+    </section>
   );
 }
 
 function SetupWorkspace({ accounts, onRefresh }) {
   const account = accounts[0] || null;
+
   const [businessName, setBusinessName] = useState(account?.businessName || "");
   const [phoneNumber, setPhoneNumber] = useState(account?.phoneNumber || "");
   const [phoneNumberId, setPhoneNumberId] = useState(account?.phoneNumberId || "");
@@ -885,12 +1150,23 @@ function SetupWorkspace({ accounts, onRefresh }) {
 
   async function save(event) {
     event.preventDefault();
+
     if (!phoneNumber.trim()) return toast.error("Store WhatsApp number is required");
+
     setSaving(true);
+
     try {
-      const payload = { businessName: businessName.trim(), phoneNumber: phoneNumber.trim(), phoneNumberId: phoneNumberId.trim() || null, wabaId: wabaId.trim() || null, ...(accessToken.trim() ? { accessToken: accessToken.trim() } : {}) };
+      const payload = {
+        businessName: businessName.trim(),
+        phoneNumber: phoneNumber.trim(),
+        phoneNumberId: phoneNumberId.trim() || null,
+        wabaId: wabaId.trim() || null,
+        ...(accessToken.trim() ? { accessToken: accessToken.trim() } : {}),
+      };
+
       if (account?.id) await updateWhatsAppAccount(account.id, payload);
       else await createWhatsAppAccount(payload);
+
       toast.success("WhatsApp connection saved");
       await onRefresh?.();
     } catch (err) {
@@ -902,7 +1178,9 @@ function SetupWorkspace({ accounts, onRefresh }) {
 
   async function toggleActive() {
     if (!account?.id) return;
+
     setToggling(true);
+
     try {
       await setWhatsAppAccountActive(account.id, !account.isActive);
       toast.success(account.isActive ? "WhatsApp paused" : "WhatsApp activated");
@@ -915,14 +1193,153 @@ function SetupWorkspace({ accounts, onRefresh }) {
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-[var(--color-surface-2)] p-4 [scrollbar-width:thin]">
-      <div className="mb-4"><div className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-primary)]">Connection</div><h2 className="mt-2 text-2xl font-black text-[var(--color-text)]">WhatsApp connection</h2><p className="mt-2 text-sm font-semibold text-[var(--color-text-muted)]">Connect one store WhatsApp number. Customers message one number; Storvex keeps sales, stock, drawer, and records controlled.</p></div>
-      <form onSubmit={save} className="max-w-3xl rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4 shadow-sm">
-        <div className="mb-4 flex items-center justify-between"><div><Pill className={account?.isActive ? "bg-[var(--color-primary-soft)] text-[var(--color-primary)]" : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]"}>{account?.isActive ? "Active" : "Paused"}</Pill><h3 className="mt-3 text-xl font-black text-[var(--color-text)]">Store WhatsApp number</h3></div>{account?.id ? <AsyncButton type="button" onClick={toggleActive} loading={toggling} loadingText="Updating..." variant="secondary">{account.isActive ? "Pause" : "Activate"}</AsyncButton> : null}</div>
-        <div className="grid gap-3 md:grid-cols-2"><input value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Business name shown to customers" className="h-11 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-semibold outline-none" /><input value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="2507XXXXXXXX" className="h-11 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-semibold outline-none" /><input value={phoneNumberId} onChange={(e) => setPhoneNumberId(e.target.value)} placeholder="Meta phone connection" className="h-11 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-semibold outline-none" /><input value={wabaId} onChange={(e) => setWabaId(e.target.value)} placeholder="Meta business connection" className="h-11 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-semibold outline-none" /><input value={accessToken} onChange={(e) => setAccessToken(e.target.value)} placeholder={account?.hasAccessToken ? "Already saved. Enter only if replacing." : "Message sending permission"} className="md:col-span-2 h-11 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-semibold outline-none" /></div>
-        <AsyncButton type="submit" loading={saving} loadingText="Saving..." className="mt-4">Save connection</AsyncButton>
+    <section className="svx-wa-page-panel">
+      <div className="svx-wa-section-title">
+        <p>Connection</p>
+        <h2>WhatsApp store number</h2>
+        <span>
+          Connect one store WhatsApp number. Customers message one number while Storvex keeps
+          sales, stock, drawer and records controlled.
+        </span>
+      </div>
+
+      <form onSubmit={save} className="svx-wa-setup-form">
+        <div className="svx-wa-setup-head">
+          <div>
+            <Badge tone={account?.isActive ? "success" : "neutral"}>
+              {account?.isActive ? "Active" : "Paused"}
+            </Badge>
+            <h3>Store WhatsApp number</h3>
+          </div>
+
+          {account?.id ? (
+            <AsyncButton
+              type="button"
+              onClick={toggleActive}
+              loading={toggling}
+              loadingText="Updating..."
+              variant="secondary"
+            >
+              {account.isActive ? "Pause" : "Activate"}
+            </AsyncButton>
+          ) : null}
+        </div>
+
+        <div className="svx-wa-form-grid">
+          <label>
+            <span>Business name</span>
+            <input
+              value={businessName}
+              onChange={(event) => setBusinessName(event.target.value)}
+              placeholder="Business name shown to customers"
+            />
+          </label>
+
+          <label>
+            <span>Phone number</span>
+            <input
+              value={phoneNumber}
+              onChange={(event) => setPhoneNumber(event.target.value)}
+              placeholder="2507XXXXXXXX"
+            />
+          </label>
+
+          <label>
+            <span>Phone number ID</span>
+            <input
+              value={phoneNumberId}
+              onChange={(event) => setPhoneNumberId(event.target.value)}
+              placeholder="Meta phone number ID"
+            />
+          </label>
+
+          <label>
+            <span>WABA ID</span>
+            <input
+              value={wabaId}
+              onChange={(event) => setWabaId(event.target.value)}
+              placeholder="WhatsApp business account ID"
+            />
+          </label>
+
+          <label className="is-wide">
+            <span>Access token</span>
+            <input
+              value={accessToken}
+              onChange={(event) => setAccessToken(event.target.value)}
+              placeholder={
+                account?.hasAccessToken
+                  ? "Already saved. Enter only if replacing."
+                  : "WhatsApp access token"
+              }
+            />
+          </label>
+        </div>
+
+        <AsyncButton type="submit" loading={saving} loadingText="Saving...">
+          Save connection
+        </AsyncButton>
       </form>
-    </div>
+    </section>
+  );
+}
+
+function ActivityWorkspace({ conversations, drafts, broadcasts }) {
+  const rows = [
+    ...conversations.slice(0, 6).map((item) => ({
+      id: `conversation-${item.id}`,
+      title: customerName(item),
+      text: latestPreview(item),
+      status: statusLabel(item.status),
+      time: item.updatedAt || item.createdAt,
+    })),
+    ...drafts.slice(0, 4).map((item) => ({
+      id: `draft-${item.id}`,
+      title: "Draft sale",
+      text: `${money(item.total)} · ${item.items?.length || 0} item(s)`,
+      status: "Draft",
+      time: item.updatedAt || item.createdAt,
+    })),
+    ...broadcasts.slice(0, 4).map((item) => ({
+      id: `broadcast-${item.id}`,
+      title: item.promotion?.title || "Broadcast",
+      text: `${Number(item.recipientCount || 0)} customer(s) targeted`,
+      status: statusLabel(item.status),
+      time: item.updatedAt || item.createdAt,
+    })),
+  ]
+    .sort((a, b) => new Date(b.time || 0).getTime() - new Date(a.time || 0).getTime())
+    .slice(0, 12);
+
+  return (
+    <section className="svx-wa-page-panel">
+      <div className="svx-wa-section-title">
+        <p>Activity</p>
+        <h2>WhatsApp workspace history</h2>
+        <span>Recent customer messages, draft sales and campaign updates.</span>
+      </div>
+
+      {rows.length ? (
+        <div className="svx-wa-activity-list">
+          {rows.map((row) => (
+            <article key={row.id} className="svx-wa-activity-row">
+              <span className="svx-wa-activity-dot" />
+              <div>
+                <strong>{row.title}</strong>
+                <p>{row.text}</p>
+              </div>
+              <Badge tone={toneForStatus(row.status)}>{row.status}</Badge>
+              <small>{formatDay(row.time)}</small>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          title="No WhatsApp activity yet"
+          body="Activity will appear after customer conversations, draft sales, and broadcasts."
+        />
+      )}
+    </section>
   );
 }
 
@@ -951,9 +1368,12 @@ function CreateDraftModal({ open, conversation, onClose, onCreated }) {
 
   async function runSearch(event) {
     event?.preventDefault?.();
+
     const clean = query.trim();
     if (!clean) return toast.error("Search product first");
+
     setSearching(true);
+
     try {
       const data = await searchProducts({ q: clean, limit: 12 });
       setProducts(normalizeProductList(data));
@@ -967,31 +1387,59 @@ function CreateDraftModal({ open, conversation, onClose, onCreated }) {
   function addProduct(product) {
     setItems((current) => {
       const existing = current.find((item) => item.productId === product.id);
-      if (existing) return current.map((item) => item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item);
-      return [...current, { productId: product.id, name: product.name, quantity: 1, unitPrice: product.sellPrice, stockQty: product.stockQty }];
+
+      if (existing) {
+        return current.map((item) =>
+          item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+
+      return [
+        ...current,
+        {
+          productId: product.id,
+          name: product.name,
+          quantity: 1,
+          unitPrice: product.sellPrice,
+          stockQty: product.stockQty,
+        },
+      ];
     });
   }
 
   function updateQty(productId, nextQty) {
-    const qty = Math.max(1, Number(nextQty || 1));
-    setItems((current) => current.map((item) => item.productId === productId ? { ...item, quantity: qty } : item));
+    const quantity = Math.max(1, Number(nextQty || 1));
+
+    setItems((current) =>
+      current.map((item) => (item.productId === productId ? { ...item, quantity } : item))
+    );
   }
 
   async function submit() {
     if (!conversation?.id) return;
     if (!items.length) return toast.error("Add at least one product");
+
     setSaving(true);
+
     try {
       const payload = {
         branchId: conversation.branchId || undefined,
         customerId: conversation.customerId || undefined,
-        customer: conversation.customer ? undefined : { name: conversation.phone, phone: conversation.phone },
+        customer: conversation.customer
+          ? undefined
+          : { name: conversation.phone, phone: conversation.phone },
         saleType,
         dueDate: saleType === "CREDIT" && dueDate ? dueDate : null,
         amountPaid: Number(amountPaid || 0),
-        items: items.map((item) => ({ productId: item.productId, quantity: item.quantity, unitPrice: item.unitPrice })),
+        items: items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
       };
+
       const result = await createWhatsAppSaleDraft(conversation.id, payload);
+
       toast.success("WhatsApp draft sale created");
       onCreated?.(result.draft);
       onClose?.();
@@ -1002,15 +1450,129 @@ function CreateDraftModal({ open, conversation, onClose, onCreated }) {
     }
   }
 
-  const total = items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unitPrice || 0), 0);
+  const total = items.reduce(
+    (sum, item) => sum + Number(item.quantity || 0) * Number(item.unitPrice || 0),
+    0
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 backdrop-blur-sm sm:items-center">
-      <div className="max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-lg bg-[var(--color-card)] shadow-2xl">
-        <div className="flex items-start justify-between border-b border-[var(--color-border)] p-4"><div><div className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-primary)]">WhatsApp sale draft</div><h2 className="mt-2 text-2xl font-black text-[var(--color-text)]">Prepare customer order</h2></div><button type="button" onClick={onClose} className="rounded-lg bg-[var(--color-surface-2)] px-4 py-2 text-sm font-black">Close</button></div>
-        <div className="grid max-h-[calc(92vh-110px)] gap-3 overflow-y-auto p-4 lg:grid-cols-[1fr_340px]">
-          <div className="space-y-4"><form onSubmit={runSearch} className="flex gap-2"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search product, SKU, model, barcode..." className="h-11 flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-semibold outline-none" /><AsyncButton type="submit" loading={searching} loadingText="Searching...">Search</AsyncButton></form><div className="grid gap-3 sm:grid-cols-2">{products.map((product) => <button key={product.id} type="button" onClick={() => addProduct(product)} className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4 text-left hover:bg-[var(--color-surface-2)]"><div className="text-sm font-black">{product.name}</div><div className="mt-1 text-xs font-semibold text-[var(--color-text-muted)]">Stock {product.stockQty}</div><div className="mt-3 text-lg font-black text-[var(--color-primary)]">{money(product.sellPrice)}</div></button>)}</div></div>
-          <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4"><div className="text-sm font-black">Draft summary</div><div className="mt-4 space-y-3">{items.length ? items.map((item) => <div key={item.productId} className="rounded-lg bg-[var(--color-card)] p-3"><div className="flex items-start justify-between gap-3"><div className="font-black text-sm">{item.name}</div><button type="button" onClick={() => setItems((v) => v.filter((x) => x.productId !== item.productId))} className="text-xs font-black text-red-500">Remove</button></div><div className="mt-3 flex items-center gap-2"><span className="text-xs font-bold text-[var(--color-text-muted)]">Qty</span><input type="number" min="1" value={item.quantity} onChange={(e) => updateQty(item.productId, e.target.value)} className="h-10 w-24 rounded-lg border border-[var(--color-border)] px-3 text-sm font-black" /></div></div>) : <div className="rounded-lg border border-dashed border-[var(--color-border)] p-4 text-sm font-semibold text-[var(--color-text-muted)]">No product added yet.</div>}</div><div className="mt-4 grid grid-cols-2 gap-2">{["CREDIT", "CASH"].map((type) => <button key={type} type="button" onClick={() => setSaleType(type)} className={cx("h-11 rounded-lg text-sm font-black", saleType === type ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)]" : "bg-[var(--color-card)] text-[var(--color-text)]")}>{statusLabel(type)}</button>)}</div>{saleType === "CREDIT" ? <div className="mt-4 space-y-3"><input type="number" value={amountPaid} onChange={(e) => setAmountPaid(e.target.value)} placeholder="Deposit paid now" className="h-11 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-4 text-sm font-semibold" /><input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="h-11 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-4 text-sm font-semibold" /></div> : null}<div className="mt-4 rounded-lg bg-[var(--color-card)] p-4"><div className="text-xs font-black uppercase text-[var(--color-text-muted)]">Total</div><div className="mt-2 text-2xl font-black">{money(total)}</div></div><AsyncButton onClick={submit} loading={saving} loadingText="Creating..." className="mt-4 w-full">Create draft sale</AsyncButton></div>
+    <div className="svx-wa-modal-backdrop">
+      <div className="svx-wa-modal is-wide">
+        <header className="svx-wa-modal-head">
+          <div>
+            <p>WhatsApp sale draft</p>
+            <h2>Prepare customer order</h2>
+          </div>
+          <button type="button" onClick={onClose}>
+            Close
+          </button>
+        </header>
+
+        <div className="svx-wa-modal-grid">
+          <section>
+            <form onSubmit={runSearch} className="svx-wa-search-form">
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search product, SKU, model, barcode..."
+              />
+              <AsyncButton type="submit" loading={searching} loadingText="Searching...">
+                Search
+              </AsyncButton>
+            </form>
+
+            <div className="svx-wa-product-grid">
+              {products.map((product) => (
+                <button key={product.id} type="button" onClick={() => addProduct(product)}>
+                  <strong>{product.name}</strong>
+                  <span>Stock {product.stockQty}</span>
+                  <small>{money(product.sellPrice)}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <aside className="svx-wa-draft-builder">
+            <h3>Draft summary</h3>
+
+            <div className="svx-wa-draft-items">
+              {items.length ? (
+                items.map((item) => (
+                  <article key={item.productId}>
+                    <div>
+                      <strong>{item.name}</strong>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setItems((current) =>
+                            current.filter((entry) => entry.productId !== item.productId)
+                          )
+                        }
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <label>
+                      Qty
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(event) => updateQty(item.productId, event.target.value)}
+                      />
+                    </label>
+                  </article>
+                ))
+              ) : (
+                <p>No product added yet.</p>
+              )}
+            </div>
+
+            <div className="svx-wa-sale-type-grid">
+              {["CREDIT", "CASH"].map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setSaleType(type)}
+                  className={cx(saleType === type && "is-active")}
+                >
+                  {statusLabel(type)}
+                </button>
+              ))}
+            </div>
+
+            {saleType === "CREDIT" ? (
+              <div className="svx-wa-form-grid is-one">
+                <label>
+                  <span>Deposit paid now</span>
+                  <input
+                    type="number"
+                    value={amountPaid}
+                    onChange={(event) => setAmountPaid(event.target.value)}
+                    placeholder="Deposit paid now"
+                  />
+                </label>
+
+                <label>
+                  <span>Due date</span>
+                  <input
+                    type="date"
+                    value={dueDate}
+                    onChange={(event) => setDueDate(event.target.value)}
+                  />
+                </label>
+              </div>
+            ) : null}
+
+            <div className="svx-wa-total-box">
+              <span>Total</span>
+              <strong>{money(total)}</strong>
+            </div>
+
+            <AsyncButton onClick={submit} loading={saving} loadingText="Creating...">
+              Create draft sale
+            </AsyncButton>
+          </aside>
         </div>
       </div>
     </div>
@@ -1019,11 +1581,14 @@ function CreateDraftModal({ open, conversation, onClose, onCreated }) {
 
 function AssignModal({ open, staff, conversation, onClose, onAssigned }) {
   const [savingId, setSavingId] = useState("");
+
   if (!open) return null;
 
   async function assign(staffId) {
     if (!conversation?.id) return;
+
     setSavingId(staffId);
+
     try {
       const result = await assignWhatsAppConversationOwner(conversation.id, { assignedToId: staffId });
       toast.success("Conversation assigned");
@@ -1038,7 +1603,9 @@ function AssignModal({ open, staff, conversation, onClose, onAssigned }) {
 
   async function clear() {
     if (!conversation?.id) return;
+
     setSavingId("clear");
+
     try {
       const result = await clearWhatsAppConversationOwner(conversation.id);
       toast.success("Assignment cleared");
@@ -1052,11 +1619,50 @@ function AssignModal({ open, staff, conversation, onClose, onAssigned }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-lg rounded-lg bg-[var(--color-card)] p-4 shadow-2xl">
-        <div className="flex items-start justify-between gap-3"><div><div className="text-[11px] font-black uppercase tracking-[0.2em] text-[var(--color-primary)]">Assign conversation</div><h2 className="mt-2 text-2xl font-black text-[var(--color-text)]">Choose responsible staff</h2></div><button type="button" onClick={onClose} className="rounded-lg bg-[var(--color-surface-2)] px-4 py-2 text-sm font-black">Close</button></div>
-        <div className="mt-4 space-y-2">{staff.length ? staff.map((person) => <button key={person.id} type="button" onClick={() => assign(person.id)} disabled={Boolean(savingId)} className="flex w-full items-center justify-between rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4 text-left hover:bg-[var(--color-card)]"><div><div className="text-sm font-black">{person.name || person.email}</div><div className="mt-1 text-xs font-bold text-[var(--color-text-muted)]">{person.role}</div></div><div className="text-xs font-black text-[var(--color-primary)]">{savingId === person.id ? "Assigning..." : "Assign"}</div></button>) : <div className="rounded-lg border border-dashed border-[var(--color-border)] p-4 text-sm font-semibold text-[var(--color-text-muted)]">No staff members available for assignment.</div>}</div>
-        <AsyncButton onClick={clear} loading={savingId === "clear"} loadingText="Clearing..." variant="secondary" className="mt-4 w-full">Clear assignment</AsyncButton>
+    <div className="svx-wa-modal-backdrop">
+      <div className="svx-wa-modal">
+        <header className="svx-wa-modal-head">
+          <div>
+            <p>Assign conversation</p>
+            <h2>Choose responsible staff</h2>
+          </div>
+          <button type="button" onClick={onClose}>
+            Close
+          </button>
+        </header>
+
+        <div className="svx-wa-staff-list">
+          {staff.length ? (
+            staff.map((person) => (
+              <button
+                key={person.id}
+                type="button"
+                onClick={() => assign(person.id)}
+                disabled={Boolean(savingId)}
+              >
+                <span>
+                  <strong>{person.name || person.email}</strong>
+                  <small>{person.role}</small>
+                </span>
+                <em>{savingId === person.id ? "Assigning..." : "Assign"}</em>
+              </button>
+            ))
+          ) : (
+            <EmptyState
+              title="No assignable staff"
+              body="No staff members are available for WhatsApp assignment."
+            />
+          )}
+        </div>
+
+        <AsyncButton
+          onClick={clear}
+          loading={savingId === "clear"}
+          loadingText="Clearing..."
+          variant="secondary"
+        >
+          Clear assignment
+        </AsyncButton>
       </div>
     </div>
   );
@@ -1095,15 +1701,24 @@ export default function WhatsAppInbox() {
 
   async function loadConversations({ showSkeleton = false } = {}) {
     let skeletonTimer = null;
+
     if (showSkeleton && !hasLoadedOnceRef.current) {
       setLoading(true);
       skeletonTimer = window.setTimeout(() => setShowPageSkeleton(true), 220);
     }
+
     try {
       const conversationData = await listWhatsAppConversations();
       const nextConversations = conversationData.conversations || [];
-      setConversations(nextConversations.map((item) => (item.id === selectedId ? markConversationOpened(item) : item)));
+
+      setConversations(
+        nextConversations.map((item) =>
+          item.id === selectedId ? markConversationOpened(item) : item
+        )
+      );
+
       if (!selectedId && nextConversations[0]?.id) setSelectedId(nextConversations[0].id);
+
       hasLoadedOnceRef.current = true;
     } catch (err) {
       toast.error(safeError(err, "Could not load WhatsApp conversations"));
@@ -1116,12 +1731,29 @@ export default function WhatsAppInbox() {
 
   async function loadSecondaryWhatsAppData({ showToast = false } = {}) {
     try {
-      const safeDrafts = canUseInbox ? listWhatsAppSaleDrafts().catch(() => ({ drafts: [] })) : Promise.resolve({ drafts: [] });
-      const safeStaff = canManageTools ? listAssignableWhatsAppStaff().catch(() => ({ staff: [] })) : Promise.resolve({ staff: [] });
-      const safeAccounts = canManageTools ? listWhatsAppAccounts().catch(() => ({ accounts: [] })) : Promise.resolve({ accounts: [] });
-      const safeBroadcasts = canManageTools ? listWhatsAppBroadcasts({ limit: 50 }).catch(() => ({ broadcasts: [] })) : Promise.resolve({ broadcasts: [] });
-      const safePromotions = canManageTools ? listWhatsAppPromotions({ limit: 50 }).catch(() => ({ promotions: [] })) : Promise.resolve({ promotions: [] });
-      const [draftData, staffData, accountData, broadcastData, promotionData] = await Promise.all([safeDrafts, safeStaff, safeAccounts, safeBroadcasts, safePromotions]);
+      const safeDrafts = canUseInbox
+        ? listWhatsAppSaleDrafts().catch(() => ({ drafts: [] }))
+        : Promise.resolve({ drafts: [] });
+
+      const safeStaff = canManageTools
+        ? listAssignableWhatsAppStaff().catch(() => ({ staff: [] }))
+        : Promise.resolve({ staff: [] });
+
+      const safeAccounts = canManageTools
+        ? listWhatsAppAccounts().catch(() => ({ accounts: [] }))
+        : Promise.resolve({ accounts: [] });
+
+      const safeBroadcasts = canManageTools
+        ? listWhatsAppBroadcasts({ limit: 50 }).catch(() => ({ broadcasts: [] }))
+        : Promise.resolve({ broadcasts: [] });
+
+      const safePromotions = canManageTools
+        ? listWhatsAppPromotions({ limit: 50 }).catch(() => ({ promotions: [] }))
+        : Promise.resolve({ promotions: [] });
+
+      const [draftData, staffData, accountData, broadcastData, promotionData] =
+        await Promise.all([safeDrafts, safeStaff, safeAccounts, safeBroadcasts, safePromotions]);
+
       setDrafts(draftData.drafts || []);
       setStaff(staffData.staff || []);
       setAccounts(accountData.accounts || []);
@@ -1135,7 +1767,9 @@ export default function WhatsAppInbox() {
 
   async function load({ silent = false } = {}) {
     if (!canUseInbox) return;
+
     if (silent) setRefreshing(true);
+
     try {
       await loadConversations({ showSkeleton: !silent });
       await loadSecondaryWhatsAppData({ showToast: silent });
@@ -1145,19 +1779,35 @@ export default function WhatsAppInbox() {
   }
 
   useEffect(() => {
+    document.title = "WhatsApp Workspace • Storvex";
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!canManageTools && ["broadcasts", "setup"].includes(workspaceTab)) setWorkspaceTab("inbox");
+    if (!canManageTools && ["broadcasts", "activity", "setup"].includes(workspaceTab)) {
+      setWorkspaceTab("inbox");
+    }
   }, [canManageTools, workspaceTab]);
 
-  const selectedConversation = useMemo(() => conversations.find((item) => item.id === selectedId) || null, [conversations, selectedId]);
+  const selectedConversation = useMemo(
+    () => conversations.find((item) => item.id === selectedId) || null,
+    [conversations, selectedId]
+  );
 
   const linkedDraft = useMemo(() => {
     if (!selectedConversation) return null;
-    return drafts.find((draft) => draft.conversationId === selectedConversation.id) || drafts.find((draft) => draft.customerId && selectedConversation.customerId && draft.customerId === selectedConversation.customerId) || null;
+
+    return (
+      drafts.find((draft) => draft.conversationId === selectedConversation.id) ||
+      drafts.find(
+        (draft) =>
+          draft.customerId &&
+          selectedConversation.customerId &&
+          draft.customerId === selectedConversation.customerId
+      ) ||
+      null
+    );
   }, [drafts, selectedConversation]);
 
   useEffect(() => {
@@ -1170,21 +1820,29 @@ export default function WhatsAppInbox() {
         setMessagesConversationId("");
         return;
       }
+
       setMessagesLoading(true);
       setShowMessagesSkeleton(false);
+
       skeletonTimer = window.setTimeout(() => {
         if (alive) setShowMessagesSkeleton(true);
       }, 220);
+
       try {
         const data = await listWhatsAppConversationMessages(selectedId);
+
         if (!alive) return;
+
         setMessages(data.messages || []);
         setMessagesConversationId(selectedId);
-        setConversations((current) => current.map((item) => item.id === selectedId ? markConversationOpened(item) : item));
+        setConversations((current) =>
+          current.map((item) => (item.id === selectedId ? markConversationOpened(item) : item))
+        );
       } catch (err) {
         if (alive) toast.error(safeError(err, "Could not load conversation messages"));
       } finally {
         if (skeletonTimer) window.clearTimeout(skeletonTimer);
+
         if (alive) {
           setMessagesLoading(false);
           setShowMessagesSkeleton(false);
@@ -1193,6 +1851,7 @@ export default function WhatsAppInbox() {
     }
 
     loadMessages();
+
     return () => {
       alive = false;
       if (skeletonTimer) window.clearTimeout(skeletonTimer);
@@ -1206,22 +1865,32 @@ export default function WhatsAppInbox() {
   function openConversation(conversation) {
     setSelectedId(conversation.id);
     setWorkspaceTab("inbox");
-    setConversations((current) => current.map((item) => item.id === conversation.id ? markConversationOpened(item) : item));
+    setConversations((current) =>
+      current.map((item) => (item.id === conversation.id ? markConversationOpened(item) : item))
+    );
   }
 
   function updateConversationLocally(conversation) {
     if (!conversation?.id) return;
-    setConversations((current) => current.map((item) => item.id === conversation.id ? { ...item, ...conversation } : item));
+
+    setConversations((current) =>
+      current.map((item) => (item.id === conversation.id ? { ...item, ...conversation } : item))
+    );
   }
 
   async function submitReply(event) {
     event.preventDefault();
+
     if (!selectedConversation?.id) return;
+
     const text = replyText.trim();
     if (!text) return;
+
     setSending(true);
+
     try {
       const result = await replyToWhatsAppConversation(selectedConversation.id, { text });
+
       setReplyText("");
       setMessagesConversationId(selectedConversation.id);
       setMessages((current) => [...current, result.message].filter(Boolean));
@@ -1235,9 +1904,14 @@ export default function WhatsAppInbox() {
 
   async function toggleStatus() {
     if (!selectedConversation?.id) return;
+
     const nextStatus = selectedConversation.status === "OPEN" ? "CLOSED" : "OPEN";
+
     try {
-      const result = await updateWhatsAppConversationStatus(selectedConversation.id, { status: nextStatus });
+      const result = await updateWhatsAppConversationStatus(selectedConversation.id, {
+        status: nextStatus,
+      });
+
       toast.success(nextStatus === "OPEN" ? "Conversation reopened" : "Conversation closed");
       updateConversationLocally(result.conversation);
     } catch (err) {
@@ -1247,7 +1921,9 @@ export default function WhatsAppInbox() {
 
   async function finalizeDraft(draft) {
     if (!draft?.id) return;
+
     setFinalizingDraftId(draft.id);
+
     try {
       await finalizeWhatsAppSaleDraft(draft.id);
       toast.success("WhatsApp sale finalized");
@@ -1261,7 +1937,9 @@ export default function WhatsAppInbox() {
 
   async function finalizeLinkedDraft() {
     if (!linkedDraft?.id) return;
+
     setFinalizing(true);
+
     try {
       await finalizeWhatsAppSaleDraft(linkedDraft.id);
       toast.success("WhatsApp sale finalized");
@@ -1273,39 +1951,181 @@ export default function WhatsAppInbox() {
     }
   }
 
+  function onDraftCreated(draft) {
+    setDrafts((current) => [draft, ...current].filter(Boolean));
+    loadSecondaryWhatsAppData();
+  }
+
+  function onAssigned(conversation) {
+    updateConversationLocally(conversation);
+    loadSecondaryWhatsAppData();
+  }
+
   if (!canUseInbox) {
     return (
-      <div className="p-4"><EmptyState title="WhatsApp access is not available" body="Ask the owner or manager to give your role access to WhatsApp work." /></div>
+      <main className="svx-wa-workspace">
+        <EmptyState
+          title="WhatsApp access is not enabled for your role"
+          body="Ask the owner or manager to update your WhatsApp workspace permission."
+        />
+      </main>
     );
   }
 
-  if (showPageSkeleton || (loading && !hasLoadedOnceRef.current)) return <PageSkeleton label="Loading WhatsApp workspace" />;
+  if (showPageSkeleton || (loading && !hasLoadedOnceRef.current)) {
+    return <PageSkeleton titleWidth="w-44" lines={6} variant="default" />;
+  }
+
+  const activeAccount = accounts.find((account) => account.isActive) || accounts[0] || null;
+  const unreadTotal = conversations.reduce(
+    (sum, conversation) => sum + unreadCount(conversation, conversation.id === selectedId),
+    0
+  );
+  const draftTotal = drafts.length;
+  const scheduledCampaigns = broadcasts.filter((item) =>
+    ["DRAFT", "QUEUED"].includes(String(item.status || "").toUpperCase())
+  ).length;
 
   return (
-    <div className="h-[calc(100vh-116px)] min-h-[640px] overflow-hidden rounded-none border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] shadow-[var(--shadow-card)]">
-      <div className="flex h-full w-full overflow-hidden">
-        <div className="flex min-w-0 flex-1 flex-col">
-          <WorkspaceTop activeTab={workspaceTab} setActiveTab={setWorkspaceTab} canManageTools={canManageTools} refreshing={refreshing} onRefresh={() => load({ silent: true })} />
-
-          {workspaceTab === "inbox" ? (
-            <div className="flex min-h-0 flex-1 overflow-hidden">
-              <ConversationList conversations={conversations} drafts={drafts} selectedId={selectedId} onSelect={openConversation} search={search} setSearch={setSearch} />
-              <ChatPanel conversation={selectedConversation} messages={messages} messagesConversationId={messagesConversationId} messagesLoading={messagesLoading} showMessagesSkeleton={showMessagesSkeleton} replyText={replyText} setReplyText={setReplyText} sending={sending} onSend={submitReply} onCreateDraft={() => setDraftModalOpen(true)} onAssign={() => setAssignModalOpen(true)} onToggleStatus={toggleStatus} canManageTools={canManageTools} messagesEndRef={messagesEndRef} />
-              <CustomerProfile conversation={selectedConversation} draft={linkedDraft} canManageTools={canManageTools} onCreateDraft={() => setDraftModalOpen(true)} onAssign={() => setAssignModalOpen(true)} onToggleStatus={toggleStatus} onFinalize={finalizeLinkedDraft} finalizing={finalizing} />
-            </div>
-          ) : null}
-
-          {workspaceTab === "drafts" ? <DraftsWorkspace drafts={drafts} conversations={conversations} onOpenConversation={openConversation} onFinalize={finalizeDraft} finalizingDraftId={finalizingDraftId} /> : null}
-          {workspaceTab === "broadcasts" && canManageTools ? <BroadcastsWorkspace accounts={accounts} promotions={promotions} broadcasts={broadcasts} onRefresh={() => load({ silent: true })} /> : null}
-          {workspaceTab === "setup" && canManageTools ? <SetupWorkspace accounts={accounts} onRefresh={() => load({ silent: true })} /> : null}
+    <main className="svx-wa-workspace">
+      <section className="svx-wa-hero">
+        <div className="svx-wa-hero-copy">
+          <Badge tone="info">WhatsApp</Badge>
+          <h1>WhatsApp Workspace</h1>
+          <p>
+            Manage customer conversations, sale orders and campaigns from one store number.
+            Collaborate with your team and grow sales.
+          </p>
         </div>
-      </div>
 
-      <CreateDraftModal open={draftModalOpen} conversation={selectedConversation} onClose={() => setDraftModalOpen(false)} onCreated={async () => load({ silent: true })} />
+        <div className="svx-wa-hero-actions">
+          <Badge tone={activeAccount?.isActive ? "success" : "warning"}>
+            {activeAccount?.isActive ? "Connected" : "Setup needed"}
+          </Badge>
+          <AsyncButton
+            type="button"
+            loading={refreshing}
+            loadingText="Refreshing..."
+            onClick={() => load({ silent: true })}
+            className="svx-wa-refresh-button"
+          >
+            Refresh
+          </AsyncButton>
+        </div>
+      </section>
 
-      {canManageTools ? (
-        <AssignModal open={assignModalOpen} staff={staff} conversation={selectedConversation} onClose={() => setAssignModalOpen(false)} onAssigned={updateConversationLocally} />
+      <section className="svx-wa-metrics">
+        <MetricCard
+          label="Active conversations"
+          value={conversations.length}
+          note={`${unreadTotal} unread`}
+          icon={<ChatIcon />}
+          tone="success"
+        />
+        <MetricCard
+          label="Draft sales"
+          value={draftTotal}
+          note="Need completion"
+          icon={<DraftIcon />}
+          tone={draftTotal > 0 ? "warning" : "info"}
+        />
+        <MetricCard
+          label="Scheduled campaigns"
+          value={scheduledCampaigns}
+          note="Upcoming broadcasts"
+          icon={<CampaignIcon />}
+          tone={scheduledCampaigns > 0 ? "warning" : "info"}
+        />
+        <MetricCard
+          label="Team members"
+          value={staff.length}
+          note="Active on WhatsApp"
+          icon={<TeamIcon />}
+          tone="info"
+        />
+      </section>
+
+      <WorkspaceTabs value={workspaceTab} onChange={setWorkspaceTab} canManageTools={canManageTools} />
+
+      {workspaceTab === "inbox" ? (
+        <section className="svx-wa-inbox-grid">
+          <ConversationList
+            conversations={conversations}
+            drafts={drafts}
+            selectedId={selectedId}
+            onSelect={openConversation}
+            search={search}
+            setSearch={setSearch}
+          />
+
+          <ChatPanel
+            conversation={selectedConversation}
+            messages={messages}
+            messagesConversationId={messagesConversationId}
+            messagesLoading={messagesLoading}
+            showMessagesSkeleton={showMessagesSkeleton}
+            replyText={replyText}
+            setReplyText={setReplyText}
+            sending={sending}
+            onSend={submitReply}
+            onCreateDraft={() => setDraftModalOpen(true)}
+            messagesEndRef={messagesEndRef}
+          />
+
+          <CustomerPanel
+            conversation={selectedConversation}
+            draft={linkedDraft}
+            canManageTools={canManageTools}
+            onCreateDraft={() => setDraftModalOpen(true)}
+            onAssign={() => setAssignModalOpen(true)}
+            onToggleStatus={toggleStatus}
+            onFinalize={finalizeLinkedDraft}
+            finalizing={finalizing}
+          />
+        </section>
       ) : null}
-    </div>
+
+      {workspaceTab === "drafts" ? (
+        <DraftsWorkspace
+          drafts={drafts}
+          conversations={conversations}
+          onOpenConversation={openConversation}
+          onFinalize={finalizeDraft}
+          finalizingDraftId={finalizingDraftId}
+        />
+      ) : null}
+
+      {workspaceTab === "broadcasts" && canManageTools ? (
+        <BroadcastsWorkspace
+          accounts={accounts}
+          promotions={promotions}
+          broadcasts={broadcasts}
+          onRefresh={() => load({ silent: true })}
+        />
+      ) : null}
+
+      {workspaceTab === "activity" && canManageTools ? (
+        <ActivityWorkspace conversations={conversations} drafts={drafts} broadcasts={broadcasts} />
+      ) : null}
+
+      {workspaceTab === "setup" && canManageTools ? (
+        <SetupWorkspace accounts={accounts} onRefresh={() => load({ silent: true })} />
+      ) : null}
+
+      <CreateDraftModal
+        open={draftModalOpen}
+        conversation={selectedConversation}
+        onClose={() => setDraftModalOpen(false)}
+        onCreated={onDraftCreated}
+      />
+
+      <AssignModal
+        open={assignModalOpen}
+        staff={staff}
+        conversation={selectedConversation}
+        onClose={() => setAssignModalOpen(false)}
+        onAssigned={onAssigned}
+      />
+    </main>
   );
 }
