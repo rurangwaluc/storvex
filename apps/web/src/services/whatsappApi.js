@@ -1,6 +1,14 @@
 /* src/services/whatsappApi.js */
 import { apiFetch } from "./apiClient";
 
+const BUSINESS_CATEGORIES = Object.freeze([
+  "ELECTRONICS",
+  "HARDWARE",
+  "HOME_KITCHEN",
+  "LIGHTING",
+  "SPARE_PARTS",
+]);
+
 /**
  * WhatsApp API
  *
@@ -149,6 +157,12 @@ function sanitizeChannelStrategy(value) {
         ? item.branchIdRequiredOnAccount
         : false,
     note: trimString(item.note),
+    categoryAware:
+      typeof item.categoryAware === "boolean" ? item.categoryAware : false,
+    businessCategory: toUpper(item.businessCategory),
+    supportedCategories: ensureArray(item.supportedCategories)
+      .map(toUpper)
+      .filter(Boolean),
   };
 }
 
@@ -379,6 +393,9 @@ function sanitizeProduct(value) {
     sku: trimString(item.sku),
     serial: trimString(item.serial),
     barcode: trimString(item.barcode),
+    businessCategory: toUpper(item.businessCategory || item.category),
+    categoryTitle: trimString(item.categoryTitle),
+    categoryDescription: trimString(item.categoryDescription),
     sellPrice: toNumber(item.sellPrice, 0),
     stockQty: toNumber(item.stockQty, 0),
   };
@@ -394,6 +411,9 @@ function sanitizePromotion(value) {
     title: trimString(item.title),
     message: trimString(item.message),
     productId: trimString(item.productId),
+    businessCategory: toUpper(item.businessCategory || item.category || item.product?.businessCategory),
+    categoryTitle: trimString(item.categoryTitle),
+    categoryDescription: trimString(item.categoryDescription),
     createdById: trimString(item.createdById),
     sentAt: item.sentAt || null,
     createdAt: item.createdAt || null,
@@ -437,6 +457,8 @@ function sanitizeBroadcast(value) {
     queuedAt: item.queuedAt || null,
     sentAt: item.sentAt || null,
     createdAt: item.createdAt || null,
+    businessCategory: toUpper(item.businessCategory || item.category || item.targetingPreview?.category),
+    supportedCategories: ensureArray(item.supportedCategories).map(toUpper).filter(Boolean),
     strategy: sanitizeChannelStrategy(item.strategy),
     account: sanitizeAccount(item.account),
     promotion: sanitizePromotion(item.promotion),
@@ -454,6 +476,8 @@ function sanitizeBroadcast(value) {
           mode: toUpper(item.targetingPreview.mode || "ALL_OPTED_IN"),
           branchId: trimString(item.targetingPreview.branchId),
           productId: trimString(item.targetingPreview.productId),
+          category: toUpper(item.targetingPreview.category),
+          businessCategory: toUpper(item.targetingPreview.businessCategory || item.targetingPreview.category),
           manualCustomerCount: toNumber(item.targetingPreview.manualCustomerCount, 0),
           persisted: toBoolean(item.targetingPreview.persisted),
           note: trimString(item.targetingPreview.note),
@@ -469,6 +493,8 @@ function sanitizeBroadcastSummary(value) {
     targetMode: toUpper(item.targetMode || "ALL_OPTED_IN"),
     branchId: trimString(item.branchId),
     productId: trimString(item.productId),
+    category: toUpper(item.category),
+    businessCategory: toUpper(item.businessCategory || item.category),
     attempted: toNumber(item.attempted, 0),
     delivered: toNumber(item.delivered, 0),
     failed: toNumber(item.failed, 0),
@@ -502,8 +528,39 @@ function normalizeTargeting(payload = {}) {
     mode: toUpper(source.mode || source.targetMode || "ALL_OPTED_IN"),
     branchId: nullableString(source.branchId),
     productId: nullableString(source.productId),
+    category: nullableString(source.category || source.businessCategory),
     customerIds: ensureArray(source.customerIds).map(trimString).filter(Boolean),
   };
+}
+
+/**
+ * Module health
+ */
+
+export async function getWhatsAppHealth() {
+  const data = await apiFetch("/whatsapp/health");
+
+  return {
+    ok: toBoolean(data?.ok),
+    module: trimString(data?.module),
+    version: toNumber(data?.version, 1),
+    categoryAware: toBoolean(data?.categoryAware),
+    storeStrategy: trimString(data?.storeStrategy),
+    supportedCategories: ensureArray(data?.supportedCategories)
+      .map(toUpper)
+      .filter(Boolean),
+    uptimeSeconds: toNumber(data?.uptimeSeconds, 0),
+    hostname: trimString(data?.hostname),
+    timestamp: data?.timestamp || null,
+  };
+}
+
+/**
+ * Categories
+ */
+
+export function listWhatsAppBusinessCategories() {
+  return [...BUSINESS_CATEGORIES];
 }
 
 /**
@@ -1016,6 +1073,7 @@ export const replyToConversation = replyToWhatsAppConversation;
 export const markConversationRead = markWhatsAppConversationRead;
 
 export {
+  BUSINESS_CATEGORIES,
   sanitizeAccount,
   sanitizeAssignedUser,
   sanitizeBranch,
