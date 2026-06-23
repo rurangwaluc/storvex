@@ -156,78 +156,37 @@ export default function WhatsAppWorkspaceTabs({ className = "", compact = false 
   if (!tabs.length) return null;
 
   return (
-    <section className={cx("svx-wa-tabs", compact && "is-compact", className)}>
-      <div className="svx-wa-tabs-head">
-        <div className="svx-wa-tabs-head-main">
-          <span className="svx-wa-tabs-logo">
-            <Icon name="chat" />
-          </span>
-
-          <div className="svx-wa-tabs-copy">
-            <div className="svx-wa-tabs-meta">
-              <span className="svx-wa-tabs-eyebrow">WhatsApp workspace</span>
-              <span className="svx-wa-tabs-count">
-                {tabs.length} area{tabs.length === 1 ? "" : "s"}
-              </span>
-            </div>
-
-            {!compact ? (
+    <nav
+      className={cx("svx-wa-tabs", compact && "is-compact", className)}
+      aria-label="WhatsApp workspace navigation"
+    >
+      <div className="svx-wa-tabs-list">
+        {tabs.map((tab) => (
+          <NavLink
+            key={tab.key}
+            to={tab.to}
+            end
+            className={({ isActive }) => cx("svx-wa-tab-link", isActive && "is-active")}
+          >
+            {({ isActive }) => (
               <>
-                <h2>Customer messages, sales and campaigns in one place.</h2>
-                <p>
-                  Move between customer chats, WhatsApp sale drafts, store number setup,
-                  activity and promotions without losing business context.
-                </p>
+                <span className={cx("svx-wa-tab-icon", isActive && "is-active")}>
+                  <Icon name={tab.icon} />
+                </span>
+
+                <span className="svx-wa-tab-text">
+                  <strong>
+                    <span className="svx-wa-tab-label-full">{tab.label}</span>
+                    <span className="svx-wa-tab-label-short">{tab.shortLabel}</span>
+                  </strong>
+
+                  {!compact ? <small>{tab.helper}</small> : null}
+                </span>
               </>
-            ) : (
-              <p>Customer messages and WhatsApp sales</p>
             )}
-          </div>
-        </div>
-
-        {!compact ? (
-          <div className="svx-wa-tabs-rule-box">
-            <div>
-              <span>Customer side</span>
-              <strong>One store number</strong>
-            </div>
-            <div>
-              <span>Team side</span>
-              <strong>Controlled work</strong>
-            </div>
-          </div>
-        ) : null}
+          </NavLink>
+        ))}
       </div>
-
-      <nav className="svx-wa-tabs-scroll" aria-label="WhatsApp workspace navigation">
-        <div className="svx-wa-tabs-list">
-          {tabs.map((tab) => (
-            <NavLink
-              key={tab.key}
-              to={tab.to}
-              end
-              className={({ isActive }) => cx("svx-wa-tab-link", isActive && "is-active")}
-            >
-              {({ isActive }) => (
-                <>
-                  <span className={cx("svx-wa-tab-icon", isActive && "is-active")}>
-                    <Icon name={tab.icon} />
-                  </span>
-
-                  <span className="svx-wa-tab-text">
-                    <strong>
-                      <span className="svx-wa-tab-label-full">{tab.label}</span>
-                      <span className="svx-wa-tab-label-short">{tab.shortLabel}</span>
-                    </strong>
-
-                    {!compact ? <small>{tab.helper}</small> : null}
-                  </span>
-                </>
-              )}
-            </NavLink>
-          ))}
-        </div>
-      </nav>
-    </section>
+    </nav>
   );
 }
