@@ -17,6 +17,7 @@ import {
   listPromotions,
 } from "../../services/promotionsApi";
 import WhatsAppWorkspaceTabs from "./WhatsAppWorkspaceTabs";
+import "./WhatsAppBroadcasts.css";
 
 // ─── style helpers ────────────────────────────────────────────────────────────
 
@@ -710,7 +711,7 @@ export default function WhatsAppBroadcasts() {
   if (loading) return <PageSkeleton titleWidth="w-52" lines={6} variant="default" />;
 
   return (
-    <div className="space-y-6">
+    <main className="svx-wa-broadcasts">
       {/* ── Page header ── */}
       <section className={cx(card(), "overflow-hidden")}>
         <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
@@ -936,6 +937,6 @@ export default function WhatsAppBroadcasts() {
           </section>
         </aside>
       </div>
-    </div>
+    </main>
   );
 }

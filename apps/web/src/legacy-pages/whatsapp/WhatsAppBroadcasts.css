@@ -1,0 +1,380 @@
+/* Storvex WhatsApp Broadcasts
+   Full page CSS layer for apps/web/src/legacy-pages/whatsapp/WhatsAppBroadcasts.jsx
+   Keeps current logic working while making the page match the Storvex WhatsApp workspace.
+*/
+
+.svx-wa-broadcasts {
+  --wa-bg: #ffffff;
+  --wa-card: #ffffff;
+  --wa-soft: #f7faff;
+  --wa-text: #0d1b3e;
+  --wa-muted: #5f6b84;
+  --wa-muted-2: #718096;
+  --wa-border: rgba(13, 27, 62, 0.12);
+  --wa-border-soft: #eef1f6;
+  --wa-primary: #2563eb;
+  --wa-primary-dark: #0f4fd8;
+  --wa-primary-soft: #eef6ff;
+  --wa-success: #10b981;
+  --wa-success-soft: rgba(16, 185, 129, 0.11);
+  --wa-warning: #d97706;
+  --wa-warning-soft: rgba(217, 119, 6, 0.12);
+  --wa-danger: #dc2626;
+  --wa-danger-soft: rgba(220, 38, 38, 0.1);
+  --wa-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --wa-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --wa-ease: cubic-bezier(0.16, 1, 0.3, 1);
+
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  padding: 18px 0 32px;
+  color: var(--wa-text);
+  font-family: var(--wa-body-font);
+}
+
+:root[data-theme="dark"] .svx-wa-broadcasts {
+  --wa-bg: #06111f;
+  --wa-card: #1f1f20;
+  --wa-soft: #0d1d32;
+  --wa-text: #ffffff;
+  --wa-muted: rgba(255, 255, 255, 0.72);
+  --wa-muted-2: rgba(255, 255, 255, 0.58);
+  --wa-border: rgba(255, 255, 255, 0.12);
+  --wa-border-soft: rgba(255, 255, 255, 0.1);
+  --wa-primary: #159cff;
+  --wa-primary-dark: #0b86df;
+  --wa-primary-soft: rgba(21, 156, 255, 0.14);
+  --wa-success: #34d399;
+  --wa-success-soft: rgba(52, 211, 153, 0.13);
+  --wa-warning: #fbbf24;
+  --wa-warning-soft: rgba(251, 191, 36, 0.13);
+  --wa-danger: #fb7185;
+  --wa-danger-soft: rgba(251, 113, 133, 0.13);
+}
+
+.svx-wa-broadcasts *,
+.svx-wa-broadcasts *::before,
+.svx-wa-broadcasts *::after {
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.svx-wa-broadcasts svg {
+  display: block;
+}
+
+.svx-wa-broadcasts h1,
+.svx-wa-broadcasts h2,
+.svx-wa-broadcasts p {
+  margin: 0;
+}
+
+.svx-wa-broadcasts strong,
+.svx-wa-broadcasts h1,
+.svx-wa-broadcasts h2 {
+  font-family: var(--wa-heading-font);
+}
+
+/* Main cards */
+.svx-wa-broadcasts > section,
+.svx-wa-broadcasts > div > section,
+.svx-wa-broadcasts > div > aside > section {
+  min-width: 0;
+  border: 1px solid var(--wa-border-soft) !important;
+  border-radius: 20px !important;
+  background: var(--wa-card) !important;
+  color: var(--wa-text);
+  box-shadow:
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 1px 30px rgba(16, 24, 40, 0.03) !important;
+}
+
+:root[data-theme="dark"] .svx-wa-broadcasts > section,
+:root[data-theme="dark"] .svx-wa-broadcasts > div > section,
+:root[data-theme="dark"] .svx-wa-broadcasts > div > aside > section {
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Header */
+.svx-wa-broadcasts > section:first-child {
+  overflow: hidden;
+}
+
+.svx-wa-broadcasts > section:first-child > div:first-child {
+  border-bottom: 1px solid var(--wa-border-soft) !important;
+  padding: 22px !important;
+}
+
+.svx-wa-broadcasts > section:first-child h2 {
+  color: var(--wa-text) !important;
+  font-size: clamp(30px, 3vw, 44px) !important;
+  font-weight: 900 !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.055em !important;
+}
+
+.svx-wa-broadcasts > section:first-child p {
+  max-width: 760px;
+  color: var(--wa-muted) !important;
+  font-size: 14.5px !important;
+  font-weight: 650 !important;
+  line-height: 1.58 !important;
+}
+
+.svx-wa-broadcasts > section:first-child > div:last-child {
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+  padding: 18px 22px 22px !important;
+}
+
+/* KPI cards */
+.svx-wa-broadcasts > section:first-child article {
+  min-height: 102px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 16px !important;
+  background: var(--wa-card) !important;
+  box-shadow: none !important;
+  padding: 16px !important;
+}
+
+.svx-wa-broadcasts > section:first-child article > div:first-child {
+  background: var(--wa-primary) !important;
+}
+
+/* Workspace grid */
+.svx-wa-broadcasts > div:last-child {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 430px !important;
+  gap: 16px !important;
+  align-items: start;
+}
+
+.svx-wa-broadcasts > div:last-child > section,
+.svx-wa-broadcasts > div:last-child > aside > section {
+  overflow: hidden;
+}
+
+.svx-wa-broadcasts > div:last-child > section > div:first-child {
+  border-bottom: 1px solid var(--wa-border-soft) !important;
+  padding: 18px 20px !important;
+}
+
+.svx-wa-broadcasts > div:last-child > section > div:last-child,
+.svx-wa-broadcasts > div:last-child > aside > section {
+  padding: 18px !important;
+}
+
+.svx-wa-broadcasts > div:last-child > aside {
+  display: grid !important;
+  gap: 14px !important;
+}
+
+/* Text */
+.svx-wa-broadcasts [class*="text-\\[var\\(--color-text\\)"],
+.svx-wa-broadcasts [class*="text-[var(--color-text)]"] {
+  color: var(--wa-text) !important;
+}
+
+.svx-wa-broadcasts [class*="text-\\[var\\(--color-text-muted\\)"],
+.svx-wa-broadcasts [class*="text-[var(--color-text-muted)]"] {
+  color: var(--wa-muted) !important;
+}
+
+/* Inputs */
+.svx-wa-broadcasts .app-input,
+.svx-wa-broadcasts input,
+.svx-wa-broadcasts select,
+.svx-wa-broadcasts textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--wa-border-soft) !important;
+  border-radius: 14px !important;
+  background: var(--wa-card) !important;
+  color: var(--wa-text) !important;
+  outline: 0;
+  font-size: 13px !important;
+  font-weight: 700;
+  font-family: var(--wa-body-font);
+}
+
+.svx-wa-broadcasts input,
+.svx-wa-broadcasts select {
+  padding: 0 13px;
+}
+
+.svx-wa-broadcasts textarea {
+  min-height: 132px;
+  padding: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.svx-wa-broadcasts input::placeholder,
+.svx-wa-broadcasts textarea::placeholder {
+  color: var(--wa-muted-2);
+}
+
+.svx-wa-broadcasts input:focus,
+.svx-wa-broadcasts select:focus,
+.svx-wa-broadcasts textarea:focus {
+  border-color: var(--wa-primary) !important;
+  box-shadow: 0 0 0 4px var(--wa-primary-soft);
+}
+
+/* Buttons */
+.svx-wa-broadcasts button,
+.svx-wa-broadcasts .svx-wa-primary-button,
+.svx-wa-broadcasts .svx-wa-secondary-button {
+  font-family: var(--wa-body-font);
+}
+
+.svx-wa-broadcasts button[class*="bg-\\[var\\(--color-primary\\)"],
+.svx-wa-broadcasts button[class*="bg-[var(--color-primary)]"] {
+  background: var(--wa-primary) !important;
+  color: #ffffff !important;
+}
+
+/* Badges */
+.svx-wa-broadcasts span[class*="rounded-full"] {
+  min-height: 28px;
+  border-radius: 999px !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Inner soft cards */
+.svx-wa-broadcasts [class*="bg-\\[var\\(--color-surface-2\\)"],
+.svx-wa-broadcasts [class*="bg-[var(--color-surface-2)]"] {
+  background: var(--wa-soft) !important;
+}
+
+/* Broadcast list items */
+.svx-wa-broadcasts > div:last-child > section > div:last-child > div > div {
+  border: 1px solid var(--wa-border-soft) !important;
+  border-radius: 16px !important;
+  background: var(--wa-soft) !important;
+}
+
+.svx-wa-broadcasts > div:last-child > section > div:last-child > div > div:hover {
+  border-color: color-mix(in srgb, var(--wa-primary) 28%, var(--wa-border-soft)) !important;
+}
+
+/* Info stat cards */
+.svx-wa-broadcasts [class*="rounded-\\[22px\\]"],
+.svx-wa-broadcasts [class*="rounded-[22px]"] {
+  border-radius: 16px !important;
+}
+
+/* No horizontal scroll */
+.svx-wa-broadcasts .grid,
+.svx-wa-broadcasts .flex,
+.svx-wa-broadcasts aside,
+.svx-wa-broadcasts section,
+.svx-wa-broadcasts article,
+.svx-wa-broadcasts button,
+.svx-wa-broadcasts div {
+  min-width: 0;
+}
+
+/* Responsive */
+@media (max-width: 1180px) {
+  .svx-wa-broadcasts > section:first-child > div:last-child {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-broadcasts > div:last-child {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-wa-broadcasts > div:last-child > aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-broadcasts > div:last-child > aside > section:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  html,
+  body,
+  #root,
+  #__next {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .svx-wa-broadcasts {
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    padding: 8px 0 calc(28px + env(safe-area-inset-bottom));
+  }
+
+  .svx-wa-broadcasts > section:first-child {
+    border-radius: 18px !important;
+  }
+
+  .svx-wa-broadcasts > section:first-child > div:first-child,
+  .svx-wa-broadcasts > section:first-child > div:last-child,
+  .svx-wa-broadcasts > div:last-child > section > div:first-child,
+  .svx-wa-broadcasts > div:last-child > section > div:last-child,
+  .svx-wa-broadcasts > div:last-child > aside > section {
+    padding: 14px !important;
+  }
+
+  .svx-wa-broadcasts > section:first-child h2 {
+    font-size: clamp(28px, 9vw, 36px) !important;
+  }
+
+  .svx-wa-broadcasts > section:first-child > div:last-child,
+  .svx-wa-broadcasts > div:last-child > aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .svx-wa-broadcasts > section:first-child article {
+    min-height: 92px;
+    padding: 12px !important;
+  }
+
+  .svx-wa-broadcasts > div:last-child {
+    gap: 12px !important;
+  }
+
+  .svx-wa-broadcasts > div:last-child > section,
+  .svx-wa-broadcasts > div:last-child > aside > section {
+    border-radius: 18px !important;
+  }
+
+  .svx-wa-broadcasts input,
+  .svx-wa-broadcasts select,
+  .svx-wa-broadcasts textarea {
+    font-size: 13px !important;
+  }
+
+  .svx-wa-broadcasts button {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-wa-broadcasts > section:first-child > div:last-child,
+  .svx-wa-broadcasts > div:last-child > aside {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-wa-broadcasts > section:first-child,
+  .svx-wa-broadcasts > div:last-child > section,
+  .svx-wa-broadcasts > div:last-child > aside > section {
+    border-radius: 16px !important;
+  }
+}

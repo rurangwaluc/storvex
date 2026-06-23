@@ -34,6 +34,19 @@ function clampLimit(value, fallback = 50, max = 200) {
   return Math.min(max, Math.max(1, Math.floor(n)));
 }
 
+function getModelFields(delegate) {
+  try {
+    return delegate?.fields || {};
+  } catch {
+    return {};
+  }
+}
+
+function modelHasField(delegate, fieldName) {
+  const fields = getModelFields(delegate);
+  return typeof fields[fieldName] !== "undefined";
+}
+
 async function createAuditLogSafe({
   tenantId,
   userId = null,
@@ -43,11 +56,7 @@ async function createAuditLogSafe({
   metadata = null,
 }) {
   try {
-    if (
-      !tenantId ||
-      !action ||
-      typeof prisma.auditLog?.create !== "function"
-    ) {
+    if (!tenantId || !action || typeof prisma.auditLog?.create !== "function") {
       return;
     }
 
@@ -64,6 +73,15 @@ async function createAuditLogSafe({
   } catch (err) {
     console.error("Promotion audit log error:", err?.message || err);
   }
+}
+
+function getProductBusinessCategory(product) {
+  return (
+    product?.businessCategory ||
+    product?.category ||
+    product?.marketplaceCategory ||
+    null
+  );
 }
 
 function buildPublicPromotion(promotion) {
@@ -97,7 +115,10 @@ function buildPublicPromotion(promotion) {
           name: promotion.product.name,
           sku: promotion.product.sku || null,
           serial: promotion.product.serial || null,
-          businessCategory: promotion.product.businessCategory || null,
+          businessCategory: getProductBusinessCategory(promotion.product),
+          category: promotion.product.category || null,
+          subcategory: promotion.product.subcategory || null,
+          marketplaceCategory: promotion.product.marketplaceCategory || null,
           sellPrice: Number(promotion.product.sellPrice || 0),
           stockQty: Number(promotion.product.stockQty || 0),
         }
@@ -122,18 +143,29 @@ function buildPublicPromotion(promotion) {
   };
 }
 
+function productSelectShape() {
+  return {
+    id: true,
+    name: true,
+    sku: true,
+    serial: true,
+    ...(modelHasField(prisma.product, "businessCategory")
+      ? { businessCategory: true }
+      : {}),
+    ...(modelHasField(prisma.product, "category") ? { category: true } : {}),
+    ...(modelHasField(prisma.product, "subcategory") ? { subcategory: true } : {}),
+    ...(modelHasField(prisma.product, "marketplaceCategory")
+      ? { marketplaceCategory: true }
+      : {}),
+    sellPrice: true,
+    stockQty: true,
+  };
+}
+
 function promotionInclude() {
   return {
     product: {
-      select: {
-        id: true,
-        name: true,
-        sku: true,
-        serial: true,
-        businessCategory: true,
-        sellPrice: true,
-        stockQty: true,
-      },
+      select: productSelectShape(),
     },
     createdBy: {
       select: {
@@ -446,7 +478,9 @@ async function updatePromotion(req, res) {
       req.body?.title !== undefined ? normalizeText(req.body.title) : existing.title;
 
     const nextMessage =
-      req.body?.message !== undefined ? normalizeText(req.body.message) : existing.message;
+      req.body?.message !== undefined
+        ? normalizeText(req.body.message)
+        : existing.message;
 
     const nextProductId =
       req.body?.productId !== undefined
