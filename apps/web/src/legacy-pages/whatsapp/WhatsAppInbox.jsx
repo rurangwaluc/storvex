@@ -315,7 +315,55 @@ function hasQuotation(summary) {
   return Boolean(summary?.hasQuotation || Number(summary?.quotationCount || 0) > 0 || latestQuotation(summary));
 }
 
-function recommendedSalesAction({ conversation, draft, summary }) {
+function messageText(message) {
+  return String(message?.textContent || "").trim();
+}
+
+function isOutboundMessage(message) {
+  return String(message?.direction || "").toUpperCase() === "OUTBOUND";
+}
+
+function quotationFollowUpMessage({ conversation, summary }) {
+  const quotation = latestQuotation(summary);
+  const name = customerName(conversation);
+  const number = quotation?.number || "your quotation";
+  const amount = money(quotation?.total || 0);
+
+  return `Hello ${name}, your quotation ${number} for ${amount} is ready. Please confirm if you would like us to proceed with the sale.`;
+}
+
+function latestQuotationFollowUp({ messages = [], summary }) {
+  const quotation = latestQuotation(summary);
+  if (!quotation) return null;
+
+  const number = String(quotation.number || "").toLowerCase();
+  const quotationTime = quotation.createdAt ? new Date(quotation.createdAt).getTime() : 0;
+
+  return [...messages]
+    .filter((message) => {
+      if (!isOutboundMessage(message)) return false;
+
+      const text = messageText(message).toLowerCase();
+      if (!text) return false;
+
+      const messageTime = message.createdAt ? new Date(message.createdAt).getTime() : 0;
+      if (quotationTime && messageTime && messageTime < quotationTime) return false;
+
+      const mentionsQuotation =
+        text.includes("quotation") || text.includes("proforma") || (number && text.includes(number));
+      const asksForDecision =
+        text.includes("confirm") || text.includes("proceed") || text.includes("ready");
+
+      return Boolean(mentionsQuotation && asksForDecision);
+    })
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] || null;
+}
+
+function hasQuotationFollowUp({ messages = [], summary }) {
+  return Boolean(latestQuotationFollowUp({ messages, summary }));
+}
+
+function recommendedSalesAction({ conversation, draft, summary, messages = [] }) {
   const outstanding = Number(summary?.outstandingCredit || 0);
   const orders = Number(summary?.totalOrders || 0);
   const lastPurchaseDays = daysSince(summary?.lastPurchase);
@@ -329,10 +377,20 @@ function recommendedSalesAction({ conversation, draft, summary }) {
     };
   }
 
+  if (hasQuotationFollowUp({ messages, summary })) {
+    return {
+      label: "Waiting for customer response",
+      detail: "A quotation follow-up was already sent. Wait for the customer to confirm before converting this proforma to a sale.",
+      primary: "Waiting",
+      action: "WAITING",
+      disabled: true,
+    };
+  }
+
   if (hasQuotation(summary)) {
     return {
-      label: "Follow up",
-      detail: "A proforma already exists for this conversation. Follow up and move the customer to a decision.",
+      label: "Follow up quotation",
+      detail: "A proforma exists for this conversation. Fill the reply box with a clear follow-up message.",
       primary: "Follow up",
       action: "FOLLOW_UP",
     };
@@ -373,7 +431,7 @@ function recommendedSalesAction({ conversation, draft, summary }) {
   };
 }
 
-function buildSalesTimeline({ conversation, draft, summary }) {
+function buildSalesTimeline({ conversation, draft, summary, messages = [] }) {
   const events = [];
 
   if (conversation?.createdAt) {
@@ -410,6 +468,17 @@ function buildSalesTimeline({ conversation, draft, summary }) {
       meta: `${quotation.number || "Proforma"} · ${money(quotation.total)}`,
     });
   });
+
+  const quotationFollowUp = latestQuotationFollowUp({ messages, summary });
+
+  if (quotationFollowUp?.createdAt) {
+    events.push({
+      id: `quotation-follow-up-${quotationFollowUp.id || quotationFollowUp.createdAt}`,
+      at: quotationFollowUp.createdAt,
+      title: "Quotation follow-up sent",
+      meta: latestQuotation(summary)?.number || "Customer follow-up",
+    });
+  }
 
   if (summary?.lastPurchase) {
     events.push({
@@ -964,12 +1033,12 @@ function SalesTimeline({ events }) {
   );
 }
 
-function SalesIntelligenceCard({ conversation, draft, summary, loading, onRecommendedAction }) {
+function SalesIntelligenceCard({ conversation, draft, summary, messages = [], loading, onRecommendedAction }) {
   const safeSummary = summary || {};
   const tier = customerTier(safeSummary);
   const temperature = leadTemperature({ conversation, draft, summary: safeSummary });
-  const nextAction = recommendedSalesAction({ conversation, draft, summary: safeSummary });
-  const timeline = buildSalesTimeline({ conversation, draft, summary: safeSummary });
+  const nextAction = recommendedSalesAction({ conversation, draft, summary: safeSummary, messages });
+  const timeline = buildSalesTimeline({ conversation, draft, summary: safeSummary, messages });
   const quotation = latestQuotation(safeSummary);
   const lastPurchaseDays = daysSince(safeSummary.lastPurchase);
   const lastPurchaseLabel =
@@ -1029,7 +1098,7 @@ function SalesIntelligenceCard({ conversation, draft, summary, loading, onRecomm
             <span>Recommended next action</span>
             <strong>{nextAction.label}</strong>
             <small>{nextAction.detail}</small>
-            <button type="button" onClick={() => onRecommendedAction?.(nextAction)}>
+            <button type="button" disabled={nextAction.disabled} onClick={() => onRecommendedAction?.(nextAction)}>
               {nextAction.primary}
             </button>
           </div>
@@ -1049,6 +1118,7 @@ function CustomerPanel({
   conversation,
   draft,
   salesSummary,
+  messages = [],
   salesSummaryLoading,
   canManageTools,
   onCreateDraft,
@@ -1101,6 +1171,7 @@ function CustomerPanel({
         conversation={conversation}
         draft={draft}
         summary={salesSummary}
+        messages={messages}
         loading={salesSummaryLoading}
         onRecommendedAction={onRecommendedAction}
       />
@@ -2429,12 +2500,31 @@ export default function WhatsAppInbox() {
   }
 
   function fillPaymentReminder() {
-      if (!selectedConversation) return;
+    if (!selectedConversation) return;
 
-      setReplyText(
-        `Hello ${customerName(selectedConversation)}, this is a friendly reminder about your pending payment. Please let us know when you will be able to complete it. Thank you.`
-      );
+    setReplyText(
+      `Hello ${customerName(selectedConversation)}, this is a friendly reminder about your pending payment. Please let us know when you will be able to complete it. Thank you.`
+    );
+  }
+
+  function fillQuotationFollowUp() {
+    if (!selectedConversation) return;
+
+    if (!latestQuotation(salesSummary)) {
+      toast.error("Create a quotation before sending a quotation follow-up");
+      return;
     }
+
+    setReplyText(quotationFollowUpMessage({
+      conversation: selectedConversation,
+      summary: salesSummary,
+    }));
+    toast.success("Quotation follow-up prepared. Review it before sending.");
+
+    window.setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView?.({ behavior: "smooth", block: "end" });
+    }, 60);
+  }
 
   function createQuotationFromConversation() {
     if (!selectedConversation?.id) return;
@@ -2472,8 +2562,18 @@ export default function WhatsAppInbox() {
       return;
     }
 
+    if (actionType === "FOLLOW_UP") {
+      fillQuotationFollowUp();
+      return;
+    }
+
     if (actionType === "REMINDER") {
       fillPaymentReminder();
+      return;
+    }
+
+    if (actionType === "WAITING") {
+      toast.success("Quotation follow-up already sent. Wait for the customer response.");
       return;
     }
 
@@ -2661,6 +2761,7 @@ export default function WhatsAppInbox() {
             conversation={selectedConversation}
             draft={linkedDraft}
             salesSummary={salesSummary}
+            messages={messages}
             salesSummaryLoading={salesSummaryLoading}
             canManageTools={canManageTools}
             onCreateDraft={() => setDraftModalOpen(true)}

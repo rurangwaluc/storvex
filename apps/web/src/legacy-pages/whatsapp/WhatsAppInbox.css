@@ -4779,3 +4779,19 @@ background: var(--wa-soft);
     width: 100% !important;
   }
 }
+
+/* Quotation follow-up state */
+.svx-wa-recommended-action button:disabled,
+.svx-wa-recommended-action button[disabled] {
+  border-color: var(--wa-border-soft) !important;
+  background: var(--wa-soft) !important;
+  color: var(--wa-muted) !important;
+  cursor: default !important;
+  opacity: 0.82 !important;
+}
+
+.svx-wa-recommended-action button:disabled:hover,
+.svx-wa-recommended-action button[disabled]:hover {
+  background: var(--wa-soft) !important;
+  transform: none !important;
+}
