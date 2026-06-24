@@ -2793,3 +2793,417 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Storvex WhatsApp business intelligence finish                               */
+/* Final 8%: smarter customer intelligence, queue priority, compact header.    */
+/* -------------------------------------------------------------------------- */
+
+.svx-wa-conversation-list {
+  min-height: 320px;
+  max-height: 620px;
+}
+
+.svx-wa-chat-person small {
+  display: block;
+  margin-top: 3px;
+  color: var(--wa-muted-2);
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.svx-wa-intelligence-card {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--wa-primary-soft) 72%, var(--wa-card)), var(--wa-card));
+}
+
+:root[data-theme="dark"] .svx-wa-intelligence-card {
+  background:
+    linear-gradient(135deg, rgba(21, 156, 255, 0.09), rgba(31, 31, 32, 0.98));
+}
+
+.svx-wa-intelligence-focus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  border: 1px solid color-mix(in srgb, var(--wa-success) 24%, var(--wa-border-soft));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--wa-success-soft) 55%, var(--wa-card));
+  padding: 12px;
+}
+
+.svx-wa-intelligence-focus span {
+  display: block;
+  color: var(--wa-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.svx-wa-intelligence-focus strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--wa-text);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+.svx-wa-intelligence-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.svx-wa-intelligence-grid > div:first-child {
+  grid-column: 1 / -1;
+}
+
+.svx-wa-intelligence-grid > div:first-child strong {
+  font-size: 18px;
+}
+
+.svx-wa-recommended-action {
+  border-color: color-mix(in srgb, var(--wa-primary) 30%, var(--wa-border-soft));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--wa-primary-soft) 72%, var(--wa-card)), var(--wa-card));
+}
+
+.svx-wa-conversation-tags .svx-wa-badge:first-child {
+  border-color: color-mix(in srgb, var(--wa-primary) 24%, transparent);
+}
+
+@media (min-width: 1181px) {
+  .svx-wa-side-panel {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-wa-chat-person small {
+    font-size: 11px;
+  }
+
+  .svx-wa-intelligence-focus {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-wa-intelligence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-wa-intelligence-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-wa-conversation-list {
+    min-height: 260px;
+    max-height: 460px;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Storvex WhatsApp mobile/PWA containment fix                                 */
+/* No hidden content. No horizontal scroll. Keep cards readable on phones.     */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 760px) {
+  html,
+  body,
+  #root,
+  #__next {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden !important;
+  }
+
+  .svx-wa-workspace {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    gap: 12px !important;
+    padding: 8px 0 calc(28px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .svx-wa-workspace *,
+  .svx-wa-workspace *::before,
+  .svx-wa-workspace *::after {
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .svx-wa-hero,
+  .svx-wa-metrics,
+  .svx-wa-module-tabs,
+  .svx-wa-inbox-grid,
+  .svx-wa-conversation-panel,
+  .svx-wa-chat-panel,
+  .svx-wa-side-panel,
+  .svx-wa-page-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .svx-wa-inbox-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    gap: 12px !important;
+  }
+
+  .svx-wa-conversation-panel,
+  .svx-wa-chat-panel,
+  .svx-wa-side-panel {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  .svx-wa-conversation-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: visible !important;
+  }
+
+  .svx-wa-panel-head,
+  .svx-wa-search,
+  .svx-wa-filter-row,
+  .svx-wa-conversation-list {
+    flex: 0 0 auto !important;
+  }
+
+  .svx-wa-filter-row {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    overflow: visible !important;
+    padding: 10px 14px 12px !important;
+  }
+
+  .svx-wa-filter-row .svx-wa-badge {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 28px !important;
+    padding: 0 6px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .svx-wa-conversation-list {
+    display: grid !important;
+    gap: 9px !important;
+    min-height: 230px !important;
+    max-height: 430px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 0 10px 14px !important;
+    overscroll-behavior: contain !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .svx-wa-conversation-row {
+    display: grid !important;
+    grid-template-columns: 42px minmax(0, 1fr) auto !important;
+    gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    padding: 11px !important;
+  }
+
+  .svx-wa-conversation-main,
+  .svx-wa-conversation-topline,
+  .svx-wa-conversation-preview,
+  .svx-wa-conversation-tags {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .svx-wa-conversation-topline strong,
+  .svx-wa-conversation-preview {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .svx-wa-conversation-tags {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 5px !important;
+  }
+
+  .svx-wa-conversation-tags .svx-wa-badge {
+    max-width: 100% !important;
+    min-height: 23px !important;
+    padding: 0 7px !important;
+    font-size: 8.5px !important;
+    letter-spacing: 0.09em !important;
+  }
+
+  .svx-wa-chat-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    height: min(660px, calc(100dvh - 86px)) !important;
+    max-height: min(660px, calc(100dvh - 86px)) !important;
+  }
+
+  .svx-wa-chat-head,
+  .svx-wa-reply-bar {
+    flex: 0 0 auto !important;
+  }
+
+  .svx-wa-message-area {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .svx-wa-chat-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .svx-wa-chat-head {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .svx-wa-chat-actions button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 40px !important;
+    padding: 0 8px !important;
+    font-size: 11px !important;
+  }
+
+  .svx-wa-side-panel {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    overflow: visible !important;
+    padding: 12px !important;
+  }
+
+  .svx-wa-side-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .svx-wa-customer-card,
+  .svx-wa-intelligence-hero,
+  .svx-wa-intelligence-focus,
+  .svx-wa-intelligence-grid,
+  .svx-wa-info-list {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .svx-wa-action-list {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+  }
+
+  .svx-wa-action-list button {
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-height: 78px !important;
+  }
+
+  .svx-wa-action-list strong,
+  .svx-wa-action-list span,
+  .svx-wa-info-list strong,
+  .svx-wa-info-list span,
+  .svx-wa-intelligence-grid strong,
+  .svx-wa-intelligence-grid span {
+    overflow-wrap: anywhere !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .svx-wa-side-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-customer-card {
+    grid-template-columns: 50px minmax(0, 1fr) !important;
+  }
+
+  .svx-wa-customer-card .svx-wa-avatar.is-large,
+  .svx-wa-chat-person .svx-wa-avatar.is-large {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .svx-wa-intelligence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-wa-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-module-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-conversation-row {
+    grid-template-columns: 40px minmax(0, 1fr) !important;
+  }
+
+  .svx-wa-unread {
+    grid-column: 2 !important;
+    justify-self: start !important;
+  }
+
+  .svx-wa-side-panel {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-wa-action-list,
+  .svx-wa-button-grid,
+  .svx-wa-card-actions,
+  .svx-wa-intelligence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-intelligence-grid > div:first-child,
+  .svx-wa-recommended-action,
+  .svx-wa-side-card.is-highlight,
+  .svx-wa-side-card:has(.svx-wa-info-list) {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 365px) {
+  .svx-wa-metrics,
+  .svx-wa-action-list,
+  .svx-wa-button-grid,
+  .svx-wa-card-actions,
+  .svx-wa-intelligence-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}

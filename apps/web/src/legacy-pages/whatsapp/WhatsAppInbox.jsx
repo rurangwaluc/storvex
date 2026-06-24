@@ -270,6 +270,59 @@ function recommendedCustomerAction(summary) {
 }
 
 
+function buyingProbability({ conversation, draft, summary }) {
+  let score = 20;
+
+  const text = [
+    conversation?.latestMessage?.textContent,
+    conversation?.customer?.name,
+    conversation?.phone,
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  if (draft?.id) score += 35;
+  if (text.includes("price") || text.includes("how much") || text.includes("angahe")) score += 18;
+  if (text.includes("available") || text.includes("stock") || text.includes("ufite")) score += 18;
+  if (text.includes("pay later") || text.includes("credit") || text.includes("ideni")) score += 15;
+  if (text.includes("deliver") || text.includes("delivery") || text.includes("location")) score += 12;
+  if (Number(summary?.totalOrders || 0) > 0) score += 10;
+  if (Number(summary?.outstandingCredit || 0) > 0) score -= 8;
+
+  return Math.max(0, Math.min(100, score));
+}
+
+function probabilityLabel(score) {
+  if (score >= 75) return { label: "High", tone: "success" };
+  if (score >= 40) return { label: "Medium", tone: "warning" };
+  return { label: "Low", tone: "neutral" };
+}
+
+function opportunityValue({ draft, summary }) {
+  const draftTotal = Number(draft?.total || 0);
+  if (draftTotal > 0) return draftTotal;
+
+  const orders = Number(summary?.totalOrders || 0);
+  const revenue = Number(summary?.totalRevenue || 0);
+
+  if (orders > 0 && revenue > 0) return Math.round(revenue / orders);
+
+  return 0;
+}
+
+function conversationPriority({ conversation, draft, summary }) {
+  const score = buyingProbability({ conversation, draft, summary });
+  const outstanding = Number(summary?.outstandingCredit || 0);
+  const orders = Number(summary?.totalOrders || 0);
+
+  if (draft?.id) return { label: "Buying", tone: "warning" };
+  if (score >= 75) return { label: "Hot", tone: "success" };
+  if (outstanding > 0) return { label: "Follow up", tone: "warning" };
+  if (orders >= 3) return { label: "Returning", tone: "info" };
+  return { label: "New", tone: "neutral" };
+}
+
+
 function customerName(conversation) {
   return (
     conversation?.customer?.name ||
@@ -443,10 +496,11 @@ function EmptyState({ title, body }) {
   );
 }
 
-function ConversationRow({ conversation, active, draft, onClick }) {
+function ConversationRow({ conversation, active, draft, salesSummary, onClick }) {
   const name = customerName(conversation);
   const count = unreadCount(conversation, active);
   const needsLocation = !conversation.branchId;
+  const priority = conversationPriority({ conversation, draft, summary: salesSummary });
 
   return (
     <button
@@ -467,6 +521,7 @@ function ConversationRow({ conversation, active, draft, onClick }) {
         </span>
 
         <span className="svx-wa-conversation-tags">
+          <Badge tone={priority.tone}>{priority.label}</Badge>
           <Badge tone={toneForStatus(conversation.status)}>{statusLabel(conversation.status)}</Badge>
           {draft ? <Badge tone="warning">Draft sale</Badge> : null}
           {needsLocation ? <Badge tone="warning">Location needed</Badge> : null}
@@ -561,7 +616,7 @@ function WorkspaceTabs({ value, onChange, canManageTools }) {
   );
 }
 
-function ConversationList({ conversations, drafts, selectedId, onSelect, search, setSearch }) {
+function ConversationList({ conversations, drafts, selectedId, selectedSalesSummary, onSelect, search, setSearch }) {
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -615,6 +670,7 @@ function ConversationList({ conversations, drafts, selectedId, onSelect, search,
                 key={conversation.id}
                 conversation={conversation}
                 draft={draft}
+                salesSummary={conversation.id === selectedId ? selectedSalesSummary : null}
                 active={conversation.id === selectedId}
                 onClick={() => onSelect(conversation)}
               />
@@ -773,6 +829,15 @@ function CustomerPanel({
         </div>
       </section>
 
+      <SalesIntelligenceCard
+        conversation={conversation}
+        draft={draft}
+        summary={salesSummary}
+        loading={salesSummaryLoading}
+      />
+
+      <DraftSummaryCard draft={draft} onFinalize={onFinalize} finalizing={finalizing} />
+
       <section className="svx-wa-side-card">
         <div className="svx-wa-side-title">Quick actions</div>
         <div className="svx-wa-action-list">
@@ -794,10 +859,6 @@ function CustomerPanel({
           </button>
         </div>
       </section>
-
-      <DraftSummaryCard draft={draft} onFinalize={onFinalize} finalizing={finalizing} />
-
-      <SalesIntelligenceCard summary={salesSummary} loading={salesSummaryLoading} />
 
       <section className="svx-wa-side-card">
         <div className="svx-wa-side-title">Conversation info</div>
@@ -832,6 +893,8 @@ function ChatPanel({
   onCreateDraft,
   onPaymentReminder,
   onComingNext,
+  salesSummary,
+  linkedDraft,
   messagesEndRef,
 }) {
   if (!conversation) {
@@ -848,6 +911,8 @@ function ChatPanel({
   const hasCurrentMessages = messagesConversationId === conversation.id;
   const visibleMessages = hasCurrentMessages ? messages : [];
   const openingDifferentConversation = messagesLoading && !hasCurrentMessages;
+  const tier = customerTier(salesSummary || {});
+  const opportunity = opportunityValue({ draft: linkedDraft, summary: salesSummary || {} });
 
   return (
     <main className="svx-wa-chat-panel">
@@ -857,8 +922,9 @@ function ChatPanel({
           <div>
             <strong>{customerName(conversation)}</strong>
             <span>
-              <i /> {statusLabel(conversation.status)} · {cleanPhone(conversation.phone)}
+              <i /> {tier.label} · {Number(salesSummary?.totalOrders || 0)} orders · {money(opportunity)}
             </span>
+            <small>{statusLabel(conversation.status)} · {cleanPhone(conversation.phone)}</small>
           </div>
         </div>
 
@@ -2252,6 +2318,7 @@ export default function WhatsAppInbox() {
             conversations={conversations}
             drafts={drafts}
             selectedId={selectedId}
+            selectedSalesSummary={salesSummary}
             onSelect={openConversation}
             search={search}
             setSearch={setSearch}
@@ -2270,6 +2337,8 @@ export default function WhatsAppInbox() {
             onCreateDraft={() => setDraftModalOpen(true)}
             onPaymentReminder={fillPaymentReminder}
             onComingNext={showComingNext}
+            salesSummary={salesSummary}
+            linkedDraft={linkedDraft}
             messagesEndRef={messagesEndRef}
           />
 
