@@ -427,16 +427,43 @@ function ConversationRow({ conversation, active, draft, onClick }) {
   );
 }
 
+
+function deliveryStatusMeta(message, outbound) {
+  if (!outbound) return null;
+
+  const status = String(message?.status || "SENT").trim().toUpperCase();
+
+  if (status === "READ") {
+    return { label: "Seen", marks: "✓✓", tone: "seen" };
+  }
+
+  if (status === "DELIVERED") {
+    return { label: "Delivered", marks: "✓✓", tone: "delivered" };
+  }
+
+  if (status === "FAILED") {
+    return { label: "Failed", marks: "!", tone: "failed" };
+  }
+
+  return { label: "Sent", marks: "✓", tone: "sent" };
+}
+
 function MessageBubble({ message }) {
   const outbound = message.direction === "OUTBOUND";
+  const delivery = deliveryStatusMeta(message, outbound);
 
   return (
     <div className={cx("svx-wa-message-line", outbound ? "is-outbound" : "is-inbound")}>
       <article className={cx("svx-wa-message", outbound && "is-outbound")}>
         <p>{message.textContent || "Message"}</p>
-        <span>
-          {formatTime(message.createdAt)}
-          {outbound ? " · Sent" : ""}
+        <span className="svx-wa-message-meta">
+          <em>{formatTime(message.createdAt)}</em>
+          {delivery ? (
+            <strong className={cx("svx-wa-message-status", `is-${delivery.tone}`)}>
+              <b>{delivery.marks}</b>
+              {delivery.label}
+            </strong>
+          ) : null}
         </span>
       </article>
     </div>
@@ -461,7 +488,7 @@ function WorkspaceTabs({ value, onChange, canManageTools }) {
       ? [
           ["broadcasts", "Campaigns", <CampaignIcon />],
           ["activity", "Activity", <TeamIcon />],
-          ["setup", "Settings", <SettingsIcon />],
+          ["setup", "Accounts", <SettingsIcon />],
         ]
       : []),
   ];
@@ -1196,10 +1223,10 @@ function SetupWorkspace({ accounts, onRefresh }) {
     <section className="svx-wa-page-panel">
       <div className="svx-wa-section-title">
         <p>Connection</p>
-        <h2>WhatsApp store number</h2>
+        <h2>WhatsApp accounts</h2>
         <span>
-          Connect one store WhatsApp number. Customers message one number while Storvex keeps
-          sales, stock, drawer and records controlled.
+          Manage the WhatsApp number used by this workspace. Storvex keeps customer chats, sales,
+          stock, drawer and records controlled from one business workspace.
         </span>
       </div>
 
@@ -1209,7 +1236,7 @@ function SetupWorkspace({ accounts, onRefresh }) {
             <Badge tone={account?.isActive ? "success" : "neutral"}>
               {account?.isActive ? "Active" : "Paused"}
             </Badge>
-            <h3>Store WhatsApp number</h3>
+            <h3>Active WhatsApp account</h3>
           </div>
 
           {account?.id ? (
@@ -2002,6 +2029,8 @@ export default function WhatsAppInbox() {
           <Badge tone={activeAccount?.isActive ? "success" : "warning"}>
             {activeAccount?.isActive ? "Connected" : "Setup needed"}
           </Badge>
+
+
           <AsyncButton
             type="button"
             loading={refreshing}
