@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
@@ -20,6 +20,42 @@ function makeEmptyItem() {
     unitPrice: "",
     discountPercent: "",
   };
+}
+
+function makeItemFromPrefill(item) {
+  const source = item && typeof item === "object" ? item : {};
+
+  return {
+    ...makeEmptyItem(),
+    key: `prefill-${Math.random().toString(36).slice(2, 10)}`,
+    productId: cleanText(source.productId),
+    productName: cleanText(source.productName),
+    sku: cleanText(source.sku),
+    category: cleanText(source.category),
+    stockQty: Number(source.stockQty || 0),
+    description: cleanText(source.description),
+    quantity: Math.max(1, parseInt(source.quantity || 1, 10) || 1),
+    unitPrice: Number(source.unitPrice || 0),
+    discountPercent: "",
+  };
+}
+
+function readStoredWhatsAppPrefill() {
+  try {
+    const raw = sessionStorage.getItem("storvex:whatsapp-proforma-prefill");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function clearStoredWhatsAppPrefill() {
+  try {
+    sessionStorage.removeItem("storvex:whatsapp-proforma-prefill");
+  } catch {
+    // Session storage can be unavailable in private or restricted webviews.
+  }
 }
 
 function cleanText(value) {
@@ -90,18 +126,32 @@ function ProductResult({ product, onPick }) {
 
 export default function ProformaCreate() {
   const navigate = useNavigate();
+  const location = useLocation();
   const debounceRef = useRef(null);
+  const whatsappPrefillRef = useRef(location.state?.proformaPrefill || readStoredWhatsAppPrefill());
+  const whatsappPrefill = whatsappPrefillRef.current;
 
   const [form, setForm] = useState({
-    customerName: "",
-    customerPhone: "",
-    customerEmail: "",
-    customerAddress: "",
+    customerId: cleanText(whatsappPrefill?.customerId),
+    customerName: cleanText(whatsappPrefill?.customerName),
+    customerPhone: cleanText(whatsappPrefill?.customerPhone),
+    customerEmail: cleanText(whatsappPrefill?.customerEmail),
+    customerAddress: cleanText(whatsappPrefill?.customerAddress),
     validUntil: "",
-    notes: "",
+    notes: cleanText(whatsappPrefill?.notes),
+    reference: cleanText(whatsappPrefill?.reference),
+    source: cleanText(whatsappPrefill?.source),
+    conversationId: cleanText(whatsappPrefill?.conversationId),
+    draftSaleId: cleanText(whatsappPrefill?.draftSaleId),
   });
 
-  const [items, setItems] = useState([makeEmptyItem()]);
+  const [items, setItems] = useState(() => {
+    const prefillItems = Array.isArray(whatsappPrefill?.items)
+      ? whatsappPrefill.items.map(makeItemFromPrefill).filter((item) => cleanText(item.productName))
+      : [];
+
+    return prefillItems.length ? prefillItems : [makeEmptyItem()];
+  });
   const [saving, setSaving] = useState(false);
 
   const [searchState, setSearchState] = useState({});
@@ -268,12 +318,17 @@ export default function ProformaCreate() {
       setSaving(true);
 
       const payload = {
+        customerId: cleanText(form.customerId) || undefined,
         customerName: cleanText(form.customerName),
         customerPhone: cleanText(form.customerPhone) || undefined,
         customerEmail: cleanText(form.customerEmail) || undefined,
         customerAddress: cleanText(form.customerAddress) || undefined,
         validUntil: form.validUntil || undefined,
+        reference: cleanText(form.reference) || undefined,
         notes: cleanText(form.notes) || undefined,
+        source: cleanText(form.source) || undefined,
+        conversationId: cleanText(form.conversationId) || undefined,
+        draftSaleId: cleanText(form.draftSaleId) || undefined,
         currency: "RWF",
         status: "DRAFT",
         items: validItems.map((item) => ({
@@ -288,6 +343,7 @@ export default function ProformaCreate() {
       const result = await createProforma(payload);
       const createdId = result?.proforma?.id;
 
+      clearStoredWhatsAppPrefill();
       toast.success("Proforma created");
 
       if (createdId) {
@@ -344,6 +400,15 @@ export default function ProformaCreate() {
                 <span>Capture only what is needed to send and approve the quotation.</span>
               </div>
             </div>
+
+            {form.source === "WHATSAPP" ? (
+              <div className="svx-proforma-source-card">
+                <strong>WhatsApp quotation</strong>
+                <span>
+                  Prefilled from customer conversation{form.draftSaleId ? " and active sale draft" : ""}.
+                </span>
+              </div>
+            ) : null}
 
             <div className="svx-proforma-grid">
               <label className="svx-proforma-field svx-proforma-span-2">
@@ -556,6 +621,7 @@ export default function ProformaCreate() {
 
             <div className="svx-proforma-summary-list">
               <SummaryRow label="Customer" value={form.customerName} />
+              {form.source === "WHATSAPP" ? <SummaryRow label="Source" value="WhatsApp" /> : null}
               <SummaryRow label="Valid until" value={form.validUntil} />
               <SummaryRow label="Products" value={String(validItems.length)} />
               <SummaryRow label="Subtotal" value={money(subtotal)} />

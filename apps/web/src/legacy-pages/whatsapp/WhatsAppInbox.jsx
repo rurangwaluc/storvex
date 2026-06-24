@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import toast from "react-hot-toast";
 
@@ -134,6 +135,10 @@ function cleanPhone(value) {
   return String(value || "").trim() || "No phone";
 }
 
+function cleanText(value) {
+  return String(value || "").trim();
+}
+
 function normalizeProductList(data) {
   const raw = data?.products || data?.data?.products || data?.data || data?.items || data || [];
   if (!Array.isArray(raw)) return [];
@@ -267,6 +272,220 @@ function recommendedCustomerAction(summary) {
   if (orders >= 3) return "Offer related accessories";
 
   return "Create sale when customer confirms";
+}
+
+function leadTemperature({ conversation, draft, summary }) {
+  const activityDays = daysSince(conversation?.updatedAt || conversation?.latestMessage?.createdAt);
+  const orders = Number(summary?.totalOrders || 0);
+
+  if (draft?.id && orders > 0 && activityDays !== null && activityDays <= 3) {
+    return {
+      key: "HOT",
+      label: "🔥 Hot lead",
+      shortLabel: "Hot",
+      tone: "success",
+      reason: "Draft sale, buying history, and activity within 3 days.",
+    };
+  }
+
+  if (activityDays !== null && activityDays <= 14) {
+    return {
+      key: "WARM",
+      label: "🟡 Warm lead",
+      shortLabel: "Warm",
+      tone: "warning",
+      reason: "Recent activity within 14 days.",
+    };
+  }
+
+  return {
+    key: "COLD",
+    label: "⚪ Cold lead",
+    shortLabel: "Cold",
+    tone: "neutral",
+    reason: "No meaningful activity for more than 14 days.",
+  };
+}
+
+function latestQuotation(summary) {
+  return summary?.latestQuotation || summary?.proformas?.[0] || null;
+}
+
+function hasQuotation(summary) {
+  return Boolean(summary?.hasQuotation || Number(summary?.quotationCount || 0) > 0 || latestQuotation(summary));
+}
+
+function recommendedSalesAction({ conversation, draft, summary }) {
+  const outstanding = Number(summary?.outstandingCredit || 0);
+  const orders = Number(summary?.totalOrders || 0);
+  const lastPurchaseDays = daysSince(summary?.lastPurchase);
+
+  if (outstanding > 0) {
+    return {
+      label: "Collect payment",
+      detail: "Customer has outstanding credit. Payment follow-up is the highest-value action.",
+      primary: "Payment reminder",
+      action: "REMINDER",
+    };
+  }
+
+  if (hasQuotation(summary)) {
+    return {
+      label: "Follow up",
+      detail: "A proforma already exists for this conversation. Follow up and move the customer to a decision.",
+      primary: "Follow up",
+      action: "FOLLOW_UP",
+    };
+  }
+
+  if (!draft?.id) {
+    return {
+      label: "Create draft sale",
+      detail: "No active draft exists for this conversation yet.",
+      primary: "Create draft",
+      action: "DRAFT",
+    };
+  }
+
+  if (draft?.id) {
+    return {
+      label: "Create quotation",
+      detail: "A draft exists. Convert it into a professional proforma before final sale.",
+      primary: "Create quotation",
+      action: "QUOTATION",
+    };
+  }
+
+  if (orders > 0 && lastPurchaseDays !== null && lastPurchaseDays <= 30) {
+    return {
+      label: "Offer accessories",
+      detail: "Customer recently bought. Recommend useful add-ons or replacements.",
+      primary: "Prepare offer",
+      action: "OFFER",
+    };
+  }
+
+  return {
+    label: "Follow up",
+    detail: "Keep the conversation active and move the customer toward a concrete buying decision.",
+    primary: "Follow up",
+    action: "FOLLOW_UP",
+  };
+}
+
+function buildSalesTimeline({ conversation, draft, summary }) {
+  const events = [];
+
+  if (conversation?.createdAt) {
+    events.push({
+      id: "conversation-started",
+      at: conversation.createdAt,
+      title: "Started WhatsApp conversation",
+      meta: cleanPhone(conversation.phone),
+    });
+  }
+
+  if (draft?.id) {
+    events.push({
+      id: `draft-${draft.id}`,
+      at: draft.createdAt || draft.updatedAt,
+      title: "Draft sale created",
+      meta: `${money(draft.total)} · ${draft.items?.length || 0} item${draft.items?.length === 1 ? "" : "s"}`,
+    });
+  }
+
+  const quotationEvents = Array.isArray(summary?.proformas)
+    ? summary.proformas
+    : latestQuotation(summary)
+      ? [latestQuotation(summary)]
+      : [];
+
+  quotationEvents.forEach((quotation) => {
+    if (!quotation?.createdAt) return;
+
+    events.push({
+      id: `proforma-${quotation.id || quotation.number || quotation.createdAt}`,
+      at: quotation.createdAt,
+      title: "Proforma created",
+      meta: `${quotation.number || "Proforma"} · ${money(quotation.total)}`,
+    });
+  });
+
+  if (summary?.lastPurchase) {
+    events.push({
+      id: "last-purchase",
+      at: summary.lastPurchase,
+      title: "Sale completed",
+      meta: `${Number(summary.totalOrders || 0)} total order${Number(summary.totalOrders || 0) === 1 ? "" : "s"}`,
+    });
+  }
+
+  if (summary?.lastWarranty) {
+    events.push({
+      id: "last-warranty",
+      at: summary.lastWarranty,
+      title: "Warranty activated",
+      meta: "After-sales support available",
+    });
+  }
+
+  return events
+    .filter((event) => event.at && !Number.isNaN(new Date(event.at).getTime()))
+    .sort((a, b) => new Date(a.at).getTime() - new Date(b.at).getTime())
+    .slice(-5);
+}
+
+function normalizeDraftItemsForProforma(draft) {
+  const items = Array.isArray(draft?.items) ? draft.items : [];
+
+  return items
+    .map((item) => {
+      const product = item.product || {};
+      const productName =
+        cleanText(product.name) || cleanText(item.productName) || cleanText(item.name);
+
+      if (!productName) return null;
+
+      return {
+        productId: cleanText(item.productId || product.id),
+        productName,
+        sku: cleanText(product.sku),
+        category: cleanText(product.category || product.businessCategory),
+        stockQty: Number(product.stockQty ?? product.availableQty ?? product.branchQty ?? 0),
+        quantity: Math.max(1, Number(item.quantity || 1)),
+        unitPrice: Number(item.unitPrice ?? item.price ?? product.sellPrice ?? 0),
+        description: cleanText(product.serial || product.barcode),
+      };
+    })
+    .filter(Boolean);
+}
+
+function buildWhatsAppProformaPrefill({ conversation, draft }) {
+  if (!conversation?.id) return null;
+
+  const name = cleanText(conversation.customer?.name) || cleanText(conversation.phone) || "WhatsApp customer";
+  const phone = cleanText(conversation.customer?.phone) || cleanText(conversation.phone);
+  const sourceLines = [
+    "Source: WhatsApp",
+    `Conversation ID: ${conversation.id}`,
+  ];
+
+  if (draft?.id) sourceLines.push(`Draft sale ID: ${draft.id}`);
+
+  return {
+    source: "WHATSAPP",
+    conversationId: conversation.id,
+    draftSaleId: draft?.id || "",
+    customerId: conversation.customerId || conversation.customer?.id || draft?.customerId || "",
+    customerName: name,
+    customerPhone: phone,
+    customerEmail: conversation.customer?.email || draft?.customer?.email || "",
+    customerAddress: conversation.customer?.address || draft?.customer?.address || "",
+    reference: `WHATSAPP:${conversation.id}`,
+    notes: sourceLines.join("\n"),
+    items: normalizeDraftItemsForProforma(draft),
+    createdAt: new Date().toISOString(),
+  };
 }
 
 
@@ -690,7 +909,7 @@ function ConversationList({ conversations, drafts, selectedId, selectedSalesSumm
 function DraftSummaryCard({ draft, onFinalize, finalizing = false }) {
   if (!draft) {
     return (
-      <section className="svx-wa-side-card">
+      <section className="svx-wa-side-card svx-wa-draft-card">
         <div className="svx-wa-side-title">Recent draft sale</div>
         <p className="svx-wa-help-text">
           Create a draft sale only when the customer asks to buy.
@@ -700,7 +919,7 @@ function DraftSummaryCard({ draft, onFinalize, finalizing = false }) {
   }
 
   return (
-    <section className="svx-wa-side-card is-highlight">
+    <section className="svx-wa-side-card svx-wa-draft-card is-highlight">
       <div className="svx-wa-side-title">Recent draft sale</div>
       <div className="svx-wa-draft-value">{money(draft.total)}</div>
       <p className="svx-wa-help-text">
@@ -720,9 +939,38 @@ function DraftSummaryCard({ draft, onFinalize, finalizing = false }) {
 }
 
 
-function SalesIntelligenceCard({ summary, loading }) {
+function SalesTimeline({ events }) {
+  if (!events.length) {
+    return (
+      <div className="svx-wa-sales-timeline is-empty">
+        <span>No sales timeline yet</span>
+        <strong>Create a draft or quotation when the customer shows buying intent.</strong>
+      </div>
+    );
+  }
+
+  return (
+    <div className="svx-wa-sales-timeline">
+      {events.map((event) => (
+        <div key={event.id} className="svx-wa-sales-timeline-item">
+          <time>{shortDate(event.at)}</time>
+          <div>
+            <strong>{event.title}</strong>
+            <span>{event.meta}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SalesIntelligenceCard({ conversation, draft, summary, loading, onRecommendedAction }) {
   const safeSummary = summary || {};
   const tier = customerTier(safeSummary);
+  const temperature = leadTemperature({ conversation, draft, summary: safeSummary });
+  const nextAction = recommendedSalesAction({ conversation, draft, summary: safeSummary });
+  const timeline = buildSalesTimeline({ conversation, draft, summary: safeSummary });
+  const quotation = latestQuotation(safeSummary);
   const lastPurchaseDays = daysSince(safeSummary.lastPurchase);
   const lastPurchaseLabel =
     lastPurchaseDays === null
@@ -745,10 +993,11 @@ function SalesIntelligenceCard({ summary, loading }) {
         <>
           <div className="svx-wa-intelligence-hero">
             <div>
-              <span>Customer tier</span>
-              <strong>{tier.label}</strong>
+              <span>Customer temperature</span>
+              <strong>{temperature.label}</strong>
+              <small>{temperature.reason}</small>
             </div>
-            <Badge tone={tier.tone}>{statusLabel(safeSummary.lastSaleType || "Lead")}</Badge>
+            <Badge tone={temperature.tone}>{tier.label}</Badge>
           </div>
 
           <div className="svx-wa-intelligence-grid">
@@ -765,6 +1014,11 @@ function SalesIntelligenceCard({ summary, loading }) {
               <strong>{money(safeSummary.outstandingCredit)}</strong>
             </div>
             <div>
+              <span>Proformas</span>
+              <strong>{Number(safeSummary.quotationCount || 0)}</strong>
+              <small>{quotation?.number || "No proforma yet"}</small>
+            </div>
+            <div>
               <span>Last purchase</span>
               <strong>{lastPurchaseLabel}</strong>
               <small>{shortDate(safeSummary.lastPurchase)}</small>
@@ -772,8 +1026,17 @@ function SalesIntelligenceCard({ summary, loading }) {
           </div>
 
           <div className="svx-wa-recommended-action">
-            <span>Recommended action</span>
-            <strong>{recommendedCustomerAction(safeSummary)}</strong>
+            <span>Recommended next action</span>
+            <strong>{nextAction.label}</strong>
+            <small>{nextAction.detail}</small>
+            <button type="button" onClick={() => onRecommendedAction?.(nextAction)}>
+              {nextAction.primary}
+            </button>
+          </div>
+
+          <div className="svx-wa-timeline-block">
+            <div className="svx-wa-mini-title">Sales timeline</div>
+            <SalesTimeline events={timeline} />
           </div>
         </>
       )}
@@ -789,6 +1052,8 @@ function CustomerPanel({
   salesSummaryLoading,
   canManageTools,
   onCreateDraft,
+  onCreateQuotation,
+  onRecommendedAction,
   onAssign,
   onToggleStatus,
   onFinalize,
@@ -807,7 +1072,7 @@ function CustomerPanel({
 
   return (
     <aside className="svx-wa-side-panel">
-      <section className="svx-wa-side-card">
+      <section className="svx-wa-side-card svx-wa-customer-details-card">
         <div className="svx-wa-side-title">Customer details</div>
         <div className="svx-wa-customer-card">
           <span className="svx-wa-avatar is-large">{initials(customerName(conversation))}</span>
@@ -823,6 +1088,9 @@ function CustomerPanel({
           <button type="button" onClick={onCreateDraft}>
             New sale
           </button>
+          <button type="button" onClick={onCreateQuotation}>
+            Quotation
+          </button>
           <button type="button" onClick={onToggleStatus}>
             {conversation.status === "OPEN" ? "Close" : "Reopen"}
           </button>
@@ -834,16 +1102,22 @@ function CustomerPanel({
         draft={draft}
         summary={salesSummary}
         loading={salesSummaryLoading}
+        onRecommendedAction={onRecommendedAction}
       />
 
       <DraftSummaryCard draft={draft} onFinalize={onFinalize} finalizing={finalizing} />
 
-      <section className="svx-wa-side-card">
+      <section className="svx-wa-side-card svx-wa-quick-actions-card">
         <div className="svx-wa-side-title">Quick actions</div>
         <div className="svx-wa-action-list">
           <button type="button" onClick={onCreateDraft}>
             <strong>Create draft sale</strong>
             <span>Create a sale from this chat</span>
+          </button>
+
+          <button type="button" onClick={onCreateQuotation}>
+            <strong>Create quotation</strong>
+            <span>Use the existing proforma document flow</span>
           </button>
 
           {canManageTools ? (
@@ -860,7 +1134,7 @@ function CustomerPanel({
         </div>
       </section>
 
-      <section className="svx-wa-side-card">
+      <section className="svx-wa-side-card svx-wa-conversation-info-card">
         <div className="svx-wa-side-title">Conversation info</div>
         <div className="svx-wa-info-list">
           <span>Status</span>
@@ -891,8 +1165,8 @@ function ChatPanel({
   sending,
   onSend,
   onCreateDraft,
+  onCreateQuotation,
   onPaymentReminder,
-  onComingNext,
   salesSummary,
   linkedDraft,
   messagesEndRef,
@@ -932,7 +1206,7 @@ function ChatPanel({
           <button type="button" onClick={onCreateDraft}>
             Create sale
           </button>
-          <button type="button" onClick={onComingNext}>
+          <button type="button" onClick={onCreateQuotation}>
             Quotation
           </button>
           <button type="button" onClick={onPaymentReminder}>
@@ -1887,6 +2161,7 @@ function AssignModal({ open, staff, conversation, onClose, onAssigned }) {
 }
 
 export default function WhatsAppInbox() {
+  const navigate = useNavigate();
   const messagesEndRef = useRef(null);
   const hasLoadedOnceRef = useRef(false);
 
@@ -2161,9 +2436,49 @@ export default function WhatsAppInbox() {
       );
     }
 
-    function showComingNext() {
-      toast.success("Coming next in WhatsApp Sales Workspace");
+  function createQuotationFromConversation() {
+    if (!selectedConversation?.id) return;
+
+    const prefill = buildWhatsAppProformaPrefill({
+      conversation: selectedConversation,
+      draft: linkedDraft,
+    });
+
+    if (!prefill) return;
+
+    try {
+      sessionStorage.setItem("storvex:whatsapp-proforma-prefill", JSON.stringify(prefill));
+    } catch (error) {
+      console.error("Could not store WhatsApp proforma prefill:", error);
     }
+
+    navigate("/app/documents/proformas/create", {
+      state: {
+        proformaPrefill: prefill,
+      },
+    });
+  }
+
+  function handleRecommendedAction(action) {
+    const actionType = action?.action || "";
+
+    if (actionType === "DRAFT") {
+      setDraftModalOpen(true);
+      return;
+    }
+
+    if (actionType === "QUOTATION") {
+      createQuotationFromConversation();
+      return;
+    }
+
+    if (actionType === "REMINDER") {
+      fillPaymentReminder();
+      return;
+    }
+
+    toast.success(action?.label || "Recommended action selected");
+  }
 
   async function toggleStatus() {
     if (!selectedConversation?.id) return;
@@ -2335,8 +2650,8 @@ export default function WhatsAppInbox() {
             sending={sending}
             onSend={submitReply}
             onCreateDraft={() => setDraftModalOpen(true)}
+            onCreateQuotation={createQuotationFromConversation}
             onPaymentReminder={fillPaymentReminder}
-            onComingNext={showComingNext}
             salesSummary={salesSummary}
             linkedDraft={linkedDraft}
             messagesEndRef={messagesEndRef}
@@ -2349,6 +2664,8 @@ export default function WhatsAppInbox() {
             salesSummaryLoading={salesSummaryLoading}
             canManageTools={canManageTools}
             onCreateDraft={() => setDraftModalOpen(true)}
+            onCreateQuotation={createQuotationFromConversation}
+            onRecommendedAction={handleRecommendedAction}
             onAssign={() => setAssignModalOpen(true)}
             onToggleStatus={toggleStatus}
             onFinalize={finalizeLinkedDraft}

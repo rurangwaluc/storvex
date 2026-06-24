@@ -441,6 +441,28 @@ function sanitizePromotion(value) {
   };
 }
 
+
+function sanitizeProformaSummary(value) {
+  const item = ensureObject(value);
+  if (!Object.keys(item).length) return null;
+
+  return {
+    id: trimString(item.id),
+    number: trimString(item.number),
+    status: toUpper(item.status || "DRAFT"),
+    total: toNumber(item.total, 0),
+    currency: trimString(item.currency || "RWF"),
+    reference: trimString(item.reference),
+    source: toUpper(item.source),
+    conversationId: trimString(item.conversationId),
+    draftSaleId: trimString(item.draftSaleId),
+    convertedToSaleId: trimString(item.convertedToSaleId),
+    convertedAt: item.convertedAt || null,
+    createdAt: item.createdAt || null,
+    updatedAt: item.updatedAt || null,
+  };
+}
+
 function sanitizeBroadcast(value) {
   const item = ensureObject(value);
   if (!Object.keys(item).length) return null;
@@ -1063,6 +1085,8 @@ export async function getWhatsAppConversationSalesSummary(conversationId) {
   const id = trimString(conversationId);
 
   const data = await apiFetch(`/whatsapp/inbox/conversations/${id}/sales-summary`);
+  const proformas = ensureArray(data?.proformas).map(sanitizeProformaSummary).filter(Boolean);
+  const latestQuotation = sanitizeProformaSummary(data?.latestQuotation) || proformas[0] || null;
 
   return {
     totalOrders: toNumber(data?.totalOrders, 0),
@@ -1070,6 +1094,11 @@ export async function getWhatsAppConversationSalesSummary(conversationId) {
     outstandingCredit: toNumber(data?.outstandingCredit, 0),
     lastPurchase: data?.lastPurchase || null,
     lastSaleType: toUpper(data?.lastSaleType),
+    quotationCount: toNumber(data?.quotationCount, proformas.length),
+    hasQuotation:
+      typeof data?.hasQuotation === "boolean" ? data.hasQuotation : Boolean(latestQuotation),
+    latestQuotation,
+    proformas,
   };
 }
 
@@ -1100,6 +1129,7 @@ export {
   sanitizeDraftItem,
   sanitizeMessage,
   sanitizePayment,
+  sanitizeProformaSummary,
   sanitizePromotion,
   sanitizeStaff,
 };

@@ -57,6 +57,39 @@ function normalizeStatus(value) {
   return null;
 }
 
+function normalizeSource(value) {
+  const source = String(value || "").trim().toUpperCase();
+  if (!source) return null;
+  if (source === "WHATSAPP") return "WHATSAPP";
+  return source.slice(0, 80);
+}
+
+function modelHasField(delegate, fieldName) {
+  try {
+    return typeof delegate?.fields?.[fieldName] !== "undefined";
+  } catch {
+    return false;
+  }
+}
+
+function appendUniqueLines(...groups) {
+  const seen = new Set();
+  const lines = [];
+
+  groups
+    .flatMap((group) => String(group || "").split("\n"))
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .forEach((line) => {
+      const key = line.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      lines.push(line);
+    });
+
+  return lines.length ? lines.join("\n") : null;
+}
+
 function polishedProductName(value) {
   const clean = oneLine(value) || "—";
 
@@ -285,6 +318,9 @@ function mapProformaListRow(proforma) {
     validUntil: proforma.validUntil || null,
     preparedBy: proforma.preparedBy || null,
     reference: proforma.reference || null,
+    source: proforma.source || null,
+    conversationId: proforma.conversationId || null,
+    draftSaleId: proforma.draftSaleId || null,
     convertedToSaleId: proforma.convertedToSaleId || null,
     convertedAt: proforma.convertedAt || null,
     itemsCount: Array.isArray(proforma.items) ? proforma.items.length : 0,
@@ -330,6 +366,9 @@ function mapProformaDetail(proforma, tenant) {
       preparedBy: proforma.preparedBy || null,
       reference: proforma.reference || null,
       notes: proforma.notes || null,
+      source: proforma.source || null,
+      conversationId: proforma.conversationId || null,
+      draftSaleId: proforma.draftSaleId || null,
 
       convertedToSaleId: proforma.convertedToSaleId || null,
       convertedAt: proforma.convertedAt || null,
@@ -549,6 +588,9 @@ async function listProformas(req, res) {
           validUntil: true,
           preparedBy: true,
           reference: true,
+          ...(modelHasField(prisma.proforma, "source") ? { source: true } : {}),
+          ...(modelHasField(prisma.proforma, "conversationId") ? { conversationId: true } : {}),
+          ...(modelHasField(prisma.proforma, "draftSaleId") ? { draftSaleId: true } : {}),
           convertedToSaleId: true,
           convertedAt: true,
           createdAt: true,
@@ -602,6 +644,9 @@ async function createProforma(req, res) {
       currency,
       items,
       status,
+      source,
+      conversationId,
+      draftSaleId,
     } = req.body || {};
 
     const cleanCustomerName = cleanString(customerName);
@@ -654,11 +699,75 @@ async function createProforma(req, res) {
 
     const result = await prisma.$transaction(async (tx) => {
       let customer = null;
+      let linkedConversation = null;
+      let linkedDraftSale = null;
 
-      if (customerId) {
+      const cleanSource = normalizeSource(source);
+      let cleanConversationId = cleanString(conversationId);
+      const cleanDraftSaleId = cleanString(draftSaleId);
+
+      if (cleanConversationId) {
+        linkedConversation = await tx.whatsAppConversation.findFirst({
+          where: {
+            id: cleanConversationId,
+            tenantId,
+          },
+          select: {
+            id: true,
+            customerId: true,
+            phone: true,
+          },
+        });
+
+        if (!linkedConversation) {
+          throw new Error("WHATSAPP_CONVERSATION_NOT_FOUND");
+        }
+      }
+
+      if (cleanDraftSaleId) {
+        linkedDraftSale = await tx.sale.findFirst({
+          where: {
+            id: cleanDraftSaleId,
+            tenantId,
+            isDraft: true,
+            draftSource: "WHATSAPP",
+          },
+          select: {
+            id: true,
+            customerId: true,
+            conversationId: true,
+          },
+        });
+
+        if (!linkedDraftSale) {
+          throw new Error("WHATSAPP_DRAFT_SALE_NOT_FOUND");
+        }
+
+        if (!cleanConversationId && linkedDraftSale.conversationId) {
+          cleanConversationId = linkedDraftSale.conversationId;
+          linkedConversation = await tx.whatsAppConversation.findFirst({
+            where: {
+              id: cleanConversationId,
+              tenantId,
+            },
+            select: {
+              id: true,
+              customerId: true,
+              phone: true,
+            },
+          });
+        }
+      }
+
+      const resolvedCustomerId =
+        cleanString(customerId) ||
+        cleanString(linkedDraftSale?.customerId) ||
+        cleanString(linkedConversation?.customerId);
+
+      if (resolvedCustomerId) {
         customer = await tx.customer.findFirst({
           where: {
-            id: String(customerId),
+            id: resolvedCustomerId,
             tenantId,
           },
           select: {
@@ -703,7 +812,7 @@ async function createProforma(req, res) {
 
       const createData = {
         tenantId,
-        customerId: customer?.id || cleanString(customerId),
+        customerId: customer?.id || resolvedCustomerId || null,
         createdById: userId || null,
 
         number: documentNumber.proformaNumber,
@@ -720,12 +829,29 @@ async function createProforma(req, res) {
 
         validUntil: parsedValidUntil,
         preparedBy: preparedByText,
-        reference: cleanString(reference),
-        notes: cleanString(notes),
+        reference: cleanString(reference) || (cleanConversationId ? `WHATSAPP:${cleanConversationId}` : null),
+        notes: appendUniqueLines(
+          cleanSource === "WHATSAPP" ? "Source: WhatsApp" : null,
+          cleanConversationId ? `Conversation ID: ${cleanConversationId}` : null,
+          cleanDraftSaleId ? `Draft sale ID: ${cleanDraftSaleId}` : null,
+          notes,
+        ),
       };
 
       if (typeof tx.proforma.fields?.branchId !== "undefined") {
         createData.branchId = activeLocation.id;
+      }
+
+      if (modelHasField(tx.proforma, "source")) {
+        createData.source = cleanSource;
+      }
+
+      if (modelHasField(tx.proforma, "conversationId")) {
+        createData.conversationId = cleanConversationId || null;
+      }
+
+      if (modelHasField(tx.proforma, "draftSaleId")) {
+        createData.draftSaleId = cleanDraftSaleId || null;
       }
 
       const proforma = await tx.proforma.create({
@@ -746,6 +872,9 @@ async function createProforma(req, res) {
           preparedBy: true,
           reference: true,
           notes: true,
+          ...(modelHasField(tx.proforma, "source") ? { source: true } : {}),
+          ...(modelHasField(tx.proforma, "conversationId") ? { conversationId: true } : {}),
+          ...(modelHasField(tx.proforma, "draftSaleId") ? { draftSaleId: true } : {}),
           createdAt: true,
           updatedAt: true,
         },
@@ -774,8 +903,18 @@ async function createProforma(req, res) {
     const handled = sendLocationError(res, error);
     if (handled) return handled;
 
-    if (String(error?.message || "") === "CUSTOMER_NOT_FOUND") {
+    const code = String(error?.message || "");
+
+    if (code === "CUSTOMER_NOT_FOUND") {
       return res.status(404).json({ message: "Customer not found" });
+    }
+
+    if (code === "WHATSAPP_CONVERSATION_NOT_FOUND") {
+      return res.status(404).json({ message: "WhatsApp conversation not found" });
+    }
+
+    if (code === "WHATSAPP_DRAFT_SALE_NOT_FOUND") {
+      return res.status(404).json({ message: "WhatsApp draft sale not found" });
     }
 
     console.error("createProforma error:", error);
@@ -1175,6 +1314,9 @@ async function duplicateProforma(req, res) {
           preparedBy: true,
           reference: true,
           notes: true,
+          ...(modelHasField(tx.proforma, "source") ? { source: true } : {}),
+          ...(modelHasField(tx.proforma, "conversationId") ? { conversationId: true } : {}),
+          ...(modelHasField(tx.proforma, "draftSaleId") ? { draftSaleId: true } : {}),
           createdAt: true,
           updatedAt: true,
         },

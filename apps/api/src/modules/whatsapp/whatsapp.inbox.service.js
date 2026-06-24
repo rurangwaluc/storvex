@@ -2322,6 +2322,81 @@ async function markConversationRead({ tenantId, conversationId, userId }) {
   };
 }
 
+function normalizeProformaSummary(proforma) {
+  if (!proforma) return null;
+
+  return {
+    id: proforma.id,
+    number: proforma.number || null,
+    status: proforma.status || null,
+    total: Number(proforma.total || 0),
+    currency: proforma.currency || "RWF",
+    reference: proforma.reference || null,
+    source: proforma.source || null,
+    conversationId: proforma.conversationId || null,
+    draftSaleId: proforma.draftSaleId || null,
+    convertedToSaleId: proforma.convertedToSaleId || null,
+    convertedAt: proforma.convertedAt || null,
+    createdAt: proforma.createdAt || null,
+    updatedAt: proforma.updatedAt || null,
+  };
+}
+
+async function listConversationProformas({ tenantId, conversationId }) {
+  if (!tenantId || !conversationId) return [];
+
+  const hasConversationId = modelHasField(prisma.proforma, "conversationId");
+  const hasDraftSaleId = modelHasField(prisma.proforma, "draftSaleId");
+  const hasSource = modelHasField(prisma.proforma, "source");
+
+  const where = {
+    tenantId,
+    OR: [
+      { reference: `WHATSAPP:${conversationId}` },
+    ],
+  };
+
+  if (hasConversationId) {
+    where.OR.unshift({ conversationId });
+  }
+
+  return prisma.proforma.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    take: 6,
+    select: {
+      id: true,
+      number: true,
+      status: true,
+      total: true,
+      currency: true,
+      reference: true,
+      convertedToSaleId: true,
+      convertedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      ...(hasSource ? { source: true } : {}),
+      ...(hasConversationId ? { conversationId: true } : {}),
+      ...(hasDraftSaleId ? { draftSaleId: true } : {}),
+    },
+  });
+}
+
+function emptySalesSummary(extra = {}) {
+  return {
+    totalOrders: 0,
+    totalRevenue: 0,
+    outstandingCredit: 0,
+    lastPurchase: null,
+    lastSaleType: null,
+    quotationCount: 0,
+    hasQuotation: false,
+    latestQuotation: null,
+    proformas: [],
+    ...extra,
+  };
+}
+
 async function getSalesSummary({
   tenantId,
   userId,
@@ -2347,14 +2422,21 @@ async function getSalesSummary({
     throw appError("NOT_FOUND");
   }
 
+  const proformas = await listConversationProformas({
+    tenantId,
+    conversationId,
+  });
+  const normalizedProformas = proformas.map(normalizeProformaSummary);
+  const latestQuotation = normalizedProformas[0] || null;
+  const quotationMeta = {
+    quotationCount: normalizedProformas.length,
+    hasQuotation: normalizedProformas.length > 0,
+    latestQuotation,
+    proformas: normalizedProformas,
+  };
+
   if (!conversation.customerId) {
-    return {
-      totalOrders: 0,
-      totalRevenue: 0,
-      outstandingCredit: 0,
-      lastPurchase: null,
-      lastSaleType: null,
-    };
+    return emptySalesSummary(quotationMeta);
   }
 
   const sales = await prisma.sale.findMany({
@@ -2377,13 +2459,7 @@ async function getSalesSummary({
   });
 
   if (!sales.length) {
-    return {
-      totalOrders: 0,
-      totalRevenue: 0,
-      outstandingCredit: 0,
-      lastPurchase: null,
-      lastSaleType: null,
-    };
+    return emptySalesSummary(quotationMeta);
   }
 
   return {
@@ -2402,6 +2478,8 @@ async function getSalesSummary({
     lastPurchase: sales[0].createdAt,
 
     lastSaleType: sales[0].saleType,
+
+    ...quotationMeta,
   };
 }
 

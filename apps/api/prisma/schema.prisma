@@ -621,6 +621,8 @@ model Sale {
   conversationId String?
   conversation   WhatsAppConversation? @relation(fields: [conversationId], references: [id])
 
+  sourceProformas Proforma[] @relation("ProformaDraftSale")
+
   deliveryNotes DeliveryNote[]
   cashier       User           @relation("CashierSales", fields: [cashierId], references: [id])
   customer      Customer?      @relation(fields: [customerId], references: [id])
@@ -703,6 +705,10 @@ model Proforma {
   reference  String?
   notes      String?
 
+  source         String? @db.Text
+  conversationId String? @db.Text
+  draftSaleId    String? @db.Text
+
   convertedToSaleId String?
   convertedAt       DateTime?
 
@@ -712,8 +718,10 @@ model Proforma {
   tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   branch    Branch?        @relation(fields: [branchId], references: [id])
   customer  Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  createdBy User?          @relation("ProformaCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  items     ProformaItem[]
+  createdBy    User?                  @relation("ProformaCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  conversation WhatsAppConversation?  @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  draftSale    Sale?                  @relation("ProformaDraftSale", fields: [draftSaleId], references: [id], onDelete: SetNull)
+  items        ProformaItem[]
 
   @@unique([tenantId, number])
   @@index([tenantId, status, createdAt])
@@ -722,6 +730,9 @@ model Proforma {
   @@index([tenantId, customerPhone])
   @@index([tenantId, validUntil])
   @@index([tenantId, convertedToSaleId])
+  @@index([tenantId, source, createdAt])
+  @@index([tenantId, conversationId, createdAt])
+  @@index([tenantId, draftSaleId])
 }
 
 model ProformaItem {
@@ -972,6 +983,7 @@ model WhatsAppConversation {
   tenant       Tenant             @relation(fields: [tenantId], references: [id])
   messages     WhatsAppMessage[]
   sales        Sale[]
+  proformas    Proforma[]
 
   @@index([tenantId])
   @@index([phone])
