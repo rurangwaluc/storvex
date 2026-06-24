@@ -1059,6 +1059,20 @@ export async function sendWhatsAppBroadcastNow(broadcastId, payload = {}) {
   };
 }
 
+export async function getWhatsAppConversationSalesSummary(conversationId) {
+  const id = trimString(conversationId);
+
+  const data = await apiFetch(`/whatsapp/inbox/conversations/${id}/sales-summary`);
+
+  return {
+    totalOrders: toNumber(data?.totalOrders, 0),
+    totalRevenue: toNumber(data?.totalRevenue, 0),
+    outstandingCredit: toNumber(data?.outstandingCredit, 0),
+    lastPurchase: data?.lastPurchase || null,
+    lastSaleType: toUpper(data?.lastSaleType),
+  };
+}
+
 /**
  * Stable aliases
  */

@@ -514,6 +514,24 @@ async function unassignConversation(req, res) {
   }
 }
 
+async function getSalesSummary(req, res) {
+  try {
+    const summary = await service.getSalesSummary({
+      tenantId: req.user.tenantId,
+      userId: req.user.id,
+      conversationId: req.params.id,
+    });
+
+    return res.json(summary);
+  } catch (err) {
+    return mapServiceError(
+      err,
+      res,
+      "Failed to load sales summary"
+    );
+  }
+}
+
 module.exports = {
   listConversations,
   listMessages,
@@ -529,4 +547,5 @@ module.exports = {
   finalizeSaleDraft,
   assignConversation,
   unassignConversation,
+  getSalesSummary
 };

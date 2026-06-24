@@ -2322,6 +2322,89 @@ async function markConversationRead({ tenantId, conversationId, userId }) {
   };
 }
 
+async function getSalesSummary({
+  tenantId,
+  userId,
+  conversationId,
+}) {
+  const baseWhere = await buildConversationBranchWhere({
+    tenantId,
+    userId,
+  });
+
+  const conversation =
+    await prisma.whatsAppConversation.findFirst({
+      where: {
+        ...baseWhere,
+        id: conversationId,
+      },
+      select: {
+        customerId: true,
+      },
+    });
+
+  if (!conversation) {
+    throw appError("NOT_FOUND");
+  }
+
+  if (!conversation.customerId) {
+    return {
+      totalOrders: 0,
+      totalRevenue: 0,
+      outstandingCredit: 0,
+      lastPurchase: null,
+      lastSaleType: null,
+    };
+  }
+
+  const sales = await prisma.sale.findMany({
+    where: {
+      tenantId,
+      customerId: conversation.customerId,
+      isDraft: false,
+      isCancelled: false,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      id: true,
+      total: true,
+      balanceDue: true,
+      saleType: true,
+      createdAt: true,
+    },
+  });
+
+  if (!sales.length) {
+    return {
+      totalOrders: 0,
+      totalRevenue: 0,
+      outstandingCredit: 0,
+      lastPurchase: null,
+      lastSaleType: null,
+    };
+  }
+
+  return {
+    totalOrders: sales.length,
+
+    totalRevenue: sales.reduce(
+      (sum, sale) => sum + sale.total,
+      0
+    ),
+
+    outstandingCredit: sales.reduce(
+      (sum, sale) => sum + sale.balanceDue,
+      0
+    ),
+
+    lastPurchase: sales[0].createdAt,
+
+    lastSaleType: sales[0].saleType,
+  };
+}
+
 module.exports = {
   listConversations,
   listMessages,
@@ -2337,4 +2420,5 @@ module.exports = {
   listAssignableStaff,
   assignConversation,
   unassignConversation,
+  getSalesSummary,
 };

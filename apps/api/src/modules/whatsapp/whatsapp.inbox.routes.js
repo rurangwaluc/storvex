@@ -94,4 +94,6 @@ router.delete("/inbox/sale-drafts/:saleId", controller.deleteSaleDraft);
 
 router.post("/inbox/sale-drafts/:saleId/finalize", controller.finalizeSaleDraft);
 
+router.get("/inbox/conversations/:id/sales-summary", controller.getSalesSummary );
+
 module.exports = router;
