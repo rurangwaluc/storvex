@@ -1544,7 +1544,37 @@ async function convertProformaToSale(req, res) {
 
       if (!proforma) throw new Error("PROFORMA_NOT_FOUND");
       if (proforma.status === "CONVERTED" || proforma.convertedToSaleId) {
-        throw new Error("PROFORMA_ALREADY_CONVERTED");
+        const existingSale = proforma.convertedToSaleId
+          ? await tx.sale.findFirst({
+              where: { id: proforma.convertedToSaleId, tenantId },
+              select: {
+                id: true,
+                invoiceNumber: true,
+                receiptNumber: true,
+                total: true,
+                status: true,
+                ...(modelHasField(tx.sale, "conversationId") ? { conversationId: true } : {}),
+              },
+            })
+          : null;
+
+        return {
+          alreadyConverted: true,
+          sale: existingSale || {
+            id: proforma.convertedToSaleId || null,
+            invoiceNumber: null,
+            receiptNumber: null,
+            total: proforma.total,
+            status: "UNPAID",
+          },
+          proforma: {
+            id: proforma.id,
+            number: proforma.number,
+            status: "CONVERTED",
+            convertedToSaleId: proforma.convertedToSaleId || null,
+            convertedAt: proforma.convertedAt || null,
+          },
+        };
       }
       if (proforma.status === "CANCELLED") throw new Error("PROFORMA_CANCELLED");
       if (!Array.isArray(proforma.items) || proforma.items.length === 0) {
@@ -1724,11 +1754,12 @@ async function convertProformaToSale(req, res) {
       return { sale, proforma: updatedProforma };
     });
 
-    return res.status(201).json({
+    return res.status(result.alreadyConverted ? 200 : 201).json({
       converted: true,
-      saleId: result.sale.id,
-      invoiceNumber: result.sale.invoiceNumber,
-      receiptNumber: result.sale.receiptNumber,
+      alreadyConverted: Boolean(result.alreadyConverted),
+      saleId: result.sale?.id || result.proforma?.convertedToSaleId || null,
+      invoiceNumber: result.sale?.invoiceNumber || null,
+      receiptNumber: result.sale?.receiptNumber || null,
       sale: result.sale,
       proforma: result.proforma,
     });

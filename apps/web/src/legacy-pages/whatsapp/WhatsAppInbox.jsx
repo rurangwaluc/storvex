@@ -2600,11 +2600,18 @@ export default function WhatsAppInbox() {
     setConvertingProformaId(quotationId);
 
     try {
-      await convertProformaToSale(quotationId);
-      toast.success("Quotation converted to sale");
+      const result = await convertProformaToSale(quotationId);
+      toast.success(result?.alreadyConverted ? "Quotation was already converted" : "Quotation converted to sale");
       await load({ silent: true });
     } catch (err) {
-      toast.error(safeError(err, "Could not convert quotation to sale"));
+      const message = safeError(err, "Could not convert quotation to sale");
+
+      if (message.toLowerCase().includes("already converted")) {
+        toast.success("Quotation was already converted");
+        await load({ silent: true });
+      } else {
+        toast.error(message);
+      }
     } finally {
       setConvertingProformaId("");
     }
