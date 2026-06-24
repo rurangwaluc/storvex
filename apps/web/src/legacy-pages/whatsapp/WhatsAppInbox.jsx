@@ -712,6 +712,8 @@ function ChatPanel({
   sending,
   onSend,
   onCreateDraft,
+  onPaymentReminder,
+  onComingNext,
   messagesEndRef,
 }) {
   if (!conversation) {
@@ -743,9 +745,14 @@ function ChatPanel({
         </div>
 
         <div className="svx-wa-chat-actions">
-          <Badge tone={toneForStatus(conversation.status)}>{statusLabel(conversation.status)}</Badge>
           <button type="button" onClick={onCreateDraft}>
-            New sale
+            Create sale
+          </button>
+          <button type="button" onClick={onComingNext}>
+            Quotation
+          </button>
+          <button type="button" onClick={onPaymentReminder}>
+            Reminder
           </button>
         </div>
       </header>
@@ -1929,6 +1936,18 @@ export default function WhatsAppInbox() {
     }
   }
 
+  function fillPaymentReminder() {
+      if (!selectedConversation) return;
+
+      setReplyText(
+        `Hello ${customerName(selectedConversation)}, this is a friendly reminder about your pending payment. Please let us know when you will be able to complete it. Thank you.`
+      );
+    }
+
+    function showComingNext() {
+      toast.success("Coming next in WhatsApp Sales Workspace");
+    }
+
   async function toggleStatus() {
     if (!selectedConversation?.id) return;
 
@@ -2098,6 +2117,8 @@ export default function WhatsAppInbox() {
             sending={sending}
             onSend={submitReply}
             onCreateDraft={() => setDraftModalOpen(true)}
+            onPaymentReminder={fillPaymentReminder}
+            onComingNext={showComingNext}
             messagesEndRef={messagesEndRef}
           />
 
