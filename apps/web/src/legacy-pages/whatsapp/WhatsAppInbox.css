@@ -3924,3 +3924,858 @@ background: var(--wa-soft);
   }
 }
 
+/* -------------------------------------------------------------------------- */
+/* Storvex WhatsApp responsive contract - desktop, tablet, PWA                 */
+/* This block intentionally overrides older patch blocks above.                 */
+/* Goal: no squeezed side cards, no horizontal scroll, readable at every width. */
+/* -------------------------------------------------------------------------- */
+
+.svx-wa-workspace,
+.svx-wa-workspace * {
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.svx-wa-workspace {
+  overflow-x: hidden !important;
+}
+
+/* Desktop: three real work zones. The right intelligence rail is a rail, not
+   a set of tiny columns. */
+@media (min-width: 1501px) {
+  .svx-wa-inbox-grid {
+    display: grid !important;
+    grid-template-columns:
+      clamp(350px, 24vw, 430px)
+      minmax(620px, 1fr)
+      clamp(380px, 26vw, 470px) !important;
+    gap: 16px !important;
+    height: min(780px, calc(100dvh - 258px)) !important;
+    min-height: 650px !important;
+    max-height: min(840px, calc(100dvh - 226px)) !important;
+    overflow: hidden !important;
+    align-items: stretch !important;
+  }
+
+  .svx-wa-side-panel {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-content: start !important;
+    gap: 12px !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 12px !important;
+  }
+
+  .svx-wa-side-card,
+  .svx-wa-draft-card,
+  .svx-wa-intelligence-card,
+  .svx-wa-customer-details-card,
+  .svx-wa-quick-actions-card,
+  .svx-wa-conversation-info-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-column: auto !important;
+  }
+
+  .svx-wa-customer-details-card { order: 1 !important; }
+  .svx-wa-intelligence-card { order: 2 !important; }
+  .svx-wa-draft-card { order: 3 !important; }
+  .svx-wa-quick-actions-card { order: 4 !important; }
+  .svx-wa-conversation-info-card { order: 5 !important; }
+}
+
+/* Laptop / medium desktop: protect the chat. Move customer intelligence below
+   instead of squeezing it into a poor right rail. */
+@media (min-width: 1181px) and (max-width: 1500px) {
+  .svx-wa-inbox-grid {
+    display: grid !important;
+    grid-template-columns: clamp(320px, 30vw, 390px) minmax(560px, 1fr) !important;
+    gap: 16px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    align-items: start !important;
+  }
+
+  .svx-wa-conversation-panel {
+    height: min(670px, calc(100dvh - 256px)) !important;
+    max-height: min(670px, calc(100dvh - 256px)) !important;
+  }
+
+  .svx-wa-chat-panel {
+    height: min(670px, calc(100dvh - 256px)) !important;
+    max-height: min(670px, calc(100dvh - 256px)) !important;
+  }
+
+  .svx-wa-side-panel {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(260px, 1fr)) !important;
+    gap: 14px !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 14px !important;
+  }
+
+  .svx-wa-intelligence-card {
+    grid-column: span 2 !important;
+  }
+
+  .svx-wa-conversation-info-card {
+    grid-column: span 2 !important;
+  }
+}
+
+/* Tablet and narrow desktop: one selling flow, then intelligence below. */
+@media (min-width: 761px) and (max-width: 1180px) {
+  .svx-wa-inbox-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 14px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .svx-wa-conversation-panel {
+    height: 420px !important;
+    max-height: 420px !important;
+  }
+
+  .svx-wa-chat-panel {
+    height: min(680px, calc(100dvh - 154px)) !important;
+    max-height: min(680px, calc(100dvh - 154px)) !important;
+  }
+
+  .svx-wa-side-panel {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 14px !important;
+  }
+
+  .svx-wa-draft-card { order: 1 !important; }
+  .svx-wa-intelligence-card {
+    order: 2 !important;
+    grid-column: 1 / -1 !important;
+  }
+  .svx-wa-customer-details-card { order: 3 !important; }
+  .svx-wa-quick-actions-card { order: 4 !important; }
+  .svx-wa-conversation-info-card {
+    order: 5 !important;
+    grid-column: 1 / -1 !important;
+  }
+}
+
+/* Shared card internals: never split words into unreadable vertical fragments. */
+.svx-wa-side-panel .svx-wa-side-card {
+  overflow: hidden !important;
+}
+
+.svx-wa-side-panel .svx-wa-side-title,
+.svx-wa-side-panel strong,
+.svx-wa-side-panel span,
+.svx-wa-side-panel small,
+.svx-wa-side-panel p,
+.svx-wa-side-panel button {
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  hyphens: none !important;
+}
+
+.svx-wa-customer-card {
+  grid-template-columns: 64px minmax(0, 1fr) !important;
+}
+
+.svx-wa-customer-card strong,
+.svx-wa-chat-person strong {
+  max-width: 100% !important;
+}
+
+.svx-wa-intelligence-hero {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.svx-wa-intelligence-hero > .svx-wa-badge {
+  justify-self: end !important;
+  align-self: center !important;
+  min-width: 92px !important;
+  min-height: 30px !important;
+  text-align: center !important;
+}
+
+.svx-wa-intelligence-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.svx-wa-intelligence-grid > div,
+.svx-wa-recommended-action,
+.svx-wa-sales-timeline-item,
+.svx-wa-action-list button,
+.svx-wa-info-list {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.svx-wa-intelligence-grid > div:first-child,
+.svx-wa-recommended-action,
+.svx-wa-timeline-block {
+  grid-column: 1 / -1 !important;
+}
+
+.svx-wa-action-list button {
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr) !important;
+}
+
+/* PWA/mobile: vertical information hierarchy. Keep 2-up only where it remains
+   readable; never force customer intelligence into columns. */
+@media (max-width: 760px) {
+  html,
+  body,
+  #root,
+  #__next {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  .svx-wa-workspace {
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 12px !important;
+    overflow-x: hidden !important;
+    padding: 8px 0 calc(28px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .svx-wa-hero,
+  .svx-wa-metrics,
+  .svx-wa-module-tabs,
+  .svx-wa-inbox-grid,
+  .svx-wa-conversation-panel,
+  .svx-wa-chat-panel,
+  .svx-wa-side-panel,
+  .svx-wa-page-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .svx-wa-hero {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 14px !important;
+    border-radius: 18px !important;
+  }
+
+  .svx-wa-hero-copy h1 {
+    font-size: clamp(25px, 9vw, 34px) !important;
+    line-height: 1.03 !important;
+  }
+
+  .svx-wa-hero-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .svx-wa-hero-actions > * {
+    width: 100% !important;
+  }
+
+  .svx-wa-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .svx-wa-metric {
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    min-height: 86px !important;
+    padding: 10px !important;
+  }
+
+  .svx-wa-module-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+    padding: 8px !important;
+  }
+
+  .svx-wa-module-tab {
+    width: 100% !important;
+    min-width: 0 !important;
+    justify-content: center !important;
+  }
+
+  .svx-wa-inbox-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .svx-wa-conversation-panel {
+    height: clamp(300px, 42dvh, 430px) !important;
+    max-height: clamp(300px, 42dvh, 430px) !important;
+  }
+
+  .svx-wa-chat-panel {
+    height: clamp(540px, 74dvh, 680px) !important;
+    max-height: clamp(540px, 74dvh, 680px) !important;
+  }
+
+  .svx-wa-chat-head {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .svx-wa-chat-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+
+  .svx-wa-chat-actions button {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 8px !important;
+    font-size: 11px !important;
+  }
+
+  .svx-wa-reply-bar {
+    grid-template-columns: minmax(0, 1fr) 42px !important;
+  }
+
+  .svx-wa-send-button {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+
+  .svx-wa-side-panel {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 10px !important;
+  }
+
+  .svx-wa-draft-card { order: 1 !important; }
+  .svx-wa-intelligence-card { order: 2 !important; }
+  .svx-wa-customer-details-card { order: 3 !important; }
+  .svx-wa-quick-actions-card { order: 4 !important; }
+  .svx-wa-conversation-info-card { order: 5 !important; }
+
+  .svx-wa-intelligence-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+    justify-items: center !important;
+    text-align: center !important;
+  }
+
+  .svx-wa-intelligence-hero > .svx-wa-badge {
+    justify-self: center !important;
+  }
+
+  .svx-wa-button-grid,
+  .svx-wa-card-actions,
+  .svx-wa-action-list,
+  .svx-wa-intelligence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-action-list button {
+    grid-template-columns: minmax(0, 1fr) !important;
+    min-height: 78px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-wa-hero-actions,
+  .svx-wa-action-list,
+  .svx-wa-button-grid,
+  .svx-wa-card-actions,
+  .svx-wa-intelligence-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-wa-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-customer-card {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+  }
+
+  .svx-wa-customer-card .svx-wa-avatar.is-large,
+  .svx-wa-chat-person .svx-wa-avatar.is-large {
+    width: 46px !important;
+    height: 46px !important;
+    min-width: 46px !important;
+    min-height: 46px !important;
+  }
+}
+
+@media (max-width: 335px) {
+  .svx-wa-metrics {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* Storvex WhatsApp premium command-center redesign                            */
+/* Purpose: stop desktop/tablet side-card stretching and make the workspace      */
+/* feel like a serious retail sales command center across all breakpoints.       */
+/* Keep this block LAST.                                                        */
+/* -------------------------------------------------------------------------- */
+
+.svx-wa-workspace {
+  gap: 18px !important;
+}
+
+:root[data-theme="dark"] .svx-wa-workspace {
+  --wa-card: #1c1c1d;
+  --wa-soft: #141c2a;
+  --wa-soft-2: #111827;
+  --wa-border-soft: rgba(255, 255, 255, 0.095);
+}
+
+.svx-wa-hero {
+  min-height: 82px !important;
+}
+
+.svx-wa-hero-copy h1 {
+  max-width: 900px !important;
+}
+
+.svx-wa-metric {
+  min-height: 88px !important;
+  border-radius: 16px !important;
+}
+
+.svx-wa-module-tabs {
+  min-height: 54px !important;
+  border-radius: 16px !important;
+}
+
+.svx-wa-module-tab {
+  min-height: 54px !important;
+}
+
+/* Main selling area: conversation list + chat only. Customer BI becomes a real
+   command center below instead of a cramped right rail. */
+.svx-wa-inbox-grid {
+  display: grid !important;
+  grid-template-columns: minmax(340px, 0.42fr) minmax(0, 1fr) !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.svx-wa-conversation-panel,
+.svx-wa-chat-panel {
+  height: clamp(560px, calc(100dvh - 300px), 720px) !important;
+  max-height: clamp(560px, calc(100dvh - 300px), 720px) !important;
+  min-height: 560px !important;
+}
+
+.svx-wa-side-panel {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  align-items: start !important;
+  align-content: start !important;
+  gap: 16px !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  border-radius: 18px !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--wa-card) 96%, var(--wa-primary) 4%), var(--wa-card)) !important;
+  padding: 16px !important;
+}
+
+.svx-wa-side-card {
+  height: auto !important;
+  min-height: 0 !important;
+  align-self: start !important;
+  border-radius: 16px !important;
+  padding: 16px !important;
+}
+
+.svx-wa-customer-details-card {
+  grid-column: span 3 !important;
+  order: 1 !important;
+}
+
+.svx-wa-intelligence-card {
+  grid-column: span 6 !important;
+  order: 2 !important;
+}
+
+.svx-wa-draft-card {
+  grid-column: span 3 !important;
+  order: 3 !important;
+}
+
+.svx-wa-quick-actions-card {
+  grid-column: span 6 !important;
+  order: 4 !important;
+}
+
+.svx-wa-conversation-info-card {
+  grid-column: span 6 !important;
+  order: 5 !important;
+}
+
+/* Customer card: compact, not a huge empty block. */
+.svx-wa-customer-card {
+  grid-template-columns: 58px minmax(0, 1fr) !important;
+  margin-top: 14px !important;
+  padding: 14px !important;
+}
+
+.svx-wa-customer-card .svx-wa-avatar.is-large {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+  min-height: 48px !important;
+}
+
+.svx-wa-button-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.svx-wa-button-grid button {
+  min-height: 42px !important;
+  border-radius: 12px !important;
+}
+
+/* Intelligence: make it read like a business dashboard. */
+.svx-wa-intelligence-hero {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 16px !important;
+  border: 1px solid var(--wa-border-soft) !important;
+  border-radius: 15px !important;
+  background: var(--wa-soft) !important;
+  padding: 14px !important;
+}
+
+.svx-wa-intelligence-hero > div {
+  min-width: 0 !important;
+}
+
+.svx-wa-intelligence-hero strong {
+  font-size: 20px !important;
+  line-height: 1.05 !important;
+}
+
+.svx-wa-intelligence-hero small {
+  max-width: 620px !important;
+}
+
+.svx-wa-intelligence-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin-top: 12px !important;
+}
+
+.svx-wa-intelligence-grid > div {
+  min-height: 80px !important;
+  border-radius: 14px !important;
+  padding: 13px !important;
+}
+
+.svx-wa-intelligence-grid strong {
+  font-size: 18px !important;
+  line-height: 1.1 !important;
+}
+
+.svx-wa-recommended-action {
+  margin-top: 12px !important;
+  border-radius: 15px !important;
+  padding: 14px !important;
+}
+
+.svx-wa-recommended-action button {
+  min-height: 42px !important;
+}
+
+.svx-wa-timeline-block {
+  margin-top: 14px !important;
+}
+
+.svx-wa-sales-timeline {
+  gap: 8px !important;
+}
+
+.svx-wa-sales-timeline-item {
+  grid-template-columns: 92px minmax(0, 1fr) !important;
+  min-height: 54px !important;
+  border-radius: 13px !important;
+  padding: 10px 12px !important;
+}
+
+/* Draft card: important but not visually dominating. */
+.svx-wa-draft-card.is-highlight {
+  border-color: color-mix(in srgb, var(--wa-warning) 24%, var(--wa-border-soft)) !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--wa-card) 92%, var(--wa-warning) 8%), var(--wa-card)) !important;
+}
+
+.svx-wa-draft-value {
+  margin-top: 14px !important;
+  font-size: clamp(24px, 2.2vw, 34px) !important;
+  line-height: 1.02 !important;
+}
+
+.svx-wa-draft-card .svx-wa-full-button {
+  min-height: 44px !important;
+  margin-top: 14px !important;
+}
+
+/* Quick actions become a clean 2x2 command grid. */
+.svx-wa-action-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.svx-wa-action-list button {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr) !important;
+  min-height: 64px !important;
+  border-radius: 14px !important;
+  background: var(--wa-soft) !important;
+}
+
+.svx-wa-action-list strong,
+.svx-wa-action-list span {
+  overflow-wrap: anywhere !important;
+}
+
+/* Conversation info reads like a compact facts table. */
+.svx-wa-info-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.svx-wa-info-list span,
+.svx-wa-info-list strong {
+  display: block !important;
+  text-align: left !important;
+}
+
+.svx-wa-info-list span:nth-child(odd) {
+  color: var(--wa-muted-2) !important;
+  font-size: 10.5px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+.svx-wa-info-list strong:nth-child(even) {
+  margin-top: -6px !important;
+  border: 1px solid var(--wa-border-soft) !important;
+  border-radius: 12px !important;
+  background: var(--wa-soft) !important;
+  padding: 10px !important;
+  font-size: 12.5px !important;
+  white-space: normal !important;
+}
+
+/* Laptop/tablet: still premium, no squeezed rails. */
+@media (max-width: 1280px) {
+  .svx-wa-inbox-grid {
+    grid-template-columns: minmax(310px, 0.44fr) minmax(0, 1fr) !important;
+  }
+
+  .svx-wa-conversation-panel,
+  .svx-wa-chat-panel {
+    height: clamp(540px, 70dvh, 680px) !important;
+    max-height: clamp(540px, 70dvh, 680px) !important;
+    min-height: 540px !important;
+  }
+
+  .svx-wa-customer-details-card,
+  .svx-wa-draft-card {
+    grid-column: span 4 !important;
+  }
+
+  .svx-wa-intelligence-card {
+    grid-column: span 8 !important;
+  }
+
+  .svx-wa-quick-actions-card,
+  .svx-wa-conversation-info-card {
+    grid-column: span 6 !important;
+  }
+
+  .svx-wa-intelligence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .svx-wa-inbox-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-wa-conversation-panel {
+    height: clamp(320px, 42dvh, 460px) !important;
+    max-height: clamp(320px, 42dvh, 460px) !important;
+    min-height: 320px !important;
+  }
+
+  .svx-wa-chat-panel {
+    height: clamp(560px, 72dvh, 700px) !important;
+    max-height: clamp(560px, 72dvh, 700px) !important;
+    min-height: 560px !important;
+  }
+
+  .svx-wa-side-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-customer-details-card,
+  .svx-wa-draft-card,
+  .svx-wa-quick-actions-card,
+  .svx-wa-conversation-info-card {
+    grid-column: span 1 !important;
+  }
+
+  .svx-wa-intelligence-card {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-wa-workspace {
+    gap: 12px !important;
+  }
+
+  .svx-wa-inbox-grid {
+    gap: 12px !important;
+  }
+
+  .svx-wa-conversation-panel {
+    height: clamp(300px, 44dvh, 430px) !important;
+    max-height: clamp(300px, 44dvh, 430px) !important;
+    min-height: 300px !important;
+  }
+
+  .svx-wa-chat-panel {
+    height: clamp(540px, 74dvh, 680px) !important;
+    max-height: clamp(540px, 74dvh, 680px) !important;
+    min-height: 540px !important;
+  }
+
+  .svx-wa-chat-head {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .svx-wa-chat-actions {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    width: 100% !important;
+  }
+
+  .svx-wa-chat-actions button {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 8px !important;
+    font-size: 11px !important;
+  }
+
+  .svx-wa-side-panel {
+    grid-template-columns: minmax(0, 1fr) !important;
+    padding: 12px !important;
+    border-radius: 18px !important;
+  }
+
+  .svx-wa-customer-details-card,
+  .svx-wa-intelligence-card,
+  .svx-wa-draft-card,
+  .svx-wa-quick-actions-card,
+  .svx-wa-conversation-info-card {
+    grid-column: 1 / -1 !important;
+  }
+
+  .svx-wa-draft-card { order: 1 !important; }
+  .svx-wa-intelligence-card { order: 2 !important; }
+  .svx-wa-customer-details-card { order: 3 !important; }
+  .svx-wa-quick-actions-card { order: 4 !important; }
+  .svx-wa-conversation-info-card { order: 5 !important; }
+
+  .svx-wa-intelligence-hero {
+    grid-template-columns: minmax(0, 1fr) !important;
+    text-align: left !important;
+  }
+
+  .svx-wa-intelligence-hero > .svx-wa-badge {
+    justify-self: start !important;
+  }
+
+  .svx-wa-intelligence-grid,
+  .svx-wa-action-list,
+  .svx-wa-info-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-wa-hero-copy h1 {
+    font-size: clamp(26px, 9vw, 32px) !important;
+  }
+
+  .svx-wa-chat-actions,
+  .svx-wa-intelligence-grid,
+  .svx-wa-action-list,
+  .svx-wa-info-list,
+  .svx-wa-button-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-wa-message {
+    max-width: 94% !important;
+  }
+
+  .svx-wa-reply-bar {
+    grid-template-columns: minmax(0, 1fr) 42px !important;
+  }
+
+  .svx-wa-send-button {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+  }
+}
