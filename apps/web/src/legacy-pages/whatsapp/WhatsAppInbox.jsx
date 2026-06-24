@@ -13,6 +13,7 @@ import {
   createWhatsAppPromotion,
   createWhatsAppSaleDraft,
   finalizeWhatsAppSaleDraft,
+  getWhatsAppConversationSalesSummary,
   listAssignableWhatsAppStaff,
   listWhatsAppAccounts,
   listWhatsAppBroadcasts,
@@ -218,6 +219,56 @@ function dateLabel(value) {
     year: "numeric",
   }).format(date);
 }
+
+function shortDate(value) {
+  if (!value) return "No purchases yet";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "No purchases yet";
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function daysSince(value) {
+  if (!value) return null;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const diff = Date.now() - date.getTime();
+  return Math.max(0, Math.floor(diff / 86400000));
+}
+
+function customerTier(summary) {
+  const orders = Number(summary?.totalOrders || 0);
+  const revenue = Number(summary?.totalRevenue || 0);
+  const outstanding = Number(summary?.outstandingCredit || 0);
+
+  if (outstanding > 0) return { label: "Credit watch", tone: "warning" };
+  if (orders >= 10 || revenue >= 1000000) return { label: "VIP customer", tone: "success" };
+  if (orders >= 3 || revenue >= 250000) return { label: "Returning customer", tone: "info" };
+  if (orders > 0) return { label: "New buyer", tone: "neutral" };
+
+  return { label: "New lead", tone: "neutral" };
+}
+
+function recommendedCustomerAction(summary) {
+  const orders = Number(summary?.totalOrders || 0);
+  const outstanding = Number(summary?.outstandingCredit || 0);
+  const lastPurchaseDays = daysSince(summary?.lastPurchase);
+
+  if (outstanding > 0) return "Send payment reminder";
+  if (orders === 0) return "Convert chat into first sale";
+  if (lastPurchaseDays !== null && lastPurchaseDays >= 30) return "Follow up with a fresh offer";
+  if (orders >= 3) return "Offer related accessories";
+
+  return "Create sale when customer confirms";
+}
+
 
 function customerName(conversation) {
   return (
@@ -612,9 +663,74 @@ function DraftSummaryCard({ draft, onFinalize, finalizing = false }) {
   );
 }
 
+
+function SalesIntelligenceCard({ summary, loading }) {
+  const safeSummary = summary || {};
+  const tier = customerTier(safeSummary);
+  const lastPurchaseDays = daysSince(safeSummary.lastPurchase);
+  const lastPurchaseLabel =
+    lastPurchaseDays === null
+      ? "No purchases yet"
+      : lastPurchaseDays === 0
+        ? "Today"
+        : `${lastPurchaseDays} day${lastPurchaseDays === 1 ? "" : "s"} ago`;
+
+  return (
+    <section className="svx-wa-side-card svx-wa-intelligence-card">
+      <div className="svx-wa-side-title">Customer intelligence</div>
+
+      {loading ? (
+        <div className="svx-wa-intelligence-loading">
+          <span />
+          <span />
+          <span />
+        </div>
+      ) : (
+        <>
+          <div className="svx-wa-intelligence-hero">
+            <div>
+              <span>Customer tier</span>
+              <strong>{tier.label}</strong>
+            </div>
+            <Badge tone={tier.tone}>{statusLabel(safeSummary.lastSaleType || "Lead")}</Badge>
+          </div>
+
+          <div className="svx-wa-intelligence-grid">
+            <div>
+              <span>Total orders</span>
+              <strong>{Number(safeSummary.totalOrders || 0)}</strong>
+            </div>
+            <div>
+              <span>Lifetime value</span>
+              <strong>{money(safeSummary.totalRevenue)}</strong>
+            </div>
+            <div>
+              <span>Outstanding credit</span>
+              <strong>{money(safeSummary.outstandingCredit)}</strong>
+            </div>
+            <div>
+              <span>Last purchase</span>
+              <strong>{lastPurchaseLabel}</strong>
+              <small>{shortDate(safeSummary.lastPurchase)}</small>
+            </div>
+          </div>
+
+          <div className="svx-wa-recommended-action">
+            <span>Recommended action</span>
+            <strong>{recommendedCustomerAction(safeSummary)}</strong>
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+
 function CustomerPanel({
   conversation,
   draft,
+  salesSummary,
+  salesSummaryLoading,
   canManageTools,
   onCreateDraft,
   onAssign,
@@ -680,6 +796,8 @@ function CustomerPanel({
       </section>
 
       <DraftSummaryCard draft={draft} onFinalize={onFinalize} finalizing={finalizing} />
+
+      <SalesIntelligenceCard summary={salesSummary} loading={salesSummaryLoading} />
 
       <section className="svx-wa-side-card">
         <div className="svx-wa-side-title">Conversation info</div>
@@ -1732,6 +1850,8 @@ export default function WhatsAppInbox() {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [finalizingDraftId, setFinalizingDraftId] = useState("");
+  const [salesSummary, setSalesSummary] = useState(null);
+  const [salesSummaryLoading, setSalesSummaryLoading] = useState(false);
 
   async function loadConversations({ showSkeleton = false } = {}) {
     let skeletonTimer = null;
@@ -1843,6 +1963,37 @@ export default function WhatsAppInbox() {
       null
     );
   }, [drafts, selectedConversation]);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadCustomerIntelligence() {
+      if (!selectedConversation?.id) {
+        setSalesSummary(null);
+        return;
+      }
+
+      setSalesSummaryLoading(true);
+
+      try {
+        const summary = await getWhatsAppConversationSalesSummary(selectedConversation.id);
+        if (alive) setSalesSummary(summary);
+      } catch (err) {
+        if (alive) {
+          setSalesSummary(null);
+          console.error("WhatsApp sales summary load failed:", err?.message || err);
+        }
+      } finally {
+        if (alive) setSalesSummaryLoading(false);
+      }
+    }
+
+    loadCustomerIntelligence();
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedConversation?.id]);
 
   useEffect(() => {
     let alive = true;
@@ -2125,6 +2276,8 @@ export default function WhatsAppInbox() {
           <CustomerPanel
             conversation={selectedConversation}
             draft={linkedDraft}
+            salesSummary={salesSummary}
+            salesSummaryLoading={salesSummaryLoading}
             canManageTools={canManageTools}
             onCreateDraft={() => setDraftModalOpen(true)}
             onAssign={() => setAssignModalOpen(true)}

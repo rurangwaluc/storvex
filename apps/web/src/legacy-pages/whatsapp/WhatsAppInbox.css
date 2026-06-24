@@ -2660,3 +2660,136 @@
     font-size: 11.5px;
   }
 }
+
+
+/* -------------------------------------------------------------------------- */
+/* WhatsApp Customer Intelligence                                              */
+/* Turns conversation details into a sales workspace without changing layout.   */
+/* -------------------------------------------------------------------------- */
+
+.svx-wa-intelligence-card {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--wa-primary-soft) 58%, var(--wa-card)), var(--wa-card));
+}
+
+:root[data-theme="dark"] .svx-wa-intelligence-card {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--wa-primary) 10%, var(--wa-card)), var(--wa-card));
+}
+
+.svx-wa-intelligence-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 13px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 14px;
+  background: var(--wa-soft);
+  padding: 12px;
+}
+
+.svx-wa-intelligence-hero span,
+.svx-wa-intelligence-grid span,
+.svx-wa-recommended-action span {
+  display: block;
+  color: var(--wa-muted);
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.svx-wa-intelligence-hero strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--wa-text);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+
+.svx-wa-intelligence-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.svx-wa-intelligence-grid > div {
+  min-width: 0;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 14px;
+  background: var(--wa-card);
+  padding: 11px;
+}
+
+.svx-wa-intelligence-grid strong {
+  display: block;
+  overflow: hidden;
+  margin-top: 6px;
+  color: var(--wa-text);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-intelligence-grid small {
+  display: block;
+  margin-top: 4px;
+  color: var(--wa-muted-2);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.svx-wa-recommended-action {
+  margin-top: 10px;
+  border: 1px solid color-mix(in srgb, var(--wa-success) 22%, var(--wa-border-soft));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--wa-success-soft) 72%, var(--wa-card));
+  padding: 12px;
+}
+
+.svx-wa-recommended-action strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--wa-text);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.svx-wa-intelligence-loading {
+  display: grid;
+  gap: 9px;
+  margin-top: 13px;
+}
+
+.svx-wa-intelligence-loading span {
+  display: block;
+  height: 44px;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--wa-soft) 78%, var(--wa-card));
+  animation: svx-wa-pulse 1s ease-in-out infinite alternate;
+}
+
+@media (max-width: 560px) {
+  .svx-wa-intelligence-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-wa-intelligence-grid strong {
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 365px) {
+  .svx-wa-intelligence-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
