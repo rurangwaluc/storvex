@@ -1332,6 +1332,43 @@ async function listSaleDrafts({ tenantId, userId = null, branchId = null }) {
     }
   }
 
+  if (
+    prisma.proforma &&
+    modelHasField(prisma.proforma, "draftSaleId") &&
+    modelHasField(prisma.proforma, "convertedToSaleId")
+  ) {
+    const convertedProformaDrafts = await prisma.proforma.findMany({
+      where: {
+        tenantId,
+        draftSaleId: { not: null },
+        OR: [
+          { status: "CONVERTED" },
+          { convertedToSaleId: { not: null } },
+          { convertedAt: { not: null } },
+        ],
+      },
+      select: {
+        draftSaleId: true,
+      },
+    });
+
+    const convertedDraftIds = [
+      ...new Set(
+        convertedProformaDrafts
+          .map((item) => normalizeId(item.draftSaleId))
+          .filter(Boolean)
+      ),
+    ];
+
+    if (convertedDraftIds.length) {
+      where.id = { notIn: convertedDraftIds };
+    }
+  }
+
+  if (typeof saleFields.finalizedAt !== "undefined") {
+    where.finalizedAt = null;
+  }
+
   return prisma.sale.findMany({
     where,
     orderBy: { createdAt: "desc" },

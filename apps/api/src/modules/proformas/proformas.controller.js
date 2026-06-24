@@ -1516,6 +1516,107 @@ async function printProformaHtml(req, res) {
   }
 }
 
+
+function normalizeSaleTypeForConversion(value) {
+  const v = String(value || "").trim().toUpperCase();
+  return v === "CASH" ? "CASH" : "CREDIT";
+}
+
+function computeConvertedSalePaymentState({ saleType, total, draftAmountPaid = 0, dueDate = null }) {
+  const safeTotal = Number(total || 0);
+  const safePaid = Number(draftAmountPaid || 0);
+
+  if (saleType === "CASH") {
+    return {
+      amountPaid: safeTotal,
+      balanceDue: 0,
+      status: "PAID",
+      dueDate: null,
+    };
+  }
+
+  const balanceDue = Math.max(0, safeTotal - safePaid);
+  const hasDue = dueDate && !Number.isNaN(new Date(dueDate).getTime());
+  const overdue = hasDue && new Date(dueDate) < new Date();
+
+  if (balanceDue <= 0) {
+    return {
+      amountPaid: safeTotal,
+      balanceDue: 0,
+      status: "PAID",
+      dueDate,
+    };
+  }
+
+  return {
+    amountPaid: safePaid,
+    balanceDue,
+    status: safePaid > 0 ? (overdue ? "OVERDUE" : "PARTIAL") : overdue ? "OVERDUE" : "UNPAID",
+    dueDate,
+  };
+}
+
+async function getSourceDraftForProformaTx(tx, proforma) {
+  const draftSaleId = cleanString(proforma?.draftSaleId);
+  if (!draftSaleId) return null;
+
+  return tx.sale.findFirst({
+    where: {
+      id: draftSaleId,
+      tenantId: proforma.tenantId,
+    },
+    select: {
+      id: true,
+      saleType: true,
+      total: true,
+      amountPaid: true,
+      balanceDue: true,
+      status: true,
+      dueDate: true,
+      conversationId: true,
+    },
+  });
+}
+
+async function reconcileConvertedSalePaymentStateTx(tx, { proforma, sale }) {
+  if (!sale?.id) return sale || null;
+
+  const sourceDraft = await getSourceDraftForProformaTx(tx, proforma);
+  const sourceSaleType = normalizeSaleTypeForConversion(sourceDraft?.saleType || "CREDIT");
+
+  const paymentState = computeConvertedSalePaymentState({
+    saleType: sourceSaleType,
+    total: sale.total ?? proforma.total,
+    draftAmountPaid: sourceDraft?.amountPaid || 0,
+    dueDate: sourceSaleType === "CREDIT" ? proforma.validUntil || sourceDraft?.dueDate || null : null,
+  });
+
+  const patch = {
+    saleType: sourceSaleType,
+    amountPaid: paymentState.amountPaid,
+    balanceDue: paymentState.balanceDue,
+    status: paymentState.status,
+    dueDate: paymentState.dueDate,
+    ...(modelHasField(tx.sale, "conversationId") && proforma.conversationId
+      ? { conversationId: proforma.conversationId }
+      : {}),
+  };
+
+  await tx.sale.updateMany({
+    where: {
+      id: sale.id,
+      tenantId: proforma.tenantId,
+    },
+    data: patch,
+  });
+
+  return {
+    ...sale,
+    ...patch,
+  };
+}
+
+
 async function convertProformaToSale(req, res) {
   try {
     const tenantId = getTenantId(req);
@@ -1552,19 +1653,32 @@ async function convertProformaToSale(req, res) {
                 invoiceNumber: true,
                 receiptNumber: true,
                 total: true,
+                saleType: true,
+                amountPaid: true,
+                balanceDue: true,
                 status: true,
                 ...(modelHasField(tx.sale, "conversationId") ? { conversationId: true } : {}),
               },
             })
           : null;
 
+        const reconciledSale = existingSale
+          ? await reconcileConvertedSalePaymentStateTx(tx, {
+              proforma,
+              sale: existingSale,
+            })
+          : null;
+
         return {
           alreadyConverted: true,
-          sale: existingSale || {
+          sale: reconciledSale || {
             id: proforma.convertedToSaleId || null,
             invoiceNumber: null,
             receiptNumber: null,
             total: proforma.total,
+            saleType: "CREDIT",
+            amountPaid: 0,
+            balanceDue: proforma.total,
             status: "UNPAID",
           },
           proforma: {
@@ -1666,6 +1780,14 @@ async function convertProformaToSale(req, res) {
 
       const subtotal = Number(proforma.subtotal || proforma.total || 0);
       const total = Number(proforma.total || subtotal || 0);
+      const sourceDraft = await getSourceDraftForProformaTx(tx, proforma);
+      const convertedSaleType = normalizeSaleTypeForConversion(sourceDraft?.saleType || "CREDIT");
+      const paymentState = computeConvertedSalePaymentState({
+        saleType: convertedSaleType,
+        total,
+        draftAmountPaid: sourceDraft?.amountPaid || 0,
+        dueDate: convertedSaleType === "CREDIT" ? proforma.validUntil || sourceDraft?.dueDate || null : null,
+      });
 
       const sale = await tx.sale.create({
         data: {
@@ -1682,11 +1804,11 @@ async function convertProformaToSale(req, res) {
           taxAmount: 0,
           pricesIncludeTax: false,
           showTaxOnCustomerDocuments: false,
-          saleType: "CREDIT",
-          amountPaid: 0,
-          balanceDue: total,
-          status: "UNPAID",
-          dueDate: proforma.validUntil || null,
+          saleType: convertedSaleType,
+          amountPaid: paymentState.amountPaid,
+          balanceDue: paymentState.balanceDue,
+          status: paymentState.status,
+          dueDate: paymentState.dueDate,
           receiptNumber: numbers.receiptNumber,
           invoiceNumber: numbers.invoiceNumber,
           ...(modelHasField(tx.sale, "conversationId") && proforma.conversationId
@@ -1702,6 +1824,9 @@ async function convertProformaToSale(req, res) {
           invoiceNumber: true,
           receiptNumber: true,
           total: true,
+          saleType: true,
+          amountPaid: true,
+          balanceDue: true,
           status: true,
           ...(modelHasField(tx.sale, "conversationId") ? { conversationId: true } : {}),
         },

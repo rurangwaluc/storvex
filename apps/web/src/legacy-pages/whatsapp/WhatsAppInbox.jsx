@@ -324,6 +324,40 @@ function isQuotationConverted(quotation) {
   );
 }
 
+function convertedDraftSaleIds(summary) {
+  const ids = new Set();
+  const quotations = Array.isArray(summary?.proformas) ? summary.proformas : [];
+
+  quotations.forEach((quotation) => {
+    if (isQuotationConverted(quotation) && quotation?.draftSaleId) {
+      ids.add(String(quotation.draftSaleId));
+    }
+  });
+
+  const latest = latestQuotation(summary);
+  if (isQuotationConverted(latest) && latest?.draftSaleId) {
+    ids.add(String(latest.draftSaleId));
+  }
+
+  return ids;
+}
+
+function isActiveWhatsAppDraft(draft, summary) {
+  if (!draft?.id) return false;
+
+  if (draft.isCancelled || draft.cancelledAt || draft.finalizedAt) return false;
+  if (draft.isDraft === false) return false;
+
+  const convertedIds = convertedDraftSaleIds(summary);
+  if (convertedIds.has(String(draft.id))) return false;
+
+  return true;
+}
+
+function hasCompletedSale(summary) {
+  return Number(summary?.totalOrders || 0) > 0 || Boolean(summary?.lastPurchase);
+}
+
 function latestOpenQuotation(summary) {
   const quotations = Array.isArray(summary?.proformas) ? summary.proformas : [];
   const openFromList = quotations.find((quotation) => quotation && !isQuotationConverted(quotation));
@@ -977,11 +1011,17 @@ function ConversationList({ conversations, drafts, selectedId, selectedSalesSumm
       <div className="svx-wa-conversation-list">
         {filtered.length ? (
           filtered.map((conversation) => {
-            const draft = drafts.find(
+            const matchingDraft = drafts.find(
               (item) =>
                 item.conversationId === conversation.id ||
                 (item.customerId && item.customerId === conversation.customerId)
             );
+            const draft =
+              conversation.id === selectedId
+                ? isActiveWhatsAppDraft(matchingDraft, selectedSalesSummary)
+                  ? matchingDraft
+                  : null
+                : matchingDraft;
 
             return (
               <ConversationRow
@@ -1159,6 +1199,7 @@ function CustomerPanel({
   canManageTools,
   onCreateDraft,
   onCreateQuotation,
+  onPaymentReminder,
   onRecommendedAction,
   onAssign,
   onToggleStatus,
@@ -1176,6 +1217,10 @@ function CustomerPanel({
       </aside>
     );
   }
+
+  const completedSale = hasCompletedSale(salesSummary);
+  const openQuotation = latestOpenQuotation(salesSummary);
+  const showQuotationAction = !completedSale && Boolean(draft?.id || openQuotation || !hasQuotation(salesSummary));
 
   return (
     <aside className="svx-wa-side-panel">
@@ -1195,9 +1240,11 @@ function CustomerPanel({
           <button type="button" onClick={onCreateDraft}>
             New sale
           </button>
-          <button type="button" onClick={onCreateQuotation}>
-            Quotation
-          </button>
+          {showQuotationAction ? (
+            <button type="button" onClick={onCreateQuotation}>
+              Quotation
+            </button>
+          ) : null}
           <button type="button" onClick={onToggleStatus}>
             {conversation.status === "OPEN" ? "Close" : "Reopen"}
           </button>
@@ -1224,10 +1271,17 @@ function CustomerPanel({
             <span>Create a sale from this chat</span>
           </button>
 
-          <button type="button" onClick={onCreateQuotation}>
-            <strong>Create quotation</strong>
-            <span>Use the existing proforma document flow</span>
-          </button>
+          {showQuotationAction ? (
+            <button type="button" onClick={onCreateQuotation}>
+              <strong>Create quotation</strong>
+              <span>Use the existing proforma document flow</span>
+            </button>
+          ) : completedSale ? (
+            <button type="button" onClick={onPaymentReminder}>
+              <strong>Send after-sale message</strong>
+              <span>Follow up after the completed sale</span>
+            </button>
+          ) : null}
 
           {canManageTools ? (
             <button type="button" onClick={onAssign}>
@@ -2403,7 +2457,7 @@ export default function WhatsAppInbox() {
   const linkedDraft = useMemo(() => {
     if (!selectedConversation) return null;
 
-    return (
+    const matchingDraft =
       drafts.find((draft) => draft.conversationId === selectedConversation.id) ||
       drafts.find(
         (draft) =>
@@ -2411,9 +2465,10 @@ export default function WhatsAppInbox() {
           selectedConversation.customerId &&
           draft.customerId === selectedConversation.customerId
       ) ||
-      null
-    );
-  }, [drafts, selectedConversation]);
+      null;
+
+    return isActiveWhatsAppDraft(matchingDraft, salesSummary) ? matchingDraft : null;
+  }, [drafts, selectedConversation, salesSummary]);
 
   useEffect(() => {
     let alive = true;
@@ -2844,6 +2899,7 @@ export default function WhatsAppInbox() {
             canManageTools={canManageTools}
             onCreateDraft={() => setDraftModalOpen(true)}
             onCreateQuotation={createQuotationFromConversation}
+            onPaymentReminder={fillPaymentReminder}
             onRecommendedAction={handleRecommendedAction}
             onAssign={() => setAssignModalOpen(true)}
             onToggleStatus={toggleStatus}
