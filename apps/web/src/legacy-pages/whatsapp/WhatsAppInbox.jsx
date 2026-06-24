@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import { searchProducts } from "../../services/inventoryApi";
+import { convertProformaToSale } from "../../services/proformasApi";
 import {
   assignWhatsAppConversationOwner,
   clearWhatsAppConversationOwner,
@@ -315,6 +316,24 @@ function hasQuotation(summary) {
   return Boolean(summary?.hasQuotation || Number(summary?.quotationCount || 0) > 0 || latestQuotation(summary));
 }
 
+function isQuotationConverted(quotation) {
+  return Boolean(
+    quotation?.convertedToSaleId ||
+      quotation?.convertedAt ||
+      String(quotation?.status || "").toUpperCase() === "CONVERTED"
+  );
+}
+
+function latestOpenQuotation(summary) {
+  const quotations = Array.isArray(summary?.proformas) ? summary.proformas : [];
+  const openFromList = quotations.find((quotation) => quotation && !isQuotationConverted(quotation));
+
+  if (openFromList) return openFromList;
+
+  const latest = latestQuotation(summary);
+  return latest && !isQuotationConverted(latest) ? latest : null;
+}
+
 function messageText(message) {
   return String(message?.textContent || "").trim();
 }
@@ -377,17 +396,28 @@ function recommendedSalesAction({ conversation, draft, summary, messages = [] })
     };
   }
 
-  if (hasQuotationFollowUp({ messages, summary })) {
+  const openQuotation = latestOpenQuotation(summary);
+
+  if (orders > 0 && !openQuotation) {
     return {
-      label: "Waiting for customer response",
-      detail: "A quotation follow-up was already sent. Wait for the customer to confirm before converting this proforma to a sale.",
-      primary: "Waiting",
-      action: "WAITING",
-      disabled: true,
+      label: "After-sale support",
+      detail: "The customer already has a completed sale. Offer delivery, warranty, setup help, or useful accessories.",
+      primary: "Prepare support",
+      action: "AFTER_SALE",
     };
   }
 
-  if (hasQuotation(summary)) {
+  if (hasQuotationFollowUp({ messages, summary }) && openQuotation) {
+    return {
+      label: "Convert quotation to sale",
+      detail: "The quotation follow-up was sent. When the customer confirms, convert this proforma into a real sale.",
+      primary: "Convert to sale",
+      action: "CONVERT_PROFORMA",
+      quotationId: openQuotation.id,
+    };
+  }
+
+  if (openQuotation || hasQuotation(summary)) {
     return {
       label: "Follow up quotation",
       detail: "A proforma exists for this conversation. Fill the reply box with a clear follow-up message.",
@@ -1033,7 +1063,7 @@ function SalesTimeline({ events }) {
   );
 }
 
-function SalesIntelligenceCard({ conversation, draft, summary, messages = [], loading, onRecommendedAction }) {
+function SalesIntelligenceCard({ conversation, draft, summary, messages = [], loading, convertingProformaId = "", onRecommendedAction }) {
   const safeSummary = summary || {};
   const tier = customerTier(safeSummary);
   const temperature = leadTemperature({ conversation, draft, summary: safeSummary });
@@ -1098,8 +1128,14 @@ function SalesIntelligenceCard({ conversation, draft, summary, messages = [], lo
             <span>Recommended next action</span>
             <strong>{nextAction.label}</strong>
             <small>{nextAction.detail}</small>
-            <button type="button" disabled={nextAction.disabled} onClick={() => onRecommendedAction?.(nextAction)}>
-              {nextAction.primary}
+            <button
+              type="button"
+              disabled={nextAction.disabled || Boolean(convertingProformaId)}
+              onClick={() => onRecommendedAction?.(nextAction)}
+            >
+              {convertingProformaId && nextAction.action === "CONVERT_PROFORMA"
+                ? "Converting..."
+                : nextAction.primary}
             </button>
           </div>
 
@@ -1128,6 +1164,7 @@ function CustomerPanel({
   onToggleStatus,
   onFinalize,
   finalizing,
+  convertingProformaId,
 }) {
   if (!conversation) {
     return (
@@ -1173,6 +1210,7 @@ function CustomerPanel({
         summary={salesSummary}
         messages={messages}
         loading={salesSummaryLoading}
+        convertingProformaId={convertingProformaId}
         onRecommendedAction={onRecommendedAction}
       />
 
@@ -2262,6 +2300,7 @@ export default function WhatsAppInbox() {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [finalizingDraftId, setFinalizingDraftId] = useState("");
+  const [convertingProformaId, setConvertingProformaId] = useState("");
   const [salesSummary, setSalesSummary] = useState(null);
   const [salesSummaryLoading, setSalesSummaryLoading] = useState(false);
 
@@ -2549,6 +2588,28 @@ export default function WhatsAppInbox() {
     });
   }
 
+  async function convertLatestProformaToSale(action = {}) {
+    const quotation = action?.quotationId ? { id: action.quotationId } : latestOpenQuotation(salesSummary);
+    const quotationId = cleanText(quotation?.id);
+
+    if (!quotationId) {
+      toast.error("No open quotation was found for this conversation");
+      return;
+    }
+
+    setConvertingProformaId(quotationId);
+
+    try {
+      await convertProformaToSale(quotationId);
+      toast.success("Quotation converted to sale");
+      await load({ silent: true });
+    } catch (err) {
+      toast.error(safeError(err, "Could not convert quotation to sale"));
+    } finally {
+      setConvertingProformaId("");
+    }
+  }
+
   function handleRecommendedAction(action) {
     const actionType = action?.action || "";
 
@@ -2569,6 +2630,16 @@ export default function WhatsAppInbox() {
 
     if (actionType === "REMINDER") {
       fillPaymentReminder();
+      return;
+    }
+
+    if (actionType === "CONVERT_PROFORMA") {
+      convertLatestProformaToSale(action);
+      return;
+    }
+
+    if (actionType === "AFTER_SALE") {
+      toast.success("Sale completed. Follow up with delivery, warranty, or accessories.");
       return;
     }
 
@@ -2771,6 +2842,7 @@ export default function WhatsAppInbox() {
             onToggleStatus={toggleStatus}
             onFinalize={finalizeLinkedDraft}
             finalizing={finalizing}
+            convertingProformaId={convertingProformaId}
           />
         </section>
       ) : null}

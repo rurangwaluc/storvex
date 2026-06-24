@@ -1659,6 +1659,9 @@ async function convertProformaToSale(req, res) {
           dueDate: proforma.validUntil || null,
           receiptNumber: numbers.receiptNumber,
           invoiceNumber: numbers.invoiceNumber,
+          ...(modelHasField(tx.sale, "conversationId") && proforma.conversationId
+            ? { conversationId: proforma.conversationId }
+            : {}),
           createdAt,
           isDraft: false,
           draftSource: `PROFORMA:${proforma.number || proforma.id}`,
@@ -1670,6 +1673,7 @@ async function convertProformaToSale(req, res) {
           receiptNumber: true,
           total: true,
           status: true,
+          ...(modelHasField(tx.sale, "conversationId") ? { conversationId: true } : {}),
         },
       });
 
@@ -1681,6 +1685,25 @@ async function convertProformaToSale(req, res) {
           price: Number(item.unitPrice || 0),
         })),
       });
+
+      if (proforma.draftSaleId && proforma.draftSaleId !== sale.id) {
+        const draftFields = getModelFields(tx.sale);
+
+        await tx.sale.updateMany({
+          where: {
+            id: proforma.draftSaleId,
+            tenantId,
+            ...(typeof draftFields.isDraft !== "undefined" ? { isDraft: true } : {}),
+            isCancelled: false,
+          },
+          data: {
+            isCancelled: true,
+            cancelledAt: createdAt,
+            cancelledById: userId || null,
+            cancelNote: `Converted from proforma ${proforma.number || proforma.id} into sale ${sale.id}`,
+          },
+        });
+      }
 
       const updatedProforma = await tx.proforma.update({
         where: { id: proforma.id },
