@@ -7,6 +7,7 @@ import PageSkeleton from "../../components/ui/PageSkeleton";
 import {
   createWhatsAppBroadcast,
   listWhatsAppBroadcasts,
+  previewWhatsAppBroadcastRecipients,
   queueWhatsAppBroadcast,
   sendWhatsAppBroadcastNow,
   updateWhatsAppBroadcast,
@@ -37,6 +38,7 @@ const txaCls  = () => cx(
 const primaryBtn   = () => "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60";
 const secondaryBtn = () => "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] px-5 text-sm font-semibold text-[var(--color-text)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
 const dangerBtn    = () => "inline-flex h-11 items-center justify-center rounded-2xl bg-[rgba(219,80,74,0.12)] px-5 text-sm font-semibold text-[var(--color-danger)] transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60";
+const outlineBtn   = () => "inline-flex h-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-5 text-sm font-semibold text-[var(--color-text)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60";
 const fieldLbl     = () => "mb-1.5 block text-sm font-medium text-[var(--color-text)]";
 const fieldHlp     = () => "mt-1.5 text-xs leading-5 text-[var(--color-text-muted)]";
 
@@ -97,6 +99,118 @@ function fmtAgo(v) {
   const h = Math.floor(diff / 3600000);
   if (h < 24)                return `${h}h ago`;
   return `${Math.floor(diff / 86400000)}d ago`;
+}
+
+
+const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
+
+const BUSINESS_CATEGORY_LABELS = {
+  ELECTRONICS: "Electronics retail",
+  HARDWARE: "Hardware / Quincaillerie",
+  HOME_KITCHEN: "Home & kitchen",
+  LIGHTING: "Lighting",
+  SPARE_PARTS: "Spare parts",
+};
+
+const AUDIENCE_OPTIONS = [
+  {
+    value: "ALL_OPTED_IN",
+    label: "All WhatsApp customers",
+    helper: "Every opted-in customer for this store.",
+  },
+  {
+    value: "CATEGORY_CUSTOMERS",
+    label: "This store category customers",
+    helper: "Customers matched to the business category chosen during onboarding.",
+  },
+  {
+    value: "CREDIT_CUSTOMERS",
+    label: "Credit customers",
+    helper: "Customers with credit purchase history.",
+  },
+  {
+    value: "OVERDUE_CREDIT_CUSTOMERS",
+    label: "Overdue credit customers",
+    helper: "Customers who need payment follow-up.",
+  },
+  {
+    value: "PRODUCT_BUYERS",
+    label: "Product buyers",
+    helper: "Customers who bought the product attached to this campaign message.",
+  },
+];
+
+function cleanText(value) {
+  return String(value || "").trim();
+}
+
+function normalizeBusinessCategory(value) {
+  const category = cleanText(value).toUpperCase();
+
+  if (["HARDWARE", "QUINCAILLERIE"].includes(category)) return "HARDWARE";
+  if (["HOME_KITCHEN", "HOME_AND_KITCHEN", "HOME & KITCHEN"].includes(category)) return "HOME_KITCHEN";
+  if (category === "LIGHTING") return "LIGHTING";
+  if (["SPARE_PARTS", "SPARE PARTS", "AUTO_PARTS"].includes(category)) return "SPARE_PARTS";
+
+  return "ELECTRONICS";
+}
+
+function businessCategoryLabel(value) {
+  const category = normalizeBusinessCategory(value);
+  return BUSINESS_CATEGORY_LABELS[category] || "Retail store";
+}
+
+function readStoredJson(key) {
+  try {
+    const raw = sessionStorage.getItem(key) || localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getRegisteredBusinessCategory() {
+  const workspace = readStoredJson(WORKSPACE_CACHE_KEY) || {};
+  const tenant = workspace?.tenant || workspace?.business || workspace?.store || {};
+  const candidates = [
+    tenant?.businessCategory,
+    tenant?.category,
+    tenant?.shopType,
+    workspace?.businessCategory,
+    workspace?.category,
+    workspace?.shopType,
+    workspace?.tenant?.businessCategory,
+    workspace?.tenant?.category,
+    workspace?.tenant?.shopType,
+    workspace?.business?.businessCategory,
+    workspace?.business?.category,
+    workspace?.business?.shopType,
+  ];
+
+  return normalizeBusinessCategory(candidates.find((value) => cleanText(value)));
+}
+
+function previewKey({ promotionId, targetMode, category, productId }) {
+  return [promotionId || "", targetMode || "ALL_OPTED_IN", category || "", productId || ""].join("|");
+}
+
+function normalizePreview(raw) {
+  const item = raw?.preview || raw || {};
+  const recipients = Array.isArray(item.recipients) ? item.recipients : [];
+
+  return {
+    audienceLabel: cleanText(item.audienceLabel) || "WhatsApp customers",
+    recipientCount: Number(item.recipientCount || 0),
+    previewLimit: Number(item.previewLimit || 20),
+    hasMore: Boolean(item.hasMore),
+    canSend: Boolean(item.canSend),
+    warning: cleanText(item.warning),
+    recipients: recipients.map((recipient) => ({
+      id: cleanText(recipient.id),
+      name: cleanText(recipient.name) || "Customer",
+      phone: cleanText(recipient.phone),
+    })),
+  };
 }
 
 // ─── normalizers ─────────────────────────────────────────────────────────────
@@ -431,6 +545,77 @@ function PromotionSelector({ value, onSelect }) {
   );
 }
 
+
+function RecipientPreviewPanel({ preview, loading, onPreview, disabled }) {
+  if (!preview && !loading) {
+    return (
+      <div className={cx(panel(), "space-y-3 border border-[var(--color-border)] p-4")}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <div className={cx("text-sm font-black", strong())}>Recipient preview</div>
+            <p className={cx("mt-1 text-xs leading-5", muted())}>
+              Preview matching customers before creating or sending this broadcast.
+            </p>
+          </div>
+          <AsyncButton type="button" loading={loading} loadingText="Checking…" onClick={onPreview} disabled={disabled} className={outlineBtn()}>
+            Preview recipients
+          </AsyncButton>
+        </div>
+      </div>
+    );
+  }
+
+  const count = Number(preview?.recipientCount || 0);
+  const canSend = Boolean(preview?.canSend && count > 0);
+
+  return (
+    <div className={cx(
+      panel(),
+      "space-y-4 border p-4",
+      canSend ? "border-emerald-500/30" : "border-[var(--color-danger)]/35"
+    )}>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className={cx("text-sm font-black", strong())}>Recipient preview</div>
+          <p className={cx("mt-1 text-xs leading-5", muted())}>
+            {loading ? "Checking matching customers…" : `${count} matching customer${count === 1 ? "" : "s"} · ${preview?.audienceLabel || "WhatsApp customers"}`}
+          </p>
+        </div>
+        <AsyncButton type="button" loading={loading} loadingText="Checking…" onClick={onPreview} disabled={disabled} className={outlineBtn()}>
+          Refresh preview
+        </AsyncButton>
+      </div>
+
+      {preview?.warning ? (
+        <div className="rounded-2xl border border-[var(--color-danger)]/25 bg-[rgba(219,80,74,0.10)] p-3 text-xs font-semibold leading-5 text-[var(--color-danger)]">
+          {preview.warning}
+        </div>
+      ) : null}
+
+      {preview?.recipients?.length ? (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {preview.recipients.slice(0, 8).map((recipient) => (
+            <div key={recipient.id || recipient.phone} className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-3">
+              <div className={cx("truncate text-xs font-black", strong())}>{recipient.name}</div>
+              <div className={cx("mt-1 truncate text-xs font-semibold", muted())}>{recipient.phone || "No phone"}</div>
+            </div>
+          ))}
+        </div>
+      ) : !loading ? (
+        <div className={cx("rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] p-3 text-xs font-semibold leading-5", muted())}>
+          No recipients found for this audience.
+        </div>
+      ) : null}
+
+      {preview?.hasMore ? (
+        <p className={cx("text-xs font-semibold leading-5", muted())}>
+          Showing the first {preview.previewLimit || preview.recipients.length} customers only. The full audience count is {count}.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 // ─── BroadcastCard ────────────────────────────────────────────────────────────
 
 function BroadcastCard({ item, selected, onOpen, onQueue, onSend, queueing, sending }) {
@@ -501,6 +686,7 @@ function BroadcastCard({ item, selected, onOpen, onQueue, onSend, queueing, send
 const EMPTY_FORM = {
   id: "", accountId: "", promotionId: "",
   templateName: "", languageCode: "en_US",
+  targetMode: "ALL_OPTED_IN",
 };
 
 export default function WhatsAppBroadcasts() {
@@ -520,6 +706,10 @@ export default function WhatsAppBroadcasts() {
   const [saving,     setSaving]     = useState(false);
   const [queueingId, setQueueingId] = useState("");
   const [sendingId,  setSendingId]  = useState("");
+  const [previewing, setPreviewing] = useState(false);
+  const [recipientPreview, setRecipientPreview] = useState(null);
+  const [lastPreviewKey, setLastPreviewKey] = useState("");
+  const [selectedPromotionInfo, setSelectedPromotionInfo] = useState(null);
 
   const [form, setForm] = useState(EMPTY_FORM);
 
@@ -583,7 +773,13 @@ export default function WhatsAppBroadcasts() {
     };
   }
 
-  function setField(k, v) { setForm(c => ({ ...c, [k]: v })); }
+  function setField(k, v) {
+    setForm(c => ({ ...c, [k]: v }));
+    if (["promotionId", "targetMode"].includes(k)) {
+      setRecipientPreview(null);
+      setLastPreviewKey("");
+    }
+  }
 
   function openBroadcast(item) {
     setSelectedId(item.id);
@@ -593,11 +789,94 @@ export default function WhatsAppBroadcasts() {
       promotionId:  item.promotionId  || "",
       templateName: item.templateName || "",
       languageCode: item.languageCode || "en_US",
+      targetMode: form.targetMode || "ALL_OPTED_IN",
     });
+    setSelectedPromotionInfo(item.promotion || null);
+    setRecipientPreview(null);
+    setLastPreviewKey("");
   }
 
   function handlePromotionSelected(promo) {
     setField("promotionId", promo?.id || "");
+    setSelectedPromotionInfo(promo || null);
+    setRecipientPreview(null);
+    setLastPreviewKey("");
+  }
+
+  const selectedBroadcast = useMemo(() =>
+    broadcasts.find(x => x.id === selectedId) || null,
+    [broadcasts, selectedId]
+  );
+
+  const registeredCategory = useMemo(() => getRegisteredBusinessCategory(), []);
+  const selectedProductId = selectedPromotionInfo?.productId || selectedBroadcast?.promotion?.productId || "";
+
+  function buildTargeting() {
+    return {
+      mode: form.targetMode || "ALL_OPTED_IN",
+      category: form.targetMode === "CATEGORY_CUSTOMERS" ? registeredCategory : null,
+      productId: form.targetMode === "PRODUCT_BUYERS" ? selectedProductId || null : null,
+      branchId: null,
+      customerIds: [],
+    };
+  }
+
+  function currentPreviewKey() {
+    return previewKey({
+      promotionId: form.promotionId,
+      targetMode: form.targetMode,
+      category: registeredCategory,
+      productId: selectedProductId,
+    });
+  }
+
+  function hasValidPreview() {
+    return Boolean(
+      recipientPreview?.canSend &&
+        Number(recipientPreview.recipientCount || 0) > 0 &&
+        lastPreviewKey === currentPreviewKey()
+    );
+  }
+
+  async function handlePreviewRecipients({ silent = false } = {}) {
+    if (!String(form.promotionId || "").trim()) {
+      if (!silent) toast.error("Choose or create a campaign message first");
+      return null;
+    }
+
+    if (form.targetMode === "PRODUCT_BUYERS" && !selectedProductId) {
+      if (!silent) toast.error("Product buyers needs a campaign message connected to a product");
+      return null;
+    }
+
+    setPreviewing(true);
+    try {
+      const res = await previewWhatsAppBroadcastRecipients({
+        promotionId: form.promotionId,
+        targeting: buildTargeting(),
+        limit: 20,
+      });
+      const preview = normalizePreview(res?.preview);
+      setRecipientPreview(preview);
+      setLastPreviewKey(currentPreviewKey());
+
+      if (!silent) {
+        if (preview.canSend && Number(preview.recipientCount || 0) > 0) {
+          toast.success(`${preview.recipientCount} matching customer${preview.recipientCount === 1 ? "" : "s"}`);
+        } else {
+          toast.error(preview.warning || "No matching recipients found");
+        }
+      }
+
+      return preview;
+    } catch (err) {
+      if (!silent) toast.error(err?.message || "Failed to preview recipients");
+      setRecipientPreview(null);
+      setLastPreviewKey("");
+      return null;
+    } finally {
+      if (mountedRef.current) setPreviewing(false);
+    }
   }
 
   function buildPayload() {
@@ -606,6 +885,7 @@ export default function WhatsAppBroadcasts() {
       templateName: String(form.templateName || "").trim() || null,
       languageCode: String(form.languageCode || "").trim() || "en_US",
       promotionId:  String(form.promotionId  || "").trim() || null,
+      targeting: buildTargeting(),
     };
   }
 
@@ -617,6 +897,8 @@ export default function WhatsAppBroadcasts() {
 
   async function handleCreate() {
     if (!validate()) return;
+    if (!String(form.promotionId || "").trim()) { toast.error("Choose or create a campaign message first"); return; }
+    if (!hasValidPreview()) { toast.error("Preview recipients first and make sure at least one customer matches"); return; }
     setCreating(true);
     try {
       const res     = await createWhatsAppBroadcast(buildPayload());
@@ -634,6 +916,7 @@ export default function WhatsAppBroadcasts() {
   async function handleSave() {
     if (!selectedId) { toast.error("Open a campaign first"); return; }
     if (!validate()) return;
+    if (!hasValidPreview()) { toast.error("Preview recipients first and make sure at least one customer matches"); return; }
     setSaving(true);
     try {
       const res     = await updateWhatsAppBroadcast(selectedId, buildPayload());
@@ -668,9 +951,33 @@ export default function WhatsAppBroadcasts() {
       toast.error("Attach a campaign message before sending — it is required by the WhatsApp API");
       return;
     }
+
+    const usingCurrentForm = selectedId === item.id;
+
+    if (!usingCurrentForm) {
+      openBroadcast(item);
+      toast.error("Open the campaign and preview recipients before sending");
+      return;
+    }
+
+    let preview = hasValidPreview() ? recipientPreview : null;
+
+    if (!preview) {
+      preview = await handlePreviewRecipients({ silent: true });
+    }
+
+    if (!preview?.canSend || Number(preview.recipientCount || 0) <= 0) {
+      toast.error(preview?.warning || "No matching recipients found for this audience");
+      return;
+    }
+
+    const countText = `${preview.recipientCount} customer${preview.recipientCount === 1 ? "" : "s"}`;
+    const confirmed = window.confirm(`Send this WhatsApp broadcast now to ${countText}? This action cannot be undone.`);
+    if (!confirmed) return;
+
     setSendingId(item.id);
     try {
-      const res     = await sendWhatsAppBroadcastNow(item.id, { limit: 50 });
+      const res     = await sendWhatsAppBroadcastNow(item.id, { limit: 50, targeting: buildTargeting() });
       const updated = normalizeBroadcast(res?.broadcast);
       setBroadcasts(prev => prev.map(x => x.id === updated.id ? updated : x));
       if (selectedId === updated.id) openBroadcast(updated);
@@ -695,11 +1002,6 @@ export default function WhatsAppBroadcasts() {
     });
   }, [broadcasts, query, statusFilter, accountFilter]);
 
-  const selectedBroadcast = useMemo(() =>
-    broadcasts.find(x => x.id === selectedId) || null,
-    [broadcasts, selectedId]
-  );
-
   const summary = useMemo(() => ({
     total:     broadcasts.length,
     drafts:    broadcasts.filter(x => x.status === "DRAFT").length,
@@ -707,6 +1009,8 @@ export default function WhatsAppBroadcasts() {
     sent:      broadcasts.filter(x => x.status === "SENT").length,
     delivered: broadcasts.reduce((s, x) => s + Number(x.deliveredCount || 0), 0),
   }), [broadcasts]);
+
+  const recipientPreviewReady = hasValidPreview();
 
   if (loading) return <PageSkeleton titleWidth="w-52" lines={6} variant="default" />;
 
@@ -857,12 +1161,58 @@ export default function WhatsAppBroadcasts() {
                 />
               </div>
 
+              {/* Audience */}
+              <div className="rounded-[22px] border border-[var(--color-border)] p-4 space-y-4">
+                <div>
+                  <div className={cx("text-sm font-bold", strong())}>Audience</div>
+                  <p className={cx("mt-1 text-xs leading-5", muted())}>
+                    Choose who should receive the broadcast, then preview recipients before creating or sending.
+                  </p>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {AUDIENCE_OPTIONS.map((option) => {
+                    const disabled = option.value === "PRODUCT_BUYERS" && !selectedProductId;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => setField("targetMode", option.value)}
+                        className={cx(
+                          "rounded-2xl border p-3 text-left transition disabled:cursor-not-allowed disabled:opacity-55",
+                          form.targetMode === option.value
+                            ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
+                            : "border-[var(--color-border)] bg-[var(--color-card)] hover:border-[var(--color-primary)]"
+                        )}
+                      >
+                        <strong className={cx("block text-xs", strong())}>{option.label}</strong>
+                        <span className={cx("mt-1 block text-xs leading-5", muted())}>
+                          {option.value === "CATEGORY_CUSTOMERS"
+                            ? `${option.helper} Current category: ${businessCategoryLabel(registeredCategory)}.`
+                            : disabled
+                              ? "Attach a product-linked promotion first."
+                              : option.helper}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <RecipientPreviewPanel
+                  preview={recipientPreview}
+                  loading={previewing}
+                  onPreview={() => handlePreviewRecipients()}
+                  disabled={!form.promotionId || (form.targetMode === "PRODUCT_BUYERS" && !selectedProductId)}
+                />
+              </div>
+
               {/* Actions */}
               <div className="flex flex-col gap-2 sm:flex-row">
-                <AsyncButton type="button" loading={creating} loadingText="Creating…" onClick={handleCreate} className={cx(secondaryBtn(), "w-full")}>
+                <AsyncButton type="button" loading={creating} loadingText="Creating…" onClick={handleCreate} disabled={!recipientPreviewReady} className={cx(secondaryBtn(), "w-full")}>
                   Create draft
                 </AsyncButton>
-                <AsyncButton type="button" loading={saving} loadingText="Saving…" onClick={handleSave} disabled={!selectedId} className={cx(primaryBtn(), "w-full")}>
+                <AsyncButton type="button" loading={saving} loadingText="Saving…" onClick={handleSave} disabled={!selectedId || !recipientPreviewReady} className={cx(primaryBtn(), "w-full")}>
                   Save changes
                 </AsyncButton>
               </div>
@@ -895,7 +1245,7 @@ export default function WhatsAppBroadcasts() {
               <InfoStat
                 label="Recipients"
                 value={selectedBroadcast ? String(selectedBroadcast.recipientCount || 0) : "—"}
-                sub={selectedBroadcast ? `${selectedBroadcast.deliveredCount || 0} delivered` : "No campaign selected"}
+                sub={selectedBroadcast ? (recipientPreviewReady ? `${recipientPreview.recipientCount} previewed · ${selectedBroadcast.deliveredCount || 0} delivered` : `${selectedBroadcast.deliveredCount || 0} delivered`) : "No campaign selected"}
               />
             </div>
 
@@ -912,14 +1262,16 @@ export default function WhatsAppBroadcasts() {
                     loading={sendingId === selectedBroadcast.id}
                     loadingText="Sending…"
                     onClick={() => handleSend(selectedBroadcast)}
-                    disabled={!selectedBroadcast.promotionId}
+                    disabled={!selectedBroadcast.promotionId || (selectedId === selectedBroadcast.id && !recipientPreviewReady)}
                     className={cx(
-                      selectedBroadcast.promotionId ? primaryBtn() : dangerBtn(),
+                      selectedBroadcast.promotionId && recipientPreviewReady ? primaryBtn() : dangerBtn(),
                     )}
                   >
-                    {selectedBroadcast.promotionId
-                      ? "Send selected campaign now"
-                      : "Attach a message before sending"}
+                    {!selectedBroadcast.promotionId
+                      ? "Attach a message before sending"
+                      : recipientPreviewReady
+                        ? "Send selected campaign now"
+                        : "Preview recipients before sending"}
                   </AsyncButton>
                 )}
               </div>
@@ -931,8 +1283,8 @@ export default function WhatsAppBroadcasts() {
             <div className={cx("text-lg font-black tracking-tight", strong())}>How this works</div>
             <div className="mt-4 grid grid-cols-1 gap-3">
               <InfoStat label="Step 1" value="Write a campaign message" sub="Use the form to create a title + message body with template placeholders." />
-              <InfoStat label="Step 2" value="Create the broadcast draft" sub="Set your sending number, template name, and attach the message. Save as draft." />
-              <InfoStat label="Step 3" value="Queue then send" sub="Queue to mark it ready, then Send now to push to all opted-in customers." />
+              <InfoStat label="Step 2" value="Preview recipients" sub="Choose the audience and confirm matching customers before creating the draft." />
+              <InfoStat label="Step 3" value="Queue then send" sub="Queue to mark it ready, then confirm before sending to the previewed audience." />
             </div>
           </section>
         </aside>

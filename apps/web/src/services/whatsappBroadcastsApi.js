@@ -97,7 +97,66 @@ function buildBroadcastPayload(payload = {}, { partial = false } = {}) {
     built.languageCode = normalizeNullableString(body.languageCode) || "en_US";
   }
 
+  if (
+    Object.prototype.hasOwnProperty.call(body, "targeting") ||
+    Object.prototype.hasOwnProperty.call(body, "mode") ||
+    Object.prototype.hasOwnProperty.call(body, "targetMode") ||
+    Object.prototype.hasOwnProperty.call(body, "branchId") ||
+    Object.prototype.hasOwnProperty.call(body, "productId") ||
+    Object.prototype.hasOwnProperty.call(body, "category") ||
+    Object.prototype.hasOwnProperty.call(body, "businessCategory") ||
+    Object.prototype.hasOwnProperty.call(body, "customerIds")
+  ) {
+    built.targeting = normalizeTargeting(body.targeting || body);
+  }
+
   return built;
+}
+
+function normalizeTargeting(payload = {}) {
+  const source = ensureObject(payload);
+
+  return {
+    mode: trimString(source.mode || source.targetMode || "ALL_OPTED_IN").toUpperCase(),
+    branchId: normalizeNullableString(source.branchId),
+    productId: normalizeNullableString(source.productId),
+    category: normalizeNullableString(source.category || source.businessCategory),
+    customerIds: ensureArray(source.customerIds).map(trimString).filter(Boolean),
+  };
+}
+
+function normalizeRecipientPreview(raw) {
+  const item = ensureObject(raw);
+  const targeting = ensureObject(item.targeting);
+
+  return {
+    mode: trimString(item.mode || targeting.mode || "ALL_OPTED_IN").toUpperCase(),
+    audienceLabel: trimString(item.audienceLabel || "WhatsApp customers"),
+    recipientCount: normalizeNumber(item.recipientCount, 0),
+    previewLimit: normalizeNumber(item.previewLimit, 20),
+    hasMore: normalizeBoolean(item.hasMore, false),
+    canSend: normalizeBoolean(item.canSend, false),
+    warning: trimString(item.warning),
+    targeting: {
+      mode: trimString(targeting.mode || item.mode || "ALL_OPTED_IN").toUpperCase(),
+      branchId: trimString(targeting.branchId),
+      productId: trimString(targeting.productId),
+      category: trimString(targeting.category || targeting.businessCategory).toUpperCase(),
+      manualCustomerCount: normalizeNumber(targeting.manualCustomerCount, 0),
+    },
+    promotion: item.promotion
+      ? {
+          id: trimString(item.promotion.id),
+          title: trimString(item.promotion.title),
+          productId: trimString(item.promotion.productId),
+        }
+      : null,
+    recipients: ensureArray(item.recipients).map((recipient) => ({
+      id: trimString(recipient.id),
+      name: trimString(recipient.name || "Customer"),
+      phone: trimString(recipient.phone),
+    })),
+  };
 }
 
 export async function listWhatsAppBroadcasts(filters = {}) {
@@ -116,6 +175,30 @@ export async function listWhatsAppBroadcasts(filters = {}) {
 
   return {
     broadcasts: ensureArray(data?.broadcasts).map(normalizeBroadcast),
+  };
+}
+
+export async function previewWhatsAppBroadcastRecipients(payload = {}) {
+  const source = ensureObject(payload);
+  const limit = Number(source.limit);
+  const body = {
+    promotionId: normalizeNullableString(source.promotionId),
+    targeting: normalizeTargeting(source.targeting || source),
+  };
+
+  if (Number.isFinite(limit) && limit > 0) {
+    body.limit = Math.floor(limit);
+  }
+
+  const data = await apiFetch("/whatsapp/broadcasts/recipients/preview", {
+    method: "POST",
+    body,
+  });
+
+  return {
+    ok: normalizeBoolean(data?.ok, false),
+    message: trimString(data?.message),
+    preview: normalizeRecipientPreview(data?.preview),
   };
 }
 
@@ -178,11 +261,25 @@ export async function queueWhatsAppBroadcast(broadcastId) {
 
 export async function sendWhatsAppBroadcastNow(broadcastId, payload = {}) {
   const id = trimString(broadcastId);
+  const source = ensureObject(payload);
   const body = {};
-  const limit = Number(payload.limit);
+  const limit = Number(source.limit);
 
   if (Number.isFinite(limit) && limit > 0) {
     body.limit = Math.floor(limit);
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(source, "targeting") ||
+    Object.prototype.hasOwnProperty.call(source, "mode") ||
+    Object.prototype.hasOwnProperty.call(source, "targetMode") ||
+    Object.prototype.hasOwnProperty.call(source, "branchId") ||
+    Object.prototype.hasOwnProperty.call(source, "productId") ||
+    Object.prototype.hasOwnProperty.call(source, "category") ||
+    Object.prototype.hasOwnProperty.call(source, "businessCategory") ||
+    Object.prototype.hasOwnProperty.call(source, "customerIds")
+  ) {
+    body.targeting = normalizeTargeting(source.targeting || source);
   }
 
   const data = await apiFetch(`/whatsapp/broadcasts/${id}/send`, {
