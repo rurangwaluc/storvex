@@ -2152,7 +2152,7 @@ function cleanupBroadcastActionLabel(broadcast) {
   const status = broadcastStatusValue(broadcast);
 
   if (status === "QUEUED") return "Cancel queue";
-  if (status === "FAILED") return "Delete failed";
+  if (status === "FAILED") return "Remove record";
   if (status === "SENT") return "History";
 
   return "Delete draft";
@@ -2162,7 +2162,7 @@ function cleanupBroadcastTitle(broadcast) {
   const status = broadcastStatusValue(broadcast);
 
   if (status === "QUEUED") return "Cancel queued broadcast?";
-  if (status === "FAILED") return "Delete failed broadcast record?";
+  if (status === "FAILED") return "Remove failed broadcast record?";
 
   return "Delete draft broadcast?";
 }
@@ -2176,7 +2176,7 @@ function cleanupBroadcastMessage(broadcast) {
   }
 
   if (status === "FAILED") {
-    return `This removes the failed ${title} record from this campaign list. Sent campaign history is never deleted.`;
+    return `This removes the failed, unsent ${title} record from the campaign list. It does not delete customer messages or sent campaign history.`;
   }
 
   return `This removes the unsent draft for ${title}. This cannot be undone.`;
@@ -2203,6 +2203,7 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   const [busyBroadcastId, setBusyBroadcastId] = useState("");
   const [sendConfirmBroadcast, setSendConfirmBroadcast] = useState(null);
   const [cleanupConfirmAction, setCleanupConfirmAction] = useState(null);
+  const [openBroadcastMenu, setOpenBroadcastMenu] = useState(null);
   const [broadcastPreviewCacheVersion, setBroadcastPreviewCacheVersion] = useState(0);
 
   const visibleBroadcasts = useMemo(
@@ -2235,6 +2236,51 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   useEffect(() => {
     setBroadcastLimit(BROADCAST_LIST_LIMIT);
   }, [broadcastSearch, broadcastStatusFilter]);
+
+  useEffect(() => {
+    function closeBroadcastMenu(event) {
+      if (!event.target?.closest?.(".svx-wa-record-more-menu")) {
+        setOpenBroadcastMenu(null);
+      }
+    }
+
+    function closeBroadcastMenuOnEscape(event) {
+      if (event.key === "Escape") {
+        setOpenBroadcastMenu(null);
+      }
+    }
+
+    window.addEventListener("pointerdown", closeBroadcastMenu);
+    window.addEventListener("keydown", closeBroadcastMenuOnEscape);
+
+    return () => {
+      window.removeEventListener("pointerdown", closeBroadcastMenu);
+      window.removeEventListener("keydown", closeBroadcastMenuOnEscape);
+    };
+  }, []);
+
+  function toggleBroadcastRowMenu(broadcastId, event) {
+    event.stopPropagation();
+
+    const trigger = event.currentTarget;
+    const triggerRect = trigger?.getBoundingClientRect?.();
+    const estimatedMenuHeight = 230;
+    const viewportHeight =
+      typeof window !== "undefined" ? window.innerHeight : estimatedMenuHeight * 2;
+    const spaceBelow = triggerRect ? viewportHeight - triggerRect.bottom : viewportHeight;
+    const spaceAbove = triggerRect ? triggerRect.top : 0;
+    const placement =
+      spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow ? "up" : "down";
+
+    setOpenBroadcastMenu((current) => {
+      if (current?.id === broadcastId) return null;
+
+      return {
+        id: broadcastId,
+        placement,
+      };
+    });
+  }
 
   function currentTargeting() {
     return {
@@ -2844,7 +2890,11 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
                   const sendDisabled = busyBroadcastId === broadcast.id || !canSendBroadcast(broadcast) || !hasAudience || forceQueue;
 
                   return (
-                    <article key={broadcast.id} className="svx-wa-broadcast-row" role="listitem">
+                    <article
+                      key={broadcast.id}
+                      className={cx("svx-wa-broadcast-row", openBroadcastMenu?.id === broadcast.id && "is-menu-open")}
+                      role="listitem"
+                    >
                       <div className="svx-wa-record-status-cell">
                         <Badge tone={toneForStatus(broadcast.status)}>
                           {statusLabel(broadcast.status)}
@@ -2870,15 +2920,9 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
                         ) : null}
                       </div>
 
-                      <div className="svx-wa-record-number-pair" aria-label="Broadcast performance">
-                        <span>
-                          <small>Customers</small>
-                          <strong>{formatCompactNumber(recipientCount)}</strong>
-                        </span>
-                        <span>
-                          <small>Sent</small>
-                          <strong>{formatCompactNumber(broadcast.deliveredCount || failureDetails?.delivered || 0)}</strong>
-                        </span>
+                      <div className="svx-wa-record-metrics-cell" aria-label="Broadcast performance">
+                        <span><strong>{formatCompactNumber(recipientCount)}</strong> customers</span>
+                        <span><strong>{formatCompactNumber(broadcast.deliveredCount || failureDetails?.delivered || 0)}</strong> sent</span>
                       </div>
 
                       <div className="svx-wa-record-actions-cell">
@@ -2910,46 +2954,74 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
                           );
                         })()}
 
-                        <details className="svx-wa-record-more-menu">
-                          <summary aria-label="Open campaign actions"><span aria-hidden="true">•••</span></summary>
-                          <div>
-                            {secondaryQueueAvailable({ broadcast, recipientCount }) ? (
-                              <button
-                                type="button"
-                                onClick={() => queueBroadcast(broadcast)}
-                                disabled={busyBroadcastId === broadcast.id}
-                              >
-                                Queue for later
-                              </button>
-                            ) : null}
+                        <div
+                          className={cx(
+                            "svx-wa-record-more-menu",
+                            openBroadcastMenu?.id === broadcast.id && "is-open",
+                            openBroadcastMenu?.id === broadcast.id && openBroadcastMenu?.placement === "up" && "is-up"
+                          )}
+                        >
+                          <button
+                            type="button"
+                            className="svx-wa-record-more-trigger"
+                            aria-label="Open campaign actions"
+                            aria-expanded={openBroadcastMenu?.id === broadcast.id}
+                            onClick={(event) => toggleBroadcastRowMenu(broadcast.id, event)}
+                          >
+                            <span aria-hidden="true">•••</span>
+                          </button>
 
-                            {failureDetails ? (
-                              <div className="svx-wa-record-more-issue">
-                                <strong>Issue</strong>
-                                <span>{failureDetails.message}</span>
-                                <small>
-                                  Attempted {formatCompactNumber(failureDetails.attempted || recipientCount || 0)} · Failed {formatCompactNumber(failureDetails.failed || 0)}
-                                </small>
-                              </div>
-                            ) : null}
+                          {openBroadcastMenu?.id === broadcast.id ? (
+                            <div
+                              className="svx-wa-record-more-panel"
+                              role="menu"
+                            >
+                              {secondaryQueueAvailable({ broadcast, recipientCount }) ? (
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  onClick={() => {
+                                    setOpenBroadcastMenu(null);
+                                    queueBroadcast(broadcast);
+                                  }}
+                                  disabled={busyBroadcastId === broadcast.id}
+                                >
+                                  Queue for later
+                                </button>
+                              ) : null}
 
-                            {canRemoveBroadcastRecord(broadcast) ? (
-                              <button
-                                type="button"
-                                className="is-danger"
-                                onClick={() => requestRemoveBroadcast(broadcast)}
-                                disabled={busyBroadcastId === broadcast.id}
-                                title={cleanupBroadcastMessage(broadcast)}
-                              >
-                                {cleanupBroadcastActionLabel(broadcast)}
-                              </button>
-                            ) : (
-                              <span className="svx-wa-record-more-note">
-                                Sent campaign history is protected.
-                              </span>
-                            )}
-                          </div>
-                        </details>
+                              {failureDetails ? (
+                                <div className="svx-wa-record-more-issue">
+                                  <strong>Issue</strong>
+                                  <span>{failureDetails.message}</span>
+                                  <small>
+                                    Attempted {formatCompactNumber(failureDetails.attempted || recipientCount || 0)} · Failed {formatCompactNumber(failureDetails.failed || 0)}
+                                  </small>
+                                </div>
+                              ) : null}
+
+                              {canRemoveBroadcastRecord(broadcast) ? (
+                                <button
+                                  type="button"
+                                  role="menuitem"
+                                  className="is-danger"
+                                  onClick={() => {
+                                    setOpenBroadcastMenu(null);
+                                    requestRemoveBroadcast(broadcast);
+                                  }}
+                                  disabled={busyBroadcastId === broadcast.id}
+                                  title={cleanupBroadcastMessage(broadcast)}
+                                >
+                                  {cleanupBroadcastActionLabel(broadcast)}
+                                </button>
+                              ) : (
+                                <span className="svx-wa-record-more-note">
+                                  Sent campaign history is protected.
+                                </span>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
                       </div>
                     </article>
                   );

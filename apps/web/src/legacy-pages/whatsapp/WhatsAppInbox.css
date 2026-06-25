@@ -6802,3 +6802,320 @@ background: var(--wa-soft);
     padding-bottom: 5px;
   }
 }
+
+/* Campaign ledger finishing polish: denser records + safe adaptive More menu */
+.svx-wa-record-column,
+.svx-wa-record-table,
+.svx-wa-broadcast-row,
+.svx-wa-promotion-row,
+.svx-wa-record-actions-cell,
+.svx-wa-record-more-menu {
+  overflow: visible;
+}
+
+.svx-wa-record-table {
+  max-height: none;
+  padding-right: 0;
+}
+
+.svx-wa-record-column {
+  position: relative;
+}
+
+.svx-wa-broadcast-row {
+  position: relative;
+  grid-template-columns: minmax(104px, 132px) minmax(0, 1fr) minmax(158px, auto) minmax(176px, auto);
+  min-height: 58px;
+  align-items: center;
+  gap: 8px;
+  border-radius: 13px;
+  padding: 8px 9px;
+}
+
+.svx-wa-broadcast-row:hover {
+  transform: none;
+}
+
+.svx-wa-record-main-cell > strong {
+  max-width: 100%;
+  font-size: 13.4px;
+}
+
+.svx-wa-record-main-cell > span {
+  max-width: 100%;
+  font-size: 11.4px;
+}
+
+.svx-wa-record-metrics-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0;
+  min-width: 0;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--wa-card) 90%, var(--wa-soft));
+  padding: 5px 7px;
+  white-space: nowrap;
+}
+
+.svx-wa-record-metrics-cell span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+  padding: 0 8px;
+  color: var(--wa-muted);
+  font-size: 10.8px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.svx-wa-record-metrics-cell span + span {
+  border-left: 1px solid var(--wa-border-soft);
+}
+
+.svx-wa-record-metrics-cell strong {
+  color: var(--wa-text);
+  font-size: 13.6px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.svx-wa-record-actions-cell {
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 6px;
+  isolation: isolate;
+}
+
+.svx-wa-record-primary-action {
+  min-height: 34px !important;
+  border-radius: 10px !important;
+}
+
+.svx-wa-record-more-menu {
+  position: relative;
+  z-index: 30;
+  min-width: 0;
+}
+
+.svx-wa-record-more-menu.is-open {
+  z-index: 90;
+}
+
+.svx-wa-record-more-trigger {
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 0 !important;
+  border: 1px solid var(--wa-border-soft) !important;
+  border-radius: 10px !important;
+  background: color-mix(in srgb, var(--wa-card) 92%, var(--wa-soft)) !important;
+  color: var(--wa-muted) !important;
+  display: grid !important;
+  place-items: center !important;
+  cursor: pointer;
+}
+
+.svx-wa-record-more-trigger span {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  line-height: 1;
+}
+
+.svx-wa-record-more-menu.is-open .svx-wa-record-more-trigger,
+.svx-wa-record-more-trigger:hover {
+  border-color: color-mix(in srgb, var(--wa-primary) 32%, var(--wa-border-soft)) !important;
+  background: var(--wa-primary-soft) !important;
+  color: var(--wa-primary) !important;
+}
+
+.svx-wa-record-more-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 120;
+  display: grid;
+  width: min(292px, calc(100vw - 32px));
+  gap: 7px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 16px;
+  background: var(--wa-card);
+  padding: 8px;
+  box-shadow: 0 26px 70px rgba(15, 23, 42, 0.22);
+}
+
+.svx-wa-record-more-menu.is-up .svx-wa-record-more-panel {
+  top: auto;
+  bottom: calc(100% + 8px);
+}
+
+:root[data-theme="dark"] .svx-wa-record-more-panel {
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45);
+}
+
+.svx-wa-record-more-panel button {
+  justify-content: flex-start !important;
+  width: 100% !important;
+  min-height: 38px !important;
+  border: 1px solid var(--wa-border-soft) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--wa-card) 94%, var(--wa-soft)) !important;
+  color: var(--wa-text) !important;
+  padding: 0 12px !important;
+  text-align: left !important;
+}
+
+.svx-wa-record-more-panel button:hover {
+  border-color: color-mix(in srgb, var(--wa-primary) 34%, var(--wa-border-soft)) !important;
+  background: var(--wa-primary-soft) !important;
+  color: var(--wa-primary) !important;
+}
+
+.svx-wa-record-more-panel button.is-danger:hover {
+  border-color: color-mix(in srgb, var(--wa-danger) 34%, var(--wa-border-soft)) !important;
+  background: var(--wa-danger-soft) !important;
+  color: var(--wa-danger) !important;
+}
+
+.svx-wa-row-warning,
+.svx-wa-row-scale-note,
+.svx-wa-row-issue-chip {
+  min-height: 19px;
+  margin-top: 5px;
+  padding: 0 7px;
+  font-size: 9.2px;
+}
+
+@media (max-width: 1280px) {
+  .svx-wa-broadcast-row {
+    grid-template-columns: minmax(96px, 124px) minmax(0, 1fr) minmax(146px, auto) minmax(168px, auto);
+  }
+}
+
+@media (max-width: 980px) {
+  .svx-wa-broadcast-row {
+    grid-template-columns: 96px minmax(0, 1fr) minmax(140px, auto);
+  }
+
+  .svx-wa-broadcast-row .svx-wa-record-actions-cell {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) 38px;
+  }
+}
+
+@media (max-width: 680px) {
+  .svx-wa-broadcast-row {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-wa-record-metrics-cell {
+    justify-content: space-between;
+    width: 100%;
+    border-radius: 12px;
+  }
+
+  .svx-wa-record-metrics-cell span {
+    width: 50%;
+    justify-content: center;
+  }
+
+  .svx-wa-record-more-panel {
+    right: 0;
+    width: min(300px, calc(100vw - 28px));
+  }
+}
+
+
+/* Campaign ledger menu fix: use viewport-fixed popover so it cannot hide behind rows or clip inside the list. */
+.svx-wa-broadcast-row.is-menu-open {
+  z-index: 260;
+  border-color: color-mix(in srgb, var(--wa-primary) 34%, var(--wa-border-soft));
+}
+
+.svx-wa-record-more-panel {
+  position: fixed !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: 9999 !important;
+  width: min(292px, calc(100vw - 24px)) !important;
+  max-height: min(300px, calc(100dvh - 24px));
+  overflow-y: auto;
+}
+
+.svx-wa-record-more-menu.is-up .svx-wa-record-more-panel {
+  top: auto;
+  bottom: auto;
+}
+
+.svx-wa-record-more-panel button.is-danger {
+  color: var(--wa-danger) !important;
+}
+
+.svx-wa-record-more-issue {
+  max-height: none;
+}
+
+@media (max-width: 680px) {
+  .svx-wa-record-more-panel {
+    width: min(300px, calc(100vw - 24px)) !important;
+  }
+}
+
+
+/* Campaign action menu anchoring: keep the menu beside its own three-dot trigger. */
+.svx-wa-campaign-records-shell,
+.svx-wa-records-grid,
+.svx-wa-record-column,
+.svx-wa-record-table,
+.svx-wa-broadcast-row,
+.svx-wa-record-actions-cell,
+.svx-wa-record-more-menu {
+  overflow: visible !important;
+}
+
+.svx-wa-record-actions-cell {
+  position: relative !important;
+  z-index: 1;
+}
+
+.svx-wa-broadcast-row.is-menu-open {
+  z-index: 500 !important;
+}
+
+.svx-wa-record-more-menu {
+  position: relative !important;
+  z-index: 5 !important;
+}
+
+.svx-wa-record-more-menu.is-open {
+  z-index: 700 !important;
+}
+
+.svx-wa-record-more-panel {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  right: 0 !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: 999 !important;
+  width: min(292px, calc(100vw - 28px)) !important;
+  max-height: min(300px, calc(100dvh - 28px));
+  overflow-y: auto;
+}
+
+.svx-wa-record-more-menu.is-up .svx-wa-record-more-panel {
+  top: auto !important;
+  bottom: calc(100% + 8px) !important;
+  right: 0 !important;
+  left: auto !important;
+}
+
+@media (max-width: 680px) {
+  .svx-wa-record-more-panel {
+    right: 0 !important;
+    width: min(300px, calc(100vw - 24px)) !important;
+  }
+}
