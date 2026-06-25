@@ -49,6 +49,7 @@ const DEFAULT_MESSAGE_LANGUAGE = "en_US";
 const PROMOTION_LIST_LIMIT = 6;
 const BROADCAST_LIST_LIMIT = 5;
 const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
+const BROADCAST_PREVIEW_CACHE_KEY = "storvex_whatsapp_broadcast_preview_cache_v1";
 
 const BUSINESS_CATEGORY_LABELS = {
   ELECTRONICS: "Electronics retail",
@@ -1826,6 +1827,108 @@ function previewRecipients(preview) {
   return Array.isArray(rows) ? rows : [];
 }
 
+function readBroadcastPreviewCache() {
+  try {
+    const raw =
+      (typeof localStorage !== "undefined" && localStorage.getItem(BROADCAST_PREVIEW_CACHE_KEY)) ||
+      "{}";
+
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeBroadcastPreviewCache(nextCache) {
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(BROADCAST_PREVIEW_CACHE_KEY, JSON.stringify(nextCache || {}));
+  } catch {
+    // Local cache is only used to keep draft recipient counts visible after refresh.
+  }
+}
+
+function cachedBroadcastPreview(broadcastId) {
+  const id = cleanText(broadcastId);
+  if (!id) return null;
+
+  const cache = readBroadcastPreviewCache();
+  const preview = cache[id];
+  return preview && typeof preview === "object" ? preview : null;
+}
+
+function rememberBroadcastPreview({ broadcastId, preview, targeting, promotionId }) {
+  const id = cleanText(broadcastId);
+  if (!id || !preview) return null;
+
+  const count = previewRecipientCount(preview);
+  const rows = previewRecipients(preview).slice(0, 20).map((recipient) => ({
+    id: cleanText(recipient.id),
+    name: cleanText(recipient.name) || "Customer",
+    phone: cleanText(recipient.phone),
+  }));
+
+  const snapshot = {
+    broadcastId: id,
+    promotionId: cleanText(promotionId),
+    recipientCount: count,
+    recipients: rows,
+    audienceLabel: cleanText(preview.audienceLabel) || cleanText(preview.label),
+    warning: cleanText(preview.warning),
+    canSend: preview.canSend !== false && count > 0,
+    targeting: targeting || { mode: "ALL_OPTED_IN" },
+    savedAt: new Date().toISOString(),
+  };
+
+  const cache = readBroadcastPreviewCache();
+  cache[id] = snapshot;
+  writeBroadcastPreviewCache(cache);
+
+  return snapshot;
+}
+
+function enrichBroadcastWithCachedPreview(broadcast) {
+  const cached = cachedBroadcastPreview(broadcast?.id);
+  if (!cached) return broadcast;
+
+  const liveRecipientCount = Number(broadcast?.recipientCount || 0);
+  const cachedRecipientCount = Number(cached.recipientCount || 0);
+
+  return {
+    ...broadcast,
+    recipientCount: liveRecipientCount > 0 ? liveRecipientCount : cachedRecipientCount,
+    recipientPreview: cached,
+    targetingPreview: cached.targeting || broadcast?.targetingPreview || null,
+  };
+}
+
+function broadcastRecipientCount(broadcast) {
+  return Number(broadcast?.recipientCount || broadcast?.recipientPreview?.recipientCount || 0);
+}
+
+function broadcastStatusValue(broadcast) {
+  return String(broadcast?.status || "DRAFT").trim().toUpperCase();
+}
+
+function canQueueBroadcast(broadcast) {
+  return broadcastStatusValue(broadcast) === "DRAFT";
+}
+
+function canSendBroadcast(broadcast) {
+  return ["DRAFT", "QUEUED", "FAILED"].includes(broadcastStatusValue(broadcast));
+}
+
+function sendActionLabel(broadcast) {
+  const status = broadcastStatusValue(broadcast);
+
+  if (status === "SENT") return "Sent";
+  if (status === "QUEUED") return "Send queued now";
+  if (status === "FAILED") return "Retry send";
+
+  return "Send now";
+}
+
 function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   const registeredBusinessCategory = useMemo(() => getRegisteredBusinessCategory(), []);
   const registeredBusinessCategoryLabel = categoryLabel(registeredBusinessCategory);
@@ -1842,6 +1945,13 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   const [promotionLimit, setPromotionLimit] = useState(PROMOTION_LIST_LIMIT);
   const [broadcastLimit, setBroadcastLimit] = useState(BROADCAST_LIST_LIMIT);
   const [busyBroadcastId, setBusyBroadcastId] = useState("");
+  const [sendConfirmBroadcast, setSendConfirmBroadcast] = useState(null);
+  const [broadcastPreviewCacheVersion, setBroadcastPreviewCacheVersion] = useState(0);
+
+  const visibleBroadcasts = useMemo(
+    () => broadcasts.map(enrichBroadcastWithCachedPreview),
+    [broadcasts, broadcastPreviewCacheVersion]
+  );
 
   const selectedPromotion = useMemo(
     () => promotions.find((item) => item.id === promotionId) || null,
@@ -1961,13 +2071,24 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
     setSavingBroadcast(true);
 
     try {
-      await createWhatsAppBroadcast({
+      const targeting = currentTargeting();
+      const result = await createWhatsAppBroadcast({
         accountId: accounts[0]?.id || undefined,
         promotionId,
         templateName: DEFAULT_MESSAGE_FORMAT,
         languageCode: DEFAULT_MESSAGE_LANGUAGE,
-        targeting: currentTargeting(),
+        targeting,
       });
+
+      if (result?.broadcast?.id) {
+        rememberBroadcastPreview({
+          broadcastId: result.broadcast.id,
+          preview: recipientPreview,
+          targeting,
+          promotionId,
+        });
+        setBroadcastPreviewCacheVersion((value) => value + 1);
+      }
 
       toast.success("Broadcast draft created");
       setPromotionId("");
@@ -1981,20 +2102,44 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
     }
   }
 
-  async function sendBroadcast(id) {
-    const ok = window.confirm(
-      "Send this WhatsApp broadcast now? Queue is safer for planned campaigns."
-    );
-    if (!ok) return;
+  async function sendBroadcast(broadcast) {
+    if (!broadcast?.id) return;
 
-    setBusyBroadcastId(id);
+    const cachedPreview = cachedBroadcastPreview(broadcast.id);
+    const count = broadcastRecipientCount(broadcast) || Number(cachedPreview?.recipientCount || 0);
+
+    if (!canSendBroadcast(broadcast)) {
+      toast.error("This broadcast has already been sent");
+      return;
+    }
+
+    if (!count) {
+      toast.error("Preview recipients before sending this broadcast");
+      return;
+    }
+
+    setSendConfirmBroadcast({
+      ...broadcast,
+      recipientCount: count,
+      targetingPreview: cachedPreview?.targeting || broadcast?.targetingPreview || { mode: "ALL_OPTED_IN" },
+    });
+  }
+
+  async function confirmSendBroadcast() {
+    const broadcast = sendConfirmBroadcast;
+    if (!broadcast?.id) return;
+
+    const count = broadcastRecipientCount(broadcast);
+
+    setBusyBroadcastId(broadcast.id);
 
     try {
-      const result = await sendWhatsAppBroadcastNow(id, {
-        limit: 50,
-        targeting: { mode: "ALL_OPTED_IN" },
+      const result = await sendWhatsAppBroadcastNow(broadcast.id, {
+        limit: Math.max(50, count || 1),
+        targeting: broadcast.targetingPreview || { mode: "ALL_OPTED_IN" },
       });
 
+      setSendConfirmBroadcast(null);
       toast.success(result.summary?.delivered ? "Broadcast sent" : "Broadcast checked");
       await onRefresh?.();
     } catch (err) {
@@ -2004,7 +2149,20 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
     }
   }
 
-  async function queueBroadcast(id) {
+  async function queueBroadcast(broadcast) {
+    const id = broadcast?.id;
+    const count = broadcastRecipientCount(broadcast) || Number(cachedBroadcastPreview(id)?.recipientCount || 0);
+
+    if (!canQueueBroadcast(broadcast)) {
+      toast("Broadcast is already queued or sent");
+      return;
+    }
+
+    if (!count) {
+      toast.error("Preview recipients before queueing this broadcast");
+      return;
+    }
+
     setBusyBroadcastId(id);
 
     try {
@@ -2021,6 +2179,8 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   const previewCount = previewRecipientCount(recipientPreview);
   const previewRows = previewRecipients(recipientPreview).slice(0, 8);
   const previewReady = hasValidRecipientPreview();
+  const sendConfirmCount = broadcastRecipientCount(sendConfirmBroadcast);
+  const sendConfirmTitle = sendConfirmBroadcast?.promotion?.title || "Customer broadcast";
 
   return (
     <section className="svx-wa-page-panel">
@@ -2220,10 +2380,10 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
         <section className="svx-wa-campaign-list">
           <div className="svx-wa-list-head">
             <h3>Broadcasts</h3>
-            <Badge tone="neutral">{broadcasts.length}</Badge>
+            <Badge tone="neutral">{visibleBroadcasts.length}</Badge>
           </div>
 
-          {broadcasts.slice(0, broadcastLimit).map((broadcast) => (
+          {visibleBroadcasts.slice(0, broadcastLimit).map((broadcast) => (
             <article key={broadcast.id} className="svx-wa-broadcast-card">
               <div>
                 <Badge tone={toneForStatus(broadcast.status)}>
@@ -2236,7 +2396,7 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
               <div className="svx-wa-broadcast-stats">
                 <span>
                   <small>Customers</small>
-                  <strong>{Number(broadcast.recipientCount || 0)}</strong>
+                  <strong>{broadcastRecipientCount(broadcast)}</strong>
                 </span>
                 <span>
                   <small>Sent</small>
@@ -2246,25 +2406,29 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
 
               <div className="svx-wa-card-actions">
                 <AsyncButton
-                  onClick={() => queueBroadcast(broadcast.id)}
+                  onClick={() => queueBroadcast(broadcast)}
                   loading={busyBroadcastId === broadcast.id}
-                  loadingText="Working..."
+                  loadingText="Queueing..."
                   variant="secondary"
+                  disabled={busyBroadcastId === broadcast.id || !canQueueBroadcast(broadcast)}
+                  title={canQueueBroadcast(broadcast) ? "Keep this broadcast ready to send later" : "Broadcast already queued or sent"}
                 >
-                  Queue
+                  {canQueueBroadcast(broadcast) ? "Queue" : broadcastStatusValue(broadcast) === "QUEUED" ? "Queued" : "Queue closed"}
                 </AsyncButton>
                 <AsyncButton
-                  onClick={() => sendBroadcast(broadcast.id)}
+                  onClick={() => sendBroadcast(broadcast)}
                   loading={busyBroadcastId === broadcast.id}
                   loadingText="Sending..."
+                  disabled={busyBroadcastId === broadcast.id || !canSendBroadcast(broadcast)}
+                  title="Send this broadcast to the previewed recipients now"
                 >
-                  Send now
+                  {sendActionLabel(broadcast)}
                 </AsyncButton>
               </div>
             </article>
           ))}
 
-          {broadcasts.length > broadcastLimit ? (
+          {visibleBroadcasts.length > broadcastLimit ? (
             <button
               type="button"
               className="svx-wa-secondary-action"
@@ -2275,6 +2439,56 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
           ) : null}
         </section>
       </div>
+
+      {sendConfirmBroadcast ? (
+        <div className="svx-wa-modal-backdrop" role="presentation">
+          <section
+            className="svx-wa-send-confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="wa-send-confirm-title"
+          >
+            <div className="svx-wa-send-confirm-head">
+              <Badge tone="warning">Send now</Badge>
+              <h3 id="wa-send-confirm-title">Send broadcast now?</h3>
+              <p>
+                This will immediately send <strong>{sendConfirmTitle}</strong> to
+                <strong> {sendConfirmCount}</strong> WhatsApp customer
+                {sendConfirmCount === 1 ? "" : "s"}. Messages will be logged in customer conversations and this action cannot be undone.
+              </p>
+            </div>
+
+            <div className="svx-wa-send-confirm-summary">
+              <span>
+                <small>Recipients</small>
+                <strong>{sendConfirmCount}</strong>
+              </span>
+              <span>
+                <small>Status after send</small>
+                <strong>Sent or needs attention</strong>
+              </span>
+            </div>
+
+            <div className="svx-wa-send-confirm-actions">
+              <button
+                type="button"
+                onClick={() => setSendConfirmBroadcast(null)}
+                disabled={Boolean(busyBroadcastId)}
+              >
+                Not now
+              </button>
+              <AsyncButton
+                type="button"
+                onClick={confirmSendBroadcast}
+                loading={busyBroadcastId === sendConfirmBroadcast.id}
+                loadingText="Sending..."
+              >
+                Send now
+              </AsyncButton>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }
