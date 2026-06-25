@@ -4903,3 +4903,40 @@ background: var(--wa-soft);
     font-size: 26px !important;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Storvex WhatsApp conversation preview discipline                            */
+/* Inbox rows should preview messages, not expand into full chat transcripts.   */
+/* -------------------------------------------------------------------------- */
+.svx-wa-conversation-preview {
+  display: -webkit-box !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  line-clamp: 2 !important;
+}
+
+.svx-wa-conversation-row {
+  align-items: center !important;
+}
+
+.svx-wa-conversation-main {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.svx-wa-conversation-tags {
+  margin-top: 8px !important;
+}
+
+@media (max-width: 760px) {
+  .svx-wa-conversation-preview {
+    -webkit-line-clamp: 1 !important;
+    line-clamp: 1 !important;
+  }
+}
