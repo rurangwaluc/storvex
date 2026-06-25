@@ -2529,216 +2529,220 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
           </AsyncButton>
         </form>
 
-        <section className="svx-wa-campaign-list svx-wa-campaign-list-panel">
-          <div className="svx-wa-list-head">
+        <section className="svx-wa-campaign-records-shell">
+          <div className="svx-wa-records-head">
             <div>
-              <h3>Promotions</h3>
-              <span className="svx-wa-list-count">
-                Showing {Math.min(filteredPromotions.length, promotionLimit)} of {formatCompactNumber(filteredPromotions.length)}
+              <p>Campaign records</p>
+              <h3>Campaign library</h3>
+              <span>Search, review, queue, retry, and send customer campaigns without turning the page into a wall of cards.</span>
+            </div>
+
+            <div className="svx-wa-records-summary" aria-label="Campaign record totals">
+              <span>
+                <small>Promotions</small>
+                <strong>{formatCompactNumber(promotions.length)}</strong>
+              </span>
+              <span>
+                <small>Broadcasts</small>
+                <strong>{formatCompactNumber(visibleBroadcasts.length)}</strong>
               </span>
             </div>
-            <Badge tone="neutral">{formatCompactNumber(promotions.length)}</Badge>
           </div>
 
-          <div className="svx-wa-list-toolbar">
-            <input
-              value={promotionSearch}
-              onChange={(event) => setPromotionSearch(event.target.value)}
-              placeholder="Search promotions..."
-            />
-          </div>
-
-          <div className="svx-wa-long-list" role="list">
-            {filteredPromotions.slice(0, promotionLimit).map((promotion) => (
-              <article key={promotion.id} className="svx-wa-campaign-card svx-wa-record-row" role="listitem">
+          <div className="svx-wa-records-grid">
+            <section className="svx-wa-record-column">
+              <div className="svx-wa-record-column-head">
                 <div>
-                  <Badge tone={promotion.sentAt ? "success" : "warning"}>
-                    {promotion.sentAt ? "Sent" : "Draft"}
-                  </Badge>
-                  <strong>{promotion.title}</strong>
-                  <p>{promotion.message || "No message"}</p>
+                  <h4>Promotions</h4>
+                  <span>Showing {Math.min(filteredPromotions.length, promotionLimit)} of {formatCompactNumber(filteredPromotions.length)}</span>
                 </div>
-                <span className="svx-wa-row-stat">
-                  <small>Broadcasts</small>
-                  <strong>{formatCompactNumber(promotion.usage?.broadcastCount || 0)}</strong>
-                </span>
-              </article>
-            ))}
-          </div>
+                <Badge tone="neutral">{formatCompactNumber(promotions.length)}</Badge>
+              </div>
 
-          {filteredPromotions.length === 0 ? (
-            <div className="svx-wa-list-empty">No promotions match this search.</div>
-          ) : null}
+              <div className="svx-wa-list-toolbar">
+                <input
+                  value={promotionSearch}
+                  onChange={(event) => setPromotionSearch(event.target.value)}
+                  placeholder="Search promotions..."
+                />
+              </div>
 
-          {filteredPromotions.length > promotionLimit ? (
-            <button
-              type="button"
-              className="svx-wa-secondary-action svx-wa-load-more-action"
-              onClick={() => setPromotionLimit((value) => value + PROMOTION_LIST_LIMIT)}
-            >
-              Load more promotions
-            </button>
-          ) : null}
-        </section>
-
-        <section className="svx-wa-campaign-list svx-wa-campaign-list-panel">
-          <div className="svx-wa-list-head">
-            <div>
-              <h3>Broadcasts</h3>
-              <span className="svx-wa-list-count">
-                Showing {Math.min(filteredBroadcasts.length, broadcastLimit)} of {formatCompactNumber(filteredBroadcasts.length)}
-              </span>
-            </div>
-            <Badge tone="neutral">{formatCompactNumber(visibleBroadcasts.length)}</Badge>
-          </div>
-
-          <div className="svx-wa-list-toolbar svx-wa-broadcast-toolbar">
-            <input
-              value={broadcastSearch}
-              onChange={(event) => setBroadcastSearch(event.target.value)}
-              placeholder="Search broadcasts..."
-            />
-            <select
-              value={broadcastStatusFilter}
-              onChange={(event) => setBroadcastStatusFilter(event.target.value)}
-              aria-label="Filter broadcasts by status"
-            >
-              <option value="ALL">All statuses</option>
-              <option value="DRAFT">Draft</option>
-              <option value="QUEUED">Queued</option>
-              <option value="SENT">Sent</option>
-              <option value="FAILED">Needs attention</option>
-            </select>
-          </div>
-
-          <div className="svx-wa-long-list" role="list">
-            {filteredBroadcasts.slice(0, broadcastLimit).map((broadcast) => {
-              const recipientCount = broadcastRecipientCount(broadcast);
-              const failureDetails = broadcastFailureDetails(broadcast);
-              const hasAudience = canActOnBroadcastAudience(broadcast);
-              const forceQueue = shouldForceQueue(recipientCount);
-              const queueDisabled = busyBroadcastId === broadcast.id || !canQueueBroadcast(broadcast) || !hasAudience;
-              const sendDisabled = busyBroadcastId === broadcast.id || !canSendBroadcast(broadcast) || !hasAudience || forceQueue;
-
-              return (
-                <article key={broadcast.id} className="svx-wa-broadcast-card svx-wa-record-row" role="listitem">
-                  <div>
-                    <Badge tone={toneForStatus(broadcast.status)}>
-                      {statusLabel(broadcast.status)}
-                    </Badge>
-                    <strong>{broadcast.promotion?.title || "Customer broadcast"}</strong>
-                    <p>{broadcast.promotion?.message || "No promotion message attached"}</p>
-                  </div>
-
-                  <div className="svx-wa-broadcast-stats">
-                    <span>
-                      <small>Customers</small>
-                      <strong>{formatCompactNumber(recipientCount)}</strong>
-                    </span>
-                    <span>
-                      <small>Sent</small>
-                      <strong>{formatCompactNumber(broadcast.deliveredCount || failureDetails?.delivered || 0)}</strong>
-                    </span>
-                  </div>
-
-                  {!hasAudience ? (
-                    <div className="svx-wa-broadcast-warning">
-                      <strong>Preview recipients first</strong>
-                      <span>This draft has no saved recipient count, so it cannot be queued or sent safely.</span>
+              <div className="svx-wa-record-table" role="list" aria-label="Promotions">
+                {filteredPromotions.slice(0, promotionLimit).map((promotion) => (
+                  <article key={promotion.id} className="svx-wa-promotion-row" role="listitem">
+                    <div className="svx-wa-record-status-cell">
+                      <Badge tone={promotion.sentAt ? "success" : "warning"}>
+                        {promotion.sentAt ? "Sent" : "Draft"}
+                      </Badge>
                     </div>
-                  ) : null}
 
-                  {hasAudience && isLargeAudience(recipientCount) ? (
-                    <div className="svx-wa-broadcast-scale-note">
-                      <strong>{forceQueue ? "Queue required" : "Queue recommended"}</strong>
-                      <span>
-                        {formatCompactNumber(recipientCount)} recipients is a large audience. {forceQueue ? "Use Queue so this campaign can be handled safely." : "Queue is safer than Send now for planned campaigns."}
-                      </span>
+                    <div className="svx-wa-record-main-cell">
+                      <strong>{promotion.title}</strong>
+                      <span>{promotion.message || "No message"}</span>
                     </div>
-                  ) : null}
 
-                  {failureDetails ? (
-                    <div className="svx-wa-broadcast-failure">
-                      <div>
-                        <strong>Why it needs attention</strong>
-                        <span>{failureDetails.message}</span>
+                    <div className="svx-wa-record-number-cell">
+                      <small>Broadcasts</small>
+                      <strong>{formatCompactNumber(promotion.usage?.broadcastCount || 0)}</strong>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              {filteredPromotions.length === 0 ? (
+                <div className="svx-wa-list-empty">No promotions match this search.</div>
+              ) : null}
+
+              {filteredPromotions.length > promotionLimit ? (
+                <button
+                  type="button"
+                  className="svx-wa-secondary-action svx-wa-load-more-action"
+                  onClick={() => setPromotionLimit((value) => value + PROMOTION_LIST_LIMIT)}
+                >
+                  Load more promotions
+                </button>
+              ) : null}
+            </section>
+
+            <section className="svx-wa-record-column is-broadcasts">
+              <div className="svx-wa-record-column-head">
+                <div>
+                  <h4>Broadcasts</h4>
+                  <span>Showing {Math.min(filteredBroadcasts.length, broadcastLimit)} of {formatCompactNumber(filteredBroadcasts.length)}</span>
+                </div>
+                <Badge tone="neutral">{formatCompactNumber(visibleBroadcasts.length)}</Badge>
+              </div>
+
+              <div className="svx-wa-list-toolbar svx-wa-broadcast-toolbar">
+                <input
+                  value={broadcastSearch}
+                  onChange={(event) => setBroadcastSearch(event.target.value)}
+                  placeholder="Search broadcasts..."
+                />
+                <select
+                  value={broadcastStatusFilter}
+                  onChange={(event) => setBroadcastStatusFilter(event.target.value)}
+                  aria-label="Filter broadcasts by status"
+                >
+                  <option value="ALL">All statuses</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="QUEUED">Queued</option>
+                  <option value="SENT">Sent</option>
+                  <option value="FAILED">Needs attention</option>
+                </select>
+              </div>
+
+              <div className="svx-wa-record-table is-broadcast-table" role="list" aria-label="Broadcasts">
+                {filteredBroadcasts.slice(0, broadcastLimit).map((broadcast) => {
+                  const recipientCount = broadcastRecipientCount(broadcast);
+                  const failureDetails = broadcastFailureDetails(broadcast);
+                  const hasAudience = canActOnBroadcastAudience(broadcast);
+                  const forceQueue = shouldForceQueue(recipientCount);
+                  const queueDisabled = busyBroadcastId === broadcast.id || !canQueueBroadcast(broadcast) || !hasAudience;
+                  const sendDisabled = busyBroadcastId === broadcast.id || !canSendBroadcast(broadcast) || !hasAudience || forceQueue;
+
+                  return (
+                    <article key={broadcast.id} className="svx-wa-broadcast-row" role="listitem">
+                      <div className="svx-wa-record-status-cell">
+                        <Badge tone={toneForStatus(broadcast.status)}>
+                          {statusLabel(broadcast.status)}
+                        </Badge>
                       </div>
 
-                      <div className="svx-wa-broadcast-failure-stats">
+                      <div className="svx-wa-record-main-cell">
+                        <strong>{broadcast.promotion?.title || "Customer broadcast"}</strong>
+                        <span>{broadcast.promotion?.message || "No promotion message attached"}</span>
+
+                        {!hasAudience ? (
+                          <em className="svx-wa-row-warning">Preview recipients first — this draft cannot be queued or sent safely.</em>
+                        ) : null}
+
+                        {hasAudience && isLargeAudience(recipientCount) ? (
+                          <em className="svx-wa-row-scale-note">
+                            {forceQueue ? "Queue required" : "Queue recommended"} for {formatCompactNumber(recipientCount)} recipients.
+                          </em>
+                        ) : null}
+
+                        {failureDetails ? (
+                          <details className="svx-wa-row-issue">
+                            <summary>View issue</summary>
+                            <div>
+                              <strong>{failureDetails.message}</strong>
+                              <span>
+                                Attempted {formatCompactNumber(failureDetails.attempted || recipientCount || 0)} · Failed {formatCompactNumber(failureDetails.failed || 0)}
+                              </span>
+                              {Array.isArray(failureDetails.failures) && failureDetails.failures.length ? (
+                                <small>{failureDetails.failures[0]?.phone || "Customer"}: {failureDetails.failures[0]?.message}</small>
+                              ) : null}
+                            </div>
+                          </details>
+                        ) : null}
+                      </div>
+
+                      <div className="svx-wa-record-number-pair" aria-label="Broadcast performance">
                         <span>
-                          <small>Attempted</small>
-                          <strong>{formatCompactNumber(failureDetails.attempted || recipientCount || 0)}</strong>
+                          <small>Customers</small>
+                          <strong>{formatCompactNumber(recipientCount)}</strong>
                         </span>
                         <span>
-                          <small>Failed</small>
-                          <strong>{formatCompactNumber(failureDetails.failed || 0)}</strong>
+                          <small>Sent</small>
+                          <strong>{formatCompactNumber(broadcast.deliveredCount || failureDetails?.delivered || 0)}</strong>
                         </span>
                       </div>
 
-                      {Array.isArray(failureDetails.failures) && failureDetails.failures.length ? (
-                        <div className="svx-wa-broadcast-failure-list">
-                          {failureDetails.failures.slice(0, 3).map((item) => (
-                            <span key={`${item.customerId || item.phone}-${item.message}`}>
-                              <strong>{item.phone || "Customer"}</strong>
-                              <small>{item.message}</small>
-                            </span>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
+                      <div className="svx-wa-record-actions-cell">
+                        <AsyncButton
+                          onClick={() => queueBroadcast(broadcast)}
+                          loading={busyBroadcastId === broadcast.id}
+                          loadingText="Queueing..."
+                          variant="secondary"
+                          disabled={queueDisabled}
+                          title={
+                            !hasAudience
+                              ? "Preview recipients before queueing"
+                              : canQueueBroadcast(broadcast)
+                                ? "Keep this broadcast ready to send later"
+                                : "Broadcast already queued or sent"
+                          }
+                        >
+                          {canQueueBroadcast(broadcast) ? "Queue" : broadcastStatusValue(broadcast) === "QUEUED" ? "Queued" : "Closed"}
+                        </AsyncButton>
+                        <AsyncButton
+                          onClick={() => sendBroadcast(broadcast)}
+                          loading={busyBroadcastId === broadcast.id}
+                          loadingText="Sending..."
+                          disabled={sendDisabled}
+                          title={
+                            !hasAudience
+                              ? "Preview recipients before sending"
+                              : forceQueue
+                                ? "Queue is required for large recipient lists"
+                                : "Send this broadcast to the previewed recipients now"
+                          }
+                        >
+                          {forceQueue ? "Queue required" : sendActionLabel(broadcast)}
+                        </AsyncButton>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
 
-                  <div className="svx-wa-card-actions">
-                    <AsyncButton
-                      onClick={() => queueBroadcast(broadcast)}
-                      loading={busyBroadcastId === broadcast.id}
-                      loadingText="Queueing..."
-                      variant="secondary"
-                      disabled={queueDisabled}
-                      title={
-                        !hasAudience
-                          ? "Preview recipients before queueing"
-                          : canQueueBroadcast(broadcast)
-                            ? "Keep this broadcast ready to send later"
-                            : "Broadcast already queued or sent"
-                      }
-                    >
-                      {canQueueBroadcast(broadcast) ? "Queue" : broadcastStatusValue(broadcast) === "QUEUED" ? "Queued" : "Queue closed"}
-                    </AsyncButton>
-                    <AsyncButton
-                      onClick={() => sendBroadcast(broadcast)}
-                      loading={busyBroadcastId === broadcast.id}
-                      loadingText="Sending..."
-                      disabled={sendDisabled}
-                      title={
-                        !hasAudience
-                          ? "Preview recipients before sending"
-                          : forceQueue
-                            ? "Queue is required for large recipient lists"
-                            : "Send this broadcast to the previewed recipients now"
-                      }
-                    >
-                      {forceQueue ? "Queue required" : sendActionLabel(broadcast)}
-                    </AsyncButton>
-                  </div>
-                </article>
-              );
-            })}
+              {filteredBroadcasts.length === 0 ? (
+                <div className="svx-wa-list-empty">No broadcasts match this view.</div>
+              ) : null}
+
+              {filteredBroadcasts.length > broadcastLimit ? (
+                <button
+                  type="button"
+                  className="svx-wa-secondary-action svx-wa-load-more-action"
+                  onClick={() => setBroadcastLimit((value) => value + BROADCAST_LIST_LIMIT)}
+                >
+                  Load more broadcasts
+                </button>
+              ) : null}
+            </section>
           </div>
-
-          {filteredBroadcasts.length === 0 ? (
-            <div className="svx-wa-list-empty">No broadcasts match this view.</div>
-          ) : null}
-
-          {filteredBroadcasts.length > broadcastLimit ? (
-            <button
-              type="button"
-              className="svx-wa-secondary-action svx-wa-load-more-action"
-              onClick={() => setBroadcastLimit((value) => value + BROADCAST_LIST_LIMIT)}
-            >
-              Load more broadcasts
-            </button>
-          ) : null}
         </section>
       </div>
 

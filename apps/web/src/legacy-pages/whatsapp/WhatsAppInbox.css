@@ -5954,3 +5954,403 @@ background: var(--wa-soft);
     grid-template-columns: 1fr;
   }
 }
+
+/* Campaign library: dense, scalable records for large promotion/broadcast lists */
+.svx-wa-campaign-records-shell {
+  grid-column: 1 / -1;
+  min-width: 0;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--wa-card) 94%, var(--wa-soft));
+  padding: 14px;
+}
+
+.svx-wa-records-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 4px 2px 14px;
+}
+
+.svx-wa-records-head p {
+  color: var(--wa-primary);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.svx-wa-records-head h3 {
+  margin-top: 5px;
+  color: var(--wa-text);
+  font-size: 23px;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+
+.svx-wa-records-head span {
+  display: block;
+  max-width: 680px;
+  margin-top: 6px;
+  color: var(--wa-muted);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.svx-wa-records-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(96px, 1fr));
+  gap: 8px;
+  min-width: min(260px, 100%);
+}
+
+.svx-wa-records-summary span {
+  display: grid;
+  gap: 4px;
+  min-height: 58px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 16px;
+  background: var(--wa-soft);
+  padding: 10px 12px;
+}
+
+.svx-wa-records-summary small {
+  color: var(--wa-muted);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.svx-wa-records-summary strong {
+  color: var(--wa-text);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.svx-wa-records-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(420px, 1.45fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.svx-wa-record-column {
+  min-width: 0;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 20px;
+  background: var(--wa-card);
+  padding: 12px;
+}
+
+.svx-wa-record-column-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.svx-wa-record-column-head h4 {
+  margin: 0;
+  color: var(--wa-text);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+.svx-wa-record-column-head span {
+  display: block;
+  margin-top: 3px;
+  color: var(--wa-muted);
+  font-size: 11.5px;
+  font-weight: 800;
+}
+
+.svx-wa-record-table {
+  display: grid;
+  gap: 7px;
+  max-height: min(680px, 64dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+  scrollbar-width: thin;
+}
+
+.svx-wa-promotion-row,
+.svx-wa-broadcast-row {
+  min-width: 0;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 16px;
+  background: var(--wa-soft);
+  padding: 10px;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    transform 180ms var(--wa-ease);
+}
+
+.svx-wa-promotion-row:hover,
+.svx-wa-broadcast-row:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--wa-primary) 28%, var(--wa-border-soft));
+  background: color-mix(in srgb, var(--wa-primary) 5%, var(--wa-soft));
+}
+
+.svx-wa-promotion-row {
+  display: grid;
+  grid-template-columns: minmax(82px, auto) minmax(0, 1fr) minmax(92px, auto);
+  align-items: center;
+  gap: 10px;
+}
+
+.svx-wa-broadcast-row {
+  display: grid;
+  grid-template-columns: minmax(96px, auto) minmax(0, 1fr) minmax(148px, auto) minmax(174px, auto);
+  align-items: center;
+  gap: 10px;
+}
+
+.svx-wa-record-status-cell {
+  min-width: 0;
+}
+
+.svx-wa-record-main-cell {
+  min-width: 0;
+}
+
+.svx-wa-record-main-cell > strong {
+  display: block;
+  overflow: hidden;
+  color: var(--wa-text);
+  font-size: 13.8px;
+  font-weight: 900;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-record-main-cell > span {
+  display: block;
+  overflow: hidden;
+  margin-top: 4px;
+  color: var(--wa-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-record-number-cell,
+.svx-wa-record-number-pair span {
+  min-width: 0;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--wa-card) 85%, var(--wa-soft));
+  padding: 9px 10px;
+}
+
+.svx-wa-record-number-cell small,
+.svx-wa-record-number-pair small {
+  display: block;
+  overflow: hidden;
+  color: var(--wa-muted);
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.svx-wa-record-number-cell strong,
+.svx-wa-record-number-pair strong {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--wa-text);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-record-number-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(68px, 1fr));
+  gap: 7px;
+}
+
+.svx-wa-record-actions-cell {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  min-width: 0;
+}
+
+.svx-wa-record-actions-cell .svx-wa-secondary-action,
+.svx-wa-record-actions-cell button {
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.svx-wa-row-warning,
+.svx-wa-row-scale-note {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 7px;
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.svx-wa-row-warning {
+  background: var(--wa-warning-soft);
+  color: var(--wa-warning);
+}
+
+.svx-wa-row-scale-note {
+  background: var(--wa-primary-soft);
+  color: var(--wa-primary);
+}
+
+.svx-wa-row-issue {
+  margin-top: 7px;
+  max-width: 100%;
+}
+
+.svx-wa-row-issue summary {
+  width: fit-content;
+  border: 1px solid color-mix(in srgb, var(--wa-danger) 30%, var(--wa-border-soft));
+  border-radius: 999px;
+  background: var(--wa-danger-soft);
+  color: var(--wa-danger);
+  padding: 5px 8px;
+  font-size: 10.5px;
+  font-weight: 900;
+  cursor: pointer;
+  list-style: none;
+}
+
+.svx-wa-row-issue summary::-webkit-details-marker {
+  display: none;
+}
+
+.svx-wa-row-issue > div {
+  display: grid;
+  gap: 4px;
+  margin-top: 7px;
+  border: 1px solid color-mix(in srgb, var(--wa-danger) 24%, var(--wa-border-soft));
+  border-radius: 13px;
+  background: var(--wa-danger-soft);
+  padding: 9px;
+}
+
+.svx-wa-row-issue > div strong,
+.svx-wa-row-issue > div span,
+.svx-wa-row-issue > div small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.svx-wa-row-issue > div strong {
+  color: var(--wa-text);
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.svx-wa-row-issue > div span,
+.svx-wa-row-issue > div small {
+  color: var(--wa-muted);
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+@media (max-width: 1280px) {
+  .svx-wa-records-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-wa-record-table {
+    max-height: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .svx-wa-records-head {
+    flex-direction: column;
+  }
+
+  .svx-wa-records-summary {
+    width: 100%;
+  }
+
+  .svx-wa-broadcast-row {
+    grid-template-columns: minmax(0, 1fr) minmax(132px, auto);
+    align-items: start;
+  }
+
+  .svx-wa-broadcast-row .svx-wa-record-status-cell {
+    grid-column: 1 / -1;
+  }
+
+  .svx-wa-record-main-cell {
+    grid-column: 1 / -1;
+  }
+
+  .svx-wa-record-number-pair {
+    grid-column: 1 / 2;
+  }
+
+  .svx-wa-record-actions-cell {
+    grid-column: 2 / 3;
+    grid-row: 3 / 4;
+  }
+}
+
+@media (max-width: 560px) {
+  .svx-wa-campaign-records-shell {
+    padding: 10px;
+    border-radius: 18px;
+  }
+
+  .svx-wa-promotion-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .svx-wa-promotion-row .svx-wa-record-status-cell {
+    grid-column: 1 / -1;
+  }
+
+  .svx-wa-broadcast-row {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-wa-record-number-pair,
+  .svx-wa-record-actions-cell {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .svx-wa-record-actions-cell {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
