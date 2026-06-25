@@ -1379,17 +1379,25 @@ function CustomerPanel({
       <section className="svx-wa-side-card svx-wa-conversation-info-card">
         <div className="svx-wa-side-title">Conversation info</div>
         <div className="svx-wa-info-list">
-          <span>Status</span>
-          <strong>{statusLabel(conversation.status)}</strong>
+          <div className="svx-wa-info-item">
+            <span>Status</span>
+            <strong>{statusLabel(conversation.status)}</strong>
+          </div>
 
-          <span>Assigned to</span>
-          <strong>{conversation.assignedTo?.name || "Unassigned"}</strong>
+          <div className="svx-wa-info-item">
+            <span>Assigned to</span>
+            <strong>{conversation.assignedTo?.name || "Unassigned"}</strong>
+          </div>
 
-          <span>Location</span>
-          <strong>{conversation.branchId ? "Ready" : "Location needed"}</strong>
+          <div className="svx-wa-info-item">
+            <span>Location</span>
+            <strong>{conversation.branchId ? "Ready" : "Location needed"}</strong>
+          </div>
 
-          <span>Last message</span>
-          <strong>{formatDay(conversation.updatedAt)}</strong>
+          <div className="svx-wa-info-item">
+            <span>Last message</span>
+            <strong>{formatDay(conversation.updatedAt)}</strong>
+          </div>
         </div>
       </section>
     </aside>
