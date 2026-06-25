@@ -463,6 +463,44 @@ function sanitizeProformaSummary(value) {
   };
 }
 
+function sanitizeSaleSummary(value) {
+  const item = ensureObject(value);
+  if (!Object.keys(item).length) return null;
+
+  return {
+    id: trimString(item.id),
+    customerId: trimString(item.customerId),
+    conversationId: trimString(item.conversationId),
+    total: toNumber(item.total, 0),
+    balanceDue: toNumber(item.balanceDue, 0),
+    saleType: toUpper(item.saleType || "CASH"),
+    status: toUpper(item.status || "PAID"),
+    createdAt: item.createdAt || null,
+    customer: sanitizeCustomer(item.customer),
+    items: ensureArray(item.items).map(sanitizeDraftItem),
+  };
+}
+
+function sanitizeDeliveryNoteSummary(value) {
+  const item = ensureObject(value);
+  if (!Object.keys(item).length) return null;
+
+  return {
+    id: trimString(item.id),
+    number: trimString(item.number),
+    saleId: trimString(item.saleId),
+    customerName: trimString(item.customerName),
+    customerPhone: trimString(item.customerPhone),
+    customerAddress: trimString(item.customerAddress),
+    deliveredBy: trimString(item.deliveredBy),
+    receivedBy: trimString(item.receivedBy),
+    receivedByPhone: trimString(item.receivedByPhone),
+    itemsCount: toNumber(item.itemsCount, 0),
+    createdAt: item.createdAt || null,
+    date: item.date || item.createdAt || null,
+  };
+}
+
 function sanitizeBroadcast(value) {
   const item = ensureObject(value);
   if (!Object.keys(item).length) return null;
@@ -1087,6 +1125,12 @@ export async function getWhatsAppConversationSalesSummary(conversationId) {
   const data = await apiFetch(`/whatsapp/inbox/conversations/${id}/sales-summary`);
   const proformas = ensureArray(data?.proformas).map(sanitizeProformaSummary).filter(Boolean);
   const latestQuotation = sanitizeProformaSummary(data?.latestQuotation) || proformas[0] || null;
+  const deliveryNotes = ensureArray(data?.deliveryNotes)
+    .map(sanitizeDeliveryNoteSummary)
+    .filter(Boolean);
+  const latestDeliveryNote =
+    sanitizeDeliveryNoteSummary(data?.latestDeliveryNote) || deliveryNotes[0] || null;
+  const latestSale = sanitizeSaleSummary(data?.latestSale);
 
   return {
     totalOrders: toNumber(data?.totalOrders, 0),
@@ -1094,6 +1138,14 @@ export async function getWhatsAppConversationSalesSummary(conversationId) {
     outstandingCredit: toNumber(data?.outstandingCredit, 0),
     lastPurchase: data?.lastPurchase || null,
     lastSaleType: toUpper(data?.lastSaleType),
+    latestSale,
+    deliveryNoteCount: toNumber(data?.deliveryNoteCount, deliveryNotes.length),
+    hasDeliveryNote:
+      typeof data?.hasDeliveryNote === "boolean"
+        ? data.hasDeliveryNote
+        : Boolean(latestDeliveryNote),
+    latestDeliveryNote,
+    deliveryNotes,
     quotationCount: toNumber(data?.quotationCount, proformas.length),
     hasQuotation:
       typeof data?.hasQuotation === "boolean" ? data.hasQuotation : Boolean(latestQuotation),
@@ -1130,6 +1182,8 @@ export {
   sanitizeMessage,
   sanitizePayment,
   sanitizeProformaSummary,
+  sanitizeSaleSummary,
+  sanitizeDeliveryNoteSummary,
   sanitizePromotion,
   sanitizeStaff,
 };
