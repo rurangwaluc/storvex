@@ -2441,6 +2441,54 @@ function normalizeDeliveryNoteSummary(note) {
   };
 }
 
+function normalizeWarrantyUnitSummary(unit) {
+  if (!unit) return null;
+
+  const saleItem = unit.saleItem || {};
+  const product = saleItem.product || {};
+  const productName =
+    normalizeText(product.name) ||
+    normalizeText(unit.unitLabel) ||
+    normalizeText(unit.productName) ||
+    "Covered product";
+
+  return {
+    id: unit.id || null,
+    saleItemId: unit.saleItemId || null,
+    productId: unit.productId || product.id || null,
+    productName,
+    serial: unit.serial || product.serial || null,
+    imei1: unit.imei1 || null,
+    imei2: unit.imei2 || null,
+    unitLabel: unit.unitLabel || null,
+    startsAt: unit.startsAt || null,
+    endsAt: unit.endsAt || null,
+  };
+}
+
+function normalizeWarrantySummary(warranty) {
+  if (!warranty) return null;
+
+  const units = Array.isArray(warranty.units)
+    ? warranty.units.map(normalizeWarrantyUnitSummary).filter(Boolean)
+    : [];
+
+  return {
+    id: warranty.id,
+    number: warranty.warrantyNumber || warranty.number || null,
+    warrantyNumber: warranty.warrantyNumber || warranty.number || null,
+    saleId: warranty.saleId || null,
+    policy: warranty.policy || null,
+    startsAt: warranty.startsAt || null,
+    endsAt: warranty.endsAt || null,
+    durationMonths: warranty.durationMonths ?? null,
+    durationDays: warranty.durationDays ?? null,
+    createdAt: warranty.createdAt || null,
+    unitsCount: units.length || Number(warranty.unitsCount || 0),
+    units,
+  };
+}
+
 async function listSaleDeliveryNotes({ tenantId, saleIds }) {
   if (!tenantId || !Array.isArray(saleIds) || !saleIds.length || !prisma.deliveryNote) return [];
   if (!modelHasField(prisma.deliveryNote, "saleId")) return [];
@@ -2462,6 +2510,58 @@ async function listSaleDeliveryNotes({ tenantId, saleIds }) {
       createdAt: true,
       items: {
         select: { id: true },
+      },
+    },
+  });
+}
+
+async function listSaleWarranties({ tenantId, saleIds }) {
+  if (!tenantId || !Array.isArray(saleIds) || !saleIds.length || !prisma.saleWarranty) return [];
+  if (!modelHasField(prisma.saleWarranty, "saleId")) return [];
+
+  return prisma.saleWarranty.findMany({
+    where: {
+      tenantId,
+      saleId: { in: saleIds },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+    select: {
+      id: true,
+      saleId: true,
+      warrantyNumber: true,
+      policy: true,
+      durationMonths: true,
+      durationDays: true,
+      startsAt: true,
+      endsAt: true,
+      createdAt: true,
+      units: {
+        orderBy: [{ createdAt: "asc" }],
+        select: {
+          id: true,
+          saleItemId: true,
+          productId: true,
+          serial: true,
+          imei1: true,
+          imei2: true,
+          unitLabel: true,
+          startsAt: true,
+          endsAt: true,
+          saleItem: {
+            select: {
+              id: true,
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  sku: true,
+                  ...(modelHasField(prisma.product, "serial") ? { serial: true } : {}),
+                },
+              },
+            },
+          },
+        },
       },
     },
   });
@@ -2519,6 +2619,11 @@ function emptySalesSummary(extra = {}) {
     hasDeliveryNote: false,
     latestDeliveryNote: null,
     deliveryNotes: [],
+    warrantyCount: 0,
+    hasWarranty: false,
+    latestWarranty: null,
+    warranties: [],
+    lastWarranty: null,
     quotationCount: 0,
     hasQuotation: false,
     latestQuotation: null,
@@ -2604,9 +2709,12 @@ async function getSalesSummary({
 
   const saleIds = sales.map((sale) => sale.id).filter(Boolean);
   const deliveryNotes = await listSaleDeliveryNotes({ tenantId, saleIds });
+  const warranties = await listSaleWarranties({ tenantId, saleIds });
   const normalizedDeliveryNotes = deliveryNotes.map(normalizeDeliveryNoteSummary).filter(Boolean);
+  const normalizedWarranties = warranties.map(normalizeWarrantySummary).filter(Boolean);
   const latestSale = normalizeSaleSummary(sales[0]);
   const latestDeliveryNote = normalizedDeliveryNotes[0] || null;
+  const latestWarranty = normalizedWarranties[0] || null;
 
   return {
     totalOrders: sales.length,
@@ -2630,6 +2738,11 @@ async function getSalesSummary({
     hasDeliveryNote: normalizedDeliveryNotes.length > 0,
     latestDeliveryNote,
     deliveryNotes: normalizedDeliveryNotes,
+    warrantyCount: normalizedWarranties.length,
+    hasWarranty: normalizedWarranties.length > 0,
+    latestWarranty,
+    warranties: normalizedWarranties,
+    lastWarranty: latestWarranty?.createdAt || null,
 
     ...quotationMeta,
   };

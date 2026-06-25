@@ -501,6 +501,46 @@ function sanitizeDeliveryNoteSummary(value) {
   };
 }
 
+function sanitizeWarrantyUnitSummary(value) {
+  const item = ensureObject(value);
+  if (!Object.keys(item).length) return null;
+
+  return {
+    id: trimString(item.id),
+    saleItemId: trimString(item.saleItemId),
+    productId: trimString(item.productId),
+    productName: trimString(item.productName || item.unitLabel || "Covered product"),
+    serial: trimString(item.serial),
+    imei1: trimString(item.imei1),
+    imei2: trimString(item.imei2),
+    unitLabel: trimString(item.unitLabel),
+    startsAt: item.startsAt || null,
+    endsAt: item.endsAt || null,
+  };
+}
+
+function sanitizeWarrantySummary(value) {
+  const item = ensureObject(value);
+  if (!Object.keys(item).length) return null;
+
+  const units = ensureArray(item.units).map(sanitizeWarrantyUnitSummary).filter(Boolean);
+
+  return {
+    id: trimString(item.id),
+    number: trimString(item.number || item.warrantyNumber),
+    warrantyNumber: trimString(item.warrantyNumber || item.number),
+    saleId: trimString(item.saleId),
+    policy: trimString(item.policy),
+    startsAt: item.startsAt || null,
+    endsAt: item.endsAt || null,
+    durationMonths: toNumber(item.durationMonths, 0),
+    durationDays: toNumber(item.durationDays, 0),
+    unitsCount: toNumber(item.unitsCount, units.length),
+    units,
+    createdAt: item.createdAt || null,
+  };
+}
+
 function sanitizeBroadcast(value) {
   const item = ensureObject(value);
   if (!Object.keys(item).length) return null;
@@ -1131,6 +1171,11 @@ export async function getWhatsAppConversationSalesSummary(conversationId) {
   const latestDeliveryNote =
     sanitizeDeliveryNoteSummary(data?.latestDeliveryNote) || deliveryNotes[0] || null;
   const latestSale = sanitizeSaleSummary(data?.latestSale);
+  const warranties = ensureArray(data?.warranties)
+    .map(sanitizeWarrantySummary)
+    .filter(Boolean);
+  const latestWarranty =
+    sanitizeWarrantySummary(data?.latestWarranty) || warranties[0] || null;
 
   return {
     totalOrders: toNumber(data?.totalOrders, 0),
@@ -1146,6 +1191,14 @@ export async function getWhatsAppConversationSalesSummary(conversationId) {
         : Boolean(latestDeliveryNote),
     latestDeliveryNote,
     deliveryNotes,
+    warrantyCount: toNumber(data?.warrantyCount, warranties.length),
+    hasWarranty:
+      typeof data?.hasWarranty === "boolean"
+        ? data.hasWarranty
+        : Boolean(latestWarranty),
+    latestWarranty,
+    warranties,
+    lastWarranty: data?.lastWarranty || latestWarranty?.createdAt || null,
     quotationCount: toNumber(data?.quotationCount, proformas.length),
     hasQuotation:
       typeof data?.hasQuotation === "boolean" ? data.hasQuotation : Boolean(latestQuotation),

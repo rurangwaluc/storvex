@@ -371,6 +371,14 @@ function hasDeliveryNote(summary) {
   return Boolean(summary?.hasDeliveryNote || Number(summary?.deliveryNoteCount || 0) > 0 || latestDeliveryNote(summary));
 }
 
+function latestWarranty(summary) {
+  return summary?.latestWarranty || summary?.warranties?.[0] || null;
+}
+
+function hasWarranty(summary) {
+  return Boolean(summary?.hasWarranty || Number(summary?.warrantyCount || 0) > 0 || latestWarranty(summary));
+}
+
 function deliveryNoteCustomerMessage({ conversation, summary }) {
   const note = latestDeliveryNote(summary);
   const name = customerName(conversation);
@@ -392,6 +400,27 @@ function deliveryNoteCustomerMessage({ conversation, summary }) {
     : `${Number(note?.itemsCount || 0) || "the"} item${Number(note?.itemsCount || 0) === 1 ? "" : "s"}`;
 
   return `Hello ${name}, your delivery note ${number} is ready for ${deliveryItems}. Please check the products and quantities when received.`;
+}
+
+function warrantyCustomerMessage({ conversation, summary }) {
+  const warranty = latestWarranty(summary);
+  const note = latestDeliveryNote(summary);
+  const name = customerName(conversation);
+  const number = warranty?.number || warranty?.warrantyNumber || "your warranty";
+  const units = Array.isArray(warranty?.units) ? warranty.units : [];
+  const saleItems = normalizeSaleItemsForDelivery(latestCompletedSale(summary));
+  const productNames = (units.length ? units : saleItems)
+    .slice(0, 3)
+    .map((item) => cleanText(item.productName || item.unitLabel || item.name))
+    .filter(Boolean);
+
+  const productsText = productNames.length
+    ? productNames.join(", ")
+    : "your covered product";
+  const endText = warranty?.endsAt ? ` until ${dateLabel(warranty.endsAt)}` : "";
+  const deliveryText = note?.number ? ` Please keep delivery note ${note.number} for support requests.` : "";
+
+  return `Hello ${name}, your warranty ${number} is active for ${productsText}${endText}.${deliveryText}`;
 }
 
 function latestDeliveryNoteCustomerMessage({ messages = [], summary }) {
@@ -423,6 +452,39 @@ function latestDeliveryNoteCustomerMessage({ messages = [], summary }) {
 
 function hasDeliveryNoteCustomerMessage({ messages = [], summary }) {
   return Boolean(latestDeliveryNoteCustomerMessage({ messages, summary }));
+}
+
+function latestWarrantyCustomerMessage({ messages = [], summary }) {
+  const warranty = latestWarranty(summary);
+  if (!warranty) return null;
+
+  const number = String(warranty.number || warranty.warrantyNumber || "").toLowerCase();
+  const warrantyTime = warranty.createdAt ? new Date(warranty.createdAt).getTime() : 0;
+
+  return [...messages]
+    .filter((message) => {
+      if (!isOutboundMessage(message)) return false;
+
+      const text = messageText(message).toLowerCase();
+      if (!text) return false;
+
+      const messageTime = message.createdAt ? new Date(message.createdAt).getTime() : 0;
+      if (warrantyTime && messageTime && messageTime < warrantyTime) return false;
+
+      const mentionsWarranty = text.includes("warranty") || (number && text.includes(number));
+      const mentionsSupport =
+        text.includes("support") ||
+        text.includes("service") ||
+        text.includes("covered") ||
+        text.includes("active");
+
+      return Boolean(mentionsWarranty && mentionsSupport);
+    })
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] || null;
+}
+
+function hasWarrantyCustomerMessage({ messages = [], summary }) {
+  return Boolean(latestWarrantyCustomerMessage({ messages, summary }));
 }
 
 function normalizeSaleItemsForDelivery(sale) {
@@ -540,9 +602,27 @@ function recommendedSalesAction({ conversation, draft, summary, messages = [] })
       };
     }
 
+    if (!hasWarranty(summary)) {
+      return {
+        label: "Create warranty",
+        detail: "Delivery is documented. Create a warranty record from the completed sale for covered products.",
+        primary: "Create warranty",
+        action: "CREATE_WARRANTY",
+      };
+    }
+
+    if (!hasWarrantyCustomerMessage({ messages, summary })) {
+      return {
+        label: "Send warranty message",
+        detail: "The warranty record is ready. Send a simple support message with the warranty number and covered products.",
+        primary: "Prepare message",
+        action: "WARRANTY_MESSAGE",
+      };
+    }
+
     return {
       label: "After-sale support",
-      detail: "The customer already has a completed sale and delivery note message. Offer warranty, setup help, or useful accessories.",
+      detail: "The customer has delivery and warranty support recorded. Offer setup help, useful accessories, or close the conversation.",
       primary: "Prepare support",
       action: "AFTER_SALE",
     };
@@ -688,12 +768,14 @@ function buildSalesTimeline({ conversation, draft, summary, messages = [] }) {
     });
   }
 
-  if (summary?.lastWarranty) {
+  const warranty = latestWarranty(summary);
+
+  if (warranty?.createdAt || summary?.lastWarranty) {
     events.push({
-      id: "last-warranty",
-      at: summary.lastWarranty,
+      id: `warranty-${warranty?.id || warranty?.number || summary.lastWarranty}`,
+      at: warranty?.createdAt || summary.lastWarranty,
       title: "Warranty activated",
-      meta: "After-sales support available",
+      meta: `${warranty?.number || warranty?.warrantyNumber || "Warranty"} · ${Number(warranty?.unitsCount || warranty?.units?.length || 0)} covered item${Number(warranty?.unitsCount || warranty?.units?.length || 0) === 1 ? "" : "s"}`,
     });
   }
 
@@ -1301,6 +1383,11 @@ function SalesIntelligenceCard({ conversation, draft, summary, messages = [], lo
               <span>Delivery notes</span>
               <strong>{Number(safeSummary.deliveryNoteCount || 0)}</strong>
               <small>{latestDeliveryNote(safeSummary)?.number || "No delivery note yet"}</small>
+            </div>
+            <div>
+              <span>Warranties</span>
+              <strong>{Number(safeSummary.warrantyCount || 0)}</strong>
+              <small>{latestWarranty(safeSummary)?.number || "No warranty yet"}</small>
             </div>
           </div>
 
@@ -2802,6 +2889,49 @@ export default function WhatsAppInbox() {
     }, 60);
   }
 
+  function fillWarrantyMessage() {
+    if (!selectedConversation) return;
+
+    if (!latestWarranty(salesSummary)) {
+      toast.error("Create a warranty before sending the warranty message");
+      return;
+    }
+
+    setReplyText(warrantyCustomerMessage({
+      conversation: selectedConversation,
+      summary: salesSummary,
+    }));
+    toast.success("Warranty message prepared. Review it before sending.");
+
+    window.setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView?.({ behavior: "smooth", block: "end" });
+    }, 60);
+  }
+
+  function createWarrantyFromSale() {
+    const sale = latestCompletedSale(salesSummary);
+
+    if (!sale?.id) {
+      toast.error("No completed sale was found for this conversation");
+      return;
+    }
+
+    const warranty = latestWarranty(salesSummary);
+
+    if (warranty?.id) {
+      toast.success("Warranty already exists for this sale");
+      navigate(`/app/documents/warranties/${encodeURIComponent(warranty.id)}/preview`);
+      return;
+    }
+
+    navigate(`/app/documents/warranties/create?saleId=${encodeURIComponent(sale.id)}`, {
+      state: {
+        whatsappConversationId: selectedConversation?.id || null,
+        saleId: sale.id,
+      },
+    });
+  }
+
   function createQuotationFromConversation() {
     if (!selectedConversation?.id) return;
 
@@ -2966,6 +3096,16 @@ export default function WhatsAppInbox() {
 
     if (actionType === "DELIVERY_NOTE_MESSAGE") {
       fillDeliveryNoteMessage();
+      return;
+    }
+
+    if (actionType === "CREATE_WARRANTY") {
+      createWarrantyFromSale();
+      return;
+    }
+
+    if (actionType === "WARRANTY_MESSAGE") {
+      fillWarrantyMessage();
       return;
     }
 
