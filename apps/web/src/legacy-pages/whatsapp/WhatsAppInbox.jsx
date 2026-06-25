@@ -2142,16 +2142,32 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
 
             {recipientPreview ? (
               previewCount > 0 ? (
-                <div className="svx-wa-recipient-preview-list">
-                  {previewRows.map((recipient) => (
-                    <span key={recipient.id || recipient.phone}>
-                      <strong>{recipientName(recipient)}</strong>
-                      <small>{recipientPhone(recipient)}</small>
+                <div className="svx-wa-recipient-preview-success">
+                  <div className="svx-wa-recipient-preview-count">
+                    <strong>{previewCount}</strong>
+                    <span>
+                      Recipient{previewCount === 1 ? "" : "s"} ready for this broadcast
                     </span>
-                  ))}
-                  {previewCount > previewRows.length ? (
-                    <em>+{previewCount - previewRows.length} more customer{previewCount - previewRows.length === 1 ? "" : "s"}</em>
-                  ) : null}
+                    <small>{recipientPreview.audienceLabel || "Selected WhatsApp audience"}</small>
+                  </div>
+
+                  {previewRows.length ? (
+                    <div className="svx-wa-recipient-preview-list">
+                      {previewRows.map((recipient) => (
+                        <span key={recipient.id || recipient.phone}>
+                          <strong>{recipientName(recipient)}</strong>
+                          <small>{recipientPhone(recipient)}</small>
+                        </span>
+                      ))}
+                      {previewCount > previewRows.length ? (
+                        <em>+{previewCount - previewRows.length} more customer{previewCount - previewRows.length === 1 ? "" : "s"}</em>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="svx-wa-recipient-preview-note">
+                      {previewCount} matching recipient{previewCount === 1 ? "" : "s"} found. Customer names are hidden because this preview response did not include customer rows.
+                    </p>
+                  )}
                 </div>
               ) : (
                 <p className="svx-wa-recipient-preview-warning">

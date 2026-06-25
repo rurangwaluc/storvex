@@ -5407,6 +5407,66 @@ background: var(--wa-soft);
   white-space: nowrap;
 }
 
+
+.svx-wa-recipient-preview-success {
+  display: grid;
+  gap: 10px;
+}
+
+.svx-wa-recipient-preview-count {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 2px;
+  border: 1px solid color-mix(in srgb, var(--wa-success) 34%, var(--wa-border-soft));
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--wa-success) 10%, var(--wa-card));
+  padding: 12px;
+}
+
+.svx-wa-recipient-preview-count strong {
+  grid-row: span 2;
+  min-width: 44px;
+  color: var(--wa-success);
+  font-size: 28px;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: -0.06em;
+  text-align: center;
+}
+
+.svx-wa-recipient-preview-count span {
+  overflow: hidden;
+  color: var(--wa-text);
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-recipient-preview-count small {
+  overflow: hidden;
+  color: var(--wa-muted);
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-recipient-preview-note {
+  border: 1px solid color-mix(in srgb, var(--wa-success) 28%, var(--wa-border-soft));
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--wa-success) 8%, var(--wa-card));
+  padding: 11px 12px;
+  color: var(--wa-text);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
 .svx-wa-recipient-preview-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
