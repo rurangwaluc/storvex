@@ -15,6 +15,8 @@ import {
   createWhatsAppAccount,
   createWhatsAppBroadcast,
   createWhatsAppPromotion,
+  deleteWhatsAppBroadcast,
+  deleteWhatsAppPromotion,
   createWhatsAppSaleDraft,
   finalizeWhatsAppSaleDraft,
   getWhatsAppConversationSalesSummary,
@@ -2062,6 +2064,59 @@ function shouldForceQueue(count) {
   return Number(count || 0) >= FORCE_QUEUE_RECIPIENT_COUNT;
 }
 
+
+function promotionBroadcastCount(promotion) {
+  return Number(promotion?.usage?.broadcastCount || promotion?.broadcastCount || 0);
+}
+
+function canDeletePromotionRecord(promotion) {
+  return Boolean(promotion?.id) && promotionBroadcastCount(promotion) === 0;
+}
+
+function canRemoveBroadcastRecord(broadcast) {
+  const status = broadcastStatusValue(broadcast);
+  const delivered = Number(broadcast?.deliveredCount || 0);
+
+  if (!broadcast?.id) return false;
+  if (status === "SENT" || delivered > 0) return false;
+
+  return ["DRAFT", "QUEUED", "FAILED"].includes(status);
+}
+
+function cleanupBroadcastActionLabel(broadcast) {
+  const status = broadcastStatusValue(broadcast);
+
+  if (status === "QUEUED") return "Cancel queue";
+  if (status === "FAILED") return "Delete failed";
+  if (status === "SENT") return "History";
+
+  return "Delete draft";
+}
+
+function cleanupBroadcastTitle(broadcast) {
+  const status = broadcastStatusValue(broadcast);
+
+  if (status === "QUEUED") return "Cancel queued broadcast?";
+  if (status === "FAILED") return "Delete failed broadcast record?";
+
+  return "Delete draft broadcast?";
+}
+
+function cleanupBroadcastMessage(broadcast) {
+  const title = broadcast?.promotion?.title || "this broadcast";
+  const status = broadcastStatusValue(broadcast);
+
+  if (status === "QUEUED") {
+    return `This will cancel ${title} before it is sent. Customer conversations will not receive this campaign.`;
+  }
+
+  if (status === "FAILED") {
+    return `This removes the failed ${title} record from this campaign list. Sent campaign history is never deleted.`;
+  }
+
+  return `This removes the unsent draft for ${title}. This cannot be undone.`;
+}
+
 function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   const registeredBusinessCategory = useMemo(() => getRegisteredBusinessCategory(), []);
   const registeredBusinessCategoryLabel = categoryLabel(registeredBusinessCategory);
@@ -2082,6 +2137,7 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   const [broadcastStatusFilter, setBroadcastStatusFilter] = useState("ALL");
   const [busyBroadcastId, setBusyBroadcastId] = useState("");
   const [sendConfirmBroadcast, setSendConfirmBroadcast] = useState(null);
+  const [cleanupConfirmAction, setCleanupConfirmAction] = useState(null);
   const [broadcastPreviewCacheVersion, setBroadcastPreviewCacheVersion] = useState(0);
 
   const visibleBroadcasts = useMemo(
@@ -2352,6 +2408,72 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
     }
   }
 
+
+  function requestDeletePromotion(promotion) {
+    if (!promotion?.id) return;
+
+    if (!canDeletePromotionRecord(promotion)) {
+      toast("Promotion is already used in broadcasts, so it must stay in campaign history.");
+      return;
+    }
+
+    setCleanupConfirmAction({
+      type: "PROMOTION",
+      id: promotion.id,
+      title: "Delete promotion?",
+      label: promotion.title || "Promotion",
+      message: "This promotion has not been used in any broadcast. Deleting it removes the draft offer from the campaign library.",
+      confirmLabel: "Delete promotion",
+    });
+  }
+
+  function requestRemoveBroadcast(broadcast) {
+    if (!broadcast?.id) return;
+
+    if (!canRemoveBroadcastRecord(broadcast)) {
+      toast("Sent broadcast history cannot be deleted.");
+      return;
+    }
+
+    setCleanupConfirmAction({
+      type: "BROADCAST",
+      id: broadcast.id,
+      title: cleanupBroadcastTitle(broadcast),
+      label: broadcast?.promotion?.title || "Customer broadcast",
+      message: cleanupBroadcastMessage(broadcast),
+      confirmLabel: cleanupBroadcastActionLabel(broadcast),
+    });
+  }
+
+  async function confirmCampaignCleanup() {
+    const action = cleanupConfirmAction;
+    if (!action?.id) return;
+
+    setBusyBroadcastId(action.id);
+
+    try {
+      if (action.type === "PROMOTION") {
+        await deleteWhatsAppPromotion(action.id);
+        toast.success("Promotion deleted");
+      } else {
+        await deleteWhatsAppBroadcast(action.id);
+        clearBroadcastFailure(action.id);
+        const cache = readBroadcastPreviewCache();
+        delete cache[action.id];
+        writeBroadcastPreviewCache(cache);
+        setBroadcastPreviewCacheVersion((value) => value + 1);
+        toast.success(action.confirmLabel === "Cancel queue" ? "Queued broadcast cancelled" : "Broadcast removed");
+      }
+
+      setCleanupConfirmAction(null);
+      await onRefresh?.();
+    } catch (err) {
+      toast.error(safeError(err, "Campaign record could not be removed"));
+    } finally {
+      setBusyBroadcastId("");
+    }
+  }
+
   const previewCount = previewRecipientCount(recipientPreview);
   const previewRows = previewRecipients(recipientPreview).slice(0, RECIPIENT_PREVIEW_VISIBLE_LIMIT);
   const previewReady = hasValidRecipientPreview();
@@ -2583,7 +2705,22 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
 
                     <div className="svx-wa-record-number-cell">
                       <small>Broadcasts</small>
-                      <strong>{formatCompactNumber(promotion.usage?.broadcastCount || 0)}</strong>
+                      <strong>{formatCompactNumber(promotionBroadcastCount(promotion))}</strong>
+                    </div>
+
+                    <div className="svx-wa-record-cleanup-cell">
+                      <button
+                        type="button"
+                        onClick={() => requestDeletePromotion(promotion)}
+                        disabled={!canDeletePromotionRecord(promotion) || busyBroadcastId === promotion.id}
+                        title={
+                          canDeletePromotionRecord(promotion)
+                            ? "Delete this unused promotion"
+                            : "Used promotions stay in campaign history"
+                        }
+                      >
+                        {canDeletePromotionRecord(promotion) ? "Delete" : "Used"}
+                      </button>
                     </div>
                   </article>
                 ))}
@@ -2722,6 +2859,19 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
                         >
                           {forceQueue ? "Queue required" : sendActionLabel(broadcast)}
                         </AsyncButton>
+                        <button
+                          type="button"
+                          className="svx-wa-record-remove-action"
+                          onClick={() => requestRemoveBroadcast(broadcast)}
+                          disabled={!canRemoveBroadcastRecord(broadcast) || busyBroadcastId === broadcast.id}
+                          title={
+                            canRemoveBroadcastRecord(broadcast)
+                              ? cleanupBroadcastMessage(broadcast)
+                              : "Sent campaign history cannot be deleted"
+                          }
+                        >
+                          {cleanupBroadcastActionLabel(broadcast)}
+                        </button>
                       </div>
                     </article>
                   );
@@ -2745,6 +2895,45 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
           </div>
         </section>
       </div>
+
+
+
+      {cleanupConfirmAction ? (
+        <div className="svx-wa-modal-backdrop" role="presentation">
+          <section
+            className="svx-wa-send-confirm-modal svx-wa-cleanup-confirm-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="wa-cleanup-confirm-title"
+          >
+            <div className="svx-wa-send-confirm-head">
+              <Badge tone="warning">Clean up</Badge>
+              <h3 id="wa-cleanup-confirm-title">{cleanupConfirmAction.title}</h3>
+              <p>
+                <strong>{cleanupConfirmAction.label}</strong> — {cleanupConfirmAction.message}
+              </p>
+            </div>
+
+            <div className="svx-wa-send-confirm-actions">
+              <button
+                type="button"
+                onClick={() => setCleanupConfirmAction(null)}
+                disabled={Boolean(busyBroadcastId)}
+              >
+                Keep record
+              </button>
+              <AsyncButton
+                type="button"
+                onClick={confirmCampaignCleanup}
+                loading={busyBroadcastId === cleanupConfirmAction.id}
+                loadingText="Working..."
+              >
+                {cleanupConfirmAction.confirmLabel}
+              </AsyncButton>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {sendConfirmBroadcast ? (
         <div className="svx-wa-modal-backdrop" role="presentation">

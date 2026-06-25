@@ -704,6 +704,59 @@ async function updateBroadcast({ tenantId, broadcastId, body }) {
   };
 }
 
+async function deleteBroadcast({ tenantId, userId = null, broadcastId }) {
+  await ensureTenantExists(tenantId);
+
+  const existing = await getBroadcastOrThrow(tenantId, broadcastId);
+  const messages = Array.isArray(existing.messages) ? existing.messages : [];
+  const sentMessages = messages.filter((message) => String(message.messageId || "").trim());
+
+  if (existing.status === "SENT") {
+    throw appError("SENT_BROADCAST_CANNOT_BE_DELETED");
+  }
+
+  if (messages.length > 0 || sentMessages.length > 0) {
+    throw appError("BROADCAST_HAS_SENT_HISTORY");
+  }
+
+  const previousStatus = existing.status;
+
+  await withPrismaRetry(() =>
+    prisma.whatsAppBroadcast.delete({
+      where: { id: existing.id },
+    }),
+  );
+
+  const action = previousStatus === "QUEUED"
+    ? "WHATSAPP_BROADCAST_QUEUE_CANCELLED"
+    : previousStatus === "FAILED"
+      ? "WHATSAPP_BROADCAST_FAILED_RECORD_DELETED"
+      : "WHATSAPP_BROADCAST_DRAFT_DELETED";
+
+  await createAuditLogSafe({
+    tenantId,
+    userId,
+    entityId: existing.id,
+    action,
+    metadata: {
+      previousStatus,
+      promotionId: existing.promotionId || null,
+      templateName: existing.templateName || null,
+    },
+  });
+
+  return {
+    deleted: true,
+    broadcastId: existing.id,
+    action,
+    message: previousStatus === "QUEUED"
+      ? "Queued broadcast cancelled"
+      : previousStatus === "FAILED"
+        ? "Failed broadcast record deleted"
+        : "Draft broadcast deleted",
+  };
+}
+
 async function queueBroadcast({ tenantId, broadcastId }) {
   await ensureTenantExists(tenantId);
 
@@ -1327,6 +1380,7 @@ module.exports = {
   getBroadcast,
   createBroadcast,
   updateBroadcast,
+  deleteBroadcast,
   queueBroadcast,
   sendBroadcastNow,
 };

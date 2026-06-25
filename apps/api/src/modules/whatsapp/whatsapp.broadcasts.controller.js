@@ -48,6 +48,22 @@ function mapBroadcastError(err, res, fallbackMessage) {
     });
   }
 
+  if (code === "SENT_BROADCAST_CANNOT_BE_DELETED") {
+    return res.status(409).json({
+      ok: false,
+      message: "Sent broadcasts stay as business history and cannot be deleted",
+      code,
+    });
+  }
+
+  if (code === "BROADCAST_HAS_SENT_HISTORY") {
+    return res.status(409).json({
+      ok: false,
+      message: "This broadcast already has message history and cannot be deleted",
+      code,
+    });
+  }
+
   if (code === "PROMOTION_NOT_FOUND") {
     return res.status(404).json({
       ok: false,
@@ -312,6 +328,29 @@ async function updateBroadcast(req, res) {
   }
 }
 
+async function deleteBroadcast(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    const userId = getUserId(req);
+    const { id } = req.params;
+
+    const result = await service.deleteBroadcast({
+      tenantId,
+      userId,
+      broadcastId: id,
+    });
+
+    return res.json({
+      ok: true,
+      deleted: true,
+      ...result,
+    });
+  } catch (err) {
+    console.error("deleteBroadcast error:", err);
+    return mapBroadcastError(err, res, "Failed to clean up WhatsApp broadcast");
+  }
+}
+
 async function queueBroadcast(req, res) {
   try {
     const tenantId = getTenantId(req);
@@ -362,6 +401,7 @@ module.exports = {
   getBroadcast,
   createBroadcast,
   updateBroadcast,
+  deleteBroadcast,
   queueBroadcast,
   sendBroadcastNow,
 };

@@ -101,6 +101,17 @@ router.get("/broadcasts/:id", controller.getBroadcast);
 router.patch("/broadcasts/:id", controller.updateBroadcast);
 
 /**
+ * DELETE /api/whatsapp/broadcasts/:id
+ *
+ * Cleanup rules:
+ * - DRAFT: deletes the draft broadcast.
+ * - QUEUED: cancels the queued broadcast.
+ * - FAILED: deletes the failed unsent record.
+ * - SENT or records with sent messages stay as history.
+ */
+router.delete("/broadcasts/:id", controller.deleteBroadcast);
+
+/**
  * POST /api/whatsapp/broadcasts/:id/queue
  *
  * Moves a draft broadcast into queued status.

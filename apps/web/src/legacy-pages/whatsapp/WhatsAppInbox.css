@@ -2151,6 +2151,10 @@ background: var(--wa-soft);
   .svx-wa-sale-type-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .svx-wa-record-remove-action {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 520px) {
@@ -6103,14 +6107,14 @@ background: var(--wa-soft);
 
 .svx-wa-promotion-row {
   display: grid;
-  grid-template-columns: minmax(82px, auto) minmax(0, 1fr) minmax(92px, auto);
+  grid-template-columns: minmax(82px, auto) minmax(0, 1fr) minmax(92px, auto) minmax(82px, auto);
   align-items: center;
   gap: 10px;
 }
 
 .svx-wa-broadcast-row {
   display: grid;
-  grid-template-columns: minmax(96px, auto) minmax(0, 1fr) minmax(148px, auto) minmax(174px, auto);
+  grid-template-columns: minmax(96px, auto) minmax(0, 1fr) minmax(148px, auto) minmax(252px, auto);
   align-items: center;
   gap: 10px;
 }
@@ -6190,7 +6194,7 @@ background: var(--wa-soft);
 
 .svx-wa-record-actions-cell {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 7px;
   min-width: 0;
 }
@@ -6203,6 +6207,50 @@ background: var(--wa-soft);
   border-radius: 12px;
   font-size: 11.5px;
   white-space: nowrap;
+}
+
+
+.svx-wa-record-cleanup-cell {
+  min-width: 0;
+}
+
+.svx-wa-record-cleanup-cell button,
+.svx-wa-record-remove-action {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--wa-card) 92%, var(--wa-soft));
+  color: var(--wa-muted);
+  padding: 0 10px;
+  font-size: 11.5px;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms var(--wa-ease);
+}
+
+.svx-wa-record-cleanup-cell button:not(:disabled):hover,
+.svx-wa-record-remove-action:not(:disabled):hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--wa-danger) 34%, var(--wa-border-soft));
+  background: var(--wa-danger-soft);
+  color: var(--wa-danger);
+}
+
+.svx-wa-record-cleanup-cell button:disabled,
+.svx-wa-record-remove-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.svx-wa-cleanup-confirm-modal .svx-wa-send-confirm-actions .svx-wa-send-confirm-actions,
+.svx-wa-cleanup-confirm-modal {
+  max-width: min(460px, calc(100vw - 28px));
 }
 
 .svx-wa-row-warning,
@@ -6323,6 +6371,7 @@ background: var(--wa-soft);
   .svx-wa-record-actions-cell {
     grid-column: 2 / 3;
     grid-row: 3 / 4;
+    grid-template-columns: 1fr;
   }
 }
 

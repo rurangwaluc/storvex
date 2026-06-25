@@ -1123,6 +1123,22 @@ export async function updateWhatsAppBroadcast(broadcastId, payload) {
   };
 }
 
+
+export async function deleteWhatsAppBroadcast(broadcastId) {
+  const id = trimString(broadcastId);
+
+  const data = await apiFetch(`/whatsapp/broadcasts/${id}`, {
+    method: "DELETE",
+  });
+
+  return {
+    ok: toBoolean(data?.ok),
+    deleted: toBoolean(data?.deleted),
+    broadcastId: trimString(data?.broadcastId || id),
+    message: trimString(data?.message),
+  };
+}
+
 export async function queueWhatsAppBroadcast(broadcastId) {
   const id = trimString(broadcastId);
 
