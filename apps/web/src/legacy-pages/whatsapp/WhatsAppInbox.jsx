@@ -47,14 +47,24 @@ const DEFAULT_MESSAGE_FORMAT = "promo_template";
 const DEFAULT_MESSAGE_LANGUAGE = "en_US";
 const PROMOTION_LIST_LIMIT = 6;
 const BROADCAST_LIST_LIMIT = 5;
+const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
 
-const BUSINESS_CATEGORIES = [
-  ["ELECTRONICS", "Electronics"],
-  ["HARDWARE", "Hardware"],
-  ["HOME_KITCHEN", "Home & kitchen"],
-  ["LIGHTING", "Lighting"],
-  ["SPARE_PARTS", "Spare parts"],
-];
+const BUSINESS_CATEGORY_LABELS = {
+  ELECTRONICS: "Electronics retail",
+  ELECTRONICS_RETAIL: "Electronics retail",
+  PHONE_SHOP: "Electronics retail",
+  LAPTOP_SHOP: "Electronics retail",
+  ACCESSORIES_SHOP: "Electronics retail",
+  REPAIR_SHOP: "Electronics retail",
+  MIXED_ELECTRONICS: "Electronics retail",
+  HARDWARE: "Hardware / Quincaillerie",
+  QUINCAILLERIE: "Hardware / Quincaillerie",
+  HOME_KITCHEN: "Home & kitchen",
+  HOME_AND_KITCHEN: "Home & kitchen",
+  LIGHTING: "Lighting",
+  SPARE_PARTS: "Spare parts",
+  AUTO_PARTS: "Spare parts",
+};
 
 const AUDIENCE_OPTIONS = [
   {
@@ -64,8 +74,8 @@ const AUDIENCE_OPTIONS = [
   },
   {
     value: "CATEGORY_CUSTOMERS",
-    label: "Category customers",
-    helper: "Customers matched to one business category.",
+    label: "This store category customers",
+    helper: "Customers matched to your registered business category.",
   },
   {
     value: "CREDIT_CUSTOMERS",
@@ -139,6 +149,72 @@ function cleanPhone(value) {
 
 function cleanText(value) {
   return String(value || "").trim();
+}
+
+function normalizeBusinessCategory(value) {
+  const category = String(value || "").trim().toUpperCase();
+
+  if (["HARDWARE", "QUINCAILLERIE"].includes(category)) return "HARDWARE";
+  if (["HOME_KITCHEN", "HOME_AND_KITCHEN", "HOME & KITCHEN"].includes(category)) return "HOME_KITCHEN";
+  if (category === "LIGHTING") return "LIGHTING";
+  if (["SPARE_PARTS", "SPARE PARTS", "AUTO_PARTS"].includes(category)) return "SPARE_PARTS";
+
+  return "ELECTRONICS";
+}
+
+function categoryLabel(value) {
+  return BUSINESS_CATEGORY_LABELS[normalizeBusinessCategory(value)] || "Retail store";
+}
+
+function readStoredJson(key) {
+  try {
+    const raw =
+      (typeof sessionStorage !== "undefined" && sessionStorage.getItem(key)) ||
+      (typeof localStorage !== "undefined" && localStorage.getItem(key));
+
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function readTokenPayload() {
+  try {
+    const token =
+      (typeof localStorage !== "undefined" &&
+        (localStorage.getItem("tenantToken") || localStorage.getItem("token"))) ||
+      "";
+
+    return token ? jwtDecode(token) : {};
+  } catch {
+    return {};
+  }
+}
+
+function getRegisteredBusinessCategory() {
+  const workspace = readStoredJson(WORKSPACE_CACHE_KEY) || {};
+  const tokenPayload = readTokenPayload();
+  const tenant = workspace?.tenant || workspace?.business || workspace?.store || {};
+  const candidates = [
+    tenant?.businessCategory,
+    tenant?.category,
+    tenant?.shopType,
+    workspace?.businessCategory,
+    workspace?.category,
+    workspace?.shopType,
+    workspace?.tenant?.businessCategory,
+    workspace?.tenant?.category,
+    workspace?.tenant?.shopType,
+    workspace?.business?.businessCategory,
+    workspace?.business?.category,
+    workspace?.business?.shopType,
+    tokenPayload?.businessCategory,
+    tokenPayload?.category,
+    tokenPayload?.shopType,
+  ];
+
+  const match = candidates.find((value) => cleanText(value));
+  return normalizeBusinessCategory(match);
 }
 
 function normalizeProductList(data) {
@@ -1732,12 +1808,13 @@ function DraftsWorkspace({ drafts, conversations, onOpenConversation, onFinalize
 }
 
 function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
+  const registeredBusinessCategory = useMemo(() => getRegisteredBusinessCategory(), []);
+  const registeredBusinessCategoryLabel = categoryLabel(registeredBusinessCategory);
+
   const [promotionTitle, setPromotionTitle] = useState("");
   const [promotionMessage, setPromotionMessage] = useState("");
-  const [promotionCategory, setPromotionCategory] = useState("ELECTRONICS");
   const [promotionId, setPromotionId] = useState("");
   const [targetMode, setTargetMode] = useState("ALL_OPTED_IN");
-  const [targetCategory, setTargetCategory] = useState("ELECTRONICS");
   const [savingPromotion, setSavingPromotion] = useState(false);
   const [savingBroadcast, setSavingBroadcast] = useState(false);
   const [promotionLimit, setPromotionLimit] = useState(PROMOTION_LIST_LIMIT);
@@ -1757,13 +1834,13 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
         title: promotionTitle.trim(),
         message: promotionMessage.trim(),
         productId: null,
-        category: promotionCategory,
+        category: registeredBusinessCategory,
       });
 
       toast.success("Promotion created");
       setPromotionTitle("");
       setPromotionMessage("");
-      setPromotionCategory("ELECTRONICS");
+      // Keep category locked to the registered business category.
       await onRefresh?.();
     } catch (err) {
       toast.error(safeError(err, "Promotion could not be saved"));
@@ -1790,7 +1867,7 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
         targeting: {
           mode: targetMode,
           branchId: null,
-          category: targetMode === "CATEGORY_CUSTOMERS" ? targetCategory : null,
+          category: targetMode === "CATEGORY_CUSTOMERS" ? registeredBusinessCategory : null,
           productId:
             targetMode === "PRODUCT_BUYERS" ? selectedPromotion?.productId || null : null,
           customerIds: [],
@@ -1800,7 +1877,7 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
       toast.success("Broadcast draft created");
       setPromotionId("");
       setTargetMode("ALL_OPTED_IN");
-      setTargetCategory("ELECTRONICS");
+      // Keep targeting category locked to the registered business category.
       await onRefresh?.();
     } catch (err) {
       toast.error(safeError(err, "Broadcast could not be created"));
@@ -1864,16 +1941,12 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
 
           <label>
             <span>Business category</span>
-            <select
-              value={promotionCategory}
-              onChange={(event) => setPromotionCategory(event.target.value)}
-            >
-              {BUSINESS_CATEGORIES.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
+            <input
+              value={registeredBusinessCategoryLabel}
+              readOnly
+              disabled
+              aria-label="Registered business category"
+            />
           </label>
 
           <label>
@@ -1923,16 +1996,12 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
           {targetMode === "CATEGORY_CUSTOMERS" ? (
             <label>
               <span>Target category</span>
-              <select
-                value={targetCategory}
-                onChange={(event) => setTargetCategory(event.target.value)}
-              >
-                {BUSINESS_CATEGORIES.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+              <input
+                value={registeredBusinessCategoryLabel}
+                readOnly
+                disabled
+                aria-label="Registered business broadcast category"
+              />
             </label>
           ) : null}
 
