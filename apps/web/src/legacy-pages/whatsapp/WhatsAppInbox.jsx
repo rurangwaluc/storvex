@@ -46,10 +46,14 @@ const WHATSAPP_WORKSPACE_ROLES = [
 const WHATSAPP_MANAGER_ROLES = ["OWNER", "MANAGER"];
 const DEFAULT_MESSAGE_FORMAT = "promo_template";
 const DEFAULT_MESSAGE_LANGUAGE = "en_US";
-const PROMOTION_LIST_LIMIT = 6;
-const BROADCAST_LIST_LIMIT = 5;
+const PROMOTION_LIST_LIMIT = 8;
+const BROADCAST_LIST_LIMIT = 6;
+const RECIPIENT_PREVIEW_VISIBLE_LIMIT = 10;
+const LARGE_AUDIENCE_WARNING_COUNT = 50;
+const FORCE_QUEUE_RECIPIENT_COUNT = 500;
 const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
 const BROADCAST_PREVIEW_CACHE_KEY = "storvex_whatsapp_broadcast_preview_cache_v1";
+const BROADCAST_FAILURE_CACHE_KEY = "storvex_whatsapp_broadcast_failure_cache_v1";
 
 const BUSINESS_CATEGORY_LABELS = {
   ELECTRONICS: "Electronics retail",
@@ -128,6 +132,16 @@ function money(value) {
   const safe = Number.isFinite(amount) ? amount : 0;
 
   return `${Math.round(safe).toLocaleString("en-US")} RWF`;
+}
+
+function formatCompactNumber(value) {
+  const amount = Number(value || 0);
+  const safe = Number.isFinite(amount) ? amount : 0;
+
+  return new Intl.NumberFormat("en-US", {
+    notation: safe >= 10000 ? "compact" : "standard",
+    maximumFractionDigits: 1,
+  }).format(safe);
 }
 
 function initials(value) {
@@ -1907,6 +1921,92 @@ function broadcastRecipientCount(broadcast) {
   return Number(broadcast?.recipientCount || broadcast?.recipientPreview?.recipientCount || 0);
 }
 
+function readBroadcastFailureCache() {
+  try {
+    const raw =
+      (typeof localStorage !== "undefined" && localStorage.getItem(BROADCAST_FAILURE_CACHE_KEY)) ||
+      "{}";
+
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeBroadcastFailureCache(nextCache) {
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(BROADCAST_FAILURE_CACHE_KEY, JSON.stringify(nextCache || {}));
+  } catch {
+    // Failure details are helpful UI context only; sending must not depend on local storage.
+  }
+}
+
+function rememberBroadcastFailure({ broadcastId, summary = null, message = "" }) {
+  const id = cleanText(broadcastId);
+  if (!id) return null;
+
+  const failures = Array.isArray(summary?.failurePreview)
+    ? summary.failurePreview.slice(0, 5).map((item) => ({
+        customerId: cleanText(item.customerId),
+        phone: cleanText(item.phone),
+        message: cleanText(item.message) || "This customer message could not be sent.",
+      }))
+    : [];
+
+  const snapshot = {
+    broadcastId: id,
+    failed: Number(summary?.failed || failures.length || 1),
+    delivered: Number(summary?.delivered || 0),
+    attempted: Number(summary?.attempted || 0),
+    skippedDuplicate: Number(summary?.skippedDuplicate || 0),
+    message: cleanText(message) || failures[0]?.message || "The last send attempt needs attention.",
+    failures,
+    savedAt: new Date().toISOString(),
+  };
+
+  const cache = readBroadcastFailureCache();
+  cache[id] = snapshot;
+  writeBroadcastFailureCache(cache);
+
+  return snapshot;
+}
+
+function clearBroadcastFailure(broadcastId) {
+  const id = cleanText(broadcastId);
+  if (!id) return;
+
+  const cache = readBroadcastFailureCache();
+  if (!cache[id]) return;
+
+  delete cache[id];
+  writeBroadcastFailureCache(cache);
+}
+
+function broadcastFailureDetails(broadcast) {
+  const cached = readBroadcastFailureCache()[cleanText(broadcast?.id)] || null;
+  if (cached) return cached;
+
+  if (broadcastStatusValue(broadcast) !== "FAILED") return null;
+
+  const count = broadcastRecipientCount(broadcast);
+  return {
+    failed: count || 0,
+    delivered: Number(broadcast?.deliveredCount || 0),
+    attempted: count || 0,
+    skippedDuplicate: 0,
+    message: count
+      ? "The last send attempt failed. Check WhatsApp account setup, approved template, and recipient phone numbers."
+      : "This failed broadcast has no saved recipient preview. Preview recipients again before retrying.",
+    failures: [],
+  };
+}
+
+function canActOnBroadcastAudience(broadcast) {
+  return broadcastRecipientCount(broadcast) > 0;
+}
+
 function broadcastStatusValue(broadcast) {
   return String(broadcast?.status || "DRAFT").trim().toUpperCase();
 }
@@ -1929,6 +2029,39 @@ function sendActionLabel(broadcast) {
   return "Send now";
 }
 
+function matchesPromotionQuery(promotion, query) {
+  const q = cleanText(query).toLowerCase();
+  if (!q) return true;
+
+  return [promotion?.title, promotion?.message, promotion?.category]
+    .join(" ")
+    .toLowerCase()
+    .includes(q);
+}
+
+function matchesBroadcastQuery(broadcast, query) {
+  const q = cleanText(query).toLowerCase();
+  if (!q) return true;
+
+  return [
+    broadcast?.promotion?.title,
+    broadcast?.promotion?.message,
+    broadcast?.templateName,
+    broadcast?.status,
+  ]
+    .join(" ")
+    .toLowerCase()
+    .includes(q);
+}
+
+function isLargeAudience(count) {
+  return Number(count || 0) >= LARGE_AUDIENCE_WARNING_COUNT;
+}
+
+function shouldForceQueue(count) {
+  return Number(count || 0) >= FORCE_QUEUE_RECIPIENT_COUNT;
+}
+
 function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   const registeredBusinessCategory = useMemo(() => getRegisteredBusinessCategory(), []);
   const registeredBusinessCategoryLabel = categoryLabel(registeredBusinessCategory);
@@ -1944,6 +2077,9 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   const [lastPreviewKey, setLastPreviewKey] = useState("");
   const [promotionLimit, setPromotionLimit] = useState(PROMOTION_LIST_LIMIT);
   const [broadcastLimit, setBroadcastLimit] = useState(BROADCAST_LIST_LIMIT);
+  const [promotionSearch, setPromotionSearch] = useState("");
+  const [broadcastSearch, setBroadcastSearch] = useState("");
+  const [broadcastStatusFilter, setBroadcastStatusFilter] = useState("ALL");
   const [busyBroadcastId, setBusyBroadcastId] = useState("");
   const [sendConfirmBroadcast, setSendConfirmBroadcast] = useState(null);
   const [broadcastPreviewCacheVersion, setBroadcastPreviewCacheVersion] = useState(0);
@@ -1953,10 +2089,31 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
     [broadcasts, broadcastPreviewCacheVersion]
   );
 
+  const filteredPromotions = useMemo(() => {
+    return promotions.filter((promotion) => matchesPromotionQuery(promotion, promotionSearch));
+  }, [promotions, promotionSearch]);
+
+  const filteredBroadcasts = useMemo(() => {
+    return visibleBroadcasts.filter((broadcast) => {
+      const matchesStatus =
+        broadcastStatusFilter === "ALL" || broadcastStatusValue(broadcast) === broadcastStatusFilter;
+
+      return matchesStatus && matchesBroadcastQuery(broadcast, broadcastSearch);
+    });
+  }, [visibleBroadcasts, broadcastSearch, broadcastStatusFilter]);
+
   const selectedPromotion = useMemo(
     () => promotions.find((item) => item.id === promotionId) || null,
     [promotionId, promotions]
   );
+
+  useEffect(() => {
+    setPromotionLimit(PROMOTION_LIST_LIMIT);
+  }, [promotionSearch]);
+
+  useEffect(() => {
+    setBroadcastLimit(BROADCAST_LIST_LIMIT);
+  }, [broadcastSearch, broadcastStatusFilter]);
 
   function currentTargeting() {
     return {
@@ -2008,7 +2165,7 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
     try {
       const result = await previewWhatsAppBroadcastRecipients({
         promotionId,
-        limit: 50,
+        limit: 20,
         targeting: currentTargeting(),
       });
 
@@ -2139,11 +2296,30 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
         targeting: broadcast.targetingPreview || { mode: "ALL_OPTED_IN" },
       });
 
+      const summary = result?.summary || {};
+
+      if (Number(summary.failed || 0) > 0 || Number(summary.delivered || 0) === 0) {
+        rememberBroadcastFailure({
+          broadcastId: broadcast.id,
+          summary,
+          message: Number(summary.delivered || 0) > 0
+            ? "Some WhatsApp messages need attention."
+            : "WhatsApp could not deliver this broadcast.",
+        });
+      } else {
+        clearBroadcastFailure(broadcast.id);
+      }
+
       setSendConfirmBroadcast(null);
       toast.success(result.summary?.delivered ? "Broadcast sent" : "Broadcast checked");
       await onRefresh?.();
     } catch (err) {
-      toast.error(safeError(err, "Broadcast could not be sent"));
+      const message = safeError(err, "Broadcast could not be sent");
+      rememberBroadcastFailure({
+        broadcastId: broadcast.id,
+        message,
+      });
+      toast.error(message);
     } finally {
       setBusyBroadcastId("");
     }
@@ -2177,7 +2353,7 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   }
 
   const previewCount = previewRecipientCount(recipientPreview);
-  const previewRows = previewRecipients(recipientPreview).slice(0, 8);
+  const previewRows = previewRecipients(recipientPreview).slice(0, RECIPIENT_PREVIEW_VISIBLE_LIMIT);
   const previewReady = hasValidRecipientPreview();
   const sendConfirmCount = broadcastRecipientCount(sendConfirmBroadcast);
   const sendConfirmTitle = sendConfirmBroadcast?.promotion?.title || "Customer broadcast";
@@ -2311,6 +2487,12 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
                     <small>{recipientPreview.audienceLabel || "Selected WhatsApp audience"}</small>
                   </div>
 
+                  {isLargeAudience(previewCount) ? (
+                    <p className="svx-wa-recipient-preview-scale-note">
+                      Showing the first {Math.min(previewRows.length || RECIPIENT_PREVIEW_VISIBLE_LIMIT, previewCount)} of {formatCompactNumber(previewCount)} recipients. Queue is recommended for large campaigns.
+                    </p>
+                  ) : null}
+
                   {previewRows.length ? (
                     <div className="svx-wa-recipient-preview-list">
                       {previewRows.map((recipient) => (
@@ -2347,29 +2529,51 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
           </AsyncButton>
         </form>
 
-        <section className="svx-wa-campaign-list">
+        <section className="svx-wa-campaign-list svx-wa-campaign-list-panel">
           <div className="svx-wa-list-head">
-            <h3>Promotions</h3>
-            <Badge tone="neutral">{promotions.length}</Badge>
+            <div>
+              <h3>Promotions</h3>
+              <span className="svx-wa-list-count">
+                Showing {Math.min(filteredPromotions.length, promotionLimit)} of {formatCompactNumber(filteredPromotions.length)}
+              </span>
+            </div>
+            <Badge tone="neutral">{formatCompactNumber(promotions.length)}</Badge>
           </div>
 
-          {promotions.slice(0, promotionLimit).map((promotion) => (
-            <article key={promotion.id} className="svx-wa-campaign-card">
-              <div>
-                <Badge tone={promotion.sentAt ? "success" : "warning"}>
-                  {promotion.sentAt ? "Sent" : "Draft"}
-                </Badge>
-                <strong>{promotion.title}</strong>
-                <p>{promotion.message || "No message"}</p>
-                <span>Used in {Number(promotion.usage?.broadcastCount || 0)} broadcast(s)</span>
-              </div>
-            </article>
-          ))}
+          <div className="svx-wa-list-toolbar">
+            <input
+              value={promotionSearch}
+              onChange={(event) => setPromotionSearch(event.target.value)}
+              placeholder="Search promotions..."
+            />
+          </div>
 
-          {promotions.length > promotionLimit ? (
+          <div className="svx-wa-long-list" role="list">
+            {filteredPromotions.slice(0, promotionLimit).map((promotion) => (
+              <article key={promotion.id} className="svx-wa-campaign-card svx-wa-record-row" role="listitem">
+                <div>
+                  <Badge tone={promotion.sentAt ? "success" : "warning"}>
+                    {promotion.sentAt ? "Sent" : "Draft"}
+                  </Badge>
+                  <strong>{promotion.title}</strong>
+                  <p>{promotion.message || "No message"}</p>
+                </div>
+                <span className="svx-wa-row-stat">
+                  <small>Broadcasts</small>
+                  <strong>{formatCompactNumber(promotion.usage?.broadcastCount || 0)}</strong>
+                </span>
+              </article>
+            ))}
+          </div>
+
+          {filteredPromotions.length === 0 ? (
+            <div className="svx-wa-list-empty">No promotions match this search.</div>
+          ) : null}
+
+          {filteredPromotions.length > promotionLimit ? (
             <button
               type="button"
-              className="svx-wa-secondary-action"
+              className="svx-wa-secondary-action svx-wa-load-more-action"
               onClick={() => setPromotionLimit((value) => value + PROMOTION_LIST_LIMIT)}
             >
               Load more promotions
@@ -2377,61 +2581,159 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
           ) : null}
         </section>
 
-        <section className="svx-wa-campaign-list">
+        <section className="svx-wa-campaign-list svx-wa-campaign-list-panel">
           <div className="svx-wa-list-head">
-            <h3>Broadcasts</h3>
-            <Badge tone="neutral">{visibleBroadcasts.length}</Badge>
+            <div>
+              <h3>Broadcasts</h3>
+              <span className="svx-wa-list-count">
+                Showing {Math.min(filteredBroadcasts.length, broadcastLimit)} of {formatCompactNumber(filteredBroadcasts.length)}
+              </span>
+            </div>
+            <Badge tone="neutral">{formatCompactNumber(visibleBroadcasts.length)}</Badge>
           </div>
 
-          {visibleBroadcasts.slice(0, broadcastLimit).map((broadcast) => (
-            <article key={broadcast.id} className="svx-wa-broadcast-card">
-              <div>
-                <Badge tone={toneForStatus(broadcast.status)}>
-                  {statusLabel(broadcast.status)}
-                </Badge>
-                <strong>{broadcast.promotion?.title || "Customer broadcast"}</strong>
-                <p>{broadcast.promotion?.message || "No promotion message attached"}</p>
-              </div>
+          <div className="svx-wa-list-toolbar svx-wa-broadcast-toolbar">
+            <input
+              value={broadcastSearch}
+              onChange={(event) => setBroadcastSearch(event.target.value)}
+              placeholder="Search broadcasts..."
+            />
+            <select
+              value={broadcastStatusFilter}
+              onChange={(event) => setBroadcastStatusFilter(event.target.value)}
+              aria-label="Filter broadcasts by status"
+            >
+              <option value="ALL">All statuses</option>
+              <option value="DRAFT">Draft</option>
+              <option value="QUEUED">Queued</option>
+              <option value="SENT">Sent</option>
+              <option value="FAILED">Needs attention</option>
+            </select>
+          </div>
 
-              <div className="svx-wa-broadcast-stats">
-                <span>
-                  <small>Customers</small>
-                  <strong>{broadcastRecipientCount(broadcast)}</strong>
-                </span>
-                <span>
-                  <small>Sent</small>
-                  <strong>{Number(broadcast.deliveredCount || 0)}</strong>
-                </span>
-              </div>
+          <div className="svx-wa-long-list" role="list">
+            {filteredBroadcasts.slice(0, broadcastLimit).map((broadcast) => {
+              const recipientCount = broadcastRecipientCount(broadcast);
+              const failureDetails = broadcastFailureDetails(broadcast);
+              const hasAudience = canActOnBroadcastAudience(broadcast);
+              const forceQueue = shouldForceQueue(recipientCount);
+              const queueDisabled = busyBroadcastId === broadcast.id || !canQueueBroadcast(broadcast) || !hasAudience;
+              const sendDisabled = busyBroadcastId === broadcast.id || !canSendBroadcast(broadcast) || !hasAudience || forceQueue;
 
-              <div className="svx-wa-card-actions">
-                <AsyncButton
-                  onClick={() => queueBroadcast(broadcast)}
-                  loading={busyBroadcastId === broadcast.id}
-                  loadingText="Queueing..."
-                  variant="secondary"
-                  disabled={busyBroadcastId === broadcast.id || !canQueueBroadcast(broadcast)}
-                  title={canQueueBroadcast(broadcast) ? "Keep this broadcast ready to send later" : "Broadcast already queued or sent"}
-                >
-                  {canQueueBroadcast(broadcast) ? "Queue" : broadcastStatusValue(broadcast) === "QUEUED" ? "Queued" : "Queue closed"}
-                </AsyncButton>
-                <AsyncButton
-                  onClick={() => sendBroadcast(broadcast)}
-                  loading={busyBroadcastId === broadcast.id}
-                  loadingText="Sending..."
-                  disabled={busyBroadcastId === broadcast.id || !canSendBroadcast(broadcast)}
-                  title="Send this broadcast to the previewed recipients now"
-                >
-                  {sendActionLabel(broadcast)}
-                </AsyncButton>
-              </div>
-            </article>
-          ))}
+              return (
+                <article key={broadcast.id} className="svx-wa-broadcast-card svx-wa-record-row" role="listitem">
+                  <div>
+                    <Badge tone={toneForStatus(broadcast.status)}>
+                      {statusLabel(broadcast.status)}
+                    </Badge>
+                    <strong>{broadcast.promotion?.title || "Customer broadcast"}</strong>
+                    <p>{broadcast.promotion?.message || "No promotion message attached"}</p>
+                  </div>
 
-          {visibleBroadcasts.length > broadcastLimit ? (
+                  <div className="svx-wa-broadcast-stats">
+                    <span>
+                      <small>Customers</small>
+                      <strong>{formatCompactNumber(recipientCount)}</strong>
+                    </span>
+                    <span>
+                      <small>Sent</small>
+                      <strong>{formatCompactNumber(broadcast.deliveredCount || failureDetails?.delivered || 0)}</strong>
+                    </span>
+                  </div>
+
+                  {!hasAudience ? (
+                    <div className="svx-wa-broadcast-warning">
+                      <strong>Preview recipients first</strong>
+                      <span>This draft has no saved recipient count, so it cannot be queued or sent safely.</span>
+                    </div>
+                  ) : null}
+
+                  {hasAudience && isLargeAudience(recipientCount) ? (
+                    <div className="svx-wa-broadcast-scale-note">
+                      <strong>{forceQueue ? "Queue required" : "Queue recommended"}</strong>
+                      <span>
+                        {formatCompactNumber(recipientCount)} recipients is a large audience. {forceQueue ? "Use Queue so this campaign can be handled safely." : "Queue is safer than Send now for planned campaigns."}
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {failureDetails ? (
+                    <div className="svx-wa-broadcast-failure">
+                      <div>
+                        <strong>Why it needs attention</strong>
+                        <span>{failureDetails.message}</span>
+                      </div>
+
+                      <div className="svx-wa-broadcast-failure-stats">
+                        <span>
+                          <small>Attempted</small>
+                          <strong>{formatCompactNumber(failureDetails.attempted || recipientCount || 0)}</strong>
+                        </span>
+                        <span>
+                          <small>Failed</small>
+                          <strong>{formatCompactNumber(failureDetails.failed || 0)}</strong>
+                        </span>
+                      </div>
+
+                      {Array.isArray(failureDetails.failures) && failureDetails.failures.length ? (
+                        <div className="svx-wa-broadcast-failure-list">
+                          {failureDetails.failures.slice(0, 3).map((item) => (
+                            <span key={`${item.customerId || item.phone}-${item.message}`}>
+                              <strong>{item.phone || "Customer"}</strong>
+                              <small>{item.message}</small>
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  <div className="svx-wa-card-actions">
+                    <AsyncButton
+                      onClick={() => queueBroadcast(broadcast)}
+                      loading={busyBroadcastId === broadcast.id}
+                      loadingText="Queueing..."
+                      variant="secondary"
+                      disabled={queueDisabled}
+                      title={
+                        !hasAudience
+                          ? "Preview recipients before queueing"
+                          : canQueueBroadcast(broadcast)
+                            ? "Keep this broadcast ready to send later"
+                            : "Broadcast already queued or sent"
+                      }
+                    >
+                      {canQueueBroadcast(broadcast) ? "Queue" : broadcastStatusValue(broadcast) === "QUEUED" ? "Queued" : "Queue closed"}
+                    </AsyncButton>
+                    <AsyncButton
+                      onClick={() => sendBroadcast(broadcast)}
+                      loading={busyBroadcastId === broadcast.id}
+                      loadingText="Sending..."
+                      disabled={sendDisabled}
+                      title={
+                        !hasAudience
+                          ? "Preview recipients before sending"
+                          : forceQueue
+                            ? "Queue is required for large recipient lists"
+                            : "Send this broadcast to the previewed recipients now"
+                      }
+                    >
+                      {forceQueue ? "Queue required" : sendActionLabel(broadcast)}
+                    </AsyncButton>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {filteredBroadcasts.length === 0 ? (
+            <div className="svx-wa-list-empty">No broadcasts match this view.</div>
+          ) : null}
+
+          {filteredBroadcasts.length > broadcastLimit ? (
             <button
               type="button"
-              className="svx-wa-secondary-action"
+              className="svx-wa-secondary-action svx-wa-load-more-action"
               onClick={() => setBroadcastLimit((value) => value + BROADCAST_LIST_LIMIT)}
             >
               Load more broadcasts
@@ -2468,6 +2770,13 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
                 <strong>Sent or needs attention</strong>
               </span>
             </div>
+
+            {isLargeAudience(sendConfirmCount) ? (
+              <div className="svx-wa-send-confirm-warning">
+                <strong>{shouldForceQueue(sendConfirmCount) ? "Queue required for this audience" : "Queue recommended"}</strong>
+                <span>Large campaigns are safer when queued instead of sent instantly.</span>
+              </div>
+            ) : null}
 
             <div className="svx-wa-send-confirm-actions">
               <button

@@ -5530,6 +5530,190 @@ background: var(--wa-soft);
   }
 }
 
+
+
+/* Long-list campaign controls */
+.svx-wa-campaign-list-panel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.svx-wa-list-head > div {
+  min-width: 0;
+}
+
+.svx-wa-list-count {
+  display: block;
+  margin-top: 5px;
+  color: var(--wa-muted);
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.svx-wa-list-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.svx-wa-broadcast-toolbar {
+  grid-template-columns: minmax(0, 1fr) minmax(132px, 0.42fr);
+}
+
+.svx-wa-list-toolbar input,
+.svx-wa-list-toolbar select {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 13px;
+  background: var(--wa-soft);
+  color: var(--wa-text);
+  padding: 0 13px;
+  font-size: 12.5px;
+  font-weight: 850;
+  outline: none;
+}
+
+.svx-wa-list-toolbar input::placeholder {
+  color: var(--wa-muted-2);
+}
+
+.svx-wa-long-list {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-height: 0;
+}
+
+.svx-wa-record-row {
+  margin-top: 0 !important;
+}
+
+.svx-wa-campaign-card.svx-wa-record-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(88px, auto);
+  align-items: center;
+  gap: 12px;
+}
+
+.svx-wa-record-row > div:first-child {
+  min-width: 0;
+}
+
+.svx-wa-record-row strong,
+.svx-wa-record-row p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.svx-wa-record-row p {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.svx-wa-row-stat {
+  display: grid !important;
+  min-width: 84px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 13px;
+  background: var(--wa-card);
+  padding: 10px 11px;
+  text-align: left;
+}
+
+.svx-wa-row-stat small {
+  color: var(--wa-muted-2);
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.svx-wa-row-stat strong {
+  margin-top: 5px;
+  color: var(--wa-text);
+  font-size: 16px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.svx-wa-list-empty {
+  border: 1px dashed var(--wa-border-soft);
+  border-radius: 15px;
+  background: var(--wa-soft);
+  padding: 16px;
+  color: var(--wa-muted);
+  font-size: 12.5px;
+  font-weight: 850;
+  text-align: center;
+}
+
+.svx-wa-load-more-action {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.svx-wa-broadcast-scale-note,
+.svx-wa-recipient-preview-scale-note,
+.svx-wa-send-confirm-warning {
+  border: 1px solid color-mix(in srgb, var(--wa-warning) 35%, var(--wa-border-soft));
+  border-radius: 14px;
+  background: var(--wa-warning-soft);
+  padding: 11px 12px;
+  color: var(--wa-warning);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.svx-wa-broadcast-scale-note strong,
+.svx-wa-send-confirm-warning strong {
+  display: block;
+  color: var(--wa-warning);
+  font-size: 12.5px;
+  font-weight: 950;
+}
+
+.svx-wa-broadcast-scale-note span,
+.svx-wa-send-confirm-warning span {
+  display: block;
+  margin-top: 4px;
+  color: var(--wa-warning);
+  font-size: 11.8px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.svx-wa-recipient-preview-success .svx-wa-recipient-preview-list {
+  max-height: 244px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 900px) {
+  .svx-wa-broadcast-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .svx-wa-campaign-card.svx-wa-record-row {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-wa-row-stat {
+    min-width: 0;
+  }
+}
+
 /* Professional broadcast send/queue states */
 .svx-wa-page-panel .svx-wa-card-actions button:disabled,
 .svx-wa-page-panel .svx-wa-card-actions button[disabled] {
@@ -5662,6 +5846,111 @@ background: var(--wa-soft);
 
   .svx-wa-send-confirm-summary,
   .svx-wa-send-confirm-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Broadcast failure details + zero-recipient safety */
+.svx-wa-broadcast-warning,
+.svx-wa-broadcast-failure {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 16px;
+  background: var(--wa-soft);
+  padding: 12px;
+}
+
+.svx-wa-broadcast-warning {
+  border-color: color-mix(in srgb, var(--wa-warning) 34%, var(--wa-border-soft));
+  background: var(--wa-warning-soft);
+}
+
+.svx-wa-broadcast-warning strong,
+.svx-wa-broadcast-failure strong {
+  display: block;
+  color: var(--wa-text);
+  font-size: 12.5px;
+  font-weight: 950;
+  line-height: 1.2;
+}
+
+.svx-wa-broadcast-warning span,
+.svx-wa-broadcast-failure span {
+  display: block;
+  color: var(--wa-muted);
+  font-size: 11.8px;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.svx-wa-broadcast-failure {
+  border-color: color-mix(in srgb, var(--wa-danger) 34%, var(--wa-border-soft));
+  background: color-mix(in srgb, var(--wa-danger) 8%, var(--wa-card));
+}
+
+.svx-wa-broadcast-failure-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.svx-wa-broadcast-failure-stats span {
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--wa-danger) 20%, var(--wa-border-soft));
+  border-radius: 13px;
+  background: var(--wa-card);
+  padding: 10px;
+}
+
+.svx-wa-broadcast-failure-stats small {
+  display: block;
+  color: var(--wa-muted-2);
+  font-size: 9.5px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.svx-wa-broadcast-failure-stats strong {
+  margin-top: 5px;
+  color: var(--wa-danger);
+  font-size: 18px;
+  letter-spacing: -0.04em;
+}
+
+.svx-wa-broadcast-failure-list {
+  display: grid;
+  gap: 7px;
+}
+
+.svx-wa-broadcast-failure-list span {
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--wa-danger) 18%, var(--wa-border-soft));
+  border-radius: 13px;
+  background: var(--wa-card);
+  padding: 9px 10px;
+}
+
+.svx-wa-broadcast-failure-list strong {
+  overflow: hidden;
+  color: var(--wa-text);
+  font-size: 11.8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-broadcast-failure-list small {
+  display: block;
+  margin-top: 3px;
+  color: var(--wa-muted);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+@media (max-width: 420px) {
+  .svx-wa-broadcast-failure-stats {
     grid-template-columns: 1fr;
   }
 }
