@@ -222,6 +222,32 @@ async function listBroadcasts(req, res) {
   }
 }
 
+async function previewBroadcastRecipients(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+
+    const preview = await service.previewBroadcastRecipients({
+      tenantId,
+      body: {
+        ...(req.body || {}),
+        targeting: getTargetingFromRequest(req),
+      },
+      limit: req.body?.limit || req.query?.limit || 20,
+    });
+
+    return res.json({
+      ok: true,
+      message: preview.recipientCount
+        ? "WhatsApp broadcast recipients found"
+        : "No eligible WhatsApp recipients found",
+      preview,
+    });
+  } catch (err) {
+    console.error("previewBroadcastRecipients error:", err);
+    return mapBroadcastError(err, res, "Failed to preview WhatsApp broadcast recipients");
+  }
+}
+
 async function getBroadcast(req, res) {
   try {
     const tenantId = getTenantId(req);
@@ -332,6 +358,7 @@ async function sendBroadcastNow(req, res) {
 
 module.exports = {
   listBroadcasts,
+  previewBroadcastRecipients,
   getBroadcast,
   createBroadcast,
   updateBroadcast,

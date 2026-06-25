@@ -898,9 +898,9 @@ async function getCategoryCustomerIds({ tenantId, category, limit }) {
   return [...new Set(rows.map((row) => row.sale?.customerId).filter(Boolean))].slice(0, limit);
 }
 
-async function getRecipients({ tenantId, targeting, promotion, limit }) {
+async function getRecipients({ tenantId, targeting, promotion, limit, maxLimit = 200 }) {
   const customerFields = getModelFields(prisma.customer);
-  const take = clampLimit(limit, 50, 200);
+  const take = clampLimit(limit, 50, maxLimit);
 
   let customerIds = [];
 
@@ -1036,6 +1036,94 @@ async function findOrCreateConversation({ tenantId, account, recipient }) {
   }
 
   return conversation;
+}
+
+function audienceLabel(targeting) {
+  const mode = normalizeTargetMode(targeting?.mode);
+
+  if (mode === "ALL_OPTED_IN") return "All opted-in WhatsApp customers";
+  if (mode === "CATEGORY_CUSTOMERS") return "Registered category customers";
+  if (mode === "CREDIT_CUSTOMERS") return "Credit customers";
+  if (mode === "OVERDUE_CREDIT_CUSTOMERS") return "Overdue credit customers";
+  if (mode === "PRODUCT_BUYERS") return "Customers who bought the selected product";
+  if (mode === "MANUAL_CUSTOMERS") return "Selected customers";
+  if (mode === "BRANCH_CUSTOMERS") return "Branch customers";
+
+  return "WhatsApp customers";
+}
+
+function publicRecipientPreview(recipient) {
+  return {
+    id: recipient.id,
+    name: recipient.name || "Customer",
+    phone: recipient.phone,
+  };
+}
+
+async function previewBroadcastRecipients({ tenantId, body = {}, limit = 20 }) {
+  await ensureTenantExists(tenantId);
+
+  const promotionId = normalizeText(body?.promotionId);
+  const previewLimit = clampLimit(limit, 20, 50);
+  const countLimit = 1000;
+
+  let promotion = null;
+  if (promotionId) {
+    promotion = await getPromotionOrThrow(tenantId, promotionId);
+  }
+
+  const targeting = normalizeTargeting(body || {});
+
+  if (targeting.mode === "BRANCH_CUSTOMERS" && targeting.branchId) {
+    await assertBranchBelongsToTenant(tenantId, targeting.branchId);
+  }
+
+  if (targeting.mode === "PRODUCT_BUYERS" && !targeting.productId && !promotion?.productId) {
+    throw appError("PRODUCT_ID_REQUIRED_FOR_TARGET");
+  }
+
+  if (targeting.mode === "CATEGORY_CUSTOMERS" && !targeting.category) {
+    throw appError("CATEGORY_REQUIRED");
+  }
+
+  if (targeting.mode === "MANUAL_CUSTOMERS" && targeting.manualCustomerIds.length === 0) {
+    throw appError("CUSTOMER_IDS_REQUIRED_FOR_TARGET");
+  }
+
+  const recipients = await getRecipients({
+    tenantId,
+    targeting,
+    promotion,
+    limit: countLimit,
+    maxLimit: countLimit,
+  });
+
+  const recipientCount = recipients.length;
+
+  return {
+    mode: targeting.mode,
+    audienceLabel: audienceLabel(targeting),
+    recipientCount,
+    previewLimit,
+    hasMore: recipientCount > previewLimit,
+    canSend: recipientCount > 0,
+    warning: recipientCount > 0 ? null : "NO_MATCHING_RECIPIENTS",
+    targeting: {
+      mode: targeting.mode,
+      branchId: targeting.branchId || null,
+      productId: targeting.productId || promotion?.productId || null,
+      category: targeting.category || null,
+      manualCustomerCount: targeting.manualCustomerIds.length,
+    },
+    promotion: promotion
+      ? {
+          id: promotion.id,
+          title: promotion.title,
+          productId: promotion.productId || null,
+        }
+      : null,
+    recipients: recipients.slice(0, previewLimit).map(publicRecipientPreview),
+  };
 }
 
 async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: targetingInput = null }) {
@@ -1235,6 +1323,7 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
 
 module.exports = {
   listBroadcasts,
+  previewBroadcastRecipients,
   getBroadcast,
   createBroadcast,
   updateBroadcast,

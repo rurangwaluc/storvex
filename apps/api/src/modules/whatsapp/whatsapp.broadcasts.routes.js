@@ -65,6 +65,29 @@ router.get("/broadcasts", controller.listBroadcasts);
  */
 router.post("/broadcasts", controller.createBroadcast);
 
+
+/**
+ * POST /api/whatsapp/broadcasts/recipients/preview
+ *
+ * Body:
+ * {
+ *   "promotionId": "optional",
+ *   "limit": 20,
+ *   "targeting": {
+ *     "mode": "ALL_OPTED_IN" |
+ *       "CATEGORY_CUSTOMERS" |
+ *       "CREDIT_CUSTOMERS" |
+ *       "OVERDUE_CREDIT_CUSTOMERS" |
+ *       "PRODUCT_BUYERS" |
+ *       "MANUAL_CUSTOMERS",
+ *     "category": "registered business category",
+ *     "productId": "optional",
+ *     "customerIds": []
+ *   }
+ * }
+ */
+router.post("/broadcasts/recipients/preview", controller.previewBroadcastRecipients);
+
 /**
  * GET /api/whatsapp/broadcasts/:id
  */
