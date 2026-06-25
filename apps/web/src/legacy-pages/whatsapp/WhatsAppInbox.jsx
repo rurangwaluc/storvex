@@ -2019,13 +2019,13 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
           {promotions.slice(0, promotionLimit).map((promotion) => (
             <article key={promotion.id} className="svx-wa-campaign-card">
               <div>
+                <Badge tone={promotion.sentAt ? "success" : "warning"}>
+                  {promotion.sentAt ? "Sent" : "Draft"}
+                </Badge>
                 <strong>{promotion.title}</strong>
                 <p>{promotion.message || "No message"}</p>
                 <span>Used in {Number(promotion.usage?.broadcastCount || 0)} broadcast(s)</span>
               </div>
-              <Badge tone={promotion.sentAt ? "success" : "warning"}>
-                {promotion.sentAt ? "Sent" : "Draft"}
-              </Badge>
             </article>
           ))}
 

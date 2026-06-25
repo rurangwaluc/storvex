@@ -5342,3 +5342,24 @@ background: var(--wa-soft);
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* Promotions list status should match broadcast status treatment: small, clean pill. */
+.svx-wa-campaign-card {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.svx-wa-campaign-card .svx-wa-badge {
+  display: inline-flex !important;
+  width: fit-content !important;
+  min-width: 0 !important;
+  min-height: 26px !important;
+  margin: 0 0 9px !important;
+  padding: 0 10px !important;
+  border-radius: 999px !important;
+  font-size: 9.5px !important;
+  line-height: 1 !important;
+}
+
+.svx-wa-campaign-card strong {
+  margin-top: 0 !important;
+}
