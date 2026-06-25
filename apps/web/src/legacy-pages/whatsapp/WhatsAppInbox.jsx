@@ -371,6 +371,60 @@ function hasDeliveryNote(summary) {
   return Boolean(summary?.hasDeliveryNote || Number(summary?.deliveryNoteCount || 0) > 0 || latestDeliveryNote(summary));
 }
 
+function deliveryNoteCustomerMessage({ conversation, summary }) {
+  const note = latestDeliveryNote(summary);
+  const name = customerName(conversation);
+  const number = note?.number || "your delivery note";
+  const saleItems = normalizeSaleItemsForDelivery(latestCompletedSale(summary));
+
+  const itemsText = saleItems
+    .slice(0, 3)
+    .map((item) => `${item.productName}${Number(item.quantity || 0) > 1 ? ` x${Number(item.quantity)}` : ""}`)
+    .join(", ");
+
+  const extraItems =
+    saleItems.length > 3
+      ? ` and ${saleItems.length - 3} more item${saleItems.length - 3 === 1 ? "" : "s"}`
+      : "";
+
+  const deliveryItems = itemsText
+    ? `${itemsText}${extraItems}`
+    : `${Number(note?.itemsCount || 0) || "the"} item${Number(note?.itemsCount || 0) === 1 ? "" : "s"}`;
+
+  return `Hello ${name}, your delivery note ${number} is ready for ${deliveryItems}. Please check the products and quantities when received.`;
+}
+
+function latestDeliveryNoteCustomerMessage({ messages = [], summary }) {
+  const note = latestDeliveryNote(summary);
+  if (!note) return null;
+
+  const number = String(note.number || "").toLowerCase();
+  const noteTime = note.createdAt || note.date ? new Date(note.createdAt || note.date).getTime() : 0;
+
+  return [...messages]
+    .filter((message) => {
+      if (!isOutboundMessage(message)) return false;
+
+      const text = messageText(message).toLowerCase();
+      if (!text) return false;
+
+      const messageTime = message.createdAt ? new Date(message.createdAt).getTime() : 0;
+      if (noteTime && messageTime && messageTime < noteTime) return false;
+
+      const mentionsDeliveryNote =
+        text.includes("delivery note") || text.includes("delivered") || (number && text.includes(number));
+      const mentionsItems =
+        text.includes("products") || text.includes("quantities") || text.includes("items") || text.includes("received");
+
+      return Boolean(mentionsDeliveryNote && mentionsItems);
+    })
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())[0] || null;
+}
+
+function hasDeliveryNoteCustomerMessage({ messages = [], summary }) {
+  return Boolean(latestDeliveryNoteCustomerMessage({ messages, summary }));
+}
+
 function normalizeSaleItemsForDelivery(sale) {
   const items = Array.isArray(sale?.items) ? sale.items : [];
 
@@ -477,9 +531,18 @@ function recommendedSalesAction({ conversation, draft, summary, messages = [] })
       };
     }
 
+    if (!hasDeliveryNoteCustomerMessage({ messages, summary })) {
+      return {
+        label: "Send delivery note message",
+        detail: "The delivery note is ready. Send a clear customer message with the delivery note number and delivered items only.",
+        primary: "Prepare message",
+        action: "DELIVERY_NOTE_MESSAGE",
+      };
+    }
+
     return {
       label: "After-sale support",
-      detail: "The customer already has a completed sale. Offer warranty, setup help, or useful accessories.",
+      detail: "The customer already has a completed sale and delivery note message. Offer warranty, setup help, or useful accessories.",
       primary: "Prepare support",
       action: "AFTER_SALE",
     };
@@ -613,6 +676,17 @@ function buildSalesTimeline({ conversation, draft, summary, messages = [] }) {
       meta: `${note.number || "Delivery note"} · ${Number(note.itemsCount || 0)} item${Number(note.itemsCount || 0) === 1 ? "" : "s"}`,
     });
   });
+
+  const deliveryNoteMessage = latestDeliveryNoteCustomerMessage({ messages, summary });
+
+  if (deliveryNoteMessage?.createdAt) {
+    events.push({
+      id: `delivery-note-message-${deliveryNoteMessage.id || deliveryNoteMessage.createdAt}`,
+      at: deliveryNoteMessage.createdAt,
+      title: "Delivery note message sent",
+      meta: latestDeliveryNote(summary)?.number || "Customer delivery update",
+    });
+  }
 
   if (summary?.lastWarranty) {
     events.push({
@@ -1269,6 +1343,7 @@ function CustomerPanel({
   onCreateQuotation,
   onPaymentReminder,
   onCreateDeliveryNote,
+  onDeliveryNoteMessage,
   onRecommendedAction,
   onAssign,
   onToggleStatus,
@@ -1355,9 +1430,9 @@ function CustomerPanel({
                   <span>Prepare products and quantities only</span>
                 </button>
               ) : null}
-              <button type="button" onClick={onPaymentReminder}>
-                <strong>Send after-sale message</strong>
-                <span>Follow up after the completed sale</span>
+              <button type="button" onClick={onDeliveryNoteMessage}>
+                <strong>Send delivery note message</strong>
+                <span>Share delivery note and delivered items</span>
               </button>
             </>
           ) : null}
@@ -2708,6 +2783,25 @@ export default function WhatsAppInbox() {
     }, 60);
   }
 
+  function fillDeliveryNoteMessage() {
+    if (!selectedConversation) return;
+
+    if (!latestDeliveryNote(salesSummary)) {
+      toast.error("Create a delivery note before sending the delivery message");
+      return;
+    }
+
+    setReplyText(deliveryNoteCustomerMessage({
+      conversation: selectedConversation,
+      summary: salesSummary,
+    }));
+    toast.success("Delivery note message prepared. Review it before sending.");
+
+    window.setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView?.({ behavior: "smooth", block: "end" });
+    }, 60);
+  }
+
   function createQuotationFromConversation() {
     if (!selectedConversation?.id) return;
 
@@ -2852,6 +2946,11 @@ export default function WhatsAppInbox() {
 
     if (actionType === "DELIVERY_NOTE") {
       createDeliveryNoteFromSale();
+      return;
+    }
+
+    if (actionType === "DELIVERY_NOTE_MESSAGE") {
+      fillDeliveryNoteMessage();
       return;
     }
 
@@ -3056,6 +3155,7 @@ export default function WhatsAppInbox() {
             onCreateQuotation={createQuotationFromConversation}
             onPaymentReminder={fillPaymentReminder}
             onCreateDeliveryNote={createDeliveryNoteFromSale}
+            onDeliveryNoteMessage={fillDeliveryNoteMessage}
             onRecommendedAction={handleRecommendedAction}
             onAssign={() => setAssignModalOpen(true)}
             onToggleStatus={toggleStatus}
