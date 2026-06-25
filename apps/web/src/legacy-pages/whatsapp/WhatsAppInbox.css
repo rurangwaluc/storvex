@@ -5155,3 +5155,190 @@ background: var(--wa-soft);
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* WhatsApp growth/support tabs polish                                         */
+/* Promotions, broadcasts, activity and account setup should stay practical,   */
+/* compact and clean: no decorative glows, no wasted mobile height.            */
+/* -------------------------------------------------------------------------- */
+
+.svx-wa-page-panel {
+  align-self: start !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.svx-wa-page-panel .svx-wa-form-card,
+.svx-wa-page-panel .svx-wa-campaign-list,
+.svx-wa-page-panel .svx-wa-campaign-card,
+.svx-wa-page-panel .svx-wa-broadcast-card,
+.svx-wa-page-panel .svx-wa-activity-row,
+.svx-wa-page-panel .svx-wa-setup-form {
+  box-shadow: none !important;
+}
+
+.svx-wa-page-panel .svx-wa-form-card > button,
+.svx-wa-page-panel .svx-wa-card-actions button,
+.svx-wa-page-panel .svx-wa-secondary-action,
+.svx-wa-page-panel .svx-wa-account-button,
+.svx-wa-page-panel .svx-wa-refresh-button {
+  box-shadow: none !important;
+  background-image: none !important;
+}
+
+.svx-wa-page-panel .svx-wa-form-card > button:not(.svx-wa-secondary-action),
+.svx-wa-page-panel .svx-wa-card-actions button:not(:first-child) {
+  border-color: var(--wa-primary) !important;
+  background: var(--wa-primary) !important;
+  color: #ffffff !important;
+}
+
+.svx-wa-page-panel .svx-wa-form-card > button:hover,
+.svx-wa-page-panel .svx-wa-card-actions button:hover,
+.svx-wa-page-panel .svx-wa-secondary-action:hover,
+.svx-wa-page-panel .svx-wa-account-button:hover,
+.svx-wa-page-panel .svx-wa-refresh-button:hover {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.svx-wa-activity-dot {
+  width: 10px !important;
+  height: 10px !important;
+  border: 0 !important;
+  background: var(--wa-primary) !important;
+  box-shadow: none !important;
+}
+
+.svx-wa-activity-list {
+  align-content: start !important;
+}
+
+.svx-wa-activity-row p {
+  white-space: nowrap !important;
+}
+
+.svx-wa-page-panel .svx-wa-empty {
+  min-height: 156px !important;
+}
+
+.svx-wa-campaign-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: start !important;
+}
+
+.svx-wa-campaign-grid > * {
+  min-width: 0 !important;
+}
+
+.svx-wa-campaign-list {
+  align-self: stretch !important;
+}
+
+.svx-wa-broadcast-card {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.svx-wa-broadcast-stats,
+.svx-wa-card-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.svx-wa-campaign-card p,
+.svx-wa-broadcast-card p {
+  display: -webkit-box !important;
+  overflow: hidden !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+}
+
+.svx-wa-setup-form .svx-wa-form-grid,
+.svx-wa-form-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.svx-wa-form-grid.is-one {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+@media (max-width: 1120px) {
+  .svx-wa-campaign-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-wa-page-panel {
+    padding: 14px !important;
+  }
+
+  .svx-wa-campaign-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-wa-form-card,
+  .svx-wa-campaign-list {
+    padding: 14px !important;
+  }
+
+  .svx-wa-audience-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-broadcast-stats,
+  .svx-wa-card-actions,
+  .svx-wa-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-activity-row {
+    grid-template-columns: 10px minmax(0, 1fr) auto !important;
+    gap: 10px !important;
+  }
+
+  .svx-wa-activity-row small {
+    grid-column: 2 / -1 !important;
+    justify-self: start !important;
+  }
+
+  .svx-wa-activity-row .svx-wa-badge {
+    grid-column: auto !important;
+    justify-self: end !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .svx-wa-audience-list,
+  .svx-wa-broadcast-stats,
+  .svx-wa-card-actions,
+  .svx-wa-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-wa-audience-list button {
+    min-height: 82px !important;
+    padding: 10px !important;
+  }
+
+  .svx-wa-audience-list strong {
+    font-size: 12px !important;
+  }
+
+  .svx-wa-audience-list span {
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+  }
+}
+
+@media (max-width: 370px) {
+  .svx-wa-audience-list,
+  .svx-wa-broadcast-stats,
+  .svx-wa-card-actions,
+  .svx-wa-form-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
