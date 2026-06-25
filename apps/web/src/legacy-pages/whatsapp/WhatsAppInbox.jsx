@@ -2865,6 +2865,14 @@ export default function WhatsAppInbox() {
     }
 
     if (hasDeliveryNote(salesSummary)) {
+      const note = latestDeliveryNote(salesSummary);
+
+      if (note?.id) {
+        toast.success("Delivery note already exists for this sale");
+        navigate(`/app/documents/delivery-notes/${encodeURIComponent(note.id)}/preview`);
+        return;
+      }
+
       toast.success("Delivery note already exists for this sale");
       return;
     }
@@ -2907,8 +2915,15 @@ export default function WhatsAppInbox() {
         items,
       });
 
-      toast.success(`Delivery note ${result?.deliveryNote?.number || "created"} created`);
+      const note = result?.deliveryNote || result?.data?.deliveryNote || result?.data || result || null;
+      const noteId = cleanText(note?.id);
+
+      toast.success(`Delivery note ${note?.number || "created"} created`);
       await load({ silent: true });
+
+      if (noteId) {
+        navigate(`/app/documents/delivery-notes/${encodeURIComponent(noteId)}/preview`);
+      }
     } catch (err) {
       toast.error(safeError(err, "Could not create delivery note"));
     } finally {
