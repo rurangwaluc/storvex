@@ -360,32 +360,28 @@ function SummaryCard({ label, value, note, tone = "neutral" }) {
           : "bg-[var(--doc-blue)]";
 
   return (
-    <article className={cx(pageCard(), "relative overflow-hidden p-5")}>
-      <div className="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-[rgba(74,163,255,0.08)] blur-2xl" />
-
-      <div className="relative">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--doc-muted)]">
-            {label}
-          </p>
-          <span className={cx("h-2.5 w-2.5 rounded-full", dot)} />
-        </div>
-
-        <p className="mt-3 truncate text-2xl font-black tracking-[-0.03em] text-[var(--doc-text)]">
-          {value}
+    <article className={cx(pageCard(), "p-5")}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[11px] font-black uppercase tracking-[0.16em] text-[var(--doc-muted)]">
+          {label}
         </p>
-
-        {note ? (
-          <p className="mt-1 text-xs font-semibold leading-5 text-[var(--doc-muted)]">
-            {note}
-          </p>
-        ) : null}
+        <span className={cx("h-2.5 w-2.5 shrink-0 rounded-full", dot)} />
       </div>
+
+      <p className="mt-3 break-words text-2xl font-black tracking-[-0.03em] text-[var(--doc-text)]">
+        {value}
+      </p>
+
+      {note ? (
+        <p className="mt-1 break-words text-xs font-semibold leading-5 text-[var(--doc-muted)]">
+          {note}
+        </p>
+      ) : null}
     </article>
   );
 }
 
-function InfoTile({ label, value, tone = "neutral" }) {
+function InfoTile({ label, value, tone = "neutral", compact = false }) {
   const valueClass =
     tone === "danger"
       ? "text-[var(--doc-red)]"
@@ -396,12 +392,12 @@ function InfoTile({ label, value, tone = "neutral" }) {
           : "text-[var(--doc-text)]";
 
   return (
-    <div className={cx(softPanel(), "p-4 shadow-[0_14px_28px_rgba(7,92,255,0.10)]")}>
+    <div className={cx(softPanel(), compact ? "p-3" : "p-4")}>
       <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--doc-muted)]">
         {label}
       </p>
 
-      <p className={cx("mt-2 break-words text-sm font-black leading-6", valueClass)}>
+      <p className={cx("mt-2 break-words font-black leading-6", compact ? "text-[13px]" : "text-sm", valueClass)}>
         {value || "—"}
       </p>
     </div>
@@ -810,10 +806,8 @@ export default function WarrantyCreate() {
 
   return (
     <div className="svx-doc-center-page space-y-5">
-      <section className={cx(pageCard(), "relative overflow-hidden p-5 sm:p-6")}>
-        <div className="pointer-events-none absolute -right-24 -top-24 h-[260px] w-[260px] rounded-full bg-[rgba(7, 92, 255, 0.10)] blur-3xl" />
-
-        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+      <section className={cx(pageCard(), "p-5 sm:p-6")}>
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--doc-blue)]">
               Warranty
@@ -846,7 +840,7 @@ export default function WarrantyCreate() {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 min-[420px]:grid-cols-2 xl:grid-cols-4">
         <SummaryCard
           label="Sale"
           value={selectedSale ? saleReferenceLabel(selectedSale) : "None"}
@@ -1120,11 +1114,12 @@ export default function WarrantyCreate() {
               Check everything before creating the certificate.
             </p>
 
-            <div className="mt-5 grid gap-3">
+            <div className="mt-5 grid gap-3 min-[420px]:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
               <InfoTile
                 label="Sale"
                 value={selectedSale ? saleReferenceLabel(selectedSale) : "Not selected"}
                 tone={selectedSale ? "success" : "warning"}
+                compact
               />
 
               <InfoTile
@@ -1134,25 +1129,27 @@ export default function WarrantyCreate() {
                     ? `${customerName(selectedSale)} • ${customerPhone(selectedSale)}`
                     : "—"
                 }
+                compact
               />
 
-              <InfoTile label="Covered products" value={formatNumber(totalCoveredItems)} />
-              <InfoTile label="Starts" value={form.startsAt || "—"} />
-              <InfoTile label="Ends" value={form.endsAt || "Auto / derived"} />
+              <InfoTile label="Covered products" value={formatNumber(totalCoveredItems)} compact />
+              <InfoTile label="Starts" value={form.startsAt || "—"} compact />
+              <InfoTile label="Ends" value={form.endsAt || "Auto / derived"} compact />
               <InfoTile
                 label="Terms"
                 value={cleanString(form.policy) ? "Provided" : "Missing"}
                 tone={cleanString(form.policy) ? "success" : "warning"}
+                compact
               />
             </div>
 
-            <div className="mt-5 flex flex-col gap-2">
-              <AsyncButton type="submit" loading={saving} className={successBtn()}>
+            <div className="mt-5 grid grid-cols-2 gap-2 max-[360px]:grid-cols-1">
+              <AsyncButton type="submit" loading={saving} className={cx(successBtn(), "w-full")}>
                 <ShieldIcon />
                 Create warranty
               </AsyncButton>
 
-              <Link to="/app/documents/warranties" className={secondaryBtn()}>
+              <Link to="/app/documents/warranties" className={cx(secondaryBtn(), "w-full")}>
                 Cancel
               </Link>
             </div>
