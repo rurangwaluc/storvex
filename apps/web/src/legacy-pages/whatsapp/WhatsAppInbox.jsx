@@ -8,6 +8,7 @@ import PageSkeleton from "../../components/ui/PageSkeleton";
 import { searchProducts } from "../../services/inventoryApi";
 import { convertProformaToSale } from "../../services/proformasApi";
 import { createDeliveryNote } from "../../services/deliveryNotesApi";
+import { previewWhatsAppBroadcastRecipients } from "../../services/whatsappBroadcastsApi";
 import {
   assignWhatsAppConversationOwner,
   clearWhatsAppConversationOwner,
@@ -1807,6 +1808,24 @@ function DraftsWorkspace({ drafts, conversations, onOpenConversation, onFinalize
   );
 }
 
+
+function recipientName(recipient) {
+  return cleanText(recipient?.name) || cleanPhone(recipient?.phone) || "WhatsApp customer";
+}
+
+function recipientPhone(recipient) {
+  return cleanPhone(recipient?.phone || recipient?.customerPhone);
+}
+
+function previewRecipientCount(preview) {
+  return Number(preview?.recipientCount || preview?.count || 0);
+}
+
+function previewRecipients(preview) {
+  const rows = preview?.recipients || preview?.previewRecipients || preview?.items || [];
+  return Array.isArray(rows) ? rows : [];
+}
+
 function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   const registeredBusinessCategory = useMemo(() => getRegisteredBusinessCategory(), []);
   const registeredBusinessCategoryLabel = categoryLabel(registeredBusinessCategory);
@@ -1817,9 +1836,90 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   const [targetMode, setTargetMode] = useState("ALL_OPTED_IN");
   const [savingPromotion, setSavingPromotion] = useState(false);
   const [savingBroadcast, setSavingBroadcast] = useState(false);
+  const [previewingRecipients, setPreviewingRecipients] = useState(false);
+  const [recipientPreview, setRecipientPreview] = useState(null);
+  const [lastPreviewKey, setLastPreviewKey] = useState("");
   const [promotionLimit, setPromotionLimit] = useState(PROMOTION_LIST_LIMIT);
   const [broadcastLimit, setBroadcastLimit] = useState(BROADCAST_LIST_LIMIT);
   const [busyBroadcastId, setBusyBroadcastId] = useState("");
+
+  const selectedPromotion = useMemo(
+    () => promotions.find((item) => item.id === promotionId) || null,
+    [promotionId, promotions]
+  );
+
+  function currentTargeting() {
+    return {
+      mode: targetMode,
+      branchId: null,
+      category: targetMode === "CATEGORY_CUSTOMERS" ? registeredBusinessCategory : null,
+      productId:
+        targetMode === "PRODUCT_BUYERS" ? selectedPromotion?.productId || null : null,
+      customerIds: [],
+    };
+  }
+
+  function currentPreviewKey() {
+    const targeting = currentTargeting();
+    return JSON.stringify({
+      promotionId: promotionId || "",
+      mode: targeting.mode,
+      category: targeting.category || "",
+      productId: targeting.productId || "",
+    });
+  }
+
+  function hasValidRecipientPreview() {
+    return (
+      lastPreviewKey === currentPreviewKey() &&
+      previewRecipientCount(recipientPreview) > 0 &&
+      recipientPreview?.canSend !== false
+    );
+  }
+
+  function resetRecipientPreview() {
+    setRecipientPreview(null);
+    setLastPreviewKey("");
+  }
+
+  async function previewRecipientsForBroadcast() {
+    if (!promotionId) {
+      toast.error("Choose a promotion first");
+      return;
+    }
+
+    if (targetMode === "PRODUCT_BUYERS" && !selectedPromotion?.productId) {
+      toast.error("Product buyers needs a promotion connected to a product");
+      return;
+    }
+
+    setPreviewingRecipients(true);
+
+    try {
+      const result = await previewWhatsAppBroadcastRecipients({
+        promotionId,
+        limit: 50,
+        targeting: currentTargeting(),
+      });
+
+      const preview = result?.preview || null;
+      setRecipientPreview(preview);
+      setLastPreviewKey(currentPreviewKey());
+
+      const count = previewRecipientCount(preview);
+      if (count > 0 && preview?.canSend !== false) {
+        toast.success(`${count} recipient${count === 1 ? "" : "s"} found`);
+      } else {
+        toast.error(preview?.warning || "No matching WhatsApp recipients found");
+      }
+    } catch (err) {
+      toast.error(safeError(err, "Recipient preview failed"));
+      setRecipientPreview(null);
+      setLastPreviewKey("");
+    } finally {
+      setPreviewingRecipients(false);
+    }
+  }
 
   async function savePromotion(event) {
     event.preventDefault();
@@ -1840,7 +1940,6 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
       toast.success("Promotion created");
       setPromotionTitle("");
       setPromotionMessage("");
-      // Keep category locked to the registered business category.
       await onRefresh?.();
     } catch (err) {
       toast.error(safeError(err, "Promotion could not be saved"));
@@ -1854,7 +1953,10 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
 
     if (!promotionId) return toast.error("Choose a promotion first");
 
-    const selectedPromotion = promotions.find((item) => item.id === promotionId);
+    if (!hasValidRecipientPreview()) {
+      toast.error("Preview recipients before creating this broadcast");
+      return;
+    }
 
     setSavingBroadcast(true);
 
@@ -1864,20 +1966,13 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
         promotionId,
         templateName: DEFAULT_MESSAGE_FORMAT,
         languageCode: DEFAULT_MESSAGE_LANGUAGE,
-        targeting: {
-          mode: targetMode,
-          branchId: null,
-          category: targetMode === "CATEGORY_CUSTOMERS" ? registeredBusinessCategory : null,
-          productId:
-            targetMode === "PRODUCT_BUYERS" ? selectedPromotion?.productId || null : null,
-          customerIds: [],
-        },
+        targeting: currentTargeting(),
       });
 
       toast.success("Broadcast draft created");
       setPromotionId("");
       setTargetMode("ALL_OPTED_IN");
-      // Keep targeting category locked to the registered business category.
+      resetRecipientPreview();
       await onRefresh?.();
     } catch (err) {
       toast.error(safeError(err, "Broadcast could not be created"));
@@ -1887,6 +1982,11 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   }
 
   async function sendBroadcast(id) {
+    const ok = window.confirm(
+      "Send this WhatsApp broadcast now? Queue is safer for planned campaigns."
+    );
+    if (!ok) return;
+
     setBusyBroadcastId(id);
 
     try {
@@ -1917,6 +2017,10 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
       setBusyBroadcastId("");
     }
   }
+
+  const previewCount = previewRecipientCount(recipientPreview);
+  const previewRows = previewRecipients(recipientPreview).slice(0, 8);
+  const previewReady = hasValidRecipientPreview();
 
   return (
     <section className="svx-wa-page-panel">
@@ -1969,7 +2073,13 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
 
           <label>
             <span>Promotion</span>
-            <select value={promotionId} onChange={(event) => setPromotionId(event.target.value)}>
+            <select
+              value={promotionId}
+              onChange={(event) => {
+                setPromotionId(event.target.value);
+                resetRecipientPreview();
+              }}
+            >
               <option value="">Choose promotion</option>
               {promotions.map((promotion) => (
                 <option key={promotion.id} value={promotion.id}>
@@ -1984,7 +2094,10 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
               <button
                 key={option.value}
                 type="button"
-                onClick={() => setTargetMode(option.value)}
+                onClick={() => {
+                  setTargetMode(option.value);
+                  resetRecipientPreview();
+                }}
                 className={cx(targetMode === option.value && "is-active")}
               >
                 <strong>{option.label}</strong>
@@ -2005,7 +2118,55 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
             </label>
           ) : null}
 
-          <AsyncButton type="submit" loading={savingBroadcast} loadingText="Creating...">
+          <div className="svx-wa-recipient-preview-card">
+            <div className="svx-wa-recipient-preview-head">
+              <div>
+                <strong>Recipient preview</strong>
+                <span>
+                  {recipientPreview
+                    ? `${previewCount} matching customer${previewCount === 1 ? "" : "s"}`
+                    : "Preview matching customers before creating a broadcast."}
+                </span>
+              </div>
+              <AsyncButton
+                type="button"
+                loading={previewingRecipients}
+                loadingText="Checking..."
+                onClick={previewRecipientsForBroadcast}
+                disabled={!promotionId || savingBroadcast}
+                className="svx-wa-secondary-action"
+              >
+                Preview recipients
+              </AsyncButton>
+            </div>
+
+            {recipientPreview ? (
+              previewCount > 0 ? (
+                <div className="svx-wa-recipient-preview-list">
+                  {previewRows.map((recipient) => (
+                    <span key={recipient.id || recipient.phone}>
+                      <strong>{recipientName(recipient)}</strong>
+                      <small>{recipientPhone(recipient)}</small>
+                    </span>
+                  ))}
+                  {previewCount > previewRows.length ? (
+                    <em>+{previewCount - previewRows.length} more customer{previewCount - previewRows.length === 1 ? "" : "s"}</em>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="svx-wa-recipient-preview-warning">
+                  {recipientPreview.warning || "No matching customers found for this audience."}
+                </p>
+              )
+            ) : null}
+          </div>
+
+          <AsyncButton
+            type="submit"
+            loading={savingBroadcast}
+            loadingText="Creating..."
+            disabled={!previewReady || previewingRecipients}
+          >
             Create broadcast
           </AsyncButton>
         </form>
