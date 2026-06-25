@@ -7,6 +7,7 @@ import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import { searchProducts } from "../../services/inventoryApi";
 import { convertProformaToSale } from "../../services/proformasApi";
+import { createDeliveryNote } from "../../services/deliveryNotesApi";
 import {
   assignWhatsAppConversationOwner,
   clearWhatsAppConversationOwner,
@@ -358,6 +359,40 @@ function hasCompletedSale(summary) {
   return Number(summary?.totalOrders || 0) > 0 || Boolean(summary?.lastPurchase);
 }
 
+function latestCompletedSale(summary) {
+  return summary?.latestSale || null;
+}
+
+function latestDeliveryNote(summary) {
+  return summary?.latestDeliveryNote || summary?.deliveryNotes?.[0] || null;
+}
+
+function hasDeliveryNote(summary) {
+  return Boolean(summary?.hasDeliveryNote || Number(summary?.deliveryNoteCount || 0) > 0 || latestDeliveryNote(summary));
+}
+
+function normalizeSaleItemsForDelivery(sale) {
+  const items = Array.isArray(sale?.items) ? sale.items : [];
+
+  return items
+    .map((item) => {
+      const product = item.product || {};
+      const productName =
+        cleanText(item.productName) ||
+        cleanText(product.name) ||
+        cleanText(item.name) ||
+        "Product";
+
+      return {
+        productId: cleanText(item.productId || product.id) || undefined,
+        productName,
+        serial: cleanText(item.serial || product.serial || product.sku) || undefined,
+        quantity: Math.max(1, Number(item.quantity || 1)),
+      };
+    })
+    .filter((item) => item.productName && item.quantity > 0);
+}
+
 function latestOpenQuotation(summary) {
   const quotations = Array.isArray(summary?.proformas) ? summary.proformas : [];
   const openFromList = quotations.find((quotation) => quotation && !isQuotationConverted(quotation));
@@ -433,9 +468,18 @@ function recommendedSalesAction({ conversation, draft, summary, messages = [] })
   const openQuotation = latestOpenQuotation(summary);
 
   if (orders > 0 && !openQuotation) {
+    if (!hasDeliveryNote(summary)) {
+      return {
+        label: "Create delivery note",
+        detail: "The sale is completed. Prepare a delivery note with products and quantities only — no prices or totals.",
+        primary: "Create delivery note",
+        action: "DELIVERY_NOTE",
+      };
+    }
+
     return {
       label: "After-sale support",
-      detail: "The customer already has a completed sale. Offer delivery, warranty, setup help, or useful accessories.",
+      detail: "The customer already has a completed sale. Offer warranty, setup help, or useful accessories.",
       primary: "Prepare support",
       action: "AFTER_SALE",
     };
@@ -552,6 +596,23 @@ function buildSalesTimeline({ conversation, draft, summary, messages = [] }) {
       meta: `${Number(summary.totalOrders || 0)} total order${Number(summary.totalOrders || 0) === 1 ? "" : "s"}`,
     });
   }
+
+  const deliveryEvents = Array.isArray(summary?.deliveryNotes)
+    ? summary.deliveryNotes
+    : latestDeliveryNote(summary)
+      ? [latestDeliveryNote(summary)]
+      : [];
+
+  deliveryEvents.forEach((note) => {
+    if (!note?.createdAt && !note?.date) return;
+
+    events.push({
+      id: `delivery-note-${note.id || note.number || note.createdAt || note.date}`,
+      at: note.createdAt || note.date,
+      title: "Delivery note created",
+      meta: `${note.number || "Delivery note"} · ${Number(note.itemsCount || 0)} item${Number(note.itemsCount || 0) === 1 ? "" : "s"}`,
+    });
+  });
 
   if (summary?.lastWarranty) {
     events.push({
@@ -1103,7 +1164,7 @@ function SalesTimeline({ events }) {
   );
 }
 
-function SalesIntelligenceCard({ conversation, draft, summary, messages = [], loading, convertingProformaId = "", onRecommendedAction }) {
+function SalesIntelligenceCard({ conversation, draft, summary, messages = [], loading, convertingProformaId = "", creatingDeliveryNote = false, onRecommendedAction }) {
   const safeSummary = summary || {};
   const tier = customerTier(safeSummary);
   const temperature = leadTemperature({ conversation, draft, summary: safeSummary });
@@ -1162,6 +1223,11 @@ function SalesIntelligenceCard({ conversation, draft, summary, messages = [], lo
               <strong>{lastPurchaseLabel}</strong>
               <small>{shortDate(safeSummary.lastPurchase)}</small>
             </div>
+            <div>
+              <span>Delivery notes</span>
+              <strong>{Number(safeSummary.deliveryNoteCount || 0)}</strong>
+              <small>{latestDeliveryNote(safeSummary)?.number || "No delivery note yet"}</small>
+            </div>
           </div>
 
           <div className="svx-wa-recommended-action">
@@ -1170,12 +1236,14 @@ function SalesIntelligenceCard({ conversation, draft, summary, messages = [], lo
             <small>{nextAction.detail}</small>
             <button
               type="button"
-              disabled={nextAction.disabled || Boolean(convertingProformaId)}
+              disabled={nextAction.disabled || Boolean(convertingProformaId) || Boolean(creatingDeliveryNote)}
               onClick={() => onRecommendedAction?.(nextAction)}
             >
               {convertingProformaId && nextAction.action === "CONVERT_PROFORMA"
                 ? "Converting..."
-                : nextAction.primary}
+                : nextAction.action === "DELIVERY_NOTE" && creatingDeliveryNote
+                  ? "Creating..."
+                  : nextAction.primary}
             </button>
           </div>
 
@@ -1200,12 +1268,14 @@ function CustomerPanel({
   onCreateDraft,
   onCreateQuotation,
   onPaymentReminder,
+  onCreateDeliveryNote,
   onRecommendedAction,
   onAssign,
   onToggleStatus,
   onFinalize,
   finalizing,
   convertingProformaId,
+  creatingDeliveryNote,
 }) {
   if (!conversation) {
     return (
@@ -1258,6 +1328,7 @@ function CustomerPanel({
         messages={messages}
         loading={salesSummaryLoading}
         convertingProformaId={convertingProformaId}
+        creatingDeliveryNote={creatingDeliveryNote}
         onRecommendedAction={onRecommendedAction}
       />
 
@@ -1277,10 +1348,18 @@ function CustomerPanel({
               <span>Use the existing proforma document flow</span>
             </button>
           ) : completedSale ? (
-            <button type="button" onClick={onPaymentReminder}>
-              <strong>Send after-sale message</strong>
-              <span>Follow up after the completed sale</span>
-            </button>
+            <>
+              {!hasDeliveryNote(salesSummary) ? (
+                <button type="button" onClick={onCreateDeliveryNote}>
+                  <strong>Create delivery note</strong>
+                  <span>Prepare products and quantities only</span>
+                </button>
+              ) : null}
+              <button type="button" onClick={onPaymentReminder}>
+                <strong>Send after-sale message</strong>
+                <span>Follow up after the completed sale</span>
+              </button>
+            </>
           ) : null}
 
           {canManageTools ? (
@@ -2355,6 +2434,7 @@ export default function WhatsAppInbox() {
   const [finalizing, setFinalizing] = useState(false);
   const [finalizingDraftId, setFinalizingDraftId] = useState("");
   const [convertingProformaId, setConvertingProformaId] = useState("");
+  const [creatingDeliveryNote, setCreatingDeliveryNote] = useState(false);
   const [salesSummary, setSalesSummary] = useState(null);
   const [salesSummaryLoading, setSalesSummaryLoading] = useState(false);
 
@@ -2672,6 +2752,68 @@ export default function WhatsAppInbox() {
     }
   }
 
+  async function createDeliveryNoteFromSale() {
+    if (!selectedConversation?.id) return;
+
+    const sale = latestCompletedSale(salesSummary);
+
+    if (!sale?.id) {
+      toast.error("No completed sale was found for this conversation");
+      return;
+    }
+
+    if (hasDeliveryNote(salesSummary)) {
+      toast.success("Delivery note already exists for this sale");
+      return;
+    }
+
+    const items = normalizeSaleItemsForDelivery(sale);
+
+    if (!items.length) {
+      toast.error("This sale has no products to deliver");
+      return;
+    }
+
+    const customer = sale.customer || selectedConversation.customer || {};
+    const customerNameValue =
+      cleanText(customer.name) ||
+      cleanText(selectedConversation.customer?.name) ||
+      customerName(selectedConversation);
+
+    setCreatingDeliveryNote(true);
+
+    try {
+      const result = await createDeliveryNote({
+        saleId: sale.id,
+        customerName: customerNameValue,
+        customerPhone:
+          cleanText(customer.phone) ||
+          cleanText(selectedConversation.customer?.phone) ||
+          cleanText(selectedConversation.phone) ||
+          undefined,
+        customerAddress:
+          cleanText(customer.address) ||
+          cleanText(selectedConversation.customer?.address) ||
+          undefined,
+        receivedBy: customerNameValue,
+        receivedByPhone:
+          cleanText(customer.phone) ||
+          cleanText(selectedConversation.customer?.phone) ||
+          cleanText(selectedConversation.phone) ||
+          undefined,
+        notes: `Created from WhatsApp conversation ${selectedConversation.id}. No prices or totals are recorded on delivery notes.`,
+        items,
+      });
+
+      toast.success(`Delivery note ${result?.deliveryNote?.number || "created"} created`);
+      await load({ silent: true });
+    } catch (err) {
+      toast.error(safeError(err, "Could not create delivery note"));
+    } finally {
+      setCreatingDeliveryNote(false);
+    }
+  }
+
   function handleRecommendedAction(action) {
     const actionType = action?.action || "";
 
@@ -2697,6 +2839,11 @@ export default function WhatsAppInbox() {
 
     if (actionType === "CONVERT_PROFORMA") {
       convertLatestProformaToSale(action);
+      return;
+    }
+
+    if (actionType === "DELIVERY_NOTE") {
+      createDeliveryNoteFromSale();
       return;
     }
 
@@ -2900,12 +3047,14 @@ export default function WhatsAppInbox() {
             onCreateDraft={() => setDraftModalOpen(true)}
             onCreateQuotation={createQuotationFromConversation}
             onPaymentReminder={fillPaymentReminder}
+            onCreateDeliveryNote={createDeliveryNoteFromSale}
             onRecommendedAction={handleRecommendedAction}
             onAssign={() => setAssignModalOpen(true)}
             onToggleStatus={toggleStatus}
             onFinalize={finalizeLinkedDraft}
             finalizing={finalizing}
             convertingProformaId={convertingProformaId}
+            creatingDeliveryNote={creatingDeliveryNote}
           />
         </section>
       ) : null}

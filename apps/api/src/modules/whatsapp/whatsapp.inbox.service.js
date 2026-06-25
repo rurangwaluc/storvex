@@ -2379,6 +2379,94 @@ function normalizeProformaSummary(proforma) {
   };
 }
 
+function normalizeSaleItemSummary(item) {
+  if (!item) return null;
+
+  const product = item.product || {};
+  const productName =
+    normalizeText(product.name) ||
+    normalizeText(item.productName) ||
+    normalizeText(item.name) ||
+    "Product";
+
+  return {
+    id: item.id || null,
+    productId: item.productId || product.id || null,
+    productName,
+    sku: product.sku || null,
+    serial: product.serial || item.serial || null,
+    quantity: Number(item.quantity || 0),
+  };
+}
+
+function normalizeSaleSummary(sale) {
+  if (!sale) return null;
+
+  return {
+    id: sale.id,
+    total: Number(sale.total || 0),
+    balanceDue: Number(sale.balanceDue || 0),
+    saleType: sale.saleType || null,
+    status: sale.status || null,
+    createdAt: sale.createdAt || null,
+    customerId: sale.customerId || null,
+    conversationId: sale.conversationId || null,
+    customer: sale.customer
+      ? {
+          id: sale.customer.id || null,
+          name: sale.customer.name || null,
+          phone: sale.customer.phone || null,
+          email: sale.customer.email || null,
+          address: sale.customer.address || null,
+        }
+      : null,
+    items: Array.isArray(sale.items)
+      ? sale.items.map(normalizeSaleItemSummary).filter((item) => item && item.quantity > 0)
+      : [],
+  };
+}
+
+function normalizeDeliveryNoteSummary(note) {
+  if (!note) return null;
+
+  return {
+    id: note.id,
+    number: note.number || null,
+    saleId: note.saleId || null,
+    customerName: note.customerName || null,
+    customerPhone: note.customerPhone || null,
+    createdAt: note.createdAt || null,
+    date: note.date || null,
+    itemsCount: Array.isArray(note.items) ? note.items.length : Number(note.itemsCount || 0),
+  };
+}
+
+async function listSaleDeliveryNotes({ tenantId, saleIds }) {
+  if (!tenantId || !Array.isArray(saleIds) || !saleIds.length || !prisma.deliveryNote) return [];
+  if (!modelHasField(prisma.deliveryNote, "saleId")) return [];
+
+  return prisma.deliveryNote.findMany({
+    where: {
+      tenantId,
+      saleId: { in: saleIds },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+    select: {
+      id: true,
+      number: true,
+      saleId: true,
+      customerName: true,
+      customerPhone: true,
+      date: true,
+      createdAt: true,
+      items: {
+        select: { id: true },
+      },
+    },
+  });
+}
+
 async function listConversationProformas({ tenantId, conversationId }) {
   if (!tenantId || !conversationId) return [];
 
@@ -2426,6 +2514,11 @@ function emptySalesSummary(extra = {}) {
     outstandingCredit: 0,
     lastPurchase: null,
     lastSaleType: null,
+    latestSale: null,
+    deliveryNoteCount: 0,
+    hasDeliveryNote: false,
+    latestDeliveryNote: null,
+    deliveryNotes: [],
     quotationCount: 0,
     hasQuotation: false,
     latestQuotation: null,
@@ -2488,10 +2581,20 @@ async function getSalesSummary({
     },
     select: {
       id: true,
+      customerId: true,
+      conversationId: true,
       total: true,
       balanceDue: true,
       saleType: true,
+      status: true,
       createdAt: true,
+      customer: {
+        select: buildCustomerSelectShape(),
+      },
+      items: {
+        orderBy: [{ id: "asc" }],
+        select: buildDraftItemSelectShape(),
+      },
     },
   });
 
@@ -2499,22 +2602,34 @@ async function getSalesSummary({
     return emptySalesSummary(quotationMeta);
   }
 
+  const saleIds = sales.map((sale) => sale.id).filter(Boolean);
+  const deliveryNotes = await listSaleDeliveryNotes({ tenantId, saleIds });
+  const normalizedDeliveryNotes = deliveryNotes.map(normalizeDeliveryNoteSummary).filter(Boolean);
+  const latestSale = normalizeSaleSummary(sales[0]);
+  const latestDeliveryNote = normalizedDeliveryNotes[0] || null;
+
   return {
     totalOrders: sales.length,
 
     totalRevenue: sales.reduce(
-      (sum, sale) => sum + sale.total,
+      (sum, sale) => sum + Number(sale.total || 0),
       0
     ),
 
     outstandingCredit: sales.reduce(
-      (sum, sale) => sum + sale.balanceDue,
+      (sum, sale) => sum + Number(sale.balanceDue || 0),
       0
     ),
 
     lastPurchase: sales[0].createdAt,
 
     lastSaleType: sales[0].saleType,
+
+    latestSale,
+    deliveryNoteCount: normalizedDeliveryNotes.length,
+    hasDeliveryNote: normalizedDeliveryNotes.length > 0,
+    latestDeliveryNote,
+    deliveryNotes: normalizedDeliveryNotes,
 
     ...quotationMeta,
   };
@@ -2536,4 +2651,4 @@ module.exports = {
   assignConversation,
   unassignConversation,
   getSalesSummary,
-};
+};    
