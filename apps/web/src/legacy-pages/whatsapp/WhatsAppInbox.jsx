@@ -2031,6 +2031,71 @@ function sendActionLabel(broadcast) {
   return "Send now";
 }
 
+function primaryBroadcastAction({ broadcast, recipientCount }) {
+  const status = broadcastStatusValue(broadcast);
+  const hasAudience = Number(recipientCount || 0) > 0;
+
+  if (!hasAudience) {
+    return {
+      kind: "BLOCKED",
+      label: "Preview first",
+      disabled: true,
+      title: "Preview recipients before queueing or sending",
+    };
+  }
+
+  if (status === "SENT") {
+    return {
+      kind: "CLOSED",
+      label: "Sent",
+      disabled: true,
+      title: "This campaign has already been sent",
+    };
+  }
+
+  if (status === "QUEUED") {
+    return {
+      kind: "SEND",
+      label: "Send queued now",
+      disabled: false,
+      title: "Send this queued campaign now",
+    };
+  }
+
+  if (status === "FAILED") {
+    return {
+      kind: "SEND",
+      label: "Retry send",
+      disabled: false,
+      title: "Retry sending this campaign to the saved recipients",
+    };
+  }
+
+  if (shouldForceQueue(recipientCount) || isLargeAudience(recipientCount)) {
+    return {
+      kind: "QUEUE",
+      label: shouldForceQueue(recipientCount) ? "Queue required" : "Queue campaign",
+      disabled: false,
+      title: "Queue this larger campaign instead of sending immediately",
+    };
+  }
+
+  return {
+    kind: "SEND",
+    label: "Send now",
+    disabled: false,
+    title: "Send this campaign to the saved recipients now",
+  };
+}
+
+function secondaryQueueAvailable({ broadcast, recipientCount }) {
+  return (
+    broadcastStatusValue(broadcast) === "DRAFT" &&
+    Number(recipientCount || 0) > 0 &&
+    !isLargeAudience(recipientCount)
+  );
+}
+
 function matchesPromotionQuery(promotion, query) {
   const q = cleanText(query).toLowerCase();
   if (!q) return true;
@@ -2801,18 +2866,7 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
                         ) : null}
 
                         {failureDetails ? (
-                          <details className="svx-wa-row-issue">
-                            <summary>View issue</summary>
-                            <div>
-                              <strong>{failureDetails.message}</strong>
-                              <span>
-                                Attempted {formatCompactNumber(failureDetails.attempted || recipientCount || 0)} · Failed {formatCompactNumber(failureDetails.failed || 0)}
-                              </span>
-                              {Array.isArray(failureDetails.failures) && failureDetails.failures.length ? (
-                                <small>{failureDetails.failures[0]?.phone || "Customer"}: {failureDetails.failures[0]?.message}</small>
-                              ) : null}
-                            </div>
-                          </details>
+                          <em className="svx-wa-row-issue-chip">Issue needs review</em>
                         ) : null}
                       </div>
 
@@ -2828,50 +2882,74 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
                       </div>
 
                       <div className="svx-wa-record-actions-cell">
-                        <AsyncButton
-                          onClick={() => queueBroadcast(broadcast)}
-                          loading={busyBroadcastId === broadcast.id}
-                          loadingText="Queueing..."
-                          variant="secondary"
-                          disabled={queueDisabled}
-                          title={
-                            !hasAudience
-                              ? "Preview recipients before queueing"
-                              : canQueueBroadcast(broadcast)
-                                ? "Keep this broadcast ready to send later"
-                                : "Broadcast already queued or sent"
-                          }
-                        >
-                          {canQueueBroadcast(broadcast) ? "Queue" : broadcastStatusValue(broadcast) === "QUEUED" ? "Queued" : "Closed"}
-                        </AsyncButton>
-                        <AsyncButton
-                          onClick={() => sendBroadcast(broadcast)}
-                          loading={busyBroadcastId === broadcast.id}
-                          loadingText="Sending..."
-                          disabled={sendDisabled}
-                          title={
-                            !hasAudience
-                              ? "Preview recipients before sending"
-                              : forceQueue
-                                ? "Queue is required for large recipient lists"
-                                : "Send this broadcast to the previewed recipients now"
-                          }
-                        >
-                          {forceQueue ? "Queue required" : sendActionLabel(broadcast)}
-                        </AsyncButton>
-                        <button
-                          type="button"
-                          className="svx-wa-record-remove-action"
-                          onClick={() => requestRemoveBroadcast(broadcast)}
-                          disabled={!canRemoveBroadcastRecord(broadcast) || busyBroadcastId === broadcast.id}
-                          title={
-                            canRemoveBroadcastRecord(broadcast)
-                              ? cleanupBroadcastMessage(broadcast)
-                              : "Sent campaign history cannot be deleted"
-                          }
-                        >
-                          {cleanupBroadcastActionLabel(broadcast)}
-                        </button>
+                        {(() => {
+                          const primaryAction = primaryBroadcastAction({ broadcast, recipientCount });
+                          const primaryDisabled =
+                            busyBroadcastId === broadcast.id || primaryAction.disabled;
+
+                          return (
+                            <AsyncButton
+                              onClick={() => {
+                                if (primaryAction.kind === "QUEUE") {
+                                  queueBroadcast(broadcast);
+                                  return;
+                                }
+
+                                if (primaryAction.kind === "SEND") {
+                                  sendBroadcast(broadcast);
+                                }
+                              }}
+                              loading={busyBroadcastId === broadcast.id}
+                              loadingText={primaryAction.kind === "QUEUE" ? "Queueing..." : "Sending..."}
+                              disabled={primaryDisabled}
+                              title={primaryAction.title}
+                              className="svx-wa-record-primary-action"
+                            >
+                              {primaryAction.label}
+                            </AsyncButton>
+                          );
+                        })()}
+
+                        <details className="svx-wa-record-more-menu">
+                          <summary aria-label="Open campaign actions"><span aria-hidden="true">•••</span></summary>
+                          <div>
+                            {secondaryQueueAvailable({ broadcast, recipientCount }) ? (
+                              <button
+                                type="button"
+                                onClick={() => queueBroadcast(broadcast)}
+                                disabled={busyBroadcastId === broadcast.id}
+                              >
+                                Queue for later
+                              </button>
+                            ) : null}
+
+                            {failureDetails ? (
+                              <div className="svx-wa-record-more-issue">
+                                <strong>Issue</strong>
+                                <span>{failureDetails.message}</span>
+                                <small>
+                                  Attempted {formatCompactNumber(failureDetails.attempted || recipientCount || 0)} · Failed {formatCompactNumber(failureDetails.failed || 0)}
+                                </small>
+                              </div>
+                            ) : null}
+
+                            {canRemoveBroadcastRecord(broadcast) ? (
+                              <button
+                                type="button"
+                                className="is-danger"
+                                onClick={() => requestRemoveBroadcast(broadcast)}
+                                disabled={busyBroadcastId === broadcast.id}
+                                title={cleanupBroadcastMessage(broadcast)}
+                              >
+                                {cleanupBroadcastActionLabel(broadcast)}
+                              </button>
+                            ) : (
+                              <span className="svx-wa-record-more-note">
+                                Sent campaign history is protected.
+                              </span>
+                            )}
+                          </div>
+                        </details>
                       </div>
                     </article>
                   );

@@ -6193,20 +6193,135 @@ background: var(--wa-soft);
 }
 
 .svx-wa-record-actions-cell {
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr) 72px;
+  align-items: stretch;
   gap: 7px;
   min-width: 0;
 }
 
 .svx-wa-record-actions-cell .svx-wa-secondary-action,
-.svx-wa-record-actions-cell button {
+.svx-wa-record-actions-cell button,
+.svx-wa-record-actions-cell summary {
   min-width: 0;
   min-height: 38px;
   padding: 0 10px;
   border-radius: 12px;
   font-size: 11.5px;
+  font-weight: 900;
   white-space: nowrap;
+}
+
+.svx-wa-record-primary-action {
+  width: 100%;
+}
+
+.svx-wa-record-more-menu {
+  position: relative;
+  min-width: 0;
+}
+
+.svx-wa-record-more-menu summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border: 1px solid var(--wa-border-soft);
+  background: color-mix(in srgb, var(--wa-card) 94%, var(--wa-soft));
+  color: var(--wa-muted);
+  cursor: pointer;
+  list-style: none;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms var(--wa-ease);
+}
+
+.svx-wa-record-more-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.svx-wa-record-more-menu[open] summary,
+.svx-wa-record-more-menu summary:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--wa-primary) 32%, var(--wa-border-soft));
+  background: var(--wa-primary-soft);
+  color: var(--wa-primary);
+}
+
+.svx-wa-record-more-menu > div {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 8;
+  display: grid;
+  width: min(260px, calc(100vw - 32px));
+  gap: 7px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 16px;
+  background: var(--wa-card);
+  padding: 8px;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.18);
+}
+
+:root[data-theme="dark"] .svx-wa-record-more-menu > div {
+  box-shadow: none;
+}
+
+.svx-wa-record-more-menu > div button {
+  justify-content: flex-start;
+  width: 100%;
+  border: 1px solid var(--wa-border-soft);
+  background: color-mix(in srgb, var(--wa-card) 94%, var(--wa-soft));
+  color: var(--wa-text);
+  text-align: left;
+}
+
+.svx-wa-record-more-menu > div button:hover {
+  border-color: color-mix(in srgb, var(--wa-primary) 34%, var(--wa-border-soft));
+  background: var(--wa-primary-soft);
+  color: var(--wa-primary);
+}
+
+.svx-wa-record-more-menu > div button.is-danger:hover {
+  border-color: color-mix(in srgb, var(--wa-danger) 34%, var(--wa-border-soft));
+  background: var(--wa-danger-soft);
+  color: var(--wa-danger);
+}
+
+.svx-wa-record-more-note,
+.svx-wa-record-more-issue {
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 12px;
+  background: var(--wa-soft);
+  padding: 9px;
+  color: var(--wa-muted);
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.svx-wa-record-more-issue {
+  border-color: color-mix(in srgb, var(--wa-danger) 24%, var(--wa-border-soft));
+  background: var(--wa-danger-soft);
+}
+
+.svx-wa-record-more-issue strong {
+  color: var(--wa-text);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.svx-wa-record-more-issue span,
+.svx-wa-record-more-issue small {
+  color: var(--wa-muted);
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.35;
 }
 
 
@@ -6275,6 +6390,21 @@ background: var(--wa-soft);
 .svx-wa-row-scale-note {
   background: var(--wa-primary-soft);
   color: var(--wa-primary);
+}
+
+.svx-wa-row-issue-chip {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  margin-top: 7px;
+  border-radius: 999px;
+  background: var(--wa-danger-soft);
+  color: var(--wa-danger);
+  padding: 5px 8px;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.2;
 }
 
 .svx-wa-row-issue {
@@ -6401,5 +6531,274 @@ background: var(--wa-soft);
 
   .svx-wa-record-actions-cell {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+
+/* Premium campaign library ledger redesign */
+.svx-wa-campaign-records-shell {
+  padding: 16px;
+  border-radius: 22px;
+}
+
+.svx-wa-records-head {
+  align-items: center;
+  padding: 2px 2px 16px;
+}
+
+.svx-wa-records-head h3 {
+  font-size: 24px;
+}
+
+.svx-wa-records-summary {
+  grid-template-columns: repeat(2, minmax(88px, 1fr));
+  min-width: 216px;
+}
+
+.svx-wa-records-summary span {
+  min-height: 54px;
+  border-radius: 14px;
+  padding: 9px 11px;
+}
+
+.svx-wa-records-grid {
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.svx-wa-record-column {
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--wa-card) 86%, var(--wa-soft));
+  padding: 12px;
+}
+
+.svx-wa-record-column-head {
+  align-items: center;
+  margin-bottom: 9px;
+}
+
+.svx-wa-list-toolbar {
+  margin-bottom: 9px;
+}
+
+.svx-wa-list-toolbar input,
+.svx-wa-list-toolbar select {
+  min-height: 42px;
+}
+
+.svx-wa-record-table {
+  gap: 6px;
+  max-height: min(620px, 60dvh);
+}
+
+.svx-wa-promotion-row,
+.svx-wa-broadcast-row {
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--wa-soft) 78%, var(--wa-card));
+  padding: 8px 10px;
+  box-shadow: none;
+}
+
+.svx-wa-promotion-row:hover,
+.svx-wa-broadcast-row:hover {
+  transform: none;
+  background: color-mix(in srgb, var(--wa-primary) 4%, var(--wa-soft));
+}
+
+.svx-wa-promotion-row {
+  grid-template-columns: 92px minmax(0, 1fr) 112px 74px;
+  min-height: 62px;
+}
+
+.svx-wa-broadcast-row {
+  grid-template-columns: 124px minmax(220px, 1fr) 154px 172px;
+  min-height: 66px;
+}
+
+.svx-wa-record-status-cell .svx-wa-badge,
+.svx-wa-promotion-row .svx-wa-badge,
+.svx-wa-broadcast-row .svx-wa-badge {
+  min-height: 24px;
+  padding: 0 9px;
+  font-size: 8.8px;
+  letter-spacing: 0.11em;
+}
+
+.svx-wa-record-main-cell > strong {
+  font-size: 13.6px;
+  line-height: 1.16;
+}
+
+.svx-wa-record-main-cell > span {
+  margin-top: 3px;
+  font-size: 11.6px;
+  line-height: 1.25;
+}
+
+.svx-wa-row-warning,
+.svx-wa-row-scale-note,
+.svx-wa-row-issue-chip {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 21px;
+  margin-top: 6px;
+  border-radius: 999px;
+  padding: 0 8px;
+  font-size: 9.8px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.svx-wa-row-warning {
+  border: 1px solid color-mix(in srgb, var(--wa-warning) 28%, transparent);
+  background: color-mix(in srgb, var(--wa-warning) 12%, transparent);
+  color: var(--wa-warning);
+}
+
+.svx-wa-row-scale-note {
+  border: 1px solid color-mix(in srgb, var(--wa-primary) 22%, transparent);
+  background: var(--wa-primary-soft);
+  color: var(--wa-primary);
+}
+
+.svx-wa-row-issue-chip {
+  border: 1px solid color-mix(in srgb, var(--wa-danger) 24%, transparent);
+  background: color-mix(in srgb, var(--wa-danger) 10%, transparent);
+  color: var(--wa-danger);
+}
+
+.svx-wa-record-number-cell,
+.svx-wa-record-number-pair span {
+  border-radius: 12px;
+  padding: 8px 9px;
+}
+
+.svx-wa-record-number-cell small,
+.svx-wa-record-number-pair small {
+  font-size: 8px;
+  letter-spacing: 0.12em;
+}
+
+.svx-wa-record-number-cell strong,
+.svx-wa-record-number-pair strong {
+  font-size: 15px;
+}
+
+.svx-wa-record-number-pair {
+  grid-template-columns: repeat(2, minmax(58px, 1fr));
+  gap: 6px;
+}
+
+.svx-wa-record-actions-cell {
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 6px;
+}
+
+.svx-wa-record-actions-cell .svx-wa-secondary-action,
+.svx-wa-record-actions-cell button,
+.svx-wa-record-actions-cell summary {
+  min-height: 36px;
+  border-radius: 11px;
+  font-size: 11px;
+}
+
+.svx-wa-record-primary-action:disabled {
+  opacity: 0.62;
+  filter: saturate(0.75);
+}
+
+.svx-wa-record-more-menu summary {
+  padding: 0;
+  color: var(--wa-muted);
+  font-size: 0;
+}
+
+.svx-wa-record-more-menu summary span {
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.svx-wa-record-more-menu > div {
+  width: min(280px, calc(100vw - 32px));
+  border-radius: 15px;
+}
+
+.svx-wa-record-cleanup-cell button {
+  min-height: 34px;
+  border-radius: 11px;
+  padding: 0 11px;
+  font-size: 10.8px;
+  font-weight: 900;
+}
+
+:root[data-theme="dark"] .svx-wa-record-column,
+:root[data-theme="dark"] .svx-wa-promotion-row,
+:root[data-theme="dark"] .svx-wa-broadcast-row {
+  background: #111a29;
+}
+
+:root[data-theme="dark"] .svx-wa-promotion-row:hover,
+:root[data-theme="dark"] .svx-wa-broadcast-row:hover {
+  background: #142034;
+}
+
+@media (max-width: 1280px) {
+  .svx-wa-broadcast-row {
+    grid-template-columns: 112px minmax(0, 1fr) 146px 164px;
+  }
+}
+
+@media (max-width: 980px) {
+  .svx-wa-broadcast-row {
+    grid-template-columns: 104px minmax(0, 1fr) 132px;
+  }
+
+  .svx-wa-broadcast-row .svx-wa-record-actions-cell {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) 42px;
+  }
+}
+
+@media (max-width: 680px) {
+  .svx-wa-campaign-records-shell {
+    padding: 12px;
+  }
+
+  .svx-wa-records-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .svx-wa-records-summary {
+    width: 100%;
+  }
+
+  .svx-wa-promotion-row,
+  .svx-wa-broadcast-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .svx-wa-record-number-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-wa-record-actions-cell {
+    grid-template-columns: minmax(0, 1fr) 42px;
+  }
+
+  .svx-wa-row-warning,
+  .svx-wa-row-scale-note,
+  .svx-wa-row-issue-chip {
+    white-space: normal;
+    line-height: 1.25;
+    padding-top: 5px;
+    padding-bottom: 5px;
   }
 }
