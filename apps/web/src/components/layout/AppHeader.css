@@ -109,21 +109,16 @@
   gap: 10px;
   font-size: 14px;
   font-weight: 900;
-  box-shadow:
-    0 18px 42px color-mix(in srgb, var(--color-primary) 26%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  box-shadow: none;
   transition:
     transform 180ms ease,
-    box-shadow 180ms ease,
     filter 180ms ease;
 }
 
 .svx-header-add-button:hover {
   transform: translateY(-1px);
   filter: brightness(1.04);
-  box-shadow:
-    0 24px 58px color-mix(in srgb, var(--color-primary) 32%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.26);
+  box-shadow: none;
 }
 
 .svx-header-action-menu,
