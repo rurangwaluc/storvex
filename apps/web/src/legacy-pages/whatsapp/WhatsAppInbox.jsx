@@ -20,6 +20,7 @@ import {
   createWhatsAppSaleDraft,
   finalizeWhatsAppSaleDraft,
   getWhatsAppConversationSalesSummary,
+  getWhatsAppBroadcastReport,
   listAssignableWhatsAppStaff,
   listWhatsAppAccounts,
   listWhatsAppBroadcasts,
@@ -2170,6 +2171,55 @@ function cleanupBroadcastTitle(broadcast) {
   return "Delete draft broadcast?";
 }
 
+
+function percentLabel(value) {
+  const n = Number(value || 0);
+  const safe = Number.isFinite(n) ? n : 0;
+  return `${safe.toLocaleString("en-US", { maximumFractionDigits: 1 })}%`;
+}
+
+function reportStatusTone(value) {
+  const status = String(value || "").toUpperCase();
+  if (status === "READ") return "success";
+  if (status === "DELIVERED" || status === "SENT") return "info";
+  if (status === "FAILED") return "danger";
+  return "neutral";
+}
+
+function reportInsightTone(value) {
+  const tone = String(value || "").toLowerCase();
+  if (tone === "danger") return "danger";
+  if (tone === "warning") return "warning";
+  if (tone === "success") return "success";
+  if (tone === "info") return "info";
+  return "neutral";
+}
+
+function reportTime(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function recipientDisplayName(recipient) {
+  return cleanText(recipient?.customerName) || cleanText(recipient?.phone) || "WhatsApp customer";
+}
+
+function recipientStatusTime(recipient) {
+  const status = String(recipient?.status || "").toUpperCase();
+  if (status === "READ") return recipient?.readAt || recipient?.deliveredAt || recipient?.sentAt;
+  if (status === "DELIVERED") return recipient?.deliveredAt || recipient?.sentAt;
+  if (status === "FAILED") return recipient?.failedAt || recipient?.sentAt;
+  return recipient?.sentAt;
+}
+
 function cleanupBroadcastMessage(broadcast) {
   const title = broadcast?.promotion?.title || "this broadcast";
   const status = broadcastStatusValue(broadcast);
@@ -2206,6 +2256,8 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   const [busyBroadcastId, setBusyBroadcastId] = useState("");
   const [sendConfirmBroadcast, setSendConfirmBroadcast] = useState(null);
   const [cleanupConfirmAction, setCleanupConfirmAction] = useState(null);
+  const [campaignReport, setCampaignReport] = useState(null);
+  const [loadingReportId, setLoadingReportId] = useState("");
   const [openBroadcastMenu, setOpenBroadcastMenu] = useState(null);
   const [broadcastPreviewCacheVersion, setBroadcastPreviewCacheVersion] = useState(0);
 
@@ -2283,6 +2335,30 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
         placement,
       };
     });
+  }
+
+
+  async function openCampaignReport(broadcast) {
+    if (!broadcast?.id) return;
+
+    setOpenBroadcastMenu(null);
+    setLoadingReportId(broadcast.id);
+
+    try {
+      const result = await getWhatsAppBroadcastReport(broadcast.id, { limit: 250 });
+      setCampaignReport({
+        broadcast: result.broadcast || broadcast,
+        report: result.report || null,
+      });
+    } catch (err) {
+      toast.error(safeError(err, "Campaign report failed"));
+    } finally {
+      setLoadingReportId("");
+    }
+  }
+
+  function closeCampaignReport() {
+    setCampaignReport(null);
   }
 
   function currentTargeting() {
@@ -2996,6 +3072,15 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
                                 </button>
                               ) : null}
 
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={() => openCampaignReport(broadcast)}
+                                disabled={loadingReportId === broadcast.id}
+                              >
+                                {loadingReportId === broadcast.id ? "Opening report..." : "View performance report"}
+                              </button>
+
                               {failureDetails ? (
                                 <div className="svx-wa-record-more-issue">
                                   <strong>Issue</strong>
@@ -3053,6 +3138,109 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
       </div>
 
 
+
+
+      {campaignReport ? (
+        <div className="svx-wa-report-backdrop" role="presentation">
+          <section
+            className="svx-wa-campaign-report-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="wa-campaign-report-title"
+          >
+            <div className="svx-wa-report-head">
+              <div>
+                <Badge tone={toneForStatus(campaignReport.broadcast?.status)}>Campaign report</Badge>
+                <h3 id="wa-campaign-report-title">
+                  {campaignReport.broadcast?.promotion?.title || "Customer broadcast"}
+                </h3>
+                <p>{campaignReport.broadcast?.promotion?.message || "Performance report for this WhatsApp campaign."}</p>
+              </div>
+              <button type="button" onClick={closeCampaignReport}>Close</button>
+            </div>
+
+            <div className="svx-wa-report-body">
+              <div className="svx-wa-report-score-grid">
+                <article>
+                  <span>Audience</span>
+                  <strong>{formatCompactNumber(campaignReport.report?.summary?.attemptedCount || 0)}</strong>
+                  <small>Recipients logged</small>
+                </article>
+                <article>
+                  <span>Delivered</span>
+                  <strong>{percentLabel(campaignReport.report?.summary?.deliveryRate || 0)}</strong>
+                  <small>{formatCompactNumber(campaignReport.report?.summary?.deliveredCount || 0)} customers</small>
+                </article>
+                <article>
+                  <span>Read</span>
+                  <strong>{percentLabel(campaignReport.report?.summary?.readRate || 0)}</strong>
+                  <small>{formatCompactNumber(campaignReport.report?.summary?.readCount || 0)} customers</small>
+                </article>
+                <article className={campaignReport.report?.summary?.failedCount ? "is-danger" : ""}>
+                  <span>Failed</span>
+                  <strong>{formatCompactNumber(campaignReport.report?.summary?.failedCount || 0)}</strong>
+                  <small>{percentLabel(campaignReport.report?.summary?.failureRate || 0)} failure rate</small>
+                </article>
+              </div>
+
+              <div className="svx-wa-report-breakdown">
+                <span><strong>{formatCompactNumber(campaignReport.report?.summary?.sentCount || 0)}</strong> sent</span>
+                <span><strong>{formatCompactNumber(campaignReport.report?.summary?.pendingCount || 0)}</strong> pending</span>
+                <span><strong>{formatCompactNumber(campaignReport.report?.summary?.deliveredCount || 0)}</strong> delivered</span>
+                <span><strong>{formatCompactNumber(campaignReport.report?.summary?.readCount || 0)}</strong> read</span>
+              </div>
+
+              {campaignReport.report?.insights?.length ? (
+                <div className="svx-wa-report-insights">
+                  {campaignReport.report.insights.map((insight, index) => (
+                    <article key={`${insight.title}-${index}`} className={`is-${reportInsightTone(insight.tone)}`}>
+                      <strong>{insight.title}</strong>
+                      <span>{insight.message}</span>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+
+              {campaignReport.report?.summary?.latestFailureReason ? (
+                <div className="svx-wa-report-latest-issue">
+                  <strong>Latest failure reason</strong>
+                  <span>{campaignReport.report.summary.latestFailureReason}</span>
+                </div>
+              ) : null}
+
+              <div className="svx-wa-report-section-head">
+                <div>
+                  <strong>Recipient status</strong>
+                  <span>
+                    Showing {formatCompactNumber(campaignReport.report?.recipients?.length || 0)} recipient{campaignReport.report?.recipients?.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+                {campaignReport.report?.needsAttention?.length ? (
+                  <Badge tone="danger">{formatCompactNumber(campaignReport.report.needsAttention.length)} need attention</Badge>
+                ) : (
+                  <Badge tone="success">No failures</Badge>
+                )}
+              </div>
+
+              <div className="svx-wa-report-recipient-list">
+                {(campaignReport.report?.recipients || []).slice(0, 80).map((recipient) => (
+                  <article key={recipient.id || recipient.messageId || recipient.phone}>
+                    <div>
+                      <strong>{recipientDisplayName(recipient)}</strong>
+                      <span>{recipient.phone || "No phone"}</span>
+                      {recipient.failureReason ? <em>{recipient.failureReason}</em> : null}
+                    </div>
+                    <div>
+                      <Badge tone={reportStatusTone(recipient.status)}>{statusLabel(recipient.status)}</Badge>
+                      <small>{reportTime(recipientStatusTime(recipient))}</small>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
 
       {cleanupConfirmAction ? (
         <div className="svx-wa-modal-backdrop" role="presentation">

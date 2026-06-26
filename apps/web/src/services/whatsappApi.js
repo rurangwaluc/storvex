@@ -606,6 +606,70 @@ function sanitizeBroadcast(value) {
   };
 }
 
+
+function sanitizeBroadcastRecipientStatus(value) {
+  const item = ensureObject(value);
+  if (!Object.keys(item).length) return null;
+
+  return {
+    id: trimString(item.id),
+    messageId: trimString(item.messageId),
+    conversationId: trimString(item.conversationId),
+    customerId: trimString(item.customerId),
+    customerName: trimString(item.customerName),
+    phone: trimString(item.phone),
+    status: toUpper(item.status || "SENT"),
+    sentAt: item.sentAt || null,
+    deliveredAt: item.deliveredAt || null,
+    readAt: item.readAt || null,
+    failedAt: item.failedAt || null,
+    failureReason: trimString(item.failureReason),
+  };
+}
+
+function sanitizeBroadcastInsight(value) {
+  const item = ensureObject(value);
+  if (!Object.keys(item).length) return null;
+
+  return {
+    tone: toUpper(item.tone || "neutral"),
+    title: trimString(item.title),
+    message: trimString(item.message),
+  };
+}
+
+function sanitizeBroadcastReport(value) {
+  const item = ensureObject(value);
+  const summary = ensureObject(item.summary);
+
+  return {
+    generatedAt: item.generatedAt || null,
+    summary: {
+      attemptedCount: toNumber(summary.attemptedCount, 0),
+      sentCount: toNumber(summary.sentCount, 0),
+      deliveredCount: toNumber(summary.deliveredCount, 0),
+      readCount: toNumber(summary.readCount, 0),
+      failedCount: toNumber(summary.failedCount, 0),
+      pendingCount: toNumber(summary.pendingCount, 0),
+      deliveryRate: toNumber(summary.deliveryRate, 0),
+      readRate: toNumber(summary.readRate, 0),
+      failureRate: toNumber(summary.failureRate, 0),
+      latestFailureReason: trimString(summary.latestFailureReason),
+    },
+    rates: {
+      delivery: toNumber(item.rates?.delivery, 0),
+      read: toNumber(item.rates?.read, 0),
+      failure: toNumber(item.rates?.failure, 0),
+      pending: toNumber(item.rates?.pending, 0),
+    },
+    recipients: ensureArray(item.recipients).map(sanitizeBroadcastRecipientStatus).filter(Boolean),
+    needsAttention: ensureArray(item.needsAttention).map(sanitizeBroadcastRecipientStatus).filter(Boolean),
+    insights: ensureArray(item.insights).map(sanitizeBroadcastInsight).filter(Boolean),
+    hasMoreRecipients: toBoolean(item.hasMoreRecipients),
+    limit: toNumber(item.limit, 0),
+  };
+}
+
 function sanitizeBroadcastSummary(value) {
   const item = ensureObject(value);
 
@@ -1123,6 +1187,17 @@ export async function getWhatsAppBroadcast(broadcastId) {
   };
 }
 
+
+export async function getWhatsAppBroadcastReport(broadcastId, params = {}) {
+  const id = trimString(broadcastId);
+  const data = await apiFetch(`/whatsapp/broadcasts/${id}/report${buildQuery(params)}`);
+
+  return {
+    broadcast: sanitizeBroadcast(data?.broadcast),
+    report: sanitizeBroadcastReport(data?.report),
+  };
+}
+
 export async function updateWhatsAppBroadcast(broadcastId, payload) {
   const id = trimString(broadcastId);
   const source = ensureObject(payload);
@@ -1262,6 +1337,7 @@ export {
   sanitizeAssignedUser,
   sanitizeBranch,
   sanitizeBroadcast,
+  sanitizeBroadcastReport,
   sanitizeBroadcastSummary,
   sanitizeCashMovement,
   sanitizeConversation,

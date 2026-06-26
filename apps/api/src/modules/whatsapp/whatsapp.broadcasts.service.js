@@ -1584,6 +1584,168 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
   };
 }
 
+
+function reportRate(numerator, denominator) {
+  const top = Number(numerator || 0);
+  const bottom = Number(denominator || 0);
+
+  if (!bottom || !Number.isFinite(top) || !Number.isFinite(bottom)) return 0;
+
+  return Math.round((top / bottom) * 1000) / 10;
+}
+
+function publicRecipientStatus(message) {
+  const status = String(message?.status || "SENT").toUpperCase();
+  const conversation = message?.conversation || {};
+  const customer = conversation.customer || null;
+
+  return {
+    id: message.id,
+    messageId: message.messageId || null,
+    conversationId: message.conversationId || conversation.id || null,
+    customerId: customer?.id || null,
+    customerName: customer?.name || null,
+    phone: customer?.phone || conversation.phone || null,
+    status,
+    sentAt: message.createdAt || null,
+    deliveredAt: message.deliveredAt || null,
+    readAt: message.readAt || null,
+    failedAt: message.failedAt || null,
+    failureReason: message.failureReason || null,
+  };
+}
+
+function buildCampaignInsights({ broadcast, analytics, recipients }) {
+  const failed = Number(analytics.failedCount || 0);
+  const pending = Number(analytics.pendingCount || 0);
+  const sent = Number(analytics.sentCount || 0);
+  const read = Number(analytics.readCount || 0);
+  const delivered = Number(analytics.deliveredCount || 0);
+  const attempted = Number(analytics.attemptedCount || 0);
+  const items = [];
+
+  if (failed > 0) {
+    items.push({
+      tone: "danger",
+      title: "Needs attention",
+      message: `${failed} customer${failed === 1 ? "" : "s"} failed. Review phone numbers, template approval, and WhatsApp account setup.`,
+    });
+  }
+
+  if (pending > 0 && String(broadcast?.status || "").toUpperCase() === "SENT") {
+    items.push({
+      tone: "warning",
+      title: "Still waiting",
+      message: `${pending} sent message${pending === 1 ? "" : "s"} have not delivered or failed yet. WhatsApp can update these later.`,
+    });
+  }
+
+  if (delivered > 0 && read === 0) {
+    items.push({
+      tone: "info",
+      title: "Delivered, not read yet",
+      message: "Messages reached customers, but read receipts have not arrived yet.",
+    });
+  }
+
+  if (attempted > 0 && failed === 0 && pending === 0) {
+    items.push({
+      tone: "success",
+      title: "Healthy delivery",
+      message: "No failed recipients are currently recorded for this campaign.",
+    });
+  }
+
+  if (attempted === 0) {
+    items.push({
+      tone: "neutral",
+      title: "No recipients recorded",
+      message: "This campaign has not logged any recipient messages yet.",
+    });
+  }
+
+  return items.slice(0, 4);
+}
+
+async function getBroadcastReport({ tenantId, broadcastId, limit = 200 }) {
+  await ensureTenantExists(tenantId);
+
+  const broadcast = await getBroadcastOrThrow(tenantId, broadcastId);
+  const take = clampLimit(limit, 200, 1000);
+
+  const messages = await withPrismaRetry(() =>
+    prisma.whatsAppMessage.findMany({
+      where: {
+        tenantId,
+        broadcastId: String(broadcastId),
+        direction: "OUTBOUND",
+      },
+      select: {
+        id: true,
+        messageId: true,
+        conversationId: true,
+        status: true,
+        deliveredAt: true,
+        readAt: true,
+        failedAt: true,
+        failureReason: true,
+        createdAt: true,
+        conversation: {
+          select: {
+            id: true,
+            phone: true,
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [{ createdAt: "desc" }],
+      take,
+    }),
+  );
+
+  const analytics = computeBroadcastAnalytics(messages);
+  const recipients = messages.map(publicRecipientStatus);
+  const needsAttention = recipients.filter((recipient) => recipient.status === "FAILED");
+  const latestFailure = latestBroadcastFailure(messages);
+
+  return {
+    broadcast: buildPublicBroadcast({ ...broadcast, messages }),
+    report: {
+      generatedAt: new Date().toISOString(),
+      summary: {
+        attemptedCount: analytics.attemptedCount,
+        sentCount: analytics.sentCount,
+        deliveredCount: analytics.deliveredCount,
+        readCount: analytics.readCount,
+        failedCount: analytics.failedCount,
+        pendingCount: analytics.pendingCount,
+        deliveryRate: analytics.deliveryRate,
+        readRate: analytics.readRate,
+        failureRate: analytics.failureRate,
+        latestFailureReason: latestFailure,
+      },
+      rates: {
+        delivery: analytics.deliveryRate,
+        read: analytics.readRate,
+        failure: analytics.failureRate,
+        pending: reportRate(analytics.pendingCount, analytics.sentCount),
+      },
+      recipients,
+      needsAttention,
+      insights: buildCampaignInsights({ broadcast, analytics, recipients }),
+      hasMoreRecipients: messages.length >= take,
+      limit: take,
+    },
+  };
+}
+
 async function processQueuedBroadcasts({
   limit = 2,
   recipientLimit = BROADCAST_WORKER_DEFAULT_LIMIT,
@@ -1723,5 +1885,6 @@ module.exports = {
   deleteBroadcast,
   queueBroadcast,
   sendBroadcastNow,
+  getBroadcastReport,
   processQueuedBroadcasts,
 };

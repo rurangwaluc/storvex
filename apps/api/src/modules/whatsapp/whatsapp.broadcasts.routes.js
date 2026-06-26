@@ -90,6 +90,13 @@ router.post("/broadcasts", controller.createBroadcast);
 router.post("/broadcasts/recipients/preview", controller.previewBroadcastRecipients);
 
 /**
+ * GET /api/whatsapp/broadcasts/:id/report
+ *
+ * Returns campaign performance report and recipient-level delivery statuses.
+ */
+router.get("/broadcasts/:id/report", controller.getBroadcastReport);
+
+/**
  * GET /api/whatsapp/broadcasts/:id
  */
 router.get("/broadcasts/:id", controller.getBroadcast);

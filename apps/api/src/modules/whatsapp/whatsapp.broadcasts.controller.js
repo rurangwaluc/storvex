@@ -293,6 +293,28 @@ async function getBroadcast(req, res) {
   }
 }
 
+
+async function getBroadcastReport(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    const { id } = req.params;
+
+    const result = await service.getBroadcastReport({
+      tenantId,
+      broadcastId: id,
+      limit: req.query?.limit || 200,
+    });
+
+    return res.json({
+      ok: true,
+      ...result,
+    });
+  } catch (err) {
+    console.error("getBroadcastReport error:", err);
+    return mapBroadcastError(err, res, "Failed to fetch WhatsApp broadcast report");
+  }
+}
+
 async function createBroadcast(req, res) {
   try {
     const tenantId = getTenantId(req);
@@ -409,6 +431,7 @@ module.exports = {
   listBroadcasts,
   previewBroadcastRecipients,
   getBroadcast,
+  getBroadcastReport,
   createBroadcast,
   updateBroadcast,
   deleteBroadcast,
