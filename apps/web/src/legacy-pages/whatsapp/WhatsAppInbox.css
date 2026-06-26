@@ -7658,3 +7658,54 @@ background: var(--wa-soft);
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Account setup metric polish: clearer icons and no truncated status text */
+.svx-wa-account-health-grid .svx-wa-metric {
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 88px;
+  padding: 14px;
+}
+
+.svx-wa-account-health-grid .svx-wa-metric > .svx-wa-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+}
+
+.svx-wa-account-health-grid .svx-wa-metric > .svx-wa-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.svx-wa-account-health-grid .svx-wa-metric strong {
+  overflow: visible;
+  font-size: clamp(19px, 1.55vw, 25px);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.svx-wa-account-health-grid .svx-wa-metric span,
+.svx-wa-account-health-grid .svx-wa-metric small {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+@media (max-width: 760px) {
+  .svx-wa-account-health-grid .svx-wa-metric {
+    grid-template-columns: 46px minmax(0, 1fr);
+    min-height: 82px;
+  }
+
+  .svx-wa-account-health-grid .svx-wa-metric > .svx-wa-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .svx-wa-account-health-grid .svx-wa-metric strong {
+    font-size: 20px;
+  }
+}

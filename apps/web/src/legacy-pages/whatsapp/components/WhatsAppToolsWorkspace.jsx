@@ -14,6 +14,99 @@ import {
 import { cleanText, customerName, cx, formatDay, latestPreview, money, normalizeProductList, safeError, statusLabel, toneForStatus } from "../lib/whatsappInbox.utils";
 import { Badge, EmptyState, MetricCard, SettingsIcon } from "./WhatsAppInboxPanels";
 
+function LinkSignalIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M8.5 12.5l-1.2 1.2a3.4 3.4 0 004.8 4.8l2.1-2.1a3.4 3.4 0 000-4.8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M15.5 11.5l1.2-1.2a3.4 3.4 0 00-4.8-4.8L9.8 7.6a3.4 3.4 0 000 4.8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.8 14.2l4.4-4.4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function StoreNumberIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M5 10h14l-1-5H6l-1 5z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7 10v9h10v-9M9 14h6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MetaIdsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M5 7.5A2.5 2.5 0 017.5 5h9A2.5 2.5 0 0119 7.5v9a2.5 2.5 0 01-2.5 2.5h-9A2.5 2.5 0 015 16.5v-9z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M8.5 10h7M8.5 14h4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function SecureKeyIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M8.5 14.5a4 4 0 112.7-6.95A4 4 0 018.5 14.5z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M12 11h8m-3 0v3m-3-3v2"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function SetupWorkspace({ accounts, onRefresh }) {
   const account = accounts[0] || null;
 
@@ -151,10 +244,34 @@ export function SetupWorkspace({ accounts, onRefresh }) {
       </div>
 
       <div className="svx-wa-account-health-grid">
-        <MetricCard label="Connection" value={healthLabel} note={isLive ? "Live for customers" : "Review setup"} tone={healthTone} />
-        <MetricCard label="Store number" value={hasPhone ? "Saved" : "Missing"} note={phoneNumber || account?.phoneNumber || "Required"} tone={hasPhone ? "success" : "warning"} />
-        <MetricCard label="Meta setup" value={hasPhoneNumberId && hasWabaId ? "Ready" : "Incomplete"} note="Phone ID + WABA ID" tone={hasPhoneNumberId && hasWabaId ? "success" : "warning"} />
-        <MetricCard label="Token" value={hasToken ? "Saved" : "Missing"} note={account?.hasAccessToken ? "Stored securely" : "Required for sending"} tone={hasToken ? "success" : "warning"} />
+        <MetricCard
+          label="Connection"
+          value={isLive ? "Live" : isConnected ? "Ready" : hasSavedAccount ? "Review" : "Not set"}
+          note={isLive ? "Live for customers" : isConnected ? "Ready to activate" : "Finish setup"}
+          tone={healthTone}
+          icon={<LinkSignalIcon />}
+        />
+        <MetricCard
+          label="Store number"
+          value={hasPhone ? "Saved" : "Add number"}
+          note={phoneNumber || account?.phoneNumber || "Required"}
+          tone={hasPhone ? "success" : "warning"}
+          icon={<StoreNumberIcon />}
+        />
+        <MetricCard
+          label="Meta IDs"
+          value={hasPhoneNumberId && hasWabaId ? "Ready" : "Add IDs"}
+          note="Phone ID + WABA"
+          tone={hasPhoneNumberId && hasWabaId ? "success" : "warning"}
+          icon={<MetaIdsIcon />}
+        />
+        <MetricCard
+          label="Access token"
+          value={hasToken ? "Saved" : "Add token"}
+          note={account?.hasAccessToken ? "Stored securely" : "Required for sending"}
+          tone={hasToken ? "success" : "warning"}
+          icon={<SecureKeyIcon />}
+        />
       </div>
 
       <div className="svx-wa-setup-layout">
