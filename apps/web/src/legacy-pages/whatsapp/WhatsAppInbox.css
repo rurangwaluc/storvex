@@ -346,6 +346,17 @@
   line-height: 1.25;
 }
 
+.svx-whatsapp-metric-title,
+.svx-wa-stat-title,
+.svx-wa-summary-card strong,
+.svx-wa-kpi-card strong {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  line-height: 1.18;
+  word-break: normal;
+}
+
 /* Tabs */
 .svx-wa-module-tabs {
   display: flex;
