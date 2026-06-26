@@ -1319,3 +1319,210 @@
     border-radius: 14px;
   }
 }
+
+
+/* -------------------------------------------------------------------------- */
+/* WhatsApp accounts owner-safe setup polish                                  */
+/* -------------------------------------------------------------------------- */
+
+.svx-wa-account-readiness-grid {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.82fr) minmax(0, 1.18fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.svx-wa-setup-progress-card,
+.svx-wa-owner-safe-card {
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.svx-wa-progress-track {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--wa-soft);
+  box-shadow: inset 0 0 0 1px var(--wa-border-soft);
+}
+
+.svx-wa-progress-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--wa-success), var(--wa-primary));
+  transition: width 220ms var(--wa-ease);
+}
+
+.svx-wa-setup-step-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.svx-wa-setup-step {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: start;
+  gap: 11px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 14px;
+  background: var(--wa-soft);
+  padding: 12px;
+}
+
+.svx-wa-setup-step.is-done {
+  background: var(--wa-success-soft);
+  border-color: color-mix(in srgb, var(--wa-success) 26%, var(--wa-border-soft));
+}
+
+.svx-wa-setup-check {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--wa-card);
+  color: var(--wa-muted-2);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: inset 0 0 0 1px var(--wa-border-soft);
+}
+
+.svx-wa-setup-step.is-done .svx-wa-setup-check {
+  background: var(--wa-success);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.svx-wa-setup-step strong {
+  display: block;
+  color: var(--wa-text);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.svx-wa-setup-step small {
+  display: block;
+  margin-top: 4px;
+  color: var(--wa-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.svx-wa-owner-safe-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.svx-wa-health-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 16px;
+  background: var(--wa-soft);
+  padding: 14px;
+}
+
+.svx-wa-health-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+}
+
+.svx-wa-health-head > div {
+  min-width: 0;
+}
+
+.svx-wa-health-head strong {
+  display: block;
+  color: var(--wa-text);
+  font-size: 13.5px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.svx-wa-health-head span {
+  display: block;
+  margin-top: 4px;
+  color: var(--wa-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.svx-wa-health-missing {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.svx-wa-health-missing span {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--wa-warning) 22%, var(--wa-border-soft));
+  border-radius: 999px;
+  background: var(--wa-warning-soft);
+  color: var(--wa-warning);
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+@media (max-width: 1180px) {
+  .svx-wa-account-readiness-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-wa-account-readiness-grid,
+  .svx-wa-setup-progress-card,
+  .svx-wa-owner-safe-card {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .svx-wa-setup-progress-card,
+  .svx-wa-owner-safe-card {
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .svx-wa-owner-safe-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-wa-health-head {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .svx-wa-health-head .svx-wa-badge {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-wa-account-readiness-grid,
+  .svx-wa-owner-safe-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-wa-setup-progress-card,
+  .svx-wa-owner-safe-card,
+  .svx-wa-setup-step,
+  .svx-wa-health-panel {
+    border-radius: 14px;
+  }
+}

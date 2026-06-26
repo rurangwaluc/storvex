@@ -71,6 +71,77 @@ function isAccountReady(account) {
   return Boolean(account?.isActive && account?.hasAccessToken && account?.phoneNumberId);
 }
 
+
+function getAccountSetupSteps({ account = null, form = null, mode = "create" } = {}) {
+  const phoneNumber = String(form?.phoneNumber || account?.phoneNumber || "").trim();
+  const businessName = String(form?.businessName || account?.businessName || "").trim();
+  const phoneNumberId = String(form?.phoneNumberId || account?.phoneNumberId || "").trim();
+  const wabaId = String(form?.wabaId || account?.wabaId || "").trim();
+  const hasAccessToken = Boolean(
+    String(form?.accessToken || "").trim() || account?.hasAccessToken
+  );
+  const webhookVerifyToken = String(
+    form?.webhookVerifyToken || account?.webhookVerifyToken || ""
+  ).trim();
+  const appSecret = String(form?.appSecret || account?.appSecret || "").trim();
+  const isActive = Boolean(form ? form.isActive : account?.isActive);
+
+  return [
+    {
+      key: "phone",
+      label: "Business phone saved",
+      help: "Use the official store WhatsApp number customers already trust.",
+      done: Boolean(phoneNumber),
+    },
+    {
+      key: "identity",
+      label: "Business identity added",
+      help: "Add the store name and WhatsApp Business Account ID for easier support.",
+      done: Boolean(businessName && wabaId),
+    },
+    {
+      key: "phoneNumberId",
+      label: "Meta phone number ID added",
+      help: "Required before Storvex can send and receive WhatsApp messages.",
+      done: Boolean(phoneNumberId),
+    },
+    {
+      key: "accessToken",
+      label: mode === "edit" ? "Access token saved" : "Access token ready",
+      help: mode === "edit"
+        ? "Leave the token field empty only when the current token is already saved."
+        : "Paste the approved WhatsApp token before activating live sending.",
+      done: hasAccessToken,
+    },
+    {
+      key: "webhook",
+      label: "Webhook verification ready",
+      help: "Verify token and app secret protect incoming WhatsApp events.",
+      done: Boolean(webhookVerifyToken && appSecret),
+    },
+    {
+      key: "active",
+      label: "Account activated",
+      help: "Keep inactive until the required setup values are complete.",
+      done: isActive,
+    },
+  ];
+}
+
+function computeSetupScore(steps) {
+  const total = Array.isArray(steps) && steps.length ? steps.length : 1;
+  const done = steps.filter((step) => step.done).length;
+  const percent = Math.round((done / total) * 100);
+
+  return { total, done, percent };
+}
+
+function setupTone(percent) {
+  if (percent >= 85) return "success";
+  if (percent >= 50) return "warning";
+  return "neutral";
+}
+
 function blankForm() {
   return {
     phoneNumber: "",
@@ -97,7 +168,7 @@ function sanitizePayload(form) {
   };
 }
 
-function validateForm(form) {
+function validateForm(form, existingAccount = null) {
   const phone = normalizePhoneDigits(form.phoneNumber);
 
   if (!phone) return "Business phone number is required";
@@ -106,7 +177,11 @@ function validateForm(form) {
     return "Phone number ID is required before activating WhatsApp";
   }
 
-  if (form.isActive && !String(form.accessToken || "").trim()) {
+  if (
+    form.isActive &&
+    !String(form.accessToken || "").trim() &&
+    !existingAccount?.hasAccessToken
+  ) {
     return "Access token is required before activating WhatsApp";
   }
 
@@ -306,6 +381,83 @@ function RuleCard({ icon, title, text, tone = "info" }) {
   );
 }
 
+
+function SetupStepList({ steps }) {
+  return (
+    <div className="svx-wa-setup-step-list">
+      {steps.map((step) => (
+        <div key={step.key} className={cx("svx-wa-setup-step", step.done && "is-done")}>
+          <span className="svx-wa-setup-check">{step.done ? "✓" : ""}</span>
+          <div>
+            <strong>{step.label}</strong>
+            <small>{step.help}</small>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SetupProgressCard({ account, form, mode }) {
+  const steps = getAccountSetupSteps({ account, form, mode });
+  const score = computeSetupScore(steps);
+  const tone = setupTone(score.percent);
+
+  return (
+    <section className="svx-wa-card svx-wa-setup-progress-card">
+      <div className="svx-wa-section-head">
+        <div>
+          <p>Setup progress</p>
+          <h2>{score.percent}% ready</h2>
+        </div>
+        <Badge tone={tone}>{score.done}/{score.total}</Badge>
+      </div>
+
+      <div className="svx-wa-progress-track" aria-hidden="true">
+        <span style={{ width: `${score.percent}%` }} />
+      </div>
+
+      <SetupStepList steps={steps} />
+    </section>
+  );
+}
+
+function AccountHealthPanel({ account }) {
+  if (!account) return null;
+
+  const steps = getAccountSetupSteps({ account });
+  const score = computeSetupScore(steps);
+  const missing = steps.filter((step) => !step.done);
+  const ready = isAccountReady(account);
+
+  return (
+    <section className="svx-wa-health-panel">
+      <div className="svx-wa-health-head">
+        <IconShell tone={ready ? "success" : "warning"}>
+          <ShieldIcon />
+        </IconShell>
+        <div>
+          <strong>{ready ? "Ready for live WhatsApp" : "Setup needs attention"}</strong>
+          <span>
+            {ready
+              ? "This account can support inbox replies, sale drafts and broadcasts."
+              : "Finish the missing items before relying on this account for customer messages."}
+          </span>
+        </div>
+        <Badge tone={setupTone(score.percent)}>{score.percent}%</Badge>
+      </div>
+
+      {missing.length ? (
+        <div className="svx-wa-health-missing">
+          {missing.slice(0, 3).map((step) => (
+            <span key={step.key}>{step.label}</span>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function EmptyState({ title, text }) {
   return (
     <div className="svx-wa-empty">
@@ -455,6 +607,8 @@ function AccountDetailsPanel({ account, onEdit, onCreate }) {
           </small>
         </div>
       </div>
+
+      <AccountHealthPanel account={account} />
 
       <div className="svx-wa-account-detail-list">
         <AccountDetailRow icon={<ChannelIcon />} label="Business phone" value={account.phoneNumber} />
@@ -636,7 +790,7 @@ export default function WhatsAppAccounts() {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    const error = validateForm(form);
+    const error = validateForm(form, mode === "edit" ? selectedAccount : null);
 
     if (error) {
       toast.error(error);
@@ -801,6 +955,41 @@ export default function WhatsAppAccounts() {
             tone="warning"
           />
         </div>
+      </section>
+
+      <section className="svx-wa-account-readiness-grid">
+        <SetupProgressCard
+          account={mode === "edit" ? selectedAccount : null}
+          form={form}
+          mode={mode}
+        />
+
+        <section className="svx-wa-card svx-wa-owner-safe-card">
+          <div className="svx-wa-section-head">
+            <div>
+              <p>Owner-safe setup</p>
+              <h2>Connect only when ready</h2>
+            </div>
+            <Badge tone={summary.ready > 0 ? "success" : "warning"}>
+              {summary.ready > 0 ? "Connected" : "Not ready"}
+            </Badge>
+          </div>
+
+          <div className="svx-wa-owner-safe-grid">
+            <RuleCard
+              icon={<TokenIcon />}
+              title="Secrets stay private"
+              text="Saved tokens are hidden. When editing, empty secret fields keep the current saved values."
+              tone="info"
+            />
+            <RuleCard
+              icon={<ShieldIcon />}
+              title="Activate after verification"
+              text="Keep the account inactive until the phone number ID and access token are confirmed."
+              tone="success"
+            />
+          </div>
+        </section>
       </section>
 
       <section className="svx-wa-metric-grid">
