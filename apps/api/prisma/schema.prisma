@@ -1019,6 +1019,9 @@ model WhatsAppMessage {
   @@index([tenantId])
   @@index([accountId])
   @@index([broadcastId])
+  @@index([broadcastId, status])
+  @@index([tenantId, status])
+  @@index([messageId])
 }
 
 model Promotion {

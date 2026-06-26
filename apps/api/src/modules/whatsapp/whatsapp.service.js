@@ -236,7 +236,7 @@ async function handleMessageStatuses({ tenantId, statuses }) {
     };
 
     try {
-      await prisma.whatsAppMessage.updateMany({
+      const result = await prisma.whatsAppMessage.updateMany({
         where: {
           tenantId,
           messageId,
@@ -244,6 +244,22 @@ async function handleMessageStatuses({ tenantId, statuses }) {
         },
         data,
       });
+
+      if (result.count > 0) {
+        await createAuditLogSafe({
+          tenantId,
+          entity: "WHATSAPP_MESSAGE",
+          entityId: messageId,
+          action: `WHATSAPP_MESSAGE_${nextStatus}`,
+          metadata: {
+            providerMessageId: messageId,
+            status: nextStatus,
+            at: at.toISOString(),
+            recipientId: item?.recipientId || null,
+            failureReason,
+          },
+        });
+      }
     } catch (err) {
       console.error("WHATSAPP: message status update failed:", err?.message || err);
     }

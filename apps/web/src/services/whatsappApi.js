@@ -416,10 +416,6 @@ function sanitizePromotion(value) {
     categoryDescription: trimString(item.categoryDescription),
     createdById: trimString(item.createdById),
     sentAt: item.sentAt || null,
-    archivedAt: item.archivedAt || null,
-    archivedById: trimString(item.archivedById),
-    archiveReason: trimString(item.archiveReason),
-    isArchived: toBoolean(item.isArchived || item.archivedAt),
     createdAt: item.createdAt || null,
     updatedAt: item.updatedAt || null,
     status: toUpper(item.status || (item.sentAt ? "SENT" : "DRAFT")),
@@ -560,12 +556,6 @@ function sanitizeBroadcast(value) {
     createdById: trimString(item.createdById),
     queuedAt: item.queuedAt || null,
     sentAt: item.sentAt || null,
-    archivedAt: item.archivedAt || null,
-    archivedById: trimString(item.archivedById),
-    archiveReason: trimString(item.archiveReason),
-    cancelledAt: item.cancelledAt || null,
-    cancelledById: trimString(item.cancelledById),
-    isArchived: toBoolean(item.isArchived || item.archivedAt),
     createdAt: item.createdAt || null,
     businessCategory: toUpper(item.businessCategory || item.category || item.targetingPreview?.category),
     supportedCategories: ensureArray(item.supportedCategories).map(toUpper).filter(Boolean),
@@ -580,7 +570,27 @@ function sanitizeBroadcast(value) {
         }
       : null,
     recipientCount: toNumber(item.recipientCount, 0),
-    deliveredCount: toNumber(item.deliveredCount, 0),
+    attemptedCount: toNumber(item.attemptedCount || item.analytics?.attemptedCount || item.recipientCount, 0),
+    sentCount: toNumber(item.sentCount || item.analytics?.sentCount || item.deliveredCount, 0),
+    deliveredCount: toNumber(item.deliveredCount || item.analytics?.deliveredCount, 0),
+    readCount: toNumber(item.readCount || item.analytics?.readCount, 0),
+    failedCount: toNumber(item.failedCount || item.analytics?.failedCount, 0),
+    pendingCount: toNumber(item.pendingCount || item.analytics?.pendingCount, 0),
+    deliveryRate: toNumber(item.deliveryRate || item.analytics?.deliveryRate, 0),
+    readRate: toNumber(item.readRate || item.analytics?.readRate, 0),
+    failureRate: toNumber(item.failureRate || item.analytics?.failureRate, 0),
+    latestFailureReason: trimString(item.latestFailureReason),
+    analytics: {
+      attemptedCount: toNumber(item.analytics?.attemptedCount || item.attemptedCount || item.recipientCount, 0),
+      sentCount: toNumber(item.analytics?.sentCount || item.sentCount || item.deliveredCount, 0),
+      deliveredCount: toNumber(item.analytics?.deliveredCount || item.deliveredCount, 0),
+      readCount: toNumber(item.analytics?.readCount || item.readCount, 0),
+      failedCount: toNumber(item.analytics?.failedCount || item.failedCount, 0),
+      pendingCount: toNumber(item.analytics?.pendingCount || item.pendingCount, 0),
+      deliveryRate: toNumber(item.analytics?.deliveryRate || item.deliveryRate, 0),
+      readRate: toNumber(item.analytics?.readRate || item.readRate, 0),
+      failureRate: toNumber(item.analytics?.failureRate || item.failureRate, 0),
+    },
     targetingPreview: item.targetingPreview
       ? {
           mode: toUpper(item.targetingPreview.mode || "ALL_OPTED_IN"),
@@ -1056,7 +1066,7 @@ export async function updateWhatsAppPromotion(promotionId, payload) {
   };
 }
 
-export async function archiveWhatsAppPromotion(promotionId) {
+export async function deleteWhatsAppPromotion(promotionId) {
   const id = trimString(promotionId);
 
   const data = await apiFetch(`/whatsapp/promotions/${id}`, {
@@ -1066,7 +1076,6 @@ export async function archiveWhatsAppPromotion(promotionId) {
   return {
     ok: toBoolean(data?.ok),
     deleted: toBoolean(data?.deleted),
-    archived: toBoolean(data?.archived),
     promotionId: trimString(data?.promotionId || id),
     message: trimString(data?.message),
   };
@@ -1135,7 +1144,7 @@ export async function updateWhatsAppBroadcast(broadcastId, payload) {
 }
 
 
-export async function archiveWhatsAppBroadcast(broadcastId) {
+export async function deleteWhatsAppBroadcast(broadcastId) {
   const id = trimString(broadcastId);
 
   const data = await apiFetch(`/whatsapp/broadcasts/${id}`, {
@@ -1145,10 +1154,8 @@ export async function archiveWhatsAppBroadcast(broadcastId) {
   return {
     ok: toBoolean(data?.ok),
     deleted: toBoolean(data?.deleted),
-    archived: toBoolean(data?.archived),
     broadcastId: trimString(data?.broadcastId || id),
     message: trimString(data?.message),
-    broadcast: sanitizeBroadcast(data?.broadcast),
   };
 }
 
@@ -1235,9 +1242,6 @@ export async function getWhatsAppConversationSalesSummary(conversationId) {
     proformas,
   };
 }
-
-export const deleteWhatsAppPromotion = archiveWhatsAppPromotion;
-export const deleteWhatsAppBroadcast = archiveWhatsAppBroadcast;
 
 /**
  * Stable aliases

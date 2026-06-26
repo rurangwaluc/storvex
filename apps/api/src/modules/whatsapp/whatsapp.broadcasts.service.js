@@ -265,15 +265,67 @@ function broadcastIncludeShape() {
         id: true,
         messageId: true,
         conversationId: true,
+        status: true,
+        deliveredAt: true,
+        readAt: true,
+        failedAt: true,
+        failureReason: true,
+        createdAt: true,
       },
     },
   };
+}
+
+function computeBroadcastAnalytics(messages = []) {
+  const list = Array.isArray(messages) ? messages : [];
+  const attemptedCount = list.length;
+  const sentCount = list.filter((message) => {
+    const status = String(message?.status || "").toUpperCase();
+    return status === "SENT" || status === "DELIVERED" || status === "READ";
+  }).length;
+  const deliveredCount = list.filter((message) => {
+    const status = String(message?.status || "").toUpperCase();
+    return status === "DELIVERED" || status === "READ" || Boolean(message?.deliveredAt);
+  }).length;
+  const readCount = list.filter((message) => {
+    const status = String(message?.status || "").toUpperCase();
+    return status === "READ" || Boolean(message?.readAt);
+  }).length;
+  const failedCount = list.filter((message) => {
+    const status = String(message?.status || "").toUpperCase();
+    return status === "FAILED" || Boolean(message?.failedAt);
+  }).length;
+  const pendingCount = Math.max(0, sentCount - deliveredCount - failedCount);
+  const deliveryRate = sentCount > 0 ? Math.round((deliveredCount / sentCount) * 1000) / 10 : 0;
+  const readRate = deliveredCount > 0 ? Math.round((readCount / deliveredCount) * 1000) / 10 : 0;
+  const failureRate = attemptedCount > 0 ? Math.round((failedCount / attemptedCount) * 1000) / 10 : 0;
+
+  return {
+    attemptedCount,
+    sentCount,
+    deliveredCount,
+    readCount,
+    failedCount,
+    pendingCount,
+    deliveryRate,
+    readRate,
+    failureRate,
+  };
+}
+
+function latestBroadcastFailure(messages = []) {
+  const failed = (Array.isArray(messages) ? messages : [])
+    .filter((message) => String(message?.status || "").toUpperCase() === "FAILED" || message?.failedAt)
+    .sort((a, b) => new Date(b.failedAt || b.createdAt || 0).getTime() - new Date(a.failedAt || a.createdAt || 0).getTime());
+
+  return failed[0]?.failureReason || null;
 }
 
 function buildPublicBroadcast(broadcast) {
   if (!broadcast) return null;
 
   const messages = Array.isArray(broadcast.messages) ? broadcast.messages : [];
+  const analytics = computeBroadcastAnalytics(messages);
 
   return {
     id: broadcast.id,
@@ -347,8 +399,18 @@ function buildPublicBroadcast(broadcast) {
         }
       : null,
 
-    recipientCount: messages.length,
-    deliveredCount: messages.filter((m) => String(m.messageId || "").trim()).length,
+    recipientCount: analytics.attemptedCount,
+    attemptedCount: analytics.attemptedCount,
+    sentCount: analytics.sentCount,
+    deliveredCount: analytics.deliveredCount,
+    readCount: analytics.readCount,
+    failedCount: analytics.failedCount,
+    pendingCount: analytics.pendingCount,
+    deliveryRate: analytics.deliveryRate,
+    readRate: analytics.readRate,
+    failureRate: analytics.failureRate,
+    latestFailureReason: latestBroadcastFailure(messages),
+    analytics,
   };
 }
 
@@ -1304,7 +1366,14 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
         messages: {
           select: {
             id: true,
+            messageId: true,
             conversationId: true,
+            status: true,
+            deliveredAt: true,
+            readAt: true,
+            failedAt: true,
+            failureReason: true,
+            createdAt: true,
           },
         },
       },
@@ -1349,7 +1418,7 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
   );
 
   let attempted = 0;
-  let delivered = 0;
+  let sent = 0;
   let failed = 0;
   let skippedDuplicate = 0;
 
@@ -1357,9 +1426,10 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
 
   for (const recipient of recipients) {
     attempted += 1;
+    let conversation = null;
 
     try {
-      const conversation = await findOrCreateConversation({
+      conversation = await findOrCreateConversation({
         tenantId,
         account,
         recipient,
@@ -1395,6 +1465,7 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
             type: "TEXT",
             textContent: broadcast.promotion.message || "",
             messageId: providerMessageId,
+            status: "SENT",
           },
         }),
       );
@@ -1409,24 +1480,49 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
         }),
       );
 
-      delivered += 1;
+      sent += 1;
       sentConversationIds.add(conversation.id);
     } catch (err) {
       console.error("sendBroadcastNow recipient send error:", err?.message || err);
       failed += 1;
 
+      const failureMessage = friendlySendFailure(err);
+
       failures.push({
         customerId: recipient.id,
         phone: recipient.phone,
-        message: friendlySendFailure(err),
+        message: failureMessage,
       });
+
+      if (conversation?.id) {
+        try {
+          await withPrismaRetry(() =>
+            prisma.whatsAppMessage.create({
+              data: {
+                conversationId: conversation.id,
+                tenantId,
+                accountId: account.id,
+                broadcastId: broadcast.id,
+                direction: "OUTBOUND",
+                type: "TEXT",
+                textContent: broadcast.promotion.message || "",
+                status: "FAILED",
+                failedAt: new Date(),
+                failureReason: failureMessage,
+              },
+            }),
+          );
+        } catch (logError) {
+          console.error("sendBroadcastNow failed-recipient log error:", logError?.message || logError);
+        }
+      }
     }
 
     await sleep(BROADCAST_SEND_DELAY_MS);
   }
 
-  const nextStatus = delivered > 0 ? "SENT" : "FAILED";
-  const sentAt = delivered > 0 ? new Date() : null;
+  const nextStatus = sent > 0 ? "SENT" : "FAILED";
+  const sentAt = sent > 0 ? new Date() : null;
 
   const updated = await withPrismaRetry(() =>
     prisma.whatsAppBroadcast.update({
@@ -1448,20 +1544,21 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
     tenantId,
     userId: broadcast.createdById || null,
     entityId: updated.id,
-    action: delivered > 0 ? "WHATSAPP_BROADCAST_SENT" : "WHATSAPP_BROADCAST_FAILED",
+    action: sent > 0 ? "WHATSAPP_BROADCAST_SENT" : "WHATSAPP_BROADCAST_FAILED",
     metadata: {
       targetMode: targeting.mode,
       branchId: targeting.branchId || null,
       productId: targeting.productId || broadcast.promotion?.productId || null,
       category: targeting.category || null,
       attempted,
-      delivered,
+      sent,
+      delivered: 0,
       failed,
       skippedDuplicate,
     },
   });
 
-  if (delivered > 0 && broadcast.promotion && !broadcast.promotion.sentAt) {
+  if (sent > 0 && broadcast.promotion && !broadcast.promotion.sentAt) {
     await withPrismaRetry(() =>
       prisma.promotion.update({
         where: { id: broadcast.promotion.id },
@@ -1478,7 +1575,8 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
       branchId: targeting.branchId || null,
       productId: targeting.productId || broadcast.promotion?.productId || null,
       attempted,
-      delivered,
+      sent,
+      delivered: 0,
       failed,
       skippedDuplicate,
       failurePreview: failures.slice(0, 10),
