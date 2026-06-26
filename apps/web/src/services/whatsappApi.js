@@ -416,6 +416,10 @@ function sanitizePromotion(value) {
     categoryDescription: trimString(item.categoryDescription),
     createdById: trimString(item.createdById),
     sentAt: item.sentAt || null,
+    archivedAt: item.archivedAt || null,
+    archivedById: trimString(item.archivedById),
+    archiveReason: trimString(item.archiveReason),
+    isArchived: toBoolean(item.isArchived || item.archivedAt),
     createdAt: item.createdAt || null,
     updatedAt: item.updatedAt || null,
     status: toUpper(item.status || (item.sentAt ? "SENT" : "DRAFT")),
@@ -556,6 +560,12 @@ function sanitizeBroadcast(value) {
     createdById: trimString(item.createdById),
     queuedAt: item.queuedAt || null,
     sentAt: item.sentAt || null,
+    archivedAt: item.archivedAt || null,
+    archivedById: trimString(item.archivedById),
+    archiveReason: trimString(item.archiveReason),
+    cancelledAt: item.cancelledAt || null,
+    cancelledById: trimString(item.cancelledById),
+    isArchived: toBoolean(item.isArchived || item.archivedAt),
     createdAt: item.createdAt || null,
     businessCategory: toUpper(item.businessCategory || item.category || item.targetingPreview?.category),
     supportedCategories: ensureArray(item.supportedCategories).map(toUpper).filter(Boolean),
@@ -1046,7 +1056,7 @@ export async function updateWhatsAppPromotion(promotionId, payload) {
   };
 }
 
-export async function deleteWhatsAppPromotion(promotionId) {
+export async function archiveWhatsAppPromotion(promotionId) {
   const id = trimString(promotionId);
 
   const data = await apiFetch(`/whatsapp/promotions/${id}`, {
@@ -1056,6 +1066,7 @@ export async function deleteWhatsAppPromotion(promotionId) {
   return {
     ok: toBoolean(data?.ok),
     deleted: toBoolean(data?.deleted),
+    archived: toBoolean(data?.archived),
     promotionId: trimString(data?.promotionId || id),
     message: trimString(data?.message),
   };
@@ -1124,7 +1135,7 @@ export async function updateWhatsAppBroadcast(broadcastId, payload) {
 }
 
 
-export async function deleteWhatsAppBroadcast(broadcastId) {
+export async function archiveWhatsAppBroadcast(broadcastId) {
   const id = trimString(broadcastId);
 
   const data = await apiFetch(`/whatsapp/broadcasts/${id}`, {
@@ -1134,8 +1145,10 @@ export async function deleteWhatsAppBroadcast(broadcastId) {
   return {
     ok: toBoolean(data?.ok),
     deleted: toBoolean(data?.deleted),
+    archived: toBoolean(data?.archived),
     broadcastId: trimString(data?.broadcastId || id),
     message: trimString(data?.message),
+    broadcast: sanitizeBroadcast(data?.broadcast),
   };
 }
 
@@ -1222,6 +1235,9 @@ export async function getWhatsAppConversationSalesSummary(conversationId) {
     proformas,
   };
 }
+
+export const deleteWhatsAppPromotion = archiveWhatsAppPromotion;
+export const deleteWhatsAppBroadcast = archiveWhatsAppBroadcast;
 
 /**
  * Stable aliases

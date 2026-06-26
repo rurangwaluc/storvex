@@ -2134,37 +2134,36 @@ function promotionBroadcastCount(promotion) {
   return Number(promotion?.usage?.broadcastCount || promotion?.broadcastCount || 0);
 }
 
-function canDeletePromotionRecord(promotion) {
+function canArchivePromotionRecord(promotion) {
   return Boolean(promotion?.id) && promotionBroadcastCount(promotion) === 0;
 }
 
 function canRemoveBroadcastRecord(broadcast) {
   const status = broadcastStatusValue(broadcast);
-  const delivered = Number(broadcast?.deliveredCount || 0);
 
-  if (!broadcast?.id) return false;
-  if (status === "SENT" || delivered > 0) return false;
+  if (!broadcast?.id || broadcast?.isArchived || broadcast?.archivedAt) return false;
 
-  return ["DRAFT", "QUEUED", "FAILED"].includes(status);
+  return ["DRAFT", "QUEUED", "FAILED", "SENT"].includes(status);
 }
 
 function cleanupBroadcastActionLabel(broadcast) {
   const status = broadcastStatusValue(broadcast);
 
   if (status === "QUEUED") return "Cancel queue";
-  if (status === "FAILED") return "Remove record";
-  if (status === "SENT") return "History";
+  if (status === "FAILED") return "Archive record";
+  if (status === "SENT") return "Archive history";
 
-  return "Delete draft";
+  return "Archive draft";
 }
 
 function cleanupBroadcastTitle(broadcast) {
   const status = broadcastStatusValue(broadcast);
 
-  if (status === "QUEUED") return "Cancel queued broadcast?";
-  if (status === "FAILED") return "Remove failed broadcast record?";
+  if (status === "QUEUED") return "Cancel and archive queued broadcast?";
+  if (status === "FAILED") return "Archive failed broadcast record?";
+  if (status === "SENT") return "Archive sent broadcast history?";
 
-  return "Delete draft broadcast?";
+  return "Archive draft broadcast?";
 }
 
 function cleanupBroadcastMessage(broadcast) {
@@ -2172,14 +2171,18 @@ function cleanupBroadcastMessage(broadcast) {
   const status = broadcastStatusValue(broadcast);
 
   if (status === "QUEUED") {
-    return `This will cancel ${title} before it is sent. Customer conversations will not receive this campaign.`;
+    return `This cancels ${title} before it is sent and archives it from the active campaign list. The record stays in history.`;
   }
 
   if (status === "FAILED") {
-    return `This removes the failed, unsent ${title} record from the campaign list. It does not delete customer messages or sent campaign history.`;
+    return `This archives the failed ${title} record from the campaign list. It does not delete customer messages or campaign history.`;
   }
 
-  return `This removes the unsent draft for ${title}. This cannot be undone.`;
+  if (status === "SENT") {
+    return `This hides ${title} from the active campaign list while keeping the sent campaign history for reporting and audit.`;
+  }
+
+  return `This archives the unsent draft for ${title}. It will leave the active campaign list but remain available for audit history.`;
 }
 
 function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
@@ -2520,10 +2523,10 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
   }
 
 
-  function requestDeletePromotion(promotion) {
+  function requestArchivePromotion(promotion) {
     if (!promotion?.id) return;
 
-    if (!canDeletePromotionRecord(promotion)) {
+    if (!canArchivePromotionRecord(promotion)) {
       toast("Promotion is already used in broadcasts, so it must stay in campaign history.");
       return;
     }
@@ -2531,10 +2534,10 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
     setCleanupConfirmAction({
       type: "PROMOTION",
       id: promotion.id,
-      title: "Delete promotion?",
+      title: "Archive promotion?",
       label: promotion.title || "Promotion",
-      message: "This promotion has not been used in any broadcast. Deleting it removes the draft offer from the campaign library.",
-      confirmLabel: "Delete promotion",
+      message: "This promotion has not been used in any broadcast. Archiving removes it from the active campaign library while preserving cleanup history.",
+      confirmLabel: "Archive promotion",
     });
   }
 
@@ -2542,7 +2545,7 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
     if (!broadcast?.id) return;
 
     if (!canRemoveBroadcastRecord(broadcast)) {
-      toast("Sent broadcast history cannot be deleted.");
+      toast("This campaign record is already archived or cannot be changed.");
       return;
     }
 
@@ -2565,7 +2568,7 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
     try {
       if (action.type === "PROMOTION") {
         await deleteWhatsAppPromotion(action.id);
-        toast.success("Promotion deleted");
+        toast.success("Promotion archived");
       } else {
         await deleteWhatsAppBroadcast(action.id);
         clearBroadcastFailure(action.id);
@@ -2573,13 +2576,13 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
         delete cache[action.id];
         writeBroadcastPreviewCache(cache);
         setBroadcastPreviewCacheVersion((value) => value + 1);
-        toast.success(action.confirmLabel === "Cancel queue" ? "Queued broadcast cancelled" : "Broadcast removed");
+        toast.success(action.confirmLabel === "Cancel queue" ? "Queued broadcast cancelled and archived" : "Broadcast archived");
       }
 
       setCleanupConfirmAction(null);
       await onRefresh?.();
     } catch (err) {
-      toast.error(safeError(err, "Campaign record could not be removed"));
+      toast.error(safeError(err, "Campaign record could not be archived"));
     } finally {
       setBusyBroadcastId("");
     }
@@ -2822,15 +2825,15 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
                     <div className="svx-wa-record-cleanup-cell">
                       <button
                         type="button"
-                        onClick={() => requestDeletePromotion(promotion)}
-                        disabled={!canDeletePromotionRecord(promotion) || busyBroadcastId === promotion.id}
+                        onClick={() => requestArchivePromotion(promotion)}
+                        disabled={!canArchivePromotionRecord(promotion) || busyBroadcastId === promotion.id}
                         title={
-                          canDeletePromotionRecord(promotion)
-                            ? "Delete this unused promotion"
+                          canArchivePromotionRecord(promotion)
+                            ? "Archive this unused promotion"
                             : "Used promotions stay in campaign history"
                         }
                       >
-                        {canDeletePromotionRecord(promotion) ? "Delete" : "Used"}
+                        {canArchivePromotionRecord(promotion) ? "Archive" : "Used"}
                       </button>
                     </div>
                   </article>
@@ -3057,7 +3060,7 @@ function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
             aria-labelledby="wa-cleanup-confirm-title"
           >
             <div className="svx-wa-send-confirm-head">
-              <Badge tone="warning">Clean up</Badge>
+              <Badge tone="warning">Archive</Badge>
               <h3 id="wa-cleanup-confirm-title">{cleanupConfirmAction.title}</h3>
               <p>
                 <strong>{cleanupConfirmAction.label}</strong> — {cleanupConfirmAction.message}

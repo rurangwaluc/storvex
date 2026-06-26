@@ -64,6 +64,14 @@ function mapBroadcastError(err, res, fallbackMessage) {
     });
   }
 
+  if (code === "BROADCAST_ARCHIVED") {
+    return res.status(409).json({
+      ok: false,
+      message: "This broadcast is archived and cannot be changed",
+      code,
+    });
+  }
+
   if (code === "PROMOTION_NOT_FOUND") {
     return res.status(404).json({
       ok: false,
@@ -220,6 +228,7 @@ async function listBroadcasts(req, res) {
       accountId: req.query?.accountId,
       q: req.query?.q,
       limit: req.query?.limit,
+      includeArchived: req.query?.includeArchived === "true",
     });
 
     return res.json({
@@ -342,7 +351,8 @@ async function deleteBroadcast(req, res) {
 
     return res.json({
       ok: true,
-      deleted: true,
+      archived: Boolean(result.archived),
+      deleted: false,
       ...result,
     });
   } catch (err) {

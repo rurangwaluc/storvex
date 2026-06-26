@@ -280,6 +280,12 @@ function buildPublicBroadcast(broadcast) {
     createdById: broadcast.createdById,
     queuedAt: broadcast.queuedAt || null,
     sentAt: broadcast.sentAt || null,
+    archivedAt: broadcast.archivedAt || null,
+    archivedById: broadcast.archivedById || null,
+    archiveReason: broadcast.archiveReason || null,
+    cancelledAt: broadcast.cancelledAt || null,
+    cancelledById: broadcast.cancelledById || null,
+    isArchived: Boolean(broadcast.archivedAt),
     createdAt: broadcast.createdAt,
 
     strategy: {
@@ -305,6 +311,10 @@ function buildPublicBroadcast(broadcast) {
           message: broadcast.promotion.message,
           productId: broadcast.promotion.productId || null,
           sentAt: broadcast.promotion.sentAt || null,
+          archivedAt: broadcast.promotion.archivedAt || null,
+          archivedById: broadcast.promotion.archivedById || null,
+          archiveReason: broadcast.promotion.archiveReason || null,
+          isArchived: Boolean(broadcast.promotion.archivedAt),
           createdAt: broadcast.promotion.createdAt || null,
         }
       : null,
@@ -501,7 +511,7 @@ function normalizeTargeting(body = {}) {
   };
 }
 
-async function listBroadcasts({ tenantId, status, accountId, q, limit = 50 }) {
+async function listBroadcasts({ tenantId, status, accountId, q, limit = 50, includeArchived = false }) {
   await ensureTenantExists(tenantId);
 
   const cleanStatus = status ? normalizeStatus(status, "") : null;
@@ -513,6 +523,7 @@ async function listBroadcasts({ tenantId, status, accountId, q, limit = 50 }) {
     prisma.whatsAppBroadcast.findMany({
       where: {
         tenantId,
+        ...(includeArchived ? {} : { archivedAt: null }),
         ...(cleanStatus ? { status: cleanStatus } : {}),
         ...(cleanAccountId ? { accountId: cleanAccountId } : {}),
         ...(cleanQuery
@@ -635,6 +646,10 @@ async function updateBroadcast({ tenantId, broadcastId, body }) {
 
   const existing = await getBroadcastOrThrow(tenantId, broadcastId);
 
+  if (existing.archivedAt) {
+    throw appError("BROADCAST_ARCHIVED");
+  }
+
   if (existing.status !== "DRAFT") {
     throw appError("ONLY_DRAFT_CAN_BE_EDITED");
   }
@@ -708,30 +723,55 @@ async function deleteBroadcast({ tenantId, userId = null, broadcastId }) {
   await ensureTenantExists(tenantId);
 
   const existing = await getBroadcastOrThrow(tenantId, broadcastId);
-  const messages = Array.isArray(existing.messages) ? existing.messages : [];
-  const sentMessages = messages.filter((message) => String(message.messageId || "").trim());
-
-  if (existing.status === "SENT") {
-    throw appError("SENT_BROADCAST_CANNOT_BE_DELETED");
-  }
-
-  if (messages.length > 0 || sentMessages.length > 0) {
-    throw appError("BROADCAST_HAS_SENT_HISTORY");
-  }
-
   const previousStatus = existing.status;
+  const archivedAt = new Date();
 
-  await withPrismaRetry(() =>
-    prisma.whatsAppBroadcast.delete({
+  if (existing.archivedAt) {
+    return {
+      archived: true,
+      alreadyArchived: true,
+      broadcastId: existing.id,
+      action: "WHATSAPP_BROADCAST_ALREADY_ARCHIVED",
+      message: "Broadcast is already archived",
+      broadcast: buildPublicBroadcast(existing),
+    };
+  }
+
+  const archiveReason =
+    previousStatus === "QUEUED"
+      ? "Queued broadcast cancelled before sending"
+      : previousStatus === "FAILED"
+        ? "Failed broadcast archived from active campaign list"
+        : previousStatus === "SENT"
+          ? "Sent broadcast archived from active campaign list"
+          : "Draft broadcast archived from active campaign list";
+
+  const updated = await withPrismaRetry(() =>
+    prisma.whatsAppBroadcast.update({
       where: { id: existing.id },
+      data: {
+        archivedAt,
+        archivedById: userId || null,
+        archiveReason,
+        ...(previousStatus === "QUEUED"
+          ? {
+              cancelledAt: archivedAt,
+              cancelledById: userId || null,
+            }
+          : {}),
+      },
+      include: broadcastIncludeShape(),
     }),
   );
 
-  const action = previousStatus === "QUEUED"
-    ? "WHATSAPP_BROADCAST_QUEUE_CANCELLED"
-    : previousStatus === "FAILED"
-      ? "WHATSAPP_BROADCAST_FAILED_RECORD_DELETED"
-      : "WHATSAPP_BROADCAST_DRAFT_DELETED";
+  const action =
+    previousStatus === "QUEUED"
+      ? "WHATSAPP_BROADCAST_QUEUE_CANCELLED"
+      : previousStatus === "FAILED"
+        ? "WHATSAPP_BROADCAST_FAILED_RECORD_ARCHIVED"
+        : previousStatus === "SENT"
+          ? "WHATSAPP_BROADCAST_SENT_RECORD_ARCHIVED"
+          : "WHATSAPP_BROADCAST_DRAFT_ARCHIVED";
 
   await createAuditLogSafe({
     tenantId,
@@ -742,18 +782,24 @@ async function deleteBroadcast({ tenantId, userId = null, broadcastId }) {
       previousStatus,
       promotionId: existing.promotionId || null,
       templateName: existing.templateName || null,
+      archiveReason,
     },
   });
 
   return {
-    deleted: true,
+    archived: true,
+    deleted: false,
     broadcastId: existing.id,
     action,
-    message: previousStatus === "QUEUED"
-      ? "Queued broadcast cancelled"
-      : previousStatus === "FAILED"
-        ? "Failed broadcast record deleted"
-        : "Draft broadcast deleted",
+    message:
+      previousStatus === "QUEUED"
+        ? "Queued broadcast cancelled and archived"
+        : previousStatus === "FAILED"
+          ? "Failed broadcast archived"
+          : previousStatus === "SENT"
+            ? "Sent broadcast archived from the active list"
+            : "Draft broadcast archived",
+    broadcast: buildPublicBroadcast(updated),
   };
 }
 
@@ -761,6 +807,10 @@ async function queueBroadcast({ tenantId, broadcastId }) {
   await ensureTenantExists(tenantId);
 
   const existing = await getBroadcastOrThrow(tenantId, broadcastId);
+
+  if (existing.archivedAt) {
+    throw appError("BROADCAST_ARCHIVED");
+  }
 
   if (existing.status !== "DRAFT") {
     throw appError("ONLY_DRAFT_CAN_BE_QUEUED");
@@ -1210,6 +1260,10 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
 
   if (!broadcast) {
     throw appError("BROADCAST_NOT_FOUND");
+  }
+
+  if (broadcast.archivedAt) {
+    throw appError("BROADCAST_ARCHIVED");
   }
 
   if (broadcast.status !== "DRAFT" && broadcast.status !== "QUEUED" && broadcast.status !== "FAILED") {

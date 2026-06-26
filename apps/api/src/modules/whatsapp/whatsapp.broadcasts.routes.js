@@ -34,6 +34,7 @@ router.use(
  * - accountId=<whatsappAccountId>
  * - q=<search>
  * - limit=50
+ * - includeArchived=true
  */
 router.get("/broadcasts", controller.listBroadcasts);
 
@@ -104,10 +105,12 @@ router.patch("/broadcasts/:id", controller.updateBroadcast);
  * DELETE /api/whatsapp/broadcasts/:id
  *
  * Cleanup rules:
- * - DRAFT: deletes the draft broadcast.
- * - QUEUED: cancels the queued broadcast.
- * - FAILED: deletes the failed unsent record.
- * - SENT or records with sent messages stay as history.
+ * - DRAFT: archives the draft broadcast from active lists.
+ * - QUEUED: cancels the queue and archives the broadcast.
+ * - FAILED: archives the failed record.
+ * - SENT: archives from active lists but keeps campaign history.
+ *
+ * This route keeps the DELETE verb for UI compatibility, but it is a soft archive.
  */
 router.delete("/broadcasts/:id", controller.deleteBroadcast);
 
