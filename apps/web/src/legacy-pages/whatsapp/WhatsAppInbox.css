@@ -346,17 +346,6 @@
   line-height: 1.25;
 }
 
-.svx-whatsapp-metric-title,
-.svx-wa-stat-title,
-.svx-wa-summary-card strong,
-.svx-wa-kpi-card strong {
-  overflow: visible;
-  text-overflow: unset;
-  white-space: normal;
-  line-height: 1.18;
-  word-break: normal;
-}
-
 /* Tabs */
 .svx-wa-module-tabs {
   display: flex;
@@ -7718,5 +7707,402 @@ background: var(--wa-soft);
 
   .svx-wa-account-health-grid .svx-wa-metric strong {
     font-size: 20px;
+  }
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* WhatsApp activity and reporting polish                                      */
+/* -------------------------------------------------------------------------- */
+.svx-wa-section-title.is-activity-report {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.svx-wa-section-title.is-activity-report > div {
+  min-width: 0;
+}
+
+.svx-wa-activity-workspace {
+  display: grid;
+  gap: 18px;
+}
+
+.svx-wa-activity-report-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.svx-wa-activity-report-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 18px;
+  background: var(--wa-card);
+  padding: 16px;
+  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.04);
+}
+
+.svx-wa-activity-report-card > span {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  background: var(--wa-primary-soft);
+  color: var(--wa-primary);
+}
+
+.svx-wa-activity-report-card > span svg,
+.svx-wa-activity-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.svx-wa-activity-report-card.is-conversation > span {
+  background: var(--wa-success-soft);
+  color: var(--wa-success);
+}
+
+.svx-wa-activity-report-card.is-draft > span,
+.svx-wa-activity-report-card.is-broadcast > span {
+  background: var(--wa-warning-soft);
+  color: var(--wa-warning);
+}
+
+.svx-wa-activity-report-card.is-risk > span {
+  background: var(--wa-danger-soft);
+  color: var(--wa-danger);
+}
+
+.svx-wa-activity-report-card div {
+  min-width: 0;
+}
+
+.svx-wa-activity-report-card p {
+  margin: 0;
+  color: var(--wa-muted);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.svx-wa-activity-report-card strong {
+  display: block;
+  margin-top: 4px;
+  color: var(--wa-text);
+  font-size: clamp(24px, 2.2vw, 34px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.svx-wa-activity-report-card small {
+  display: block;
+  margin-top: 6px;
+  overflow: hidden;
+  color: var(--wa-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-activity-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.svx-wa-activity-timeline-panel,
+.svx-wa-activity-report-panel {
+  min-width: 0;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 20px;
+  background: var(--wa-card);
+  padding: 18px;
+}
+
+.svx-wa-activity-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.svx-wa-activity-panel-head div {
+  min-width: 0;
+}
+
+.svx-wa-activity-panel-head p {
+  margin: 0;
+  color: var(--wa-primary);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.17em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.svx-wa-activity-panel-head h3 {
+  margin: 5px 0 0;
+  color: var(--wa-text);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: -0.04em;
+}
+
+.svx-wa-activity-list.is-polished {
+  gap: 11px;
+}
+
+.svx-wa-activity-row.is-polished {
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  border-radius: 16px;
+  padding: 14px;
+  background: color-mix(in srgb, var(--wa-card) 94%, var(--wa-soft));
+}
+
+.svx-wa-activity-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 13px;
+  background: var(--wa-primary-soft);
+  color: var(--wa-primary);
+}
+
+.svx-wa-activity-icon.is-conversation {
+  background: var(--wa-success-soft);
+  color: var(--wa-success);
+}
+
+.svx-wa-activity-icon.is-draft {
+  background: var(--wa-warning-soft);
+  color: var(--wa-warning);
+}
+
+.svx-wa-activity-icon.is-broadcast {
+  background: var(--wa-primary-soft);
+  color: var(--wa-primary);
+}
+
+.svx-wa-activity-copy {
+  min-width: 0;
+}
+
+.svx-wa-activity-copy > span {
+  display: block;
+  overflow: hidden;
+  color: var(--wa-muted-2);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.13em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.svx-wa-activity-copy strong {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--wa-text);
+  font-size: 13.5px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-activity-row.is-polished p {
+  margin-top: 4px;
+  white-space: normal;
+}
+
+.svx-wa-campaign-health-list {
+  display: grid;
+  gap: 12px;
+}
+
+.svx-wa-campaign-health-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--wa-card) 94%, var(--wa-soft));
+  padding: 14px;
+}
+
+.svx-wa-campaign-health-card.has-risk {
+  border-color: color-mix(in srgb, var(--wa-warning) 35%, var(--wa-border-soft));
+}
+
+.svx-wa-campaign-health-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.svx-wa-campaign-health-top div {
+  min-width: 0;
+}
+
+.svx-wa-campaign-health-top strong {
+  display: block;
+  overflow: hidden;
+  color: var(--wa-text);
+  font-size: 13.5px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-campaign-health-top span {
+  display: block;
+  margin-top: 4px;
+  color: var(--wa-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.svx-wa-health-bars {
+  display: grid;
+  gap: 10px;
+}
+
+.svx-wa-health-bars div {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--wa-soft);
+  padding: 9px 11px;
+}
+
+.svx-wa-health-bars span,
+.svx-wa-health-bars strong {
+  position: relative;
+  z-index: 1;
+  color: var(--wa-text);
+  font-size: 11.5px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.svx-wa-health-bars i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--wa-success) 18%, transparent);
+}
+
+.svx-wa-health-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.svx-wa-health-numbers span {
+  overflow: hidden;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 12px;
+  background: var(--wa-card);
+  padding: 9px;
+  color: var(--wa-muted);
+  font-size: 11.5px;
+  font-weight: 850;
+  line-height: 1.2;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-wa-health-warning {
+  margin: 0;
+  border-radius: 12px;
+  background: var(--wa-warning-soft);
+  padding: 10px;
+  color: var(--wa-warning);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.svx-whatsapp-metric-title,
+.svx-wa-stat-title,
+.svx-wa-summary-card strong,
+.svx-wa-kpi-card strong {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
+  line-height: 1.18;
+  word-break: normal;
+}
+
+@media (max-width: 1180px) {
+  .svx-wa-activity-report-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-wa-activity-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-wa-section-title.is-activity-report {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-wa-activity-report-grid,
+  .svx-wa-health-numbers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-wa-activity-timeline-panel,
+  .svx-wa-activity-report-panel {
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .svx-wa-activity-row.is-polished {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .svx-wa-activity-row.is-polished .svx-wa-badge,
+  .svx-wa-activity-row.is-polished > small {
+    grid-column: 2;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-wa-activity-report-grid,
+  .svx-wa-health-numbers {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
