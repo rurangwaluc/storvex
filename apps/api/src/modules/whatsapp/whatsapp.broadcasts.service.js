@@ -3,6 +3,9 @@ const whatsappService = require("./whatsapp.service");
 
 
 const BROADCAST_SEND_DELAY_MS = 300;
+const BROADCAST_WORKER_DEFAULT_LIMIT = 1000;
+const BROADCAST_WORKER_LOCK_TIMEOUT_MS = 10 * 60 * 1000;
+const BROADCAST_WORKER_MAX_ATTEMPTS = 3;
 
 const BUSINESS_CATEGORIES = Object.freeze({
   ELECTRONICS: "ELECTRONICS",
@@ -244,6 +247,9 @@ function broadcastIncludeShape() {
         message: true,
         productId: true,
         sentAt: true,
+        archivedAt: true,
+        archivedById: true,
+        archiveReason: true,
         createdAt: true,
       },
     },
@@ -278,6 +284,20 @@ function buildPublicBroadcast(broadcast) {
     languageCode: broadcast.languageCode,
     status: broadcast.status,
     createdById: broadcast.createdById,
+    targeting: {
+      mode: broadcast.targetMode || null,
+      branchId: broadcast.targetBranchId || null,
+      productId: broadcast.targetProductId || null,
+      category: broadcast.targetCategory || null,
+      manualCustomerCount: Array.isArray(broadcast.targetCustomerIds) ? broadcast.targetCustomerIds.length : 0,
+    },
+    processing: {
+      lockedAt: broadcast.processingLockedAt || null,
+      lockedBy: broadcast.processingLockedBy || null,
+      attempts: Number(broadcast.processingAttempts || 0),
+      lastError: broadcast.processingLastError || null,
+      nextAttemptAt: broadcast.nextAttemptAt || null,
+    },
     queuedAt: broadcast.queuedAt || null,
     sentAt: broadcast.sentAt || null,
     archivedAt: broadcast.archivedAt || null,
@@ -511,6 +531,37 @@ function normalizeTargeting(body = {}) {
   };
 }
 
+function buildBroadcastTargetingData(targeting, promotion = null) {
+  return {
+    targetMode: targeting.mode,
+    targetBranchId: targeting.branchId || null,
+    targetProductId: targeting.productId || promotion?.productId || null,
+    targetCategory: targeting.category || null,
+    targetCustomerIds:
+      targeting.mode === "MANUAL_CUSTOMERS" && targeting.manualCustomerIds.length
+        ? targeting.manualCustomerIds
+        : undefined,
+  };
+}
+
+function targetingFromBroadcast(broadcast) {
+  const rawCustomerIds = Array.isArray(broadcast?.targetCustomerIds)
+    ? broadcast.targetCustomerIds
+    : [];
+
+  return {
+    mode: normalizeTargetMode(broadcast?.targetMode || "ALL_OPTED_IN"),
+    branchId: normalizeText(broadcast?.targetBranchId),
+    productId: normalizeText(broadcast?.targetProductId || broadcast?.promotion?.productId),
+    category: normalizeBusinessCategory(broadcast?.targetCategory),
+    manualCustomerIds: rawCustomerIds.map(normalizeText).filter(Boolean),
+  };
+}
+
+function safeWorkerErrorMessage(error) {
+  return String(error?.code || error?.message || "Queued broadcast could not be processed").slice(0, 600);
+}
+
 async function listBroadcasts({ tenantId, status, accountId, q, limit = 50, includeArchived = false }) {
   await ensureTenantExists(tenantId);
 
@@ -605,6 +656,7 @@ async function createBroadcast({ tenantId, userId, body }) {
         languageCode,
         status: "DRAFT",
         createdById: userId,
+        ...buildBroadcastTargetingData(targeting, promotion),
       },
       include: broadcastIncludeShape(),
     }),
@@ -701,6 +753,7 @@ async function updateBroadcast({ tenantId, broadcastId, body }) {
         promotionId: nextPromotionId,
         templateName: nextTemplateName,
         languageCode: nextLanguageCode,
+        ...buildBroadcastTargetingData(targeting, null),
       },
       include: broadcastIncludeShape(),
     }),
@@ -1276,12 +1329,13 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
 
   const account = await getActiveAccountOrThrow(tenantId, broadcast.accountId);
 
-  const targeting = normalizeTargeting(targetingInput || {});
+  const targeting = normalizeTargeting(targetingInput || targetingFromBroadcast(broadcast));
   const recipients = await getRecipients({
     tenantId,
     targeting,
     promotion: broadcast.promotion,
     limit,
+    maxLimit: Math.max(200, Math.min(1000, Number(limit) || 50)),
   });
 
   if (!recipients.length) {
@@ -1381,6 +1435,10 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
         status: nextStatus,
         ...(sentAt ? { sentAt } : {}),
         queuedAt: broadcast.queuedAt || new Date(),
+        processingLockedAt: null,
+        processingLockedBy: null,
+        processingLastError: failed > 0 ? failures[0]?.message || null : null,
+        nextAttemptAt: null,
       },
       include: broadcastIncludeShape(),
     }),
@@ -1428,6 +1486,136 @@ async function sendBroadcastNow({ tenantId, broadcastId, limit = 50, targeting: 
   };
 }
 
+async function processQueuedBroadcasts({
+  limit = 2,
+  recipientLimit = BROADCAST_WORKER_DEFAULT_LIMIT,
+  workerId = `wa-worker-${process.pid}`,
+} = {}) {
+  const now = new Date();
+  const lockCutoff = new Date(Date.now() - BROADCAST_WORKER_LOCK_TIMEOUT_MS);
+  const take = Math.min(10, Math.max(1, Number(limit) || 2));
+
+  const candidates = await withPrismaRetry(() =>
+    prisma.whatsAppBroadcast.findMany({
+      where: {
+        status: "QUEUED",
+        archivedAt: null,
+        cancelledAt: null,
+        OR: [
+          { nextAttemptAt: null },
+          { nextAttemptAt: { lte: now } },
+        ],
+        AND: [
+          {
+            OR: [
+              { processingLockedAt: null },
+              { processingLockedAt: { lt: lockCutoff } },
+            ],
+          },
+        ],
+      },
+      include: broadcastIncludeShape(),
+      orderBy: [{ queuedAt: "asc" }, { createdAt: "asc" }],
+      take,
+    }),
+  );
+
+  const results = [];
+
+  for (const candidate of candidates) {
+    const claimed = await withPrismaRetry(() =>
+      prisma.whatsAppBroadcast.updateMany({
+        where: {
+          id: candidate.id,
+          status: "QUEUED",
+          archivedAt: null,
+          cancelledAt: null,
+          OR: [
+            { processingLockedAt: null },
+            { processingLockedAt: { lt: lockCutoff } },
+          ],
+        },
+        data: {
+          processingLockedAt: new Date(),
+          processingLockedBy: workerId,
+          processingAttempts: { increment: 1 },
+          processingLastError: null,
+        },
+      }),
+    );
+
+    if (!claimed.count) {
+      continue;
+    }
+
+    const attempts = Number(candidate.processingAttempts || 0) + 1;
+
+    try {
+      const sent = await sendBroadcastNow({
+        tenantId: candidate.tenantId,
+        broadcastId: candidate.id,
+        limit: Math.min(1000, Math.max(1, Number(recipientLimit) || BROADCAST_WORKER_DEFAULT_LIMIT)),
+        targeting: targetingFromBroadcast(candidate),
+      });
+
+      results.push({
+        broadcastId: candidate.id,
+        ok: true,
+        status: sent.broadcast?.status || null,
+        summary: sent.summary || null,
+      });
+    } catch (error) {
+      const message = safeWorkerErrorMessage(error);
+      const exhausted = attempts >= BROADCAST_WORKER_MAX_ATTEMPTS;
+      const nextAttemptAt = exhausted ? null : new Date(Date.now() + attempts * 5 * 60 * 1000);
+
+      const updated = await withPrismaRetry(() =>
+        prisma.whatsAppBroadcast.update({
+          where: { id: candidate.id },
+          data: {
+            status: exhausted ? "FAILED" : "QUEUED",
+            processingLockedAt: null,
+            processingLockedBy: null,
+            processingLastError: message,
+            nextAttemptAt,
+          },
+          include: broadcastIncludeShape(),
+        }),
+      );
+
+      await createAuditLogSafe({
+        tenantId: candidate.tenantId,
+        userId: candidate.createdById || null,
+        entityId: candidate.id,
+        action: exhausted
+          ? "WHATSAPP_BROADCAST_WORKER_FAILED"
+          : "WHATSAPP_BROADCAST_WORKER_RETRY_SCHEDULED",
+        metadata: {
+          attempts,
+          maxAttempts: BROADCAST_WORKER_MAX_ATTEMPTS,
+          nextAttemptAt,
+          error: message,
+        },
+      });
+
+      results.push({
+        broadcastId: candidate.id,
+        ok: false,
+        status: updated.status,
+        attempts,
+        error: message,
+      });
+    }
+  }
+
+  return {
+    workerId,
+    checked: candidates.length,
+    processed: results.length,
+    results,
+  };
+}
+
 module.exports = {
   listBroadcasts,
   previewBroadcastRecipients,
@@ -1437,4 +1625,5 @@ module.exports = {
   deleteBroadcast,
   queueBroadcast,
   sendBroadcastNow,
+  processQueuedBroadcasts,
 };

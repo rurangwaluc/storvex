@@ -1053,8 +1053,18 @@ model WhatsAppBroadcast {
   languageCode String            @default("en_US")
   status       BroadcastStatus   @default(DRAFT)
   createdById  String
+  targetMode   String?
+  targetBranchId String?
+  targetProductId String?
+  targetCategory String?
+  targetCustomerIds Json?
   queuedAt     DateTime?
   sentAt       DateTime?
+  processingLockedAt DateTime?
+  processingLockedBy String?
+  processingAttempts Int         @default(0)
+  processingLastError String?
+  nextAttemptAt DateTime?
   archivedAt    DateTime?
   archivedById  String?
   archiveReason String?
@@ -1070,6 +1080,8 @@ model WhatsAppBroadcast {
   @@index([tenantId])
   @@index([accountId])
   @@index([status])
+  @@index([tenantId, status, nextAttemptAt])
+  @@index([processingLockedAt])
   @@index([createdAt])
   @@index([archivedAt])
 }
