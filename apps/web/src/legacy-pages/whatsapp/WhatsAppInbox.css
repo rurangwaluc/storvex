@@ -7439,3 +7439,222 @@ background: var(--wa-soft);
     justify-items: start;
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/* WhatsApp account setup polish                                               */
+/* -------------------------------------------------------------------------- */
+
+.svx-wa-setup-workspace {
+  display: grid;
+  gap: 16px;
+}
+
+.svx-wa-account-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 0.28fr);
+  gap: 14px;
+  align-items: stretch;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 18px;
+  background: var(--wa-card);
+  padding: 18px;
+}
+
+.svx-wa-account-hero-main,
+.svx-wa-account-hero-side {
+  min-width: 0;
+}
+
+.svx-wa-account-hero-main h3 {
+  margin: 12px 0 6px;
+  color: var(--wa-text);
+  font-size: clamp(22px, 3vw, 34px);
+  font-weight: 950;
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.svx-wa-account-hero-main p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--wa-muted);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.55;
+}
+
+.svx-wa-account-hero-side {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 4px;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 16px;
+  background: var(--wa-soft);
+  padding: 16px;
+}
+
+.svx-wa-account-hero-side span,
+.svx-wa-account-hero-side small {
+  color: var(--wa-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.svx-wa-account-hero-side strong {
+  color: var(--wa-text);
+  font-size: 36px;
+  font-weight: 950;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.svx-wa-account-health-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.svx-wa-setup-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.42fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.svx-wa-setup-checklist {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 16px;
+  background: var(--wa-card);
+  padding: 16px;
+}
+
+.svx-wa-setup-card-title span {
+  display: block;
+  color: var(--wa-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.svx-wa-setup-card-title strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--wa-text);
+  font-size: 17px;
+  font-weight: 950;
+  letter-spacing: -0.03em;
+}
+
+.svx-wa-setup-step {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 14px;
+  background: var(--wa-soft);
+  padding: 12px;
+}
+
+.svx-wa-setup-step-mark {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--wa-border);
+  border-radius: 999px;
+  color: #ffffff;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.svx-wa-setup-step.is-done .svx-wa-setup-step-mark {
+  border-color: var(--wa-success);
+  background: var(--wa-success);
+}
+
+.svx-wa-setup-step strong {
+  display: block;
+  color: var(--wa-text);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.svx-wa-setup-step p {
+  margin: 3px 0 0;
+  color: var(--wa-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.svx-wa-setup-head p {
+  margin: 6px 0 0;
+  color: var(--wa-muted);
+  font-size: 12.5px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.svx-wa-form-grid label small {
+  display: block;
+  margin-top: 7px;
+  color: var(--wa-muted);
+  font-size: 11.5px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.svx-wa-setup-actions {
+  display: grid;
+  grid-template-columns: minmax(180px, max-content) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+.svx-wa-setup-actions p {
+  margin: 0;
+  color: var(--wa-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+@media (max-width: 1020px) {
+  .svx-wa-account-health-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-wa-setup-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .svx-wa-account-hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
+  }
+
+  .svx-wa-setup-checklist,
+  .svx-wa-setup-form {
+    padding: 14px;
+  }
+
+  .svx-wa-setup-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-wa-account-health-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

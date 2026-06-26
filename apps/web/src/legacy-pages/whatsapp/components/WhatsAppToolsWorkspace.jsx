@@ -25,6 +25,48 @@ export function SetupWorkspace({ accounts, onRefresh }) {
   const [saving, setSaving] = useState(false);
   const [toggling, setToggling] = useState(false);
 
+  const hasPhone = Boolean(phoneNumber.trim() || account?.phoneNumber);
+  const hasPhoneNumberId = Boolean(phoneNumberId.trim() || account?.phoneNumberId);
+  const hasWabaId = Boolean(wabaId.trim() || account?.wabaId);
+  const hasToken = Boolean(accessToken.trim() || account?.hasAccessToken);
+  const hasSavedAccount = Boolean(account?.id);
+  const isConnected = hasSavedAccount && hasPhone && hasPhoneNumberId && hasWabaId && hasToken;
+  const isLive = isConnected && Boolean(account?.isActive);
+
+  const checklist = [
+    {
+      id: "business",
+      label: "Business profile",
+      text: hasPhone ? "Store number is saved for customers." : "Add the store WhatsApp number customers will use.",
+      done: hasPhone,
+    },
+    {
+      id: "meta",
+      label: "Meta IDs",
+      text:
+        hasPhoneNumberId && hasWabaId
+          ? "Phone number ID and WABA ID are ready."
+          : "Add the Meta phone number ID and WhatsApp Business Account ID.",
+      done: hasPhoneNumberId && hasWabaId,
+    },
+    {
+      id: "token",
+      label: "Access token",
+      text: hasToken ? "Sending token is saved." : "Add the access token before sending messages.",
+      done: hasToken,
+    },
+    {
+      id: "active",
+      label: "Account status",
+      text: account?.isActive ? "Customer messaging is active." : "Activate only when credentials are correct.",
+      done: Boolean(account?.isActive),
+    },
+  ];
+
+  const completedSteps = checklist.filter((item) => item.done).length;
+  const healthTone = isLive ? "success" : isConnected ? "warning" : hasSavedAccount ? "neutral" : "danger";
+  const healthLabel = isLive ? "Connected" : isConnected ? "Ready to activate" : hasSavedAccount ? "Needs setup" : "Not connected";
+
   useEffect(() => {
     setBusinessName(account?.businessName || "");
     setPhoneNumber(account?.phoneNumber || "");
@@ -78,93 +120,150 @@ export function SetupWorkspace({ accounts, onRefresh }) {
   }
 
   return (
-    <section className="svx-wa-page-panel">
+    <section className="svx-wa-page-panel svx-wa-setup-workspace">
       <div className="svx-wa-section-title">
         <p>Connection</p>
-        <h2>WhatsApp accounts</h2>
+        <h2>WhatsApp account setup</h2>
         <span>
-          Manage the WhatsApp number used by this workspace. Storvex keeps customer chats, sales,
-          stock, drawer and records controlled from one business workspace.
+          Connect the store WhatsApp number safely. Customers only see the business number; staff
+          manage conversations, draft sales, follow-ups and campaign reports inside Storvex.
         </span>
       </div>
 
-      <form onSubmit={save} className="svx-wa-setup-form">
-        <div className="svx-wa-setup-head">
-          <div>
-            <Badge tone={account?.isActive ? "success" : "neutral"}>
-              {account?.isActive ? "Active" : "Paused"}
-            </Badge>
-            <h3>Active WhatsApp account</h3>
+      <div className="svx-wa-account-hero">
+        <div className="svx-wa-account-hero-main">
+          <Badge tone={healthTone}>{healthLabel}</Badge>
+          <h3>{account?.businessName || businessName || "No WhatsApp account connected"}</h3>
+          <p>
+            {isLive
+              ? "This workspace is ready to receive customer messages and send approved broadcasts."
+              : isConnected
+                ? "Credentials are saved. Activate the account when you are ready to send and receive customer messages."
+                : "Finish the checklist below before turning on customer messaging."}
+          </p>
+        </div>
+
+        <div className="svx-wa-account-hero-side">
+          <span>Setup progress</span>
+          <strong>{completedSteps}/4</strong>
+          <small>{phoneNumber || "Store number not added"}</small>
+        </div>
+      </div>
+
+      <div className="svx-wa-account-health-grid">
+        <MetricCard label="Connection" value={healthLabel} note={isLive ? "Live for customers" : "Review setup"} tone={healthTone} />
+        <MetricCard label="Store number" value={hasPhone ? "Saved" : "Missing"} note={phoneNumber || account?.phoneNumber || "Required"} tone={hasPhone ? "success" : "warning"} />
+        <MetricCard label="Meta setup" value={hasPhoneNumberId && hasWabaId ? "Ready" : "Incomplete"} note="Phone ID + WABA ID" tone={hasPhoneNumberId && hasWabaId ? "success" : "warning"} />
+        <MetricCard label="Token" value={hasToken ? "Saved" : "Missing"} note={account?.hasAccessToken ? "Stored securely" : "Required for sending"} tone={hasToken ? "success" : "warning"} />
+      </div>
+
+      <div className="svx-wa-setup-layout">
+        <div className="svx-wa-setup-checklist">
+          <div className="svx-wa-setup-card-title">
+            <span>Owner checklist</span>
+            <strong>Ready before sending</strong>
           </div>
 
-          {account?.id ? (
-            <AsyncButton
-              type="button"
-              onClick={toggleActive}
-              loading={toggling}
-              loadingText="Updating..."
-              variant="secondary"
-            >
-              {account.isActive ? "Pause" : "Activate"}
+          {checklist.map((item) => (
+            <div key={item.id} className={cx("svx-wa-setup-step", item.done && "is-done")}>
+              <span className="svx-wa-setup-step-mark">{item.done ? "✓" : ""}</span>
+              <div>
+                <strong>{item.label}</strong>
+                <p>{item.text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <form onSubmit={save} className="svx-wa-setup-form">
+          <div className="svx-wa-setup-head">
+            <div>
+              <Badge tone={account?.isActive ? "success" : "neutral"}>
+                {account?.isActive ? "Active" : "Paused"}
+              </Badge>
+              <h3>Connection details</h3>
+              <p>Use the official Meta WhatsApp Business details for this store.</p>
+            </div>
+
+            {account?.id ? (
+              <AsyncButton
+                type="button"
+                onClick={toggleActive}
+                loading={toggling}
+                loadingText="Updating..."
+                variant="secondary"
+              >
+                {account.isActive ? "Pause" : "Activate"}
+              </AsyncButton>
+            ) : null}
+          </div>
+
+          <div className="svx-wa-form-grid">
+            <label>
+              <span>Business name</span>
+              <input
+                value={businessName}
+                onChange={(event) => setBusinessName(event.target.value)}
+                placeholder="Business name shown to customers"
+              />
+            </label>
+
+            <label>
+              <span>Store WhatsApp number</span>
+              <input
+                value={phoneNumber}
+                onChange={(event) => setPhoneNumber(event.target.value)}
+                placeholder="2507XXXXXXXX"
+              />
+            </label>
+
+            <label>
+              <span>Meta phone number ID</span>
+              <input
+                value={phoneNumberId}
+                onChange={(event) => setPhoneNumberId(event.target.value)}
+                placeholder="Phone number ID from Meta"
+              />
+            </label>
+
+            <label>
+              <span>WhatsApp Business Account ID</span>
+              <input
+                value={wabaId}
+                onChange={(event) => setWabaId(event.target.value)}
+                placeholder="WABA ID from Meta"
+              />
+            </label>
+
+            <label className="is-wide">
+              <span>Access token</span>
+              <input
+                value={accessToken}
+                onChange={(event) => setAccessToken(event.target.value)}
+                placeholder={
+                  account?.hasAccessToken
+                    ? "Already saved. Enter only if replacing."
+                    : "Paste WhatsApp access token"
+                }
+              />
+              <small>
+                Storvex does not show saved tokens again. Paste a new token only when replacing the
+                current one.
+              </small>
+            </label>
+          </div>
+
+          <div className="svx-wa-setup-actions">
+            <AsyncButton type="submit" loading={saving} loadingText="Saving...">
+              Save connection
             </AsyncButton>
-          ) : null}
-        </div>
-
-        <div className="svx-wa-form-grid">
-          <label>
-            <span>Business name</span>
-            <input
-              value={businessName}
-              onChange={(event) => setBusinessName(event.target.value)}
-              placeholder="Business name shown to customers"
-            />
-          </label>
-
-          <label>
-            <span>Phone number</span>
-            <input
-              value={phoneNumber}
-              onChange={(event) => setPhoneNumber(event.target.value)}
-              placeholder="2507XXXXXXXX"
-            />
-          </label>
-
-          <label>
-            <span>Phone number ID</span>
-            <input
-              value={phoneNumberId}
-              onChange={(event) => setPhoneNumberId(event.target.value)}
-              placeholder="Meta phone number ID"
-            />
-          </label>
-
-          <label>
-            <span>WABA ID</span>
-            <input
-              value={wabaId}
-              onChange={(event) => setWabaId(event.target.value)}
-              placeholder="WhatsApp business account ID"
-            />
-          </label>
-
-          <label className="is-wide">
-            <span>Access token</span>
-            <input
-              value={accessToken}
-              onChange={(event) => setAccessToken(event.target.value)}
-              placeholder={
-                account?.hasAccessToken
-                  ? "Already saved. Enter only if replacing."
-                  : "WhatsApp access token"
-              }
-            />
-          </label>
-        </div>
-
-        <AsyncButton type="submit" loading={saving} loadingText="Saving...">
-          Save connection
-        </AsyncButton>
-      </form>
+            <p>
+              Keep the account paused until the number, Meta IDs and token have been checked. This
+              prevents customers from hitting an unfinished setup.
+            </p>
+          </div>
+        </form>
+      </div>
     </section>
   );
 }
