@@ -39,19 +39,19 @@ const navItems = [
 
 const heroStats = [
   {
-    label: "Today’s sales",
-    value: "RWF 14.2M",
-    helper: "Visible as sales happen",
+    label: "Sales register",
+    value: "Live records",
+    helper: "Every sale saved clearly",
   },
   {
-    label: "Net profit",
-    value: "RWF 4.8M",
-    helper: "After recorded costs",
+    label: "Cash movement",
+    value: "Daily control",
+    helper: "Payments and expenses tracked",
   },
   {
-    label: "Orders",
-    value: "1,246",
-    helper: "Across active branches",
+    label: "Stock watch",
+    value: "Low-stock alerts",
+    helper: "Know what needs attention",
   },
 ];
 
@@ -59,22 +59,22 @@ const platformCards = [
   {
     icon: ShoppingCart,
     title: "Sales Tracking",
-    text: "Record sales clearly, review performance, and understand what is happening across the store.",
+    text: "Record counter sales, review daily movement, and keep every branch visible from one workspace.",
   },
   {
     icon: ReceiptText,
     title: "Cash Control",
-    text: "Track cash activity, payment records, expenses, and daily money movement in one place.",
+    text: "Follow payments, expenses, cash drawers, and daily handovers without spreadsheet confusion.",
   },
   {
     icon: Warehouse,
     title: "Stock Visibility",
-    text: "Keep product quantities, low-stock alerts, supply records, and store documents under control.",
+    text: "Know what is available, what is running low, and what needs restocking before sales are missed.",
   },
   {
     icon: UserCog,
     title: "Staff Access",
-    text: "Give workers the right access while keeping owner visibility and secure controls in place.",
+    text: "Give each worker only what they need while owners keep full visibility and control.",
   },
 ];
 
@@ -82,31 +82,31 @@ const problemCards = [
   {
     icon: PackageCheck,
     title: "Missed Stock",
-    text: "Know what is running low before customers ask for it.",
+    text: "Spot low stock early so staff can reorder before customers walk away.",
   },
   {
     icon: BarChart3,
     title: "Unclear Performance",
-    text: "See what sells, what slows down, and where money is moving.",
+    text: "Understand branch performance, daily sales, and cash movement without waiting for manual updates.",
   },
   {
     icon: UsersRound,
     title: "Staff Mistakes",
-    text: "Reduce manual errors with clear roles, records, and activity visibility.",
+    text: "Limit mistakes with clear staff roles, recorded actions, and safer owner approval flows.",
   },
   {
     icon: WalletCards,
     title: "Cost Leaks",
-    text: "Track expenses and cash movement before small losses become big losses.",
+    text: "Catch expenses, cash gaps, and uncontrolled costs before they quietly reduce profit.",
   },
 ];
 
 const mobilePoints = [
-  "Live performance & insights",
-  "Orders, products & inventory",
-  "Customers & communication",
-  "Marketing & growth tools",
-  "Secure. Fast. Always available",
+  "Sales and stock at a glance",
+  "Orders, products and branches",
+  "Customer messages and follow-ups",
+  "Campaigns and repeat sales",
+  "Owner controls stay protected",
 ];
 
 const footerGroups = [
@@ -490,13 +490,13 @@ function DashboardMockup() {
           </div>
 
           <div className="svx-stores-card">
-            <h4>Top stores</h4>
+            <h4>Branch snapshot</h4>
 
             <div className="svx-store-list">
               {[
-                ["Downtown Branch", "RWF 8,250"],
-                ["Market Street", "RWF 4,750"],
-                ["Lakeside Store", "RWF 5,430"],
+                ["Main store", "Open"],
+                ["Branch sales", "Compared"],
+                ["Stock movement", "Watched"],
               ].map(([name, amount], index) => (
                 <div key={name} className="svx-store-row">
                   <div>
@@ -525,13 +525,13 @@ function PhoneMockup() {
           <span>•••</span>
         </div>
 
-        <p className="svx-phone-date">Daily · Jun 18, 2026</p>
+        <p className="svx-phone-date">Daily store view</p>
 
         <div className="svx-phone-card-stack">
           {[
-            ["Total sales", "RWF 14.2M"],
-            ["Net profit", "RWF 4.82M"],
-            ["Orders", "1,246"],
+            ["Sales saved", "Live"],
+            ["Cash movement", "Tracked"],
+            ["Stock checks", "Visible"],
           ].map(([label, value]) => (
             <div key={label} className="svx-phone-card">
               <p>{label}</p>
