@@ -4517,3 +4517,86 @@ body,
     width: min(226px, 80vw) !important;
   }
 }
+
+/* Keep the network visual on mobile without breaking PWA layout */
+@media (max-width: 900px) {
+  .svx-mobile-ready-network {
+    order: 3 !important;
+    display: block !important;
+    position: relative !important;
+    inset: auto !important;
+    width: min(100%, 310px) !important;
+    height: 112px !important;
+    min-height: 112px !important;
+    margin: 0 auto !important;
+    transform: none !important;
+    overflow: visible !important;
+  }
+
+  .svx-network-paths {
+    width: 100% !important;
+    height: 112px !important;
+    opacity: 0.8 !important;
+  }
+
+  .svx-network-paths path:nth-of-type(1),
+  .svx-network-paths path:nth-of-type(3),
+  .svx-network-paths circle {
+    display: none !important;
+  }
+
+  .svx-network-paths path:nth-of-type(2) {
+    display: block !important;
+    stroke-width: 2 !important;
+    stroke-dasharray: 4 5 !important;
+  }
+
+  .svx-network-center {
+    left: 50% !important;
+    top: 50% !important;
+    width: 58px !important;
+    height: 58px !important;
+    border-radius: 16px !important;
+    padding: 11px !important;
+    transform: translate(-50%, -50%) !important;
+    box-shadow:
+      0 10px 26px rgba(21, 156, 255, 0.18),
+      0 0 0 18px rgba(21, 156, 255, 0.055) !important;
+  }
+
+  .svx-network-photo {
+    width: 56px !important;
+    height: 56px !important;
+    border-width: 2px !important;
+  }
+
+  .svx-network-photo-one {
+    top: 28px !important;
+    left: 8px !important;
+  }
+
+  .svx-network-photo-two {
+    top: 28px !important;
+    right: 8px !important;
+  }
+
+  .svx-network-photo-three {
+    display: none !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-mobile-ready-network {
+    width: min(100%, 280px) !important;
+  }
+
+  .svx-network-photo {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .svx-network-center {
+    width: 52px !important;
+    height: 52px !important;
+  }
+}
