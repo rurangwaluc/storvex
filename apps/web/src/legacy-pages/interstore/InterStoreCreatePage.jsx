@@ -35,6 +35,8 @@ const EMPTY_FORM = {
   notes: "",
 };
 
+const STORE_SEARCH_MIN_CHARS = 2;
+
 const CATEGORY_FIELD_COPY = {
   ELECTRONICS: {
     businessLabel: "Electronics",
@@ -209,6 +211,22 @@ function activeBranchLabel() {
   return activeBranchParts().label;
 }
 
+function supplierPhoneValue(supplier) {
+  return cleanString(
+    supplier?.phone ||
+      supplier?.contactPhone ||
+      supplier?.businessPhone ||
+      supplier?.ownerPhone ||
+      supplier?.primaryPhone ||
+      supplier?.mobile ||
+      "",
+  );
+}
+
+function supplierEmailValue(supplier) {
+  return cleanString(supplier?.email || supplier?.businessEmail || supplier?.ownerEmail || "");
+}
+
 function Field({ label, hint, children, full = false }) {
   return (
     <div className={`svx-transfer-form-field ${full ? "is-full" : ""}`}>
@@ -300,6 +318,7 @@ export default function InterStoreCreatePage() {
       source: isInternal
         ? cleanString(supplierQuery) || "Internal store"
         : cleanString(form.externalSupplierName) || "External supplier",
+      sourcePhone: cleanString(form.externalSupplierPhone),
       item: cleanString(form.productName) || "Item not entered",
       responsible: cleanString(form.resellerName) || "Responsible person not entered",
       phoneReady: normalizeDigits(form.resellerPhone).length >= 7,
@@ -314,14 +333,31 @@ export default function InterStoreCreatePage() {
   }, []);
 
   useEffect(() => {
-    if (!isInternal) return;
+    if (!isInternal) {
+      setSuppliers([]);
+      setSuppliersLoading(false);
+      return;
+    }
+
+    if (form.supplierTenantId) {
+      setSuppliers([]);
+      setSuppliersLoading(false);
+      return;
+    }
+
+    const searchTerm = cleanString(supplierQuery);
+    if (searchTerm.length < STORE_SEARCH_MIN_CHARS) {
+      setSuppliers([]);
+      setSuppliersLoading(false);
+      return;
+    }
 
     const timer = window.setTimeout(() => {
-      void loadSuppliers(supplierQuery);
+      void loadSuppliers(searchTerm);
     }, 220);
 
     return () => window.clearTimeout(timer);
-  }, [isInternal, supplierQuery, businessCategory]);
+  }, [isInternal, supplierQuery, form.supplierTenantId, businessCategory]);
 
   useEffect(() => {
     if (!isInternal || !form.supplierTenantId) return;
@@ -347,10 +383,17 @@ export default function InterStoreCreatePage() {
   }
 
   async function loadSuppliers(search = "") {
+    const searchTerm = cleanString(search);
+    if (searchTerm.length < STORE_SEARCH_MIN_CHARS) {
+      setSuppliers([]);
+      setSuppliersLoading(false);
+      return;
+    }
+
     try {
       setSuppliersLoading(true);
       const rows = await listInternalSuppliers({
-        q: cleanString(search) || undefined,
+        q: searchTerm,
         take: 12,
         businessCategory,
       });
@@ -408,8 +451,15 @@ export default function InterStoreCreatePage() {
   }
 
   function chooseSupplier(supplier) {
-    setForm((current) => ({ ...current, supplierTenantId: supplier.id || "" }));
+    const phone = supplierPhoneValue(supplier);
+
+    setForm((current) => ({
+      ...current,
+      supplierTenantId: supplier.id || "",
+      externalSupplierPhone: phone,
+    }));
     setSupplierQuery(supplier.name || "");
+    setSuppliers([]);
     setProductQuery("");
     setSupplierProducts([]);
     void loadSupplierProducts(supplier.id, "");
@@ -554,33 +604,64 @@ export default function InterStoreCreatePage() {
                       onChange={(event) => {
                         const next = event.target.value;
                         setSupplierQuery(next);
-                        setForm((current) => ({ ...current, supplierTenantId: "", productId: "", productName: "", productCategory: "", productColor: "", serial: "", agreedPrice: "" }));
+                        setForm((current) => ({
+                          ...current,
+                          supplierTenantId: "",
+                          externalSupplierPhone: "",
+                          productId: "",
+                          productName: "",
+                          productCategory: "",
+                          productColor: "",
+                          serial: "",
+                          agreedPrice: "",
+                        }));
                         setSupplierProducts([]);
                       }}
-                      onFocus={() => loadSuppliers(supplierQuery)}
+                      onFocus={() => {
+                        if (cleanString(supplierQuery).length >= STORE_SEARCH_MIN_CHARS && !form.supplierTenantId) {
+                          void loadSuppliers(supplierQuery);
+                        }
+                      }}
                       onKeyDown={(event) => {
                         if (event.key === "Enter") {
                           event.preventDefault();
-                          void loadSuppliers(supplierQuery);
+                          if (cleanString(supplierQuery).length >= STORE_SEARCH_MIN_CHARS && !form.supplierTenantId) {
+                            void loadSuppliers(supplierQuery);
+                          }
                         }
                       }}
                       placeholder={`Search ${fieldCopy.businessLabel} stores only`}
                     />
                   </Field>
-                  {suppliersLoading ? (
+                  {form.supplierTenantId ? (
+                    <>
+                      <div className="svx-transfer-search-state is-full">Selected store: {supplierQuery}. Edit the search field to choose another store.</div>
+                      <Field label="Store phone" hint="Filled automatically from the selected store." full>
+                        <input
+                          className="svx-transfer-input"
+                          value={form.externalSupplierPhone || "No phone saved for this store"}
+                          readOnly
+                        />
+                      </Field>
+                    </>
+                  ) : null}
+                  {!form.supplierTenantId && cleanString(supplierQuery).length > 0 && cleanString(supplierQuery).length < STORE_SEARCH_MIN_CHARS ? (
+                    <div className="svx-transfer-search-state is-full">Type at least {STORE_SEARCH_MIN_CHARS} characters to search stores.</div>
+                  ) : null}
+                  {!form.supplierTenantId && suppliersLoading ? (
                     <div className="svx-transfer-search-state is-full">Searching stores...</div>
                   ) : null}
-                  {!suppliersLoading && supplierQuery && !suppliers.length ? (
+                  {!form.supplierTenantId && !suppliersLoading && cleanString(supplierQuery).length >= STORE_SEARCH_MIN_CHARS && !suppliers.length ? (
                     <div className="svx-transfer-search-state is-full">No matching {fieldCopy.businessLabel} stores found.</div>
                   ) : null}
-                  {suppliers.length ? (
+                  {!form.supplierTenantId && suppliers.length ? (
                     <div className="svx-transfer-search-results is-full">
                       {suppliers.map((supplier) => (
                         <SearchResult
                           key={supplier.id}
                           active={form.supplierTenantId === supplier.id}
                           title={supplier.name || "Unnamed store"}
-                          subtitle={[supplier.phone, supplier.email].filter(Boolean).join("  ")}
+                          subtitle={[supplierPhoneValue(supplier), supplierEmailValue(supplier)].filter(Boolean).join("  ")}
                           onClick={() => chooseSupplier(supplier)}
                         />
                       ))}
@@ -723,6 +804,7 @@ export default function InterStoreCreatePage() {
 
               <div className="svx-transfer-create-side-summary">
                 <SummaryItem label="Source" value={summary.source} />
+                {summary.sourcePhone ? <SummaryItem label="Source phone" value={summary.sourcePhone} /> : null}
                 <SummaryItem label="Item" value={summary.item} />
                 <SummaryItem label="Responsible" value={summary.responsible} />
                 <SummaryItem label="Money at risk" value={formatMoney(summary.value)} />

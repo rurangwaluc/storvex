@@ -625,6 +625,18 @@ async function listInternalSuppliers(req, res) {
   try {
     const tenantId = getTenantId(req);
     const q = cleanString(req.query.q);
+    if (q.length < 2) {
+      const requestedCategory = normalizeBusinessCategory(req.query.businessCategory || req.query.category);
+      const borrowerCategory = requestedCategory || (await tenantBusinessCategory(prisma, getTenantId(req)));
+      return res.json({
+        ok: true,
+        suppliers: [],
+        count: 0,
+        businessCategory: borrowerCategory || null,
+        requiresSearch: true,
+      });
+    }
+
     const takeRaw = toInt(req.query.take);
     const take = Number.isFinite(takeRaw) ? Math.min(Math.max(1, takeRaw), 50) : 20;
     const requestedCategory = normalizeBusinessCategory(req.query.businessCategory || req.query.category);
