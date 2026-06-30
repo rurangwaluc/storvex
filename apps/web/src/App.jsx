@@ -10,6 +10,7 @@ import LandingPage from "./legacy-pages/public/LandingPage";
 import Dashboard from "./legacy-pages/dashboard/Dashboard";
 import Employees from "./legacy-pages/employees/EmployeesList";
 import InterStoreDeals from "./legacy-pages/interstore/InterStoreDeals";
+import InterStoreCreatePage from "./legacy-pages/interstore/InterStoreCreatePage";
 import InterStoreDetail from "./legacy-pages/interstore/InterStoreDetail";
 
 import InventoryCreate from "./legacy-pages/inventory/InventoryCreate";
@@ -336,7 +337,7 @@ export default function App() {
 
             <Route
               element={
-                <RequireRole roles={["OWNER", "MANAGER", "CASHIER", "SELLER"]} />
+                <RequireRole roles={["OWNER", "CASHIER", "MANAGER", "SELLER"]} />
               }
             >
               <Route
@@ -409,6 +410,7 @@ export default function App() {
 
             <Route element={<RequireRole roles={["OWNER", "MANAGER", "CASHIER"]} />}>
               <Route path="interstore" element={<InterStoreDeals />} />
+              <Route path="interstore/new" element={<InterStoreCreatePage />} />
               <Route path="interstore/:id" element={<InterStoreDetail />} />
             </Route>
 

@@ -305,6 +305,7 @@ export async function listInternalSuppliers(params = {}) {
     appendQuery("/interstore/internal-suppliers", {
       q: params.q,
       take: params.take,
+      businessCategory: params.businessCategory,
     })
   );
 
@@ -324,6 +325,7 @@ export async function searchInternalSupplierProducts(supplierTenantId, params = 
       {
         q: params.q,
         take: params.take,
+        businessCategory: params.businessCategory,
       }
     )
   );

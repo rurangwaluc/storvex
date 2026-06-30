@@ -1,0 +1,5029 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap");
+
+.svx-transfer-page,
+.svx-transfer-modal,
+.svx-transfer-page * ,
+.svx-transfer-modal * {
+  box-sizing: border-box;
+}
+
+.svx-transfer-page {
+  --transfer-bg: var(--color-bg, #f6f8fc);
+  --transfer-card: var(--color-card, #ffffff);
+  --transfer-surface: var(--color-surface, #ffffff);
+  --transfer-surface-2: var(--color-surface-2, #f4f7fb);
+  --transfer-surface-3: var(--color-surface-3, #e9eef7);
+  --transfer-text: var(--color-text, #0d1b3e);
+  --transfer-muted: var(--color-text-muted, #647089);
+  --transfer-border: var(--color-border, rgba(13, 27, 62, 0.12));
+  --transfer-primary: var(--color-primary, #159cff);
+  --transfer-primary-soft: var(--color-primary-soft, rgba(21, 156, 255, 0.12));
+  --transfer-primary-contrast: var(--color-primary-contrast, #ffffff);
+  --transfer-danger: var(--color-danger, #ef4444);
+  --transfer-shadow: var(--shadow-card, 0 18px 50px rgba(15, 45, 90, 0.08));
+  --transfer-shadow-soft: var(--shadow-soft, 0 12px 30px rgba(15, 45, 90, 0.08));
+  --transfer-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --transfer-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --transfer-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  overflow-x: clip;
+  color: var(--transfer-text);
+  font-family: var(--transfer-body-font);
+}
+
+:root[data-theme="dark"] .svx-transfer-page {
+  --transfer-bg: var(--color-bg, #06111f);
+  --transfer-card: var(--color-card, #1f1f20);
+  --transfer-surface: var(--color-surface, #101a2b);
+  --transfer-surface-2: var(--color-surface-2, #0d1d32);
+  --transfer-surface-3: var(--color-surface-3, #142641);
+  --transfer-text: var(--color-text, #ffffff);
+  --transfer-muted: var(--color-text-muted, rgba(255, 255, 255, 0.66));
+  --transfer-border: var(--color-border, rgba(255, 255, 255, 0.11));
+  --transfer-primary: var(--color-primary, #159cff);
+  --transfer-primary-soft: var(--color-primary-soft, rgba(21, 156, 255, 0.14));
+  --transfer-shadow: var(--shadow-card, 0 22px 70px rgba(0, 0, 0, 0.22));
+  --transfer-shadow-soft: var(--shadow-soft, 0 12px 34px rgba(0, 0, 0, 0.18));
+}
+
+.svx-transfer-page h1,
+.svx-transfer-page h2,
+.svx-transfer-page h3,
+.svx-transfer-page h4,
+.svx-transfer-page p,
+.svx-transfer-page button,
+.svx-transfer-page input,
+.svx-transfer-page textarea,
+.svx-transfer-page select,
+.svx-transfer-page span,
+.svx-transfer-page strong,
+.svx-transfer-page small,
+.svx-transfer-modal h2,
+.svx-transfer-modal h3,
+.svx-transfer-modal p,
+.svx-transfer-modal button,
+.svx-transfer-modal input,
+.svx-transfer-modal textarea,
+.svx-transfer-modal select,
+.svx-transfer-modal span,
+.svx-transfer-modal strong,
+.svx-transfer-modal small {
+  font-family: var(--transfer-body-font);
+}
+
+.svx-transfer-page h1,
+.svx-transfer-page h2,
+.svx-transfer-page h3,
+.svx-transfer-page h4,
+.svx-transfer-modal h2,
+.svx-transfer-modal h3 {
+  margin: 0;
+  color: var(--transfer-text);
+  font-family: var(--transfer-heading-font);
+  letter-spacing: -0.04em;
+}
+
+.svx-transfer-page p,
+.svx-transfer-modal p {
+  margin: 0;
+  color: var(--transfer-muted);
+}
+
+.svx-transfer-page button,
+.svx-transfer-modal button {
+  border: 0;
+  cursor: pointer;
+}
+
+.svx-transfer-page button:disabled,
+.svx-transfer-modal button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.svx-transfer-shell {
+  display: grid;
+  gap: 22px;
+  width: min(100%, 1440px);
+  margin: 0 auto;
+  padding: 8px 0 28px;
+}
+
+.svx-transfer-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--transfer-border);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 88% 0%, color-mix(in srgb, var(--transfer-primary) 11%, transparent), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--transfer-card) 94%, var(--transfer-primary-soft)), var(--transfer-card));
+  box-shadow: var(--transfer-shadow);
+  padding: 28px;
+}
+
+.svx-transfer-hero::after {
+  content: "";
+  position: absolute;
+  right: -80px;
+  top: -110px;
+  width: 260px;
+  height: 260px;
+  border-radius: 999px;
+  background: var(--transfer-primary-soft);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.svx-transfer-hero-inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 24px;
+}
+
+.svx-transfer-eyebrow,
+.svx-transfer-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  width: fit-content;
+  border: 1px solid color-mix(in srgb, var(--transfer-primary) 20%, transparent);
+  border-radius: 999px;
+  background: var(--transfer-primary-soft);
+  padding: 0 12px;
+  color: var(--transfer-primary);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.svx-transfer-title {
+  max-width: 780px;
+  margin-top: 16px;
+  font-size: clamp(30px, 3vw, 46px);
+  font-weight: 800;
+  line-height: 1.03;
+}
+
+.svx-transfer-subtitle {
+  max-width: 720px;
+  margin-top: 12px !important;
+  color: var(--transfer-muted);
+  font-size: 15.5px;
+  font-weight: 650;
+  line-height: 1.65;
+}
+
+.svx-transfer-hero-actions,
+.svx-transfer-toolbar-actions,
+.svx-transfer-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.svx-transfer-primary,
+.svx-transfer-secondary,
+.svx-transfer-danger,
+.svx-transfer-success,
+.svx-transfer-warning,
+.svx-transfer-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 14px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  transition: transform 180ms var(--transfer-ease), box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.svx-transfer-primary {
+  background: var(--transfer-primary);
+  color: var(--transfer-primary-contrast);
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--transfer-primary) 22%, transparent);
+}
+
+.svx-transfer-secondary,
+.svx-transfer-ghost {
+  border: 1px solid var(--transfer-border) !important;
+  background: var(--transfer-card);
+  color: var(--transfer-text);
+  box-shadow: var(--transfer-shadow-soft);
+}
+
+.svx-transfer-success { background: #10b981; color: #ffffff; }
+.svx-transfer-warning { background: #f59e0b; color: #ffffff; }
+.svx-transfer-danger { background: var(--transfer-danger); color: #ffffff; }
+
+.svx-transfer-primary:hover,
+.svx-transfer-secondary:hover,
+.svx-transfer-success:hover,
+.svx-transfer-warning:hover,
+.svx-transfer-danger:hover,
+.svx-transfer-ghost:hover {
+  transform: translateY(-1px);
+}
+
+.svx-transfer-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.svx-transfer-stat-card,
+.svx-transfer-card,
+.svx-transfer-panel,
+.svx-transfer-list-card,
+.svx-transfer-empty,
+.svx-transfer-form-card {
+  border: 1px solid var(--transfer-border);
+  border-radius: 24px;
+  background: var(--transfer-card);
+  box-shadow: var(--transfer-shadow-soft);
+}
+
+.svx-transfer-stat-card {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  padding: 18px;
+}
+
+.svx-transfer-stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--stat-color, var(--transfer-primary));
+}
+
+.svx-transfer-stat-label,
+.svx-transfer-label {
+  color: var(--transfer-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.svx-transfer-stat-value {
+  margin-top: 8px;
+  color: var(--transfer-text);
+  font-family: var(--transfer-heading-font);
+  font-size: clamp(22px, 2vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.svx-transfer-stat-note {
+  margin-top: 8px !important;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.svx-transfer-toolbar {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--transfer-border);
+  border-radius: 24px;
+  background: var(--transfer-card);
+  padding: 14px;
+  box-shadow: var(--transfer-shadow-soft);
+}
+
+.svx-transfer-search-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+}
+
+.svx-transfer-input,
+.svx-transfer-select,
+.svx-transfer-textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--transfer-border);
+  border-radius: 14px;
+  background: var(--transfer-surface);
+  color: var(--transfer-text);
+  outline: none;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.svx-transfer-input,
+.svx-transfer-select {
+  min-height: 44px;
+  padding: 0 14px;
+}
+
+.svx-transfer-textarea {
+  min-height: 96px;
+  resize: vertical;
+  padding: 12px 14px;
+  line-height: 1.5;
+}
+
+.svx-transfer-input::placeholder,
+.svx-transfer-textarea::placeholder {
+  color: color-mix(in srgb, var(--transfer-muted) 76%, transparent);
+}
+
+.svx-transfer-input:focus,
+.svx-transfer-select:focus,
+.svx-transfer-textarea:focus {
+  border-color: var(--transfer-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--transfer-primary) 14%, transparent);
+}
+
+.svx-transfer-filter-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.svx-transfer-filter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border: 1px solid var(--transfer-border) !important;
+  border-radius: 999px;
+  background: var(--transfer-card);
+  color: var(--transfer-text);
+  padding: 0 14px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.svx-transfer-filter.is-active {
+  border-color: transparent !important;
+  background: var(--transfer-primary);
+  color: var(--transfer-primary-contrast);
+}
+
+.svx-transfer-content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  gap: 18px;
+  align-items: start;
+}
+
+.svx-transfer-section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.svx-transfer-section-head h2,
+.svx-transfer-panel h2,
+.svx-transfer-form-card h2 {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.06;
+}
+
+.svx-transfer-section-head p {
+  margin-top: 6px !important;
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.svx-transfer-list {
+  display: grid;
+  gap: 10px;
+}
+
+.svx-transfer-list-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(150px, 0.55fr) minmax(170px, 0.65fr) auto;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+  padding: 14px;
+  text-align: left;
+}
+
+.svx-transfer-list-card:hover {
+  border-color: color-mix(in srgb, var(--transfer-primary) 34%, var(--transfer-border));
+}
+
+.svx-transfer-item-main {
+  min-width: 0;
+}
+
+.svx-transfer-item-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.svx-transfer-item-title h3 {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.svx-transfer-item-meta,
+.svx-transfer-mini-meta {
+  display: flex;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.svx-transfer-item-meta span,
+.svx-transfer-mini-meta span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.svx-transfer-amount {
+  color: var(--transfer-text);
+  font-family: var(--transfer-heading-font);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+
+.svx-transfer-note {
+  margin-top: 4px !important;
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.svx-transfer-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.svx-transfer-status.borrowed { background: rgba(245, 158, 11, 0.13); color: #f59e0b; }
+.svx-transfer-status.received { background: rgba(14, 165, 233, 0.13); color: #0ea5e9; }
+.svx-transfer-status.sold { background: var(--transfer-primary-soft); color: var(--transfer-primary); }
+.svx-transfer-status.paid { background: rgba(16, 185, 129, 0.13); color: #10b981; }
+.svx-transfer-status.returned { background: var(--transfer-surface-2); color: var(--transfer-muted); }
+
+.svx-transfer-row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.svx-transfer-row-actions button,
+.svx-transfer-row-actions a {
+  min-height: 36px;
+  border-radius: 12px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.svx-transfer-panel {
+  padding: 18px;
+}
+
+.svx-transfer-panel + .svx-transfer-panel {
+  margin-top: 14px;
+}
+
+.svx-transfer-side-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.svx-transfer-side-item {
+  border: 1px solid var(--transfer-border);
+  border-radius: 18px;
+  background: var(--transfer-surface-2);
+  padding: 13px;
+}
+
+.svx-transfer-side-item strong {
+  display: block;
+  color: var(--transfer-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.svx-transfer-side-item span {
+  display: block;
+  margin-top: 4px;
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.svx-transfer-empty {
+  padding: 28px;
+  text-align: center;
+}
+
+.svx-transfer-empty h3 {
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.svx-transfer-empty p {
+  max-width: 440px;
+  margin: 10px auto 0 !important;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.svx-transfer-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 400px);
+  gap: 18px;
+  align-items: start;
+}
+
+.svx-transfer-detail-hero {
+  padding: 24px;
+}
+
+.svx-transfer-detail-title-row {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.svx-transfer-detail-title-row h1 {
+  max-width: 760px;
+  font-size: clamp(28px, 3vw, 42px);
+  font-weight: 800;
+  line-height: 1.04;
+}
+
+.svx-transfer-detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.svx-transfer-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.svx-transfer-info-card {
+  min-width: 0;
+  border: 1px solid var(--transfer-border);
+  border-radius: 18px;
+  background: var(--transfer-surface-2);
+  padding: 14px;
+}
+
+.svx-transfer-info-card strong {
+  display: block;
+  margin-top: 7px;
+  color: var(--transfer-text);
+  font-size: 14px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.svx-transfer-progress {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.svx-transfer-step {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.svx-transfer-step-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--transfer-surface-3);
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.svx-transfer-step.is-done .svx-transfer-step-dot {
+  background: var(--transfer-primary);
+  color: var(--transfer-primary-contrast);
+}
+
+.svx-transfer-step strong {
+  display: block;
+  color: var(--transfer-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.svx-transfer-step span {
+  display: block;
+  margin-top: 3px;
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.svx-transfer-payments {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.svx-transfer-payment-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--transfer-border);
+  border-radius: 18px;
+  background: var(--transfer-surface-2);
+  padding: 12px;
+}
+
+.svx-transfer-payment-row strong {
+  color: var(--transfer-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.svx-transfer-payment-row span {
+  display: block;
+  margin-top: 3px;
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.svx-transfer-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.svx-transfer-form-field {
+  min-width: 0;
+}
+
+.svx-transfer-form-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--transfer-text);
+  font-size: 12.5px;
+  font-weight: 900;
+}
+
+.svx-transfer-field-hint {
+  margin-top: 6px !important;
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.svx-transfer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: none;
+  font-family: var(--transfer-body-font);
+}
+
+.svx-transfer-modal.is-open {
+  display: block;
+}
+
+.svx-transfer-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+}
+
+.svx-transfer-modal-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: 22px;
+}
+
+.svx-transfer-modal-card {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid var(--transfer-border);
+  border-radius: 30px;
+  background: var(--transfer-card);
+  box-shadow: 0 32px 120px rgba(0, 0, 0, 0.32);
+}
+
+.svx-transfer-modal-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  border-bottom: 1px solid var(--transfer-border);
+  padding: 22px;
+}
+
+.svx-transfer-modal-head h2 {
+  margin-top: 10px;
+  font-size: clamp(26px, 3vw, 38px);
+  font-weight: 800;
+  line-height: 1.04;
+}
+
+.svx-transfer-modal-head p {
+  max-width: 720px;
+  margin-top: 9px !important;
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.svx-transfer-modal-body {
+  display: grid;
+  gap: 16px;
+  padding: 22px;
+}
+
+.svx-transfer-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.svx-transfer-mode-card {
+  border: 1px solid var(--transfer-border) !important;
+  border-radius: 20px;
+  background: var(--transfer-surface-2);
+  padding: 16px;
+  text-align: left;
+}
+
+.svx-transfer-mode-card.is-active {
+  border-color: var(--transfer-primary) !important;
+  background: var(--transfer-primary-soft);
+}
+
+.svx-transfer-mode-card strong {
+  color: var(--transfer-text);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.svx-transfer-mode-card span {
+  display: block;
+  margin-top: 5px;
+  color: var(--transfer-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.svx-transfer-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid var(--transfer-border);
+  padding: 18px 22px;
+}
+
+.svx-transfer-error {
+  border-radius: 18px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.svx-transfer-search-results {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.svx-transfer-result-card {
+  border: 1px solid var(--transfer-border) !important;
+  border-radius: 16px;
+  background: var(--transfer-surface-2);
+  padding: 12px;
+  text-align: left;
+}
+
+.svx-transfer-result-card.is-active {
+  border-color: var(--transfer-primary) !important;
+  background: var(--transfer-primary-soft);
+}
+
+.svx-transfer-result-card strong {
+  display: block;
+  color: var(--transfer-text);
+  font-size: 13.5px;
+  font-weight: 900;
+}
+
+.svx-transfer-result-card span {
+  display: block;
+  margin-top: 4px;
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.svx-transfer-skeleton {
+  border-radius: 20px;
+  background: linear-gradient(90deg, var(--transfer-surface-2), var(--transfer-surface-3), var(--transfer-surface-2));
+  background-size: 220% 100%;
+  animation: svx-transfer-shimmer 1.2s infinite linear;
+}
+
+@keyframes svx-transfer-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+@media (max-width: 1180px) {
+  .svx-transfer-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-transfer-content-grid,
+  .svx-transfer-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-transfer-list-card {
+    grid-template-columns: minmax(0, 1fr) minmax(140px, 0.45fr) auto;
+  }
+
+  .svx-transfer-list-card .svx-transfer-row-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-shell {
+    gap: 16px;
+    padding-bottom: calc(22px + env(safe-area-inset-bottom));
+  }
+
+  .svx-transfer-hero,
+  .svx-transfer-card,
+  .svx-transfer-panel,
+  .svx-transfer-form-card {
+    border-radius: 20px;
+  }
+
+  .svx-transfer-hero {
+    padding: 20px 16px;
+  }
+
+  .svx-transfer-hero-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-transfer-title {
+    max-width: 350px;
+    font-size: clamp(29px, 9vw, 38px);
+  }
+
+  .svx-transfer-subtitle {
+    max-width: 340px;
+    font-size: 13.5px;
+    line-height: 1.5;
+  }
+
+  .svx-transfer-hero-actions,
+  .svx-transfer-toolbar-actions,
+  .svx-transfer-action-row,
+  .svx-transfer-detail-actions,
+  .svx-transfer-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .svx-transfer-primary,
+  .svx-transfer-secondary,
+  .svx-transfer-danger,
+  .svx-transfer-success,
+  .svx-transfer-warning,
+  .svx-transfer-ghost {
+    width: 100%;
+    min-height: 42px;
+    padding: 0 12px;
+    font-size: 12.5px;
+  }
+
+  .svx-transfer-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .svx-transfer-stat-card {
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .svx-transfer-stat-value {
+    font-size: 21px;
+  }
+
+  .svx-transfer-toolbar {
+    grid-template-columns: 1fr;
+    border-radius: 20px;
+    padding: 12px;
+  }
+
+  .svx-transfer-search-wrap {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-transfer-filter-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .svx-transfer-filter {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 8px;
+    font-size: 10px;
+  }
+
+  .svx-transfer-section-head {
+    display: grid;
+    gap: 8px;
+  }
+
+  .svx-transfer-section-head h2,
+  .svx-transfer-panel h2,
+  .svx-transfer-form-card h2 {
+    font-size: 21px;
+  }
+
+  .svx-transfer-list-card {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .svx-transfer-amount {
+    font-size: 16px;
+  }
+
+  .svx-transfer-row-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-content: stretch;
+  }
+
+  .svx-transfer-info-grid,
+  .svx-transfer-form-grid,
+  .svx-transfer-mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-transfer-payment-row {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-transfer-modal-scroll {
+    padding: 10px;
+  }
+
+  .svx-transfer-modal-card {
+    min-height: calc(100dvh - 20px);
+    border-radius: 22px;
+  }
+
+  .svx-transfer-modal-head,
+  .svx-transfer-modal-body,
+  .svx-transfer-modal-actions {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .svx-transfer-summary-grid,
+  .svx-transfer-filter-row,
+  .svx-transfer-row-actions,
+  .svx-transfer-hero-actions,
+  .svx-transfer-toolbar-actions,
+  .svx-transfer-action-row,
+  .svx-transfer-detail-actions,
+  .svx-transfer-modal-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-transfer-title {
+    max-width: 300px;
+    font-size: 29px;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Storvex POS color alignment layer                                           */
+/* -------------------------------------------------------------------------- */
+/* Keep Interstore visually aligned with the current Sales desk/POS foundation:
+   flat premium dark cards, restrained borders, blue only for primary actions,
+   green only for healthy/complete states, red only for risk/destructive states. */
+
+.svx-transfer-page {
+  --transfer-bg: var(--color-bg, #07111f);
+  --transfer-card: var(--color-card, #1f1f20);
+  --transfer-surface: var(--color-surface, #1f1f20);
+  --transfer-surface-2: var(--color-surface-2, #151f2e);
+  --transfer-surface-3: var(--color-surface-3, #111827);
+  --transfer-text: var(--color-text, #ffffff);
+  --transfer-muted: var(--color-text-muted, rgba(255, 255, 255, 0.68));
+  --transfer-border: var(--color-border, rgba(255, 255, 255, 0.12));
+  --transfer-primary: var(--color-primary, #2f8cff);
+  --transfer-primary-soft: var(--color-primary-soft, rgba(47, 140, 255, 0.13));
+  --transfer-success: #10b981;
+  --transfer-warning: #f59e0b;
+  --transfer-danger: var(--color-danger, #ef4444);
+  --transfer-shadow: var(--shadow-card, none);
+  --transfer-shadow-soft: var(--shadow-soft, none);
+}
+
+:root[data-theme="dark"] .svx-transfer-page,
+:root[data-theme="dark"] .svx-transfer-modal {
+  --transfer-bg: #07111f;
+  --transfer-card: #1f1f20;
+  --transfer-surface: #1f1f20;
+  --transfer-surface-2: #151f2e;
+  --transfer-surface-3: #101827;
+  --transfer-text: #ffffff;
+  --transfer-muted: rgba(255, 255, 255, 0.68);
+  --transfer-border: rgba(255, 255, 255, 0.12);
+  --transfer-primary: #2f8cff;
+  --transfer-primary-soft: rgba(47, 140, 255, 0.13);
+  --transfer-primary-contrast: #ffffff;
+  --transfer-success: #10b981;
+  --transfer-warning: #f59e0b;
+  --transfer-danger: #ef4444;
+  --transfer-shadow: none;
+  --transfer-shadow-soft: none;
+}
+
+.svx-transfer-hero,
+.svx-transfer-detail-hero,
+.svx-transfer-card,
+.svx-transfer-panel,
+.svx-transfer-list-card,
+.svx-transfer-stat-card,
+.svx-transfer-info-card,
+.svx-transfer-form-card,
+.svx-transfer-modal-card {
+  border: 1px solid var(--transfer-border) !important;
+  background: var(--transfer-card) !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-hero::after,
+.svx-transfer-detail-hero::after,
+.svx-transfer-card::after,
+.svx-transfer-panel::after,
+.svx-transfer-stat-card::after,
+.svx-transfer-info-card::after {
+  display: none !important;
+}
+
+.svx-transfer-hero,
+.svx-transfer-detail-hero {
+  border-radius: 28px !important;
+  padding: 28px !important;
+}
+
+.svx-transfer-title,
+.svx-transfer-detail-title-row h1,
+.svx-transfer-section-head h2,
+.svx-transfer-modal-head h2 {
+  color: var(--transfer-text) !important;
+  font-family: var(--transfer-heading-font) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.svx-transfer-subtitle,
+.svx-transfer-note,
+.svx-transfer-field-hint,
+.svx-transfer-stat-note,
+.svx-transfer-mini-meta,
+.svx-transfer-item-meta,
+.svx-transfer-side-item p,
+.svx-transfer-info-card p {
+  color: var(--transfer-muted) !important;
+}
+
+.svx-transfer-eyebrow,
+.svx-transfer-kicker,
+.svx-transfer-label,
+.svx-transfer-stat-label {
+  color: var(--transfer-primary) !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.18em !important;
+}
+
+.svx-transfer-eyebrow,
+.svx-transfer-kicker {
+  border-color: rgba(47, 140, 255, 0.24) !important;
+  background: rgba(47, 140, 255, 0.11) !important;
+}
+
+.svx-transfer-primary {
+  background: var(--transfer-primary) !important;
+  color: #ffffff !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-secondary,
+.svx-transfer-ghost,
+.svx-transfer-filter,
+.svx-transfer-mode-card,
+.svx-transfer-result-card {
+  border: 1px solid var(--transfer-border) !important;
+  background: var(--transfer-card) !important;
+  color: var(--transfer-text) !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-filter.is-active,
+.svx-transfer-mode-card.is-active,
+.svx-transfer-result-card.is-active {
+  border-color: rgba(47, 140, 255, 0.48) !important;
+  background: rgba(47, 140, 255, 0.11) !important;
+  color: var(--transfer-primary) !important;
+}
+
+.svx-transfer-success {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: var(--transfer-success) !important;
+  border-color: rgba(16, 185, 129, 0.24) !important;
+}
+
+.svx-transfer-warning {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: var(--transfer-warning) !important;
+  border-color: rgba(245, 158, 11, 0.24) !important;
+}
+
+.svx-transfer-danger {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: var(--transfer-danger) !important;
+  border-color: rgba(239, 68, 68, 0.26) !important;
+}
+
+.svx-transfer-input,
+.svx-transfer-select,
+.svx-transfer-textarea {
+  border: 1px solid var(--transfer-border) !important;
+  background: var(--transfer-surface-2) !important;
+  color: var(--transfer-text) !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-input::placeholder,
+.svx-transfer-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.44) !important;
+}
+
+.svx-transfer-input:focus,
+.svx-transfer-select:focus,
+.svx-transfer-textarea:focus {
+  border-color: rgba(47, 140, 255, 0.65) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 4px rgba(47, 140, 255, 0.14) !important;
+}
+
+.svx-transfer-list-card,
+.svx-transfer-side-item,
+.svx-transfer-payment-row {
+  transition: border-color 160ms ease, transform 160ms var(--transfer-ease), background-color 160ms ease;
+}
+
+.svx-transfer-list-card:hover,
+.svx-transfer-side-item:hover,
+.svx-transfer-payment-row:hover {
+  border-color: rgba(47, 140, 255, 0.3) !important;
+  background: color-mix(in srgb, var(--transfer-card) 92%, var(--transfer-primary-soft)) !important;
+  transform: translateY(-1px);
+}
+
+.svx-transfer-progress {
+  background: var(--transfer-surface-3) !important;
+}
+
+.svx-transfer-progress > span,
+.svx-transfer-step-dot.is-active,
+.svx-transfer-step.is-active .svx-transfer-step-dot {
+  background: var(--transfer-primary) !important;
+}
+
+.svx-transfer-status[data-tone="success"],
+.svx-transfer-status.is-success {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: var(--transfer-success) !important;
+  border-color: rgba(16, 185, 129, 0.24) !important;
+}
+
+.svx-transfer-status[data-tone="warning"],
+.svx-transfer-status.is-warning {
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: var(--transfer-warning) !important;
+  border-color: rgba(245, 158, 11, 0.24) !important;
+}
+
+.svx-transfer-status[data-tone="danger"],
+.svx-transfer-status.is-danger {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: var(--transfer-danger) !important;
+  border-color: rgba(239, 68, 68, 0.26) !important;
+}
+
+.svx-transfer-toolbar,
+.svx-transfer-action-row,
+.svx-transfer-modal-actions {
+  gap: 12px !important;
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-shell {
+    gap: 16px !important;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .svx-transfer-hero,
+  .svx-transfer-detail-hero,
+  .svx-transfer-card,
+  .svx-transfer-panel,
+  .svx-transfer-list-card,
+  .svx-transfer-stat-card,
+  .svx-transfer-info-card,
+  .svx-transfer-form-card {
+    border-radius: 20px !important;
+  }
+
+  .svx-transfer-hero,
+  .svx-transfer-detail-hero {
+    padding: 20px 16px !important;
+  }
+
+  .svx-transfer-title,
+  .svx-transfer-detail-title-row h1 {
+    font-size: clamp(30px, 9vw, 38px) !important;
+    line-height: 1.02 !important;
+  }
+
+  .svx-transfer-hero-inner,
+  .svx-transfer-toolbar,
+  .svx-transfer-action-row,
+  .svx-transfer-row-actions,
+  .svx-transfer-modal-actions {
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .svx-transfer-primary,
+  .svx-transfer-secondary,
+  .svx-transfer-ghost,
+  .svx-transfer-danger,
+  .svx-transfer-success,
+  .svx-transfer-warning {
+    width: 100% !important;
+    min-height: 46px !important;
+  }
+
+  .svx-transfer-summary-grid,
+  .svx-transfer-info-grid,
+  .svx-transfer-form-grid,
+  .svx-transfer-mode-grid,
+  .svx-transfer-detail-grid,
+  .svx-transfer-content-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* POS/Sales desk mirror correction: Interstore must share the internal app foundation */
+.svx-transfer-page {
+  --transfer-bg: #070e19 !important;
+  --transfer-card: #1f1f20 !important;
+  --transfer-surface: #1f1f20 !important;
+  --transfer-surface-2: #141d2b !important;
+  --transfer-surface-3: #101827 !important;
+  --transfer-text: #ffffff !important;
+  --transfer-muted: rgba(255, 255, 255, 0.66) !important;
+  --transfer-border: rgba(255, 255, 255, 0.12) !important;
+  --transfer-primary: #2f8cff !important;
+  --transfer-primary-soft: rgba(47, 140, 255, 0.12) !important;
+  --transfer-success: #19c79a !important;
+  --transfer-warning: #f59e0b !important;
+  --transfer-danger: #ef4444 !important;
+  --transfer-shadow: none !important;
+  --transfer-shadow-soft: none !important;
+  background: transparent !important;
+}
+
+.svx-transfer-shell {
+  width: min(100%, 1120px) !important;
+  gap: 14px !important;
+  padding: 36px 0 42px !important;
+}
+
+.svx-transfer-hero,
+.svx-transfer-stat-card,
+.svx-transfer-toolbar,
+.svx-transfer-panel,
+.svx-transfer-list-card,
+.svx-transfer-empty,
+.svx-transfer-card,
+.svx-transfer-form-card {
+  background: #1f1f20 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-hero,
+.svx-transfer-detail-hero {
+  border-radius: 24px !important;
+  padding: 30px !important;
+  background: #1f1f20 !important;
+}
+
+.svx-transfer-hero::after,
+.svx-transfer-detail-hero::after,
+.svx-transfer-stat-card::before,
+.svx-transfer-stat-card::after,
+.svx-transfer-panel::before,
+.svx-transfer-card::before {
+  display: none !important;
+}
+
+.svx-transfer-hero-inner {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.52fr) !important;
+  align-items: center !important;
+  gap: 28px !important;
+}
+
+.svx-transfer-eyebrow,
+.svx-transfer-kicker {
+  min-height: 28px !important;
+  width: fit-content !important;
+  border: 0 !important;
+  background: rgba(0, 201, 151, 0.12) !important;
+  color: #00c997 !important;
+  border-radius: 999px !important;
+  padding: 0 14px !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+}
+
+.svx-transfer-title {
+  max-width: 620px !important;
+  margin-top: 14px !important;
+  font-size: clamp(36px, 3.1vw, 50px) !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.055em !important;
+}
+
+.svx-transfer-subtitle {
+  max-width: 600px !important;
+  margin-top: 14px !important;
+  color: rgba(255, 255, 255, 0.68) !important;
+  font-size: 15px !important;
+  font-weight: 650 !important;
+  line-height: 1.55 !important;
+}
+
+.svx-transfer-category-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  min-height: 32px !important;
+  margin-top: 22px !important;
+  border-radius: 999px !important;
+  background: rgba(0, 201, 151, 0.12) !important;
+  padding: 0 16px !important;
+  color: #00c997 !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+}
+
+.svx-transfer-hero-tabs {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  align-self: center !important;
+}
+
+.svx-transfer-tab {
+  min-height: 44px !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 14px !important;
+  background: transparent !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+
+.svx-transfer-tab.is-active {
+  border-color: rgba(47, 140, 255, 0.55) !important;
+  color: #2f8cff !important;
+}
+
+.svx-transfer-summary-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.svx-transfer-stat-card {
+  min-height: 104px !important;
+  border-radius: 18px !important;
+  padding: 18px !important;
+  overflow: hidden !important;
+}
+
+.svx-transfer-stat-card > * {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+.svx-transfer-stat-card::marker { display: none !important; }
+
+.svx-transfer-stat-card .svx-transfer-stat-label,
+.svx-transfer-stat-label {
+  color: rgba(255, 255, 255, 0.72) !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.2em !important;
+}
+
+.svx-transfer-stat-value {
+  margin-top: 10px !important;
+  color: #ffffff !important;
+  font-size: 25px !important;
+  line-height: 1 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.svx-transfer-stat-note {
+  margin-top: 8px !important;
+  color: rgba(255, 255, 255, 0.64) !important;
+  font-size: 12px !important;
+  font-weight: 650 !important;
+  line-height: 1.35 !important;
+}
+
+.svx-transfer-toolbar {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 12px !important;
+  border-radius: 18px !important;
+  padding: 12px !important;
+}
+
+.svx-transfer-search-wrap {
+  display: grid !important;
+  grid-template-columns: minmax(280px, 1fr) minmax(150px, auto) auto !important;
+  gap: 10px !important;
+}
+
+.svx-transfer-input,
+.svx-transfer-select,
+.svx-transfer-textarea {
+  min-height: 44px !important;
+  border-radius: 13px !important;
+  background: #141d2b !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+}
+
+.svx-transfer-filter-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+}
+
+.svx-transfer-filter-row::-webkit-scrollbar { display: none !important; }
+
+.svx-transfer-filter {
+  min-height: 40px !important;
+  white-space: nowrap !important;
+  border-radius: 999px !important;
+  padding: 0 14px !important;
+  background: transparent !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 10px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.12em !important;
+}
+
+.svx-transfer-filter.is-active {
+  border-color: rgba(47, 140, 255, 0.55) !important;
+  background: rgba(47, 140, 255, 0.12) !important;
+  color: #2f8cff !important;
+}
+
+.svx-transfer-content-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.55fr) minmax(320px, 0.82fr) !important;
+  gap: 16px !important;
+  align-items: start !important;
+}
+
+.svx-transfer-section-head {
+  margin-bottom: 10px !important;
+}
+
+.svx-transfer-section-head h2,
+.svx-transfer-panel h2 {
+  margin-top: 8px !important;
+  color: #ffffff !important;
+  font-size: 23px !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.svx-transfer-section-head p {
+  margin-top: 4px !important;
+  color: rgba(255, 255, 255, 0.64) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+}
+
+.svx-transfer-empty {
+  min-height: 150px !important;
+  border-radius: 22px !important;
+  padding: 28px !important;
+  display: grid !important;
+  place-items: center !important;
+  text-align: center !important;
+}
+
+.svx-transfer-empty h3 {
+  color: #ffffff !important;
+  font-size: 22px !important;
+}
+
+.svx-transfer-empty p {
+  max-width: 520px !important;
+  margin-top: 10px !important;
+  color: rgba(255, 255, 255, 0.66) !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+.svx-transfer-empty .svx-transfer-primary {
+  margin-top: 16px !important;
+}
+
+.svx-transfer-panel {
+  border-radius: 24px !important;
+  padding: 20px !important;
+}
+
+.svx-transfer-panel + .svx-transfer-panel {
+  margin-top: 14px !important;
+}
+
+.svx-transfer-side-list {
+  display: grid !important;
+  gap: 10px !important;
+  margin-top: 16px !important;
+}
+
+.svx-transfer-side-item {
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+  background: #141d2b !important;
+  padding: 14px !important;
+}
+
+.svx-transfer-side-item:hover {
+  transform: none !important;
+  background: #141d2b !important;
+  border-color: rgba(47, 140, 255, 0.32) !important;
+}
+
+.svx-transfer-side-item strong {
+  color: #ffffff !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+
+.svx-transfer-side-item span,
+.svx-transfer-side-item p {
+  display: block !important;
+  margin-top: 5px !important;
+  color: rgba(255, 255, 255, 0.64) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+}
+
+.svx-transfer-primary,
+.svx-transfer-secondary,
+.svx-transfer-ghost,
+.svx-transfer-success,
+.svx-transfer-warning,
+.svx-transfer-danger {
+  min-height: 44px !important;
+  border-radius: 14px !important;
+  box-shadow: none !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+}
+
+.svx-transfer-secondary,
+.svx-transfer-ghost {
+  background: transparent !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.svx-transfer-primary {
+  background: #2f8cff !important;
+  color: #ffffff !important;
+}
+
+.svx-transfer-list-card {
+  border-radius: 22px !important;
+  padding: 18px !important;
+  grid-template-columns: minmax(0, 1.15fr) minmax(150px, 0.5fr) minmax(180px, 0.65fr) auto !important;
+}
+
+@media (max-width: 1180px) {
+  .svx-transfer-shell {
+    width: min(100%, 980px) !important;
+  }
+
+  .svx-transfer-hero-inner,
+  .svx-transfer-content-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-hero-tabs {
+    width: min(100%, 560px) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-shell {
+    gap: 12px !important;
+    padding: 16px 0 calc(22px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .svx-transfer-hero,
+  .svx-transfer-detail-hero {
+    padding: 20px 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .svx-transfer-title {
+    font-size: 34px !important;
+    line-height: 0.98 !important;
+  }
+
+  .svx-transfer-subtitle {
+    max-width: 330px !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+
+  .svx-transfer-category-pill {
+    min-height: 28px !important;
+    margin-top: 16px !important;
+    padding: 0 12px !important;
+    font-size: 9px !important;
+  }
+
+  .svx-transfer-hero-tabs,
+  .svx-transfer-summary-grid,
+  .svx-transfer-search-wrap,
+  .svx-transfer-toolbar,
+  .svx-transfer-content-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-hero-tabs {
+    gap: 8px !important;
+  }
+
+  .svx-transfer-summary-grid {
+    gap: 10px !important;
+  }
+
+  .svx-transfer-stat-card {
+    min-height: 86px !important;
+    border-radius: 18px !important;
+    padding: 15px !important;
+  }
+
+  .svx-transfer-stat-value {
+    font-size: 24px !important;
+  }
+
+  .svx-transfer-toolbar {
+    border-radius: 20px !important;
+  }
+
+  .svx-transfer-filter-row {
+    margin-top: 2px !important;
+    padding-bottom: 2px !important;
+  }
+
+  .svx-transfer-list-card {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+    padding: 16px !important;
+  }
+
+  .svx-transfer-row-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  .svx-transfer-row-actions > *:only-child {
+    grid-column: 1 / -1 !important;
+  }
+
+  .svx-transfer-panel {
+    padding: 16px !important;
+    border-radius: 20px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .svx-transfer-row-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-title {
+    font-size: 31px !important;
+  }
+}
+
+
+/* FINAL OWNER-FIRST INTERSTORE CLEANUP */
+.svx-transfer-shell {
+  width: min(100%, 1060px) !important;
+}
+
+.svx-transfer-branch-stack,
+.svx-transfer-branch-value {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  vertical-align: top;
+}
+
+.svx-transfer-branch-stack strong,
+.svx-transfer-branch-value strong {
+  color: var(--transfer-text);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.svx-transfer-branch-stack em,
+.svx-transfer-branch-value span {
+  color: var(--transfer-muted);
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.svx-transfer-load-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.svx-transfer-list-card {
+  grid-template-columns: minmax(260px, 1.2fr) minmax(160px, 0.52fr) minmax(160px, 0.55fr) auto !important;
+}
+
+.svx-transfer-detail-hero .svx-transfer-info-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.svx-transfer-payment-row div {
+  display: grid;
+  gap: 3px;
+}
+
+.svx-transfer-modal-card {
+  max-height: calc(100vh - 44px);
+  display: flex;
+  flex-direction: column;
+}
+
+.svx-transfer-modal-body {
+  overflow-y: auto;
+}
+
+@media (max-width: 1100px) {
+  .svx-transfer-content-grid,
+  .svx-transfer-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-list-card {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .svx-transfer-row-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-transfer-shell {
+    padding: 20px 0 28px !important;
+  }
+
+  .svx-transfer-hero,
+  .svx-transfer-detail-hero,
+  .svx-transfer-panel,
+  .svx-transfer-toolbar,
+  .svx-transfer-list-card,
+  .svx-transfer-form-card {
+    border-radius: 20px !important;
+  }
+
+  .svx-transfer-list-card,
+  .svx-transfer-detail-hero .svx-transfer-info-grid,
+  .svx-transfer-form-grid,
+  .svx-transfer-mode-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-load-more {
+    flex-direction: column;
+  }
+
+  .svx-transfer-modal-scroll {
+    padding: 10px !important;
+  }
+
+  .svx-transfer-modal-card {
+    max-height: calc(100vh - 20px);
+    border-radius: 22px !important;
+  }
+}
+
+/* FINAL LISTING PAGE FIX: clickable cards, no overlap, tighter filters, better PWA columns */
+.svx-transfer-shell {
+  width: min(100%, 1056px) !important;
+}
+
+.svx-transfer-content-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(272px, 0.36fr) !important;
+  gap: 16px !important;
+  align-items: start !important;
+}
+
+.svx-transfer-content-grid > * {
+  min-width: 0 !important;
+}
+
+.svx-transfer-list,
+.svx-transfer-section-head,
+.svx-transfer-list-card,
+.svx-transfer-item-main {
+  min-width: 0 !important;
+}
+
+.svx-transfer-list-card {
+  position: relative !important;
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.15fr) minmax(130px, 0.38fr) minmax(140px, 0.42fr) minmax(92px, 92px) !important;
+  gap: 14px !important;
+  align-items: center !important;
+  overflow: hidden !important;
+}
+
+.svx-transfer-list-card.is-clickable {
+  cursor: pointer !important;
+}
+
+.svx-transfer-list-card.is-clickable:focus-visible {
+  outline: 2px solid rgba(47, 140, 255, 0.72) !important;
+  outline-offset: 3px !important;
+}
+
+.svx-transfer-list-card.is-clickable:hover {
+  border-color: rgba(47, 140, 255, 0.36) !important;
+  background: #242424 !important;
+}
+
+.svx-transfer-list-card h3,
+.svx-transfer-item-meta span,
+.svx-transfer-mini-meta span,
+.svx-transfer-note,
+.svx-transfer-label {
+  min-width: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.svx-transfer-item-meta {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, max-content)) !important;
+  column-gap: 12px !important;
+  row-gap: 6px !important;
+  align-items: start !important;
+}
+
+.svx-transfer-row-actions {
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  align-self: stretch !important;
+}
+
+.svx-transfer-row-actions button,
+.svx-transfer-row-actions a {
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 40px !important;
+  padding-inline: 10px !important;
+}
+
+.svx-transfer-panel {
+  min-width: 0 !important;
+}
+
+.svx-transfer-side-item {
+  padding: 12px !important;
+}
+
+.svx-transfer-toolbar {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  padding: 10px !important;
+  gap: 10px !important;
+}
+
+.svx-transfer-search-wrap {
+  grid-template-columns: minmax(220px, 1fr) minmax(130px, 150px) minmax(76px, auto) !important;
+  gap: 8px !important;
+}
+
+.svx-transfer-filter-row {
+  gap: 6px !important;
+}
+
+.svx-transfer-filter {
+  min-height: 36px !important;
+  padding: 0 11px !important;
+  font-size: 9px !important;
+  letter-spacing: 0.1em !important;
+}
+
+@media (max-width: 1180px) {
+  .svx-transfer-content-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-transfer-content-grid aside {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  .svx-transfer-panel + .svx-transfer-panel {
+    margin-top: 0 !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-shell {
+    width: 100% !important;
+    padding-inline: 10px !important;
+  }
+
+  .svx-transfer-hero-tabs {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .svx-transfer-tab {
+    min-height: 38px !important;
+    padding-inline: 8px !important;
+    font-size: 11px !important;
+  }
+
+  .svx-transfer-summary-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .svx-transfer-toolbar {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    padding: 9px !important;
+  }
+
+  .svx-transfer-search-wrap {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .svx-transfer-search-wrap .svx-transfer-input {
+    grid-column: 1 / -1 !important;
+  }
+
+  .svx-transfer-filter-row {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+    overflow: visible !important;
+  }
+
+  .svx-transfer-filter {
+    width: 100% !important;
+    min-height: 34px !important;
+    padding: 0 6px !important;
+    font-size: 8px !important;
+    letter-spacing: 0.08em !important;
+  }
+
+  .svx-transfer-list-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+    padding: 14px !important;
+  }
+
+  .svx-transfer-item-main,
+  .svx-transfer-row-actions {
+    grid-column: 1 / -1 !important;
+  }
+
+  .svx-transfer-item-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    column-gap: 10px !important;
+  }
+
+  .svx-transfer-row-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-transfer-content-grid aside {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .svx-transfer-summary-grid,
+  .svx-transfer-list-card,
+  .svx-transfer-item-meta,
+  .svx-transfer-row-actions,
+  .svx-transfer-search-wrap,
+  .svx-transfer-filter-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* FINAL THEME LOCK: Interstore must be light in light mode                    */
+/* -------------------------------------------------------------------------- */
+/* Previous POS alignment rules intentionally matched the dark Sales desk, but
+   they were global. These final rules scope the dark card treatment to dark
+   mode and restore the same clean, bright foundation used by Sales desk in
+   light mode. */
+
+:root:not([data-theme="dark"]) .svx-transfer-page,
+:root:not([data-theme="dark"]) .svx-transfer-modal {
+  --transfer-bg: #ffffff !important;
+  --transfer-card: #ffffff !important;
+  --transfer-surface: #ffffff !important;
+  --transfer-surface-2: #f5f8fc !important;
+  --transfer-surface-3: #eef4fb !important;
+  --transfer-text: #071735 !important;
+  --transfer-muted: #52627a !important;
+  --transfer-border: #dfe8f4 !important;
+  --transfer-primary: #0f8df7 !important;
+  --transfer-primary-soft: rgba(15, 141, 247, 0.09) !important;
+  --transfer-primary-contrast: #ffffff !important;
+  --transfer-success: #10b981 !important;
+  --transfer-warning: #d97706 !important;
+  --transfer-danger: #ef4444 !important;
+  --transfer-shadow: 0 16px 44px rgba(15, 45, 90, 0.08) !important;
+  --transfer-shadow-soft: 0 10px 28px rgba(15, 45, 90, 0.06) !important;
+  color: var(--transfer-text) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-page {
+  background: transparent !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-hero,
+:root:not([data-theme="dark"]) .svx-transfer-detail-hero,
+:root:not([data-theme="dark"]) .svx-transfer-card,
+:root:not([data-theme="dark"]) .svx-transfer-panel,
+:root:not([data-theme="dark"]) .svx-transfer-list-card,
+:root:not([data-theme="dark"]) .svx-transfer-stat-card,
+:root:not([data-theme="dark"]) .svx-transfer-info-card,
+:root:not([data-theme="dark"]) .svx-transfer-form-card,
+:root:not([data-theme="dark"]) .svx-transfer-empty,
+:root:not([data-theme="dark"]) .svx-transfer-toolbar,
+:root:not([data-theme="dark"]) .svx-transfer-modal-card {
+  border-color: var(--transfer-border) !important;
+  background: var(--transfer-card) !important;
+  color: var(--transfer-text) !important;
+  box-shadow: var(--transfer-shadow-soft) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-hero,
+:root:not([data-theme="dark"]) .svx-transfer-detail-hero {
+  box-shadow: var(--transfer-shadow) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-title,
+:root:not([data-theme="dark"]) .svx-transfer-detail-title-row h1,
+:root:not([data-theme="dark"]) .svx-transfer-section-head h2,
+:root:not([data-theme="dark"]) .svx-transfer-panel h2,
+:root:not([data-theme="dark"]) .svx-transfer-form-card h2,
+:root:not([data-theme="dark"]) .svx-transfer-modal-head h2,
+:root:not([data-theme="dark"]) .svx-transfer-item-title h3,
+:root:not([data-theme="dark"]) .svx-transfer-empty h3,
+:root:not([data-theme="dark"]) .svx-transfer-side-item strong,
+:root:not([data-theme="dark"]) .svx-transfer-info-card strong,
+:root:not([data-theme="dark"]) .svx-transfer-payment-row strong,
+:root:not([data-theme="dark"]) .svx-transfer-step strong,
+:root:not([data-theme="dark"]) .svx-transfer-amount,
+:root:not([data-theme="dark"]) .svx-transfer-stat-value {
+  color: var(--transfer-text) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-subtitle,
+:root:not([data-theme="dark"]) .svx-transfer-note,
+:root:not([data-theme="dark"]) .svx-transfer-field-hint,
+:root:not([data-theme="dark"]) .svx-transfer-stat-note,
+:root:not([data-theme="dark"]) .svx-transfer-mini-meta,
+:root:not([data-theme="dark"]) .svx-transfer-item-meta,
+:root:not([data-theme="dark"]) .svx-transfer-side-item span,
+:root:not([data-theme="dark"]) .svx-transfer-side-item p,
+:root:not([data-theme="dark"]) .svx-transfer-info-card p,
+:root:not([data-theme="dark"]) .svx-transfer-empty p,
+:root:not([data-theme="dark"]) .svx-transfer-section-head p,
+:root:not([data-theme="dark"]) .svx-transfer-step span,
+:root:not([data-theme="dark"]) .svx-transfer-payment-row span,
+:root:not([data-theme="dark"]) .svx-transfer-branch-stack em,
+:root:not([data-theme="dark"]) .svx-transfer-branch-value span {
+  color: var(--transfer-muted) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-eyebrow,
+:root:not([data-theme="dark"]) .svx-transfer-kicker,
+:root:not([data-theme="dark"]) .svx-transfer-category-pill {
+  border: 0 !important;
+  background: rgba(16, 185, 129, 0.11) !important;
+  color: #059669 !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-label,
+:root:not([data-theme="dark"]) .svx-transfer-stat-label {
+  color: #40516b !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-input,
+:root:not([data-theme="dark"]) .svx-transfer-select,
+:root:not([data-theme="dark"]) .svx-transfer-textarea {
+  border-color: var(--transfer-border) !important;
+  background: #f7fbff !important;
+  color: var(--transfer-text) !important;
+  box-shadow: none !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-input::placeholder,
+:root:not([data-theme="dark"]) .svx-transfer-textarea::placeholder {
+  color: #7b8aa2 !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-input:focus,
+:root:not([data-theme="dark"]) .svx-transfer-select:focus,
+:root:not([data-theme="dark"]) .svx-transfer-textarea:focus {
+  border-color: rgba(15, 141, 247, 0.65) !important;
+  box-shadow: 0 0 0 4px rgba(15, 141, 247, 0.12) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-secondary,
+:root:not([data-theme="dark"]) .svx-transfer-ghost,
+:root:not([data-theme="dark"]) .svx-transfer-filter,
+:root:not([data-theme="dark"]) .svx-transfer-tab,
+:root:not([data-theme="dark"]) .svx-transfer-mode-card,
+:root:not([data-theme="dark"]) .svx-transfer-result-card {
+  border-color: var(--transfer-border) !important;
+  background: #ffffff !important;
+  color: var(--transfer-text) !important;
+  box-shadow: none !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-filter.is-active,
+:root:not([data-theme="dark"]) .svx-transfer-tab.is-active,
+:root:not([data-theme="dark"]) .svx-transfer-mode-card.is-active,
+:root:not([data-theme="dark"]) .svx-transfer-result-card.is-active {
+  border-color: rgba(15, 141, 247, 0.55) !important;
+  background: rgba(15, 141, 247, 0.08) !important;
+  color: var(--transfer-primary) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-primary {
+  border-color: transparent !important;
+  background: var(--transfer-primary) !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 24px rgba(15, 141, 247, 0.14) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-success {
+  background: rgba(16, 185, 129, 0.11) !important;
+  color: #047857 !important;
+  border-color: rgba(16, 185, 129, 0.22) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-warning {
+  background: rgba(245, 158, 11, 0.12) !important;
+  color: #b45309 !important;
+  border-color: rgba(245, 158, 11, 0.22) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-danger {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #dc2626 !important;
+  border-color: rgba(239, 68, 68, 0.24) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-side-item,
+:root:not([data-theme="dark"]) .svx-transfer-payment-row,
+:root:not([data-theme="dark"]) .svx-transfer-info-card,
+:root:not([data-theme="dark"]) .svx-transfer-step-dot {
+  border-color: var(--transfer-border) !important;
+  background: #f6f9fd !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-side-item:hover,
+:root:not([data-theme="dark"]) .svx-transfer-payment-row:hover,
+:root:not([data-theme="dark"]) .svx-transfer-list-card.is-clickable:hover,
+:root:not([data-theme="dark"]) .svx-transfer-list-card:hover {
+  border-color: rgba(15, 141, 247, 0.26) !important;
+  background: #fbfdff !important;
+  transform: translateY(-1px);
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-status.borrowed,
+:root:not([data-theme="dark"]) .svx-transfer-status[data-tone="warning"],
+:root:not([data-theme="dark"]) .svx-transfer-status.is-warning {
+  background: rgba(245, 158, 11, 0.13) !important;
+  color: #b45309 !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-status.received,
+:root:not([data-theme="dark"]) .svx-transfer-status.sold {
+  background: rgba(15, 141, 247, 0.1) !important;
+  color: var(--transfer-primary) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-status.paid,
+:root:not([data-theme="dark"]) .svx-transfer-status[data-tone="success"],
+:root:not([data-theme="dark"]) .svx-transfer-status.is-success {
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #047857 !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-status.returned {
+  background: #eef4fb !important;
+  color: #52627a !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-modal-backdrop {
+  background: rgba(7, 23, 53, 0.34) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+/* FINAL LISTING POLISH: owner-first register, no clutter, no broken words */
+.svx-transfer-content-grid.is-list-only {
+  grid-template-columns: minmax(0, 1fr) !important;
+  max-width: 100% !important;
+}
+
+.svx-transfer-content-grid.is-list-only > div {
+  min-width: 0 !important;
+}
+
+.svx-transfer-section-head {
+  align-items: center !important;
+}
+
+.svx-transfer-section-head h2 {
+  font-size: clamp(22px, 2.1vw, 28px) !important;
+  letter-spacing: -0.045em !important;
+}
+
+.svx-transfer-list {
+  gap: 12px !important;
+}
+
+.svx-transfer-list-card {
+  grid-template-columns: minmax(0, 1.35fr) minmax(138px, 0.34fr) minmax(132px, 0.32fr) minmax(104px, 104px) !important;
+  gap: 16px !important;
+  align-items: center !important;
+  min-height: 118px !important;
+  padding: 16px !important;
+  overflow: hidden !important;
+}
+
+.svx-transfer-list-card.is-clickable:hover {
+  transform: translateY(-1px) !important;
+}
+
+.svx-transfer-list-main,
+.svx-transfer-list-money,
+.svx-transfer-list-next,
+.svx-transfer-list-meta-item {
+  min-width: 0 !important;
+}
+
+.svx-transfer-item-title {
+  flex-wrap: nowrap !important;
+  gap: 10px !important;
+}
+
+.svx-transfer-item-title h3 {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  font-size: 17px !important;
+  line-height: 1.18 !important;
+}
+
+.svx-transfer-list-main-meta {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin-top: 12px !important;
+}
+
+.svx-transfer-list-meta-item {
+  display: grid !important;
+  gap: 3px !important;
+}
+
+.svx-transfer-list-meta-item small,
+.svx-transfer-label {
+  display: block !important;
+  color: var(--transfer-muted) !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.13em !important;
+  line-height: 1.1 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+
+.svx-transfer-list-meta-item strong,
+.svx-transfer-list-next strong,
+.svx-transfer-list-next span {
+  display: block !important;
+  min-width: 0 !important;
+  color: var(--transfer-text) !important;
+  font-size: 12.5px !important;
+  font-weight: 850 !important;
+  line-height: 1.22 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.svx-transfer-list-next span {
+  margin-top: 4px !important;
+  color: var(--transfer-muted) !important;
+  font-weight: 750 !important;
+}
+
+.svx-transfer-branch-stack,
+.svx-transfer-branch-value {
+  max-width: 100% !important;
+}
+
+.svx-transfer-branch-stack strong,
+.svx-transfer-branch-stack em,
+.svx-transfer-branch-value strong,
+.svx-transfer-branch-value span {
+  max-width: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.svx-transfer-list-money {
+  display: grid !important;
+  gap: 4px !important;
+}
+
+.svx-transfer-amount {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 18px !important;
+}
+
+.svx-transfer-note {
+  margin-top: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  word-break: normal !important;
+}
+
+.svx-transfer-row-actions {
+  align-self: center !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+}
+
+.svx-transfer-row-actions button,
+.svx-transfer-row-actions a {
+  min-height: 42px !important;
+  border-radius: 14px !important;
+  white-space: nowrap !important;
+}
+
+.svx-transfer-mobile-status-control {
+  width: fit-content !important;
+  min-width: 176px !important;
+  max-width: 220px !important;
+  margin-left: auto !important;
+}
+
+.svx-transfer-mobile-status-control .svx-transfer-select {
+  min-width: 176px !important;
+  max-width: 220px !important;
+}
+
+@media (min-width: 1181px) {
+  .svx-transfer-shell {
+    width: min(100%, 1060px) !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .svx-transfer-list-card {
+    grid-template-columns: minmax(0, 1fr) minmax(132px, 0.28fr) minmax(132px, 0.28fr) minmax(104px, 104px) !important;
+  }
+
+  .svx-transfer-list-main-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-section-head {
+    margin-bottom: 8px !important;
+  }
+
+  .svx-transfer-section-head h2 {
+    font-size: 22px !important;
+  }
+
+  .svx-transfer-section-head p {
+    max-width: 360px !important;
+  }
+
+  .svx-transfer-list-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    min-height: auto !important;
+    gap: 12px !important;
+    padding: 14px !important;
+  }
+
+  .svx-transfer-list-main {
+    grid-column: 1 / -1 !important;
+  }
+
+  .svx-transfer-list-main-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px !important;
+  }
+
+  .svx-transfer-list-money,
+  .svx-transfer-list-next {
+    min-height: 58px !important;
+  }
+
+  .svx-transfer-row-actions {
+    grid-column: 1 / -1 !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-transfer-row-actions > *:only-child {
+    grid-column: 1 / -1 !important;
+  }
+
+  .svx-transfer-mobile-status-control {
+    justify-self: start !important;
+    margin-left: 0 !important;
+    min-width: 168px !important;
+    width: 168px !important;
+    max-width: 58vw !important;
+  }
+
+  .svx-transfer-mobile-status-control .svx-transfer-select {
+    min-width: 168px !important;
+    max-width: 58vw !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-transfer-list-main-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-transfer-list-meta-item small,
+  .svx-transfer-label {
+    font-size: 8.5px !important;
+    letter-spacing: 0.09em !important;
+  }
+
+  .svx-transfer-list-meta-item strong,
+  .svx-transfer-list-next strong,
+  .svx-transfer-list-next span {
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .svx-transfer-list-card,
+  .svx-transfer-list-main-meta,
+  .svx-transfer-row-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-mobile-status-control,
+  .svx-transfer-mobile-status-control .svx-transfer-select {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
+/* FINAL REGISTER READABILITY FIX: no unprofessional ellipsis on owner-critical values */
+.svx-transfer-section-head h2 {
+  letter-spacing: -0.025em !important;
+  word-spacing: 0.04em !important;
+}
+
+.svx-transfer-list-card {
+  grid-template-columns: minmax(0, 1fr) minmax(96px, auto) !important;
+  grid-template-areas:
+    "main actions"
+    "money actions"
+    "next actions" !important;
+  align-items: center !important;
+  gap: 14px 18px !important;
+  min-height: auto !important;
+  padding: 18px !important;
+}
+
+.svx-transfer-list-main { grid-area: main !important; }
+.svx-transfer-list-money { grid-area: money !important; }
+.svx-transfer-list-next { grid-area: next !important; }
+.svx-transfer-row-actions { grid-area: actions !important; }
+
+.svx-transfer-list-main,
+.svx-transfer-list-money,
+.svx-transfer-list-next,
+.svx-transfer-list-meta-item,
+.svx-transfer-list-card h3,
+.svx-transfer-list-meta-item strong,
+.svx-transfer-list-next strong,
+.svx-transfer-list-next span,
+.svx-transfer-note,
+.svx-transfer-amount,
+.svx-transfer-branch-stack,
+.svx-transfer-branch-stack strong,
+.svx-transfer-branch-stack em,
+.svx-transfer-branch-value,
+.svx-transfer-branch-value strong,
+.svx-transfer-branch-value span {
+  min-width: 0 !important;
+  max-width: none !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  hyphens: none !important;
+}
+
+.svx-transfer-item-title {
+  flex-wrap: wrap !important;
+  align-items: center !important;
+}
+
+.svx-transfer-item-title h3 {
+  font-size: 17px !important;
+  line-height: 1.2 !important;
+}
+
+.svx-transfer-list-main-meta {
+  display: grid !important;
+  grid-template-columns: minmax(180px, 1.05fr) minmax(160px, 0.78fr) minmax(170px, 0.9fr) minmax(120px, 0.52fr) !important;
+  gap: 12px 18px !important;
+  align-items: start !important;
+}
+
+.svx-transfer-list-meta-item {
+  align-content: start !important;
+}
+
+.svx-transfer-list-meta-item small,
+.svx-transfer-label {
+  white-space: nowrap !important;
+  line-height: 1.15 !important;
+}
+
+.svx-transfer-list-meta-item strong,
+.svx-transfer-list-next strong,
+.svx-transfer-list-next span {
+  font-size: 12.5px !important;
+  line-height: 1.28 !important;
+}
+
+.svx-transfer-branch-stack,
+.svx-transfer-branch-value {
+  display: grid !important;
+  gap: 2px !important;
+}
+
+.svx-transfer-branch-stack strong,
+.svx-transfer-branch-stack em,
+.svx-transfer-branch-value strong,
+.svx-transfer-branch-value span {
+  display: block !important;
+}
+
+.svx-transfer-list-money,
+.svx-transfer-list-next {
+  display: grid !important;
+  grid-template-columns: 144px minmax(0, 1fr) !important;
+  gap: 4px 12px !important;
+  align-items: baseline !important;
+}
+
+.svx-transfer-list-money .svx-transfer-label,
+.svx-transfer-list-next .svx-transfer-label {
+  grid-column: 1 / -1 !important;
+}
+
+.svx-transfer-list-money .svx-transfer-note,
+.svx-transfer-list-next span {
+  margin: 0 !important;
+}
+
+.svx-transfer-row-actions {
+  align-self: stretch !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 92px !important;
+}
+
+.svx-transfer-row-actions button,
+.svx-transfer-row-actions a {
+  width: 92px !important;
+  min-height: 44px !important;
+}
+
+@media (min-width: 1181px) {
+  .svx-transfer-shell {
+    width: min(100%, 1120px) !important;
+  }
+}
+
+@media (max-width: 1180px) {
+  .svx-transfer-list-card {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "main"
+      "money"
+      "next"
+      "actions" !important;
+  }
+
+  .svx-transfer-list-main-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-transfer-row-actions {
+    justify-content: stretch !important;
+    min-width: 0 !important;
+  }
+
+  .svx-transfer-row-actions button,
+  .svx-transfer-row-actions a {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-list-card {
+    padding: 14px !important;
+    gap: 12px !important;
+  }
+
+  .svx-transfer-list-main-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px 12px !important;
+  }
+
+  .svx-transfer-list-money,
+  .svx-transfer-list-next {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-transfer-row-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .svx-transfer-list-main-meta,
+  .svx-transfer-list-money,
+  .svx-transfer-list-next,
+  .svx-transfer-row-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* FINAL: long-list transfer register, no dot separators, compact owner rows */
+.svx-transfer-register-head {
+  display: grid !important;
+  grid-template-columns: minmax(170px, 1.28fr) minmax(130px, 0.92fr) minmax(118px, 0.72fr) minmax(132px, 0.8fr) minmax(96px, 0.58fr) minmax(140px, 0.78fr) minmax(96px, 0.54fr) 96px !important;
+  gap: 14px !important;
+  align-items: center !important;
+  padding: 0 16px 8px !important;
+  color: var(--transfer-muted) !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+}
+
+.svx-transfer-register-list {
+  gap: 8px !important;
+}
+
+.svx-transfer-register-card {
+  display: grid !important;
+  grid-template-columns: minmax(170px, 1.28fr) minmax(130px, 0.92fr) minmax(118px, 0.72fr) minmax(132px, 0.8fr) minmax(96px, 0.58fr) minmax(140px, 0.78fr) minmax(96px, 0.54fr) 96px !important;
+  gap: 14px !important;
+  align-items: center !important;
+  min-height: 76px !important;
+  padding: 14px 16px !important;
+  border-radius: 18px !important;
+}
+
+.svx-transfer-register-primary,
+.svx-transfer-register-cell,
+.svx-transfer-quantity-stack {
+  min-width: 0 !important;
+}
+
+.svx-transfer-register-primary {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  gap: 10px !important;
+  align-items: center !important;
+}
+
+.svx-transfer-register-primary h3 {
+  margin: 0 !important;
+  min-width: 0 !important;
+  color: var(--transfer-text) !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+  line-height: 1.18 !important;
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
+  hyphens: none !important;
+}
+
+.svx-transfer-register-cell {
+  display: grid !important;
+  gap: 4px !important;
+  align-content: center !important;
+  color: var(--transfer-text) !important;
+}
+
+.svx-transfer-register-cell small {
+  display: block !important;
+  color: var(--transfer-muted) !important;
+  font-size: 8.5px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.svx-transfer-register-cell strong,
+.svx-transfer-register-cell em,
+.svx-transfer-quantity-stack strong,
+.svx-transfer-quantity-stack em,
+.svx-transfer-branch-stack strong,
+.svx-transfer-branch-stack em {
+  display: block !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  color: var(--transfer-text) !important;
+  font-style: normal !important;
+  font-size: 12.5px !important;
+  font-weight: 900 !important;
+  line-height: 1.24 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: break-word !important;
+  word-break: normal !important;
+  hyphens: none !important;
+}
+
+.svx-transfer-register-cell em,
+.svx-transfer-quantity-stack em,
+.svx-transfer-branch-stack em {
+  color: var(--transfer-muted) !important;
+  font-weight: 800 !important;
+}
+
+.svx-transfer-register-money strong {
+  font-size: 15px !important;
+  letter-spacing: -0.03em !important;
+}
+
+.svx-transfer-register-next strong {
+  color: var(--transfer-text) !important;
+}
+
+.svx-transfer-register-card .svx-transfer-row-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  align-self: center !important;
+  gap: 7px !important;
+  min-width: 0 !important;
+}
+
+.svx-transfer-register-card .svx-transfer-row-actions button,
+.svx-transfer-register-card .svx-transfer-row-actions a {
+  min-height: 38px !important;
+  width: auto !important;
+  min-width: 78px !important;
+  padding: 0 14px !important;
+  border-radius: 13px !important;
+  white-space: nowrap !important;
+}
+
+.svx-transfer-status {
+  white-space: nowrap !important;
+}
+
+/* Remove the old visual row systems from the register. */
+.svx-transfer-list-main,
+.svx-transfer-list-main-meta,
+.svx-transfer-list-money,
+.svx-transfer-list-next {
+  display: contents !important;
+}
+
+@media (max-width: 1240px) {
+  .svx-transfer-register-head {
+    display: none !important;
+  }
+
+  .svx-transfer-register-card {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+    min-height: 0 !important;
+    padding: 15px !important;
+  }
+
+  .svx-transfer-register-primary {
+    grid-column: 1 / -1 !important;
+  }
+
+  .svx-transfer-register-card .svx-transfer-row-actions {
+    grid-column: 1 / -1 !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    justify-content: stretch !important;
+  }
+
+  .svx-transfer-register-card .svx-transfer-row-actions button,
+  .svx-transfer-register-card .svx-transfer-row-actions a {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-register-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px 10px !important;
+    padding: 14px !important;
+  }
+
+  .svx-transfer-register-primary,
+  .svx-transfer-register-money,
+  .svx-transfer-register-card .svx-transfer-row-actions {
+    grid-column: 1 / -1 !important;
+  }
+
+  .svx-transfer-register-primary h3 {
+    font-size: 15px !important;
+  }
+
+  .svx-transfer-register-money {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    column-gap: 10px !important;
+  }
+
+  .svx-transfer-register-money small {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .svx-transfer-register-card {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-register-primary,
+  .svx-transfer-register-money {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* FINAL REGISTER DENSITY LOCK: true long-list rows, no cramped cells, no separators */
+.svx-transfer-register-head {
+  grid-template-columns: minmax(230px, 1.45fr) minmax(150px, 0.9fr) minmax(135px, 0.74fr) minmax(145px, 0.82fr) minmax(150px, 0.78fr) minmax(110px, 0.54fr) 96px !important;
+  gap: 16px !important;
+  padding-inline: 18px !important;
+}
+
+.svx-transfer-register-card {
+  grid-template-columns: minmax(230px, 1.45fr) minmax(150px, 0.9fr) minmax(135px, 0.74fr) minmax(145px, 0.82fr) minmax(150px, 0.78fr) minmax(110px, 0.54fr) 96px !important;
+  gap: 16px !important;
+  min-height: 72px !important;
+  padding: 13px 18px !important;
+  border-radius: 16px !important;
+}
+
+.svx-transfer-register-primary {
+  grid-template-columns: auto minmax(0, 1fr) !important;
+  align-items: center !important;
+}
+
+.svx-transfer-register-item-copy {
+  display: grid !important;
+  gap: 5px !important;
+  min-width: 0 !important;
+}
+
+.svx-transfer-register-item-copy h3 {
+  max-width: 100% !important;
+}
+
+.svx-transfer-quantity-stack {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 4px 10px !important;
+  align-items: center !important;
+}
+
+.svx-transfer-quantity-stack strong,
+.svx-transfer-quantity-stack em {
+  display: inline-flex !important;
+  white-space: nowrap !important;
+  font-size: 11.5px !important;
+  line-height: 1.15 !important;
+}
+
+.svx-transfer-register-cell small,
+.svx-transfer-register-cell strong,
+.svx-transfer-register-cell em,
+.svx-transfer-branch-stack strong,
+.svx-transfer-branch-stack em {
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  hyphens: none !important;
+}
+
+.svx-transfer-register-cell strong,
+.svx-transfer-branch-stack strong,
+.svx-transfer-branch-stack em {
+  white-space: normal !important;
+}
+
+.svx-transfer-register-card .svx-transfer-row-actions {
+  justify-content: end !important;
+}
+
+.svx-transfer-register-card .svx-transfer-row-actions button,
+.svx-transfer-register-card .svx-transfer-row-actions a {
+  min-width: 86px !important;
+  min-height: 40px !important;
+}
+
+@media (max-width: 1240px) {
+  .svx-transfer-register-card {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 0.9fr) !important;
+  }
+
+  .svx-transfer-register-primary {
+    grid-column: 1 / -1 !important;
+  }
+
+  .svx-transfer-register-money,
+  .svx-transfer-register-next,
+  .svx-transfer-register-card .svx-transfer-row-actions {
+    grid-column: auto !important;
+  }
+
+  .svx-transfer-register-card .svx-transfer-row-actions {
+    display: flex !important;
+    justify-content: flex-end !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-register-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px 10px !important;
+    padding: 14px !important;
+  }
+
+  .svx-transfer-register-primary,
+  .svx-transfer-register-money,
+  .svx-transfer-register-card .svx-transfer-row-actions {
+    grid-column: 1 / -1 !important;
+  }
+
+  .svx-transfer-register-card .svx-transfer-row-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    justify-content: stretch !important;
+  }
+
+  .svx-transfer-register-card .svx-transfer-row-actions button,
+  .svx-transfer-register-card .svx-transfer-row-actions a {
+    width: 100% !important;
+  }
+}
+
+/* FINAL DETAIL PAGE POLISH: owner-first transfer detail, same Interstore CSS file */
+.svx-transfer-detail-page .svx-transfer-shell {
+  width: min(100%, 1080px) !important;
+  gap: 14px !important;
+}
+
+.svx-transfer-detail-hero-clean {
+  display: grid !important;
+  gap: 18px !important;
+  padding: 26px !important;
+}
+
+.svx-transfer-detail-topbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.svx-transfer-detail-topbar .svx-transfer-secondary {
+  width: auto !important;
+  min-width: 78px !important;
+}
+
+.svx-transfer-detail-mainline {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 300px) !important;
+  gap: 18px !important;
+  align-items: end !important;
+}
+
+.svx-transfer-detail-mainline h1 {
+  max-width: 720px !important;
+  margin-top: 10px !important;
+  color: var(--transfer-text) !important;
+  font-size: clamp(34px, 3.4vw, 48px) !important;
+  font-weight: 800 !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.06em !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.svx-transfer-detail-mainline .svx-transfer-subtitle {
+  max-width: 620px !important;
+  margin-top: 12px !important;
+  color: var(--transfer-muted) !important;
+  font-size: 14px !important;
+  font-weight: 750 !important;
+  line-height: 1.5 !important;
+}
+
+.svx-transfer-next-card {
+  min-width: 0 !important;
+  border: 1px solid var(--transfer-border) !important;
+  border-radius: 18px !important;
+  background: var(--transfer-surface-2) !important;
+  padding: 16px !important;
+}
+
+.svx-transfer-next-card strong {
+  display: block !important;
+  margin-top: 8px !important;
+  color: var(--transfer-text) !important;
+  font-size: 20px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.04em !important;
+}
+
+.svx-transfer-next-card span {
+  display: block !important;
+  margin-top: 5px !important;
+  color: var(--transfer-muted) !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  line-height: 1.35 !important;
+}
+
+.svx-transfer-detail-hero-clean .svx-transfer-detail-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  margin-top: 0 !important;
+}
+
+.svx-transfer-detail-hero-clean .svx-transfer-detail-actions:empty {
+  display: none !important;
+}
+
+.svx-transfer-detail-hero-clean .svx-transfer-detail-actions > * {
+  width: auto !important;
+  min-width: 132px !important;
+}
+
+.svx-transfer-owner-summary {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.svx-transfer-owner-summary .svx-transfer-info-card {
+  background: var(--transfer-surface-2) !important;
+  border-radius: 17px !important;
+  padding: 14px !important;
+}
+
+.svx-transfer-owner-summary .svx-transfer-info-card.is-strong {
+  background: color-mix(in srgb, var(--transfer-card) 88%, var(--transfer-primary-soft)) !important;
+  border-color: color-mix(in srgb, var(--transfer-primary) 30%, var(--transfer-border)) !important;
+}
+
+.svx-transfer-owner-summary .svx-transfer-info-card strong,
+.svx-transfer-owner-grid .svx-transfer-info-card strong {
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.svx-transfer-detail-grid-clean {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px) !important;
+  gap: 14px !important;
+  align-items: start !important;
+}
+
+.svx-transfer-detail-main,
+.svx-transfer-detail-side {
+  min-width: 0 !important;
+}
+
+.svx-transfer-panel-headline {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.svx-transfer-panel-headline h2,
+.svx-transfer-settlement-panel h2,
+.svx-transfer-detail-main .svx-transfer-panel h2 {
+  margin-top: 8px !important;
+  color: var(--transfer-text) !important;
+  font-size: 24px !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.svx-transfer-timeline-clean {
+  display: grid !important;
+  gap: 10px !important;
+  margin-top: 16px !important;
+}
+
+.svx-transfer-timeline-step {
+  display: grid !important;
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-items: start !important;
+  border: 1px solid var(--transfer-border) !important;
+  border-radius: 16px !important;
+  background: var(--transfer-surface-2) !important;
+  padding: 12px !important;
+}
+
+.svx-transfer-timeline-mark {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 999px !important;
+  background: var(--transfer-surface-3) !important;
+  color: var(--transfer-muted) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+.svx-transfer-timeline-step.is-done .svx-transfer-timeline-mark {
+  background: var(--transfer-primary) !important;
+  color: #fff !important;
+}
+
+.svx-transfer-timeline-step.is-warning .svx-transfer-timeline-mark {
+  background: rgba(245, 158, 11, 0.16) !important;
+  color: var(--transfer-warning) !important;
+}
+
+.svx-transfer-timeline-step strong {
+  display: block !important;
+  color: var(--transfer-text) !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+}
+
+.svx-transfer-timeline-step span {
+  display: block !important;
+  margin-top: 3px !important;
+  color: var(--transfer-muted) !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  line-height: 1.35 !important;
+}
+
+.svx-transfer-owner-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  margin-top: 16px !important;
+}
+
+.svx-transfer-settlement-panel .svx-transfer-side-list {
+  grid-template-columns: 1fr !important;
+}
+
+.svx-transfer-payment-form {
+  margin-top: 16px !important;
+}
+
+.svx-transfer-payment-form .svx-transfer-primary {
+  width: 100% !important;
+}
+
+.svx-transfer-quiet-note {
+  margin-top: 16px !important;
+  border: 1px solid var(--transfer-border) !important;
+  border-radius: 16px !important;
+  background: var(--transfer-surface-2) !important;
+  padding: 13px !important;
+  color: var(--transfer-muted) !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1.4 !important;
+}
+
+.svx-transfer-detail-page .svx-transfer-payments {
+  margin-top: 14px !important;
+}
+
+.svx-transfer-detail-page .svx-transfer-payment-row {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+}
+
+/* light mode detail cards must stay light after previous dark overrides */
+:root:not([data-theme="dark"]) .svx-transfer-detail-page {
+  --transfer-card: #ffffff !important;
+  --transfer-surface: #ffffff !important;
+  --transfer-surface-2: #f4f8ff !important;
+  --transfer-surface-3: #eaf2ff !important;
+  --transfer-text: #07142b !important;
+  --transfer-muted: #536179 !important;
+  --transfer-border: rgba(8, 25, 48, 0.12) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-card,
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-panel,
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-info-card,
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-next-card,
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-timeline-step,
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-side-item,
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-payment-row,
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-quiet-note {
+  background: #ffffff !important;
+  border-color: rgba(8, 25, 48, 0.12) !important;
+  color: #07142b !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-info-card,
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-next-card,
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-timeline-step,
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-side-item,
+:root:not([data-theme="dark"]) .svx-transfer-detail-page .svx-transfer-quiet-note {
+  background: #f6f9ff !important;
+}
+
+@media (max-width: 1040px) {
+  .svx-transfer-detail-grid-clean,
+  .svx-transfer-detail-mainline {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-owner-summary,
+  .svx-transfer-owner-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-transfer-detail-page .svx-transfer-shell {
+    padding-inline: 10px !important;
+  }
+
+  .svx-transfer-detail-hero-clean {
+    gap: 14px !important;
+    padding: 18px !important;
+    border-radius: 20px !important;
+  }
+
+  .svx-transfer-detail-topbar {
+    align-items: center !important;
+  }
+
+  .svx-transfer-detail-mainline h1 {
+    font-size: clamp(30px, 9vw, 38px) !important;
+  }
+
+  .svx-transfer-detail-hero-clean .svx-transfer-detail-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100% !important;
+  }
+
+  .svx-transfer-detail-hero-clean .svx-transfer-detail-actions > * {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .svx-transfer-owner-summary,
+  .svx-transfer-owner-grid,
+  .svx-transfer-detail-page .svx-transfer-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-transfer-owner-summary .svx-transfer-info-card,
+  .svx-transfer-owner-grid .svx-transfer-info-card {
+    min-height: 96px !important;
+  }
+
+  .svx-transfer-detail-page .svx-transfer-panel {
+    padding: 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .svx-transfer-panel-headline {
+    display: grid !important;
+    gap: 10px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-transfer-owner-summary,
+  .svx-transfer-owner-grid,
+  .svx-transfer-detail-page .svx-transfer-form-grid,
+  .svx-transfer-detail-hero-clean .svx-transfer-detail-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* FINAL: Store transfers hero create button                                  */
+/* -------------------------------------------------------------------------- */
+/* The page-level New transfer button should look intentional, not like a
+   random primary button dropped above the tabs. Keep it scoped to the Store
+   transfers hero so modal/payment buttons are not affected. */
+
+.svx-transfer-hero-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+  width: min(100%, 360px) !important;
+  justify-self: end !important;
+  align-self: center !important;
+}
+
+.svx-transfer-hero-actions .svx-transfer-primary,
+.svx-transfer-hero-actions .svx-transfer-new-transfer,
+.svx-transfer-hero-actions .svx-transfer-new-transfer-button,
+.svx-transfer-hero-actions .svx-transfer-hero-new-transfer,
+.svx-transfer-hero-actions .svx-transfer-create-transfer,
+.svx-transfer-hero-actions .svx-transfer-create-button {
+  grid-column: 1 / -1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-height: 46px !important;
+  border: 1px solid rgba(47, 140, 255, 0.72) !important;
+  border-radius: 16px !important;
+  background: #2f8cff !important;
+  color: #ffffff !important;
+  padding: 0 18px !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1 !important;
+  box-shadow: 0 14px 30px rgba(47, 140, 255, 0.22) !important;
+  transform: translateZ(0) !important;
+}
+
+.svx-transfer-hero-actions .svx-transfer-primary::before,
+.svx-transfer-hero-actions .svx-transfer-new-transfer::before,
+.svx-transfer-hero-actions .svx-transfer-new-transfer-button::before,
+.svx-transfer-hero-actions .svx-transfer-hero-new-transfer::before,
+.svx-transfer-hero-actions .svx-transfer-create-transfer::before,
+.svx-transfer-hero-actions .svx-transfer-create-button::before {
+  content: "+";
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.svx-transfer-hero-actions .svx-transfer-primary:hover,
+.svx-transfer-hero-actions .svx-transfer-new-transfer:hover,
+.svx-transfer-hero-actions .svx-transfer-new-transfer-button:hover,
+.svx-transfer-hero-actions .svx-transfer-hero-new-transfer:hover,
+.svx-transfer-hero-actions .svx-transfer-create-transfer:hover,
+.svx-transfer-hero-actions .svx-transfer-create-button:hover {
+  border-color: rgba(47, 140, 255, 0.95) !important;
+  background: #2284f5 !important;
+  transform: translateY(-1px) !important;
+}
+
+.svx-transfer-hero-actions .svx-transfer-primary:active,
+.svx-transfer-hero-actions .svx-transfer-new-transfer:active,
+.svx-transfer-hero-actions .svx-transfer-new-transfer-button:active,
+.svx-transfer-hero-actions .svx-transfer-hero-new-transfer:active,
+.svx-transfer-hero-actions .svx-transfer-create-transfer:active,
+.svx-transfer-hero-actions .svx-transfer-create-button:active {
+  transform: translateY(0) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions .svx-transfer-primary,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions .svx-transfer-new-transfer,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions .svx-transfer-new-transfer-button,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions .svx-transfer-hero-new-transfer,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions .svx-transfer-create-transfer,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions .svx-transfer-create-button {
+  background: #0f8df7 !important;
+  border-color: rgba(15, 141, 247, 0.74) !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 32px rgba(15, 141, 247, 0.18) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions .svx-transfer-primary:hover,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions .svx-transfer-new-transfer:hover,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions .svx-transfer-new-transfer-button:hover,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions .svx-transfer-hero-new-transfer:hover,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions .svx-transfer-create-transfer:hover,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions .svx-transfer-create-button:hover {
+  background: #087fdf !important;
+}
+
+@media (max-width: 1180px) {
+  .svx-transfer-hero-actions {
+    justify-self: start !important;
+    width: min(100%, 420px) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-hero-actions {
+    width: 100% !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .svx-transfer-hero-actions .svx-transfer-primary,
+  .svx-transfer-hero-actions .svx-transfer-new-transfer,
+  .svx-transfer-hero-actions .svx-transfer-new-transfer-button,
+  .svx-transfer-hero-actions .svx-transfer-hero-new-transfer,
+  .svx-transfer-hero-actions .svx-transfer-create-transfer,
+  .svx-transfer-hero-actions .svx-transfer-create-button {
+    min-height: 44px !important;
+    border-radius: 14px !important;
+    font-size: 12.5px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .svx-transfer-hero-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-hero-actions .svx-transfer-primary,
+  .svx-transfer-hero-actions .svx-transfer-new-transfer,
+  .svx-transfer-hero-actions .svx-transfer-new-transfer-button,
+  .svx-transfer-hero-actions .svx-transfer-hero-new-transfer,
+  .svx-transfer-hero-actions .svx-transfer-create-transfer,
+  .svx-transfer-hero-actions .svx-transfer-create-button {
+    grid-column: 1 !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* FINAL ADD-ONLY FIX: Store transfers page-level New transfer button          */
+/* -------------------------------------------------------------------------- */
+/* This block only styles the New transfer action inside the Interstore hero.
+   It does not change the register, filters, detail page, modal, or global Add New. */
+
+.svx-transfer-hero-actions > button:first-child,
+.svx-transfer-hero-actions > .svx-transfer-primary:first-child,
+.svx-transfer-hero-actions > .svx-transfer-new-transfer,
+.svx-transfer-hero-actions > .svx-transfer-new-transfer-button,
+.svx-transfer-hero-actions > .svx-transfer-hero-new-transfer,
+.svx-transfer-hero-actions > .svx-transfer-create-transfer,
+.svx-transfer-hero-actions > .svx-transfer-create-button {
+  position: relative !important;
+  isolation: isolate !important;
+  min-width: 152px !important;
+  min-height: 48px !important;
+  padding: 0 18px 0 44px !important;
+  border: 1px solid rgba(47, 140, 255, 0.72) !important;
+  border-radius: 16px !important;
+  background: #2f8cff !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 34px rgba(47, 140, 255, 0.22) !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+}
+
+.svx-transfer-hero-actions > button:first-child::before,
+.svx-transfer-hero-actions > .svx-transfer-primary:first-child::before,
+.svx-transfer-hero-actions > .svx-transfer-new-transfer::before,
+.svx-transfer-hero-actions > .svx-transfer-new-transfer-button::before,
+.svx-transfer-hero-actions > .svx-transfer-hero-new-transfer::before,
+.svx-transfer-hero-actions > .svx-transfer-create-transfer::before,
+.svx-transfer-hero-actions > .svx-transfer-create-button::before {
+  content: "+";
+  position: absolute !important;
+  left: 16px !important;
+  top: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  transform: translateY(-50%) !important;
+}
+
+.svx-transfer-hero-actions > button:first-child:hover,
+.svx-transfer-hero-actions > .svx-transfer-primary:first-child:hover,
+.svx-transfer-hero-actions > .svx-transfer-new-transfer:hover,
+.svx-transfer-hero-actions > .svx-transfer-new-transfer-button:hover,
+.svx-transfer-hero-actions > .svx-transfer-hero-new-transfer:hover,
+.svx-transfer-hero-actions > .svx-transfer-create-transfer:hover,
+.svx-transfer-hero-actions > .svx-transfer-create-button:hover {
+  background: #1f7eea !important;
+  border-color: rgba(47, 140, 255, 0.92) !important;
+  transform: translateY(-1px) !important;
+}
+
+.svx-transfer-hero-actions > button:first-child:active,
+.svx-transfer-hero-actions > .svx-transfer-primary:first-child:active,
+.svx-transfer-hero-actions > .svx-transfer-new-transfer:active,
+.svx-transfer-hero-actions > .svx-transfer-new-transfer-button:active,
+.svx-transfer-hero-actions > .svx-transfer-hero-new-transfer:active,
+.svx-transfer-hero-actions > .svx-transfer-create-transfer:active,
+.svx-transfer-hero-actions > .svx-transfer-create-button:active {
+  transform: translateY(0) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > button:first-child,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > .svx-transfer-primary:first-child,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > .svx-transfer-new-transfer,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > .svx-transfer-new-transfer-button,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > .svx-transfer-hero-new-transfer,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > .svx-transfer-create-transfer,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > .svx-transfer-create-button {
+  border-color: rgba(15, 141, 247, 0.78) !important;
+  background: #0f8df7 !important;
+  color: #ffffff !important;
+  box-shadow: 0 16px 34px rgba(15, 141, 247, 0.18) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > button:first-child:hover,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > .svx-transfer-primary:first-child:hover,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > .svx-transfer-new-transfer:hover,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > .svx-transfer-new-transfer-button:hover,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > .svx-transfer-hero-new-transfer:hover,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > .svx-transfer-create-transfer:hover,
+:root:not([data-theme="dark"]) .svx-transfer-hero-actions > .svx-transfer-create-button:hover {
+  background: #087fdf !important;
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-hero-actions > button:first-child,
+  .svx-transfer-hero-actions > .svx-transfer-primary:first-child,
+  .svx-transfer-hero-actions > .svx-transfer-new-transfer,
+  .svx-transfer-hero-actions > .svx-transfer-new-transfer-button,
+  .svx-transfer-hero-actions > .svx-transfer-hero-new-transfer,
+  .svx-transfer-hero-actions > .svx-transfer-create-transfer,
+  .svx-transfer-hero-actions > .svx-transfer-create-button {
+    min-width: 0 !important;
+    width: 100% !important;
+    min-height: 46px !important;
+    border-radius: 15px !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* NEW TRANSFER BUTTON ONLY                                                    */
+/* -------------------------------------------------------------------------- */
+/* Added as a small, scoped button layer only. No layout/register/filter/detail
+   styles are changed here. The button has no shadow by request. */
+
+.svx-transfer-hero-side .svx-transfer-create-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  width: fit-content !important;
+  min-width: 132px !important;
+  min-height: 44px !important;
+  margin: 0 0 10px 0 !important;
+  padding: 0 18px !important;
+  border: 1px solid transparent !important;
+  border-radius: 14px !important;
+  background: var(--transfer-primary, #2f8cff) !important;
+  color: var(--transfer-primary-contrast, #ffffff) !important;
+  box-shadow: none !important;
+  font-family: var(--transfer-body-font, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif) !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  text-decoration: none !important;
+  text-transform: none !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms var(--transfer-ease) !important;
+}
+
+.svx-transfer-hero-side .svx-transfer-create-button:hover {
+  background: color-mix(in srgb, var(--transfer-primary, #2f8cff) 92%, #ffffff 8%) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  transform: translateY(-1px) !important;
+}
+
+.svx-transfer-hero-side .svx-transfer-create-button:active {
+  transform: translateY(0) !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-hero-side .svx-transfer-create-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--transfer-primary, #2f8cff) 54%, #ffffff 46%) !important;
+  outline-offset: 3px !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-hero-side .svx-transfer-create-button:disabled {
+  opacity: 0.62 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-hero-side .svx-transfer-create-plus {
+  display: inline-grid !important;
+  place-items: center !important;
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 999px !important;
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  flex: 0 0 auto !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-hero-side .svx-transfer-create-button {
+  background: var(--transfer-primary, #0f8df7) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-hero-side .svx-transfer-create-button:hover {
+  background: color-mix(in srgb, var(--transfer-primary, #0f8df7) 90%, #071735 10%) !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-hero-side .svx-transfer-create-button {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin-bottom: 8px !important;
+  }
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* OWNER-FIRST CREATE TRANSFER MODAL                                           */
+/* -------------------------------------------------------------------------- */
+
+.svx-transfer-create-modal .svx-transfer-modal-scroll {
+  padding: 18px !important;
+}
+
+.svx-transfer-create-card {
+  width: min(100%, 1160px) !important;
+  max-height: calc(100dvh - 36px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  border-radius: 28px !important;
+  overflow: hidden !important;
+}
+
+.svx-transfer-create-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  gap: 18px !important;
+  align-items: start !important;
+  border-bottom: 1px solid var(--transfer-border) !important;
+  padding: 22px !important;
+}
+
+.svx-transfer-create-head h2 {
+  margin-top: 10px !important;
+  color: var(--transfer-text) !important;
+  font-family: var(--transfer-heading-font) !important;
+  font-size: clamp(28px, 3vw, 42px) !important;
+  font-weight: 800 !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.055em !important;
+}
+
+.svx-transfer-create-head p {
+  max-width: 760px !important;
+  margin-top: 10px !important;
+  color: var(--transfer-muted) !important;
+  font-size: 14.5px !important;
+  font-weight: 700 !important;
+  line-height: 1.55 !important;
+}
+
+.svx-transfer-create-body {
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 340px) !important;
+  gap: 16px !important;
+  overflow-y: auto !important;
+  padding: 18px !important;
+}
+
+.svx-transfer-create-main {
+  min-width: 0 !important;
+  display: grid !important;
+  gap: 14px !important;
+}
+
+.svx-transfer-create-section,
+.svx-transfer-create-summary-card {
+  min-width: 0 !important;
+  border: 1px solid var(--transfer-border) !important;
+  border-radius: 22px !important;
+  background: var(--transfer-card) !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-create-section {
+  padding: 18px !important;
+}
+
+.svx-transfer-create-section-head {
+  display: grid !important;
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-items: start !important;
+  margin-bottom: 14px !important;
+}
+
+.svx-transfer-create-section-head > span {
+  display: grid !important;
+  place-items: center !important;
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 999px !important;
+  background: var(--transfer-primary-soft) !important;
+  color: var(--transfer-primary) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+.svx-transfer-create-section-head small {
+  display: block !important;
+  color: var(--transfer-primary) !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+}
+
+.svx-transfer-create-section-head h3,
+.svx-transfer-create-summary-card h3 {
+  margin: 4px 0 0 !important;
+  color: var(--transfer-text) !important;
+  font-family: var(--transfer-heading-font) !important;
+  font-size: 22px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.045em !important;
+  line-height: 1.05 !important;
+}
+
+.svx-transfer-create-section-head p {
+  max-width: 760px !important;
+  margin-top: 6px !important;
+  color: var(--transfer-muted) !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 1.45 !important;
+}
+
+.svx-transfer-create-mode-grid,
+.svx-transfer-create-form-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.svx-transfer-create-mode-grid + .svx-transfer-create-form-grid,
+.svx-transfer-create-results + .svx-transfer-create-form-grid,
+.svx-transfer-create-branch-card + .svx-transfer-create-form-grid,
+.svx-transfer-create-section .svx-transfer-create-form-grid + .svx-transfer-create-form-grid {
+  margin-top: 14px !important;
+}
+
+.svx-transfer-create-mode,
+.svx-transfer-create-result,
+.svx-transfer-create-branch-card {
+  min-width: 0 !important;
+  border: 1px solid var(--transfer-border) !important;
+  border-radius: 18px !important;
+  background: var(--transfer-surface-2) !important;
+  color: var(--transfer-text) !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-create-mode {
+  padding: 15px !important;
+  text-align: left !important;
+}
+
+.svx-transfer-create-mode.is-active,
+.svx-transfer-create-result.is-active {
+  border-color: color-mix(in srgb, var(--transfer-primary) 62%, var(--transfer-border)) !important;
+  background: var(--transfer-primary-soft) !important;
+}
+
+.svx-transfer-create-mode strong,
+.svx-transfer-create-result strong {
+  display: block !important;
+  color: var(--transfer-text) !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  line-height: 1.2 !important;
+}
+
+.svx-transfer-create-mode span,
+.svx-transfer-create-result span,
+.svx-transfer-create-branch-card p,
+.svx-transfer-create-field p {
+  display: block !important;
+  margin-top: 5px !important;
+  color: var(--transfer-muted) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+}
+
+.svx-transfer-create-field {
+  min-width: 0 !important;
+}
+
+.svx-transfer-create-field.is-wide {
+  grid-column: 1 / -1 !important;
+}
+
+.svx-transfer-create-field label {
+  display: block !important;
+  margin-bottom: 7px !important;
+  color: var(--transfer-text) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.svx-transfer-create-results {
+  grid-column: 1 / -1 !important;
+  display: grid !important;
+  gap: 8px !important;
+}
+
+.svx-transfer-create-result {
+  padding: 12px !important;
+  text-align: left !important;
+}
+
+.svx-transfer-create-branch-card {
+  display: grid !important;
+  gap: 4px !important;
+  margin-bottom: 14px !important;
+  padding: 14px !important;
+}
+
+.svx-transfer-create-branch-card small {
+  color: var(--transfer-primary) !important;
+  font-size: 9px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.16em !important;
+  text-transform: uppercase !important;
+}
+
+.svx-transfer-create-branch-card strong {
+  color: var(--transfer-text) !important;
+  font-size: 16px !important;
+  font-weight: 900 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.svx-transfer-create-aside {
+  min-width: 0 !important;
+  display: grid !important;
+  align-content: start !important;
+  gap: 12px !important;
+}
+
+.svx-transfer-create-summary-card {
+  position: sticky !important;
+  top: 0 !important;
+  padding: 16px !important;
+}
+
+.svx-transfer-create-summary-card.is-compact {
+  position: static !important;
+}
+
+.svx-transfer-create-summary-card h3 {
+  margin-bottom: 12px !important;
+}
+
+.svx-transfer-create-summary-list {
+  display: grid !important;
+  gap: 8px !important;
+  margin-top: 12px !important;
+}
+
+.svx-transfer-create-summary-row {
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(86px, 0.42fr) minmax(0, 1fr) !important;
+  gap: 10px !important;
+  align-items: start !important;
+  border-bottom: 1px solid var(--transfer-border) !important;
+  padding-bottom: 8px !important;
+}
+
+.svx-transfer-create-summary-row span {
+  color: var(--transfer-muted) !important;
+  font-size: 11px !important;
+  font-weight: 850 !important;
+}
+
+.svx-transfer-create-summary-row strong {
+  color: var(--transfer-text) !important;
+  font-size: 12.5px !important;
+  font-weight: 900 !important;
+  line-height: 1.25 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.svx-transfer-create-money-box {
+  display: grid !important;
+  gap: 4px !important;
+  margin-top: 14px !important;
+  border: 1px solid color-mix(in srgb, var(--transfer-primary) 35%, var(--transfer-border)) !important;
+  border-radius: 18px !important;
+  background: var(--transfer-primary-soft) !important;
+  padding: 14px !important;
+}
+
+.svx-transfer-create-money-box span,
+.svx-transfer-create-money-box em {
+  color: var(--transfer-muted) !important;
+  font-size: 12px !important;
+  font-style: normal !important;
+  font-weight: 800 !important;
+}
+
+.svx-transfer-create-money-box strong {
+  color: var(--transfer-text) !important;
+  font-family: var(--transfer-heading-font) !important;
+  font-size: 24px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.svx-transfer-create-check {
+  display: grid !important;
+  grid-template-columns: 24px minmax(0, 1fr) !important;
+  gap: 8px !important;
+  align-items: center !important;
+  margin-top: 10px !important;
+}
+
+.svx-transfer-create-check span {
+  display: grid !important;
+  place-items: center !important;
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 999px !important;
+  background: var(--transfer-surface-2) !important;
+  color: var(--transfer-muted) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+}
+
+.svx-transfer-create-check.is-done span {
+  background: rgba(16, 185, 129, 0.14) !important;
+  color: var(--transfer-success, #10b981) !important;
+}
+
+.svx-transfer-create-check strong {
+  color: var(--transfer-text) !important;
+  font-size: 12.5px !important;
+  font-weight: 850 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.svx-transfer-create-footer {
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+  border-top: 1px solid var(--transfer-border) !important;
+  background: var(--transfer-card) !important;
+  padding: 16px 18px !important;
+}
+
+.svx-transfer-create-footer .svx-transfer-primary,
+.svx-transfer-create-footer .svx-transfer-secondary {
+  min-width: 140px !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 1080px) {
+  .svx-transfer-create-body {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-create-aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-transfer-create-summary-card {
+    position: static !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-create-modal .svx-transfer-modal-scroll {
+    padding: 10px !important;
+  }
+
+  .svx-transfer-create-card {
+    max-height: calc(100dvh - 20px) !important;
+    min-height: calc(100dvh - 20px) !important;
+    border-radius: 22px !important;
+  }
+
+  .svx-transfer-create-head {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+    padding: 16px !important;
+  }
+
+  .svx-transfer-create-head h2 {
+    font-size: clamp(27px, 8vw, 36px) !important;
+  }
+
+  .svx-transfer-create-body {
+    gap: 12px !important;
+    padding: 12px !important;
+  }
+
+  .svx-transfer-create-section,
+  .svx-transfer-create-summary-card {
+    border-radius: 18px !important;
+    padding: 14px !important;
+  }
+
+  .svx-transfer-create-section-head {
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+  }
+
+  .svx-transfer-create-section-head > span {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .svx-transfer-create-section-head h3,
+  .svx-transfer-create-summary-card h3 {
+    font-size: 20px !important;
+  }
+
+  .svx-transfer-create-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .svx-transfer-create-mode-grid,
+  .svx-transfer-create-aside {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-create-field.is-wide {
+    grid-column: 1 / -1 !important;
+  }
+
+  .svx-transfer-create-footer {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    padding: 12px !important;
+  }
+
+  .svx-transfer-create-footer .svx-transfer-primary,
+  .svx-transfer-create-footer .svx-transfer-secondary {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-transfer-create-form-grid,
+  .svx-transfer-create-footer {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* Interstore create transfer page                                             */
+/* -------------------------------------------------------------------------- */
+
+.svx-transfer-create-page {
+  min-height: 100%;
+}
+
+.svx-transfer-create-shell {
+  display: grid;
+  gap: 16px;
+  width: min(100%, 1120px);
+  margin: 0 auto;
+  padding: 36px 0 44px;
+}
+
+.svx-transfer-create-hero,
+.svx-transfer-create-section,
+.svx-transfer-create-side-card,
+.svx-transfer-create-overview,
+.svx-transfer-create-footer {
+  border: 1px solid var(--transfer-border) !important;
+  background: var(--transfer-card) !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-create-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: center;
+  border-radius: 24px;
+  padding: 28px;
+}
+
+.svx-transfer-create-hero-copy h1 {
+  margin-top: 14px;
+  color: var(--transfer-text);
+  font-family: var(--transfer-heading-font);
+  font-size: clamp(34px, 3.1vw, 50px);
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  line-height: 0.98;
+}
+
+.svx-transfer-create-hero-copy p {
+  max-width: 720px;
+  margin-top: 14px !important;
+  color: var(--transfer-muted);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+
+.svx-transfer-create-hero-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.svx-transfer-create-overview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  border-radius: 20px;
+  padding: 12px;
+}
+
+.svx-transfer-create-summary-item {
+  min-width: 0;
+  border: 1px solid var(--transfer-border);
+  border-radius: 16px;
+  background: var(--transfer-surface-2);
+  padding: 13px;
+}
+
+.svx-transfer-create-summary-item span {
+  display: block;
+  color: var(--transfer-muted);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.svx-transfer-create-summary-item strong {
+  display: block;
+  margin-top: 7px;
+  color: var(--transfer-text);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.svx-transfer-create-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 16px;
+  align-items: start;
+}
+
+.svx-transfer-create-main {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.svx-transfer-create-section {
+  border-radius: 24px;
+  padding: 18px;
+}
+
+.svx-transfer-create-section-head {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.svx-transfer-create-step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--transfer-primary-soft);
+  color: var(--transfer-primary);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.svx-transfer-create-section-head h3 {
+  margin-top: 7px;
+  color: var(--transfer-text);
+  font-family: var(--transfer-heading-font);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.svx-transfer-create-section-head p {
+  max-width: 760px;
+  margin-top: 7px !important;
+  color: var(--transfer-muted);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.svx-transfer-create-section-body {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.svx-transfer-create-mode-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.svx-transfer-create-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+}
+
+.svx-transfer-form-field.is-full,
+.svx-transfer-search-results.is-full {
+  grid-column: 1 / -1;
+}
+
+.svx-transfer-branch-callout {
+  border: 1px solid rgba(47, 140, 255, 0.32);
+  border-radius: 18px;
+  background: var(--transfer-primary-soft);
+  padding: 14px;
+}
+
+.svx-transfer-branch-callout span {
+  display: block;
+  color: var(--transfer-primary);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.svx-transfer-branch-callout strong {
+  display: block;
+  margin-top: 8px;
+  color: var(--transfer-text);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.svx-transfer-branch-callout p {
+  margin-top: 7px !important;
+  color: var(--transfer-muted);
+  font-size: 12.5px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.svx-transfer-create-side {
+  position: sticky;
+  top: 18px;
+  min-width: 0;
+}
+
+.svx-transfer-create-side-card {
+  display: grid;
+  gap: 14px;
+  border-radius: 24px;
+  padding: 18px;
+}
+
+.svx-transfer-create-side-card h2 {
+  color: var(--transfer-text);
+  font-family: var(--transfer-heading-font);
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+}
+
+.svx-transfer-create-side-card p {
+  color: var(--transfer-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.svx-transfer-create-checks {
+  display: grid;
+  gap: 8px;
+}
+
+.svx-transfer-create-check {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  border: 1px solid var(--transfer-border);
+  border-radius: 16px;
+  background: var(--transfer-surface-2);
+  padding: 10px;
+}
+
+.svx-transfer-create-check span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--transfer-surface-3);
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.svx-transfer-create-check strong {
+  color: var(--transfer-muted);
+  font-size: 12.5px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.svx-transfer-create-check.is-ready {
+  border-color: rgba(16, 185, 129, 0.28);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.svx-transfer-create-check.is-ready span {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.svx-transfer-create-check.is-ready strong {
+  color: var(--transfer-text);
+}
+
+.svx-transfer-create-side-summary {
+  display: grid;
+  gap: 8px;
+}
+
+.svx-transfer-create-footer {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  border-radius: 20px;
+  padding: 12px;
+}
+
+.svx-transfer-create-button,
+.svx-transfer-hero-side .svx-transfer-create-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  min-height: 44px !important;
+  width: fit-content !important;
+  min-width: 132px !important;
+  border: 1px solid transparent !important;
+  border-radius: 14px !important;
+  background: var(--transfer-primary) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  padding: 0 16px !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  text-decoration: none !important;
+}
+
+.svx-transfer-create-plus {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: inherit !important;
+  font-size: 17px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+.svx-transfer-hero-side {
+  display: grid !important;
+  justify-items: start !important;
+  gap: 8px !important;
+}
+
+@media (max-width: 1180px) {
+  .svx-transfer-create-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-transfer-create-side {
+    position: static;
+  }
+
+  .svx-transfer-create-side-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-create-shell {
+    width: 100%;
+    gap: 12px;
+    padding: 16px 10px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .svx-transfer-create-hero {
+    grid-template-columns: 1fr;
+    border-radius: 20px;
+    padding: 20px 16px;
+  }
+
+  .svx-transfer-create-hero-copy h1 {
+    font-size: 34px;
+  }
+
+  .svx-transfer-create-hero-copy p {
+    max-width: 340px;
+    font-size: 13px;
+  }
+
+  .svx-transfer-create-hero-actions,
+  .svx-transfer-create-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .svx-transfer-create-overview,
+  .svx-transfer-create-grid,
+  .svx-transfer-create-mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-transfer-create-section,
+  .svx-transfer-create-side-card {
+    border-radius: 20px;
+    padding: 16px;
+  }
+
+  .svx-transfer-create-section-head {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+
+  .svx-transfer-create-step-number {
+    width: 30px;
+    height: 30px;
+  }
+
+  .svx-transfer-create-section-head h3 {
+    font-size: 22px;
+  }
+
+  .svx-transfer-create-side-card > .svx-transfer-primary {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-transfer-create-overview,
+  .svx-transfer-create-grid,
+  .svx-transfer-create-mode-grid,
+  .svx-transfer-create-hero-actions,
+  .svx-transfer-create-footer {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* CREATE PAGE OWNER-FIRST POLISH: full-page flow, no modal confusion          */
+/* -------------------------------------------------------------------------- */
+.svx-transfer-create-page .svx-transfer-create-shell {
+  width: min(100%, 1120px) !important;
+  gap: 14px !important;
+  padding: 32px 0 44px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-hero {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  min-height: auto !important;
+  border-radius: 24px !important;
+  padding: 26px 28px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-hero-copy h1 {
+  max-width: 720px !important;
+  margin-top: 12px !important;
+  font-size: clamp(34px, 3vw, 48px) !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.055em !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-hero-copy p {
+  max-width: 760px !important;
+  margin-top: 12px !important;
+  font-size: 14.5px !important;
+  line-height: 1.55 !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-hero-actions.is-back-only {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  width: auto !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-hero-actions.is-back-only .svx-transfer-secondary {
+  width: auto !important;
+  min-width: 138px !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-overview {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  border-radius: 18px !important;
+  padding: 10px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-summary-item {
+  border-radius: 14px !important;
+  padding: 12px !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(292px, 340px) !important;
+  gap: 16px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-main {
+  gap: 12px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-section,
+.svx-transfer-create-page .svx-transfer-create-side-card {
+  border-radius: 22px !important;
+  padding: 18px !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-section-head {
+  grid-template-columns: 34px minmax(0, 1fr) !important;
+  gap: 12px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-section-head h3 {
+  margin-top: 6px !important;
+  font-size: 23px !important;
+  line-height: 1.05 !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-section-head p {
+  max-width: 720px !important;
+  margin-top: 5px !important;
+  font-size: 13px !important;
+  line-height: 1.42 !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-section-body {
+  gap: 12px !important;
+  margin-top: 14px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-grid,
+.svx-transfer-create-page .svx-transfer-create-mode-grid {
+  gap: 10px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-form-field label {
+  margin-bottom: 6px !important;
+  font-size: 12px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-input,
+.svx-transfer-create-page .svx-transfer-select {
+  min-height: 42px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-field-hint {
+  margin-top: 5px !important;
+  font-size: 11.5px !important;
+  line-height: 1.35 !important;
+}
+
+.svx-transfer-create-page .svx-transfer-branch-callout {
+  border-radius: 16px !important;
+  padding: 13px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-side {
+  position: sticky !important;
+  top: 18px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-side-card {
+  gap: 12px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-side-card h2 {
+  font-size: 23px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-side-card > .svx-transfer-primary {
+  width: 100% !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-check {
+  min-height: 44px !important;
+  border-radius: 14px !important;
+  padding: 9px 10px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-check strong {
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-footer {
+  display: none !important;
+}
+
+@media (max-width: 1180px) {
+  .svx-transfer-create-page .svx-transfer-create-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-side {
+    position: static !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-side-card {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-create-page .svx-transfer-create-shell {
+    width: 100% !important;
+    gap: 12px !important;
+    padding: 14px 10px calc(92px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-hero {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    border-radius: 20px !important;
+    padding: 20px 16px !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-hero-copy h1 {
+    font-size: clamp(30px, 8vw, 36px) !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-hero-copy p {
+    max-width: 360px !important;
+    font-size: 13px !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-hero-actions.is-back-only {
+    justify-content: stretch !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-hero-actions.is-back-only .svx-transfer-secondary {
+    width: 100% !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-overview,
+  .svx-transfer-create-page .svx-transfer-create-grid,
+  .svx-transfer-create-page .svx-transfer-create-mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-section,
+  .svx-transfer-create-page .svx-transfer-create-side-card {
+    border-radius: 20px !important;
+    padding: 15px !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-section-head {
+    grid-template-columns: 30px minmax(0, 1fr) !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-step-number {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-section-head h3 {
+    font-size: 21px !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-side-card > .svx-transfer-primary {
+    display: none !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-footer {
+    position: fixed !important;
+    left: max(10px, env(safe-area-inset-left)) !important;
+    right: max(10px, env(safe-area-inset-right)) !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    z-index: 40 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) !important;
+    gap: 8px !important;
+    border-radius: 18px !important;
+    padding: 10px !important;
+    background: var(--transfer-card) !important;
+    border: 1px solid var(--transfer-border) !important;
+    box-shadow: none !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-footer .svx-transfer-primary,
+  .svx-transfer-create-page .svx-transfer-create-footer .svx-transfer-secondary {
+    width: 100% !important;
+    min-height: 44px !important;
+    box-shadow: none !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .svx-transfer-create-page .svx-transfer-create-overview,
+  .svx-transfer-create-page .svx-transfer-create-grid,
+  .svx-transfer-create-page .svx-transfer-create-mode-grid,
+  .svx-transfer-create-page .svx-transfer-create-footer {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* CATEGORY-AWARE INTERNAL STORE SEARCH STATES */
+.svx-transfer-search-state {
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  border: 1px dashed rgba(47, 140, 255, 0.28);
+  border-radius: 14px;
+  background: rgba(47, 140, 255, 0.08);
+  padding: 0 14px;
+  color: var(--transfer-muted);
+  font-size: 12.5px;
+  font-weight: 850;
+}
+
+.svx-transfer-search-results.is-full,
+.svx-transfer-search-state.is-full,
+.svx-transfer-form-field.is-full {
+  grid-column: 1 / -1;
+}
