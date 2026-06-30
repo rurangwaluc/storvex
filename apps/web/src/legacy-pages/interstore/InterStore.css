@@ -5007,23 +5007,277 @@
   }
 }
 
-
-/* CATEGORY-AWARE INTERNAL STORE SEARCH STATES */
-.svx-transfer-search-state {
-  display: flex;
-  align-items: center;
-  min-height: 46px;
-  border: 1px dashed rgba(47, 140, 255, 0.28);
-  border-radius: 14px;
-  background: rgba(47, 140, 255, 0.08);
-  padding: 0 14px;
-  color: var(--transfer-muted);
-  font-size: 12.5px;
-  font-weight: 850;
+/* -------------------------------------------------------------------------- */
+/* FINAL CREATE PAGE TUNING: clearer navigation, no hidden content             */
+/* -------------------------------------------------------------------------- */
+.svx-transfer-create-page .svx-transfer-create-layout {
+  align-items: start !important;
 }
 
-.svx-transfer-search-results.is-full,
-.svx-transfer-search-state.is-full,
-.svx-transfer-form-field.is-full {
-  grid-column: 1 / -1;
+.svx-transfer-create-page .svx-transfer-create-side {
+  top: 88px !important;
+  max-height: calc(100dvh - 108px) !important;
+  overflow: visible !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-side-card {
+  max-height: inherit !important;
+  overflow: auto !important;
+  scrollbar-width: thin !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-side-card h2 {
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  letter-spacing: -0.035em !important;
+  word-spacing: 0.08em !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-checks,
+.svx-transfer-create-page .svx-transfer-create-side-summary {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-check,
+.svx-transfer-create-page .svx-transfer-create-summary-item {
+  min-width: 0 !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-check strong,
+.svx-transfer-create-page .svx-transfer-create-summary-item strong {
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-section {
+  scroll-margin-top: 92px !important;
+}
+
+.svx-transfer-create-page .svx-transfer-create-hero-actions.is-back-only .svx-transfer-secondary,
+.svx-transfer-create-page .svx-transfer-create-footer .svx-transfer-secondary,
+.svx-transfer-create-page .svx-transfer-create-footer .svx-transfer-primary,
+.svx-transfer-create-page .svx-transfer-create-side-card > .svx-transfer-primary {
+  box-shadow: none !important;
+}
+
+@media (max-width: 1180px) {
+  .svx-transfer-create-page .svx-transfer-create-side {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-side-card {
+    overflow: visible !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-create-page .svx-transfer-create-overview {
+    position: static !important;
+  }
+
+  .svx-transfer-create-page .svx-transfer-create-checks {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-transfer-create-page .svx-transfer-create-checks {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+
+/* -------------------------------------------------------------------------- */
+/* Owner-first create page clarity: pay-later stock taker workflow             */
+/* -------------------------------------------------------------------------- */
+.svx-transfer-create-page-simple .svx-transfer-create-shell {
+  width: min(100%, 1080px) !important;
+}
+
+.svx-transfer-create-hero-simple h1 {
+  max-width: 680px !important;
+}
+
+.svx-transfer-create-hero-simple p {
+  max-width: 760px !important;
+}
+
+.svx-transfer-create-overview-simple {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.svx-transfer-create-layout-simple {
+  grid-template-columns: minmax(0, 1fr) minmax(288px, 330px) !important;
+  align-items: start !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section {
+  padding: 20px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section-head {
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section-head h3 {
+  font-size: clamp(22px, 2.2vw, 28px) !important;
+  letter-spacing: -0.045em !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section-head p {
+  max-width: 660px !important;
+  line-height: 1.42 !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section-body {
+  margin-top: 16px !important;
+  display: grid !important;
+  gap: 14px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-grid {
+  gap: 12px !important;
+}
+
+.svx-transfer-selected-card {
+  display: grid;
+  gap: 6px;
+  border: 1px dashed rgba(47, 140, 255, 0.42);
+  border-radius: 16px;
+  background: rgba(47, 140, 255, 0.08);
+  padding: 13px 14px;
+}
+
+.svx-transfer-selected-card span,
+.svx-transfer-selected-card em {
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 800;
+  font-style: normal;
+}
+
+.svx-transfer-selected-card strong {
+  color: var(--transfer-text);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.svx-transfer-inline-link {
+  width: fit-content;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--transfer-primary) !important;
+  padding: 0 !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.svx-transfer-create-pay-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.svx-transfer-create-pay-strip .svx-transfer-create-summary-item,
+.svx-transfer-create-side-summary-simple .svx-transfer-create-summary-item {
+  min-width: 0;
+}
+
+.svx-transfer-create-pay-strip strong,
+.svx-transfer-create-side-summary-simple strong {
+  overflow-wrap: anywhere;
+}
+
+.svx-transfer-create-side-card-simple {
+  position: sticky !important;
+  top: 18px !important;
+}
+
+.svx-transfer-create-side-card-simple h2 {
+  margin-top: 8px !important;
+  font-size: 24px !important;
+}
+
+.svx-transfer-create-side-card-simple > p {
+  margin-top: 8px !important;
+  max-width: 260px;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-checks {
+  gap: 8px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-check {
+  min-height: 42px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-branch-callout {
+  background: color-mix(in srgb, var(--transfer-surface-2) 88%, var(--transfer-primary-soft)) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-transfer-selected-card {
+  border-color: rgba(15, 141, 247, 0.32);
+  background: rgba(15, 141, 247, 0.07);
+}
+
+@media (max-width: 1180px) {
+  .svx-transfer-create-layout-simple {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-create-side-card-simple {
+    position: static !important;
+  }
+
+  .svx-transfer-create-side-summary-simple,
+  .svx-transfer-create-page-simple .svx-transfer-create-checks {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-create-page-simple .svx-transfer-create-shell {
+    padding-inline: 10px !important;
+  }
+
+  .svx-transfer-create-overview-simple,
+  .svx-transfer-create-pay-strip,
+  .svx-transfer-create-side-summary-simple,
+  .svx-transfer-create-page-simple .svx-transfer-create-checks {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-section {
+    padding: 16px !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-section-head {
+    display: grid !important;
+    grid-template-columns: 34px minmax(0, 1fr) !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-section-head h3 {
+    font-size: 22px !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-transfer-create-overview-simple,
+  .svx-transfer-create-pay-strip,
+  .svx-transfer-create-side-summary-simple,
+  .svx-transfer-create-page-simple .svx-transfer-create-checks,
+  .svx-transfer-create-page-simple .svx-transfer-mode-grid {
+    grid-template-columns: 1fr !important;
+  }
 }

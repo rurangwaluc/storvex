@@ -21,6 +21,14 @@ const writeBase = [
   requireWritableSubscription,
 ];
 
+
+router.get(
+  "/current-branch-products",
+  ...readBase,
+  requireDbPermission(PERMISSIONS.INTERSTORE_VIEW),
+  controller.searchCurrentBranchProducts
+);
+
 router.get(
   "/internal-suppliers",
   ...readBase,

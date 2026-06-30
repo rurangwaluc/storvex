@@ -12,7 +12,7 @@ import "./InterStore.css";
 
 const STATUS_FILTERS = [
   { value: "ALL", label: "All" },
-  { value: "BORROWED", label: "Needs receiving" },
+  { value: "BORROWED", label: "Taken" },
   { value: "RECEIVED", label: "In stock" },
   { value: "SOLD", label: "Money due" },
   { value: "PAID", label: "Paid" },
@@ -50,8 +50,8 @@ function toDateLabel(value) {
 function statusMeta(status) {
   const key = cleanString(status).toUpperCase();
   const map = {
-    BORROWED: { label: "Needs receiving", className: "borrowed", next: "Receive stock" },
-    RECEIVED: { label: "In stock", className: "received", next: "Sell or return" },
+    BORROWED: { label: "Taken", className: "borrowed", next: "Collect payment or return" },
+    RECEIVED: { label: "With receiver", className: "received", next: "Collect payment or return" },
     SOLD: { label: "Money due", className: "sold", next: "Collect payment" },
     PAID: { label: "Paid", className: "paid", next: "Done" },
     RETURNED: { label: "Returned", className: "returned", next: "Done" },
@@ -60,8 +60,7 @@ function statusMeta(status) {
 }
 
 function transferSource(deal) {
-  if (deal?.supplierTenantId) return "Internal store";
-  return cleanString(deal?.externalSupplierName) || "External supplier";
+  return cleanString(deal?.resellerName) || cleanString(deal?.externalSupplierName) || (deal?.supplierTenantId ? "Another store" : "Person/customer");
 }
 
 function branchParts(deal) {
@@ -170,12 +169,12 @@ function TransferCard({ deal, busyAction, onOpen, onReceive, onSell, onReturn })
       </div>
 
       <span className="svx-transfer-register-cell">
-        <small>Source</small>
+        <small>Taking stock</small>
         <strong title={transferSource(deal)}>{transferSource(deal)}</strong>
       </span>
 
       <span className="svx-transfer-register-cell">
-        <small>Receiving branch</small>
+        <small>Shop branch</small>
         <strong><BranchStack deal={deal} /></strong>
       </span>
 
@@ -357,7 +356,7 @@ export default function InterStoreDeals() {
               <span className="svx-transfer-eyebrow">Store transfers</span>
               <h1 className="svx-transfer-title">Store transfers</h1>
               <p className="svx-transfer-subtitle">
-                Move stock between branches, outside suppliers and store partners while keeping quantity, status and money under control.
+                Track products taken by a person or another store, with money due, returns, and final payment under control.
               </p>
               <div className="svx-transfer-category-pill">Operations</div>
             </div>
@@ -388,7 +387,7 @@ export default function InterStoreDeals() {
               className="svx-transfer-input"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search item, serial, source, branch or customer"
+              placeholder="Search item, serial, person, store or branch"
             />
             <select
               className="svx-transfer-select"
@@ -446,7 +445,7 @@ export default function InterStoreDeals() {
               <>
               <div className="svx-transfer-register-head" aria-hidden="true">
                 <span>Transfer</span>
-                <span>Source</span>
+                <span>Taking stock</span>
                 <span>Branch</span>
                 <span>Tracking</span>
                 <span>Qty</span>
@@ -460,7 +459,7 @@ export default function InterStoreDeals() {
                     key={deal.id}
                     deal={deal}
                     busyAction={busyAction}
-                    onReceive={(row) => runAction(row, () => markReceived(row.id, { allBranches }), "Transfer received")}
+                    onReceive={(row) => runAction(row, () => markReceived(row.id, { allBranches }), "Transfer updated")}
                     onSell={(row) => runAction(row, () => markSold(row.id, { soldQuantity: row.quantity || 1, soldPrice: row.agreedPrice || 0 }, { allBranches }), "Transfer marked as sold")}
                     onReturn={(row) => runAction(row, () => markReturned(row.id, { returnedQuantity: row.quantity || 1 }, { allBranches }), "Transfer returned")}
                     onOpen={(row) => navigate(`/app/interstore/${row.id}`)}
@@ -492,7 +491,7 @@ export default function InterStoreDeals() {
             ) : (
               <div className="svx-transfer-empty">
                 <h3>No transfers found</h3>
-                <p>Create a transfer when stock comes from another branch, another store, or an outside supplier and you need the owner to keep control.</p>
+                <p>Create a transfer when a person or another store takes products now and promises to pay later.</p>
                 <button type="button" className="svx-transfer-primary" onClick={() => navigate("/app/interstore/new")}>Create transfer</button>
               </div>
             )}

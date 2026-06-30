@@ -693,6 +693,115 @@ async function listInternalSuppliers(req, res) {
   }
 }
 
+
+/**
+ * CURRENT SHOP PRODUCTS
+ *
+ * Interstore is pay-later stock leaving the current shop, not supplier intake.
+ * This endpoint searches products from the active branch only.
+ */
+async function searchCurrentBranchProducts(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    const activeBranch = await ensureWritableBranchAccessOrThrow(req);
+    const q = cleanString(req.query.q);
+    const takeRaw = toInt(req.query.take);
+    const take = Number.isFinite(takeRaw) ? Math.min(Math.max(1, takeRaw), 50) : 20;
+    const requestedCategory = normalizeBusinessCategory(req.query.businessCategory || req.query.category);
+    const businessCategory = requestedCategory || (await tenantBusinessCategory(prisma, tenantId));
+
+    if (q.length < 2) {
+      return res.json({
+        ok: true,
+        products: [],
+        count: 0,
+        businessCategory: businessCategory || null,
+        requiresSearch: true,
+      });
+    }
+
+    const where = {
+      tenantId,
+      isActive: true,
+      OR: [
+        { name: { contains: q, mode: "insensitive" } },
+        { serial: { contains: q, mode: "insensitive" } },
+        { sku: { contains: q, mode: "insensitive" } },
+        { barcode: { contains: q, mode: "insensitive" } },
+        { brand: { contains: q, mode: "insensitive" } },
+        { category: { contains: q, mode: "insensitive" } },
+      ],
+      branchInventory: {
+        some: {
+          branchId: activeBranch.id,
+          qtyOnHand: { gt: 0 },
+        },
+      },
+    };
+
+    const rows = await prisma.product.findMany({
+      where,
+      orderBy: [{ name: "asc" }, { createdAt: "desc" }],
+      take,
+      select: {
+        id: true,
+        tenantId: true,
+        branchInventory: {
+          where: {
+            branchId: activeBranch.id,
+            qtyOnHand: { gt: 0 },
+          },
+          take: 1,
+          select: {
+            branchId: true,
+            qtyOnHand: true,
+            branch: { select: branchSelect() },
+          },
+        },
+        name: true,
+        serial: true,
+        sku: true,
+        barcode: true,
+        brand: true,
+        category: true,
+        stockQty: true,
+        sellPrice: true,
+        costPrice: true,
+      },
+    });
+
+    return res.json({
+      ok: true,
+      products: rows.map((row) => {
+        const inventoryRow = Array.isArray(row.branchInventory) ? row.branchInventory[0] : null;
+
+        return {
+          id: row.id,
+          tenantId: row.tenantId,
+          branchId: inventoryRow?.branchId || activeBranch.id,
+          branch: serializeBranch(inventoryRow?.branch) || serializeBranch(activeBranch),
+          name: row.name || "Unnamed product",
+          serial: row.serial || null,
+          sku: row.sku || null,
+          barcode: row.barcode || null,
+          brand: row.brand || null,
+          category: row.category || null,
+          stockQty: Number(inventoryRow?.qtyOnHand ?? row.stockQty ?? 0),
+          suggestedPrice: Number(row.sellPrice || row.costPrice || 0),
+        };
+      }),
+      count: rows.length,
+      businessCategory: businessCategory || null,
+      branchScope: activeBranch,
+    });
+  } catch (err) {
+    if (handleBranchError(res, err)) return;
+
+    console.error(err);
+    return res.status(500).json({ message: "Failed to fetch current shop products" });
+  }
+}
+
 /**
  * INTERNAL SUPPLIER PRODUCTS
  */
@@ -933,12 +1042,9 @@ async function createDeal(req, res) {
     }
 
     if (!payload.supplierTenantId && !payload.externalSupplierName) {
-      return res.status(400).json({ message: "Supplier required (internal or external)" });
+      return res.status(400).json({ message: "Person or store taking stock is required" });
     }
 
-    if (payload.supplierTenantId && payload.externalSupplierName) {
-      return res.status(400).json({ message: "Choose one supplier type only" });
-    }
 
     if (payload.supplierTenantId && payload.supplierTenantId === borrowerTenantId) {
       return res.status(400).json({ message: "Supplier cannot be the same tenant as borrower" });
@@ -995,31 +1101,24 @@ async function createDeal(req, res) {
         serial: payload.serial,
       });
 
-      if (payload.supplierTenantId && payload.productId) {
-        const stockUpdate = await tx.product.updateMany({
+      if (payload.productId) {
+        const currentShopProduct = await tx.product.findFirst({
           where: {
             id: payload.productId,
-            tenantId: payload.supplierTenantId,
+            tenantId: borrowerTenantId,
             isActive: true,
-            stockQty: { gte: qty },
+            branchInventory: {
+              some: {
+                branchId: activeBranch.id,
+                qtyOnHand: { gt: 0 },
+              },
+            },
           },
-          data: {
-            stockQty: { decrement: qty },
-          },
+          select: { id: true },
         });
 
-        if (stockUpdate.count === 0) {
-          const supplierProduct = await tx.product.findFirst({
-            where: {
-              id: payload.productId,
-              tenantId: payload.supplierTenantId,
-              isActive: true,
-            },
-            select: { id: true, stockQty: true },
-          });
-
-          if (!supplierProduct) throw new Error("SUPPLIER_PRODUCT_NOT_FOUND");
-          throw new Error("SUPPLIER_OUT_OF_STOCK");
+        if (!currentShopProduct) {
+          throw new Error("CURRENT_BRANCH_PRODUCT_NOT_FOUND");
         }
       }
 
@@ -1091,6 +1190,10 @@ async function createDeal(req, res) {
     });
   } catch (err) {
     if (handleBranchError(res, err)) return;
+
+    if (err.message === "CURRENT_BRANCH_PRODUCT_NOT_FOUND") {
+      return res.status(404).json({ message: "Product not found in current branch stock" });
+    }
 
     if (err.message === "SUPPLIER_PRODUCT_NOT_FOUND") {
       return res.status(404).json({ message: "Supplier product not found" });
@@ -1522,6 +1625,10 @@ async function markReturned(req, res) {
       });
     }
 
+    if (err.message === "CURRENT_BRANCH_PRODUCT_NOT_FOUND") {
+      return res.status(404).json({ message: "Product not found in current branch stock" });
+    }
+
     if (err.message === "SUPPLIER_PRODUCT_NOT_FOUND") {
       return res.status(404).json({ message: "Supplier product not found" });
     }
@@ -1653,7 +1760,7 @@ async function listDeals(req, res) {
     const take = Number.isFinite(takeRaw) ? Math.min(Math.max(1, takeRaw), 50) : 20;
     const cursor = cleanString(req.query.cursor);
     const q = cleanString(req.query.q);
-    const status = cleanString(req.query.status).toUpperCase();
+    const status = (cleanString(req.query.status) || "").toUpperCase();
 
     const borrowerWhere = withBorrowerBranchScope({ borrowerTenantId: tenantId }, scope);
     const visibilityWhere = {
@@ -2308,6 +2415,7 @@ async function getDealPayments(req, res) {
 
 module.exports = {
   listInternalSuppliers,
+  searchCurrentBranchProducts,
   searchInternalSupplierProducts,
   createDeal,
   markReceived,

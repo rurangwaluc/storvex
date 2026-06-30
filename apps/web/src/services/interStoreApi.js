@@ -312,6 +312,19 @@ export async function listInternalSuppliers(params = {}) {
   return normalizeSuppliersResponse(data);
 }
 
+
+export async function searchCurrentBranchProducts(params = {}) {
+  const data = await apiFetch(
+    appendQuery("/interstore/current-branch-products", {
+      q: params.q,
+      take: params.take,
+      businessCategory: params.businessCategory,
+    })
+  );
+
+  return normalizeSupplierProductsResponse(data);
+}
+
 export async function searchInternalSupplierProducts(supplierTenantId, params = {}) {
   const cleanSupplierTenantId = cleanString(supplierTenantId);
 

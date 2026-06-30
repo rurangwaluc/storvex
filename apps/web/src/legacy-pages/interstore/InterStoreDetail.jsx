@@ -46,15 +46,15 @@ function statusMeta(status) {
   const key = cleanString(status).toUpperCase();
   const map = {
     BORROWED: {
-      label: "Needs receiving",
+      label: "Taken",
       className: "borrowed",
-      next: "Receive this stock into the selected branch.",
-      actionLabel: "Receive stock",
+      next: "Collect payment, mark returned, or keep watching this transfer.",
+      actionLabel: "Follow up",
     },
     RECEIVED: {
-      label: "In stock",
+      label: "With receiver",
       className: "received",
-      next: "Sell, return, or keep watching this transfer.",
+      next: "Collect payment, mark returned, or keep watching this transfer.",
       actionLabel: "Sell or return",
     },
     SOLD: {
@@ -66,13 +66,13 @@ function statusMeta(status) {
     PAID: {
       label: "Paid",
       className: "paid",
-      next: "This transfer is closed and paid.",
+      next: "This transfer is closed and fully paid.",
       actionLabel: "Closed",
     },
     RETURNED: {
       label: "Returned",
       className: "returned",
-      next: "This transfer is closed because the stock was returned.",
+      next: "This transfer is closed because the products were returned.",
       actionLabel: "Closed",
     },
   };
@@ -80,8 +80,7 @@ function statusMeta(status) {
 }
 
 function sourceLabel(deal) {
-  if (deal?.supplierTenantId) return "Internal store";
-  return cleanString(deal?.externalSupplierName) || "External supplier";
+  return cleanString(deal?.resellerName) || cleanString(deal?.externalSupplierName) || (deal?.supplierTenantId ? "Another store" : "Person/customer");
 }
 
 function branchParts(deal) {
@@ -267,7 +266,7 @@ export default function InterStoreDetail() {
       },
       {
         title: "Received",
-        text: deal?.receivedAt ? toDateTimeLabel(deal.receivedAt) : "Waiting for branch confirmation",
+        text: deal?.receivedAt ? toDateTimeLabel(deal.receivedAt) : "Waiting for follow-up confirmation",
         done: ["RECEIVED", "SOLD", "PAID", "RETURNED"].includes(statusKey) || Boolean(deal?.receivedAt),
       },
       {
@@ -326,7 +325,7 @@ export default function InterStoreDetail() {
           </div>
 
           <div className="svx-transfer-detail-actions">
-            {deal.status === "BORROWED" ? <button type="button" className="svx-transfer-success" onClick={() => setAction("receive")}>Receive stock</button> : null}
+            {deal.status === "BORROWED" ? <button type="button" className="svx-transfer-success" onClick={() => setAction("receive")}>Confirm taken</button> : null}
             {deal.status === "RECEIVED" ? (
               <>
                 <button type="button" className="svx-transfer-primary" onClick={() => setAction("sell")}>Mark sold</button>
@@ -338,8 +337,8 @@ export default function InterStoreDetail() {
 
           <div className="svx-transfer-owner-summary">
             <InfoCard label="Money at risk" value={formatMoney(risk)} note={closed ? "Closed transfer" : "Amount owner should keep watching"} strong />
-            <InfoCard label="Receiving branch" value={<BranchValue deal={deal} />} note="Branch controlling this transfer" />
-            <InfoCard label="Source" value={sourceLabel(deal)} note={deal.externalSupplierPhone || "Where stock came from"} />
+            <InfoCard label="Shop branch" value={<BranchValue deal={deal} />} note="Current shop branch" />
+            <InfoCard label="Taking stock" value={sourceLabel(deal)} note={deal.externalSupplierPhone || "Person or store taking the stock"} />
             <InfoCard label="Responsible person" value={deal.resellerName} note={deal.resellerPhone || "Person or place accountable"} />
             <InfoCard label="Tracking" value={deal.serial} note={deal.productCategory || deal.productColor || "Serial, SKU, batch or code"} />
             <InfoCard label="Quantity" value={`${quantity} moved`} note={`Sold: ${soldQuantity}  Returned: ${returnedQuantity}`} />
@@ -428,12 +427,12 @@ export default function InterStoreDetail() {
       <ActionModal
         open={action === "receive"}
         title="Receive this stock?"
-        text="This confirms the selected branch has received the stock."
-        confirmLabel="Receive stock"
+        text="This confirms the stock is now recorded as taken and under follow-up."
+        confirmLabel="Confirm taken"
         tone="success"
         loading={actionLoading}
         onClose={() => setAction(null)}
-        onConfirm={() => runAction(() => markReceived(deal.id), "Transfer received")}
+        onConfirm={() => runAction(() => markReceived(deal.id), "Transfer updated")}
       />
 
       <ActionModal
