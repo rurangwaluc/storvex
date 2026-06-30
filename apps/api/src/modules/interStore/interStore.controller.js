@@ -1029,6 +1029,10 @@ async function createDeal(req, res) {
       return res.status(400).json({ message: "resellerName and resellerPhone are required" });
     }
 
+    if (!payload.productId) {
+      return res.status(400).json({ message: "Search and choose a product from the current shop stock." });
+    }
+
     if (!payload.productName) {
       return res.status(400).json({ message: "productName is required" });
     }
@@ -1101,26 +1105,43 @@ async function createDeal(req, res) {
         serial: payload.serial,
       });
 
-      if (payload.productId) {
-        const currentShopProduct = await tx.product.findFirst({
-          where: {
-            id: payload.productId,
-            tenantId: borrowerTenantId,
-            isActive: true,
-            branchInventory: {
-              some: {
-                branchId: activeBranch.id,
-                qtyOnHand: { gt: 0 },
-              },
+      const currentShopProduct = await tx.product.findFirst({
+        where: {
+          id: payload.productId,
+          tenantId: borrowerTenantId,
+          isActive: true,
+          branchInventory: {
+            some: {
+              branchId: activeBranch.id,
+              qtyOnHand: { gte: qty },
             },
           },
-          select: { id: true },
-        });
+        },
+        select: { id: true, stockQty: true },
+      });
 
-        if (!currentShopProduct) {
-          throw new Error("CURRENT_BRANCH_PRODUCT_NOT_FOUND");
-        }
+      if (!currentShopProduct) {
+        throw new Error("CURRENT_BRANCH_PRODUCT_NOT_FOUND");
       }
+
+      const branchStockUpdate = await tx.branchInventory.updateMany({
+        where: {
+          tenantId: borrowerTenantId,
+          branchId: activeBranch.id,
+          productId: payload.productId,
+          qtyOnHand: { gte: qty },
+        },
+        data: { qtyOnHand: { decrement: qty } },
+      });
+
+      if (branchStockUpdate.count === 0) {
+        throw new Error("CURRENT_BRANCH_PRODUCT_NOT_FOUND");
+      }
+
+      await tx.product.updateMany({
+        where: { id: payload.productId, tenantId: borrowerTenantId },
+        data: { stockQty: { decrement: qty } },
+      });
 
       const created = await tx.interStoreDeal.create({
         data: {
@@ -1137,7 +1158,8 @@ async function createDeal(req, res) {
           resellerSector: payload.resellerSector,
           resellerAddress: payload.resellerAddress,
           resellerNationalId: payload.resellerNationalId,
-          productId: payload.productId || null,
+          productId: payload.productId,
+          receivedProductId: payload.productId,
           productName: payload.productName,
           productCategory: payload.productCategory,
           productColor: payload.productColor,
@@ -1250,46 +1272,7 @@ async function markReceived(req, res) {
         ignoreDealId: deal.id,
       });
 
-      let receivedProductId = deal.receivedProductId || null;
-
-      if (!receivedProductId) {
-        const createdProduct = await tx.product.create({
-          data: {
-            tenantId: deal.borrowerTenantId,
-            name: deal.productName,
-            serial: deal.serial,
-            category: deal.productCategory || null,
-            costPrice: deal.agreedPrice,
-            sellPrice: deal.agreedPrice,
-            stockQty: deal.quantity,
-            isActive: true,
-          },
-          select: { id: true },
-        });
-
-        receivedProductId = createdProduct.id;
-      }
-
-      if (deal.borrowerBranchId && receivedProductId) {
-        await tx.branchInventory.upsert({
-          where: {
-            branchId_productId: {
-              branchId: deal.borrowerBranchId,
-              productId: receivedProductId,
-            },
-          },
-          create: {
-            tenantId: deal.borrowerTenantId,
-            branchId: deal.borrowerBranchId,
-            productId: receivedProductId,
-            qtyOnHand: deal.quantity,
-            qtyReserved: 0,
-          },
-          update: {
-            qtyOnHand: { increment: deal.quantity },
-          },
-        });
-      }
+      const receivedProductId = deal.receivedProductId || deal.productId || null;
 
       const upd = await tx.interStoreDeal.updateMany({
         where: {
@@ -1388,28 +1371,6 @@ async function markSold(req, res) {
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      const inventoryUpdate = await tx.branchInventory.updateMany({
-        where: {
-          tenantId,
-          branchId: deal.borrowerBranchId,
-          productId: deal.receivedProductId,
-          qtyOnHand: { gte: sq },
-        },
-        data: { qtyOnHand: { decrement: sq } },
-      });
-
-      if (inventoryUpdate.count === 0) {
-        throw new Error("BORROWER_PRODUCT_OUT_OF_STOCK_OR_NOT_FOUND");
-      }
-
-      await tx.product.updateMany({
-        where: {
-          id: deal.receivedProductId,
-          tenantId,
-        },
-        data: { stockQty: { decrement: sq } },
-      });
-
       const newSoldQty = deal.soldQuantity + sq;
       const fullyResolved = newSoldQty + deal.returnedQuantity === deal.quantity;
 
@@ -1420,31 +1381,13 @@ async function markSold(req, res) {
         },
         data: {
           soldQuantity: newSoldQty,
-          soldAt: fullyResolved ? new Date() : deal.soldAt,
-          soldPrice: sp ?? deal.soldPrice,
+          soldPrice: sp || deal.agreedPrice,
+          soldAt: new Date(),
           status: fullyResolved ? InterStoreDealStatus.SOLD : InterStoreDealStatus.RECEIVED,
         },
       });
 
       if (upd.count === 0) return null;
-
-      const p = await tx.product.findFirst({
-        where: {
-          id: deal.receivedProductId,
-          tenantId,
-        },
-        select: { stockQty: true },
-      });
-
-      if (p && p.stockQty <= 0) {
-        await tx.product.updateMany({
-          where: {
-            id: deal.receivedProductId,
-            tenantId,
-          },
-          data: { isActive: false },
-        });
-      }
 
       return tx.interStoreDeal.findFirst({
         where: buildBorrowerDealWhere(deal.id, tenantId, scope),

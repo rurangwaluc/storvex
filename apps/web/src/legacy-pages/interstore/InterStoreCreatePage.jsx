@@ -491,6 +491,7 @@ export default function InterStoreCreatePage() {
     if (!activeBranchId) return "Select an active branch before creating a transfer.";
     if (isInternal && !form.supplierTenantId) return "Choose the store taking the stock.";
     if (!isInternal && !cleanString(form.externalSupplierName)) return "Enter the person or customer taking the stock.";
+    if (!cleanString(form.productId)) return "Search and choose the product from this shop stock.";
     if (!cleanString(form.productName)) return "Enter the item being moved.";
     if (!cleanString(form.serial)) return `Enter the ${fieldCopy.codeLabel.toLowerCase()}.`;
     if (Number(form.quantity || 0) <= 0) return "Quantity must be greater than zero.";
@@ -513,7 +514,7 @@ export default function InterStoreCreatePage() {
       supplierTenantId: isInternal ? form.supplierTenantId : null,
       externalSupplierName: isInternal ? cleanString(form.externalSupplierName || supplierQuery) : cleanString(form.externalSupplierName),
       externalSupplierPhone: cleanString(form.externalSupplierPhone),
-      productId: cleanString(form.productId) || null,
+      productId: cleanString(form.productId),
       productName: cleanString(form.productName),
       productCategory: cleanString(form.productCategory),
       productColor: cleanString(form.productColor),
