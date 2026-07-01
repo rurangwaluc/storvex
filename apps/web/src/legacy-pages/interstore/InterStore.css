@@ -5281,3 +5281,14 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Store transfers: product must come from current branch stock */
+.svx-transfer-create-page .svx-transfer-input[readonly] {
+  background: color-mix(in srgb, var(--transfer-surface-2) 88%, var(--transfer-card));
+  color: var(--transfer-muted);
+  cursor: not-allowed;
+}
+
+.svx-transfer-create-page .svx-transfer-input[readonly]::placeholder {
+  color: color-mix(in srgb, var(--transfer-muted) 82%, transparent);
+}

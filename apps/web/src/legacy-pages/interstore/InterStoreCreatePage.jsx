@@ -729,7 +729,19 @@ export default function InterStoreCreatePage() {
                   <input
                     className="svx-transfer-input"
                     value={productQuery}
-                    onChange={(event) => setProductQuery(event.target.value)}
+                    onChange={(event) => {
+                        const next = event.target.value;
+                        setProductQuery(next);
+                        setForm((current) => ({
+                          ...current,
+                          productId: "",
+                          productName: "",
+                          productCategory: "",
+                          productColor: "",
+                          serial: "",
+                          agreedPrice: "",
+                        }));
+                      }}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
                         event.preventDefault();
@@ -761,9 +773,9 @@ export default function InterStoreCreatePage() {
               </div>
 
               <div className="svx-transfer-form-grid svx-transfer-create-grid svx-transfer-create-product-grid">
-                <Field label="Product name">
-                  <input className="svx-transfer-input" value={form.productName} onChange={(event) => updateField("productName", event.target.value)} placeholder="Example: HP Pavilion 15 Laptop" />
-                </Field>
+                <Field label="Product name" hint="Locked. Choose the product from current branch stock above.">
+                    <input className="svx-transfer-input" value={form.productName} readOnly placeholder="Choose from current branch stock first" />
+                  </Field>
                 <Field label="Quantity">
                   <input className="svx-transfer-input" type="number" min="1" value={form.quantity} onChange={(event) => updateField("quantity", event.target.value)} />
                 </Field>
@@ -845,7 +857,7 @@ export default function InterStoreCreatePage() {
                 <SummaryItem label="Amount" value={formatMoney(summary.value)} />
               </div>
 
-              <button type="submit" className="svx-transfer-primary" disabled={loading}>
+              <button type="submit" className="svx-transfer-primary" disabled={loading || !form.productId}>
                 {loading ? "Saving..." : "Save transfer"}
               </button>
             </div>
@@ -856,7 +868,7 @@ export default function InterStoreCreatePage() {
           <button type="button" className="svx-transfer-secondary" onClick={() => navigate("/app/interstore")} disabled={loading}>
             Cancel
           </button>
-          <button type="submit" className="svx-transfer-primary" disabled={loading}>
+          <button type="submit" className="svx-transfer-primary" disabled={loading || !form.productId}>
             {loading ? "Saving..." : "Save transfer"}
           </button>
         </footer>
