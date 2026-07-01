@@ -4,16 +4,14 @@ import toast from "react-hot-toast";
 
 import {
   getDealsWithMeta,
-  markReceived,
   markReturned,
-  markSold,
 } from "../../services/interStoreApi";
 import "./InterStore.css";
 
 const STATUS_FILTERS = [
   { value: "ALL", label: "All" },
   { value: "BORROWED", label: "Taken" },
-  { value: "RECEIVED", label: "In stock" },
+  { value: "RECEIVED", label: "Taken" },
   { value: "SOLD", label: "Money due" },
   { value: "PAID", label: "Paid" },
   { value: "RETURNED", label: "Returned" },
@@ -51,7 +49,7 @@ function statusMeta(status) {
   const key = cleanString(status).toUpperCase();
   const map = {
     BORROWED: { label: "Taken", className: "borrowed", next: "Collect payment or return" },
-    RECEIVED: { label: "With receiver", className: "received", next: "Collect payment or return" },
+    RECEIVED: { label: "Taken", className: "received", next: "Collect payment or return" },
     SOLD: { label: "Money due", className: "sold", next: "Collect payment" },
     PAID: { label: "Paid", className: "paid", next: "Done" },
     RETURNED: { label: "Returned", className: "returned", next: "Done" },
@@ -60,7 +58,11 @@ function statusMeta(status) {
 }
 
 function transferSource(deal) {
-  return cleanString(deal?.resellerName) || cleanString(deal?.externalSupplierName) || (deal?.supplierTenantId ? "Another store" : "Person/customer");
+  return (
+    cleanString(deal?.resellerName) ||
+    cleanString(deal?.externalSupplierName) ||
+    (deal?.supplierTenantId ? "Another store" : "Person/customer")
+  );
 }
 
 function branchParts(deal) {
@@ -91,11 +93,18 @@ function BranchStack({ deal }) {
   return <span>{branch.fallback}</span>;
 }
 
+function payableQuantity(deal) {
+  const qty = Number(deal?.quantity || 0);
+  const sold = Number(deal?.soldQuantity || 0);
+  const returned = Number(deal?.returnedQuantity || 0);
+  return Math.max(0, sold || qty - returned);
+}
+
 function paymentRisk(deal) {
-  const agreed = Number(deal?.agreedPrice || 0);
+  if (cleanString(deal?.status).toUpperCase() === "RETURNED") return 0;
+  const unitPrice = Number(deal?.soldPrice || deal?.agreedPrice || 0);
   const paid = Number(deal?.paidAmount || 0);
-  const sold = Number(deal?.soldPrice || 0);
-  const owed = sold || agreed;
+  const owed = unitPrice * payableQuantity(deal);
   return Math.max(0, owed - paid);
 }
 
@@ -116,21 +125,23 @@ function StatusPill({ status }) {
 
 function QuantityStack({ quantity, soldQuantity, returnedQuantity }) {
   const qty = Number(quantity || 1);
-  const sold = Number(soldQuantity || 0);
+  const payable = Number(soldQuantity || 0);
   const returned = Number(returnedQuantity || 0);
 
   return (
     <span className="svx-transfer-quantity-stack">
       <strong>Moved {qty}</strong>
-      {sold ? <em>Sold {sold}</em> : null}
+      {payable ? <em>Payable {payable}</em> : null}
       {returned ? <em>Returned {returned}</em> : null}
     </span>
   );
 }
 
-function TransferCard({ deal, busyAction, onOpen, onReceive, onSell, onReturn }) {
+function TransferCard({ deal, busyAction, onOpen, onReturn }) {
+  const statusKey = cleanString(deal.status).toUpperCase();
   const meta = statusMeta(deal.status);
   const risk = paymentRisk(deal);
+  const canReturn = ["BORROWED", "RECEIVED"].includes(statusKey);
 
   function openDeal() {
     onOpen?.(deal);
@@ -185,7 +196,7 @@ function TransferCard({ deal, busyAction, onOpen, onReceive, onSell, onReturn })
 
       <span className="svx-transfer-register-cell svx-transfer-register-money">
         <small>Money at risk</small>
-        <strong>{formatMoney(risk || deal.agreedPrice)}</strong>
+        <strong>{formatMoney(risk)}</strong>
         <em>Due {toDateLabel(deal.dueDate)}</em>
       </span>
 
@@ -195,41 +206,19 @@ function TransferCard({ deal, busyAction, onOpen, onReceive, onSell, onReturn })
       </span>
 
       <div className="svx-transfer-row-actions" onClick={stopAction}>
-        {deal.status === "BORROWED" ? (
+        {canReturn ? (
           <button
             type="button"
-            className="svx-transfer-success"
+            className="svx-transfer-warning"
             disabled={busyAction === deal.id}
-            onClick={() => onReceive(deal)}
+            onClick={() => onReturn(deal)}
           >
-            Receive
+            Return stock
           </button>
         ) : null}
-        {deal.status === "RECEIVED" ? (
-          <>
-            <button
-              type="button"
-              className="svx-transfer-primary"
-              disabled={busyAction === deal.id}
-              onClick={() => onSell(deal)}
-            >
-              Mark sold
-            </button>
-            <button
-              type="button"
-              className="svx-transfer-warning"
-              disabled={busyAction === deal.id}
-              onClick={() => onReturn(deal)}
-            >
-              Return
-            </button>
-          </>
-        ) : null}
-        {!["BORROWED", "RECEIVED"].includes(cleanString(deal.status).toUpperCase()) ? (
-          <button type="button" className="svx-transfer-secondary" onClick={openDeal}>
-            Details
-          </button>
-        ) : null}
+        <button type="button" className="svx-transfer-secondary" onClick={openDeal}>
+          Details
+        </button>
       </div>
     </article>
   );
@@ -327,8 +316,11 @@ export default function InterStoreDeals() {
 
   const summary = useMemo(() => {
     const active = deals.filter((deal) => ["BORROWED", "RECEIVED", "SOLD"].includes(deal.status));
-    const needAction = deals.filter((deal) => ["BORROWED", "SOLD"].includes(deal.status));
-    const moneyDue = deals.reduce((sum, deal) => sum + (deal.status === "SOLD" ? paymentRisk(deal) : 0), 0);
+    const needAction = deals.filter((deal) => ["BORROWED", "RECEIVED", "SOLD"].includes(deal.status));
+    const moneyDue = deals.reduce((sum, deal) => {
+      const statusKey = cleanString(deal.status).toUpperCase();
+      return ["BORROWED", "RECEIVED", "SOLD"].includes(statusKey) ? sum + paymentRisk(deal) : sum;
+    }, 0);
     const itemsMoving = deals.reduce((sum, deal) => sum + Number(deal.quantity || 0), 0);
     return { active: active.length, needAction: needAction.length, moneyDue, itemsMoving };
   }, [deals]);
@@ -367,7 +359,7 @@ export default function InterStoreDeals() {
               </button>
               <div className="svx-transfer-hero-tabs">
                 <button type="button" className="svx-transfer-tab is-active">Transfers list</button>
-                <button type="button" className="svx-transfer-tab">Receiving</button>
+                <button type="button" className="svx-transfer-tab">Taken stock</button>
                 <button type="button" className="svx-transfer-tab">Money due</button>
               </div>
             </div>
@@ -375,9 +367,9 @@ export default function InterStoreDeals() {
         </section>
 
         <section className="svx-transfer-summary-grid" aria-label="Transfer summary">
-          <SummaryCard label="Active transfers" value={summary.active} note="Stock still moving or awaiting payment" tone="#159cff" />
-          <SummaryCard label="Needs action" value={summary.needAction} note="Receive stock or collect payment" tone="#f59e0b" />
-          <SummaryCard label="Money due" value={formatMoney(summary.moneyDue)} note="Open sold transfers not fully paid" tone="#10b981" />
+          <SummaryCard label="Active transfers" value={summary.active} note="Stock taken or awaiting payment" tone="#159cff" />
+          <SummaryCard label="Needs action" value={summary.needAction} note="Collect payment or return stock" tone="#f59e0b" />
+          <SummaryCard label="Money due" value={formatMoney(summary.moneyDue)} note="Open transfers not fully paid" tone="#10b981" />
           <SummaryCard label="Items moved" value={summary.itemsMoving} note="Total quantity in current view" tone="#8b5cf6" />
         </section>
 
@@ -443,50 +435,48 @@ export default function InterStoreDeals() {
               <SkeletonList />
             ) : filteredDeals.length ? (
               <>
-              <div className="svx-transfer-register-head" aria-hidden="true">
-                <span>Transfer</span>
-                <span>Taking stock</span>
-                <span>Branch</span>
-                <span>Tracking</span>
-                <span>Qty</span>
-                <span>Money</span>
-                <span>Next</span>
-                <span></span>
-              </div>
-              <div className="svx-transfer-list svx-transfer-register-list">
-                {displayedDeals.map((deal) => (
-                  <TransferCard
-                    key={deal.id}
-                    deal={deal}
-                    busyAction={busyAction}
-                    onReceive={(row) => runAction(row, () => markReceived(row.id, { allBranches }), "Transfer updated")}
-                    onSell={(row) => runAction(row, () => markSold(row.id, { soldQuantity: row.quantity || 1, soldPrice: row.agreedPrice || 0 }, { allBranches }), "Transfer marked as sold")}
-                    onReturn={(row) => runAction(row, () => markReturned(row.id, { returnedQuantity: row.quantity || 1 }, { allBranches }), "Transfer returned")}
-                    onOpen={(row) => navigate(`/app/interstore/${row.id}`)}
-                  />
-                ))}
-              </div>
-              {canLoadMore ? (
-                <div className="svx-transfer-load-more">
-                  <button
-                    type="button"
-                    className="svx-transfer-secondary"
-                    onClick={() => {
-                      if (hasHiddenLocalDeals) {
-                        setVisibleCount((count) => count + initialVisibleCount());
-                        return;
-                      }
-
-                      if (page?.hasNextPage && cursor) {
-                        void loadTransfers({ append: true, nextCursor: cursor });
-                      }
-                    }}
-                  >
-                    Load more transfers
-                  </button>
-                  <span>Showing {displayedDeals.length} of {filteredDeals.length}{page?.hasNextPage ? "+" : ""}</span>
+                <div className="svx-transfer-register-head" aria-hidden="true">
+                  <span>Transfer</span>
+                  <span>Taking stock</span>
+                  <span>Branch</span>
+                  <span>Tracking</span>
+                  <span>Qty</span>
+                  <span>Money</span>
+                  <span>Next</span>
+                  <span></span>
                 </div>
-              ) : null}
+                <div className="svx-transfer-list svx-transfer-register-list">
+                  {displayedDeals.map((deal) => (
+                    <TransferCard
+                      key={deal.id}
+                      deal={deal}
+                      busyAction={busyAction}
+                      onReturn={(row) => runAction(row, () => markReturned(row.id, { returnedQuantity: row.quantity || 1 }, { allBranches }), "Transfer returned")}
+                      onOpen={(row) => navigate(`/app/interstore/${row.id}`)}
+                    />
+                  ))}
+                </div>
+                {canLoadMore ? (
+                  <div className="svx-transfer-load-more">
+                    <button
+                      type="button"
+                      className="svx-transfer-secondary"
+                      onClick={() => {
+                        if (hasHiddenLocalDeals) {
+                          setVisibleCount((count) => count + initialVisibleCount());
+                          return;
+                        }
+
+                        if (page?.hasNextPage && cursor) {
+                          void loadTransfers({ append: true, nextCursor: cursor });
+                        }
+                      }}
+                    >
+                      Load more transfers
+                    </button>
+                    <span>Showing {displayedDeals.length} of {filteredDeals.length}{page?.hasNextPage ? "+" : ""}</span>
+                  </div>
+                ) : null}
               </>
             ) : (
               <div className="svx-transfer-empty">
@@ -496,7 +486,8 @@ export default function InterStoreDeals() {
               </div>
             )}
           </div>
-        </section>      </div>
+        </section>
+      </div>
     </div>
   );
 }

@@ -6,10 +6,7 @@ import {
   addDealPayment,
   getDeal,
   getDealPayments,
-  markPaid,
-  markReceived,
   markReturned,
-  markSold,
 } from "../../services/interStoreApi";
 import "./InterStore.css";
 
@@ -48,14 +45,14 @@ function statusMeta(status) {
     BORROWED: {
       label: "Taken",
       className: "borrowed",
-      next: "Collect payment, mark returned, or keep watching this transfer.",
-      actionLabel: "Follow up",
+      next: "Collect payment, return stock, or keep watching this transfer.",
+      actionLabel: "Collect or return",
     },
     RECEIVED: {
-      label: "With receiver",
+      label: "Taken",
       className: "received",
-      next: "Collect payment, mark returned, or keep watching this transfer.",
-      actionLabel: "Sell or return",
+      next: "Collect payment, return stock, or keep watching this transfer.",
+      actionLabel: "Collect or return",
     },
     SOLD: {
       label: "Money due",
@@ -72,7 +69,7 @@ function statusMeta(status) {
     RETURNED: {
       label: "Returned",
       className: "returned",
-      next: "This transfer is closed because the products were returned.",
+      next: "This transfer is closed because the products came back.",
       actionLabel: "Closed",
     },
   };
@@ -106,11 +103,18 @@ function BranchValue({ deal }) {
   return branch.fallback;
 }
 
+function payableQuantity(deal) {
+  const qty = Number(deal?.quantity || 0);
+  const sold = Number(deal?.soldQuantity || 0);
+  const returned = Number(deal?.returnedQuantity || 0);
+  return Math.max(0, sold || qty - returned);
+}
+
 function paymentRisk(deal) {
-  const agreed = Number(deal?.agreedPrice || 0);
-  const sold = Number(deal?.soldPrice || 0);
+  if (cleanString(deal?.status).toUpperCase() === "RETURNED") return 0;
+  const unitPrice = Number(deal?.soldPrice || deal?.agreedPrice || 0);
   const paid = Number(deal?.paidAmount || 0);
-  return Math.max(0, (sold || agreed) - paid);
+  return Math.max(0, unitPrice * payableQuantity(deal) - paid);
 }
 
 function StatusPill({ status }) {
@@ -187,7 +191,6 @@ export default function InterStoreDetail() {
   const [paymentSummary, setPaymentSummary] = useState(null);
   const [action, setAction] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [soldForm, setSoldForm] = useState({ soldQuantity: "1", soldPrice: "", paymentMethod: "CASH" });
   const [returnForm, setReturnForm] = useState({ returnedQuantity: "1", notes: "" });
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "CASH", note: "" });
 
@@ -199,11 +202,6 @@ export default function InterStoreDetail() {
       const paymentData = await getDealPayments(id);
       setPayments(Array.isArray(paymentData.payments) ? paymentData.payments : []);
       setPaymentSummary(paymentData.summary || null);
-      setSoldForm((current) => ({
-        ...current,
-        soldQuantity: String(row?.quantity || 1),
-        soldPrice: String(row?.agreedPrice || ""),
-      }));
       setReturnForm((current) => ({ ...current, returnedQuantity: String(row?.quantity || 1) }));
     } catch (error) {
       console.error(error);
@@ -239,6 +237,7 @@ export default function InterStoreDetail() {
       toast.error("Enter payment amount");
       return;
     }
+
     await runAction(
       () => addDealPayment(deal.id, { amount, method: paymentForm.method, note: paymentForm.note }),
       "Payment added"
@@ -249,13 +248,14 @@ export default function InterStoreDetail() {
   const statusKey = cleanString(deal?.status).toUpperCase();
   const meta = statusMeta(deal?.status);
   const quantity = Number(deal?.quantity || 0);
-  const soldQuantity = Number(deal?.soldQuantity || 0);
+  const payableQty = payableQuantity(deal);
   const returnedQuantity = Number(deal?.returnedQuantity || 0);
   const closed = ["PAID", "RETURNED"].includes(statusKey);
   const risk = closed ? 0 : paymentRisk(deal);
-  const expectedAmount = statusKey === "RETURNED" ? 0 : (paymentSummary?.owed ?? deal?.soldPrice ?? deal?.agreedPrice ?? 0);
+  const expectedAmount = statusKey === "RETURNED" ? 0 : (paymentSummary?.owed ?? Number(deal?.soldPrice || deal?.agreedPrice || 0) * payableQty);
   const balanceDue = closed ? 0 : paymentSummary?.balanceDue ?? risk;
-  const canAddPayment = statusKey === "SOLD";
+  const canAddPayment = ["BORROWED", "RECEIVED", "SOLD"].includes(statusKey);
+  const canReturn = ["BORROWED", "RECEIVED"].includes(statusKey);
 
   const steps = useMemo(() => {
     return [
@@ -265,26 +265,25 @@ export default function InterStoreDetail() {
         done: Boolean(deal?.createdAt || deal?.borrowedAt),
       },
       {
-        title: "Received",
-        text: deal?.receivedAt ? toDateTimeLabel(deal.receivedAt) : "Waiting for follow-up confirmation",
-        done: ["RECEIVED", "SOLD", "PAID", "RETURNED"].includes(statusKey) || Boolean(deal?.receivedAt),
+        title: "Taken",
+        text: toDateTimeLabel(deal?.takenAt || deal?.borrowedAt || deal?.createdAt),
+        done: Boolean(deal?.takenAt || deal?.borrowedAt || deal?.createdAt),
       },
       {
-        title: statusKey === "RETURNED" ? "Returned" : statusKey === "PAID" ? "Paid" : statusKey === "SOLD" ? "Sold" : "Next action",
+        title: statusKey === "RETURNED" ? "Returned" : statusKey === "PAID" ? "Paid" : statusKey === "SOLD" ? "Money due" : "Next action",
         text:
           statusKey === "RETURNED"
             ? toDateTimeLabel(deal?.returnedAt)
             : statusKey === "PAID"
               ? toDateTimeLabel(deal?.paidAt)
               : statusKey === "SOLD"
-                ? "Waiting for payment collection"
+                ? "Waiting for remaining payment"
                 : meta.next,
         done: ["SOLD", "PAID", "RETURNED"].includes(statusKey),
         tone: statusKey === "SOLD" ? "warning" : undefined,
       },
     ];
   }, [deal, meta.next, statusKey]);
-
 
   if (loading) return <PageSkeleton />;
 
@@ -325,14 +324,9 @@ export default function InterStoreDetail() {
           </div>
 
           <div className="svx-transfer-detail-actions">
-            {deal.status === "BORROWED" ? <button type="button" className="svx-transfer-success" onClick={() => setAction("receive")}>Confirm taken</button> : null}
-            {deal.status === "RECEIVED" ? (
-              <>
-                <button type="button" className="svx-transfer-primary" onClick={() => setAction("sell")}>Mark sold</button>
-                <button type="button" className="svx-transfer-warning" onClick={() => setAction("return")}>Return stock</button>
-              </>
+            {canReturn ? (
+              <button type="button" className="svx-transfer-warning" onClick={() => setAction("return")}>Return stock</button>
             ) : null}
-            {deal.status === "SOLD" ? <button type="button" className="svx-transfer-success" onClick={() => setAction("paid")}>Mark paid</button> : null}
           </div>
 
           <div className="svx-transfer-owner-summary">
@@ -341,7 +335,7 @@ export default function InterStoreDetail() {
             <InfoCard label="Taking stock" value={sourceLabel(deal)} note={deal.externalSupplierPhone || "Person or store taking the stock"} />
             <InfoCard label="Responsible person" value={deal.resellerName} note={deal.resellerPhone || "Person or place accountable"} />
             <InfoCard label="Tracking" value={deal.serial} note={deal.productCategory || deal.productColor || "Serial, SKU, batch or code"} />
-            <InfoCard label="Quantity" value={`${quantity} moved`} note={`Sold: ${soldQuantity}  Returned: ${returnedQuantity}`} />
+            <InfoCard label="Quantity" value={`${quantity} moved`} note={`Payable: ${payableQty}  Returned: ${returnedQuantity}`} />
           </div>
         </section>
 
@@ -365,7 +359,7 @@ export default function InterStoreDetail() {
               <h2>Dates and values</h2>
               <div className="svx-transfer-info-grid svx-transfer-owner-grid">
                 <InfoCard label="Agreed value" value={formatMoney(deal.agreedPrice)} note="Original value recorded" />
-                <InfoCard label="Sold value" value={formatMoney(deal.soldPrice)} note={deal.soldPrice ? "Sale value recorded" : "Not sold yet"} />
+                <InfoCard label="Payable value" value={formatMoney(deal.soldPrice || deal.agreedPrice)} note="Amount expected from the receiver" />
                 <InfoCard label="Paid so far" value={formatMoney(paymentSummary?.totalPaid ?? deal.paidAmount)} note="Collected against this transfer" />
                 <InfoCard label="Due date" value={toDateLabel(deal.dueDate)} note="When payment or return is expected" />
                 <InfoCard label="Taken date" value={toDateLabel(deal.takenAt)} note="When stock left the source" />
@@ -407,7 +401,7 @@ export default function InterStoreDetail() {
                 </form>
               ) : (
                 <div className="svx-transfer-quiet-note">
-                  {statusKey === "RETURNED" ? "No payment action is needed because this transfer was returned." : statusKey === "PAID" ? "This transfer is fully paid." : "Payment entry appears after the transfer is marked sold."}
+                  {statusKey === "RETURNED" ? "No payment action is needed because this transfer was returned." : statusKey === "PAID" ? "This transfer is fully paid." : "Add payment when the receiver brings money back."}
                 </div>
               )}
 
@@ -425,36 +419,9 @@ export default function InterStoreDetail() {
       </div>
 
       <ActionModal
-        open={action === "receive"}
-        title="Receive this stock?"
-        text="This confirms the stock is now recorded as taken and under follow-up."
-        confirmLabel="Confirm taken"
-        tone="success"
-        loading={actionLoading}
-        onClose={() => setAction(null)}
-        onConfirm={() => runAction(() => markReceived(deal.id), "Transfer updated")}
-      />
-
-      <ActionModal
-        open={action === "sell"}
-        title="Mark this transfer as sold"
-        text="Record quantity sold and the value the owner should collect."
-        confirmLabel="Mark sold"
-        loading={actionLoading}
-        onClose={() => setAction(null)}
-        onConfirm={() => runAction(() => markSold(deal.id, { soldQuantity: Number(soldForm.soldQuantity || 1), soldPrice: Number(soldForm.soldPrice || 0), paymentMethod: soldForm.paymentMethod }), "Transfer marked as sold")}
-      >
-        <div className="svx-transfer-form-grid">
-          <div className="svx-transfer-form-field"><label>Sold quantity</label><input className="svx-transfer-input" type="number" min="1" value={soldForm.soldQuantity} onChange={(event) => setSoldForm((current) => ({ ...current, soldQuantity: event.target.value }))} /></div>
-          <div className="svx-transfer-form-field"><label>Sold value</label><input className="svx-transfer-input" type="number" min="0" value={soldForm.soldPrice} onChange={(event) => setSoldForm((current) => ({ ...current, soldPrice: event.target.value }))} /></div>
-          <div className="svx-transfer-form-field"><label>Payment method</label><select className="svx-transfer-select" value={soldForm.paymentMethod} onChange={(event) => setSoldForm((current) => ({ ...current, paymentMethod: event.target.value }))}><option value="CASH">Cash</option><option value="MOMO">MoMo</option><option value="BANK">Bank</option><option value="OTHER">Other</option></select></div>
-        </div>
-      </ActionModal>
-
-      <ActionModal
         open={action === "return"}
-        title="Return this transfer?"
-        text="Use this when the stock goes back to the source instead of being sold."
+        title="Return this stock?"
+        text="Use this when the products come back to this shop instead of being paid for."
         confirmLabel="Return stock"
         tone="warning"
         loading={actionLoading}
@@ -466,17 +433,6 @@ export default function InterStoreDetail() {
           <div className="svx-transfer-form-field" style={{ gridColumn: "1 / -1" }}><label>Note</label><textarea className="svx-transfer-textarea" value={returnForm.notes} onChange={(event) => setReturnForm((current) => ({ ...current, notes: event.target.value }))} placeholder="Optional return note" /></div>
         </div>
       </ActionModal>
-
-      <ActionModal
-        open={action === "paid"}
-        title="Mark transfer as paid?"
-        text="This closes the money risk for this transfer."
-        confirmLabel="Mark paid"
-        tone="success"
-        loading={actionLoading}
-        onClose={() => setAction(null)}
-        onConfirm={() => runAction(() => markPaid(deal.id, { paymentMethod: "CASH" }), "Transfer marked as paid")}
-      />
     </div>
   );
 }

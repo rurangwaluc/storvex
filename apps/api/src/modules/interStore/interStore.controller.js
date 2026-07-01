@@ -935,7 +935,10 @@ async function ensureSaleFromPaidInterStoreDeal(tx, { deal, tenantId, userId, me
     throw new Error("PAID_DEAL_MISSING_PRODUCT");
   }
 
-  const quantity = Math.max(1, Number(deal.soldQuantity || deal.quantity || 1));
+  const takenQuantity = Math.max(0, Number(deal.quantity || 0));
+  const returnedQuantity = Math.max(0, Number(deal.returnedQuantity || 0));
+  const payableQuantity = Number(deal.soldQuantity || 0) || takenQuantity - returnedQuantity;
+  const quantity = Math.max(1, payableQuantity);
   const unitPrice = Number(deal.soldPrice || deal.agreedPrice || 0);
   const total = Math.max(0, quantity * unitPrice);
   const amountPaid = Math.max(total, Number(paidAmount || deal.paidAmount || total));
@@ -976,7 +979,7 @@ async function ensureSaleFromPaidInterStoreDeal(tx, { deal, tenantId, userId, me
             receivedById: userId,
             amount: amountPaid,
             method: saleMethod,
-            note: `Interstore transfer ${deal.id}`,
+            note: `Store transfer ${deal.id}`,
           },
         ],
       },
@@ -1458,60 +1461,35 @@ async function markReturned(req, res) {
     }
 
     const updated = await prisma.$transaction(async (tx) => {
-      if (deal.receivedProductId) {
-        const inventoryUpdate = await tx.branchInventory.updateMany({
+      const productId = deal.receivedProductId || deal.productId;
+
+      if (productId) {
+        await tx.branchInventory.upsert({
           where: {
+            branchId_productId: {
+              branchId: deal.borrowerBranchId,
+              productId,
+            },
+          },
+          update: { qtyOnHand: { increment: rq } },
+          create: {
             tenantId,
             branchId: deal.borrowerBranchId,
-            productId: deal.receivedProductId,
-            qtyOnHand: { gte: rq },
+            productId,
+            qtyOnHand: rq,
           },
-          data: { qtyOnHand: { decrement: rq } },
         });
-
-        if (inventoryUpdate.count === 0) {
-          throw new Error("BORROWER_PRODUCT_OUT_OF_STOCK_OR_NOT_FOUND");
-        }
 
         await tx.product.updateMany({
           where: {
-            id: deal.receivedProductId,
+            id: productId,
             tenantId,
           },
-          data: { stockQty: { decrement: rq } },
-        });
-
-        const p = await tx.product.findFirst({
-          where: {
-            id: deal.receivedProductId,
-            tenantId,
+          data: {
+            stockQty: { increment: rq },
+            isActive: true,
           },
-          select: { stockQty: true },
         });
-
-        if (p && p.stockQty <= 0) {
-          await tx.product.updateMany({
-            where: {
-              id: deal.receivedProductId,
-              tenantId,
-            },
-            data: { isActive: false },
-          });
-        }
-      }
-
-      if (deal.supplierTenantId && deal.productId) {
-        const supplierRestore = await tx.product.updateMany({
-          where: {
-            id: deal.productId,
-            tenantId: deal.supplierTenantId,
-          },
-          data: { stockQty: { increment: rq } },
-        });
-
-        if (supplierRestore.count === 0) {
-          throw new Error("SUPPLIER_PRODUCT_NOT_FOUND");
-        }
       }
 
       const newReturnedQty = deal.returnedQuantity + rq;
@@ -1572,10 +1550,6 @@ async function markReturned(req, res) {
       return res.status(404).json({ message: "Product not found in current branch stock" });
     }
 
-    if (err.message === "SUPPLIER_PRODUCT_NOT_FOUND") {
-      return res.status(404).json({ message: "Supplier product not found" });
-    }
-
     console.error(err);
     return res.status(500).json({ message: "Failed to mark returned" });
   }
@@ -1608,18 +1582,28 @@ async function markPaid(req, res) {
     const deal = await getBorrowerDealOrNull({ id, tenantId, scope });
     if (!deal) return res.status(404).json({ message: "Deal not found" });
 
-    if (deal.status !== InterStoreDealStatus.SOLD) {
+    const payableStatuses = [
+      InterStoreDealStatus.BORROWED,
+      InterStoreDealStatus.RECEIVED,
+      InterStoreDealStatus.SOLD,
+    ];
+
+    if (!payableStatuses.includes(deal.status)) {
       return res.status(400).json({ message: `Cannot mark paid in status ${deal.status}` });
     }
 
-    const owed = Number(deal.agreedPrice) * Number(deal.soldQuantity || 0);
+    const payableQuantity = Math.max(
+      0,
+      Number(deal.soldQuantity || 0) || Number(deal.quantity || 0) - Number(deal.returnedQuantity || 0)
+    );
+    const owed = Number(deal.agreedPrice) * payableQuantity;
     if (!Number.isFinite(owed) || owed <= 0) {
       return res.status(400).json({ message: "Invalid owed amount" });
     }
 
     if (amt < owed) {
       return res.status(400).json({
-        message: "Cannot mark PAID. paidAmount is less than amount owed to supplier.",
+        message: "Cannot mark PAID. paidAmount is less than amount owed.",
         owed,
         paidAmount: amt,
       });
@@ -1629,10 +1613,12 @@ async function markPaid(req, res) {
       const upd = await tx.interStoreDeal.updateMany({
         where: {
           ...buildBorrowerDealWhere(deal.id, tenantId, scope),
-          status: InterStoreDealStatus.SOLD,
+          status: { in: payableStatuses },
         },
         data: {
           status: InterStoreDealStatus.PAID,
+          soldQuantity: payableQuantity,
+          soldPrice: Number(deal.soldPrice || deal.agreedPrice || 0),
           paidAt: new Date(),
           paidAmount: amt,
           paymentMethod: normalizedMethod || null,
@@ -1666,25 +1652,25 @@ async function markPaid(req, res) {
 
     await logAudit({
       tenantId,
-      branchId: updated?.borrowerBranchId || null,
+      branchId: updated.borrowerBranchId || null,
       userId: actorUserId,
       action: AuditAction.MARK_PAID,
       entity: "INTERSTORE_DEAL",
-      entityId: deal.id,
+      entityId: updated.id,
       metadata: {
-        borrowerBranchId: updated?.borrowerBranchId || null,
-        paidAmount: amt,
-        paymentMethod: updated?.paymentMethod || null,
-        owed,
+        borrowerBranchId: updated.borrowerBranchId || null,
+        paymentMethod: updated.paymentMethod,
+        paidAmount: updated.paidAmount,
+        saleId: updated.saleId || null,
       },
     });
 
-    return dealSuccess(res, updated, { message: "Deal marked as paid" });
+    return dealSuccess(res, updated, { message: "Transfer marked as paid and converted to sale" });
   } catch (err) {
     if (handleBranchError(res, err)) return;
 
     if (err.message === "PAID_DEAL_MISSING_PRODUCT") {
-      return res.status(400).json({ message: "Cannot create sale because this transfer has no received product. Receive the stock first." });
+      return res.status(400).json({ message: "Transfer product is missing. Cannot create sale." });
     }
 
     console.error(err);
@@ -1943,12 +1929,22 @@ async function addPayment(req, res) {
     if (!deal) return res.status(404).json({ message: "Deal not found" });
 
     if (deal.status === InterStoreDealStatus.PAID) {
-      return res.status(400).json({ message: "Deal already fully paid" });
+      return res.status(400).json({ message: "Transfer is already fully paid" });
     }
 
-    if (deal.status !== InterStoreDealStatus.SOLD) {
+    if (deal.status === InterStoreDealStatus.RETURNED) {
+      return res.status(400).json({ message: "Cannot add payment because this transfer was returned" });
+    }
+
+    const payableStatuses = [
+      InterStoreDealStatus.BORROWED,
+      InterStoreDealStatus.RECEIVED,
+      InterStoreDealStatus.SOLD,
+    ];
+
+    if (!payableStatuses.includes(deal.status)) {
       return res.status(400).json({
-        message: `Cannot add payment in status ${deal.status}. Sell first (status must be SOLD).`,
+        message: `Cannot add payment in status ${deal.status}.`,
       });
     }
 
@@ -1959,10 +1955,17 @@ async function addPayment(req, res) {
       });
 
       const totalPaidBefore = Number(aggBefore._sum.amount || 0);
-      const owedRaw = Number(deal.agreedPrice) * Number(deal.soldQuantity || 0);
+      const takenQuantity = Math.max(0, Number(deal.quantity || 0));
+      const returnedQuantity = Math.max(0, Number(deal.returnedQuantity || 0));
+      const payableQuantity = Math.max(
+        0,
+        Number(deal.soldQuantity || 0) || takenQuantity - returnedQuantity
+      );
+      const unitPrice = Number(deal.soldPrice || deal.agreedPrice || 0);
+      const owedRaw = unitPrice * payableQuantity;
       const owed = Number.isFinite(owedRaw) ? owedRaw : 0;
 
-      if (owed <= 0) throw new Error("INVALID_OWED_AMOUNT");
+      if (payableQuantity <= 0 || owed <= 0) throw new Error("INVALID_OWED_AMOUNT");
 
       if (totalPaidBefore + amt > owed) {
         return { overpay: true, owed, totalPaidBefore };
@@ -1993,9 +1996,12 @@ async function addPayment(req, res) {
       const updatedDeal = await tx.interStoreDeal.updateMany({
         where: {
           ...buildBorrowerDealWhere(deal.id, tenantId, scope),
-          status: InterStoreDealStatus.SOLD,
+          status: { in: payableStatuses },
         },
         data: {
+          soldQuantity: payableQuantity,
+          soldPrice: unitPrice,
+          soldAt: deal.soldAt || new Date(),
           paidAmount: totalPaidAfter,
           paymentMethod: normalizedMethod,
           paidAt: nextStatus === InterStoreDealStatus.PAID ? new Date() : deal.paidAt,
@@ -2034,17 +2040,16 @@ async function addPayment(req, res) {
       };
     });
 
-    if (result == null) {
-      return res.status(409).json({ message: "Deal changed; refresh and try again" });
+    if (!result) {
+      return res.status(409).json({ message: "Transfer changed; refresh and try again" });
     }
 
     if (result.overpay) {
       return res.status(400).json({
-        message: "Payment exceeds amount owed",
+        message: "Payment is higher than the remaining balance",
         owed: result.owed,
-        totalPaid: result.totalPaidBefore,
-        attemptedPayment: amt,
-        balanceDue: Math.max(0, result.owed - result.totalPaidBefore),
+        totalPaidBefore: result.totalPaidBefore,
+        remaining: Math.max(0, result.owed - result.totalPaidBefore),
       });
     }
 
@@ -2053,37 +2058,30 @@ async function addPayment(req, res) {
       branchId: result.updatedDeal?.borrowerBranchId || null,
       userId,
       action: AuditAction.ADD_PAYMENT,
-      entity: "INTERSTORE_DEAL",
-      entityId: deal.id,
+      entity: "INTERSTORE_PAYMENT",
+      entityId: result.payment.id,
       metadata: {
-        borrowerBranchId: result.updatedDeal?.borrowerBranchId || null,
-        dealId: deal.id,
-        paymentId: result.payment.id,
+        dealId: result.updatedDeal?.id || deal.id,
         amount: amt,
         method: normalizedMethod,
         note: note ? String(note).slice(0, 2000) : null,
         totalPaid: result.totalPaid,
         owed: result.owed,
-        statusAfter: result.updatedDeal?.status || null,
+        status: result.updatedDeal?.status || null,
+        saleId: result.updatedDeal?.saleId || null,
       },
     });
 
-    return res.json({
+    return res.status(201).json({
       ok: true,
-      message: "Installment recorded",
+      message: result.updatedDeal?.status === InterStoreDealStatus.PAID
+        ? "Payment added and transfer converted to sale"
+        : "Payment added",
       payment: serializePayment(result.payment),
-      deal: {
-        id: result.updatedDeal.id,
-        status: result.updatedDeal.status,
-        saleId: result.updatedDeal.saleId || null,
-        borrowerBranchId: result.updatedDeal.borrowerBranchId || null,
-        borrowerBranch: result.updatedDeal.borrowerBranch
-          ? serializeBranch(result.updatedDeal.borrowerBranch)
-          : null,
-        agreedPrice: Number(result.updatedDeal.agreedPrice),
-        soldQuantity: Number(result.updatedDeal.soldQuantity || 0),
+      deal: serializeDeal(result.updatedDeal),
+      summary: {
         owed: result.owed,
-        paidAmount: result.totalPaid,
+        totalPaid: result.totalPaid,
         balanceDue: Math.max(0, result.owed - result.totalPaid),
       },
     });
@@ -2091,13 +2089,11 @@ async function addPayment(req, res) {
     if (handleBranchError(res, err)) return;
 
     if (err.message === "INVALID_OWED_AMOUNT") {
-      return res.status(400).json({
-        message: "Invalid owed amount. Check agreed price and sold quantity.",
-      });
+      return res.status(400).json({ message: "This transfer has no payable quantity or value" });
     }
 
     if (err.message === "PAID_DEAL_MISSING_PRODUCT") {
-      return res.status(400).json({ message: "Cannot create sale because this transfer has no received product. Receive the stock first." });
+      return res.status(400).json({ message: "Transfer product is missing. Cannot create sale." });
     }
 
     console.error(err);
@@ -2321,11 +2317,14 @@ async function getDealPayments(req, res) {
     }, 0);
 
     const soldQty = Number(deal.soldQuantity || 0);
-    const price = Number(deal.agreedPrice);
+    const takenQty = Number(deal.quantity || 0);
+    const returnedQty = Number(deal.returnedQuantity || 0);
+    const payableQty = Math.max(0, soldQty || takenQty - returnedQty);
+    const price = Number(deal.soldPrice || deal.agreedPrice);
     const owed =
-      deal.status === InterStoreDealStatus.SOLD || deal.status === InterStoreDealStatus.PAID
-        ? (Number.isFinite(price) ? price : 0) * (Number.isFinite(soldQty) ? soldQty : 0)
-        : 0;
+      deal.status === InterStoreDealStatus.RETURNED
+        ? 0
+        : (Number.isFinite(price) ? price : 0) * (Number.isFinite(payableQty) ? payableQty : 0);
 
     return res.json({
       ok: true,
@@ -2334,7 +2333,7 @@ async function getDealPayments(req, res) {
       borrowerBranchId: deal.borrowerBranchId || null,
       borrowerBranch: deal.borrowerBranch ? serializeBranch(deal.borrowerBranch) : null,
       agreedPrice: Number.isFinite(price) ? price : 0,
-      soldQuantity: Number.isFinite(soldQty) ? soldQty : 0,
+      soldQuantity: Number.isFinite(payableQty) ? payableQty : 0,
       owed,
       totalPaid,
       balanceDue: Math.max(0, owed - totalPaid),
