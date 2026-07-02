@@ -5292,3 +5292,17 @@
 .svx-transfer-create-page .svx-transfer-input[readonly]::placeholder {
   color: color-mix(in srgb, var(--transfer-muted) 82%, transparent);
 }
+
+/* Store transfer payment form: keep payment button readable */
+.svx-transfer-payment-form > .svx-transfer-primary {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-height: 48px;
+  white-space: nowrap;
+  text-align: center;
+  justify-content: center;
+}
+
+.svx-transfer-payment-form .svx-transfer-field-hint {
+  line-height: 1.45;
+}

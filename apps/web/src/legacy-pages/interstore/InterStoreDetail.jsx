@@ -8,6 +8,10 @@ import {
   getDealPayments,
   markReturned,
 } from "../../services/interStoreApi";
+import {
+  getCashDrawerStatus,
+  isDrawerOpen,
+} from "../../services/cashDrawerApi";
 import "./InterStore.css";
 
 function cleanString(value) {
@@ -73,11 +77,21 @@ function statusMeta(status) {
       actionLabel: "Closed",
     },
   };
-  return map[key] || { label: key || "Unknown", className: "returned", next: "Review this transfer.", actionLabel: "Review" };
+
+  return map[key] || {
+    label: key || "Unknown",
+    className: "returned",
+    next: "Review this transfer.",
+    actionLabel: "Review",
+  };
 }
 
 function sourceLabel(deal) {
-  return cleanString(deal?.resellerName) || cleanString(deal?.externalSupplierName) || (deal?.supplierTenantId ? "Another store" : "Person/customer");
+  return (
+    cleanString(deal?.resellerName) ||
+    cleanString(deal?.externalSupplierName) ||
+    (deal?.supplierTenantId ? "Another store" : "Person/customer")
+  );
 }
 
 function branchParts(deal) {
@@ -91,6 +105,7 @@ function branchParts(deal) {
 
 function BranchValue({ deal }) {
   const branch = branchParts(deal);
+
   if (branch.code || branch.name) {
     return (
       <span className="svx-transfer-branch-value">
@@ -144,9 +159,28 @@ function TimelineStep({ done, index, title, text, tone }) {
   );
 }
 
-function ActionModal({ open, title, text, children, confirmLabel, loading, tone = "primary", onClose, onConfirm }) {
+function ActionModal({
+  open,
+  title,
+  text,
+  children,
+  confirmLabel,
+  loading,
+  tone = "primary",
+  onClose,
+  onConfirm,
+}) {
   if (!open) return null;
-  const buttonClass = tone === "danger" ? "svx-transfer-danger" : tone === "warning" ? "svx-transfer-warning" : tone === "success" ? "svx-transfer-success" : "svx-transfer-primary";
+
+  const buttonClass =
+    tone === "danger"
+      ? "svx-transfer-danger"
+      : tone === "warning"
+        ? "svx-transfer-warning"
+        : tone === "success"
+          ? "svx-transfer-success"
+          : "svx-transfer-primary";
+
   return (
     <div className="svx-transfer-modal is-open">
       <div className="svx-transfer-modal-backdrop" onClick={loading ? undefined : onClose} />
@@ -158,12 +192,18 @@ function ActionModal({ open, title, text, children, confirmLabel, loading, tone 
               <h2>{title}</h2>
               {text ? <p>{text}</p> : null}
             </div>
-            <button type="button" className="svx-transfer-secondary" onClick={onClose} disabled={loading}>Close</button>
+            <button type="button" className="svx-transfer-secondary" onClick={onClose} disabled={loading}>
+              Close
+            </button>
           </div>
           <div className="svx-transfer-modal-body">{children}</div>
           <div className="svx-transfer-modal-actions">
-            <button type="button" className="svx-transfer-secondary" onClick={onClose} disabled={loading}>Cancel</button>
-            <button type="button" className={buttonClass} onClick={onConfirm} disabled={loading}>{loading ? "Saving..." : confirmLabel}</button>
+            <button type="button" className="svx-transfer-secondary" onClick={onClose} disabled={loading}>
+              Cancel
+            </button>
+            <button type="button" className={buttonClass} onClick={onConfirm} disabled={loading}>
+              {loading ? "Saving..." : confirmLabel}
+            </button>
           </div>
         </div>
       </div>
@@ -185,24 +225,51 @@ function PageSkeleton() {
 export default function InterStoreDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+
   const [loading, setLoading] = useState(true);
   const [deal, setDeal] = useState(null);
   const [payments, setPayments] = useState([]);
   const [paymentSummary, setPaymentSummary] = useState(null);
+  const [cashDrawerStatus, setCashDrawerStatus] = useState(null);
+  const [cashDrawerLoading, setCashDrawerLoading] = useState(false);
   const [action, setAction] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [returnForm, setReturnForm] = useState({ returnedQuantity: "1", notes: "" });
   const [paymentForm, setPaymentForm] = useState({ amount: "", method: "CASH", note: "" });
 
+  async function loadCashDrawerStatus(row) {
+    try {
+      setCashDrawerLoading(true);
+
+      const branchId =
+        row?.borrowerBranchId ||
+        row?.borrowerBranch?.id ||
+        row?.branch?.id ||
+        null;
+
+      const drawerStatus = await getCashDrawerStatus(branchId ? { branchId } : {});
+      setCashDrawerStatus(drawerStatus);
+    } catch (error) {
+      console.warn("Failed to load cash drawer status", error);
+      setCashDrawerStatus(null);
+    } finally {
+      setCashDrawerLoading(false);
+    }
+  }
+
   async function loadDetail() {
     try {
       setLoading(true);
+
       const row = await getDeal(id);
       setDeal(row);
+
       const paymentData = await getDealPayments(id);
       setPayments(Array.isArray(paymentData.payments) ? paymentData.payments : []);
       setPaymentSummary(paymentData.summary || null);
       setReturnForm((current) => ({ ...current, returnedQuantity: String(row?.quantity || 1) }));
+
+      await loadCashDrawerStatus(row);
     } catch (error) {
       console.error(error);
       toast.error(error?.message || "Failed to load transfer");
@@ -230,21 +297,6 @@ export default function InterStoreDetail() {
     }
   }
 
-  async function submitPayment(event) {
-    event.preventDefault();
-    const amount = Number(paymentForm.amount || 0);
-    if (amount <= 0) {
-      toast.error("Enter payment amount");
-      return;
-    }
-
-    await runAction(
-      () => addDealPayment(deal.id, { amount, method: paymentForm.method, note: paymentForm.note }),
-      "Payment added"
-    );
-    setPaymentForm({ amount: "", method: "CASH", note: "" });
-  }
-
   const statusKey = cleanString(deal?.status).toUpperCase();
   const meta = statusMeta(deal?.status);
   const quantity = Number(deal?.quantity || 0);
@@ -252,10 +304,47 @@ export default function InterStoreDetail() {
   const returnedQuantity = Number(deal?.returnedQuantity || 0);
   const closed = ["PAID", "RETURNED"].includes(statusKey);
   const risk = closed ? 0 : paymentRisk(deal);
-  const expectedAmount = statusKey === "RETURNED" ? 0 : (paymentSummary?.owed ?? Number(deal?.soldPrice || deal?.agreedPrice || 0) * payableQty);
+  const expectedAmount =
+    statusKey === "RETURNED"
+      ? 0
+      : paymentSummary?.owed ?? Number(deal?.soldPrice || deal?.agreedPrice || 0) * payableQty;
   const balanceDue = closed ? 0 : paymentSummary?.balanceDue ?? risk;
   const canAddPayment = ["BORROWED", "RECEIVED", "SOLD"].includes(statusKey);
   const canReturn = ["BORROWED", "RECEIVED"].includes(statusKey);
+
+  const paymentMethodKey = cleanString(paymentForm.method).toUpperCase();
+  const paymentAmount = Number(paymentForm.amount || 0);
+  const isCashPayment = paymentMethodKey === "CASH";
+  const cashDrawerIsOpen = isDrawerOpen(cashDrawerStatus);
+  const cashPaymentBlocked = isCashPayment && !cashDrawerIsOpen;
+
+  const paymentButtonDisabled =
+    actionLoading ||
+    paymentAmount <= 0 ||
+    (isCashPayment && cashDrawerLoading) ||
+    cashPaymentBlocked;
+
+  async function submitPayment(event) {
+    event.preventDefault();
+
+    const amount = Number(paymentForm.amount || 0);
+    if (amount <= 0) {
+      toast.error("Enter payment amount");
+      return;
+    }
+
+    if (cashPaymentBlocked) {
+      toast.error("Open cash drawer before taking cash.");
+      return;
+    }
+
+    await runAction(
+      () => addDealPayment(deal.id, { amount, method: paymentForm.method, note: paymentForm.note }),
+      "Payment added",
+    );
+
+    setPaymentForm({ amount: "", method: "CASH", note: "" });
+  }
 
   const steps = useMemo(() => {
     return [
@@ -270,7 +359,14 @@ export default function InterStoreDetail() {
         done: Boolean(deal?.takenAt || deal?.borrowedAt || deal?.createdAt),
       },
       {
-        title: statusKey === "RETURNED" ? "Returned" : statusKey === "PAID" ? "Paid" : statusKey === "SOLD" ? "Money due" : "Next action",
+        title:
+          statusKey === "RETURNED"
+            ? "Returned"
+            : statusKey === "PAID"
+              ? "Paid"
+              : statusKey === "SOLD"
+                ? "Money due"
+                : "Next action",
         text:
           statusKey === "RETURNED"
             ? toDateTimeLabel(deal?.returnedAt)
@@ -294,7 +390,9 @@ export default function InterStoreDetail() {
           <div className="svx-transfer-empty">
             <h3>Transfer not found</h3>
             <p>This transfer may have been removed or you may not have access to it.</p>
-            <button type="button" className="svx-transfer-primary" onClick={() => navigate("/app/interstore")}>Back to transfers</button>
+            <button type="button" className="svx-transfer-primary" onClick={() => navigate("/app/interstore")}>
+              Back to transfers
+            </button>
           </div>
         </div>
       </div>
@@ -306,7 +404,9 @@ export default function InterStoreDetail() {
       <div className="svx-transfer-shell">
         <section className="svx-transfer-card svx-transfer-detail-hero svx-transfer-detail-hero-clean">
           <div className="svx-transfer-detail-topbar">
-            <Link className="svx-transfer-secondary" to="/app/interstore">Back</Link>
+            <Link className="svx-transfer-secondary" to="/app/interstore">
+              Back
+            </Link>
             <StatusPill status={deal.status} />
           </div>
 
@@ -325,7 +425,9 @@ export default function InterStoreDetail() {
 
           <div className="svx-transfer-detail-actions">
             {canReturn ? (
-              <button type="button" className="svx-transfer-warning" onClick={() => setAction("return")}>Return stock</button>
+              <button type="button" className="svx-transfer-warning" onClick={() => setAction("return")}>
+                Return stock
+              </button>
             ) : null}
           </div>
 
@@ -350,7 +452,9 @@ export default function InterStoreDetail() {
                 <span className={`svx-transfer-status ${meta.className}`}>{meta.label}</span>
               </div>
               <div className="svx-transfer-timeline-clean">
-                {steps.map((step, index) => <TimelineStep key={step.title} index={index + 1} {...step} />)}
+                {steps.map((step, index) => (
+                  <TimelineStep key={step.title} index={index + 1} {...step} />
+                ))}
               </div>
             </div>
 
@@ -373,20 +477,40 @@ export default function InterStoreDetail() {
               <span className="svx-transfer-kicker">Settlement</span>
               <h2>Money position</h2>
               <div className="svx-transfer-side-list">
-                <div className="svx-transfer-side-item"><strong>{formatMoney(expectedAmount)}</strong><span>Expected amount</span></div>
-                <div className="svx-transfer-side-item"><strong>{formatMoney(paymentSummary?.totalPaid ?? deal.paidAmount)}</strong><span>Paid so far</span></div>
-                <div className="svx-transfer-side-item"><strong>{formatMoney(balanceDue)}</strong><span>Balance due</span></div>
+                <div className="svx-transfer-side-item">
+                  <strong>{formatMoney(expectedAmount)}</strong>
+                  <span>Expected amount</span>
+                </div>
+                <div className="svx-transfer-side-item">
+                  <strong>{formatMoney(paymentSummary?.totalPaid ?? deal.paidAmount)}</strong>
+                  <span>Paid so far</span>
+                </div>
+                <div className="svx-transfer-side-item">
+                  <strong>{formatMoney(balanceDue)}</strong>
+                  <span>Balance due</span>
+                </div>
               </div>
 
               {canAddPayment ? (
                 <form className="svx-transfer-form-grid svx-transfer-payment-form" onSubmit={submitPayment}>
                   <div className="svx-transfer-form-field">
                     <label>Amount</label>
-                    <input className="svx-transfer-input" type="number" min="0" value={paymentForm.amount} onChange={(event) => setPaymentForm((current) => ({ ...current, amount: event.target.value }))} placeholder="0" />
+                    <input
+                      className="svx-transfer-input"
+                      type="number"
+                      min="0"
+                      value={paymentForm.amount}
+                      onChange={(event) => setPaymentForm((current) => ({ ...current, amount: event.target.value }))}
+                      placeholder="0"
+                    />
                   </div>
                   <div className="svx-transfer-form-field">
                     <label>Method</label>
-                    <select className="svx-transfer-select" value={paymentForm.method} onChange={(event) => setPaymentForm((current) => ({ ...current, method: event.target.value }))}>
+                    <select
+                      className="svx-transfer-select"
+                      value={paymentForm.method}
+                      onChange={(event) => setPaymentForm((current) => ({ ...current, method: event.target.value }))}
+                    >
                       <option value="CASH">Cash</option>
                       <option value="MOMO">MoMo</option>
                       <option value="BANK">Bank</option>
@@ -395,23 +519,49 @@ export default function InterStoreDetail() {
                   </div>
                   <div className="svx-transfer-form-field" style={{ gridColumn: "1 / -1" }}>
                     <label>Note</label>
-                    <input className="svx-transfer-input" value={paymentForm.note} onChange={(event) => setPaymentForm((current) => ({ ...current, note: event.target.value }))} placeholder="Optional" />
+                    <input
+                      className="svx-transfer-input"
+                      value={paymentForm.note}
+                      onChange={(event) => setPaymentForm((current) => ({ ...current, note: event.target.value }))}
+                      placeholder="Optional"
+                    />
                   </div>
-                  <button type="submit" className="svx-transfer-primary" disabled={actionLoading}>Add payment</button>
+
+                  {cashPaymentBlocked ? (
+                    <p className="svx-transfer-field-hint" style={{ gridColumn: "1 / -1" }}>
+                      Open cash drawer before taking cash.
+                    </p>
+                  ) : null}
+
+                  <button type="submit" className="svx-transfer-primary" disabled={paymentButtonDisabled}>
+                    {cashPaymentBlocked ? "Open cash drawer first" : actionLoading ? "Saving..." : "Add payment"}
+                  </button>
                 </form>
               ) : (
                 <div className="svx-transfer-quiet-note">
-                  {statusKey === "RETURNED" ? "No payment action is needed because this transfer was returned." : statusKey === "PAID" ? "This transfer is fully paid." : "Add payment when the receiver brings money back."}
+                  {statusKey === "RETURNED"
+                    ? "No payment action is needed because this transfer was returned."
+                    : statusKey === "PAID"
+                      ? "This transfer is fully paid."
+                      : "Add payment when the receiver brings money back."}
                 </div>
               )}
 
               <div className="svx-transfer-payments">
-                {payments.length ? payments.map((payment) => (
-                  <div key={payment.id} className="svx-transfer-payment-row">
-                    <div><strong>{formatMoney(payment.amount)}</strong><span>{payment.method}</span><span>{toDateTimeLabel(payment.createdAt)}</span></div>
-                    <span className="svx-transfer-status paid">Paid</span>
-                  </div>
-                )) : <p className="svx-transfer-field-hint">No payments recorded yet.</p>}
+                {payments.length ? (
+                  payments.map((payment) => (
+                    <div key={payment.id} className="svx-transfer-payment-row">
+                      <div>
+                        <strong>{formatMoney(payment.amount)}</strong>
+                        <span>{payment.method}</span>
+                        <span>{toDateTimeLabel(payment.createdAt)}</span>
+                      </div>
+                      <span className="svx-transfer-status paid">Paid</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="svx-transfer-field-hint">No payments recorded yet.</p>
+                )}
               </div>
             </div>
           </aside>
@@ -426,11 +576,37 @@ export default function InterStoreDetail() {
         tone="warning"
         loading={actionLoading}
         onClose={() => setAction(null)}
-        onConfirm={() => runAction(() => markReturned(deal.id, { returnedQuantity: Number(returnForm.returnedQuantity || 1), notes: returnForm.notes }), "Transfer returned")}
+        onConfirm={() =>
+          runAction(
+            () =>
+              markReturned(deal.id, {
+                returnedQuantity: Number(returnForm.returnedQuantity || 1),
+                notes: returnForm.notes,
+              }),
+            "Transfer returned",
+          )
+        }
       >
         <div className="svx-transfer-form-grid">
-          <div className="svx-transfer-form-field"><label>Returned quantity</label><input className="svx-transfer-input" type="number" min="1" value={returnForm.returnedQuantity} onChange={(event) => setReturnForm((current) => ({ ...current, returnedQuantity: event.target.value }))} /></div>
-          <div className="svx-transfer-form-field" style={{ gridColumn: "1 / -1" }}><label>Note</label><textarea className="svx-transfer-textarea" value={returnForm.notes} onChange={(event) => setReturnForm((current) => ({ ...current, notes: event.target.value }))} placeholder="Optional return note" /></div>
+          <div className="svx-transfer-form-field">
+            <label>Returned quantity</label>
+            <input
+              className="svx-transfer-input"
+              type="number"
+              min="1"
+              value={returnForm.returnedQuantity}
+              onChange={(event) => setReturnForm((current) => ({ ...current, returnedQuantity: event.target.value }))}
+            />
+          </div>
+          <div className="svx-transfer-form-field" style={{ gridColumn: "1 / -1" }}>
+            <label>Note</label>
+            <textarea
+              className="svx-transfer-textarea"
+              value={returnForm.notes}
+              onChange={(event) => setReturnForm((current) => ({ ...current, notes: event.target.value }))}
+              placeholder="Optional return note"
+            />
+          </div>
         </div>
       </ActionModal>
     </div>

@@ -1092,10 +1092,9 @@ async function ensureSaleFromPaidInterStoreDeal(tx, { deal, tenantId, userId, me
   let openSessionId = null;
 
   if (paymentMethodTouchesCashDrawer(saleMethod)) {
-    const shouldBlock = await getTenantCashDrawerPolicy(tx, tenantId);
     openSessionId = await getOpenCashSessionId(tx, tenantId, branchId);
 
-    if (shouldBlock && !openSessionId) {
+    if (!openSessionId) {
       throw new Error("CASH_DRAWER_CLOSED_FOR_BRANCH");
     }
   }
