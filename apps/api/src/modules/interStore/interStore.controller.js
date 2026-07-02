@@ -100,6 +100,148 @@ function normalizeInterStoreMethod(method) {
   return ALLOWED_INTERSTORE_METHODS.has(m) ? m : null;
 }
 
+function paymentMethodTouchesCashDrawer(method) {
+  return String(method || "").toUpperCase() === "CASH";
+}
+
+async function getTenantCashDrawerPolicy(tx, tenantId) {
+  if (!tenantId) return true;
+
+  const rows = await tx.$queryRaw`
+    select cash_drawer_block_cash_sales
+    from public.tenant_settings
+    where tenant_id::text = ${String(tenantId)}::text
+    limit 1
+  `;
+
+  const value = rows?.[0]?.cash_drawer_block_cash_sales;
+  return value === false ? false : true;
+}
+
+async function getOpenCashSessionId(tx, tenantId, branchId) {
+  if (!tenantId || !branchId) return null;
+
+  const rows = await tx.$queryRaw`
+    select id
+    from public.cash_sessions
+    where tenant_id::text = ${String(tenantId)}::text
+      and branch_id::text = ${String(branchId)}::text
+      and closed_at is null
+    order by opened_at desc
+    limit 1
+  `;
+
+  return rows?.[0]?.id || null;
+}
+
+async function insertCashMovementIfPossible(
+  tx,
+  { tenantId, branchId, userId, sessionId, type, reason, amount, note },
+) {
+  const amountBigInt = BigInt(Math.round(Number(amount || 0)));
+  if (!sessionId || !branchId || amountBigInt <= 0n) return null;
+
+  const rows = await tx.$queryRaw`
+    insert into public.cash_movements
+      (tenant_id, branch_id, session_id, type, reason, amount, note, created_by)
+    values
+      (
+        ${String(tenantId)}::uuid,
+        ${String(branchId)}::text,
+        ${String(sessionId)}::uuid,
+        ${String(type)}::cash_movement_type,
+        ${String(reason)}::cash_movement_reason,
+        ${amountBigInt},
+        ${note},
+        ${String(userId)}::uuid
+      )
+    returning id, tenant_id, branch_id, session_id, type, reason, amount, note, created_at, created_by
+  `;
+
+  return rows?.[0] || null;
+}
+
+async function resolveTransferCustomerIdTx(tx, tenantId, deal) {
+  const name = cleanString(deal?.resellerName);
+  const phone = normalizePhone(deal?.resellerPhone);
+
+  if (!tenantId || !name || !phone) return null;
+
+  const address =
+    [deal.resellerAddress, deal.resellerDistrict, deal.resellerSector]
+      .map(cleanString)
+      .filter(Boolean)
+      .join(", ") || null;
+
+  const notes = [
+    "Created from Store transfer",
+    deal.resellerStore ? `Store: ${deal.resellerStore}` : null,
+    deal.resellerWorkplace ? `Workplace: ${deal.resellerWorkplace}` : null,
+    deal.id ? `Transfer: ${deal.id}` : null,
+  ]
+    .filter(Boolean)
+    .join("\\n");
+
+  const existing = await tx.customer.findFirst({
+    where: { tenantId, phone },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      ...(typeof tx.customer.fields?.address !== "undefined" ? { address: true } : {}),
+      ...(typeof tx.customer.fields?.idNumber !== "undefined" ? { idNumber: true } : {}),
+      ...(typeof tx.customer.fields?.notes !== "undefined" ? { notes: true } : {}),
+      ...(typeof tx.customer.fields?.isActive !== "undefined" ? { isActive: true } : {}),
+    },
+  });
+
+  if (existing) {
+    const updateData = {
+      ...(name !== existing.name ? { name } : {}),
+      ...(typeof tx.customer.fields?.address !== "undefined" && address && address !== existing.address
+        ? { address }
+        : {}),
+      ...(typeof tx.customer.fields?.idNumber !== "undefined" &&
+      cleanString(deal.resellerNationalId) &&
+      cleanString(deal.resellerNationalId) !== existing.idNumber
+        ? { idNumber: cleanString(deal.resellerNationalId) }
+        : {}),
+      ...(typeof tx.customer.fields?.notes !== "undefined" && notes && notes !== existing.notes
+        ? { notes }
+        : {}),
+      ...(typeof tx.customer.fields?.isActive !== "undefined" && existing.isActive === false
+        ? { isActive: true }
+        : {}),
+    };
+
+    if (Object.keys(updateData).length > 0) {
+      await tx.customer.update({
+        where: { id: existing.id },
+        data: updateData,
+      });
+    }
+
+    return existing.id;
+  }
+
+  const created = await tx.customer.create({
+    data: {
+      tenantId,
+      name,
+      phone,
+      ...(typeof tx.customer.fields?.address !== "undefined" ? { address } : {}),
+      ...(typeof tx.customer.fields?.idNumber !== "undefined"
+        ? { idNumber: cleanString(deal.resellerNationalId) }
+        : {}),
+      ...(typeof tx.customer.fields?.notes !== "undefined" ? { notes } : {}),
+      ...(typeof tx.customer.fields?.isActive !== "undefined" ? { isActive: true } : {}),
+    },
+    select: { id: true },
+  });
+
+  return created.id;
+}
+
 function toNum(x) {
   const n = Number(x);
   return Number.isFinite(n) ? n : NaN;
@@ -927,6 +1069,7 @@ async function searchInternalSupplierProducts(req, res) {
 }
 
 
+
 async function ensureSaleFromPaidInterStoreDeal(tx, { deal, tenantId, userId, method, paidAmount }) {
   if (!deal || deal.saleId) return deal?.saleId || null;
 
@@ -935,20 +1078,34 @@ async function ensureSaleFromPaidInterStoreDeal(tx, { deal, tenantId, userId, me
     throw new Error("PAID_DEAL_MISSING_PRODUCT");
   }
 
+  const branchId = deal.borrowerBranchId || null;
   const takenQuantity = Math.max(0, Number(deal.quantity || 0));
   const returnedQuantity = Math.max(0, Number(deal.returnedQuantity || 0));
   const payableQuantity = Number(deal.soldQuantity || 0) || takenQuantity - returnedQuantity;
   const quantity = Math.max(1, payableQuantity);
   const unitPrice = Number(deal.soldPrice || deal.agreedPrice || 0);
   const total = Math.max(0, quantity * unitPrice);
-  const amountPaid = Math.max(total, Number(paidAmount || deal.paidAmount || total));
+  const amountPaid = Math.min(total, Math.max(0, Number(paidAmount || deal.paidAmount || total)));
   const saleMethod = interStoreMethodToSaleMethod(method || deal.paymentMethod);
+  const customerId = await resolveTransferCustomerIdTx(tx, tenantId, deal);
+
+  let openSessionId = null;
+
+  if (paymentMethodTouchesCashDrawer(saleMethod)) {
+    const shouldBlock = await getTenantCashDrawerPolicy(tx, tenantId);
+    openSessionId = await getOpenCashSessionId(tx, tenantId, branchId);
+
+    if (shouldBlock && !openSessionId) {
+      throw new Error("CASH_DRAWER_CLOSED_FOR_BRANCH");
+    }
+  }
 
   const sale = await tx.sale.create({
     data: {
       tenantId,
-      branchId: deal.borrowerBranchId || null,
+      branchId,
       cashierId: userId,
+      customerId,
       total,
       subtotalAmount: total,
       taxableAmount: 0,
@@ -975,17 +1132,30 @@ async function ensureSaleFromPaidInterStoreDeal(tx, { deal, tenantId, userId, me
         create: [
           {
             tenantId,
-            branchId: deal.borrowerBranchId || null,
+            branchId,
             receivedById: userId,
             amount: amountPaid,
             method: saleMethod,
-            note: `Store transfer ${deal.id}`,
+            note: `Store transfer ${deal.id} • ${saleMethod} • ${Date.now()}`,
           },
         ],
       },
     },
     select: { id: true },
   });
+
+  if (paymentMethodTouchesCashDrawer(saleMethod)) {
+    await insertCashMovementIfPossible(tx, {
+      tenantId,
+      branchId,
+      userId,
+      sessionId: openSessionId,
+      type: "IN",
+      reason: "DEPOSIT",
+      amount: amountPaid,
+      note: `Store transfer cash payment ${sale.id}`,
+    });
+  }
 
   await tx.interStoreDeal.update({
     where: { id: deal.id },
@@ -995,9 +1165,7 @@ async function ensureSaleFromPaidInterStoreDeal(tx, { deal, tenantId, userId, me
   return sale.id;
 }
 
-/**
- * CREATE DEAL
- */
+
 async function createDeal(req, res) {
   try {
     const borrowerTenantId = getTenantId(req);
@@ -1666,6 +1834,13 @@ async function markPaid(req, res) {
       return res.status(400).json({ message: "Transfer product is missing. Cannot create sale." });
     }
 
+      if (err.message === "CASH_DRAWER_CLOSED_FOR_BRANCH") {
+        return res.status(409).json({
+          message: "Open cash drawer before taking cash.",
+          code: "CASH_DRAWER_CLOSED",
+        });
+      }
+
     console.error(err);
     return res.status(500).json({ message: "Failed to mark paid" });
   }
@@ -2088,6 +2263,13 @@ async function addPayment(req, res) {
     if (err.message === "PAID_DEAL_MISSING_PRODUCT") {
       return res.status(400).json({ message: "Transfer product is missing. Cannot create sale." });
     }
+
+      if (err.message === "CASH_DRAWER_CLOSED_FOR_BRANCH") {
+        return res.status(409).json({
+          message: "Open cash drawer before taking cash.",
+          code: "CASH_DRAWER_CLOSED",
+        });
+      }
 
     console.error(err);
     return res.status(500).json({ message: "Failed to add payment" });
