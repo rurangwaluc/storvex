@@ -10,8 +10,7 @@ import "./InterStore.css";
 
 const STATUS_FILTERS = [
   { value: "ALL", label: "All" },
-  { value: "BORROWED", label: "Taken" },
-  { value: "RECEIVED", label: "Taken" },
+  { value: "TAKEN", label: "Taken" },
   { value: "SOLD", label: "Money due" },
   { value: "PAID", label: "Paid" },
   { value: "RETURNED", label: "Returned" },
@@ -259,7 +258,7 @@ export default function InterStoreDeals() {
         allBranches: allBranches ? "true" : undefined,
         take: MAX_SERVER_TAKE,
         cursor: nextCursor || undefined,
-        status: status !== "ALL" ? status : undefined,
+        status: status !== "ALL" && status !== "TAKEN" ? status : undefined,
         q: query || undefined,
       });
       const incoming = Array.isArray(result.deals) ? result.deals : [];
@@ -357,11 +356,6 @@ export default function InterStoreDeals() {
                 <span className="svx-transfer-create-plus" aria-hidden="true">+</span>
                 <span>New transfer</span>
               </button>
-              <div className="svx-transfer-hero-tabs">
-                <button type="button" className="svx-transfer-tab is-active">Transfers list</button>
-                <button type="button" className="svx-transfer-tab">Taken stock</button>
-                <button type="button" className="svx-transfer-tab">Money due</button>
-              </div>
             </div>
           </div>
         </section>
