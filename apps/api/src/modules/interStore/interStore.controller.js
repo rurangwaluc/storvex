@@ -1101,13 +1101,6 @@ async function createDeal(req, res) {
     }
 
     const deal = await prisma.$transaction(async (tx) => {
-      await assertBorrowerSerialNotDuplicated({
-        tx,
-        tenantId: borrowerTenantId,
-        branchId: activeBranch.id,
-        serial: payload.serial,
-      });
-
       const currentShopProduct = await tx.product.findFirst({
         where: {
           id: payload.productId,
