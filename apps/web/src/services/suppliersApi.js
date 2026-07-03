@@ -124,3 +124,75 @@ export function createSupplierSupply(id, data) {
     body: normalizeSupplyPayload(data),
   });
 }
+function normalizeSupplierBillPayload(data = {}) {
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  return {
+    billNumber: cleanString(data.billNumber) || null,
+    billDate: cleanString(data.billDate) || null,
+    dueDate: cleanString(data.dueDate) || null,
+    documentRef: cleanString(data.documentRef) || null,
+    notes: cleanString(data.notes) || null,
+    supplyId: cleanString(data.supplyId) || null,
+    purchaseOrderId: cleanString(data.purchaseOrderId) || null,
+    items: items.map((item) => ({
+      productId: cleanString(item.productId) || null,
+      productName: cleanString(item.productName),
+      quantity: Number(item.quantity || 1),
+      unitCost: Number(item.unitCost || item.buyPrice || 0),
+      notes: cleanString(item.notes) || null,
+    })),
+  };
+}
+
+function normalizeSupplierPaymentPayload(data = {}) {
+  return {
+    billId: cleanString(data.billId),
+    amount: Number(data.amount || 0),
+    method: cleanString(data.method || data.paymentMethod || "CASH").toUpperCase(),
+    reference: cleanString(data.reference) || null,
+    note: cleanString(data.note) || null,
+    paidAt: cleanString(data.paidAt) || null,
+  };
+}
+
+export function getSupplierBalance(id) {
+  const supplierId = cleanString(id);
+  if (!supplierId) throw new Error("Missing supplier id");
+
+  return apiFetch(`/suppliers/${encodeURIComponent(supplierId)}/balance`);
+}
+
+export function listSupplierBills(id, params = {}) {
+  const supplierId = cleanString(id);
+  if (!supplierId) throw new Error("Missing supplier id");
+
+  return apiFetch(`/suppliers/${encodeURIComponent(supplierId)}/bills${toQuery(params)}`);
+}
+
+export function createSupplierBill(id, data) {
+  const supplierId = cleanString(id);
+  if (!supplierId) throw new Error("Missing supplier id");
+
+  return apiFetch(`/suppliers/${encodeURIComponent(supplierId)}/bills`, {
+    method: "POST",
+    body: normalizeSupplierBillPayload(data),
+  });
+}
+
+export function listSupplierPayments(id, params = {}) {
+  const supplierId = cleanString(id);
+  if (!supplierId) throw new Error("Missing supplier id");
+
+  return apiFetch(`/suppliers/${encodeURIComponent(supplierId)}/payments${toQuery(params)}`);
+}
+
+export function createSupplierPayment(id, data) {
+  const supplierId = cleanString(id);
+  if (!supplierId) throw new Error("Missing supplier id");
+
+  return apiFetch(`/suppliers/${encodeURIComponent(supplierId)}/payments`, {
+    method: "POST",
+    body: normalizeSupplierPaymentPayload(data),
+  });
+}

@@ -1,3 +1,4 @@
+import "./Suppliers.css";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -35,23 +36,23 @@ function softText() {
 }
 
 function pageCard() {
-  return "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+  return "svx-supplier-card";
 }
 
 function softPanel() {
-  return "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
+  return "svx-supplier-panel";
 }
 
 function primaryBtn() {
-  return "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-5 text-sm font-black text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60";
+  return "svx-supplier-primary";
 }
 
 function secondaryBtn() {
-  return "inline-flex h-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-5 text-sm font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60";
+  return "svx-supplier-secondary";
 }
 
 function textareaClass() {
-  return "w-full min-h-[128px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm leading-6 text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-ring)]";
+  return "svx-supplier-textarea";
 }
 
 function badgeClass(tone = "neutral") {
@@ -188,7 +189,7 @@ function PreviewPanel({ form }) {
     <aside className={cx(pageCard(), "h-fit p-5 sm:p-6")}>
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={hasRequired ? "success" : "warning"}>
-          {hasRequired ? "Ready to save" : "Missing required details"}
+          {hasRequired ? "Ready to save" : "Needs details"}
         </Badge>
         <Badge tone="primary">{sourceLabel(form.sourceType)}</Badge>
       </div>
@@ -335,7 +336,7 @@ export default function SupplierCreate() {
               <SectionHeading
                 eyebrow="Suppliers"
                 title="Add supplier"
-                subtitle="Create a clean supplier profile with identity proof, contact information, source category, and notes for safer stock origin tracking."
+                subtitle="Create a clean supplier profile for restock, supplier bills, payments, and follow-up."
               />
             </div>
 
@@ -349,13 +350,13 @@ export default function SupplierCreate() {
           <SummaryCard
             label="Supplier"
             value={cleanString(form.name) || "Not set"}
-            note="Person, trader, or company name"
+            note="Supplier, trader, or company name"
             tone={cleanString(form.name) ? "success" : "warning"}
           />
           <SummaryCard
             label="Proof document"
             value={identityLabel(form.idType)}
-            note={cleanString(form.idNumber) || "Document number missing"}
+            note={cleanString(form.idNumber) || "Document number needed"}
             tone={cleanString(form.idNumber) ? "success" : "warning"}
           />
           <SummaryCard
@@ -373,7 +374,7 @@ export default function SupplierCreate() {
             <SectionHeading
               eyebrow="Supplier information"
               title="Profile details"
-              subtitle="Keep this understandable for store owners and staff. Do not enter system references here."
+              subtitle="Keep this simple for the owner and staff. Add only details that help with restock, payments, and follow-up."
             />
           </div>
 
@@ -391,7 +392,7 @@ export default function SupplierCreate() {
                       className="app-input"
                       value={form.name}
                       onChange={(event) => setField("name", event.target.value)}
-                      placeholder="Example: John, ABC Phones Ltd"
+                      placeholder="Example: Kigali Wholesale Supply"
                       required
                     />
                   </Field>
@@ -462,9 +463,9 @@ export default function SupplierCreate() {
             </div>
 
             <div className={cx(softPanel(), "p-5 sm:p-6")}>
-              <div className={cx("text-sm font-black", strongText())}>Business information</div>
+              <div className={cx("text-sm font-black", strongText())}>Supplier business information</div>
               <p className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-                Add company details when the supplier operates as a business.
+                Add company details when this supplier uses a registered business name.
               </p>
 
               <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -473,7 +474,7 @@ export default function SupplierCreate() {
                     className="app-input"
                     value={form.companyName}
                     onChange={(event) => setField("companyName", event.target.value)}
-                    placeholder="Example: ABC Phones Ltd"
+                    placeholder="Example: Kigali Wholesale Supply"
                   />
                 </Field>
 
@@ -505,7 +506,7 @@ export default function SupplierCreate() {
                     className="app-input"
                     value={form.sourceDetails}
                     onChange={(event) => setField("sourceDetails", event.target.value)}
-                    placeholder="Example: bought in Dubai"
+                    placeholder="Example: bought from main wholesaler"
                   />
                 </Field>
 

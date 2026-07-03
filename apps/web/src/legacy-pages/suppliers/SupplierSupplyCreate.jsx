@@ -1,3 +1,4 @@
+import "./Suppliers.css";
 // frontend-stores/src/pages/suppliers/SupplierSupplyCreate.jsx
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -8,7 +9,9 @@ import PageSkeleton from "../../components/ui/PageSkeleton";
 import {
   createSupplierSupply,
   getSupplierById,
+  listSupplierSupplies,
 } from "../../services/suppliersApi";
+import { searchProducts } from "../../services/inventoryApi";
 
 const SOURCE_TYPES = [
   { value: "BOUGHT", label: "Bought stock" },
@@ -21,6 +24,7 @@ const SOURCE_TYPES = [
 const EMPTY_ITEM = {
   productId: "",
   productName: "",
+  productSearch: "",
   category: "",
   subcategory: "",
   subcategoryOther: "",
@@ -49,23 +53,23 @@ function softText() {
 }
 
 function pageCard() {
-  return "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+  return "svx-supplier-card";
 }
 
 function softPanel() {
-  return "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
+  return "svx-supplier-panel";
 }
 
 function primaryBtn() {
-  return "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-5 text-sm font-black text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60";
+  return "svx-supplier-primary";
 }
 
 function secondaryBtn() {
-  return "inline-flex h-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-5 text-sm font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60";
+  return "svx-supplier-secondary";
 }
 
 function dangerBtn() {
-  return "inline-flex h-10 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 px-4 text-xs font-black uppercase tracking-[0.12em] text-red-600 transition hover:border-red-500/40 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-300";
+  return "svx-supplier-danger";
 }
 
 function inputClass() {
@@ -73,7 +77,7 @@ function inputClass() {
 }
 
 function textareaClass() {
-  return "w-full min-h-[110px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm leading-6 text-[var(--color-text)] outline-none transition placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-ring)]";
+  return "svx-supplier-textarea";
 }
 
 function badgeClass(tone = "neutral") {
@@ -131,6 +135,61 @@ function formatMoney(value) {
 
 function sourceLabel(value) {
   return SOURCE_TYPES.find((item) => item.value === value)?.label || "Other source";
+}
+
+function extractProductsResponse(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.products)) return data.products;
+  if (Array.isArray(data?.data?.products)) return data.data.products;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.results)) return data.results;
+  return [];
+}
+
+function productNameOf(product) {
+  return cleanString(product?.name || product?.productName || product?.title);
+}
+
+function productCategoryOf(product) {
+  return cleanString(product?.category || product?.categoryName || product?.type);
+}
+
+function productBrandOf(product) {
+  return cleanString(product?.brand || product?.maker || product?.manufacturer);
+}
+
+function productSellPriceOf(product) {
+  return Number(
+    product?.sellingPrice ??
+      product?.sellPrice ??
+      product?.price ??
+      product?.retailPrice ??
+      0
+  );
+}
+
+function productBuyPriceOf(product) {
+  return Number(
+    product?.buyingPrice ??
+      product?.buyPrice ??
+      product?.costPrice ??
+      product?.purchasePrice ??
+      0
+  );
+}
+
+function productStockOf(product) {
+  return Number(
+    product?.effectiveStockQty ??
+      product?.branchStockQty ??
+      product?.stockQty ??
+      product?.qtyOnHand ??
+      0
+  );
+}
+
+function uniqueCleanValues(values = []) {
+  return Array.from(new Set(values.map((value) => cleanString(value)).filter(Boolean)));
 }
 
 function getCurrentBranchName() {
@@ -248,7 +307,18 @@ function MiniStat({ label, value, note, tone = "neutral" }) {
   );
 }
 
-function ItemCard({ item, index, canRemove, onChange, onRemove }) {
+function ItemCard({
+  item,
+  index,
+  canRemove,
+  onChange,
+  onRemove,
+  productResults = [],
+  productSearchBusy = false,
+  onSearchProducts,
+  onChooseProduct,
+  onClearProduct,
+}) {
   const quantity = toNumber(item.quantity, 0);
   const buyPrice = toNumber(item.buyPrice, 0);
   const sellPrice = toNumber(item.sellPrice, 0);
@@ -274,7 +344,7 @@ function ItemCard({ item, index, canRemove, onChange, onRemove }) {
             </div>
 
             <div className={cx("mt-1 text-sm font-semibold leading-6", mutedText())}>
-              Record product, quantity, buying cost, selling price, and proof details.
+              Record item, quantity, buying cost, selling price, and proof details.
             </div>
           </div>
 
@@ -287,25 +357,116 @@ function ItemCard({ item, index, canRemove, onChange, onRemove }) {
       </div>
 
       <div className="space-y-5 p-5 sm:p-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 min-[620px]:grid-cols-2">
           <div className="md:col-span-2">
-            <Field label="Product name" required hint="Use the exact product name staff will recognize.">
-              <input
-                className={inputClass()}
-                value={item.productName}
-                onChange={(event) => setField("productName", event.target.value)}
-                placeholder="Example: Samsung Galaxy A15 128GB"
+              <Field
+                label="Search existing item or create new"
                 required
-              />
-            </Field>
-          </div>
+                hint="Storvex searches while you type to avoid duplicate stock records. If it is not found, keep typing the new item name."
+              >
+                <div className="grid grid-cols-1 gap-2 min-[560px]:grid-cols-[minmax(0,1fr)_auto]">
+                  <input
+                    className={inputClass()}
+                    value={item.productSearch || item.productName}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setField("productSearch", value);
+                      setField("productName", value);
+                      if (item.productId) setField("productId", "");
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        onSearchProducts?.(index, item.productSearch || item.productName);
+                      }
+                    }}
+                    placeholder="Search item, material, part, product, brand, or code"
+                    required
+                  />
+
+                  <button
+                    type="button"
+                    className={secondaryBtn()}
+                    onClick={() => onSearchProducts?.(index, item.productSearch || item.productName)}
+                    disabled={productSearchBusy}
+                  >
+                    {productSearchBusy ? "Searching..." : "Search"}
+                  </button>
+                </div>
+
+                {item.productId ? (
+                  <div className="mt-3 rounded-[18px] border border-emerald-500/20 bg-emerald-500/10 p-3">
+                    <div className="text-xs font-black text-emerald-300">
+                      Existing item selected
+                    </div>
+                    <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
+                      Storvex will add quantity to this item instead of creating a duplicate.
+                    </div>
+                    <button
+                      type="button"
+                      className={cx(secondaryBtn(), "mt-3")}
+                      onClick={() => onClearProduct?.(index)}
+                    >
+                      Clear selected item
+                    </button>
+                  </div>
+                ) : null}
+
+                {!item.productId && productSearchBusy ? (
+                  <div className={cx("mt-3 rounded-[18px] border border-[var(--color-border)] p-3 text-xs font-bold", mutedText())}>
+                    Searching existing stock items...
+                  </div>
+                ) : null}
+
+                {!item.productId &&
+                !productSearchBusy &&
+                cleanString(item.productSearch || item.productName).length >= 2 &&
+                (!Array.isArray(productResults) || productResults.length === 0) ? (
+                  <div className="mt-3 rounded-[18px] border border-amber-500/20 bg-amber-500/10 p-3">
+                    <div className="text-xs font-black text-amber-300">
+                      No existing item found
+                    </div>
+                    <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
+                      Continue typing and Storvex will create this as a new item when you save.
+                    </div>
+                  </div>
+                ) : null}
+
+                {!item.productId && Array.isArray(productResults) && productResults.length > 0 ? (
+                  <div className="mt-3 grid gap-2">
+                    {productResults.slice(0, 6).map((product) => {
+                      const name = productNameOf(product);
+                      const stock = productStockOf(product);
+
+                      return (
+                        <button
+                          key={product.id || name}
+                          type="button"
+                          className="rounded-[18px] border border-[var(--color-border)] bg-[#111318] p-3 text-left transition hover:border-[var(--color-primary)]"
+                          onClick={() => onChooseProduct?.(index, product)}
+                        >
+                          <div className={cx("text-sm font-black", strongText())}>
+                            {name || "Unnamed item"}
+                          </div>
+                          <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
+                            {[productCategoryOf(product), productBrandOf(product), `Current stock: ${stock}`]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
+              </Field>
+            </div>
 
           <Field label="Category">
             <input
               className={inputClass()}
               value={item.category}
               onChange={(event) => setField("category", event.target.value)}
-              placeholder="Phone, Laptop, TV..."
+              placeholder="Example: Hardware, lighting, spare part, kitchen item..."
             />
           </Field>
 
@@ -314,16 +475,16 @@ function ItemCard({ item, index, canRemove, onChange, onRemove }) {
               className={inputClass()}
               value={item.brand}
               onChange={(event) => setField("brand", event.target.value)}
-              placeholder="Samsung, HP, Lenovo..."
+              placeholder="Example: Brand, maker, model, or supplier line..."
             />
           </Field>
 
-          <Field label="Serial / IMEI" hint="Recommended for phones, laptops, and high-value electronics.">
+          <Field label="Tracking code / serial / part number" hint="Useful for serial items, parts, models, warranty items, or high-value stock.">
             <input
               className={inputClass()}
               value={item.serial}
               onChange={(event) => setField("serial", event.target.value)}
-              placeholder="Optional, but recommended"
+              placeholder="Optional tracking code"
             />
           </Field>
 
@@ -338,7 +499,7 @@ function ItemCard({ item, index, canRemove, onChange, onRemove }) {
             />
           </Field>
 
-          <Field label="Buying price" required hint="Amount paid per item.">
+          <Field label="Buying cost" required hint="Cost paid per item.">
             <input
               type="number"
               min="0"
@@ -351,7 +512,7 @@ function ItemCard({ item, index, canRemove, onChange, onRemove }) {
             />
           </Field>
 
-          <Field label="Selling price" required hint="Expected selling price per item.">
+          <Field label="Selling price" required hint="Selling price per item.">
             <input
               type="number"
               min="0"
@@ -370,13 +531,13 @@ function ItemCard({ item, index, canRemove, onChange, onRemove }) {
                 className={textareaClass()}
                 value={item.notes}
                 onChange={(event) => setField("notes", event.target.value)}
-                placeholder="Condition, warranty note, packaging, supplier promise..."
+                placeholder="Condition, packaging, warranty, supplier promise, or receiving note..."
               />
             </Field>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 min-[560px]:grid-cols-2 min-[900px]:grid-cols-3">
           <MiniStat
             label="Quantity"
             value={quantity || "—"}
@@ -436,7 +597,7 @@ function PreviewPanel({
       </div>
 
       <div className={cx("mt-5 text-lg font-black tracking-[-0.03em]", strongText())}>
-        Supply snapshot
+        Restock snapshot
       </div>
 
       <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>
@@ -476,8 +637,8 @@ function PreviewPanel({
         />
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-3">
-        <SummaryCard label="Lines" value={totalItems} note="Different items in this supply" />
+      <div className="mt-5 grid grid-cols-1 gap-3 min-[560px]:grid-cols-2 min-[1180px]:grid-cols-1">
+        <SummaryCard label="Lines" value={totalItems} note="Different item lines in this restock" />
         <SummaryCard label="Units" value={totalQuantity} note="Total quantity received" tone="info" />
         <SummaryCard label="Total cost" value={formatMoney(totalCost)} note="Expected purchase cost" tone="warning" />
         <SummaryCard
@@ -498,6 +659,9 @@ export default function SupplierSupplyCreate() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [supplier, setSupplier] = useState(null);
+  const [supplyHistory, setSupplyHistory] = useState([]);
+  const [productResultsByIndex, setProductResultsByIndex] = useState({});
+  const [productSearchBusyByIndex, setProductSearchBusyByIndex] = useState({});
 
   const [form, setForm] = useState({
     sourceType: "BOUGHT",
@@ -510,6 +674,11 @@ export default function SupplierSupplyCreate() {
 
   const currentBranchName = useMemo(() => getCurrentBranchName(), []);
   const currentLocationLabel = useMemo(() => getCurrentLocationLabel(), []);
+
+  const previousDocumentRefs = useMemo(
+    () => uniqueCleanValues(supplyHistory.map((supply) => supply?.documentRef)),
+    [supplyHistory],
+  );
 
   const totals = useMemo(() => {
     const items = Array.isArray(form.items) ? form.items : [];
@@ -546,11 +715,13 @@ export default function SupplierSupplyCreate() {
       setLoading(true);
 
       try {
-        const data = await getSupplierById(String(id));
+        const [data, suppliesData] = await Promise.all([
+            getSupplierById(String(id)),
+            listSupplierSupplies(String(id)),
+          ]);
 
-        if (!alive) return;
-
-        setSupplier(data || null);
+          setSupplier(data?.supplier || data || null);
+          setSupplyHistory(Array.isArray(suppliesData?.supplies) ? suppliesData.supplies : []);
       } catch (err) {
         console.error(err);
 
@@ -570,6 +741,32 @@ export default function SupplierSupplyCreate() {
     };
   }, [id]);
 
+  useEffect(() => {
+    const timers = [];
+
+    form.items.forEach((item, index) => {
+      const query = cleanString(item.productSearch || item.productName);
+
+      if (item.productId || query.length < 2) {
+        setProductResultsByIndex((prev) => {
+          if (!prev[index]?.length) return prev;
+          return { ...prev, [index]: [] };
+        });
+        return;
+      }
+
+      const timer = window.setTimeout(() => {
+        searchExistingProductsForItem(index, query, { silent: true });
+      }, 450);
+
+      timers.push(timer);
+    });
+
+    return () => {
+      timers.forEach((timer) => window.clearTimeout(timer));
+    };
+  }, [form.items]);
+
   function setField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -578,6 +775,78 @@ export default function SupplierSupplyCreate() {
     setForm((prev) => ({
       ...prev,
       items: prev.items.map((item, itemIndex) => (itemIndex === index ? nextItem : item)),
+    }));
+  }
+
+  async function searchExistingProductsForItem(index, query, options = {}) {
+    const clean = cleanString(query);
+
+    if (clean.length < 2) {
+      toast.error("Type at least 2 letters to search existing items.");
+      return;
+    }
+
+    try {
+      setProductSearchBusyByIndex((prev) => ({ ...prev, [index]: true }));
+
+      const data = await searchProducts({ q: clean, limit: 8 });
+      const products = extractProductsResponse(data);
+
+      setProductResultsByIndex((prev) => ({ ...prev, [index]: products }));
+
+      if (!products.length && !options.silent) {
+        toast("No existing item found. You can save it as a new item.");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err?.message || "Failed to search existing items");
+    } finally {
+      setProductSearchBusyByIndex((prev) => ({ ...prev, [index]: false }));
+    }
+  }
+
+  function chooseExistingProduct(index, product) {
+    const name = productNameOf(product);
+
+    if (!name) {
+      toast.error("This item has no usable name.");
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      items: prev.items.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+
+        return {
+          ...item,
+          productId: cleanString(product.id),
+          productName: name,
+          productSearch: name,
+          category: productCategoryOf(product) || item.category,
+          brand: productBrandOf(product) || item.brand,
+          buyPrice: productBuyPriceOf(product) || item.buyPrice,
+          sellPrice: productSellPriceOf(product) || item.sellPrice,
+        };
+      }),
+    }));
+
+    setProductResultsByIndex((prev) => ({ ...prev, [index]: [] }));
+    toast.success("Existing item selected");
+  }
+
+  function clearSelectedProduct(index) {
+    setForm((prev) => ({
+      ...prev,
+      items: prev.items.map((item, itemIndex) => {
+        if (itemIndex !== index) return item;
+
+        return {
+          ...item,
+          productId: "",
+          productSearch: item.productName,
+        };
+      }),
     }));
   }
 
@@ -686,7 +955,8 @@ export default function SupplierSupplyCreate() {
 
   if (!supplier) {
     return (
-      <div className="space-y-6 overflow-x-hidden">
+      <div className="svx-supplier-page">
+        <div className="svx-supplier-shell">
         <section className={cx(pageCard(), "p-6 text-center")}>
           <div className={cx("text-lg font-black tracking-[-0.03em]", strongText())}>
             Supplier not found
@@ -702,6 +972,7 @@ export default function SupplierSupplyCreate() {
             </button>
           </div>
         </section>
+        </div>
       </div>
     );
   }
@@ -713,7 +984,7 @@ export default function SupplierSupplyCreate() {
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div className="min-w-0 max-w-3xl">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone="primary">Supplier stock</Badge>
+                <Badge tone="primary">Supplier restock</Badge>
                 <Badge tone="success">{currentBranchName}</Badge>
                 <Badge tone={form.alsoUpdateStock ? "success" : "warning"}>
                   {form.alsoUpdateStock ? "Stock will be updated" : "Record only"}
@@ -722,8 +993,8 @@ export default function SupplierSupplyCreate() {
 
               <SectionHeading
                 eyebrow="Suppliers"
-                title="Record supplier stock"
-                subtitle="Save items received from this supplier and choose whether the received quantities should be added to the current selling location immediately."
+                title="Record supplier restock"
+                subtitle="Record items received from this supplier and choose whether quantities should be added to the current selling location now."
               />
             </div>
 
@@ -738,7 +1009,7 @@ export default function SupplierSupplyCreate() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-3 px-5 py-5 md:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 px-5 py-5 min-[560px]:grid-cols-2 min-[980px]:grid-cols-4">
           <SummaryCard
             label="Supplier"
             value={supplier.name || "Supplier"}
@@ -766,20 +1037,20 @@ export default function SupplierSupplyCreate() {
         </div>
       </section>
 
-      <form onSubmit={submit} className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <form onSubmit={submit} className="grid grid-cols-1 gap-6 min-[1180px]:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-6">
           <section className={cx(pageCard(), "overflow-hidden")}>
             <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
               <SectionHeading
                 eyebrow="Supply details"
                 title="Source and document proof"
-                subtitle="Attach receipt, invoice, or purchase reference so the stock origin remains clear later."
+                subtitle="Add invoice, receipt, or delivery reference so the stock origin stays clear."
               />
             </div>
 
             <div className="space-y-5 p-5 sm:p-6">
               <div className={cx(softPanel(), "p-5 sm:p-6")}>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 min-[700px]:grid-cols-2">
                   <Field label="How this stock came in">
                     <select
                       className={inputClass()}
@@ -794,14 +1065,20 @@ export default function SupplierSupplyCreate() {
                     </select>
                   </Field>
 
-                  <Field label="Receipt or invoice reference" hint="Optional, but useful for proof.">
-                    <input
-                      className={inputClass()}
-                      value={form.documentRef}
-                      onChange={(event) => setField("documentRef", event.target.value)}
-                      placeholder="Example: INV-2026-001"
-                    />
-                  </Field>
+                  <Field label="Invoice, receipt, or delivery reference" hint="Type a new reference or reuse a previous one from this supplier.">
+                      <input
+                        className={inputClass()}
+                        value={form.documentRef}
+                        onChange={(event) => setField("documentRef", event.target.value)}
+                        placeholder="Example: INV-2026-001"
+                        list="supplier-restock-document-reference-options"
+                      />
+                      <datalist id="supplier-restock-document-reference-options">
+                        {previousDocumentRefs.map((ref) => (
+                          <option key={ref} value={ref} />
+                        ))}
+                      </datalist>
+                    </Field>
 
                   <div className="md:col-span-2">
                     <Field label="Source details">
@@ -809,7 +1086,7 @@ export default function SupplierSupplyCreate() {
                         className={inputClass()}
                         value={form.sourceDetails}
                         onChange={(event) => setField("sourceDetails", event.target.value)}
-                        placeholder="Example: bought from supplier shop, received by manager..."
+                        placeholder="Example: received by manager, delivered by supplier, checked at branch..."
                       />
                     </Field>
                   </div>
@@ -835,7 +1112,7 @@ export default function SupplierSupplyCreate() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <Field label="Supply notes">
+                    <Field label="Restock notes">
                       <textarea
                         className={textareaClass()}
                         value={form.notes}
@@ -857,6 +1134,11 @@ export default function SupplierSupplyCreate() {
               canRemove={form.items.length > 1}
               onChange={setItem}
               onRemove={removeItem}
+              productResults={productResultsByIndex[index] || []}
+              productSearchBusy={Boolean(productSearchBusyByIndex[index])}
+              onSearchProducts={searchExistingProductsForItem}
+              onChooseProduct={chooseExistingProduct}
+              onClearProduct={clearSelectedProduct}
             />
           ))}
 
@@ -865,7 +1147,7 @@ export default function SupplierSupplyCreate() {
               <div>
                 <div className={cx("text-sm font-black", strongText())}>Need to add another item?</div>
                 <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-                  Add another line when the supplier delivered more than one product.
+                  Add another line when the supplier delivered more than one item.
                 </div>
               </div>
 
@@ -887,7 +1169,7 @@ export default function SupplierSupplyCreate() {
               </button>
 
               <AsyncButton type="submit" loading={saving} loadingText="Saving..." className={primaryBtn()}>
-                Save supplier stock
+                Save supplier restock
               </AsyncButton>
             </div>
           </section>

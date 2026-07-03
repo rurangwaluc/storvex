@@ -1,0 +1,1013 @@
+@import url("https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap");
+
+.svx-supplier-page,
+.svx-supplier-page * {
+  box-sizing: border-box;
+}
+
+.svx-supplier-page {
+  --supplier-card: var(--color-card, #ffffff);
+  --supplier-surface: var(--color-surface, #ffffff);
+  --supplier-surface-2: var(--color-surface-2, #f4f7fb);
+  --supplier-surface-3: var(--color-surface-3, #e9eef7);
+  --supplier-text: var(--color-text, #0d1b3e);
+  --supplier-muted: var(--color-text-muted, #647089);
+  --supplier-border: var(--color-border, rgba(13, 27, 62, 0.12));
+  --supplier-primary: var(--color-primary, #159cff);
+  --supplier-primary-soft: var(--color-primary-soft, rgba(21, 156, 255, 0.12));
+  --supplier-primary-contrast: var(--color-primary-contrast, #ffffff);
+  --supplier-danger: var(--color-danger, #ef4444);
+  --supplier-shadow: var(--shadow-card, 0 18px 50px rgba(15, 45, 90, 0.08));
+  --supplier-shadow-soft: var(--shadow-soft, 0 12px 30px rgba(15, 45, 90, 0.08));
+  --supplier-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --supplier-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  width: 100%;
+  max-width: 100%;
+  min-height: 100%;
+  overflow-x: clip;
+  color: var(--supplier-text);
+  font-family: var(--supplier-body-font);
+}
+
+:root[data-theme="dark"] .svx-supplier-page {
+  --supplier-card: #1f1f20;
+  --supplier-surface: #101a2b;
+  --supplier-surface-2: #0d1d32;
+  --supplier-surface-3: #142641;
+  --supplier-text: #ffffff;
+  --supplier-muted: rgba(255, 255, 255, 0.66);
+  --supplier-border: rgba(255, 255, 255, 0.11);
+  --supplier-primary: #159cff;
+  --supplier-primary-soft: rgba(21, 156, 255, 0.14);
+  --supplier-shadow: 0 22px 70px rgba(0, 0, 0, 0.22);
+  --supplier-shadow-soft: 0 12px 34px rgba(0, 0, 0, 0.18);
+}
+
+.svx-supplier-page h1,
+.svx-supplier-page h2,
+.svx-supplier-page h3,
+.svx-supplier-page h4,
+.svx-supplier-page p,
+.svx-supplier-page button,
+.svx-supplier-page input,
+.svx-supplier-page textarea,
+.svx-supplier-page select,
+.svx-supplier-page span,
+.svx-supplier-page strong,
+.svx-supplier-page small,
+.svx-supplier-page label {
+  font-family: var(--supplier-body-font);
+}
+
+.svx-supplier-page h1,
+.svx-supplier-page h2,
+.svx-supplier-page h3,
+.svx-supplier-page h4 {
+  margin: 0;
+  color: var(--supplier-text);
+  font-family: var(--supplier-heading-font);
+  letter-spacing: -0.04em;
+}
+
+.svx-supplier-page p {
+  margin: 0;
+  color: var(--supplier-muted);
+}
+
+.svx-supplier-page button {
+  border: 0;
+  cursor: pointer;
+}
+
+.svx-supplier-page button:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.svx-supplier-shell {
+  display: grid;
+  gap: 22px;
+  width: min(100%, 1440px);
+  margin: 0 auto;
+  padding: 8px 0 28px;
+}
+
+.svx-supplier-hero {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--supplier-border);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 88% 0%, color-mix(in srgb, var(--supplier-primary) 11%, transparent), transparent 34%),
+    linear-gradient(135deg, color-mix(in srgb, var(--supplier-card) 94%, var(--supplier-primary-soft)), var(--supplier-card));
+  box-shadow: var(--supplier-shadow);
+  padding: 28px;
+}
+
+.svx-supplier-hero::after {
+  content: "";
+  position: absolute;
+  right: -80px;
+  top: -110px;
+  width: 260px;
+  height: 260px;
+  border-radius: 999px;
+  background: var(--supplier-primary-soft);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.svx-supplier-hero-inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 24px;
+}
+
+.svx-supplier-eyebrow,
+.svx-supplier-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  width: fit-content;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.13);
+  padding: 0 12px;
+  color: #10d89b;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.svx-supplier-title {
+  max-width: 780px;
+  margin-top: 16px;
+  font-size: clamp(30px, 3vw, 46px);
+  font-weight: 800;
+  line-height: 1.03;
+}
+
+.svx-supplier-subtitle {
+  max-width: 720px;
+  margin-top: 12px;
+  color: var(--supplier-muted);
+  font-size: 15.5px;
+  font-weight: 650;
+  line-height: 1.65;
+}
+
+.svx-supplier-hero-actions,
+.svx-supplier-toolbar-actions,
+.svx-supplier-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.svx-supplier-primary,
+.svx-supplier-secondary,
+.svx-supplier-danger,
+.svx-supplier-success,
+.svx-supplier-warning,
+.svx-supplier-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 14px;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease;
+}
+
+.svx-supplier-primary {
+  background: var(--supplier-primary);
+  color: var(--supplier-primary-contrast);
+  box-shadow: 0 14px 28px color-mix(in srgb, var(--supplier-primary) 22%, transparent);
+}
+
+.svx-supplier-secondary,
+.svx-supplier-ghost {
+  border: 1px solid var(--supplier-border) !important;
+  background: var(--supplier-card);
+  color: var(--supplier-text);
+  box-shadow: var(--supplier-shadow-soft);
+}
+
+.svx-supplier-success {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.svx-supplier-warning {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.svx-supplier-danger {
+  background: var(--supplier-danger);
+  color: #ffffff;
+}
+
+.svx-supplier-primary:hover,
+.svx-supplier-secondary:hover,
+.svx-supplier-success:hover,
+.svx-supplier-warning:hover,
+.svx-supplier-danger:hover,
+.svx-supplier-ghost:hover {
+  transform: translateY(-1px);
+}
+
+.svx-supplier-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.svx-supplier-stat-card,
+.svx-supplier-card,
+.svx-supplier-panel,
+.svx-supplier-list-card,
+.svx-supplier-empty,
+.svx-supplier-form-card,
+.svx-supplier-toolbar {
+  border: 1px solid var(--supplier-border);
+  border-radius: 24px;
+  background: var(--supplier-card);
+  box-shadow: var(--supplier-shadow-soft);
+}
+
+.svx-supplier-stat-card,
+.svx-supplier-card {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.svx-supplier-stat-card {
+  padding: 18px;
+}
+
+.svx-supplier-toolbar {
+  padding: 18px;
+}
+
+.svx-supplier-panel {
+  background: var(--supplier-card);
+}
+
+.svx-supplier-register-section {
+  display: grid;
+  gap: 14px;
+}
+
+.svx-supplier-register-list {
+  display: grid;
+  gap: 12px;
+}
+
+:root[data-theme="dark"] .svx-supplier-page .app-input {
+  background: #101a2b !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  color: #ffffff !important;
+}
+
+:root[data-theme="dark"] .svx-supplier-page .app-input::placeholder {
+  color: rgba(255, 255, 255, 0.48) !important;
+}
+
+:root[data-theme="dark"] .svx-supplier-page [class*="bg-[var(--color-card)]"] {
+  background: var(--supplier-card) !important;
+}
+
+:root[data-theme="dark"] .svx-supplier-page [class*="bg-[var(--color-surface-2)]"] {
+  background: var(--supplier-surface-2) !important;
+}
+
+@media (max-width: 980px) {
+  .svx-supplier-hero-inner {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-supplier-hero-actions {
+    justify-content: flex-start;
+  }
+
+  .svx-supplier-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .svx-supplier-shell {
+    gap: 16px;
+    padding: 2px 0 18px;
+  }
+
+  .svx-supplier-hero,
+  .svx-supplier-toolbar,
+  .svx-supplier-card,
+  .svx-supplier-panel {
+    border-radius: 20px;
+  }
+
+  .svx-supplier-hero {
+    padding: 20px;
+  }
+
+  .svx-supplier-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-supplier-primary,
+  .svx-supplier-secondary,
+  .svx-supplier-danger,
+  .svx-supplier-success,
+  .svx-supplier-warning {
+    width: 100%;
+  }
+}
+
+/* No glow, no gradient, no AI-looking blue blob. Storvex supplier pages stay flat charcoal. */
+.svx-supplier-hero,
+.svx-supplier-toolbar,
+.svx-supplier-card,
+.svx-supplier-panel,
+.svx-supplier-empty,
+.svx-supplier-form-card,
+.svx-supplier-stat-card {
+  background: #1f1f20 !important;
+  background-image: none !important;
+}
+
+.svx-supplier-hero::after,
+.svx-supplier-hero::before,
+.svx-supplier-toolbar::after,
+.svx-supplier-toolbar::before,
+.svx-supplier-card::after,
+.svx-supplier-card::before,
+.svx-supplier-panel::after,
+.svx-supplier-panel::before {
+  display: none !important;
+  content: none !important;
+}
+
+:root[data-theme="dark"] .svx-supplier-hero,
+:root[data-theme="dark"] .svx-supplier-toolbar,
+:root[data-theme="dark"] .svx-supplier-card,
+:root[data-theme="dark"] .svx-supplier-panel,
+:root[data-theme="dark"] .svx-supplier-empty,
+:root[data-theme="dark"] .svx-supplier-form-card,
+:root[data-theme="dark"] .svx-supplier-stat-card {
+  background: #1f1f20 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-supplier-secondary,
+:root[data-theme="dark"] .svx-supplier-ghost {
+  background: #111318 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-supplier-primary {
+  background: #2f8cff !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-supplier-page .app-input {
+  background: #111827 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.svx-supplier-textarea {
+  width: 100%;
+  min-height: 128px;
+  border-radius: 16px;
+  border: 1px solid var(--supplier-border);
+  background: var(--supplier-card);
+  padding: 12px 16px;
+  color: var(--supplier-text);
+  font-size: 14px;
+  line-height: 1.55;
+  outline: none;
+  resize: vertical;
+}
+
+.svx-supplier-textarea::placeholder {
+  color: var(--supplier-muted);
+}
+
+.svx-supplier-textarea:focus {
+  border-color: var(--supplier-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--supplier-primary) 18%, transparent);
+}
+
+:root[data-theme="dark"] .svx-supplier-textarea {
+  background: #101a2b !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+/* Final Add/Edit supplier polish: compact, flat, category-neutral, PWA-friendly */
+.svx-supplier-page {
+  padding-bottom: max(28px, env(safe-area-inset-bottom));
+}
+
+.svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child {
+  padding: 22px !important;
+}
+
+.svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child h1 {
+  font-size: clamp(28px, 3vw, 40px) !important;
+  line-height: 1.02 !important;
+}
+
+.svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child p {
+  max-width: 760px !important;
+  font-size: 14px !important;
+  line-height: 1.55 !important;
+}
+
+.svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child .grid {
+  gap: 12px !important;
+}
+
+.svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child article {
+  min-height: 104px !important;
+  padding: 16px !important;
+}
+
+.svx-supplier-page .svx-supplier-card {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.svx-supplier-page .svx-supplier-panel {
+  border-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+.svx-supplier-page .app-input,
+.svx-supplier-page input,
+.svx-supplier-page select,
+.svx-supplier-page textarea,
+.svx-supplier-textarea {
+  border-radius: 14px !important;
+}
+
+:root[data-theme="dark"] .svx-supplier-page .app-input,
+:root[data-theme="dark"] .svx-supplier-page input,
+:root[data-theme="dark"] .svx-supplier-page select,
+:root[data-theme="dark"] .svx-supplier-page textarea,
+:root[data-theme="dark"] .svx-supplier-textarea {
+  background: #111318 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-supplier-page .app-input:focus,
+:root[data-theme="dark"] .svx-supplier-page input:focus,
+:root[data-theme="dark"] .svx-supplier-page select:focus,
+:root[data-theme="dark"] .svx-supplier-page textarea:focus,
+:root[data-theme="dark"] .svx-supplier-textarea:focus {
+  border-color: rgba(47, 140, 255, 0.55) !important;
+  box-shadow: 0 0 0 2px rgba(47, 140, 255, 0.14) !important;
+}
+
+:root[data-theme="dark"] .svx-supplier-page .app-input::placeholder,
+:root[data-theme="dark"] .svx-supplier-page input::placeholder,
+:root[data-theme="dark"] .svx-supplier-page textarea::placeholder {
+  color: rgba(255, 255, 255, 0.48) !important;
+}
+
+.svx-supplier-page aside.svx-supplier-card {
+  position: sticky;
+  top: 22px;
+}
+
+.svx-supplier-page form .svx-supplier-card,
+.svx-supplier-page form .svx-supplier-panel {
+  box-shadow: none !important;
+}
+
+.svx-supplier-page form label {
+  letter-spacing: -0.01em;
+}
+
+.svx-supplier-page form [class*="space-y-"] {
+  scroll-margin-top: 24px;
+}
+
+.svx-supplier-page .svx-supplier-primary,
+.svx-supplier-page .svx-supplier-secondary {
+  min-height: 42px;
+}
+
+@media (max-width: 1180px) {
+  .svx-supplier-page aside.svx-supplier-card {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-supplier-page .svx-supplier-shell {
+    gap: 14px;
+  }
+
+  .svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child {
+    padding: 18px !important;
+  }
+
+  .svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child article {
+    min-height: auto !important;
+  }
+
+  .svx-supplier-page form {
+    padding-bottom: 88px;
+  }
+
+  .svx-supplier-page form > .flex:last-child,
+  .svx-supplier-page form [class*="justify-end"]:last-child {
+    position: sticky;
+    bottom: 0;
+    z-index: 30;
+    margin-inline: -18px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(31, 31, 32, 0.96);
+    padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
+    backdrop-filter: blur(14px);
+  }
+
+  .svx-supplier-page form > .flex:last-child button,
+  .svx-supplier-page form > .flex:last-child a,
+  .svx-supplier-page form [class*="justify-end"]:last-child button,
+  .svx-supplier-page form [class*="justify-end"]:last-child a {
+    flex: 1 1 0;
+  }
+}
+
+@media (max-width: 460px) {
+  .svx-supplier-page .svx-supplier-title,
+  .svx-supplier-page h1 {
+    font-size: 28px !important;
+  }
+
+  .svx-supplier-page .svx-supplier-primary,
+  .svx-supplier-page .svx-supplier-secondary {
+    width: 100%;
+  }
+}
+
+/* Supplier create/edit density pass: less scrolling, better PWA feel */
+.svx-supplier-page .svx-supplier-shell {
+  gap: 18px;
+}
+
+.svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child {
+  padding: 18px 22px !important;
+}
+
+.svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child .mt-5 {
+  margin-top: 14px !important;
+}
+
+.svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child .mt-3 {
+  margin-top: 8px !important;
+}
+
+.svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child article {
+  min-height: 92px !important;
+  padding: 14px 16px !important;
+}
+
+.svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child h1 {
+  font-size: clamp(26px, 2.5vw, 34px) !important;
+}
+
+.svx-supplier-page form.svx-supplier-card,
+.svx-supplier-page form .svx-supplier-card {
+  padding-top: 22px !important;
+}
+
+.svx-supplier-page form .svx-supplier-panel {
+  padding: 18px !important;
+}
+
+.svx-supplier-page form .space-y-8,
+.svx-supplier-page form .space-y-7,
+.svx-supplier-page form .space-y-6 {
+  row-gap: 18px !important;
+}
+
+.svx-supplier-page form h2,
+.svx-supplier-page form h3 {
+  line-height: 1.08 !important;
+}
+
+.svx-supplier-page form p {
+  line-height: 1.5 !important;
+}
+
+.svx-supplier-page form label {
+  margin-bottom: 6px !important;
+}
+
+.svx-supplier-page .app-input,
+.svx-supplier-page input,
+.svx-supplier-page select {
+  min-height: 44px !important;
+  height: 44px !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.svx-supplier-page .svx-supplier-textarea,
+.svx-supplier-page textarea {
+  min-height: 104px !important;
+}
+
+.svx-supplier-page aside.svx-supplier-card {
+  padding: 20px !important;
+}
+
+.svx-supplier-page aside.svx-supplier-card .mt-5 {
+  margin-top: 14px !important;
+}
+
+.svx-supplier-page aside.svx-supplier-card .space-y-3 {
+  gap: 10px !important;
+}
+
+.svx-supplier-page aside.svx-supplier-card .svx-supplier-panel {
+  padding: 14px !important;
+}
+
+@media (max-width: 760px) {
+  .svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child {
+    padding: 16px !important;
+  }
+
+  .svx-supplier-page .svx-supplier-shell > .svx-supplier-card:first-child .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-supplier-page form .grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-supplier-page aside.svx-supplier-card {
+    padding: 16px !important;
+  }
+}
+
+/* Supplier real-data polish: category-neutral, less noisy, less destructive-looking */
+.svx-supplier-page .svx-supplier-danger {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.28) !important;
+  color: #ff8b8b !important;
+  box-shadow: none !important;
+}
+
+.svx-supplier-page .svx-supplier-danger:hover {
+  background: rgba(239, 68, 68, 0.16) !important;
+}
+
+.svx-supplier-page .svx-supplier-primary:disabled,
+.svx-supplier-page .svx-supplier-secondary:disabled,
+.svx-supplier-page .svx-supplier-danger:disabled,
+.svx-supplier-page .svx-supplier-success:disabled,
+.svx-supplier-page .svx-supplier-warning:disabled {
+  opacity: 0.48 !important;
+  box-shadow: none !important;
+}
+
+.svx-supplier-page .svx-supplier-register-section .svx-supplier-card,
+.svx-supplier-page .svx-supplier-register-list .svx-supplier-card {
+  box-shadow: none !important;
+}
+
+.svx-supplier-page .svx-supplier-register-list .svx-supplier-card {
+  padding: 18px !important;
+}
+
+.svx-supplier-page .svx-supplier-register-list aside.svx-supplier-panel {
+  background: #1b1b1c !important;
+}
+
+.svx-supplier-page .svx-supplier-register-list .svx-supplier-primary,
+.svx-supplier-page .svx-supplier-register-list .svx-supplier-secondary,
+.svx-supplier-page .svx-supplier-register-list .svx-supplier-danger {
+  min-height: 40px !important;
+}
+
+.svx-supplier-page .svx-supplier-register-list .svx-supplier-danger {
+  font-size: 12px !important;
+}
+
+.svx-supplier-page input[placeholder*="HP Pavilion"],
+.svx-supplier-page input[value*="HP Pavilion"] {
+  color: inherit;
+}
+
+.svx-supplier-page .svx-supplier-panel .svx-supplier-primary:disabled,
+.svx-supplier-page .svx-supplier-card .svx-supplier-primary:disabled {
+  background: #245f9f !important;
+}
+
+@media (max-width: 980px) {
+  .svx-supplier-page .svx-supplier-register-list .svx-supplier-card {
+    padding: 16px !important;
+  }
+}
+
+/* PWA mobile layout: use 2 columns where it is comfortable */
+@media (min-width: 390px) and (max-width: 760px) {
+  .svx-supplier-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-supplier-page .svx-supplier-hero-actions {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    width: 100%;
+  }
+
+  .svx-supplier-page .svx-supplier-hero-actions > * {
+    width: 100% !important;
+  }
+
+  .svx-supplier-page .svx-supplier-toolbar > .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: end;
+  }
+
+  .svx-supplier-page .svx-supplier-toolbar > .grid > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .svx-supplier-page .svx-supplier-toolbar > .grid > .svx-supplier-panel {
+    grid-column: span 1;
+  }
+
+  .svx-supplier-page .svx-supplier-toolbar .mt-5.flex.flex-wrap {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .svx-supplier-page .svx-supplier-toolbar .mt-5.flex.flex-wrap button {
+    width: 100% !important;
+    padding-inline: 10px !important;
+  }
+
+  .svx-supplier-page .svx-supplier-toolbar .mt-5.flex.flex-col {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-supplier-page .svx-supplier-toolbar .mt-5.flex.flex-col > * {
+    width: 100% !important;
+  }
+
+  .svx-supplier-register-list .svx-supplier-card [class*="md:grid-cols-4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-supplier-register-list aside.svx-supplier-panel .mt-4.grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-supplier-register-list aside.svx-supplier-panel .mt-4.grid > .svx-supplier-primary {
+    grid-column: 1 / -1;
+  }
+
+  .svx-supplier-register-list aside.svx-supplier-panel .mt-4.grid > .svx-supplier-secondary,
+  .svx-supplier-register-list aside.svx-supplier-panel .mt-4.grid > .svx-supplier-danger {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 389px) {
+  .svx-supplier-summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-supplier-register-list .svx-supplier-card [class*="md:grid-cols-4"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Supplier bill number should be readable because it is generated by Storvex */
+.svx-supplier-page input[aria-readonly="true"] {
+  font-size: 12px !important;
+  letter-spacing: 0.02em !important;
+  font-weight: 900 !important;
+  cursor: default !important;
+}
+
+@media (max-width: 1280px) {
+  .svx-supplier-page aside .grid.sm\:grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Light mode lock: Suppliers must respect Storvex light mode like Store transfers */
+:root:not([data-theme="dark"]) .svx-supplier-page {
+  --supplier-card: #ffffff;
+  --supplier-surface: #ffffff;
+  --supplier-surface-2: #f8fbff;
+  --supplier-surface-3: #eef5ff;
+  --supplier-text: #071633;
+  --supplier-muted: #56657d;
+  --supplier-border: rgba(7, 22, 51, 0.12);
+  --supplier-primary: #159cff;
+  --supplier-primary-soft: rgba(21, 156, 255, 0.1);
+  --supplier-primary-contrast: #ffffff;
+  --supplier-shadow: 0 18px 46px rgba(15, 45, 90, 0.07);
+  --supplier-shadow-soft: 0 10px 28px rgba(15, 45, 90, 0.06);
+  color: var(--supplier-text) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-hero,
+:root:not([data-theme="dark"]) .svx-supplier-toolbar,
+:root:not([data-theme="dark"]) .svx-supplier-card,
+:root:not([data-theme="dark"]) .svx-supplier-panel,
+:root:not([data-theme="dark"]) .svx-supplier-empty,
+:root:not([data-theme="dark"]) .svx-supplier-form-card,
+:root:not([data-theme="dark"]) .svx-supplier-stat-card {
+  background: #ffffff !important;
+  background-image: none !important;
+  border-color: rgba(7, 22, 51, 0.12) !important;
+  color: #071633 !important;
+  box-shadow: 0 18px 46px rgba(15, 45, 90, 0.07) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-page h1,
+:root:not([data-theme="dark"]) .svx-supplier-page h2,
+:root:not([data-theme="dark"]) .svx-supplier-page h3,
+:root:not([data-theme="dark"]) .svx-supplier-page h4,
+:root:not([data-theme="dark"]) .svx-supplier-page strong {
+  color: #071633 !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-page p,
+:root:not([data-theme="dark"]) .svx-supplier-page small,
+:root:not([data-theme="dark"]) .svx-supplier-page [class*="text-[var(--color-text-muted)]"] {
+  color: #56657d !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-page .app-input,
+:root:not([data-theme="dark"]) .svx-supplier-page input,
+:root:not([data-theme="dark"]) .svx-supplier-page select,
+:root:not([data-theme="dark"]) .svx-supplier-page textarea,
+:root:not([data-theme="dark"]) .svx-supplier-textarea {
+  background: #f8fbff !important;
+  background-image: none !important;
+  border-color: rgba(7, 22, 51, 0.12) !important;
+  color: #071633 !important;
+  box-shadow: none !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-page .app-input::placeholder,
+:root:not([data-theme="dark"]) .svx-supplier-page input::placeholder,
+:root:not([data-theme="dark"]) .svx-supplier-page textarea::placeholder {
+  color: #6c7a92 !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-secondary,
+:root:not([data-theme="dark"]) .svx-supplier-ghost {
+  background: #ffffff !important;
+  background-image: none !important;
+  border: 1px solid rgba(7, 22, 51, 0.12) !important;
+  color: #071633 !important;
+  box-shadow: 0 10px 28px rgba(15, 45, 90, 0.06) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-primary {
+  background: #159cff !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 12px 26px rgba(21, 156, 255, 0.18) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-danger {
+  background: rgba(239, 68, 68, 0.06) !important;
+  border: 1px solid rgba(239, 68, 68, 0.22) !important;
+  color: #b42323 !important;
+  box-shadow: none !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-page .border-b {
+  border-color: rgba(7, 22, 51, 0.1) !important;
+}
+
+/* Supplier light mode final correction: do not force dark action panels */
+:root:not([data-theme="dark"]) .svx-supplier-register-list aside.svx-supplier-panel,
+:root:not([data-theme="dark"]) .svx-supplier-page aside.svx-supplier-panel,
+:root:not([data-theme="dark"]) .svx-supplier-page aside.svx-supplier-card {
+  background: #ffffff !important;
+  background-image: none !important;
+  border-color: rgba(7, 22, 51, 0.12) !important;
+  color: #071633 !important;
+  box-shadow: 0 18px 46px rgba(15, 45, 90, 0.07) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-register-list aside.svx-supplier-panel h1,
+:root:not([data-theme="dark"]) .svx-supplier-register-list aside.svx-supplier-panel h2,
+:root:not([data-theme="dark"]) .svx-supplier-register-list aside.svx-supplier-panel h3,
+:root:not([data-theme="dark"]) .svx-supplier-register-list aside.svx-supplier-panel div,
+:root:not([data-theme="dark"]) .svx-supplier-register-list aside.svx-supplier-panel p {
+  color: inherit;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-register-list aside.svx-supplier-panel p,
+:root:not([data-theme="dark"]) .svx-supplier-register-list aside.svx-supplier-panel [class*="text-xs"] {
+  color: #56657d !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-page .svx-supplier-primary,
+:root:not([data-theme="dark"]) .svx-supplier-page button.svx-supplier-primary,
+:root:not([data-theme="dark"]) .svx-supplier-page a.svx-supplier-primary {
+  background: #159cff !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  border-color: #159cff !important;
+  box-shadow: 0 12px 26px rgba(21, 156, 255, 0.18) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-page .svx-supplier-secondary,
+:root:not([data-theme="dark"]) .svx-supplier-page button.svx-supplier-secondary,
+:root:not([data-theme="dark"]) .svx-supplier-page a.svx-supplier-secondary {
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #071633 !important;
+  border-color: rgba(7, 22, 51, 0.12) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-page .svx-supplier-danger {
+  background: rgba(239, 68, 68, 0.06) !important;
+  color: #b42323 !important;
+  border-color: rgba(239, 68, 68, 0.22) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-page .svx-supplier-eyebrow,
+:root:not([data-theme="dark"]) .svx-supplier-page .svx-supplier-kicker {
+  background: rgba(16, 185, 129, 0.11) !important;
+  border-color: rgba(16, 185, 129, 0.18) !important;
+  color: #047857 !important;
+}
+
+/* Supplier restock responsive correction: premium means breathable, not forced columns */
+.svx-supplier-page .svx-supplier-card,
+.svx-supplier-page .svx-supplier-panel,
+.svx-supplier-page .app-input,
+.svx-supplier-page textarea,
+.svx-supplier-page select,
+.svx-supplier-page button {
+  min-width: 0;
+}
+
+.svx-supplier-page .app-input,
+.svx-supplier-page textarea,
+.svx-supplier-page select {
+  width: 100%;
+  max-width: 100%;
+}
+
+.svx-supplier-page .svx-supplier-card {
+  overflow-wrap: break-word;
+}
+
+.svx-supplier-page .svx-supplier-card [class*="text-lg"],
+.svx-supplier-page .svx-supplier-card [class*="text-sm"],
+.svx-supplier-page .svx-supplier-card [class*="text-xs"] {
+  min-width: 0;
+}
+
+.svx-supplier-page .svx-money,
+.svx-supplier-page [data-money="true"] {
+  white-space: nowrap;
+}
+
+@media (max-width: 559px) {
+  .svx-supplier-page .svx-supplier-primary,
+  .svx-supplier-page .svx-supplier-secondary,
+  .svx-supplier-page .svx-supplier-danger {
+    width: 100%;
+    justify-content: center;
+  }
+}

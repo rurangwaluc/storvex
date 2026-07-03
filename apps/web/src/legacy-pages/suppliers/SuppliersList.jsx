@@ -1,3 +1,4 @@
+import "./Suppliers.css";
 // frontend-stores/src/pages/suppliers/SuppliersList.jsx
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -8,10 +9,27 @@ import PageSkeleton from "../../components/ui/PageSkeleton";
 import {
   activateSupplier,
   deactivateSupplier,
+  getSupplierBalance,
   listSuppliers,
 } from "../../services/suppliersApi";
 
-const PAGE_SIZE = 12;
+const DESKTOP_PAGE_SIZE = 6;
+const TABLET_PAGE_SIZE = 5;
+const MOBILE_PAGE_SIZE = 4;
+
+function initialSupplierVisibleCount() {
+  if (typeof window === "undefined") return DESKTOP_PAGE_SIZE;
+
+  if (window.matchMedia?.("(max-width: 640px)")?.matches) {
+    return MOBILE_PAGE_SIZE;
+  }
+
+  if (window.matchMedia?.("(max-width: 980px)")?.matches) {
+    return TABLET_PAGE_SIZE;
+  }
+
+  return DESKTOP_PAGE_SIZE;
+}
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
@@ -30,11 +48,11 @@ function softText() {
 }
 
 function pageCard() {
-  return "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+  return "svx-supplier-card";
 }
 
 function softPanel() {
-  return "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
+  return "svx-supplier-panel";
 }
 
 function inputClass() {
@@ -42,19 +60,19 @@ function inputClass() {
 }
 
 function primaryBtn() {
-  return "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-5 text-sm font-black text-[var(--color-primary-contrast)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60";
+  return "svx-supplier-primary";
 }
 
 function secondaryBtn() {
-  return "inline-flex h-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-5 text-sm font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--color-primary)] disabled:cursor-not-allowed disabled:opacity-60";
+  return "svx-supplier-secondary";
 }
 
 function dangerBtn() {
-  return "inline-flex h-10 items-center justify-center rounded-2xl bg-[var(--color-danger)] px-4 text-sm font-black text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60";
+  return "svx-supplier-danger";
 }
 
 function successBtn() {
-  return "inline-flex h-10 items-center justify-center rounded-2xl bg-emerald-600 px-4 text-sm font-black text-white transition hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60";
+  return "svx-supplier-success";
 }
 
 function badgeClass(tone = "neutral") {
@@ -110,6 +128,12 @@ function formatDate(value) {
     month: "short",
     day: "numeric",
   });
+}
+
+function formatMoney(value) {
+  const n = Number(value || 0);
+  if (!Number.isFinite(n)) return "RWF 0";
+  return `RWF ${Math.round(n).toLocaleString("en-US")}`;
 }
 
 function prettyEnum(value) {
@@ -309,9 +333,14 @@ function EmptyState({ title, text, onCreate }) {
   );
 }
 
-function SupplierCard({ supplier, busyId, onOpen, onEdit, onActivate, onDeactivate }) {
+function SupplierCard({ supplier, balance, busyId, onOpen, onEdit, onActivate, onDeactivate }) {
   const active = supplier.isActive !== false;
   const busy = busyId === supplier.id;
+  const totals = balance?.totals || {};
+  const balanceDue = Number(totals.balanceDue || 0);
+  const openBills = Number(totals.openBills || 0);
+  const lastPayment = balance?.lastPayment || null;
+  const lastSupply = balance?.lastSupply || null;
 
   return (
     <article
@@ -320,18 +349,18 @@ function SupplierCard({ supplier, busyId, onOpen, onEdit, onActivate, onDeactiva
         "overflow-hidden p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card)] sm:p-5",
       )}
     >
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_260px]">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={active ? "success" : "warning"}>
               {active ? "Active supplier" : "Inactive supplier"}
             </Badge>
 
-            <Badge tone={sourceTone(supplier.sourceType)}>
-              {prettyEnum(supplier.sourceType)}
+            <Badge tone={balanceDue > 0 ? "warning" : "success"}>
+              {balanceDue > 0 ? "Money owed" : "Nothing owed"}
             </Badge>
 
-            {supplier.verifiedAt ? <Badge tone="primary">Verified</Badge> : null}
+            {openBills > 0 ? <Badge tone="info">{openBills} open bill{openBills === 1 ? "" : "s"}</Badge> : null}
           </div>
 
           <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -347,31 +376,42 @@ function SupplierCard({ supplier, busyId, onOpen, onEdit, onActivate, onDeactiva
 
             <div className="shrink-0 lg:text-right">
               <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
-                Added
+                You owe
               </div>
-              <div className={cx("mt-1 text-sm font-black", strongText())}>
-                {formatDate(supplier.createdAt)}
+              <div
+                className={cx(
+                  "mt-1 text-lg font-black tracking-[-0.04em]",
+                  balanceDue > 0 ? "text-amber-600 dark:text-amber-300" : strongText(),
+                )}
+              >
+                {formatMoney(balanceDue)}
               </div>
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-4">
+            <InfoStat
+              label="Open bills"
+              value={String(openBills)}
+              sub={openBills > 0 ? "Needs payment follow-up" : "No unpaid bills"}
+            />
+
+            <InfoStat
+              label="Last supply"
+              value={formatDate(lastSupply?.createdAt)}
+              sub={lastSupply?.documentRef ? `Ref: ${lastSupply.documentRef}` : "Latest stock received"}
+            />
+
+            <InfoStat
+              label="Last payment"
+              value={lastPayment ? formatMoney(lastPayment.amount) : "—"}
+              sub={lastPayment ? `${prettyEnum(lastPayment.method)} • ${formatDate(lastPayment.paidAt)}` : "No payment recorded"}
+            />
+
             <InfoStat
               label="Phone"
               value={supplier.phone || "—"}
-              sub="Primary supplier contact"
-            />
-
-            <InfoStat
-              label="Identity"
-              value={supplier.idNumber || "—"}
-              sub={supplier.idType ? prettyEnum(supplier.idType) : "No ID type"}
-            />
-
-            <InfoStat
-              label="Company"
-              value={supplier.companyName || "—"}
-              sub="Business name if available"
+              sub="Primary contact"
             />
           </div>
         </div>
@@ -381,7 +421,7 @@ function SupplierCard({ supplier, busyId, onOpen, onEdit, onActivate, onDeactiva
             <div>
               <div className={cx("text-sm font-black", strongText())}>Supplier actions</div>
               <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-                Review, edit, or change supplier access state.
+                Open profile to manage bills, payments, restock, and history.
               </div>
             </div>
 
@@ -436,7 +476,8 @@ export default function SuppliersList() {
   const [busyId, setBusyId] = useState("");
 
   const [suppliers, setSuppliers] = useState([]);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [supplierBalances, setSupplierBalances] = useState({});
+  const [visibleCount, setVisibleCount] = useState(() => initialSupplierVisibleCount());
 
   const [filters, setFilters] = useState({
     q: "",
@@ -461,10 +502,24 @@ export default function SuppliersList() {
           : [];
 
       setSuppliers(rows);
+
+      const balanceResults = await Promise.allSettled(
+        rows.map((supplier) => getSupplierBalance(supplier.id)),
+      );
+
+      const nextBalances = {};
+      balanceResults.forEach((result, index) => {
+        const supplierId = rows[index]?.id;
+        if (!supplierId || result.status !== "fulfilled") return;
+        nextBalances[supplierId] = result.value;
+      });
+
+      setSupplierBalances(nextBalances);
     } catch (err) {
       console.error(err);
       toast.error(err?.message || "Failed to load suppliers");
       setSuppliers([]);
+      setSupplierBalances({});
     } finally {
       if (initial) setLoading(false);
       setRefreshing(false);
@@ -481,7 +536,7 @@ export default function SuppliersList() {
   }
 
   function applyFilters() {
-    setVisibleCount(PAGE_SIZE);
+    setVisibleCount(initialSupplierVisibleCount());
     loadSuppliers();
   }
 
@@ -492,7 +547,7 @@ export default function SuppliersList() {
       sourceType: "ALL",
     });
 
-    setVisibleCount(PAGE_SIZE);
+    setVisibleCount(initialSupplierVisibleCount());
 
     setTimeout(() => {
       loadSuppliers();
@@ -512,8 +567,8 @@ export default function SuppliersList() {
   }, [suppliers, filters.sourceType]);
 
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [filters.sourceType, suppliers.length]);
+    setVisibleCount(initialSupplierVisibleCount());
+  }, [filters.q, filters.active, filters.sourceType, suppliers.length]);
 
   const visibleSuppliers = useMemo(
     () => filteredSuppliers.slice(0, visibleCount),
@@ -524,15 +579,28 @@ export default function SuppliersList() {
 
   const summary = useMemo(() => {
     const rows = Array.isArray(suppliers) ? suppliers : [];
+    const balances = Object.values(supplierBalances || {});
+
+    const totalOwed = balances.reduce(
+      (sum, row) => sum + Number(row?.totals?.balanceDue || 0),
+      0,
+    );
+
+    const openBills = balances.reduce(
+      (sum, row) => sum + Number(row?.totals?.openBills || 0),
+      0,
+    );
+
+    const suppliersOwed = balances.filter((row) => Number(row?.totals?.balanceDue || 0) > 0).length;
 
     return {
       total: rows.length,
       active: rows.filter((supplier) => supplier.isActive !== false).length,
-      inactive: rows.filter((supplier) => supplier.isActive === false).length,
-      verified: rows.filter((supplier) => Boolean(supplier.verifiedAt)).length,
-      companies: rows.filter((supplier) => Boolean(cleanString(supplier.companyName))).length,
+      totalOwed,
+      openBills,
+      suppliersOwed,
     };
-  }, [suppliers]);
+  }, [suppliers, supplierBalances]);
 
   async function runSupplierStatusAction(id, fn, successMessage) {
     if (!id) return;
@@ -555,19 +623,19 @@ export default function SuppliersList() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className={cx(pageCard(), "overflow-hidden")}>
-        <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-3xl">
-              <SectionHeading
-                eyebrow="Suppliers"
-                title="Supplier control"
-                subtitle="Manage supplier identity, contact details, source type, supply history, and stock intake records from one operational screen."
-              />
+    <div className="svx-supplier-page">
+      <div className="svx-supplier-shell">
+        <section className="svx-supplier-hero">
+        <div className="svx-supplier-hero-inner">
+            <div>
+              <span className="svx-supplier-eyebrow">Suppliers</span>
+              <h1 className="svx-supplier-title">Supplier money control</h1>
+              <p className="svx-supplier-subtitle">
+                See who supplies you, what stock came in, what you owe, what you paid, and which supplier bills need attention.
+              </p>
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="svx-supplier-hero-actions">
               <AsyncButton
                 type="button"
                 loading={refreshing}
@@ -582,23 +650,36 @@ export default function SuppliersList() {
               </Link>
             </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 gap-3 px-5 py-5 md:grid-cols-2 xl:grid-cols-5">
-          <SummaryCard label="Visible suppliers" value={summary.total} note="Loaded from current filters" />
-          <SummaryCard label="Active" value={summary.active} note="Available for supply records" tone="success" />
+        <div className="svx-supplier-summary-grid mt-6">
           <SummaryCard
-            label="Inactive"
-            value={summary.inactive}
-            note="Blocked from normal usage"
-            tone={summary.inactive > 0 ? "warning" : "neutral"}
+            label="Total owed"
+            value={formatMoney(summary.totalOwed)}
+            note={`${summary.suppliersOwed} supplier${summary.suppliersOwed === 1 ? "" : "s"} need payment`}
+            tone={summary.totalOwed > 0 ? "warning" : "success"}
           />
-          <SummaryCard label="Verified" value={summary.verified} note="Suppliers with verified date" tone="info" />
-          <SummaryCard label="Companies" value={summary.companies} note="Business suppliers" tone="primary" />
+          <SummaryCard
+            label="Open bills"
+            value={summary.openBills}
+            note="Unpaid, partly paid, or overdue supplier bills"
+            tone={summary.openBills > 0 ? "warning" : "success"}
+          />
+          <SummaryCard
+            label="Suppliers"
+            value={summary.total}
+            note="Visible from current filters"
+            tone="primary"
+          />
+          <SummaryCard
+            label="Active suppliers"
+            value={summary.active}
+            note="Available for restock and supplier bills"
+            tone="info"
+          />
         </div>
-      </section>
+        </section>
 
-      <section className={cx(pageCard(), "p-5 sm:p-6")}>
+        <section className="svx-supplier-toolbar">
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px] xl:items-end">
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
             <div className="lg:col-span-5">
@@ -644,14 +725,14 @@ export default function SuppliersList() {
           </div>
 
           <div className={cx(softPanel(), "p-4")}>
-            <div className={cx("text-sm font-black", strongText())}>Matching suppliers</div>
+            <div className={cx("text-sm font-black", strongText())}>Suppliers shown</div>
 
             <div className={cx("mt-2 text-2xl font-black tracking-tight", strongText())}>
               {filteredSuppliers.length}
             </div>
 
             <div className={cx("mt-1 text-sm font-semibold leading-6", mutedText())}>
-              Suppliers ready for review.
+              Open one to manage bills, payments, restock, and documents.
             </div>
           </div>
         </div>
@@ -692,9 +773,9 @@ export default function SuppliersList() {
             Clear filters
           </button>
         </div>
-      </section>
+        </section>
 
-      <section className="space-y-4">
+        <section className="svx-supplier-register-section">
         {filteredSuppliers.length === 0 ? (
           <EmptyState
             title="No suppliers found"
@@ -703,11 +784,12 @@ export default function SuppliersList() {
           />
         ) : (
           <>
-            <div className="grid grid-cols-1 gap-3">
+            <div className="svx-supplier-register-list">
               {visibleSuppliers.map((supplier) => (
                 <SupplierCard
                   key={supplier.id}
                   supplier={supplier}
+                  balance={supplierBalances[supplier.id]}
                   busyId={busyId}
                   onOpen={(id) => navigate(`/app/suppliers/${id}`)}
                   onEdit={(id) => navigate(`/app/suppliers/${id}/edit`)}
@@ -725,10 +807,10 @@ export default function SuppliersList() {
               {hasMore ? (
                 <button
                   type="button"
-                  onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
+                  onClick={() => setVisibleCount((prev) => prev + initialSupplierVisibleCount())}
                   className={secondaryBtn()}
                 >
-                  Load {PAGE_SIZE} more
+                  Load more
                 </button>
               ) : (
                 <div className={cx("text-sm font-semibold", mutedText())}>
@@ -738,7 +820,8 @@ export default function SuppliersList() {
             </div>
           </>
         )}
-      </section>
+        </section>
+      </div>
     </div>
   );
 }
