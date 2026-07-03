@@ -174,9 +174,9 @@ model Tenant {
   userBranchAssignments UserBranchAssignment[]
   branchInventory       BranchInventory[]
 
-  documentSettings     TenantDocumentSettings?
-  documentCounter      TenantDocumentCounter?
-  subscription         Subscription?
+  documentSettings TenantDocumentSettings?
+  documentCounter  TenantDocumentCounter?
+  subscription     Subscription?
 
   proformas            Proforma[]
   sessions             UserSession[]
@@ -192,7 +192,7 @@ model Tenant {
   notifications            Notification[]
   payments                 Payment[]
   products                 Product[]
-  productImages ProductImage[]
+  productImages            ProductImage[]
   promotions               Promotion[]
   purchaseOrders           PurchaseOrder[]
   purchaseOrderItemSerials PurchaseOrderItemSerial[]
@@ -202,6 +202,10 @@ model Tenant {
   saleRefunds              SaleRefund[]              @relation("TenantToSaleRefunds")
   stockAdjustments         StockAdjustment[]
   suppliers                Supplier[]
+  supplierBills            SupplierBill[]
+  supplierBillItems        SupplierBillItem[]
+  supplierPayments         SupplierPayment[]
+  supplierDocuments        SupplierDocument[]
   SupplierSupply           SupplierSupply[]
   SupplierSupplyItem       SupplierSupplyItem[]
   users                    User[]
@@ -246,18 +250,21 @@ model Branch {
   borrowerInterStoreDeals InterStoreDeal[]    @relation("BorrowerInterStoreDeals")
   interStorePayments      InterStorePayment[] @relation("BranchInterStorePayments")
 
-  sales            Sale[]
-  salePayments     SalePayment[]
-  saleRefunds      SaleRefund[]
-  repairs          Repair[]
-  expenses         Expense[]
-  stockAdjustments StockAdjustment[]
-  purchaseOrders   PurchaseOrder[]
-  supplierSupplies SupplierSupply[]
-  deliveryNotes    DeliveryNote[]
-  saleWarranties   SaleWarranty[]
-  proformas        Proforma[]
-  auditLogs        AuditLog[]
+  sales             Sale[]
+  salePayments      SalePayment[]
+  saleRefunds       SaleRefund[]
+  repairs           Repair[]
+  expenses          Expense[]
+  stockAdjustments  StockAdjustment[]
+  purchaseOrders    PurchaseOrder[]
+  supplierSupplies  SupplierSupply[]
+  supplierBills     SupplierBill[]
+  supplierPayments  SupplierPayment[]
+  supplierDocuments SupplierDocument[]
+  deliveryNotes     DeliveryNote[]
+  saleWarranties    SaleWarranty[]
+  proformas         Proforma[]
+  auditLogs         AuditLog[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -306,17 +313,17 @@ model TenantDocumentSettings {
   documentPrimaryColor String? @db.Text
   documentAccentColor  String? @db.Text
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  documentHeaderDisplay       String  @default("LOGO_AND_NAME")
-  documentSizeMode            String  @default("AUTO")
+  tenant                Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  documentHeaderDisplay String @default("LOGO_AND_NAME")
+  documentSizeMode      String @default("AUTO")
 
-  taxMode                     String  @default("NONE")
-  taxDisplayMode              String  @default("HIDDEN")
-  taxName                     String?
-  taxRateBps                  Int     @default(0)
-  pricesIncludeTax            Boolean @default(false)
-  showTaxOnCustomerDocuments  Boolean @default(false)
-  
+  taxMode                    String  @default("NONE")
+  taxDisplayMode             String  @default("HIDDEN")
+  taxName                    String?
+  taxRateBps                 Int     @default(0)
+  pricesIncludeTax           Boolean @default(false)
+  showTaxOnCustomerDocuments Boolean @default(false)
+
   deliveryPrefix  String @default("DLV") @db.Text
   deliveryPadding Int    @default(6)
 
@@ -328,17 +335,17 @@ model TenantDocumentSettings {
   deliveryShowSerialNumbers    Boolean @default(true)
   deliveryAllowPartialDelivery Boolean @default(false)
 
-  showDocumentLogo             Boolean @default(true)
-  showDocumentQr               Boolean @default(false)
-  showDocumentWatermark        Boolean @default(false)
-  showPrintedDate              Boolean @default(true)
-  showBusinessContacts         Boolean @default(true)
+  showDocumentLogo      Boolean @default(true)
+  showDocumentQr        Boolean @default(false)
+  showDocumentWatermark Boolean @default(false)
+  showPrintedDate       Boolean @default(true)
+  showBusinessContacts  Boolean @default(true)
 
-  autoReceiptNumbering         Boolean @default(true)
-  autoInvoiceNumbering         Boolean @default(true)
-  autoWarrantyNumbering        Boolean @default(true)
-  autoProformaNumbering        Boolean @default(true)
-  autoDeliveryNumbering        Boolean @default(true)
+  autoReceiptNumbering  Boolean @default(true)
+  autoInvoiceNumbering  Boolean @default(true)
+  autoWarrantyNumbering Boolean @default(true)
+  autoProformaNumbering Boolean @default(true)
+  autoDeliveryNumbering Boolean @default(true)
 
   @@map("TenantDocumentSettings")
 }
@@ -390,6 +397,9 @@ model User {
   receivedNotifications      Notification[]         @relation("NotificationsReceived")
   promotions                 Promotion[]
   purchaseOrders             PurchaseOrder[]
+  supplierBillsCreated       SupplierBill[]
+  supplierPaymentsCreated    SupplierPayment[]
+  supplierDocumentsCreated   SupplierDocument[]
   repairs                    Repair[]               @relation("TechnicianRepairs")
   sales                      Sale[]                 @relation("CashierSales")
   saleRefundsCreated         SaleRefund[]           @relation("UserToSaleRefunds")
@@ -449,37 +459,37 @@ model Subscription {
 }
 
 model Product {
-  id                        String                    @id @default(uuid())
-  tenantId                  String
-  name                      String
-  sku                       String?
-  serial                    String?
-  costPrice                 Float
-  sellPrice                 Float
-  stockQty                  Int
-  createdAt                 DateTime                  @default(now())
-  isActive                  Boolean                   @default(true)
-  brand                     String?
-  category                  String?
-  subcategory               String?
-  subcategoryOther          String?
-  minStockLevel             Int?
-  barcode                   String?
-  location                  String?
-  notes                     String?
-  supplierName              String?
-  supplierId                String?
+  id               String   @id @default(uuid())
+  tenantId         String
+  name             String
+  sku              String?
+  serial           String?
+  costPrice        Float
+  sellPrice        Float
+  stockQty         Int
+  createdAt        DateTime @default(now())
+  isActive         Boolean  @default(true)
+  brand            String?
+  category         String?
+  subcategory      String?
+  subcategoryOther String?
+  minStockLevel    Int?
+  barcode          String?
+  location         String?
+  notes            String?
+  supplierName     String?
+  supplierId       String?
 
-  categoryAttributes        Json?
-  marketplaceStatus         ProductMarketplaceStatus  @default(INTERNAL)
-  marketplaceTitle          String?                   @db.Text
-  marketplaceDescription    String?                   @db.Text
-  marketplacePrice          Float?
-  marketplaceCategory       String?                   @db.Text
-  marketplaceAttributes     Json?
-  marketplaceSlug           String?                   @db.Text
-  marketplacePublishedAt    DateTime?
-  marketplaceUnpublishedAt  DateTime?
+  categoryAttributes       Json?
+  marketplaceStatus        ProductMarketplaceStatus @default(INTERNAL)
+  marketplaceTitle         String?                  @db.Text
+  marketplaceDescription   String?                  @db.Text
+  marketplacePrice         Float?
+  marketplaceCategory      String?                  @db.Text
+  marketplaceAttributes    Json?
+  marketplaceSlug          String?                  @db.Text
+  marketplacePublishedAt   DateTime?
+  marketplaceUnpublishedAt DateTime?
 
   refundItems               SaleRefundItem[]          @relation("ProductToRefundItems")
   deliveryNoteItems         DeliveryNoteItem[]
@@ -491,6 +501,7 @@ model Product {
   promotions                Promotion[]
   purchaseOrderItems        PurchaseOrderItem[]
   purchaseOrderItemSerials  PurchaseOrderItemSerial[]
+  supplierBillItems         SupplierBillItem[]
   saleItems                 SaleItem[]
   stockAdjustments          StockAdjustment[]
   SupplierSupplyItem        SupplierSupplyItem[]
@@ -582,27 +593,27 @@ model Customer {
 }
 
 model Sale {
-  id         String            @id @default(uuid())
-  tenantId   String
-  branchId   String?           @db.Text
-  cashierId  String
-  customerId String?
-  total      Float
-  subtotalAmount              Float   @default(0)
-  taxableAmount               Float   @default(0)
-  taxName                     String?
-  taxMode                     String  @default("NONE")
-  taxDisplayMode              String  @default("HIDDEN")
-  taxRateBps                  Int     @default(0)
-  taxAmount                   Float   @default(0)
-  pricesIncludeTax            Boolean @default(false)
-  showTaxOnCustomerDocuments  Boolean @default(false)
-  createdAt  DateTime          @default(now())
-  amountPaid Float             @default(0)
-  balanceDue Float             @default(0)
-  dueDate    DateTime?
-  saleType   SaleType          @default(CASH)
-  status     SalePaymentStatus @default(PAID)
+  id                         String            @id @default(uuid())
+  tenantId                   String
+  branchId                   String?           @db.Text
+  cashierId                  String
+  customerId                 String?
+  total                      Float
+  subtotalAmount             Float             @default(0)
+  taxableAmount              Float             @default(0)
+  taxName                    String?
+  taxMode                    String            @default("NONE")
+  taxDisplayMode             String            @default("HIDDEN")
+  taxRateBps                 Int               @default(0)
+  taxAmount                  Float             @default(0)
+  pricesIncludeTax           Boolean           @default(false)
+  showTaxOnCustomerDocuments Boolean           @default(false)
+  createdAt                  DateTime          @default(now())
+  amountPaid                 Float             @default(0)
+  balanceDue                 Float             @default(0)
+  dueDate                    DateTime?
+  saleType                   SaleType          @default(CASH)
+  status                     SalePaymentStatus @default(PAID)
 
   isDraft     Boolean   @default(false)
   draftSource String?
@@ -715,12 +726,12 @@ model Proforma {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  branch    Branch?        @relation(fields: [branchId], references: [id])
-  customer  Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  createdBy    User?                  @relation("ProformaCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  conversation WhatsAppConversation?  @relation(fields: [conversationId], references: [id], onDelete: SetNull)
-  draftSale    Sale?                  @relation("ProformaDraftSale", fields: [draftSaleId], references: [id], onDelete: SetNull)
+  tenant       Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch       Branch?               @relation(fields: [branchId], references: [id])
+  customer     Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdBy    User?                 @relation("ProformaCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  conversation WhatsAppConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  draftSale    Sale?                 @relation("ProformaDraftSale", fields: [draftSaleId], references: [id], onDelete: SetNull)
   items        ProformaItem[]
 
   @@unique([tenantId, number])
@@ -992,7 +1003,7 @@ model WhatsAppConversation {
 }
 
 model WhatsAppMessage {
-  id             String               @id @default(uuid())
+  id             String                @id @default(uuid())
   conversationId String
   tenantId       String
   accountId      String?
@@ -1001,19 +1012,19 @@ model WhatsAppMessage {
   type           WhatsAppMessageType
   textContent    String?
   mediaUrl       String?
-  messageId      String?              @unique
+  messageId      String?               @unique
   status         WhatsAppMessageStatus @default(SENT)
   deliveredAt    DateTime?
   readAt         DateTime?
   failedAt       DateTime?
   failureReason  String?
   sentById       String?
-  createdAt      DateTime             @default(now())
-  account        WhatsAppAccount?     @relation(fields: [accountId], references: [id])
-  broadcast      WhatsAppBroadcast?   @relation(fields: [broadcastId], references: [id])
-  conversation   WhatsAppConversation @relation(fields: [conversationId], references: [id])
-  sentBy         User?                @relation(fields: [sentById], references: [id])
-  tenant         Tenant               @relation(fields: [tenantId], references: [id])
+  createdAt      DateTime              @default(now())
+  account        WhatsAppAccount?      @relation(fields: [accountId], references: [id])
+  broadcast      WhatsAppBroadcast?    @relation(fields: [broadcastId], references: [id])
+  conversation   WhatsAppConversation  @relation(fields: [conversationId], references: [id])
+  sentBy         User?                 @relation(fields: [sentById], references: [id])
+  tenant         Tenant                @relation(fields: [tenantId], references: [id])
 
   @@index([conversationId])
   @@index([tenantId])
@@ -1025,21 +1036,21 @@ model WhatsAppMessage {
 }
 
 model Promotion {
-  id          String              @id @default(uuid())
-  tenantId    String
-  title       String
-  message     String
-  productId   String?
-  createdById String
-  createdAt   DateTime            @default(now())
-  sentAt      DateTime?
+  id            String              @id @default(uuid())
+  tenantId      String
+  title         String
+  message       String
+  productId     String?
+  createdById   String
+  createdAt     DateTime            @default(now())
+  sentAt        DateTime?
   archivedAt    DateTime?
   archivedById  String?
   archiveReason String?
-  createdBy   User                @relation(fields: [createdById], references: [id])
-  product     Product?            @relation(fields: [productId], references: [id])
-  tenant      Tenant              @relation(fields: [tenantId], references: [id])
-  broadcasts  WhatsAppBroadcast[]
+  createdBy     User                @relation(fields: [createdById], references: [id])
+  product       Product?            @relation(fields: [productId], references: [id])
+  tenant        Tenant              @relation(fields: [tenantId], references: [id])
+  broadcasts    WhatsAppBroadcast[]
 
   @@index([tenantId])
   @@index([productId])
@@ -1048,37 +1059,37 @@ model Promotion {
 }
 
 model WhatsAppBroadcast {
-  id           String            @id @default(uuid())
-  tenantId     String
-  accountId    String
-  promotionId  String?
-  templateName String
-  languageCode String            @default("en_US")
-  status       BroadcastStatus   @default(DRAFT)
-  createdById  String
-  targetMode   String?
-  targetBranchId String?
-  targetProductId String?
-  targetCategory String?
-  targetCustomerIds Json?
-  queuedAt     DateTime?
-  sentAt       DateTime?
-  processingLockedAt DateTime?
-  processingLockedBy String?
-  processingAttempts Int         @default(0)
+  id                  String            @id @default(uuid())
+  tenantId            String
+  accountId           String
+  promotionId         String?
+  templateName        String
+  languageCode        String            @default("en_US")
+  status              BroadcastStatus   @default(DRAFT)
+  createdById         String
+  targetMode          String?
+  targetBranchId      String?
+  targetProductId     String?
+  targetCategory      String?
+  targetCustomerIds   Json?
+  queuedAt            DateTime?
+  sentAt              DateTime?
+  processingLockedAt  DateTime?
+  processingLockedBy  String?
+  processingAttempts  Int               @default(0)
   processingLastError String?
-  nextAttemptAt DateTime?
-  archivedAt    DateTime?
-  archivedById  String?
-  archiveReason String?
-  cancelledAt   DateTime?
-  cancelledById String?
-  createdAt    DateTime          @default(now())
-  account      WhatsAppAccount   @relation(fields: [accountId], references: [id])
-  createdBy    User              @relation(fields: [createdById], references: [id])
-  promotion    Promotion?        @relation(fields: [promotionId], references: [id])
-  tenant       Tenant            @relation(fields: [tenantId], references: [id])
-  messages     WhatsAppMessage[]
+  nextAttemptAt       DateTime?
+  archivedAt          DateTime?
+  archivedById        String?
+  archiveReason       String?
+  cancelledAt         DateTime?
+  cancelledById       String?
+  createdAt           DateTime          @default(now())
+  account             WhatsAppAccount   @relation(fields: [accountId], references: [id])
+  createdBy           User              @relation(fields: [createdById], references: [id])
+  promotion           Promotion?        @relation(fields: [promotionId], references: [id])
+  tenant              Tenant            @relation(fields: [tenantId], references: [id])
+  messages            WhatsAppMessage[]
 
   @@index([tenantId])
   @@index([accountId])
@@ -1225,6 +1236,9 @@ model Supplier {
   verifiedAt     DateTime?          @db.Timestamp(6)
   products       Product[]
   orders         PurchaseOrder[]
+  bills          SupplierBill[]
+  payments       SupplierPayment[]
+  documents      SupplierDocument[]
   tenant         Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   SupplierSupply SupplierSupply[]
 
@@ -1253,6 +1267,8 @@ model PurchaseOrder {
   branch    Branch?                   @relation(fields: [branchId], references: [id])
   items     PurchaseOrderItem[]
   serials   PurchaseOrderItemSerial[]
+  bills     SupplierBill[]
+  documents SupplierDocument[]
 
   @@index([tenantId])
   @@index([branchId])
@@ -1312,6 +1328,8 @@ model SupplierSupply {
   Supplier           Supplier             @relation(fields: [supplierId], references: [id], onUpdate: NoAction)
   Tenant             Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   branch             Branch?              @relation(fields: [branchId], references: [id])
+  bills              SupplierBill[]
+  documents          SupplierDocument[]
   SupplierSupplyItem SupplierSupplyItem[]
 
   @@index([supplierId, createdAt])
@@ -1343,7 +1361,128 @@ model SupplierSupplyItem {
   @@index([tenantId, createdAt])
 }
 
+model SupplierBill {
+  id              String             @id @default(uuid())
+  tenantId        String
+  branchId        String?            @db.Text
+  supplierId      String
+  supplyId        String?
+  purchaseOrderId String?
+  billNumber      String?
+  status          SupplierBillStatus @default(UNPAID)
+  billDate        DateTime           @default(now()) @db.Date
+  dueDate         DateTime?          @db.Date
+  totalAmount     Float              @default(0)
+  paidAmount      Float              @default(0)
+  balanceDue      Float              @default(0)
+  documentRef     String?
+  notes           String?
+  createdById     String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @default(now()) @updatedAt
 
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch        Branch?            @relation(fields: [branchId], references: [id])
+  supplier      Supplier           @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supply        SupplierSupply?    @relation(fields: [supplyId], references: [id])
+  purchaseOrder PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id])
+  createdBy     User?              @relation(fields: [createdById], references: [id])
+  items         SupplierBillItem[]
+  payments      SupplierPayment[]
+  documents     SupplierDocument[]
+
+  @@unique([tenantId, billNumber])
+  @@index([tenantId])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, branchId])
+  @@index([tenantId, status])
+  @@index([tenantId, dueDate])
+  @@index([supplierId])
+  @@index([supplyId])
+  @@index([purchaseOrderId])
+}
+
+model SupplierBillItem {
+  id          String   @id @default(uuid())
+  tenantId    String
+  billId      String
+  productId   String?
+  productName String
+  quantity    Int      @default(1)
+  unitCost    Float    @default(0)
+  totalCost   Float    @default(0)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bill    SupplierBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  product Product?     @relation(fields: [productId], references: [id])
+
+  @@index([tenantId])
+  @@index([billId])
+  @@index([productId])
+}
+
+model SupplierPayment {
+  id             String                @id @default(uuid())
+  tenantId       String
+  branchId       String?               @db.Text
+  supplierId     String
+  billId         String?
+  amount         Float
+  method         SupplierPaymentMethod @default(CASH)
+  reference      String?
+  note           String?
+  paidAt         DateTime              @default(now())
+  createdById    String?
+  cashMovementId String?               @db.Uuid
+  createdAt      DateTime              @default(now())
+
+  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch    Branch?       @relation(fields: [branchId], references: [id])
+  supplier  Supplier      @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  bill      SupplierBill? @relation(fields: [billId], references: [id])
+  createdBy User?         @relation(fields: [createdById], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, supplierId])
+  @@index([tenantId, branchId])
+  @@index([supplierId])
+  @@index([billId])
+  @@index([paidAt])
+}
+
+model SupplierDocument {
+  id              String               @id @default(uuid())
+  tenantId        String
+  branchId        String?              @db.Text
+  supplierId      String
+  billId          String?
+  supplyId        String?
+  purchaseOrderId String?
+  type            SupplierDocumentType @default(OTHER)
+  title           String
+  documentRef     String?
+  url             String?
+  note            String?
+  createdById     String?
+  createdAt       DateTime             @default(now())
+
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch        Branch?         @relation(fields: [branchId], references: [id])
+  supplier      Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  bill          SupplierBill?   @relation(fields: [billId], references: [id])
+  supply        SupplierSupply? @relation(fields: [supplyId], references: [id])
+  purchaseOrder PurchaseOrder?  @relation(fields: [purchaseOrderId], references: [id])
+  createdBy     User?           @relation(fields: [createdById], references: [id])
+
+  @@index([tenantId])
+  @@index([tenantId, supplierId])
+  @@index([supplierId])
+  @@index([billId])
+  @@index([supplyId])
+  @@index([purchaseOrderId])
+}
 
 model DeliveryNote {
   id              String   @id @default(dbgenerated("(gen_random_uuid())::text"))
@@ -1442,24 +1581,24 @@ model cash_movements {
 }
 
 model cash_sessions {
-  id                       String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tenant_id                String           @db.Uuid
-  branch_id                String?          @db.Text
-  opened_by                String?          @db.Uuid
-  opened_at                DateTime         @default(now()) @db.Timestamptz(6)
-  opening_cash             BigInt           @default(0)
-  opening_reason           String?
-  opening_note             String?
-  closed_by                String?          @db.Uuid
-  closed_at                DateTime?        @db.Timestamptz(6)
-  counted_cash             BigInt?
-  close_note               String?
-  closing_reason           String?
-  closing_explanation      String?
-  expected_cash_at_close   BigInt?
-  cash_difference          BigInt?
-  created_at               DateTime         @default(now()) @db.Timestamptz(6)
-  cash_movements           cash_movements[]
+  id                     String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenant_id              String           @db.Uuid
+  branch_id              String?          @db.Text
+  opened_by              String?          @db.Uuid
+  opened_at              DateTime         @default(now()) @db.Timestamptz(6)
+  opening_cash           BigInt           @default(0)
+  opening_reason         String?
+  opening_note           String?
+  closed_by              String?          @db.Uuid
+  closed_at              DateTime?        @db.Timestamptz(6)
+  counted_cash           BigInt?
+  close_note             String?
+  closing_reason         String?
+  closing_explanation    String?
+  expected_cash_at_close BigInt?
+  cash_difference        BigInt?
+  created_at             DateTime         @default(now()) @db.Timestamptz(6)
+  cash_movements         cash_movements[]
 
   @@index([tenant_id])
   @@index([tenant_id, branch_id, opened_at(sort: Desc)], map: "cash_sessions_tenant_branch_opened_at_idx")
@@ -1946,6 +2085,30 @@ enum SupplySourceType {
   GIFT
   TRADE_IN
   CONSIGNMENT
+  OTHER
+}
+
+enum SupplierBillStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum SupplierPaymentMethod {
+  CASH
+  MOMO
+  BANK
+  OTHER
+}
+
+enum SupplierDocumentType {
+  BILL
+  RECEIPT
+  DELIVERY_NOTE
+  PURCHASE_ORDER
+  PHOTO
   OTHER
 }
 

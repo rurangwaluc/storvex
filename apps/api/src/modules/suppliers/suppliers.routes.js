@@ -82,4 +82,42 @@ router.post(
   suppliersController.createSupply
 );
 
+
+router.get(
+  "/:id/balance",
+  ...readBase,
+  requireDbPermission(PERMISSIONS.SUPPLIERS_VIEW),
+  suppliersController.getSupplierBalance
+);
+
+router.get(
+  "/:id/bills",
+  ...readBase,
+  requireDbPermission(PERMISSIONS.SUPPLIERS_VIEW),
+  suppliersController.listSupplierBills
+);
+
+router.post(
+  "/:id/bills",
+  express.json(),
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.SUPPLIERS_EDIT),
+  suppliersController.createSupplierBill
+);
+
+router.get(
+  "/:id/payments",
+  ...readBase,
+  requireDbPermission(PERMISSIONS.SUPPLIERS_VIEW),
+  suppliersController.listSupplierPayments
+);
+
+router.post(
+  "/:id/payments",
+  express.json(),
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.SUPPLIERS_EDIT),
+  suppliersController.createSupplierPayment
+);
+
 module.exports = router;

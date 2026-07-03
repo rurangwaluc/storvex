@@ -962,6 +962,658 @@ async function createSupply(req, res) {
   }
 }
 
+
+const SUPPLIER_PAYMENT_METHODS = new Set(["CASH", "MOMO", "BANK", "OTHER"]);
+
+function normalizeSupplierPaymentMethod(value) {
+  const x = cleanStringStrict(value || "CASH").toUpperCase();
+  return SUPPLIER_PAYMENT_METHODS.has(x) ? x : null;
+}
+
+function computeSupplierBillStatus({ totalAmount, paidAmount, dueDate, cancelled = false }) {
+  if (cancelled) return "CANCELLED";
+
+  const total = Math.max(0, Number(totalAmount || 0));
+  const paid = Math.max(0, Number(paidAmount || 0));
+  const balance = Math.max(0, total - paid);
+
+  if (balance <= 0) return "PAID";
+  if (paid > 0) return "PARTIAL";
+
+  if (dueDate) {
+    const due = new Date(dueDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (!Number.isNaN(due.getTime()) && due < today) {
+      return "OVERDUE";
+    }
+  }
+
+  return "UNPAID";
+}
+
+function serializeSupplierBill(row) {
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    tenantId: row.tenantId,
+    branchId: row.branchId || null,
+    supplierId: row.supplierId,
+    supplyId: row.supplyId || null,
+    purchaseOrderId: row.purchaseOrderId || null,
+    billNumber: row.billNumber || null,
+    status: row.status || "UNPAID",
+    billDate: row.billDate || null,
+    dueDate: row.dueDate || null,
+    totalAmount: Number(row.totalAmount || 0),
+    paidAmount: Number(row.paidAmount || 0),
+    balanceDue: Number(row.balanceDue || 0),
+    documentRef: row.documentRef || null,
+    notes: row.notes || null,
+    createdAt: row.createdAt || null,
+    updatedAt: row.updatedAt || null,
+    branch: serializeBranch(row.branch),
+    items: Array.isArray(row.items)
+      ? row.items.map((item) => ({
+          id: item.id,
+          productId: item.productId || null,
+          productName: item.productName,
+          quantity: Number(item.quantity || 0),
+          unitCost: Number(item.unitCost || 0),
+          totalCost: Number(item.totalCost || 0),
+          notes: item.notes || null,
+        }))
+      : [],
+  };
+}
+
+function serializeSupplierPayment(row) {
+  if (!row) return null;
+
+  return {
+    id: row.id,
+    tenantId: row.tenantId,
+    branchId: row.branchId || null,
+    supplierId: row.supplierId,
+    billId: row.billId || null,
+    amount: Number(row.amount || 0),
+    method: row.method || "CASH",
+    reference: row.reference || null,
+    note: row.note || null,
+    paidAt: row.paidAt || null,
+    cashMovementId: row.cashMovementId || null,
+    createdAt: row.createdAt || null,
+    branch: serializeBranch(row.branch),
+    bill: row.bill
+      ? {
+          id: row.bill.id,
+          billNumber: row.bill.billNumber || null,
+          status: row.bill.status || "UNPAID",
+          totalAmount: Number(row.bill.totalAmount || 0),
+          paidAmount: Number(row.bill.paidAmount || 0),
+          balanceDue: Number(row.bill.balanceDue || 0),
+        }
+      : null,
+  };
+}
+
+async function getOpenCashSessionForSupplierPayment(tx, tenantId, branchId) {
+  if (!tenantId || !branchId) return null;
+
+  const rows = await tx.$queryRaw`
+    select
+      cs.id,
+      cs.opening_cash,
+      (
+        cs.opening_cash
+        + coalesce(sum(case when cm.type = 'IN' then cm.amount else 0 end), 0)
+        - coalesce(sum(case when cm.type = 'OUT' then cm.amount else 0 end), 0)
+      ) as expected_cash
+    from public.cash_sessions cs
+    left join public.cash_movements cm
+      on cm.session_id = cs.id
+      and cm.tenant_id = cs.tenant_id
+      and cm.branch_id = cs.branch_id
+    where cs.tenant_id::text = ${String(tenantId)}::text
+      and cs.branch_id::text = ${String(branchId)}::text
+      and cs.closed_at is null
+    group by cs.id
+    order by cs.opened_at desc
+    limit 1
+  `;
+
+  return rows?.[0] || null;
+}
+
+async function recordSupplierCashOutMovement(tx, { tenantId, branchId, sessionId, amount, userId, note }) {
+  const amountBigInt = BigInt(Math.round(Number(amount || 0)));
+
+  const rows = await tx.$queryRaw`
+    insert into public.cash_movements
+      (tenant_id, branch_id, session_id, type, reason, amount, note, created_by)
+    values
+      (
+        ${String(tenantId)}::uuid,
+        ${String(branchId)}::text,
+        ${String(sessionId)}::uuid,
+        'OUT'::cash_movement_type,
+        'WITHDRAWAL'::cash_movement_reason,
+        ${amountBigInt},
+        ${cleanString(note)},
+        ${userId ? String(userId) : null}::uuid
+      )
+    returning id
+  `;
+
+  return rows?.[0]?.id || null;
+}
+
+async function listSupplierBills(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+    const supplierId = cleanStringStrict(req.params.id);
+    const status = cleanString(req.query.status);
+
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, tenantId },
+      select: { id: true },
+    });
+
+    if (!supplier) return res.status(404).json({ message: "Supplier not found" });
+
+    const where = {
+      tenantId,
+      supplierId,
+      ...(status ? { status: cleanStringStrict(status).toUpperCase() } : {}),
+    };
+
+    const rows = await prisma.supplierBill.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }],
+      take: 200,
+      include: {
+        branch: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            status: true,
+            isMain: true,
+          },
+        },
+        items: {
+          orderBy: [{ createdAt: "asc" }],
+        },
+      },
+    });
+
+    return res.json({
+      bills: rows.map(serializeSupplierBill),
+      count: rows.length,
+    });
+  } catch (err) {
+    console.error("listSupplierBills error:", err);
+    return res.status(500).json({ message: "Failed to load supplier bills" });
+  }
+}
+
+async function createSupplierBill(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    const userId = getUserId(req);
+    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+    const activeBranch = await ensureWritableBranchAccessOrThrow(req);
+    const supplierId = cleanStringStrict(req.params.id);
+    const items = Array.isArray(req.body.items) ? req.body.items : [];
+
+    if (!items.length) {
+      return res.status(400).json({ message: "At least one bill item is required" });
+    }
+
+    const preparedItems = [];
+
+    for (const item of items) {
+      const productName = cleanString(item.productName);
+      const quantity = toInt(item.quantity, NaN);
+      const unitCost = toMoney(item.unitCost ?? item.buyPrice, NaN);
+
+      if (!productName) return res.status(400).json({ message: "Each item must have product name" });
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        return res.status(400).json({ message: "Each item quantity must be more than 0" });
+      }
+      if (!Number.isFinite(unitCost) || unitCost < 0) {
+        return res.status(400).json({ message: "Each item cost must be 0 or more" });
+      }
+
+      preparedItems.push({
+        productId: cleanString(item.productId),
+        productName,
+        quantity,
+        unitCost,
+        totalCost: quantity * unitCost,
+        notes: cleanString(item.notes),
+      });
+    }
+
+    const totalAmount = preparedItems.reduce((sum, item) => sum + item.totalCost, 0);
+    const paidAmount = 0;
+    const balanceDue = totalAmount;
+    const dueDate = cleanString(req.body.dueDate);
+    const status = computeSupplierBillStatus({ totalAmount, paidAmount, dueDate });
+
+    const created = await prisma.$transaction(async (tx) => {
+      const supplier = await tx.supplier.findFirst({
+        where: { id: supplierId, tenantId },
+        select: { id: true },
+      });
+
+      if (!supplier) throw new Error("SUPPLIER_NOT_FOUND");
+
+      const bill = await tx.supplierBill.create({
+        data: {
+          tenantId,
+          branchId: activeBranch.id,
+          supplierId,
+          supplyId: cleanString(req.body.supplyId),
+          purchaseOrderId: cleanString(req.body.purchaseOrderId),
+          billNumber: cleanString(req.body.billNumber),
+          status,
+          billDate: req.body.billDate ? new Date(req.body.billDate) : new Date(),
+          dueDate: dueDate ? new Date(dueDate) : null,
+          totalAmount,
+          paidAmount,
+          balanceDue,
+          documentRef: cleanString(req.body.documentRef),
+          notes: cleanString(req.body.notes),
+          createdById: userId,
+          items: {
+            create: preparedItems.map((item) => ({
+              tenantId,
+              productId: item.productId || null,
+              productName: item.productName,
+              quantity: item.quantity,
+              unitCost: item.unitCost,
+              totalCost: item.totalCost,
+              notes: item.notes,
+            })),
+          },
+        },
+        include: {
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              status: true,
+              isMain: true,
+            },
+          },
+          items: true,
+        },
+      });
+
+      return bill;
+    });
+
+    return res.status(201).json({
+      created: true,
+      bill: serializeSupplierBill(created),
+    });
+  } catch (err) {
+    const handled = handleBranchError(res, err);
+    if (handled) return handled;
+
+    if (String(err?.message || "") === "SUPPLIER_NOT_FOUND") {
+      return res.status(404).json({ message: "Supplier not found" });
+    }
+
+    if (isDuplicateError(err)) {
+      return res.status(400).json({
+        message: "This bill number already exists in this store.",
+      });
+    }
+
+    console.error("createSupplierBill error:", err);
+    return res.status(500).json({ message: "Failed to create supplier bill" });
+  }
+}
+
+async function listSupplierPayments(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+    const supplierId = cleanStringStrict(req.params.id);
+
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, tenantId },
+      select: { id: true },
+    });
+
+    if (!supplier) return res.status(404).json({ message: "Supplier not found" });
+
+    const rows = await prisma.supplierPayment.findMany({
+      where: { tenantId, supplierId },
+      orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
+      take: 200,
+      include: {
+        branch: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            status: true,
+            isMain: true,
+          },
+        },
+        bill: {
+          select: {
+            id: true,
+            billNumber: true,
+            status: true,
+            totalAmount: true,
+            paidAmount: true,
+            balanceDue: true,
+          },
+        },
+      },
+    });
+
+    return res.json({
+      payments: rows.map(serializeSupplierPayment),
+      count: rows.length,
+    });
+  } catch (err) {
+    console.error("listSupplierPayments error:", err);
+    return res.status(500).json({ message: "Failed to load supplier payments" });
+  }
+}
+
+async function createSupplierPayment(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    const userId = getUserId(req);
+    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+    const activeBranch = await ensureWritableBranchAccessOrThrow(req);
+    const supplierId = cleanStringStrict(req.params.id);
+    const billId = cleanString(req.body.billId);
+    const amount = toMoney(req.body.amount, NaN);
+    const method = normalizeSupplierPaymentMethod(req.body.method || req.body.paymentMethod);
+
+    if (!billId) {
+      return res.status(400).json({ message: "Choose the supplier bill being paid." });
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return res.status(400).json({ message: "Payment amount must be more than 0" });
+    }
+
+    if (!method) {
+      return res.status(400).json({ message: "Payment method must be Cash, MoMo, Bank, or Other" });
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const supplier = await tx.supplier.findFirst({
+        where: { id: supplierId, tenantId },
+        select: { id: true, name: true },
+      });
+
+      if (!supplier) throw new Error("SUPPLIER_NOT_FOUND");
+
+      const bill = await tx.supplierBill.findFirst({
+        where: {
+          id: billId,
+          tenantId,
+          supplierId,
+          status: { not: "CANCELLED" },
+        },
+        select: {
+          id: true,
+          billNumber: true,
+          totalAmount: true,
+          paidAmount: true,
+          balanceDue: true,
+          status: true,
+        },
+      });
+
+      if (!bill) throw new Error("SUPPLIER_BILL_NOT_FOUND");
+
+      const currentBalance = Math.max(0, Number(bill.balanceDue || 0));
+
+      if (amount > currentBalance) {
+        throw new Error("SUPPLIER_PAYMENT_TOO_HIGH");
+      }
+
+      let cashMovementId = null;
+
+      if (method === "CASH") {
+        const openCash = await getOpenCashSessionForSupplierPayment(tx, tenantId, activeBranch.id);
+
+        if (!openCash) {
+          throw new Error("SUPPLIER_CASH_DRAWER_CLOSED");
+        }
+
+        const expectedCash = BigInt(openCash.expected_cash || 0);
+        const amountBigInt = BigInt(Math.round(amount));
+
+        if (expectedCash < amountBigInt) {
+          throw new Error("SUPPLIER_CASH_NOT_ENOUGH");
+        }
+
+        cashMovementId = await recordSupplierCashOutMovement(tx, {
+          tenantId,
+          branchId: activeBranch.id,
+          sessionId: openCash.id,
+          amount,
+          userId,
+          note: `Supplier payment to ${supplier.name}${bill.billNumber ? ` for ${bill.billNumber}` : ""}`,
+        });
+      }
+
+      const newPaidAmount = Number(bill.paidAmount || 0) + amount;
+      const newBalanceDue = Math.max(0, Number(bill.totalAmount || 0) - newPaidAmount);
+      const newStatus = computeSupplierBillStatus({
+        totalAmount: bill.totalAmount,
+        paidAmount: newPaidAmount,
+      });
+
+      const payment = await tx.supplierPayment.create({
+        data: {
+          tenantId,
+          branchId: activeBranch.id,
+          supplierId,
+          billId,
+          amount,
+          method,
+          reference: cleanString(req.body.reference),
+          note: cleanString(req.body.note),
+          paidAt: req.body.paidAt ? new Date(req.body.paidAt) : new Date(),
+          createdById: userId,
+          cashMovementId,
+        },
+        include: {
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              status: true,
+              isMain: true,
+            },
+          },
+          bill: {
+            select: {
+              id: true,
+              billNumber: true,
+              status: true,
+              totalAmount: true,
+              paidAmount: true,
+              balanceDue: true,
+            },
+          },
+        },
+      });
+
+      const updatedBill = await tx.supplierBill.update({
+        where: { id: bill.id },
+        data: {
+          paidAmount: newPaidAmount,
+          balanceDue: newBalanceDue,
+          status: newStatus,
+        },
+        include: {
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              status: true,
+              isMain: true,
+            },
+          },
+          items: true,
+        },
+      });
+
+      return { payment, bill: updatedBill };
+    });
+
+    return res.status(201).json({
+      created: true,
+      payment: serializeSupplierPayment(result.payment),
+      bill: serializeSupplierBill(result.bill),
+    });
+  } catch (err) {
+    const handled = handleBranchError(res, err);
+    if (handled) return handled;
+
+    const code = String(err?.message || "");
+
+    if (code === "SUPPLIER_NOT_FOUND") {
+      return res.status(404).json({ message: "Supplier not found" });
+    }
+
+    if (code === "SUPPLIER_BILL_NOT_FOUND") {
+      return res.status(404).json({ message: "Supplier bill not found" });
+    }
+
+    if (code === "SUPPLIER_PAYMENT_TOO_HIGH") {
+      return res.status(400).json({ message: "Payment is higher than the supplier bill balance" });
+    }
+
+    if (code === "SUPPLIER_CASH_DRAWER_CLOSED") {
+      return res.status(409).json({
+        message: "Open cash drawer before paying supplier with cash.",
+        code: "CASH_DRAWER_CLOSED",
+      });
+    }
+
+    if (code === "SUPPLIER_CASH_NOT_ENOUGH") {
+      return res.status(409).json({
+        message: "Not enough cash in drawer to pay this supplier.",
+        code: "CASH_DRAWER_NOT_ENOUGH",
+      });
+    }
+
+    console.error("createSupplierPayment error:", err);
+    return res.status(500).json({ message: "Failed to record supplier payment" });
+  }
+}
+
+async function getSupplierBalance(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+    const supplierId = cleanStringStrict(req.params.id);
+
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, tenantId },
+      select: { id: true, name: true },
+    });
+
+    if (!supplier) return res.status(404).json({ message: "Supplier not found" });
+
+    const [billTotals, openBills, paymentsCount, lastPayment, lastSupply] = await Promise.all([
+      prisma.supplierBill.aggregate({
+        where: { tenantId, supplierId, status: { not: "CANCELLED" } },
+        _sum: {
+          totalAmount: true,
+          paidAmount: true,
+          balanceDue: true,
+        },
+      }),
+      prisma.supplierBill.count({
+        where: {
+          tenantId,
+          supplierId,
+          status: { in: ["UNPAID", "PARTIAL", "OVERDUE"] },
+          balanceDue: { gt: 0 },
+        },
+      }),
+      prisma.supplierPayment.count({
+        where: { tenantId, supplierId },
+      }),
+      prisma.supplierPayment.findFirst({
+        where: { tenantId, supplierId },
+        orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }],
+        select: {
+          amount: true,
+          method: true,
+          paidAt: true,
+        },
+      }),
+      prisma.supplierSupply.findFirst({
+        where: { tenantId, supplierId },
+        orderBy: [{ createdAt: "desc" }],
+        select: {
+          id: true,
+          createdAt: true,
+          documentRef: true,
+        },
+      }),
+    ]);
+
+    return res.json({
+      supplier: {
+        id: supplier.id,
+        name: supplier.name,
+      },
+      totals: {
+        totalBilled: Number(billTotals._sum.totalAmount || 0),
+        totalPaid: Number(billTotals._sum.paidAmount || 0),
+        balanceDue: Number(billTotals._sum.balanceDue || 0),
+        openBills,
+        paymentsCount,
+      },
+      lastPayment: lastPayment
+        ? {
+            amount: Number(lastPayment.amount || 0),
+            method: lastPayment.method || "CASH",
+            paidAt: lastPayment.paidAt || null,
+          }
+        : null,
+      lastSupply: lastSupply
+        ? {
+            id: lastSupply.id,
+            createdAt: lastSupply.createdAt || null,
+            documentRef: lastSupply.documentRef || null,
+          }
+        : null,
+    });
+  } catch (err) {
+    console.error("getSupplierBalance error:", err);
+    return res.status(500).json({ message: "Failed to load supplier balance" });
+  }
+}
+
 module.exports = {
   listSuppliers,
   createSupplier,
@@ -971,4 +1623,9 @@ module.exports = {
   deactivateSupplier,
   listSupplies,
   createSupply,
+  getSupplierBalance,
+  listSupplierBills,
+  createSupplierBill,
+  listSupplierPayments,
+  createSupplierPayment,
 };
