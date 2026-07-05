@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { cn } from "../../lib/cn";
 import AsyncButton from "../../components/ui/AsyncButton";
 import TableSkeleton from "../../components/ui/TableSkeleton";
+import "./Customers.css";
 import {
   createCustomer,
   deactivateCustomer,
@@ -18,14 +20,11 @@ const muted = () => "text-[var(--color-text-muted)]";
 const soft = () => "text-[var(--color-text-soft)]";
 const danger = () => "text-[var(--color-danger)]";
 
-const card = () =>
-  "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+const card = () => "svx-customer-card";
 
-const panel = () =>
-  "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
+const panel = () => "svx-customer-panel";
 
-const raised = () =>
-  "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)]";
+const raised = () => "svx-customer-panel";
 
 function formatMoney(value) {
   return `RWF ${Number(value || 0).toLocaleString()}`;
@@ -121,10 +120,10 @@ function EmptyState({ title, text, action = null }) {
 
 function CustomerListPageSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="svx-customers-page space-y-6">
       <div className={cn(card(), "overflow-hidden")}>
         <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0 flex-1">
               <PulseBar className="h-3 w-16" />
               <PulseBar className="mt-4 h-8 w-44 max-w-full" />
@@ -151,17 +150,17 @@ function CustomerListPageSkeleton() {
 
       <div className={cn(card(), "overflow-hidden")}>
         <div className="border-b border-[var(--color-border)] px-5 py-4 sm:px-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="h-11 w-full max-w-xs animate-pulse rounded-2xl bg-[var(--color-surface)]" />
             <div className="h-11 w-32 animate-pulse rounded-2xl bg-[var(--color-surface)]" />
           </div>
         </div>
 
-        <div className="hidden md:block">
+        <div className="hidden lg:block">
           <TableSkeleton rows={8} cols={6} />
         </div>
 
-        <div className="space-y-3 p-4 md:hidden">
+        <div className="space-y-3 p-4 lg:hidden">
           {Array.from({ length: 6 }).map((_, index) => (
             <div key={index} className={cn(panel(), "space-y-2 p-4")}>
               <div className="flex items-start justify-between gap-3">
@@ -547,7 +546,7 @@ function LedgerDrawer({ customerId, onClose }) {
                           Payments:{" "}
                           {sale.payments
                             .map((payment) => `${formatMoney(payment.amount)} ${payment.method || ""}`.trim())
-                            .join(" · ")}
+                            .join(" ")}
                         </div>
                       ) : null}
                     </div>
@@ -613,6 +612,7 @@ function ConfirmModal({
 }
 
 export default function CustomerList() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -845,8 +845,8 @@ export default function CustomerList() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className={cn(card(), "overflow-hidden")}>
+    <div className="svx-customers-page space-y-6">
+      <section className={cn(card(), "svx-customer-shell overflow-hidden")}>
         <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -869,7 +869,7 @@ export default function CustomerList() {
               </p>
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:shrink-0 sm:flex-wrap sm:items-center">
               <AsyncButton
                 loading={refreshing}
                 loadingText="Refreshing..."
@@ -898,11 +898,11 @@ export default function CustomerList() {
         </div>
       </section>
 
-      <section className={cn(card(), "overflow-hidden")}>
+      <section className={cn(card(), "svx-customer-shell overflow-hidden")}>
         <div className="border-b border-[var(--color-border)] px-5 py-4 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <input
-              className="app-input max-w-xs"
+              className="app-input w-full lg:max-w-md"
               placeholder="Search name, phone, email, TIN, or ID…"
               value={q}
               onChange={(event) => setQ(event.target.value)}
@@ -912,7 +912,7 @@ export default function CustomerList() {
               type="button"
               onClick={() => setShowInactive((current) => !current)}
               className={cn(
-                "inline-flex h-11 items-center rounded-2xl border px-4 text-sm font-semibold transition",
+                "inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-2xl border px-4 text-sm font-semibold transition",
                 showInactive
                   ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
                   : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] hover:opacity-90",
@@ -923,11 +923,11 @@ export default function CustomerList() {
           </div>
         </div>
 
-        <div className="hidden overflow-x-auto md:block">
-          <table className="w-full">
+        <div className="hidden overflow-x-auto lg:block">
+          <table className="svx-customer-table w-full table-fixed">
             <thead>
               <tr className="border-b border-[var(--color-border)]">
-                {["Name & contact", "TIN / ID", "WhatsApp", "Outstanding", "Status", ""].map(
+                {["Name & contact", "TIN / ID", "WhatsApp", "Outstanding", "Status", "Actions"].map(
                   (heading) => (
                     <th
                       key={heading}
@@ -959,16 +959,17 @@ export default function CustomerList() {
                 filtered.map((customer) => (
                   <tr
                     key={customer.id}
+                    onClick={() => navigate(`/app/customers/${customer.id}`)}
                     className={cn(
-                      "border-b border-[var(--color-border)] transition hover:bg-[var(--color-surface-2)]",
+                      "cursor-pointer border-b border-[var(--color-border)] transition hover:bg-[var(--customer-neutral-panel)]",
                       customer.isActive === false && "opacity-50",
                     )}
                   >
                     <td className="px-5 py-3">
                       <div className={cn("text-sm font-bold", strong())}>{customer.name}</div>
-                      <div className={cn("text-xs", muted())}>
-                        {customer.phone}
-                        {customer.email ? ` · ${customer.email}` : ""}
+                      <div className={cn("mt-1 space-y-0.5 text-xs", muted())}>
+                        <div>{customer.phone}</div>
+                        {customer.email ? <div>{customer.email}</div> : null}
                       </div>
                     </td>
 
@@ -982,7 +983,7 @@ export default function CustomerList() {
 
                     <td className="px-5 py-3">
                       <Pill tone={customer.whatsappOptIn ? "success" : "neutral"}>
-                        {customer.whatsappOptIn ? "Accepted" : "Not accepted"}
+                        {customer.whatsappOptIn ? "Accepted" : "No WhatsApp"}
                       </Pill>
                     </td>
 
@@ -1003,22 +1004,14 @@ export default function CustomerList() {
                     </td>
 
                     <td className="px-5 py-3">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="svx-customer-row-actions flex items-center justify-end gap-2">
                         <button
                           type="button"
-                          onClick={() => setLedgerId(customer.id)}
-                          className={cn(
-                            "rounded-xl px-3 py-1.5 text-xs font-semibold transition hover:opacity-80",
-                            muted(),
-                          )}
-                        >
-                          History
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => openEdit(customer)}
-                          className="rounded-xl bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] transition hover:opacity-90"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            openEdit(customer);
+                          }}
+                          className="whitespace-nowrap rounded-xl bg-[var(--customer-neutral-panel)] px-3 py-1.5 text-xs font-bold text-[var(--color-text)] transition hover:opacity-90"
                         >
                           Edit
                         </button>
@@ -1026,16 +1019,22 @@ export default function CustomerList() {
                         {customer.isActive !== false ? (
                           <button
                             type="button"
-                            onClick={() => setConfirmTarget({ customer, action: "deactivate" })}
-                            className="rounded-xl px-3 py-1.5 text-xs font-semibold text-[var(--color-danger)] transition hover:opacity-80"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setConfirmTarget({ customer, action: "deactivate" });
+                            }}
+                            className="whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-bold text-[var(--color-danger)] transition hover:opacity-80"
                           >
                             Deactivate
                           </button>
                         ) : (
                           <button
                             type="button"
-                            onClick={() => setConfirmTarget({ customer, action: "reactivate" })}
-                            className="rounded-xl px-3 py-1.5 text-xs font-semibold text-[var(--color-primary)] transition hover:opacity-80"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setConfirmTarget({ customer, action: "reactivate" });
+                            }}
+                            className="whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-bold text-[var(--color-primary)] transition hover:opacity-80"
                           >
                             Reactivate
                           </button>
@@ -1049,7 +1048,7 @@ export default function CustomerList() {
           </table>
         </div>
 
-        <div className="space-y-3 p-4 md:hidden">
+        <div className="space-y-3 p-4 lg:hidden">
           {loading ? (
             Array.from({ length: 6 }).map((_, index) => (
               <div key={index} className={cn(panel(), "space-y-2 p-4")}>
@@ -1066,9 +1065,10 @@ export default function CustomerList() {
             <EmptyState title="No customers found" text="Try adjusting your search." />
           ) : (
             filtered.map((customer) => (
-              <div
+              <Link
                 key={customer.id}
-                className={cn(panel(), "p-4", customer.isActive === false && "opacity-50")}
+                to={`/app/customers/${customer.id}`}
+                className={cn(panel(), "block p-4 transition hover:border-[var(--color-primary)]", customer.isActive === false && "opacity-50")}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -1092,42 +1092,58 @@ export default function CustomerList() {
                   </div>
                 </div>
 
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                   <button
                     type="button"
-                    onClick={() => setLedgerId(customer.id)}
-                    className="rounded-2xl bg-[var(--color-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)]"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setLedgerId(customer.id);
+                    }}
+                    className="whitespace-nowrap rounded-2xl bg-[var(--customer-neutral-panel)] px-3 py-2 text-xs font-bold text-[var(--color-text)]"
                   >
-                    History
+                    Quick history
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => openEdit(customer)}
-                    className="rounded-2xl bg-[var(--color-surface)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)]"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      openEdit(customer);
+                    }}
+                    className="whitespace-nowrap rounded-2xl bg-[var(--customer-neutral-panel)] px-3 py-2 text-xs font-bold text-[var(--color-text)]"
                   >
-                    Edit
+                    Quick edit
                   </button>
 
                   {customer.isActive !== false ? (
                     <button
                       type="button"
-                      onClick={() => setConfirmTarget({ customer, action: "deactivate" })}
-                      className="rounded-2xl px-3 py-1.5 text-xs font-semibold text-[var(--color-danger)]"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setConfirmTarget({ customer, action: "deactivate" });
+                      }}
+                      className="whitespace-nowrap rounded-2xl px-3 py-1.5 text-xs font-semibold text-[var(--color-danger)]"
                     >
                       Deactivate
                     </button>
                   ) : (
                     <button
                       type="button"
-                      onClick={() => setConfirmTarget({ customer, action: "reactivate" })}
-                      className="rounded-2xl px-3 py-1.5 text-xs font-semibold text-[var(--color-primary)]"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        setConfirmTarget({ customer, action: "reactivate" });
+                      }}
+                      className="whitespace-nowrap rounded-2xl px-3 py-1.5 text-xs font-semibold text-[var(--color-primary)]"
                     >
                       Reactivate
                     </button>
                   )}
                 </div>
-              </div>
+              </Link>
             ))
           )}
         </div>

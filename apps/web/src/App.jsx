@@ -40,6 +40,7 @@ import ProfitTable from "./legacy-pages/reports/ProfitTable";
 import CustomerCreate from "./legacy-pages/customers/CustomerCreate";
 import CustomerEdit from "./legacy-pages/customers/CustomerEdit";
 import CustomerList from "./legacy-pages/customers/CustomerList";
+import CustomerView from "./legacy-pages/customers/CustomerView";
 
 import RequireRole from "./auth/RequireRole";
 import RequireTenantAuth from "./auth/requireTenantAuth";
@@ -227,7 +228,8 @@ export default function App() {
 
               <Route path="customers" element={<CustomerList />} />
               <Route path="customers/new" element={<CustomerCreate />} />
-              <Route path="customers/:id" element={<CustomerEdit />} />
+              <Route path="customers/:id" element={<CustomerView />} />
+              <Route path="customers/:id/edit" element={<CustomerEdit />} />
             </Route>
 
             <Route

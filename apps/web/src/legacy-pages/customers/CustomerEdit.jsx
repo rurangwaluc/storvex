@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import "./Customers.css";
 import { getCustomer, updateCustomer } from "../../services/customersApi";
 
 function cx(...xs) {
@@ -11,11 +12,11 @@ function cx(...xs) {
 }
 
 function shell() {
-  return "rounded-[28px] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+  return "svx-customer-card";
 }
 
 function panel() {
-  return "rounded-[22px] bg-[var(--color-surface-2)]";
+  return "svx-customer-panel";
 }
 
 function strongText() {
@@ -36,7 +37,7 @@ function inputClass() {
 
 function textareaClass() {
   return [
-    "w-full min-h-[140px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)]",
+    "w-full min-h-[140px] rounded-2xl border border-[var(--color-border)] bg-[var(--customer-neutral-card)]",
     "px-4 py-3 text-sm leading-6 text-[var(--color-text)]",
     "outline-none transition placeholder:text-[var(--color-text-muted)]",
     "focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-ring)]",
@@ -50,13 +51,13 @@ function labelClass() {
 
 function secondaryBtn(disabled = false) {
   return cx(
-    "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] px-5 text-sm font-semibold text-[var(--color-text)] transition hover:opacity-90",
+    "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--customer-neutral-card)] px-5 text-sm font-semibold text-[var(--color-text)] transition hover:opacity-90",
     disabled && "pointer-events-none cursor-not-allowed opacity-60"
   );
 }
 
 function SkeletonLine({ className = "" }) {
-  return <div className={cx("animate-pulse rounded-full bg-[var(--color-surface)]", className)} />;
+  return <div className={cx("animate-pulse rounded-full bg-[var(--customer-neutral-panel)]", className)} />;
 }
 
 function InfoTile({ label, value, tone = "neutral" }) {
@@ -85,31 +86,26 @@ function FormSwitch({ checked, onChange, disabled }) {
       type="button"
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="inline-flex items-center gap-3 disabled:cursor-not-allowed disabled:opacity-60"
+      className="svx-customer-switch-row disabled:cursor-not-allowed disabled:opacity-60"
     >
-      <span
-        className={cx(
-          "relative h-6 w-11 rounded-full transition",
-          checked ? "bg-[var(--color-primary)]" : "bg-[var(--color-surface)]"
-        )}
-      >
-        <span
-          className={cx(
-            "absolute top-0.5 h-5 w-5 rounded-full bg-[var(--color-card)] shadow transition-transform",
-            checked ? "translate-x-5" : "translate-x-0.5"
-          )}
-        />
+      <span className={cx("svx-customer-switch", checked ? "is-on" : "is-off")}>
+        <span className="svx-customer-switch-knob" />
       </span>
 
-      <span className={cx("text-sm font-medium", strongText())}>Allow WhatsApp follow-up</span>
+      <span className="min-w-0">
+        <span className={cx("block text-sm font-black", strongText())}>Allow WhatsApp follow-up</span>
+        <span className={cx("mt-1 block text-xs font-semibold", mutedText())}>
+          {checked ? "On — customer accepted WhatsApp updates" : "Off — do not send WhatsApp updates"}
+        </span>
+      </span>
     </button>
   );
 }
 
 function EditSkeleton() {
   return (
-    <div className="space-y-6">
-      <section className={cx(shell(), "overflow-hidden")}>
+    <div className="svx-customers-page space-y-6">
+      <section className={cx(shell(), "svx-customer-shell overflow-hidden")}>
         <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="min-w-0 flex-1">
@@ -119,7 +115,7 @@ function EditSkeleton() {
               <SkeletonLine className="mt-2 h-4 w-full max-w-[440px]" />
             </div>
 
-            <div className="h-11 w-36 animate-pulse rounded-2xl bg-[var(--color-surface)]" />
+            <div className="h-11 w-36 animate-pulse rounded-2xl bg-[var(--customer-neutral-panel)]" />
           </div>
         </div>
 
@@ -132,7 +128,7 @@ function EditSkeleton() {
               {Array.from({ length: 6 }).map((_, index) => (
                 <div key={index}>
                   <SkeletonLine className="mb-2 h-3 w-24" />
-                  <div className="h-11 animate-pulse rounded-2xl bg-[var(--color-surface)]" />
+                  <div className="h-11 animate-pulse rounded-2xl bg-[var(--customer-neutral-panel)]" />
                 </div>
               ))}
             </div>
@@ -255,7 +251,7 @@ export default function CustomerEdit() {
       });
 
       toast.success("Customer updated");
-      navigate("/app/customers");
+      navigate(`/app/customers/${id}`);
     } catch (error) {
       console.error(error);
       toast.error(error?.message || "Failed to update customer");
@@ -270,7 +266,7 @@ export default function CustomerEdit() {
 
   if (!customer) {
     return (
-      <div className="space-y-6">
+      <div className="svx-customers-page space-y-6">
         <section className={cx(shell(), "p-6 text-center")}>
           <h1 className={cx("text-2xl font-black tracking-tight", strongText())}>
             Customer could not be loaded
@@ -291,8 +287,8 @@ export default function CustomerEdit() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className={cx(shell(), "overflow-hidden")}>
+    <div className="svx-customers-page space-y-6">
+      <section className={cx(shell(), "svx-customer-shell overflow-hidden")}>
         <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-3xl">
@@ -311,8 +307,8 @@ export default function CustomerEdit() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Link to="/app/customers" className={secondaryBtn(saving)}>
-                Back to Customers
+              <Link to={`/app/customers/${id}`} className={secondaryBtn(saving)}>
+                Back to Profile
               </Link>
             </div>
           </div>
@@ -412,7 +408,7 @@ export default function CustomerEdit() {
                 </div>
               </div>
 
-              <div className="mt-5 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+              <div className="mt-5 rounded-[20px] border border-[var(--color-border)] bg-[var(--customer-neutral-card)] p-4">
                 <FormSwitch
                   checked={form.whatsappOptIn}
                   onChange={(value) => setField("whatsappOptIn", value)}
@@ -426,7 +422,7 @@ export default function CustomerEdit() {
             </section>
 
             <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <Link to="/app/customers" className={secondaryBtn(saving)}>
+              <Link to={`/app/customers/${id}`} className={secondaryBtn(saving)}>
                 Cancel
               </Link>
 
@@ -442,7 +438,7 @@ export default function CustomerEdit() {
           </form>
 
           <aside className="space-y-5">
-            <section className={cx(shell(), "p-5 sm:p-6 xl:sticky xl:top-5")}>
+            <section className={cx(shell(), "svx-customer-shell p-5 sm:p-6 xl:sticky xl:top-5")}>
               <div className={cx("text-[11px] font-semibold uppercase tracking-[0.18em]", softText())}>
                 Review
               </div>

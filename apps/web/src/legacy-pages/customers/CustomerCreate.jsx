@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import "./Customers.css";
 import { createCustomer } from "../../services/customersApi";
 
 function cx(...xs) {
@@ -11,11 +12,11 @@ function cx(...xs) {
 }
 
 function shell() {
-  return "rounded-[28px] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+  return "svx-customer-card";
 }
 
 function panel() {
-  return "rounded-[22px] bg-[var(--color-surface-2)]";
+  return "svx-customer-panel";
 }
 
 function strongText() {
@@ -36,7 +37,7 @@ function inputClass() {
 
 function textareaClass() {
   return [
-    "w-full min-h-[140px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)]",
+    "w-full min-h-[140px] rounded-2xl border border-[var(--color-border)] bg-[var(--customer-neutral-card)]",
     "px-4 py-3 text-sm leading-6 text-[var(--color-text)]",
     "outline-none transition placeholder:text-[var(--color-text-muted)]",
     "focus:border-[var(--color-primary)] focus:ring-2 focus:ring-[var(--color-primary-ring)]",
@@ -50,7 +51,7 @@ function labelClass() {
 
 function secondaryBtn(disabled = false) {
   return cx(
-    "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] px-5 text-sm font-semibold text-[var(--color-text)] transition hover:opacity-90",
+    "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--customer-neutral-card)] px-5 text-sm font-semibold text-[var(--color-text)] transition hover:opacity-90",
     disabled && "pointer-events-none cursor-not-allowed opacity-60"
   );
 }
@@ -81,23 +82,18 @@ function FormSwitch({ checked, onChange, disabled }) {
       type="button"
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="inline-flex items-center gap-3 disabled:cursor-not-allowed disabled:opacity-60"
+      className="svx-customer-switch-row disabled:cursor-not-allowed disabled:opacity-60"
     >
-      <span
-        className={cx(
-          "relative h-6 w-11 rounded-full transition",
-          checked ? "bg-[var(--color-primary)]" : "bg-[var(--color-surface)]"
-        )}
-      >
-        <span
-          className={cx(
-            "absolute top-0.5 h-5 w-5 rounded-full bg-[var(--color-card)] shadow transition-transform",
-            checked ? "translate-x-5" : "translate-x-0.5"
-          )}
-        />
+      <span className={cx("svx-customer-switch", checked ? "is-on" : "is-off")}>
+        <span className="svx-customer-switch-knob" />
       </span>
 
-      <span className={cx("text-sm font-medium", strongText())}>Allow WhatsApp follow-up</span>
+      <span className="min-w-0">
+        <span className={cx("block text-sm font-black", strongText())}>Allow WhatsApp follow-up</span>
+        <span className={cx("mt-1 block text-xs font-semibold", mutedText())}>
+          {checked ? "On — customer accepted WhatsApp updates" : "Off — do not send WhatsApp updates"}
+        </span>
+      </span>
     </button>
   );
 }
@@ -164,8 +160,8 @@ export default function CustomerCreate() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className={cx(shell(), "overflow-hidden")}>
+    <div className="svx-customers-page space-y-6">
+      <section className={cx(shell(), "svx-customer-shell overflow-hidden")}>
         <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div className="max-w-3xl">
@@ -290,7 +286,7 @@ export default function CustomerCreate() {
                 </div>
               </div>
 
-              <div className="mt-5 rounded-[20px] border border-[var(--color-border)] bg-[var(--color-card)] p-4">
+              <div className="mt-5 rounded-[20px] border border-[var(--color-border)] bg-[var(--customer-neutral-card)] p-4">
                 <FormSwitch
                   checked={form.whatsappOptIn}
                   onChange={(value) => setField("whatsappOptIn", value)}
@@ -320,7 +316,7 @@ export default function CustomerCreate() {
           </form>
 
           <aside className="space-y-5">
-            <section className={cx(shell(), "p-5 sm:p-6 xl:sticky xl:top-5")}>
+            <section className={cx(shell(), "svx-customer-shell p-5 sm:p-6 xl:sticky xl:top-5")}>
               <div className={cx("text-[11px] font-semibold uppercase tracking-[0.18em]", softText())}>
                 Review
               </div>

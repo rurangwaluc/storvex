@@ -1,0 +1,417 @@
+
+/* Storvex customers: forced neutral surfaces matching suppliers */
+:root {
+  --customer-neutral-card: #ffffff;
+  --customer-neutral-panel: #ffffff;
+}
+
+[data-theme="dark"],
+.dark {
+  --customer-neutral-card: #1f1f1f;
+  --customer-neutral-panel: #1f1f1f;
+}
+
+.svx-customers-page {
+  color: var(--color-text);
+}
+
+.svx-customer-card {
+  border: 1px solid var(--color-border) !important;
+  border-radius: 28px !important;
+  background: var(--customer-neutral-card) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+.svx-customer-panel {
+  border: 1px solid var(--color-border) !important;
+  border-radius: 22px !important;
+  background: var(--customer-neutral-panel) !important;
+}
+
+.svx-customers-page .svx-customer-shell,
+.svx-customers-page > section,
+.svx-customers-page table,
+.svx-customers-page thead,
+.svx-customers-page tbody,
+.svx-customers-page tr,
+.svx-customers-page td,
+.svx-customers-page th {
+  background: transparent !important;
+}
+
+.svx-customers-page .svx-customer-card,
+.svx-customers-page .svx-customer-panel,
+.svx-customers-page .svx-customer-shell {
+  background: var(--customer-neutral-card) !important;
+}
+
+.svx-customers-page .svx-customer-card .svx-customer-panel,
+.svx-customers-page .svx-customer-card [class*="bg-\[var\(--customer-neutral-panel\)"] {
+  background: var(--customer-neutral-panel) !important;
+}
+
+.svx-customers-page .svx-customer-card tr:hover {
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-customers-page .svx-customer-card tr:hover,
+html:not(.dark) body:not(.dark) .svx-customers-page .svx-customer-card tr:hover {
+  background: rgba(15, 23, 42, 0.035) !important;
+}
+
+.svx-customers-page .app-input,
+.svx-customers-page textarea,
+.svx-customers-page select {
+  background: var(--customer-neutral-card) !important;
+  border-color: var(--color-border) !important;
+  color: var(--color-text) !important;
+}
+
+.svx-customers-page a,
+.svx-customers-page button {
+  text-decoration: none;
+}
+
+/* Customers light mode only: clean Storvex white surfaces */
+html[data-theme="light"] .svx-customers-page,
+body[data-theme="light"] .svx-customers-page,
+.light .svx-customers-page {
+  --customer-neutral-card: #ffffff;
+  --customer-neutral-panel: #ffffff;
+}
+
+html[data-theme="light"] .svx-customers-page .svx-customer-card,
+html[data-theme="light"] .svx-customers-page .svx-customer-panel,
+html[data-theme="light"] .svx-customers-page .svx-customer-shell,
+body[data-theme="light"] .svx-customers-page .svx-customer-card,
+body[data-theme="light"] .svx-customers-page .svx-customer-panel,
+body[data-theme="light"] .svx-customers-page .svx-customer-shell,
+.light .svx-customers-page .svx-customer-card,
+.light .svx-customers-page .svx-customer-panel,
+.light .svx-customers-page .svx-customer-shell {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.1) !important;
+  color: var(--color-text) !important;
+}
+
+html[data-theme="light"] .svx-customers-page .app-input,
+html[data-theme="light"] .svx-customers-page textarea,
+html[data-theme="light"] .svx-customers-page select,
+body[data-theme="light"] .svx-customers-page .app-input,
+body[data-theme="light"] .svx-customers-page textarea,
+body[data-theme="light"] .svx-customers-page select,
+.light .svx-customers-page .app-input,
+.light .svx-customers-page textarea,
+.light .svx-customers-page select {
+  background: #ffffff !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+  color: var(--color-text) !important;
+}
+
+html[data-theme="light"] .svx-customers-page .svx-customer-card tr:hover,
+body[data-theme="light"] .svx-customers-page .svx-customer-card tr:hover,
+.light .svx-customers-page .svx-customer-card tr:hover {
+  background: rgba(15, 23, 42, 0.035) !important;
+}
+
+
+/* Customer WhatsApp switch: clear ON/OFF state */
+.svx-customer-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  padding: 14px 16px;
+  background: var(--customer-neutral-card);
+  text-align: left;
+}
+
+.svx-customer-switch {
+  position: relative;
+  display: inline-flex;
+  width: 54px;
+  height: 30px;
+  flex: 0 0 auto;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: transparent;
+  transition: background 180ms ease, border-color 180ms ease;
+}
+
+.svx-customer-switch.is-on {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.svx-customer-switch.is-off {
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.svx-customer-switch-knob {
+  position: absolute;
+  left: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  transition: transform 180ms ease;
+}
+
+.svx-customer-switch.is-on .svx-customer-switch-knob {
+  transform: translateX(22px);
+}
+
+.svx-customer-switch.is-off .svx-customer-switch-knob {
+  transform: translateX(0);
+}
+
+/* Customer PWA/mobile polish */
+@media (max-width: 720px) {
+  .svx-customers-page {
+    padding-bottom: 18px;
+  }
+
+  .svx-customers-page .svx-customer-card {
+    border-radius: 24px !important;
+  }
+
+  .svx-customers-page .svx-customer-panel {
+    border-radius: 20px !important;
+  }
+
+  .svx-customers-page .svx-customer-card > div {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .svx-customers-page h1 {
+    max-width: 100%;
+    line-height: 1.08;
+  }
+
+  .svx-customers-page .app-input,
+  .svx-customers-page textarea,
+  .svx-customers-page select {
+    min-height: 46px;
+  }
+
+  .svx-customers-page .svx-customer-switch-row {
+    align-items: flex-start;
+    padding: 13px;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-customers-page .grid.grid-cols-2 {
+    gap: 10px;
+  }
+
+  .svx-customers-page .svx-customer-switch {
+    width: 50px;
+    height: 28px;
+  }
+
+  .svx-customers-page .svx-customer-switch-knob {
+    width: 20px;
+    height: 20px;
+  }
+
+  .svx-customers-page .svx-customer-switch.is-on .svx-customer-switch-knob {
+    transform: translateX(21px);
+  }
+}
+
+
+
+
+/* Customer list breakpoint: table desktop, cards tablet/mobile */
+@media (max-width: 1023px) {
+  .svx-customers-page .svx-customer-table-wrap {
+    display: none !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .svx-customers-page .svx-customer-table-wrap {
+    display: block !important;
+  }
+}
+
+
+/* Customer action labels must never word-break */
+.svx-customers-page a,
+.svx-customers-page button {
+  word-break: keep-all;
+}
+
+.svx-customers-page th,
+.svx-customers-page td {
+  word-break: keep-all;
+}
+
+.svx-customers-page .svx-customer-panel {
+  overflow-wrap: normal;
+}
+
+@media (max-width: 1023px) {
+  .svx-customers-page .svx-customer-panel a,
+  .svx-customers-page .svx-customer-panel button {
+    white-space: nowrap;
+  }
+}
+
+
+/* Customer table must not create horizontal scroll */
+.svx-customers-page .svx-customer-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.svx-customers-page .svx-customer-table th,
+.svx-customers-page .svx-customer-table td {
+  vertical-align: middle;
+}
+
+.svx-customers-page .svx-customer-table th:nth-child(1),
+.svx-customers-page .svx-customer-table td:nth-child(1) {
+  width: 21%;
+}
+
+.svx-customers-page .svx-customer-table th:nth-child(2),
+.svx-customers-page .svx-customer-table td:nth-child(2) {
+  width: 12%;
+}
+
+.svx-customers-page .svx-customer-table th:nth-child(3),
+.svx-customers-page .svx-customer-table td:nth-child(3) {
+  width: 13%;
+}
+
+.svx-customers-page .svx-customer-table th:nth-child(4),
+.svx-customers-page .svx-customer-table td:nth-child(4) {
+  width: 16%;
+}
+
+.svx-customers-page .svx-customer-table th:nth-child(5),
+.svx-customers-page .svx-customer-table td:nth-child(5) {
+  width: 10%;
+}
+
+.svx-customers-page .svx-customer-table th:nth-child(6),
+.svx-customers-page .svx-customer-table td:nth-child(6) {
+  width: 28%;
+}
+
+.svx-customers-page .svx-customer-table td,
+.svx-customers-page .svx-customer-table th {
+  overflow: hidden;
+}
+
+.svx-customers-page .svx-customer-table td > *,
+.svx-customers-page .svx-customer-table th > * {
+  max-width: 100%;
+}
+
+.svx-customers-page .svx-customer-row-actions {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.svx-customers-page .svx-customer-row-actions a,
+.svx-customers-page .svx-customer-row-actions button,
+.svx-customers-page .svx-customer-table span {
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.svx-customers-page .svx-customer-row-actions a,
+.svx-customers-page .svx-customer-row-actions button {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+/* Avoid ugly word breaks in status pills */
+.svx-customers-page span {
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+
+/* Customer table premium cleanup */
+.svx-customers-page .svx-customer-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.svx-customers-page .svx-customer-table th:nth-child(1),
+.svx-customers-page .svx-customer-table td:nth-child(1) {
+  width: 25%;
+}
+
+.svx-customers-page .svx-customer-table th:nth-child(2),
+.svx-customers-page .svx-customer-table td:nth-child(2) {
+  width: 12%;
+}
+
+.svx-customers-page .svx-customer-table th:nth-child(3),
+.svx-customers-page .svx-customer-table td:nth-child(3) {
+  width: 14%;
+}
+
+.svx-customers-page .svx-customer-table th:nth-child(4),
+.svx-customers-page .svx-customer-table td:nth-child(4) {
+  width: 17%;
+}
+
+.svx-customers-page .svx-customer-table th:nth-child(5),
+.svx-customers-page .svx-customer-table td:nth-child(5) {
+  width: 12%;
+}
+
+.svx-customers-page .svx-customer-table th:nth-child(6),
+.svx-customers-page .svx-customer-table td:nth-child(6) {
+  width: 20%;
+}
+
+.svx-customers-page .svx-customer-table th,
+.svx-customers-page .svx-customer-table td {
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.svx-customers-page .svx-customer-table span,
+.svx-customers-page .svx-customer-table a,
+.svx-customers-page .svx-customer-table button {
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.svx-customers-page .svx-customer-row-actions {
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.svx-customers-page .svx-customer-table tr {
+  cursor: pointer;
+}
+
+.svx-customers-page .svx-customer-table tr:hover {
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-customers-page .svx-customer-table tr:hover,
+html:not(.dark) body:not(.dark) .svx-customers-page .svx-customer-table tr:hover {
+  background: rgba(15, 23, 42, 0.035) !important;
+}
+
+/* Do not word-break customer pills or action labels */
+.svx-customers-page a,
+.svx-customers-page button,
+.svx-customers-page span {
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
