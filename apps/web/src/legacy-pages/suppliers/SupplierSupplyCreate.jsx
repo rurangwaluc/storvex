@@ -357,8 +357,8 @@ function ItemCard({
       </div>
 
       <div className="space-y-5 p-5 sm:p-6">
-        <div className="grid grid-cols-1 gap-4 min-[620px]:grid-cols-2">
-          <div className="md:col-span-2">
+        <div className="grid grid-cols-1 gap-4 min-[760px]:grid-cols-3">
+          <div className="min-[760px]:col-span-3">
               <Field
                 label="Search item or type new item name"
                 required
@@ -499,7 +499,7 @@ function ItemCard({
           </Field>
 
           {buyPrice <= 0 ? (
-            <div className="min-[620px]:col-span-2 rounded-[18px] border border-amber-500/20 bg-amber-500/10 p-4">
+            <div className="min-[760px]:col-span-3 rounded-[18px] border border-amber-500/20 bg-amber-500/10 p-4">
               <div className="text-sm font-black text-amber-300">Add buying cost</div>
               <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
                 Enter what the supplier charged you for one item.
@@ -507,7 +507,7 @@ function ItemCard({
             </div>
           ) : null}
 
-          <div className="min-[620px]:col-span-2">
+          <div className="min-[760px]:col-span-3">
             <details className={cx(softPanel(), "group p-4")}>
               <summary className={cx("flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-black", strongText())}>
                 <span>
@@ -711,6 +711,16 @@ export default function SupplierSupplyCreate() {
     () => uniqueCleanValues(supplyHistory.map((supply) => supply?.documentRef)),
     [supplyHistory],
   );
+
+  const matchingDocumentRefs = useMemo(() => {
+    const query = cleanString(form.documentRef).toLowerCase();
+
+    if (!query) return previousDocumentRefs.slice(0, 5);
+
+    return previousDocumentRefs
+      .filter((ref) => ref.toLowerCase().includes(query))
+      .slice(0, 5);
+  }, [form.documentRef, previousDocumentRefs]);
 
   const totals = useMemo(() => {
     const items = Array.isArray(form.items) ? form.items : [];
@@ -1083,7 +1093,21 @@ export default function SupplierSupplyCreate() {
             <div className="space-y-5 p-5 sm:p-6">
               <div className={cx(softPanel(), "p-5 sm:p-6")}>
                 <div className="grid grid-cols-1 gap-4 min-[700px]:grid-cols-2">
-                  <Field label="Invoice, receipt, or delivery note number" hint="Use a number you can search later, like INV-2026-001 or DEL-204.">
+                  <Field label="Stock type">
+                    <select
+                      className={inputClass()}
+                      value={form.sourceType}
+                      onChange={(event) => setField("sourceType", event.target.value)}
+                    >
+                      {SOURCE_TYPES.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+
+                  <Field label="Invoice, receipt, or delivery note number" hint="Start typing to reuse a previous supplier document number, or enter a new one.">
                     <input
                       className={inputClass()}
                       value={form.documentRef}
@@ -1096,9 +1120,28 @@ export default function SupplierSupplyCreate() {
                         <option key={ref} value={ref} />
                       ))}
                     </datalist>
+
+                    {matchingDocumentRefs.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {matchingDocumentRefs.map((ref) => (
+                          <button
+                            key={ref}
+                            type="button"
+                            className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-black text-[var(--color-text-muted)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-text)]"
+                            onClick={() => setField("documentRef", ref)}
+                          >
+                            {ref}
+                          </button>
+                        ))}
+                      </div>
+                    ) : form.documentRef ? (
+                      <div className={cx("mt-3 text-xs font-bold leading-5", mutedText())}>
+                        No previous number found. This will be saved as a new supplier document number.
+                      </div>
+                    ) : null}
                   </Field>
 
-                  <label className={cx(softPanel(), "flex cursor-pointer items-start gap-3 p-4")}>
+                  <label className={cx(softPanel(), "flex cursor-pointer items-start gap-3 p-4 min-[700px]:col-span-2")}>
                     <input
                       type="checkbox"
                       checked={Boolean(form.alsoUpdateStock)}
@@ -1120,9 +1163,9 @@ export default function SupplierSupplyCreate() {
                     <details className={cx(softPanel(), "group p-4")}>
                       <summary className={cx("flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-black", strongText())}>
                         <span>
-                          Extra restock notes
+                          Optional restock notes
                           <span className={cx("ml-2 text-xs font-bold", mutedText())}>
-                            Stock type and receiving note
+                            Receiving note and supplier promise
                           </span>
                         </span>
                         <span className={cx("rounded-full bg-[var(--color-surface-2)] px-3 py-1 text-xs font-black", mutedText())}>
@@ -1130,21 +1173,7 @@ export default function SupplierSupplyCreate() {
                         </span>
                       </summary>
 
-                      <div className="mt-4 grid grid-cols-1 gap-4 min-[700px]:grid-cols-2">
-                        <Field label="Stock type">
-                          <select
-                            className={inputClass()}
-                            value={form.sourceType}
-                            onChange={(event) => setField("sourceType", event.target.value)}
-                          >
-                            {SOURCE_TYPES.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </Field>
-
+                      <div className="mt-4 grid grid-cols-1 gap-4">
                         <Field label="Receiving note">
                           <input
                             className={inputClass()}
@@ -1154,7 +1183,7 @@ export default function SupplierSupplyCreate() {
                           />
                         </Field>
 
-                        <div className="min-[700px]:col-span-2">
+                        <div>
                           <Field label="Supplier promise or payment note">
                             <textarea
                               className={textareaClass()}
