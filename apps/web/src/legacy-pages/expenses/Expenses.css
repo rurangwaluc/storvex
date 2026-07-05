@@ -1,0 +1,883 @@
+/* Storvex Expenses: neutral, owner-first, PWA-ready */
+:root {
+  --expense-neutral-card: #ffffff;
+  --expense-neutral-panel: #ffffff;
+}
+
+[data-theme="dark"],
+.dark {
+  --expense-neutral-card: #1f1f1f;
+  --expense-neutral-panel: #1f1f1f;
+}
+
+.svx-expenses-page {
+  color: var(--color-text);
+}
+
+.svx-expense-card {
+  border: 1px solid var(--color-border);
+  border-radius: 28px;
+  background: var(--expense-neutral-card);
+  box-shadow: var(--shadow-card);
+}
+
+.svx-expense-panel {
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--expense-neutral-panel);
+}
+
+.svx-expense-note {
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface-2);
+}
+
+.svx-expense-pill,
+.svx-expense-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
+  word-break: keep-all;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.svx-expense-pill {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+.svx-expense-pill.is-source {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-color: transparent;
+}
+
+.svx-expense-badge.is-approved {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.svx-expense-badge.is-pending {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+.svx-expenses-page a,
+.svx-expenses-page button,
+.svx-expenses-page span {
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.svx-expenses-page .app-input,
+.svx-expenses-page select,
+.svx-expenses-page textarea {
+  background: var(--color-surface);
+}
+
+@media (max-width: 1023px) {
+  .svx-expenses-page {
+    padding-bottom: 28px;
+  }
+
+  .svx-expenses-page .svx-expense-card {
+    border-radius: 24px;
+  }
+
+  .svx-expenses-page .svx-expense-panel {
+    border-radius: 20px;
+  }
+}
+
+@media (max-width: 640px) {
+  .svx-expenses-page .svx-expense-card {
+    border-radius: 22px;
+  }
+
+  .svx-expenses-page .svx-expense-pill,
+  .svx-expenses-page .svx-expense-badge {
+    font-size: 11px;
+    padding: 6px 9px;
+  }
+
+  .svx-expenses-page button {
+    min-height: 42px;
+  }
+}
+
+
+/* Premium expenses layout: no heavy sidebar */
+.svx-expense-ledger-layout {
+  align-items: start;
+}
+
+@media (min-width: 1024px) {
+  .svx-expense-filters {
+    padding: 22px 24px;
+  }
+
+  .svx-expense-filters > .mt-4 {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.1fr) minmax(220px, 1fr) minmax(220px, 0.9fr) minmax(160px, 0.55fr);
+    align-items: end;
+    gap: 16px;
+  }
+
+  .svx-expense-filters > .mt-4 > * {
+    min-width: 0;
+  }
+
+  .svx-expense-filters .space-y-4,
+  .svx-expense-filters .space-y-4 > * + * {
+    margin-top: 0 !important;
+  }
+
+  .svx-expense-filters .grid.gap-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-expense-filters .flex.flex-col.gap-2 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .svx-expense-filters button {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 1023px) {
+  .svx-expense-filters > .mt-4 {
+    display: grid;
+    gap: 16px;
+  }
+
+  .svx-expense-filters .grid.gap-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-expense-filters .flex.flex-col.gap-2 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .svx-expense-filters .grid.gap-2,
+  .svx-expense-filters .flex.flex-col.gap-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-expense-filters button {
+    width: 100%;
+  }
+}
+
+
+/* Expenses filters: clean control bar, no cramped layout */
+.svx-expense-filter-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.svx-expense-filters button {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.svx-expense-filters .app-input {
+  min-width: 0;
+}
+
+.svx-expense-showing {
+  min-width: 150px;
+}
+
+@media (min-width: 1180px) {
+  .svx-expense-filter-grid {
+    grid-template-columns: minmax(280px, 1.1fr) minmax(260px, 1.1fr) minmax(300px, 1.2fr) minmax(150px, 0.55fr);
+    align-items: end;
+  }
+
+  .svx-expense-filter-grid > * {
+    min-width: 0;
+  }
+
+  .svx-expense-filters .grid.gap-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-expense-filters .flex.flex-col.gap-2 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 760px) and (max-width: 1179px) {
+  .svx-expense-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+  }
+
+  .svx-expense-filters .grid.gap-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-expense-filters .flex.flex-col.gap-2 {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 759px) {
+  .svx-expense-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-expense-filters .grid.gap-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-expense-filters .flex.flex-col.gap-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .svx-expense-filters button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-expense-filters .grid.gap-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-expense-filters {
+    padding: 18px !important;
+  }
+}
+
+
+/* Premium modal create expense */
+.svx-expense-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(2, 6, 23, 0.62);
+  backdrop-filter: blur(10px);
+}
+
+.svx-expense-modal-panel {
+  width: min(920px, 100%);
+  max-height: min(86vh, 860px);
+  overflow: auto;
+  border-radius: 30px;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.38);
+}
+
+.svx-expense-modal-panel .svx-expense-card {
+  border-radius: 30px;
+}
+
+/* Premium ledger filters */
+.svx-expense-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.95fr) minmax(260px, 1.15fr) minmax(260px, 1fr) minmax(145px, 0.45fr);
+  align-items: end;
+  gap: 14px;
+}
+
+.svx-expense-control,
+.svx-expense-count-card {
+  min-width: 0;
+}
+
+.svx-expense-segment {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface-2);
+  padding: 6px;
+}
+
+.svx-expense-segment.is-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.svx-expense-segment-button {
+  min-height: 42px;
+  border: 0;
+  border-radius: 15px;
+  background: transparent;
+  color: var(--color-text);
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.svx-expense-segment-button:hover {
+  background: var(--color-surface);
+}
+
+.svx-expense-segment-button.is-active {
+  background: var(--color-primary);
+  color: #ffffff;
+  box-shadow: 0 14px 28px rgba(47, 146, 255, 0.22);
+}
+
+.svx-expense-count-card {
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface-2);
+  padding: 14px 16px;
+}
+
+.svx-expense-ledger .app-input {
+  height: 56px;
+  border-radius: 20px;
+}
+
+@media (max-width: 1180px) {
+  .svx-expense-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-expense-modal-backdrop {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .svx-expense-modal-panel {
+    max-height: 92vh;
+    border-radius: 26px;
+  }
+
+  .svx-expense-modal-panel .svx-expense-card {
+    border-radius: 26px;
+  }
+
+  .svx-expense-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-expense-segment.is-three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .svx-expense-segment,
+  .svx-expense-segment.is-three {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-expense-segment-button {
+    width: 100%;
+  }
+}
+
+
+/* Owner-visible expense money movement */
+.svx-expense-movement {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.svx-expense-movement.is-primary {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.svx-expense-movement.is-pending,
+.svx-expense-movement.is-neutral {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+.svx-expense-movement.is-danger {
+  background: rgba(219, 80, 74, 0.12);
+  color: var(--color-danger);
+}
+
+@media (max-width: 640px) {
+  .svx-expense-movement {
+    font-size: 11px;
+    padding: 6px 9px;
+  }
+}
+
+
+/* Expense long-list table: customer-style density */
+.svx-expense-table {
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.svx-expense-table th:nth-child(1),
+.svx-expense-table td:nth-child(1) {
+  width: 28%;
+}
+
+.svx-expense-table th:nth-child(2),
+.svx-expense-table td:nth-child(2) {
+  width: 17%;
+}
+
+.svx-expense-table th:nth-child(3),
+.svx-expense-table td:nth-child(3) {
+  width: 18%;
+}
+
+.svx-expense-table th:nth-child(4),
+.svx-expense-table td:nth-child(4) {
+  width: 12%;
+}
+
+.svx-expense-table th:nth-child(5),
+.svx-expense-table td:nth-child(5) {
+  width: 13%;
+}
+
+.svx-expense-table th:nth-child(6),
+.svx-expense-table td:nth-child(6) {
+  width: 12%;
+}
+
+.svx-expense-table th,
+.svx-expense-table td {
+  overflow: hidden;
+}
+
+.svx-expense-table tr {
+  transition: background 160ms ease;
+}
+
+.svx-expense-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+:root:not([data-theme="dark"]) .svx-expense-table tbody tr:hover,
+html:not(.dark) body:not(.dark) .svx-expense-table tbody tr:hover {
+  background: rgba(15, 23, 42, 0.035);
+}
+
+.svx-expense-row-action {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 14px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.svx-expense-row-action:hover {
+  opacity: 0.88;
+}
+
+.svx-expense-row-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.svx-expense-row-action.is-primary {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.svx-expense-row-action.is-danger {
+  background: rgba(219, 80, 74, 0.10);
+  color: var(--color-danger);
+}
+
+@media (max-width: 1180px) {
+  .svx-expense-table th,
+  .svx-expense-table td {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .svx-expense-row-action {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+
+
+/* Expense movement and row actions: premium compact polish */
+.svx-expense-table th:nth-child(1),
+.svx-expense-table td:nth-child(1) {
+  width: 27%;
+}
+
+.svx-expense-table th:nth-child(2),
+.svx-expense-table td:nth-child(2) {
+  width: 16%;
+}
+
+.svx-expense-table th:nth-child(3),
+.svx-expense-table td:nth-child(3) {
+  width: 16%;
+}
+
+.svx-expense-table th:nth-child(4),
+.svx-expense-table td:nth-child(4) {
+  width: 11%;
+}
+
+.svx-expense-table th:nth-child(5),
+.svx-expense-table td:nth-child(5) {
+  width: 13%;
+}
+
+.svx-expense-table th:nth-child(6),
+.svx-expense-table td:nth-child(6) {
+  width: 17%;
+}
+
+.svx-expense-table td:last-child,
+.svx-expense-table th:last-child {
+  text-align: right;
+}
+
+.svx-expense-table td:last-child > div {
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.svx-expense-table .svx-expense-movement {
+  max-width: 100%;
+  padding: 6px 9px;
+  font-size: 11px;
+}
+
+.svx-expense-row-action {
+  min-height: 34px;
+  border-radius: 13px;
+  padding: 0 11px;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+.svx-expense-row-action.is-primary {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.svx-expense-row-action.is-danger {
+  background: transparent;
+  color: var(--color-danger);
+}
+
+.svx-expense-row-action.is-danger:hover {
+  background: rgba(219, 80, 74, 0.1);
+}
+
+.svx-expense-card-movement {
+  display: flex;
+  min-height: 84px;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.svx-expense-card-movement .svx-expense-movement {
+  width: fit-content;
+  max-width: 100%;
+}
+
+@media (max-width: 1023px) {
+  .svx-expense-card-movement {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .svx-expense-card-movement {
+    grid-column: span 2 / span 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .svx-expense-card-movement .svx-expense-movement {
+    margin-top: 0;
+    justify-self: end;
+  }
+}
+
+@media (max-width: 420px) {
+  .svx-expense-card-movement {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .svx-expense-card-movement .svx-expense-movement {
+    justify-self: start;
+  }
+}
+
+/* Expenses final theme correction: match Storvex Customers */
+html:not(.dark) body:not(.dark) .svx-expenses-page,
+:root:not([data-theme="dark"]) .svx-expenses-page,
+[data-theme="light"] .svx-expenses-page {
+  --expense-neutral-card: #ffffff;
+  --expense-neutral-panel: #ffffff;
+}
+
+html:not(.dark) body:not(.dark) .svx-expenses-page .svx-expense-card,
+html:not(.dark) body:not(.dark) .svx-expenses-page .svx-expense-panel,
+:root:not([data-theme="dark"]) .svx-expenses-page .svx-expense-card,
+:root:not([data-theme="dark"]) .svx-expenses-page .svx-expense-panel,
+[data-theme="light"] .svx-expenses-page .svx-expense-card,
+[data-theme="light"] .svx-expenses-page .svx-expense-panel {
+  background: #ffffff !important;
+  color: var(--color-text) !important;
+}
+
+html:not(.dark) body:not(.dark) .svx-expenses-page .svx-expense-note,
+html:not(.dark) body:not(.dark) .svx-expenses-page .svx-expense-count-card,
+html:not(.dark) body:not(.dark) .svx-expenses-page .svx-expense-segment,
+html:not(.dark) body:not(.dark) .svx-expenses-page .app-input,
+html:not(.dark) body:not(.dark) .svx-expenses-page select,
+html:not(.dark) body:not(.dark) .svx-expenses-page textarea,
+:root:not([data-theme="dark"]) .svx-expenses-page .svx-expense-note,
+:root:not([data-theme="dark"]) .svx-expenses-page .svx-expense-count-card,
+:root:not([data-theme="dark"]) .svx-expenses-page .svx-expense-segment,
+:root:not([data-theme="dark"]) .svx-expenses-page .app-input,
+:root:not([data-theme="dark"]) .svx-expenses-page select,
+:root:not([data-theme="dark"]) .svx-expenses-page textarea,
+[data-theme="light"] .svx-expenses-page .svx-expense-note,
+[data-theme="light"] .svx-expenses-page .svx-expense-count-card,
+[data-theme="light"] .svx-expenses-page .svx-expense-segment,
+[data-theme="light"] .svx-expenses-page .app-input,
+[data-theme="light"] .svx-expenses-page select,
+[data-theme="light"] .svx-expenses-page textarea {
+  background: #ffffff !important;
+  color: var(--color-text) !important;
+}
+
+/* Remove shiny/glowing blue button feel on expenses */
+.svx-expenses-page button,
+.svx-expense-modal-backdrop button,
+.svx-expenses-page .svx-expense-segment-button,
+.svx-expenses-page .svx-expense-row-action,
+.svx-expenses-page .svx-expense-segment-button.is-active,
+.svx-expenses-page .svx-expense-row-action.is-primary {
+  box-shadow: none !important;
+}
+
+.svx-expenses-page .svx-expense-segment-button.is-active {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+}
+
+.svx-expenses-page .svx-expense-row-action.is-primary,
+.svx-expenses-page .svx-expense-pill.is-source,
+.svx-expenses-page .svx-expense-badge.is-approved,
+.svx-expenses-page .svx-expense-movement.is-primary {
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+}
+
+/* Light mode badges should not turn into white pills on dark cards */
+html:not(.dark) body:not(.dark) .svx-expenses-page .svx-expense-pill,
+html:not(.dark) body:not(.dark) .svx-expenses-page .svx-expense-badge,
+html:not(.dark) body:not(.dark) .svx-expenses-page .svx-expense-movement,
+:root:not([data-theme="dark"]) .svx-expenses-page .svx-expense-pill,
+:root:not([data-theme="dark"]) .svx-expenses-page .svx-expense-badge,
+:root:not([data-theme="dark"]) .svx-expenses-page .svx-expense-movement,
+[data-theme="light"] .svx-expenses-page .svx-expense-pill,
+[data-theme="light"] .svx-expenses-page .svx-expense-badge,
+[data-theme="light"] .svx-expenses-page .svx-expense-movement {
+  border-color: var(--color-border) !important;
+}
+
+/* Keep destructive action calm */
+.svx-expenses-page .svx-expense-row-action.is-danger {
+  background: transparent !important;
+  color: var(--color-danger) !important;
+}
+
+.svx-expenses-page .svx-expense-row-action.is-danger:hover {
+  background: rgba(219, 80, 74, 0.08) !important;
+}
+
+/* No accidental horizontal scroll on PWA */
+.svx-expenses-page,
+.svx-expenses-page * {
+  max-width: 100%;
+}
+\n
+/* Cash drawer expense pending state */
+.svx-expense-movement.is-warning {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+
+.svx-expense-row-action.is-neutral {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.svx-expense-row-action.is-neutral:hover {
+  background: var(--color-surface);
+}
+
+
+/* Expense row actions: final production dropdown */
+.svx-expense-action-menu-wrap {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.svx-expense-kebab {
+  display: inline-flex !important;
+  width: 34px !important;
+  height: 34px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 13px !important;
+  background: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+  box-shadow: none !important;
+}
+
+.svx-expense-kebab span {
+  display: block !important;
+  width: 3.5px !important;
+  height: 3.5px !important;
+  border-radius: 999px !important;
+  background: currentColor !important;
+  opacity: 0.72 !important;
+}
+
+.svx-expense-kebab:hover,
+.svx-expense-kebab.is-open {
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+  border-color: transparent !important;
+}
+
+.svx-expense-action-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147482998 !important;
+  display: block !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  cursor: default !important;
+}
+
+.svx-expense-action-menu {
+  position: fixed !important;
+  z-index: 2147482999 !important;
+  width: 176px !important;
+  max-width: calc(100vw - 20px) !important;
+  overflow: hidden !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 16px !important;
+  background: var(--expense-neutral-card) !important;
+  padding: 6px !important;
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.36) !important;
+  isolation: isolate !important;
+}
+
+html:not(.dark) body:not(.dark) .svx-expense-action-menu,
+:root:not([data-theme="dark"]) .svx-expense-action-menu,
+[data-theme="light"] .svx-expense-action-menu {
+  background: #ffffff !important;
+  box-shadow: 0 26px 80px rgba(15, 23, 42, 0.16) !important;
+}
+
+[data-theme="dark"] .svx-expense-action-menu,
+.dark .svx-expense-action-menu {
+  background: #1f1f1f !important;
+}
+
+.svx-expense-action-menu button {
+  display: flex !important;
+  width: 100% !important;
+  min-height: 36px !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  border: 0 !important;
+  border-radius: 10px !important;
+  background: transparent !important;
+  padding: 0 12px !important;
+  color: var(--color-text) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+  box-shadow: none !important;
+}
+
+.svx-expense-action-menu button + button {
+  margin-top: 2px !important;
+}
+
+.svx-expense-action-menu button:hover {
+  background: var(--color-surface-2) !important;
+}
+
+.svx-expense-action-menu button.is-danger {
+  color: var(--color-danger) !important;
+}
+
+.svx-expense-action-menu button:disabled {
+  cursor: not-allowed !important;
+  opacity: 0.45 !important;
+}
+
+.svx-expense-table td:last-child,
+.svx-expense-table th:last-child {
+  overflow: visible !important;
+  text-align: right;
+}
+
+.svx-expense-table tbody tr {
+  position: relative;
+}

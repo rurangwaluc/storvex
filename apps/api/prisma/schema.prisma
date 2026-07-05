@@ -833,18 +833,22 @@ model Repair {
 }
 
 model Expense {
-  id           String          @id @default(cuid())
-  title        String
-  notes        String?
-  status       String          @default("PENDING")
-  createdAt    DateTime        @default(now())
-  approvedAt   DateTime?
-  tenantId     String
-  branchId     String?         @db.Text
-  createdById  String
-  approvedById String?
-  category     ExpenseCategory
-  amount       Float
+  id                   String          @id @default(cuid())
+  title                String
+  notes                String?
+  status               String          @default("PENDING")
+  createdAt            DateTime        @default(now())
+  approvedAt           DateTime?
+  tenantId             String
+  branchId             String?         @db.Text
+  createdById          String
+  approvedById         String?
+  category             ExpenseCategory
+  amount               Float
+  paidFrom             ExpensePaidFrom @default(CASH_DRAWER)
+  paymentReference     String?
+  cashDrawerSessionId  String?         @db.Uuid
+  cashDrawerMovementId String?         @db.Uuid
 
   approvedBy User?   @relation("ApprovedExpenses", fields: [approvedById], references: [id])
   createdBy  User    @relation("CreatedExpenses", fields: [createdById], references: [id])
@@ -853,6 +857,9 @@ model Expense {
 
   @@index([tenantId])
   @@index([branchId])
+  @@index([paidFrom])
+  @@index([cashDrawerSessionId])
+  @@index([cashDrawerMovementId])
   @@index([tenantId, branchId, createdAt])
 }
 
@@ -1893,6 +1900,14 @@ enum ExpenseCategory {
   UTILITIES
   TRANSPORT
   MAINTENANCE
+  OTHER
+}
+
+enum ExpensePaidFrom {
+  CASH_DRAWER
+  BANK
+  MOMO
+  OWNER_MONEY
   OTHER
 }
 

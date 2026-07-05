@@ -1,5 +1,6 @@
 // frontend-stores/src/pages/expenses/Expenses.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
@@ -8,8 +9,10 @@ import {
   createExpense,
   deleteExpense,
   getExpenses,
+  updateExpense,
 } from "../../services/expensesApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import "./Expenses.css";
 
 const CATEGORIES = [
   { value: "RENT", label: "Rent" },
@@ -21,6 +24,37 @@ const CATEGORIES = [
 ];
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((category) => [category.value, category.label]));
+
+const PAID_FROM_OPTIONS = [
+  {
+    value: "CASH_DRAWER",
+    label: "Cash drawer",
+    help: "Cash drawer",
+  },
+  {
+    value: "BANK",
+    label: "Bank",
+    help: "Bank payment",
+  },
+  {
+    value: "MOMO",
+    label: "MoMo",
+    help: "MoMo payment",
+  },
+  {
+    value: "OWNER_MONEY",
+    label: "Owner money",
+    help: "Owner paid",
+  },
+  {
+    value: "OTHER",
+    label: "Other",
+    help: "Other source",
+  },
+];
+
+const PAID_FROM_LABEL = Object.fromEntries(PAID_FROM_OPTIONS.map((option) => [option.value, option.label]));
+const PAID_FROM_HELP = Object.fromEntries(PAID_FROM_OPTIONS.map((option) => [option.value, option.help]));
 
 const PAGE_SIZE = 15;
 
@@ -63,6 +97,67 @@ function formatDate(value) {
   });
 }
 
+function moneySourceLabel(value) {
+  const key = String(value || "CASH_DRAWER").toUpperCase();
+  return PAID_FROM_LABEL[key] || "Cash drawer";
+}
+
+function moneySourceHelp(value) {
+  const key = String(value || "CASH_DRAWER").toUpperCase();
+  return PAID_FROM_HELP[key] || PAID_FROM_HELP.CASH_DRAWER;
+}
+
+function isCashDrawerExpense(expense) {
+  return String(expense?.paidFrom || "CASH_DRAWER").toUpperCase() === "CASH_DRAWER";
+}
+
+function movementLabel(expense) {
+  const status = String(expense?.status || "").toUpperCase();
+
+  if (status !== "APPROVED") {
+    if (isCashDrawerExpense(expense)) return "Needs open drawer";
+    return "Waiting approval";
+  }
+
+  if (isCashDrawerExpense(expense)) {
+    return expense?.cashDrawerMovementId ? "Drawer money out" : "Drawer movement missing";
+  }
+
+  return "Recorded money out";
+}
+
+function movementTone(expense) {
+  const status = String(expense?.status || "").toUpperCase();
+
+  if (status !== "APPROVED") {
+    return isCashDrawerExpense(expense) ? "is-warning" : "is-pending";
+  }
+  if (isCashDrawerExpense(expense) && expense?.cashDrawerMovementId) return "is-primary";
+  if (isCashDrawerExpense(expense) && !expense?.cashDrawerMovementId) return "is-danger";
+  return "is-neutral";
+}
+
+function expenseErrorMessage(error) {
+  const code = String(error?.code || error?.data?.code || "");
+
+  if (code === "CASH_DRAWER_NOT_OPEN") {
+    return "Open the cash drawer before approving a cash-paid expense.";
+  }
+
+  if (code === "CASH_DRAWER_CASH_NOT_ENOUGH") {
+    const expected = error?.expectedCash || error?.data?.expectedCash;
+    const required = error?.requiredCash || error?.data?.requiredCash;
+
+    if (expected != null && required != null) {
+      return `Cash drawer is not enough. Expected cash: ${formatMoney(expected)}. Needed: ${formatMoney(required)}.`;
+    }
+
+    return "Cash drawer does not have enough expected cash for this expense.";
+  }
+
+  return error?.message || "Expense action failed.";
+}
+
 function relativeTime(value) {
   if (!value) return "—";
 
@@ -86,7 +181,7 @@ function activeStoreLocationNameFromStorage() {
   const name = cleanString(localStorage.getItem("activeBranchName"));
   const code = cleanString(localStorage.getItem("activeBranchCode"));
 
-  if (code && name) return `${code} • ${name}`;
+  if (code && name) return `${code} ${name}`;
   if (name) return name;
   if (code) return code;
 
@@ -98,7 +193,7 @@ function storeLocationNameFromExpense(expense) {
   const code = cleanString(location?.code);
   const name = cleanString(location?.name);
 
-  if (code && name) return `${code} • ${name}`;
+  if (code && name) return `${code} ${name}`;
   if (name) return name;
   if (code) return code;
 
@@ -127,15 +222,15 @@ function softText() {
 }
 
 function pageCard() {
-  return "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+  return "svx-expense-card";
 }
 
 function raisedPanel() {
-  return "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)]";
+  return "svx-expense-panel";
 }
 
 function softPanel() {
-  return "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
+  return "svx-expense-panel";
 }
 
 function inputClass() {
@@ -173,8 +268,8 @@ function successBtn(disabled = false) {
   return cx(
     buttonBase(disabled),
     disabled
-      ? "bg-[rgba(21,128,61,0.08)] text-[#15803d]"
-      : "bg-[#dcfce7] text-[#15803d] hover:opacity-90"
+      ? "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
+      : "bg-[var(--color-primary-soft)] text-[var(--color-primary)] hover:opacity-90"
   );
 }
 
@@ -186,12 +281,7 @@ function StatusBadge({ status }) {
   const approved = String(status || "").toUpperCase() === "APPROVED";
 
   return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold",
-        approved ? "bg-[#dcfce7] text-[#15803d]" : "bg-[#fff1c9] text-[#b88900]"
-      )}
-    >
+    <span className={cx("svx-expense-badge", approved ? "is-approved" : "is-pending")}>
       {approved ? "Approved" : "Pending"}
     </span>
   );
@@ -199,8 +289,16 @@ function StatusBadge({ status }) {
 
 function CategoryPill({ category }) {
   return (
-    <span className="inline-flex items-center rounded-full bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-muted)]">
+    <span className="svx-expense-pill">
       {CATEGORY_LABEL[category] || category || "Other"}
+    </span>
+  );
+}
+
+function MoneySourcePill({ paidFrom }) {
+  return (
+    <span className="svx-expense-pill is-source">
+      {moneySourceLabel(paidFrom)}
     </span>
   );
 }
@@ -223,47 +321,24 @@ function SectionHeading({ eyebrow, title, subtitle }) {
   );
 }
 
-function SummaryCard({ label, value, note, tone = "neutral" }) {
-  const iconTone =
-    tone === "danger"
-      ? "bg-[rgba(219,80,74,0.12)] text-[var(--color-danger)]"
-      : tone === "warning"
-        ? "bg-[#fff1c9] text-[#b88900]"
-        : tone === "success"
-          ? "bg-[#dcfce7] text-[#15803d]"
-          : "bg-[#dff1ff] text-[#4aa8ff]";
-
+function SummaryCard({ label, value, note }) {
   return (
-    <article className={cx(pageCard(), "p-5 sm:p-6")}>
-      <div className="flex items-start gap-4 sm:gap-5">
-        <div
-          className={cx(
-            "flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] shadow-[var(--shadow-soft)]",
-            iconTone
-          )}
-        >
-          <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.9">
-            <rect x="3" y="6" width="18" height="12" rx="2.5" />
-            <path d="M7 12h4M15 12h2M12 9v6" strokeLinecap="round" />
-          </svg>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className={cx("text-sm font-semibold", strongText())}>{label}</div>
-          <div className={cx("mt-2 text-[1.7rem] font-black leading-tight tracking-[-0.02em]", strongText())}>
-            {value}
-          </div>
-          {note ? <div className={cx("mt-2 text-sm leading-6", mutedText())}>{note}</div> : null}
-        </div>
+    <article className={cx(pageCard(), "p-4 sm:p-5")}>
+      <div className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+        {label}
       </div>
+      <div className="mt-3 text-[1.45rem] font-black leading-tight tracking-[-0.02em] text-[var(--color-text)]">
+        {value}
+      </div>
+      {note ? <div className="mt-2 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">{note}</div> : null}
     </article>
   );
 }
 
 function EmptyState({ onAdd }) {
   return (
-    <div className={cx(softPanel(), "px-4 py-16 text-center")}>
-      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[20px] bg-[var(--color-surface)] shadow-[var(--shadow-soft)]">
+    <div className={cx(softPanel(), "px-4 py-12 text-center sm:py-14")}>
+      <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-[18px] bg-[var(--color-surface-2)]">
         <svg viewBox="0 0 24 24" className="h-8 w-8 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" strokeWidth="1.6">
           <rect x="3" y="6" width="18" height="12" rx="2.5" />
           <path d="M7 12h10M12 9v6" strokeLinecap="round" />
@@ -272,7 +347,7 @@ function EmptyState({ onAdd }) {
 
       <div className={cx("text-base font-bold", strongText())}>No expenses found</div>
       <div className={cx("mx-auto mt-2 max-w-md text-sm leading-6", mutedText())}>
-        Log business expenses for the active store location, then approve only the ones that should become financial records.
+        Log expenses, approve verified records, and track where the money came from.
       </div>
 
       {onAdd ? (
@@ -295,7 +370,7 @@ function ListSkeleton() {
               <SkeletonBlock className="h-7 w-20 rounded-full" />
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
               <SkeletonBlock className="h-16" />
               <SkeletonBlock className="h-16" />
               <SkeletonBlock className="h-16" />
@@ -313,24 +388,14 @@ function ListSkeleton() {
   );
 }
 
-function ExpenseCard({ expense, onApprove, onDelete, approveBusy, deleteBusy, index, showStoreLocation }) {
+function ExpenseCard({ expense, onApprove, onEdit, onDelete, approveBusy, deleteBusy, index, showStoreLocation }) {
   const isApproved = String(expense.status || "").toUpperCase() === "APPROVED";
   const storeLocationName = storeLocationNameFromExpense(expense);
 
   return (
     <div
-      className={cx(
-        pageCard(),
-        "relative overflow-hidden p-4 sm:p-5",
-        index % 2 === 0 ? "bg-[var(--color-card)]" : "bg-[var(--color-surface)]"
-      )}
+      className={cx(pageCard(), "relative overflow-hidden p-4 sm:p-5")}
     >
-      <div
-        className={cx(
-          "absolute left-0 top-0 h-full w-1.5 opacity-80",
-          isApproved ? "bg-[#15803d]" : "bg-[#b88900]"
-        )}
-      />
 
       <div className="absolute inset-x-0 top-0 h-px bg-[var(--color-border)]" />
 
@@ -344,6 +409,7 @@ function ExpenseCard({ expense, onApprove, onDelete, approveBusy, deleteBusy, in
                 </span>
                 <StatusBadge status={expense.status} />
                 <CategoryPill category={expense.category} />
+                <MoneySourcePill paidFrom={expense.paidFrom} />
               </div>
 
               <div className={cx("mt-1.5 text-sm font-semibold", strongText())}>
@@ -356,6 +422,17 @@ function ExpenseCard({ expense, onApprove, onDelete, approveBusy, deleteBusy, in
             </div>
 
             <div className="flex shrink-0 flex-wrap gap-2 sm:justify-end">
+              {!isApproved ? (
+                <button
+                  type="button"
+                  onClick={() => onEdit(expense)}
+                  className={secondaryBtn()}
+                  title="Edit this pending expense"
+                >
+                  Edit
+                </button>
+              ) : null}
+
               {!isApproved ? (
                 <button
                   type="button"
@@ -393,6 +470,32 @@ function ExpenseCard({ expense, onApprove, onDelete, approveBusy, deleteBusy, in
 
             <div className={cx(raisedPanel(), "p-3.5")}>
               <div className={cx("text-[10px] font-semibold uppercase tracking-[0.18em]", softText())}>
+                Paid from
+              </div>
+              <div className={cx("mt-2.5 text-sm font-bold", strongText())}>
+                {moneySourceLabel(expense.paidFrom)}
+              </div>
+              {expense.paymentReference ? (
+                <div className={cx("mt-0.5 truncate text-xs", mutedText())}>{expense.paymentReference}</div>
+              ) : null}
+            </div>
+
+            <div className={cx(raisedPanel(), "svx-expense-card-movement p-3.5")}>
+              <div className={cx("text-[10px] font-semibold uppercase tracking-[0.18em]", softText())}>
+                Money movement
+              </div>
+              <div className={cx("mt-2.5 svx-expense-movement", movementTone(expense))}>
+                {movementLabel(expense)}
+              </div>
+              {expense.cashDrawerMovementId ? (
+                <div className={cx("mt-0.5 truncate text-xs", mutedText())}>
+                  {expense.cashDrawerMovementId}
+                </div>
+              ) : null}
+            </div>
+
+            <div className={cx(raisedPanel(), "p-3.5")}>
+              <div className={cx("text-[10px] font-semibold uppercase tracking-[0.18em]", softText())}>
                 Date
               </div>
               <div className={cx("mt-2.5 text-sm font-bold", strongText())}>
@@ -409,22 +512,17 @@ function ExpenseCard({ expense, onApprove, onDelete, approveBusy, deleteBusy, in
               </div>
             </div>
 
-            <div
-              className={cx(
-                "rounded-[22px] border p-3.5 shadow-[var(--shadow-soft)]",
-                isApproved ? "border-[#bbf7d0] bg-[#dcfce7]" : "border-[#fde68a] bg-[#fff1c9]"
-              )}
-            >
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[rgba(15,23,42,0.62)]">
+            <div className={cx(raisedPanel(), "p-3.5")}>
+              <div className={cx("text-[10px] font-semibold uppercase tracking-[0.18em]", softText())}>
                 {isApproved ? "Approved by" : "Awaiting"}
               </div>
 
-              <div className={cx("mt-2.5 text-sm font-bold", isApproved ? "text-[#166534]" : "text-[#92400e]")}>
+              <div className={cx("mt-2.5 text-sm font-bold", strongText())}>
                 {isApproved ? expense.approvedBy?.name || "Owner" : "Owner approval"}
               </div>
 
               {isApproved && expense.approvedAt ? (
-                <div className="mt-0.5 text-xs text-[#166534]">{formatDate(expense.approvedAt)}</div>
+                <div className={cx("mt-0.5 text-xs", mutedText())}>{formatDate(expense.approvedAt)}</div>
               ) : null}
             </div>
           </div>
@@ -434,9 +532,217 @@ function ExpenseCard({ expense, onApprove, onDelete, approveBusy, deleteBusy, in
               This expense belongs to <span className={cx("font-semibold", strongText())}>{storeLocationName}</span>.
             </div>
           ) : null}
+
         </div>
       </div>
     </div>
+  );
+}
+
+function ExpenseTable({
+  expenses,
+  onApprove,
+  onEdit,
+  onDelete,
+  approveBusy,
+  deleteBusy,
+  deleteTarget,
+  openActionMenuId,
+  setOpenActionMenuId,
+}) {
+  const [actionMenuPosition, setActionMenuPosition] = useState(null);
+
+  const activeExpense = useMemo(
+    () => expenses.find((expense) => expense.id === openActionMenuId) || null,
+    [expenses, openActionMenuId]
+  );
+
+  const activeExpenseIsApproved = String(activeExpense?.status || "").toUpperCase() === "APPROVED";
+
+  function toggleActionMenu(event, expense) {
+    event.stopPropagation();
+
+    const expenseId = expense?.id;
+    if (!expenseId) return;
+
+    if (openActionMenuId === expenseId) {
+      setOpenActionMenuId("");
+      setActionMenuPosition(null);
+      return;
+    }
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const isApproved = String(expense?.status || "").toUpperCase() === "APPROVED";
+
+    const menuWidth = 176;
+    const menuHeight = isApproved ? 48 : 126;
+    const gap = 4;
+    const rowBorderLift = 18;
+    const safePadding = 10;
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUp = spaceBelow < menuHeight + gap + safePadding && spaceAbove > menuHeight + gap + safePadding;
+
+    const top = openUp
+      ? rect.top - menuHeight - gap
+      : rect.bottom + gap - rowBorderLift;
+    const left = rect.right - menuWidth + 2;
+
+    setActionMenuPosition({
+      top: Math.max(safePadding, Math.min(top, window.innerHeight - menuHeight - safePadding)),
+      left: Math.max(safePadding, Math.min(left, window.innerWidth - menuWidth - safePadding)),
+      openUp,
+    });
+    setOpenActionMenuId(expenseId);
+  }
+
+  return (
+    <>
+      <table className="svx-expense-table w-full table-fixed">
+      <thead>
+        <tr>
+          {["Expense", "Paid from", "Movement", "Status", "Amount", "Actions"].map((label) => (
+            <th key={label} className="px-5 py-4 text-left text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+              {label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+
+      <tbody>
+        {expenses.map((expense) => {
+          const isApproved = String(expense.status || "").toUpperCase() === "APPROVED";
+
+          return (
+            <tr key={expense.id} className="border-t border-[var(--color-border)]">
+              <td className="px-5 py-4 align-middle">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-black text-[var(--color-text)]">
+                    {expense.title || "Untitled expense"}
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <span className="text-xs font-semibold text-[var(--color-text-muted)]">{formatDate(expense.createdAt)}</span>
+                    <CategoryPill category={expense.category} />
+                  </div>
+                </div>
+              </td>
+
+              <td className="px-5 py-4 align-middle">
+                <div className="truncate text-sm font-bold text-[var(--color-text)]">
+                  {moneySourceLabel(expense.paidFrom)}
+                </div>
+                {expense.paymentReference ? (
+                  <div className="mt-1 truncate text-xs font-semibold text-[var(--color-text-muted)]">
+                    {expense.paymentReference}
+                  </div>
+                ) : null}
+              </td>
+
+              <td className="px-5 py-4 align-middle">
+                <span className={cx("svx-expense-movement", movementTone(expense))}>
+                  {movementLabel(expense)}
+                </span>
+              </td>
+
+              <td className="px-5 py-4 align-middle">
+                <StatusBadge status={expense.status} />
+              </td>
+
+              <td className="px-5 py-4 align-middle">
+                <div className="truncate text-sm font-black text-[var(--color-text)]">
+                  {formatMoney(expense.amount)}
+                </div>
+              </td>
+
+              <td className="px-5 py-4 align-middle">
+                <div className="svx-expense-action-menu-wrap">
+                  <button
+                    type="button"
+                    className={cx("svx-expense-kebab", openActionMenuId === expense.id && "is-open")}
+                    aria-label="Expense actions"
+                    aria-expanded={openActionMenuId === expense.id}
+                    onClick={(event) => toggleActionMenu(event, expense)}
+                  >
+                    <span />
+                    <span />
+                    <span />
+                  </button>
+
+
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+      </table>
+
+      {activeExpense && actionMenuPosition
+        ? createPortal(
+            <>
+              <button
+                type="button"
+                aria-label="Close expense actions"
+                className="svx-expense-action-backdrop"
+                onClick={() => {
+                  setOpenActionMenuId("");
+                  setActionMenuPosition(null);
+                }}
+              />
+
+              <div
+                className={cx("svx-expense-action-menu", actionMenuPosition.openUp && "opens-up")}
+                style={{
+                  top: `${actionMenuPosition.top}px`,
+                  left: `${actionMenuPosition.left}px`,
+                }}
+              >
+                {!activeExpenseIsApproved ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenActionMenuId("");
+                      setActionMenuPosition(null);
+                      onEdit(activeExpense);
+                    }}
+                  >
+                    Edit expense
+                  </button>
+                ) : null}
+
+                {!activeExpenseIsApproved ? (
+                  <button
+                    type="button"
+                    disabled={approveBusy === activeExpense.id}
+                    onClick={() => {
+                      setOpenActionMenuId("");
+                      setActionMenuPosition(null);
+                      onApprove(activeExpense.id);
+                    }}
+                  >
+                    {approveBusy === activeExpense.id ? "Approving..." : "Approve"}
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  disabled={activeExpenseIsApproved || (deleteBusy && deleteTarget?.id === activeExpense.id)}
+                  onClick={() => {
+                    setOpenActionMenuId("");
+                    setActionMenuPosition(null);
+                    onDelete(activeExpense);
+                  }}
+                  className="is-danger"
+                >
+                  Delete
+                </button>
+              </div>
+            </>,
+            document.body
+          )
+        : null}
+    </>
   );
 }
 
@@ -444,12 +750,26 @@ const EMPTY_FORM = {
   title: "",
   category: "RENT",
   amount: "",
+  paidFrom: "CASH_DRAWER",
+  paymentReference: "",
   notes: "",
 };
 
-function CreateExpenseForm({ onCreated, onCancel, activeStoreLocationLabel }) {
-  const [form, setForm] = useState(EMPTY_FORM);
+function CreateExpenseForm({ onCreated, onUpdated, onCancel, activeStoreLocationLabel, expense = null }) {
+  const [form, setForm] = useState(() =>
+    expense
+      ? {
+          title: expense.title || "",
+          category: expense.category || "RENT",
+          amount: expense.amount == null ? "" : String(expense.amount),
+          paidFrom: expense.paidFrom || "CASH_DRAWER",
+          paymentReference: expense.paymentReference || "",
+          notes: expense.notes || "",
+        }
+      : EMPTY_FORM
+  );
   const [busy, setBusy] = useState(false);
+  const isEditMode = Boolean(expense?.id);
 
   function setField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -473,20 +793,29 @@ function CreateExpenseForm({ onCreated, onCancel, activeStoreLocationLabel }) {
     setBusy(true);
 
     try {
-      const expense = await createExpense({
+      const payload = {
         title,
         category: form.category,
         amount,
+        paidFrom: form.paidFrom,
+        paymentReference: cleanString(form.paymentReference) || undefined,
         notes: cleanString(form.notes) || undefined,
-      });
+      };
 
-      toast.success("Expense logged");
-      setForm(EMPTY_FORM);
-      onCreated(expense);
+      if (isEditMode) {
+        const updated = await updateExpense(expense.id, payload);
+        toast.success("Expense updated");
+        onUpdated(updated);
+      } else {
+        const created = await createExpense(payload);
+        toast.success("Expense logged");
+        setForm(EMPTY_FORM);
+        onCreated(created);
+      }
     } catch (error) {
       if (handleSubscriptionBlockedError(error, { toastId: "expense-create-blocked" })) return;
 
-      toast.error(error?.message || "Failed to log expense");
+      toast.error(error?.message || (isEditMode ? "Failed to update expense" : "Failed to log expense"));
     } finally {
       setBusy(false);
     }
@@ -494,10 +823,11 @@ function CreateExpenseForm({ onCreated, onCancel, activeStoreLocationLabel }) {
 
   return (
     <div className={cx(pageCard(), "p-5 sm:p-6")}>
-      <div className={cx("text-base font-bold", strongText())}>Log new expense</div>
+      <div className={cx("text-base font-bold", strongText())}>{isEditMode ? "Edit expense" : "Log new expense"}</div>
       <p className={cx("mt-1.5 text-sm leading-6", mutedText())}>
-        This expense will be saved under{" "}
-        <span className={cx("font-semibold", strongText())}>{activeStoreLocationLabel}</span> and will stay pending until approved.
+        {isEditMode ? "Only pending expenses can be edited." : "This expense will be saved under"}{" "}
+        {!isEditMode ? <span className={cx("font-semibold", strongText())}>{activeStoreLocationLabel}</span> : null}
+        {!isEditMode ? " and will stay pending until approved." : ""}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-5 space-y-4">
@@ -550,6 +880,48 @@ function CreateExpenseForm({ onCreated, onCancel, activeStoreLocationLabel }) {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>
+              Paid from <span className="text-[var(--color-danger)]">*</span>
+            </label>
+            <select
+              className={inputClass()}
+              value={form.paidFrom}
+              onChange={(event) => setField("paidFrom", event.target.value)}
+              required
+            >
+              {PAID_FROM_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <div className={cx("mt-2 text-xs leading-5", mutedText())}>{moneySourceHelp(form.paidFrom)}</div>
+          </div>
+
+          <div>
+            <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>
+              Payment reference <span className={cx("font-normal", mutedText())}>(optional)</span>
+            </label>
+            <input
+              className={inputClass()}
+              placeholder="MoMo code, bank slip, receipt number..."
+              value={form.paymentReference}
+              onChange={(event) => setField("paymentReference", event.target.value)}
+            />
+            <div className={cx("mt-2 text-xs leading-5", mutedText())}>
+              Add only when available.
+            </div>
+          </div>
+        </div>
+
+        <div className={cx("rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-3 text-xs leading-5", mutedText())}>
+          {form.paidFrom === "CASH_DRAWER"
+            ? "Approval will record drawer money out."
+            : "Approval records the expense without changing drawer cash."}
+        </div>
+
         <div>
           <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>
             Notes <span className={cx("font-normal", mutedText())}>(optional)</span>
@@ -570,10 +942,29 @@ function CreateExpenseForm({ onCreated, onCancel, activeStoreLocationLabel }) {
           ) : null}
 
           <button type="submit" disabled={busy} className={primaryBtn(busy)}>
-            {busy ? "Logging…" : "Log expense"}
+            {busy ? (isEditMode ? "Saving…" : "Logging…") : isEditMode ? "Save changes" : "Log expense"}
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function ExpenseFormModal({ open, expense, onCreated, onUpdated, onClose, activeStoreLocationLabel }) {
+  if (!open) return null;
+
+  return (
+    <div className="svx-expense-modal-backdrop">
+      <div className="svx-expense-modal-panel">
+        <CreateExpenseForm
+          key={expense?.id || "new-expense"}
+          expense={expense}
+          onCreated={onCreated}
+          onUpdated={onUpdated}
+          onCancel={onClose}
+          activeStoreLocationLabel={activeStoreLocationLabel}
+        />
+      </div>
     </div>
   );
 }
@@ -589,9 +980,11 @@ function DeleteConfirmDialog({ expense, busy, onConfirm, onClose }) {
         <div className={cx("mt-3 rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4")}>
           <div className={cx("text-base font-black", strongText())}>{formatMoney(expense.amount)}</div>
           <div className={cx("mt-1 text-sm font-semibold", strongText())}>{expense.title}</div>
-          <div className={cx("mt-1 text-xs", mutedText())}>
-            {CATEGORY_LABEL[expense.category] || expense.category || "Other"} · {storeLocationNameFromExpense(expense)} · logged{" "}
-            {relativeTime(expense.createdAt)}
+          <div className={cx("mt-2 space-y-1 text-xs", mutedText())}>
+            <div>{CATEGORY_LABEL[expense.category] || expense.category || "Other"}</div>
+            <div>{storeLocationNameFromExpense(expense)}</div>
+            <div>Logged {relativeTime(expense.createdAt)}</div>
+            <div>Paid from {moneySourceLabel(expense.paidFrom)}</div>
           </div>
         </div>
 
@@ -623,10 +1016,12 @@ export default function Expenses() {
   const [scopeMode, setScopeMode] = useState("CURRENT");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [showForm, setShowForm] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
 
   const [approveBusy, setApproveBusy] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [openActionMenuId, setOpenActionMenuId] = useState("");
 
   const [activeStoreLocationLabel, setActiveStoreLocationLabel] = useState(() =>
     activeStoreLocationNameFromStorage()
@@ -718,6 +1113,9 @@ export default function Expenses() {
           expense.createdBy?.name,
           expense.approvedBy?.name,
           expense.notes,
+          expense.paidFrom,
+          moneySourceLabel(expense.paidFrom),
+          expense.paymentReference,
           storeLocationNameFromExpense(expense),
           expense.status,
         ]
@@ -747,6 +1145,10 @@ export default function Expenses() {
       .filter((expense) => expense.status === "APPROVED")
       .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
 
+    const cashDrawerApprovedAmount = expenses
+      .filter((expense) => expense.status === "APPROVED" && isCashDrawerExpense(expense))
+      .reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+
     const storeLocationNames = new Set(
       expenses.map((expense) => storeLocationNameFromExpense(expense)).filter(Boolean)
     );
@@ -757,6 +1159,7 @@ export default function Expenses() {
       approved,
       totalAmount,
       approvedAmount,
+      cashDrawerApprovedAmount,
       storeLocationCount: storeLocationNames.size,
     };
   }, [expenses]);
@@ -768,6 +1171,7 @@ export default function Expenses() {
   }
 
   async function handleApprove(id) {
+    setOpenActionMenuId("");
     setApproveBusy(id);
 
     try {
@@ -792,13 +1196,14 @@ export default function Expenses() {
       toast.success("Expense approved");
     } catch (error) {
       if (handleSubscriptionBlockedError(error, { toastId: "expense-approve-blocked" })) return;
-      toast.error(error?.message || "Failed to approve expense");
+      toast.error(expenseErrorMessage(error));
     } finally {
       setApproveBusy("");
     }
   }
 
   function openDelete(expense) {
+    setOpenActionMenuId("");
     setDeleteTarget(expense);
   }
 
@@ -826,16 +1231,39 @@ export default function Expenses() {
   function handleCreated(expense) {
     setExpenses((prev) => [expense, ...prev]);
     setShowForm(false);
+    setEditingExpense(null);
+  }
+
+  function openCreateForm() {
+    setEditingExpense(null);
+    setShowForm(true);
+  }
+
+  function openEditForm(expense) {
+    setOpenActionMenuId("");
+    setEditingExpense(expense);
+    setShowForm(true);
+  }
+
+  function handleUpdated(updated) {
+    setExpenses((prev) => prev.map((expense) => (expense.id === updated.id ? { ...expense, ...updated } : expense)));
+    setShowForm(false);
+    setEditingExpense(null);
+  }
+
+  function closeExpenseForm() {
+    setShowForm(false);
+    setEditingExpense(null);
   }
 
   return (
-    <div className="space-y-6">
+    <div className="svx-expenses-page space-y-6">
       <section className="space-y-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <SectionHeading
             eyebrow="Finance"
             title="Expenses"
-            subtitle="Log, review, and approve business cash outflows by store location. Pending expenses need approval before they become permanent financial records."
+            subtitle="Track money out, approval, branch, and payment source in one clean owner view."
           />
 
           <div className="flex flex-wrap gap-2">
@@ -843,8 +1271,8 @@ export default function Expenses() {
               Refresh
             </AsyncButton>
 
-            <button type="button" onClick={() => setShowForm((prev) => !prev)} className={primaryBtn()}>
-              {showForm ? "Close form" : "Log expense"}
+            <button type="button" onClick={openCreateForm} className={primaryBtn()}>
+              Log expense
             </button>
           </div>
         </div>
@@ -857,128 +1285,26 @@ export default function Expenses() {
         </section>
       </section>
 
-      {showForm ? (
-        <CreateExpenseForm
-          onCreated={handleCreated}
-          onCancel={() => setShowForm(false)}
-          activeStoreLocationLabel={activeStoreLocationLabel}
-        />
-      ) : null}
+      <ExpenseFormModal
+        open={showForm}
+        expense={editingExpense}
+        onCreated={handleCreated}
+        onUpdated={handleUpdated}
+        onClose={closeExpenseForm}
+        activeStoreLocationLabel={activeStoreLocationLabel}
+      />
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className={cx(pageCard(), "h-fit p-5 sm:p-6")}>
-          <div className={cx("text-base font-bold", strongText())}>Filter expenses</div>
+      <div className="svx-expense-ledger-layout grid grid-cols-1 gap-6">
 
-          <div className="mt-4 space-y-4">
-            <div className={cx(softPanel(), "p-4")}>
-              <div className={cx("text-[11px] font-semibold uppercase tracking-[0.18em]", softText())}>
-                Store location view
-              </div>
-
-              <div className="mt-3 grid gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleScopeChange("CURRENT")}
-                  className={cx(
-                    "rounded-2xl border px-4 py-2.5 text-left text-sm font-semibold transition",
-                    scopeMode === "CURRENT"
-                      ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                      : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] hover:opacity-80"
-                  )}
-                >
-                  Current store location
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleScopeChange("ALL")}
-                  className={cx(
-                    "rounded-2xl border px-4 py-2.5 text-left text-sm font-semibold transition",
-                    scopeMode === "ALL"
-                      ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                      : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] hover:opacity-80"
-                  )}
-                >
-                  All store locations
-                </button>
-              </div>
-
-              <div className={cx("mt-3 text-xs leading-5", mutedText())}>
-                Current: <span className={cx("font-semibold", strongText())}>{activeStoreLocationLabel}</span>
-              </div>
-            </div>
-
-            <div>
-              <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>Search</label>
-              <input
-                className={inputClass()}
-                placeholder="Title, category, staff, location..."
-                value={q}
-                onChange={(event) => setQ(event.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>Status</label>
-              <div className="flex flex-col gap-2">
-                {[
-                  { value: "ALL", label: "All expenses" },
-                  { value: "PENDING", label: "Pending only" },
-                  { value: "APPROVED", label: "Approved only" },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setFilterStatus(option.value)}
-                    className={cx(
-                      "rounded-2xl border px-4 py-2.5 text-left text-sm font-semibold transition",
-                      filterStatus === option.value
-                        ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                        : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] hover:opacity-80"
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={cx(softPanel(), "p-4")}>
-              <div className={cx("text-[11px] font-semibold uppercase tracking-[0.18em]", softText())}>
-                Showing
-              </div>
-              <div className={cx("mt-2.5 text-lg font-bold", strongText())}>
-                {formatNumber(filtered.length)} expense{filtered.length === 1 ? "" : "s"}
-              </div>
-              {usingAllStoreLocations ? (
-                <div className={cx("mt-1 text-xs", mutedText())}>
-                  Across {formatNumber(summary.storeLocationCount)} store location
-                  {summary.storeLocationCount === 1 ? "" : "s"}.
-                </div>
-              ) : null}
-            </div>
-
-            <div className={cx(softPanel(), "p-4")}>
-              <div className={cx("text-[11px] font-semibold uppercase tracking-[0.18em]", softText())}>
-                Approval rule
-              </div>
-              <div className={cx("mt-2.5 text-sm leading-6", mutedText())}>
-                Only <span className={cx("font-semibold", strongText())}>pending</span> expenses can be deleted.
-                Approved expenses are permanent financial records.
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <section className={cx(pageCard(), "overflow-hidden")}>
+        <section className={cx(pageCard(), "svx-expense-ledger overflow-hidden")}>
           <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className={cx("text-xl font-bold", strongText())}>Expense ledger</div>
                 <div className={cx("mt-1.5 text-sm leading-6", mutedText())}>
                   {usingAllStoreLocations
-                    ? "Review expenses across store locations and approve only verified records."
-                    : "Review expenses for the current store location before they become financial records."}
+                    ? "Review money out across store locations."
+                    : "Review money out before it becomes a financial record."}
                 </div>
               </div>
 
@@ -988,22 +1314,107 @@ export default function Expenses() {
                 </span>
               ) : null}
             </div>
+
+            <div className="svx-expense-toolbar mt-5">
+              <div className="svx-expense-control">
+                <div className={cx("mb-2 text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+                  Store location
+                </div>
+                <div className="svx-expense-segment">
+                  <button
+                    type="button"
+                    onClick={() => handleScopeChange("CURRENT")}
+                    className={cx("svx-expense-segment-button", scopeMode === "CURRENT" && "is-active")}
+                  >
+                    Current
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleScopeChange("ALL")}
+                    className={cx("svx-expense-segment-button", scopeMode === "ALL" && "is-active")}
+                  >
+                    All locations
+                  </button>
+                </div>
+                <div className={cx("mt-2 truncate text-xs font-semibold", mutedText())}>
+                  {activeStoreLocationLabel}
+                </div>
+              </div>
+
+              <div className="svx-expense-control">
+                <label className={cx("mb-2 block text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+                  Search
+                </label>
+                <input
+                  className={inputClass()}
+                  placeholder="Title, category, staff, location..."
+                  value={q}
+                  onChange={(event) => setQ(event.target.value)}
+                />
+              </div>
+
+              <div className="svx-expense-control">
+                <div className={cx("mb-2 text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+                  Status
+                </div>
+                <div className="svx-expense-segment is-three">
+                  {[
+                    { value: "ALL", label: "All" },
+                    { value: "PENDING", label: "Pending" },
+                    { value: "APPROVED", label: "Approved" },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setFilterStatus(option.value)}
+                      className={cx("svx-expense-segment-button", filterStatus === option.value && "is-active")}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="svx-expense-count-card">
+                <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+                  Showing
+                </div>
+                <div className={cx("mt-2 text-base font-black", strongText())}>
+                  {formatNumber(filtered.length)} expense{filtered.length === 1 ? "" : "s"}
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="p-5 sm:p-6">
             {loading ? (
               <ListSkeleton />
             ) : filtered.length === 0 ? (
-              <EmptyState onAdd={expenses.length === 0 ? () => setShowForm(true) : null} />
+              <EmptyState onAdd={expenses.length === 0 ? openCreateForm : null} />
             ) : (
               <>
-                <div className="space-y-3">
+                <div className="hidden overflow-hidden lg:block">
+                  <ExpenseTable
+                    expenses={visible}
+                    onApprove={handleApprove}
+                    onEdit={openEditForm}
+                    onDelete={openDelete}
+                    approveBusy={approveBusy}
+                    deleteBusy={deleteBusy}
+                    deleteTarget={deleteTarget}
+                    openActionMenuId={openActionMenuId}
+                    setOpenActionMenuId={setOpenActionMenuId}
+                  />
+                </div>
+
+                <div className="space-y-3 lg:hidden">
                   {visible.map((expense, index) => (
                     <ExpenseCard
                       key={expense.id}
                       expense={expense}
                       index={index}
                       onApprove={handleApprove}
+                      onEdit={openEditForm}
                       onDelete={openDelete}
                       approveBusy={approveBusy === expense.id}
                       deleteBusy={deleteBusy && deleteTarget?.id === expense.id}

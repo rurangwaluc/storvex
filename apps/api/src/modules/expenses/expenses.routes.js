@@ -39,6 +39,13 @@ router.get(
 );
 
 router.patch(
+  "/:id",
+  ...writeBase,
+  requireRole("OWNER", "MANAGER", "CASHIER", "TECHNICIAN"),
+  controller.updateExpense
+);
+
+router.patch(
   "/:id/approve",
   ...writeBase,
   requireRole("OWNER", "MANAGER"),

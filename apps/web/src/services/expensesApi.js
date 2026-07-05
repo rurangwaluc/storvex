@@ -31,6 +31,13 @@ export async function createExpense(data) {
   });
 }
 
+export async function updateExpense(id, data, params = {}) {
+  return apiFetch(`/expenses/${encodeURIComponent(id)}${buildExpenseQuery(params)}`, {
+    method: "PATCH",
+    body: data,
+  });
+}
+
 export async function approveExpense(id, params = {}) {
   return apiFetch(`/expenses/${encodeURIComponent(id)}/approve${buildExpenseQuery(params)}`, {
     method: "PATCH",
