@@ -344,7 +344,7 @@ function ItemCard({
             </div>
 
             <div className={cx("mt-1 text-sm font-semibold leading-6", mutedText())}>
-              Record item, quantity, buying cost, selling price, and proof details.
+              Choose the item, add quantity, buying cost, and selling price.
             </div>
           </div>
 
@@ -360,9 +360,9 @@ function ItemCard({
         <div className="grid grid-cols-1 gap-4 min-[620px]:grid-cols-2">
           <div className="md:col-span-2">
               <Field
-                label="Search existing item or create new"
+                label="Search item or type new item name"
                 required
-                hint="Storvex searches while you type to avoid duplicate stock records. If it is not found, keep typing the new item name."
+                hint="Storvex searches while you type. Select an existing item or keep typing to create a new one."
               >
                 <div className="grid grid-cols-1 gap-2 min-[560px]:grid-cols-[minmax(0,1fr)_auto]">
                   <input
@@ -461,33 +461,6 @@ function ItemCard({
               </Field>
             </div>
 
-          <Field label="Category">
-            <input
-              className={inputClass()}
-              value={item.category}
-              onChange={(event) => setField("category", event.target.value)}
-              placeholder="Example: Hardware, lighting, spare part, kitchen item..."
-            />
-          </Field>
-
-          <Field label="Brand">
-            <input
-              className={inputClass()}
-              value={item.brand}
-              onChange={(event) => setField("brand", event.target.value)}
-              placeholder="Example: Brand, maker, model, or supplier line..."
-            />
-          </Field>
-
-          <Field label="Tracking code / serial / part number" hint="Useful for serial items, parts, models, warranty items, or high-value stock.">
-            <input
-              className={inputClass()}
-              value={item.serial}
-              onChange={(event) => setField("serial", event.target.value)}
-              placeholder="Optional tracking code"
-            />
-          </Field>
-
           <Field label="Quantity" required>
             <input
               type="number"
@@ -499,7 +472,7 @@ function ItemCard({
             />
           </Field>
 
-          <Field label="Buying cost" required hint="Cost paid per item.">
+          <Field label="Buying cost" required hint="What supplier charged for one item.">
             <input
               type="number"
               min="0"
@@ -512,7 +485,7 @@ function ItemCard({
             />
           </Field>
 
-          <Field label="Selling price" required hint="Selling price per item.">
+          <Field label="Selling price" required hint="Price you will sell one item for.">
             <input
               type="number"
               min="0"
@@ -525,15 +498,72 @@ function ItemCard({
             />
           </Field>
 
-          <div className="md:col-span-2">
-            <Field label="Item notes">
-              <textarea
-                className={textareaClass()}
-                value={item.notes}
-                onChange={(event) => setField("notes", event.target.value)}
-                placeholder="Condition, packaging, warranty, supplier promise, or receiving note..."
-              />
-            </Field>
+          {buyPrice <= 0 ? (
+            <div className="min-[620px]:col-span-2 rounded-[18px] border border-amber-500/20 bg-amber-500/10 p-4">
+              <div className="text-sm font-black text-amber-300">Add buying cost</div>
+              <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
+                Enter what the supplier charged you for one item.
+              </div>
+            </div>
+          ) : null}
+
+          <div className="min-[620px]:col-span-2">
+            <details className={cx(softPanel(), "group p-4")}>
+              <summary className={cx("flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-black", strongText())}>
+                <span>
+                  Extra item details
+                  <span className={cx("ml-2 text-xs font-bold", mutedText())}>
+                    Category, brand, serial, item note
+                  </span>
+                </span>
+                <span className={cx("rounded-full bg-[var(--color-surface-2)] px-3 py-1 text-xs font-black", mutedText())}>
+                  Open
+                </span>
+              </summary>
+
+              <div className="mt-4 grid grid-cols-1 gap-4 min-[620px]:grid-cols-2">
+                <Field label="Category">
+                  <input
+                    className={inputClass()}
+                    value={item.category}
+                    onChange={(event) => setField("category", event.target.value)}
+                    placeholder="Example: Hardware, lighting, spare part, kitchen item..."
+                  />
+                </Field>
+
+                <Field label="Brand">
+                  <input
+                    className={inputClass()}
+                    value={item.brand}
+                    onChange={(event) => setField("brand", event.target.value)}
+                    placeholder="Example: Brand, maker, model, or supplier line..."
+                  />
+                </Field>
+
+                <Field
+                  label="Tracking code / serial / part number"
+                  hint="Useful for serial items, parts, models, warranty items, or high-value stock."
+                >
+                  <input
+                    className={inputClass()}
+                    value={item.serial}
+                    onChange={(event) => setField("serial", event.target.value)}
+                    placeholder="Optional tracking code"
+                  />
+                </Field>
+
+                <div className="min-[620px]:col-span-2">
+                  <Field label="Item notes">
+                    <textarea
+                      className={textareaClass()}
+                      value={item.notes}
+                      onChange={(event) => setField("notes", event.target.value)}
+                      placeholder="Condition, packaging, warranty, supplier promise, or receiving note..."
+                    />
+                  </Field>
+                </div>
+              </div>
+            </details>
           </div>
         </div>
 
@@ -586,12 +616,14 @@ function PreviewPanel({
   }, 0);
 
   const missingNames = items.filter((item) => !cleanString(item.productName)).length;
+  const missingCosts = items.filter((item) => toNumber(item.buyPrice, 0) <= 0).length;
+  const needsReview = missingNames || missingCosts;
 
   return (
     <aside className={cx(pageCard(), "h-fit p-5 sm:p-6")}>
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={missingNames ? "warning" : "success"}>
-          {missingNames ? "Needs review" : "Ready"}
+        <Badge tone={needsReview ? "warning" : "success"}>
+          {missingNames ? "Needs item" : missingCosts ? "Needs cost" : "Ready"}
         </Badge>
         <Badge tone="primary">{sourceLabel(sourceType)}</Badge>
       </div>
@@ -1043,84 +1075,99 @@ export default function SupplierSupplyCreate() {
             <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
               <SectionHeading
                 eyebrow="Supply details"
-                title="Source and document proof"
-                subtitle="Add invoice, receipt, or delivery reference so the stock origin stays clear."
+                title="Restock proof"
+                subtitle="Add the invoice, receipt, or delivery note number so this restock can be found later."
               />
             </div>
 
             <div className="space-y-5 p-5 sm:p-6">
               <div className={cx(softPanel(), "p-5 sm:p-6")}>
                 <div className="grid grid-cols-1 gap-4 min-[700px]:grid-cols-2">
-                  <Field label="How this stock came in">
-                    <select
+                  <Field label="Invoice, receipt, or delivery note number" hint="Use a number you can search later, like INV-2026-001 or DEL-204.">
+                    <input
                       className={inputClass()}
-                      value={form.sourceType}
-                      onChange={(event) => setField("sourceType", event.target.value)}
-                    >
-                      {SOURCE_TYPES.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
+                      value={form.documentRef}
+                      onChange={(event) => setField("documentRef", event.target.value)}
+                      placeholder="Example: INV-2026-001"
+                      list="supplier-restock-document-reference-options"
+                    />
+                    <datalist id="supplier-restock-document-reference-options">
+                      {previousDocumentRefs.map((ref) => (
+                        <option key={ref} value={ref} />
                       ))}
-                    </select>
+                    </datalist>
                   </Field>
 
-                  <Field label="Invoice, receipt, or delivery reference" hint="Type a new reference or reuse a previous one from this supplier.">
-                      <input
-                        className={inputClass()}
-                        value={form.documentRef}
-                        onChange={(event) => setField("documentRef", event.target.value)}
-                        placeholder="Example: INV-2026-001"
-                        list="supplier-restock-document-reference-options"
-                      />
-                      <datalist id="supplier-restock-document-reference-options">
-                        {previousDocumentRefs.map((ref) => (
-                          <option key={ref} value={ref} />
-                        ))}
-                      </datalist>
-                    </Field>
+                  <label className={cx(softPanel(), "flex cursor-pointer items-start gap-3 p-4")}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(form.alsoUpdateStock)}
+                      onChange={(event) => setField("alsoUpdateStock", event.target.checked)}
+                      className="mt-1 h-4 w-4 rounded"
+                    />
 
-                  <div className="md:col-span-2">
-                    <Field label="Source details">
-                      <input
-                        className={inputClass()}
-                        value={form.sourceDetails}
-                        onChange={(event) => setField("sourceDetails", event.target.value)}
-                        placeholder="Example: received by manager, delivered by supplier, checked at branch..."
-                      />
-                    </Field>
-                  </div>
+                    <div>
+                      <div className={cx("text-sm font-black", strongText())}>
+                        Add these quantities to stock now
+                      </div>
+                      <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
+                        Keep this enabled when the items have physically arrived at the current selling location.
+                      </div>
+                    </div>
+                  </label>
 
-                  <div className="md:col-span-2">
-                    <label className={cx(softPanel(), "flex cursor-pointer items-start gap-3 p-4")}>
-                      <input
-                        type="checkbox"
-                        checked={Boolean(form.alsoUpdateStock)}
-                        onChange={(event) => setField("alsoUpdateStock", event.target.checked)}
-                        className="mt-1 h-4 w-4 rounded"
-                      />
+                  <div className="min-[700px]:col-span-2">
+                    <details className={cx(softPanel(), "group p-4")}>
+                      <summary className={cx("flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-black", strongText())}>
+                        <span>
+                          Extra restock notes
+                          <span className={cx("ml-2 text-xs font-bold", mutedText())}>
+                            Stock type and receiving note
+                          </span>
+                        </span>
+                        <span className={cx("rounded-full bg-[var(--color-surface-2)] px-3 py-1 text-xs font-black", mutedText())}>
+                          Open
+                        </span>
+                      </summary>
 
-                      <div>
-                        <div className={cx("text-sm font-black", strongText())}>
-                          Add these quantities to stock now
-                        </div>
-                        <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-                          Keep this enabled when the items have physically arrived at the current selling location.
+                      <div className="mt-4 grid grid-cols-1 gap-4 min-[700px]:grid-cols-2">
+                        <Field label="Stock type">
+                          <select
+                            className={inputClass()}
+                            value={form.sourceType}
+                            onChange={(event) => setField("sourceType", event.target.value)}
+                          >
+                            {SOURCE_TYPES.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+
+                        <Field label="Receiving note">
+                          <input
+                            className={inputClass()}
+                            value={form.sourceDetails}
+                            onChange={(event) => setField("sourceDetails", event.target.value)}
+                            placeholder="Example: delivered by supplier, checked by manager, missing item, damaged box..."
+                          />
+                        </Field>
+
+                        <div className="min-[700px]:col-span-2">
+                          <Field label="Supplier promise or payment note">
+                            <textarea
+                              className={textareaClass()}
+                              value={form.notes}
+                              onChange={(event) => setField("notes", event.target.value)}
+                              placeholder="Example: supplier promised replacement, payment due next week, warranty included..."
+                            />
+                          </Field>
                         </div>
                       </div>
-                    </label>
+                    </details>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <Field label="Restock notes">
-                      <textarea
-                        className={textareaClass()}
-                        value={form.notes}
-                        onChange={(event) => setField("notes", event.target.value)}
-                        placeholder="Supplier promise, payment note, warranty terms, or receiving note..."
-                      />
-                    </Field>
-                  </div>
                 </div>
               </div>
             </div>
