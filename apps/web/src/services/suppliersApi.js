@@ -180,6 +180,19 @@ export function createSupplierBill(id, data) {
   });
 }
 
+
+export function updateSupplierBill(id, billId, data) {
+  const supplierId = cleanString(id);
+  const supplierBillId = cleanString(billId);
+  if (!supplierId) throw new Error("Missing supplier id");
+  if (!supplierBillId) throw new Error("Missing supplier bill id");
+
+  return apiFetch(`/suppliers/${encodeURIComponent(supplierId)}/bills/${encodeURIComponent(supplierBillId)}`, {
+    method: "PUT",
+    body: normalizeSupplierBillPayload(data),
+  });
+}
+
 export function listSupplierPayments(id, params = {}) {
   const supplierId = cleanString(id);
   if (!supplierId) throw new Error("Missing supplier id");

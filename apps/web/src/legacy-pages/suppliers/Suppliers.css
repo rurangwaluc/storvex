@@ -1011,3 +1011,250 @@
     justify-content: center;
   }
 }
+
+/* Supplier profile premium command layout */
+.svx-supplier-page .svx-supplier-profile-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.svx-supplier-page .svx-supplier-ledger-stack,
+.svx-supplier-page .svx-supplier-side-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+  min-width: 0;
+}
+
+@media (min-width: 1180px) {
+  .svx-supplier-page .svx-supplier-profile-board {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 380px);
+  }
+
+  .svx-supplier-page .svx-supplier-side-stack {
+    position: sticky;
+    top: 92px;
+  }
+}
+
+.svx-supplier-page .svx-supplier-action-card {
+  min-height: 156px;
+  position: relative;
+  overflow: hidden;
+}
+
+.svx-supplier-page .svx-supplier-action-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 18px 18px 18px;
+  height: 1px;
+  background: var(--color-border);
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.svx-supplier-page .svx-supplier-action-card:hover::after {
+  opacity: 1;
+}
+
+.svx-supplier-page .svx-supplier-action-card:hover {
+  transform: translateY(-1px);
+}
+
+.svx-supplier-page .svx-supplier-contact-card {
+  order: -1;
+}
+
+@media (min-width: 1180px) {
+  .svx-supplier-page .svx-supplier-contact-card {
+    order: 10;
+  }
+}
+
+.svx-supplier-page .svx-supplier-contact-card .mt-5.grid {
+  gap: 10px;
+}
+
+.svx-supplier-page .svx-supplier-contact-card .svx-supplier-panel {
+  border-radius: 18px;
+  padding: 14px 16px;
+}
+
+.svx-supplier-page .svx-supplier-ledger-stack > section {
+  position: relative;
+}
+
+.svx-supplier-page .svx-supplier-ledger-stack > section::before {
+  content: "";
+  position: absolute;
+  left: 22px;
+  top: 20px;
+  width: 34px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  opacity: 0.7;
+}
+
+.svx-supplier-page .svx-supplier-ledger-stack > section:nth-child(2)::before {
+  background: #10b981;
+}
+
+.svx-supplier-page .svx-supplier-ledger-stack > section:nth-child(3)::before {
+  background: #22c55e;
+}
+
+.svx-supplier-page .svx-supplier-ledger-stack > section > div:first-child,
+.svx-supplier-page .svx-supplier-ledger-stack > section > .mt-5:first-child {
+  min-width: 0;
+}
+
+@media (max-width: 760px) {
+  .svx-supplier-page .svx-supplier-action-card {
+    min-height: 132px;
+  }
+}
+
+/* Clear supplier popup action affordance */
+.svx-supplier-page .svx-supplier-action-card {
+  cursor: pointer;
+}
+
+.svx-supplier-page .svx-supplier-action-card:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 4px;
+}
+
+.svx-supplier-page .svx-supplier-action-card[disabled] {
+  cursor: not-allowed;
+}
+
+
+/* Supplier focused action modals */
+.svx-supplier-page .svx-supplier-modal-card {
+  position: fixed !important;
+  z-index: 2147483000 !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: min(760px, calc(100vw - 32px)) !important;
+  max-height: min(88vh, 920px) !important;
+  overflow: auto !important;
+  transform: translate(-50%, -50%) !important;
+  background: #1f1f1f !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 28px !important;
+  box-shadow:
+    0 34px 120px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset !important;
+}
+
+@media (max-width: 560px) {
+  .svx-supplier-page .svx-supplier-modal-card {
+    width: calc(100vw - 18px) !important;
+    max-height: 92vh !important;
+    border-radius: 22px !important;
+  }
+}
+
+/* Real supplier modal overlay: blocks header/sidebar interference */
+.svx-supplier-page .svx-supplier-modal-layer {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483000 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 18px !important;
+  background: rgba(2, 6, 23, 0.88) !important;
+  backdrop-filter: blur(18px) !important;
+}
+
+.svx-supplier-page .svx-supplier-modal-layer.hidden {
+  display: none !important;
+}
+
+.svx-supplier-page .svx-supplier-modal-layer .svx-supplier-modal-card {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  z-index: 1 !important;
+  width: min(760px, calc(100vw - 32px)) !important;
+  max-height: min(88vh, 920px) !important;
+  overflow: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 560px) {
+  .svx-supplier-page .svx-supplier-modal-layer {
+    padding: 10px !important;
+    align-items: start !important;
+  }
+
+  .svx-supplier-page .svx-supplier-modal-layer .svx-supplier-modal-card {
+    width: 100% !important;
+    max-height: calc(100vh - 20px) !important;
+  }
+}
+
+/* Global supplier modal portal layer */
+.svx-supplier-modal-layer {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 18px !important;
+  background: rgba(2, 6, 23, 0.9) !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+.svx-supplier-modal-layer .svx-supplier-modal-card {
+  position: relative !important;
+  z-index: 1 !important;
+  top: auto !important;
+  left: auto !important;
+  width: min(760px, calc(100vw - 32px)) !important;
+  max-height: min(88vh, 920px) !important;
+  overflow: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  background: #1f1f1f !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 28px !important;
+  box-shadow:
+    0 34px 120px rgba(0, 0, 0, 0.72),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset !important;
+}
+
+@media (max-width: 560px) {
+  .svx-supplier-modal-layer {
+    padding: 10px !important;
+    align-items: start !important;
+  }
+
+  .svx-supplier-modal-layer .svx-supplier-modal-card {
+    width: 100% !important;
+    max-height: calc(100vh - 20px) !important;
+    border-radius: 22px !important;
+  }
+}
+
+
+
+/* Supplier modal light-mode overlay only */
+:root:not([data-theme="dark"]) .svx-supplier-modal-layer,
+html:not(.dark) body:not(.dark) .svx-supplier-modal-layer {
+  background: rgba(248, 250, 252, 0.74) !important;
+  backdrop-filter: blur(18px) saturate(1.15) !important;
+}
+
+:root:not([data-theme="dark"]) .svx-supplier-modal-layer .svx-supplier-modal-card,
+html:not(.dark) body:not(.dark) .svx-supplier-modal-layer .svx-supplier-modal-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
+  box-shadow:
+    0 34px 90px rgba(15, 23, 42, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.78) inset !important;
+}

@@ -105,6 +105,15 @@ router.post(
   suppliersController.createSupplierBill
 );
 
+
+router.put(
+  "/:id/bills/:billId",
+  express.json(),
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.SUPPLIERS_EDIT),
+  suppliersController.updateSupplierBill
+);
+
 router.get(
   "/:id/payments",
   ...readBase,

@@ -1283,6 +1283,190 @@ async function createSupplierBill(req, res) {
   }
 }
 
+
+async function updateSupplierBill(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+    await ensureWritableBranchAccessOrThrow(req);
+
+    const supplierId = cleanStringStrict(req.params.id);
+    const billId = cleanStringStrict(req.params.billId);
+    const body = req.body || {};
+    const incomingItems = Array.isArray(body.items) ? body.items : null;
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.supplierBill.findFirst({
+        where: { id: billId, supplierId, tenantId },
+        include: { items: true },
+      });
+
+      if (!existing) throw new Error("SUPPLIER_BILL_NOT_FOUND");
+
+      const paidAmount = Number(existing.paidAmount || 0);
+      const hasPayment = paidAmount > 0;
+
+      if (hasPayment && incomingItems) {
+        throw new Error("SUPPLIER_BILL_HAS_PAYMENTS");
+      }
+
+      let preparedItems = null;
+      let totalAmount = Number(existing.totalAmount || 0);
+
+      if (incomingItems) {
+        if (!incomingItems.length) {
+          throw new Error("SUPPLIER_BILL_ITEMS_REQUIRED");
+        }
+
+        preparedItems = [];
+
+        for (const item of incomingItems) {
+          const productName = cleanString(item.productName);
+          const quantity = toInt(item.quantity, NaN);
+          const unitCost = toMoney(item.unitCost ?? item.buyPrice, NaN);
+
+          if (!productName) throw new Error("SUPPLIER_BILL_ITEM_NAME_REQUIRED");
+          if (!Number.isInteger(quantity) || quantity <= 0) {
+            throw new Error("SUPPLIER_BILL_ITEM_QTY_INVALID");
+          }
+          if (!Number.isFinite(unitCost) || unitCost < 0) {
+            throw new Error("SUPPLIER_BILL_ITEM_COST_INVALID");
+          }
+
+          preparedItems.push({
+            productId: cleanString(item.productId) || null,
+            productName,
+            quantity,
+            unitCost,
+            totalCost: quantity * unitCost,
+            notes: cleanString(item.notes),
+          });
+        }
+
+        totalAmount = preparedItems.reduce((sum, item) => sum + item.totalCost, 0);
+      }
+
+      if (totalAmount < paidAmount) {
+        throw new Error("SUPPLIER_BILL_TOTAL_BELOW_PAID");
+      }
+
+      const dueDateInput = Object.prototype.hasOwnProperty.call(body, "dueDate")
+        ? cleanString(body.dueDate)
+        : existing.dueDate;
+
+      const dueDate = dueDateInput ? new Date(dueDateInput) : null;
+      const balanceDue = Math.max(0, totalAmount - paidAmount);
+      const status = computeSupplierBillStatus({
+        totalAmount,
+        paidAmount,
+        dueDate,
+      });
+
+      if (preparedItems) {
+        await tx.supplierBillItem.deleteMany({
+          where: { billId: existing.id, tenantId },
+        });
+      }
+
+      const bill = await tx.supplierBill.update({
+        where: { id: existing.id },
+        data: {
+          billNumber: Object.prototype.hasOwnProperty.call(body, "billNumber")
+            ? cleanString(body.billNumber)
+            : existing.billNumber,
+          documentRef: Object.prototype.hasOwnProperty.call(body, "documentRef")
+            ? cleanString(body.documentRef)
+            : existing.documentRef,
+          dueDate,
+          notes: Object.prototype.hasOwnProperty.call(body, "notes")
+            ? cleanString(body.notes)
+            : existing.notes,
+          totalAmount,
+          balanceDue,
+          status,
+          ...(preparedItems
+            ? {
+                items: {
+                  create: preparedItems.map((item) => ({
+                    tenantId,
+                    productId: item.productId,
+                    productName: item.productName,
+                    quantity: item.quantity,
+                    unitCost: item.unitCost,
+                    totalCost: item.totalCost,
+                    notes: item.notes,
+                  })),
+                },
+              }
+            : {}),
+        },
+        include: {
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              status: true,
+              isMain: true,
+            },
+          },
+          items: {
+            orderBy: [{ createdAt: "asc" }],
+          },
+        },
+      });
+
+      return bill;
+    });
+
+    return res.json({
+      updated: true,
+      bill: serializeSupplierBill(updated),
+    });
+  } catch (err) {
+    const handled = handleBranchError(res, err);
+    if (handled) return handled;
+
+    const code = String(err?.message || "");
+
+    if (code === "SUPPLIER_BILL_NOT_FOUND") {
+      return res.status(404).json({ message: "Supplier bill not found" });
+    }
+
+    if (code === "SUPPLIER_BILL_HAS_PAYMENTS") {
+      return res.status(400).json({
+        message: "This bill already has payments. You can edit bill number, document reference, due date, and notes, but not items or total.",
+      });
+    }
+
+    if (code === "SUPPLIER_BILL_TOTAL_BELOW_PAID") {
+      return res.status(400).json({
+        message: "Bill total cannot be lower than the amount already paid.",
+      });
+    }
+
+    if (
+      code === "SUPPLIER_BILL_ITEMS_REQUIRED" ||
+      code === "SUPPLIER_BILL_ITEM_NAME_REQUIRED" ||
+      code === "SUPPLIER_BILL_ITEM_QTY_INVALID" ||
+      code === "SUPPLIER_BILL_ITEM_COST_INVALID"
+    ) {
+      return res.status(400).json({ message: "Check the bill items and try again." });
+    }
+
+    if (isDuplicateError(err)) {
+      return res.status(400).json({
+        message: "This bill number already exists in this store.",
+      });
+    }
+
+    console.error("updateSupplierBill error:", err);
+    return res.status(500).json({ message: "Failed to update supplier bill" });
+  }
+}
+
+
 async function listSupplierPayments(req, res) {
   try {
     const tenantId = getTenantId(req);
@@ -1626,6 +1810,7 @@ module.exports = {
   getSupplierBalance,
   listSupplierBills,
   createSupplierBill,
+  updateSupplierBill,
   listSupplierPayments,
   createSupplierPayment,
 };
