@@ -597,6 +597,211 @@ function ConfirmDialog({ open, title, body, busy, confirmLabel, confirmClass, on
   );
 }
 
+function RepairActionMenu({
+  menu,
+  canArchive,
+  canDelete,
+  onClose,
+  onEdit,
+  onArchive,
+  onDelete,
+}) {
+  if (!menu?.repair) return null;
+
+  const repair = menu.repair;
+
+  return createPortal(
+    <>
+      <button
+        type="button"
+        aria-label="Close repair actions"
+        className="svx-repair-action-backdrop"
+        onClick={onClose}
+      />
+
+      <div
+        className={cx("svx-repair-action-popover", menu.openUp && "opens-up")}
+        style={{
+          top: `${menu.top}px`,
+          left: `${menu.left}px`,
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => {
+            onClose();
+            onEdit(repair);
+          }}
+        >
+          Edit repair
+        </button>
+
+        {canArchive ? (
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onArchive(repair);
+            }}
+          >
+            Archive repair
+          </button>
+        ) : null}
+
+        {canDelete ? (
+          <button
+            type="button"
+            className="is-danger"
+            onClick={() => {
+              onClose();
+              onDelete(repair);
+            }}
+          >
+            Delete repair
+          </button>
+        ) : null}
+      </div>
+    </>,
+    document.body,
+  );
+}
+
+function RepairTable({
+  repairs,
+  technicians,
+  canChangeStatus,
+  canAssign,
+  canArchive,
+  canDelete,
+  onStatusChange,
+  onAssign,
+  onOpenRepair,
+  onOpenArchive,
+  onOpenDelete,
+  openMenuId,
+  onToggleMenu,
+  onCloseMenu,
+  statusBusy,
+  assignBusy,
+  onOpenActions,
+}) {
+  return (
+    <div className="svx-repair-table-wrap">
+      <table className="svx-repair-table">
+        <thead>
+          <tr>
+            <th>Repair</th>
+            <th>Customer</th>
+            <th>Money</th>
+            <th>Pickup</th>
+            <th>Technician</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {repairs.map((repair) => (
+            <tr key={repair.id}>
+              <td>
+                <div className="svx-repair-table-main">
+                  <div className="svx-repair-table-badges">
+                    <Badge tone={statusTone(repair.status)}>{statusLabel(repair.status)}</Badge>
+                    {repair.repairNumber ? <Badge>{repair.repairNumber}</Badge> : null}
+                  </div>
+                  <strong>{repair.device || "Unnamed item"}</strong>
+                  <span>{repair.serial ? `Serial or IMEI: ${repair.serial}` : "No serial or IMEI saved"}</span>
+                </div>
+              </td>
+
+              <td>
+                <div className="svx-repair-table-stack">
+                  <strong>{repair.customer?.name || "Customer not shown"}</strong>
+                  <span>{repair.customer?.phone || "No phone saved"}</span>
+                  <em>{approvalLabel(repair.approvalStatus)}</em>
+                </div>
+              </td>
+
+              <td>
+                <div className="svx-repair-table-stack">
+                  <strong>{formatMoney(repair.estimatedCost)}</strong>
+                  <span>Paid: {formatMoney(repair.depositPaid)}</span>
+                  <em className={repairBalance(repair) > 0 ? "is-warning" : ""}>
+                    Balance: {formatMoney(repairBalance(repair))}
+                  </em>
+                </div>
+              </td>
+
+              <td>
+                <div className="svx-repair-table-stack">
+                  <strong>{formatDate(repair.expectedPickupAt)}</strong>
+                  <span>Received {formatDate(repair.createdAt)}</span>
+                </div>
+              </td>
+
+              <td>
+                {canAssign ? (
+                  <select
+                    className="app-input svx-repair-table-select"
+                    value={repair.technicianId || ""}
+                    onChange={(event) => onAssign(repair.id, event.target.value)}
+                    disabled={assignBusy === repair.id}
+                  >
+                    <option value="">Unassigned</option>
+                    {technicians.map((technician) => (
+                      <option key={technician.id} value={technician.id}>
+                        {technician.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="svx-repair-table-stack">
+                    <strong>{repair.technician?.name || "Unassigned"}</strong>
+                  </div>
+                )}
+              </td>
+
+              <td>
+                {canChangeStatus ? (
+                  <select
+                    className="app-input svx-repair-table-select"
+                    value={repair.status || ""}
+                    onChange={(event) => onStatusChange(repair.id, event.target.value)}
+                    disabled={statusBusy === repair.id}
+                  >
+                    {REPAIR_STATUSES.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <Badge tone={statusTone(repair.status)}>{statusLabel(repair.status)}</Badge>
+                )}
+              </td>
+
+              <td>
+                <div className="svx-repair-table-actions">
+                  <button
+                    type="button"
+                    className="svx-repair-kebab"
+                    aria-label="Repair actions"
+                    onClick={(event) => onOpenActions(event, repair)}
+                  >
+                    <span />
+                    <span />
+                    <span />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function RepairRow({
   repair,
   technicians,
@@ -614,6 +819,7 @@ function RepairRow({
   onCloseMenu,
   statusBusy,
   assignBusy,
+  onOpenActions,
 }) {
   return (
     <article className={cx(pageCard(), "svx-repair-row p-4 sm:p-5")}>
@@ -753,63 +959,27 @@ function RepairRow({
         </div>
 
         <aside className={cx(softPanel(), "svx-repair-row-actions p-4")}>
-          <div>
-            <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
-              Repair actions
-            </div>
-            <p className={cx("mt-2 text-xs font-semibold leading-5", mutedText())}>
-              Edit intake details or correct customer item information.
-            </p>
-          </div>
+          <button
+            type="button"
+            className="svx-repair-mobile-edit"
+            onClick={() => onOpenRepair(repair)}
+          >
+            Edit repair
+          </button>
 
-          <div className="svx-repair-actions">
-            <button type="button" onClick={() => onOpenRepair(repair)} className={primaryBtn()}>
-              Edit repair
-            </button>
-
-            {(canArchive || canDelete) ? (
-              <div className="svx-repair-more-wrap">
-                <button
-                  type="button"
-                  className="svx-repair-more-button"
-                  onClick={() => onToggleMenu(repair.id)}
-                  aria-expanded={openMenuId === repair.id}
-                >
-                  More actions
-                  <span>⋯</span>
-                </button>
-
-                {openMenuId === repair.id ? (
-                  <div className="svx-repair-more-menu">
-                    {canArchive ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onCloseMenu();
-                          onOpenArchive(repair);
-                        }}
-                      >
-                        Archive repair
-                      </button>
-                    ) : null}
-
-                    {canDelete ? (
-                      <button
-                        type="button"
-                        className="is-danger"
-                        onClick={() => {
-                          onCloseMenu();
-                          onOpenDelete(repair);
-                        }}
-                      >
-                        Delete repair
-                      </button>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
+          <button
+            type="button"
+            className="svx-repair-mobile-actions"
+            aria-label="Repair actions"
+            onClick={(event) => onOpenActions(event, repair)}
+          >
+            Actions
+            <span>
+              <i />
+              <i />
+              <i />
+            </span>
+          </button>
         </aside>
       </div>
     </article>
@@ -839,6 +1009,7 @@ export default function Repairs() {
   const [statusBusy, setStatusBusy] = useState("");
   const [assignBusy, setAssignBusy] = useState("");
   const [openActionMenuId, setOpenActionMenuId] = useState("");
+  const [repairActionMenu, setRepairActionMenu] = useState(null);
 
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [archiveBusy, setArchiveBusy] = useState(false);
@@ -953,7 +1124,7 @@ export default function Repairs() {
   );
 
   async function handleStatusChange(id, status) {
-    setOpenActionMenuId("");
+    closeRepairActionMenu();
     setStatusBusy(id);
 
     try {
@@ -978,7 +1149,7 @@ export default function Repairs() {
   }
 
   async function handleAssign(repairId, technicianId) {
-    setOpenActionMenuId("");
+    closeRepairActionMenu();
     setAssignBusy(repairId);
 
     const value = technicianId === "" ? null : technicianId;
@@ -1148,6 +1319,35 @@ export default function Repairs() {
     }
   }
 
+  function closeRepairActionMenu() {
+    setRepairActionMenu(null);
+    setOpenActionMenuId("");
+  }
+
+  function openRepairActionMenu(event, repair) {
+    event.stopPropagation();
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const menuWidth = 190;
+    const menuHeight = 132;
+    const gap = 8;
+    const safePadding = 10;
+
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    const openUp = spaceBelow < menuHeight + gap + safePadding && spaceAbove > menuHeight + gap + safePadding;
+
+    const top = openUp ? rect.top - menuHeight - gap : rect.bottom + gap;
+    const left = rect.right - menuWidth;
+
+    setRepairActionMenu({
+      repair,
+      openUp,
+      top: Math.max(safePadding, Math.min(top, window.innerHeight - menuHeight - safePadding)),
+      left: Math.max(safePadding, Math.min(left, window.innerWidth - menuWidth - safePadding)),
+    });
+  }
+
   async function confirmArchive() {
     if (!archiveTarget) return;
 
@@ -1278,27 +1478,54 @@ export default function Repairs() {
 
         <div className="space-y-3 p-4 sm:p-5">
           {visible.length ? (
-            visible.map((repair) => (
-              <RepairRow
-                key={repair.id}
-                repair={repair}
-                technicians={technicians}
-                canChangeStatus={canChangeStatus}
-                canAssign={canAssign}
-                canArchive={canArchive}
-                canDelete={canDelete}
-                onStatusChange={handleStatusChange}
-                onAssign={handleAssign}
-                onOpenRepair={openEditRepairModal}
-                onOpenArchive={setArchiveTarget}
-                onOpenDelete={setDeleteTarget}
-                openMenuId={openActionMenuId}
-                onToggleMenu={(id) => setOpenActionMenuId((current) => (current === id ? "" : id))}
-                onCloseMenu={() => setOpenActionMenuId("")}
-                statusBusy={statusBusy}
-                assignBusy={assignBusy}
-              />
-            ))
+            <>
+              <div className="svx-repair-desktop-list">
+                <RepairTable
+                  repairs={visible}
+                  technicians={technicians}
+                  canChangeStatus={canChangeStatus}
+                  canAssign={canAssign}
+                  canArchive={canArchive}
+                  canDelete={canDelete}
+                  onStatusChange={handleStatusChange}
+                  onAssign={handleAssign}
+                  onOpenRepair={openEditRepairModal}
+                  onOpenArchive={setArchiveTarget}
+                  onOpenDelete={setDeleteTarget}
+                  openMenuId={openActionMenuId}
+                  onToggleMenu={(id) => setOpenActionMenuId((current) => (current === id ? "" : id))}
+                  onCloseMenu={() => setOpenActionMenuId("")}
+                  statusBusy={statusBusy}
+                  assignBusy={assignBusy}
+                  onOpenActions={openRepairActionMenu}
+                />
+              </div>
+
+              <div className="svx-repair-card-list">
+                {visible.map((repair) => (
+                  <RepairRow
+                    key={repair.id}
+                    repair={repair}
+                    technicians={technicians}
+                    canChangeStatus={canChangeStatus}
+                    canAssign={canAssign}
+                    canArchive={canArchive}
+                    canDelete={canDelete}
+                    onStatusChange={handleStatusChange}
+                    onAssign={handleAssign}
+                    onOpenRepair={openEditRepairModal}
+                    onOpenArchive={setArchiveTarget}
+                    onOpenDelete={setDeleteTarget}
+                    openMenuId={openActionMenuId}
+                    onToggleMenu={(id) => setOpenActionMenuId((current) => (current === id ? "" : id))}
+                    onCloseMenu={() => setOpenActionMenuId("")}
+                    statusBusy={statusBusy}
+                    assignBusy={assignBusy}
+                    onOpenActions={openRepairActionMenu}
+                  />
+                ))}
+              </div>
+            </>
           ) : (
             <EmptyState canCreate={canCreate} onCreate={openCreateRepairModal} />
           )}
@@ -1316,6 +1543,16 @@ export default function Repairs() {
           ) : null}
         </div>
       </section>
+
+      <RepairActionMenu
+        menu={repairActionMenu}
+        canArchive={canArchive}
+        canDelete={canDelete}
+        onClose={closeRepairActionMenu}
+        onEdit={openEditRepairModal}
+        onArchive={setArchiveTarget}
+        onDelete={setDeleteTarget}
+      />
 
       <RepairFormModal
         open={repairModalOpen}

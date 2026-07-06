@@ -876,3 +876,497 @@ html:not(.dark) body:not(.dark) .svx-repair-more-menu,
     margin-top: 8px;
   }
 }
+
+/* Desktop repair list: compact, premium, scan-friendly */
+.svx-repair-desktop-list {
+  display: none;
+}
+
+.svx-repair-card-list {
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 1180px) {
+  .svx-repair-desktop-list {
+    display: block;
+  }
+
+  .svx-repair-card-list {
+    display: none;
+  }
+}
+
+.svx-repair-table-wrap {
+  overflow: visible;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--repair-neutral-card);
+}
+
+.svx-repair-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.svx-repair-table th {
+  padding: 16px 14px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 1000;
+  letter-spacing: 0.18em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.svx-repair-table td {
+  padding: 16px 14px;
+  border-top: 1px solid var(--color-border);
+  vertical-align: middle;
+}
+
+.svx-repair-table tbody tr {
+  transition: background 160ms ease;
+}
+
+.svx-repair-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+html:not(.dark) body:not(.dark) .svx-repair-table tbody tr:hover,
+:root:not([data-theme="dark"]) .svx-repair-table tbody tr:hover,
+[data-theme="light"] .svx-repair-table tbody tr:hover {
+  background: rgba(15, 23, 42, 0.035);
+}
+
+.svx-repair-table th:nth-child(1),
+.svx-repair-table td:nth-child(1) {
+  width: 23%;
+}
+
+.svx-repair-table th:nth-child(2),
+.svx-repair-table td:nth-child(2) {
+  width: 16%;
+}
+
+.svx-repair-table th:nth-child(3),
+.svx-repair-table td:nth-child(3) {
+  width: 16%;
+}
+
+.svx-repair-table th:nth-child(4),
+.svx-repair-table td:nth-child(4) {
+  width: 13%;
+}
+
+.svx-repair-table th:nth-child(5),
+.svx-repair-table td:nth-child(5) {
+  width: 13%;
+}
+
+.svx-repair-table th:nth-child(6),
+.svx-repair-table td:nth-child(6) {
+  width: 12%;
+}
+
+.svx-repair-table th:nth-child(7),
+.svx-repair-table td:nth-child(7) {
+  width: 7%;
+  text-align: right;
+}
+
+.svx-repair-table-main,
+.svx-repair-table-stack {
+  min-width: 0;
+}
+
+.svx-repair-table-main strong,
+.svx-repair-table-stack strong {
+  display: block;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 1000;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-repair-table-main span,
+.svx-repair-table-stack span,
+.svx-repair-table-stack em {
+  display: block;
+  overflow: hidden;
+  margin-top: 5px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-repair-table-stack em.is-warning {
+  color: var(--color-warning);
+}
+
+.svx-repair-table-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 9px;
+}
+
+.svx-repair-table-badges .svx-repair-badge {
+  padding: 5px 8px;
+  font-size: 10px;
+}
+
+.svx-repair-table-select {
+  height: 40px;
+  min-height: 40px;
+  border-radius: 14px;
+  padding-left: 12px;
+  padding-right: 12px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.svx-repair-table-actions {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+  position: relative;
+}
+
+.svx-repair-table-edit,
+.svx-repair-table-more {
+  display: inline-flex;
+  min-height: 36px;
+  width: 72px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 13px;
+  padding: 0 10px;
+  font-size: 11px;
+  font-weight: 1000;
+  box-shadow: none !important;
+}
+
+.svx-repair-table-edit {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.svx-repair-table-more {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.svx-repair-table-more:hover,
+.svx-repair-table-more[aria-expanded="true"] {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-color: transparent;
+}
+
+@media (min-width: 1180px) and (max-width: 1380px) {
+  .svx-repair-table th,
+  .svx-repair-table td {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .svx-repair-table th:nth-child(1),
+  .svx-repair-table td:nth-child(1) {
+    width: 22%;
+  }
+
+  .svx-repair-table th:nth-child(3),
+  .svx-repair-table td:nth-child(3) {
+    width: 15%;
+  }
+
+  .svx-repair-table th:nth-child(7),
+  .svx-repair-table td:nth-child(7) {
+    width: 8%;
+  }
+}
+
+/* Desktop repair table final spacing polish */
+@media (min-width: 1180px) {
+  .svx-repair-table th:nth-child(1),
+  .svx-repair-table td:nth-child(1) {
+    width: 24%;
+  }
+
+  .svx-repair-table th:nth-child(2),
+  .svx-repair-table td:nth-child(2) {
+    width: 15%;
+  }
+
+  .svx-repair-table th:nth-child(3),
+  .svx-repair-table td:nth-child(3) {
+    width: 15%;
+  }
+
+  .svx-repair-table th:nth-child(4),
+  .svx-repair-table td:nth-child(4) {
+    width: 12%;
+  }
+
+  .svx-repair-table th:nth-child(5),
+  .svx-repair-table td:nth-child(5) {
+    width: 13%;
+  }
+
+  .svx-repair-table th:nth-child(6),
+  .svx-repair-table td:nth-child(6) {
+    width: 12%;
+  }
+
+  .svx-repair-table th:nth-child(7),
+  .svx-repair-table td:nth-child(7) {
+    width: 9%;
+  }
+
+  .svx-repair-table-actions {
+    min-width: 92px;
+  }
+
+  .svx-repair-table-edit,
+  .svx-repair-table-more {
+    width: 86px;
+  }
+
+  .svx-repair-table .svx-repair-more-menu {
+    right: 0;
+    width: 190px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .svx-repair-table th:nth-child(7),
+  .svx-repair-table td:nth-child(7) {
+    width: 10%;
+  }
+
+  .svx-repair-table-edit,
+  .svx-repair-table-more {
+    width: 94px;
+  }
+}
+
+/* Repair actions: anchored three-dot menu */
+.svx-repair-kebab {
+  display: inline-flex !important;
+  width: 38px !important;
+  height: 38px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-direction: column !important;
+  gap: 3.5px !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 14px !important;
+  background: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.svx-repair-kebab span {
+  display: block !important;
+  width: 4px !important;
+  height: 4px !important;
+  border-radius: 999px !important;
+  background: currentColor !important;
+  opacity: 0.72 !important;
+}
+
+.svx-repair-kebab:hover,
+.svx-repair-kebab:focus-visible {
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+  border-color: transparent !important;
+}
+
+.svx-repair-kebab.is-card {
+  width: 100% !important;
+  min-height: 44px !important;
+  flex-direction: row !important;
+  gap: 5px !important;
+}
+
+.svx-repair-action-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147482998 !important;
+  display: block !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  cursor: default !important;
+}
+
+.svx-repair-action-popover {
+  position: fixed !important;
+  z-index: 2147482999 !important;
+  width: 190px !important;
+  max-width: calc(100vw - 20px) !important;
+  overflow: hidden !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 16px !important;
+  background: var(--repair-neutral-card) !important;
+  padding: 6px !important;
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.36) !important;
+  isolation: isolate !important;
+}
+
+.svx-repair-action-popover.opens-up {
+  transform-origin: bottom right;
+}
+
+.svx-repair-action-popover button {
+  display: flex !important;
+  width: 100% !important;
+  min-height: 40px !important;
+  align-items: center !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  color: var(--color-text) !important;
+  padding: 0 12px !important;
+  text-align: left !important;
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  box-shadow: none !important;
+}
+
+.svx-repair-action-popover button:hover {
+  background: var(--color-surface-2) !important;
+}
+
+.svx-repair-action-popover button.is-danger {
+  color: var(--color-danger) !important;
+}
+
+.svx-repair-action-popover button.is-danger:hover {
+  background: rgba(219, 80, 74, 0.1) !important;
+}
+
+html:not(.dark) body:not(.dark) .svx-repair-action-popover,
+:root:not([data-theme="dark"]) .svx-repair-action-popover,
+[data-theme="light"] .svx-repair-action-popover {
+  background: #ffffff !important;
+}
+
+[data-theme="dark"] .svx-repair-action-popover,
+.dark .svx-repair-action-popover {
+  background: #1f1f1f !important;
+}
+
+/* The old More/Edit action styles are intentionally neutralized when the kebab menu is active */
+.svx-repair-table-actions {
+  justify-items: end;
+}
+
+@media (max-width: 759px) {
+  .svx-repair-kebab.is-card {
+    justify-content: center !important;
+  }
+}
+
+/* Mobile repair cards: keep actions compact */
+@media (max-width: 1179px) {
+  .svx-repair-row-actions {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .svx-repair-row-actions > div:first-child {
+    display: none !important;
+  }
+
+  .svx-repair-kebab.is-card {
+    min-height: 40px !important;
+    border-radius: 14px !important;
+    background: var(--color-surface-2) !important;
+  }
+}
+
+/* Mobile repair action bar: premium PWA control */
+@media (max-width: 1179px) {
+  .svx-repair-row-actions {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(118px, 0.42fr) !important;
+    gap: 10px !important;
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .svx-repair-mobile-edit,
+  .svx-repair-mobile-actions {
+    display: inline-flex !important;
+    min-height: 42px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 15px !important;
+    padding: 0 14px !important;
+    font-size: 13px !important;
+    font-weight: 1000 !important;
+    line-height: 1 !important;
+    box-shadow: none !important;
+  }
+
+  .svx-repair-mobile-edit {
+    border: 0 !important;
+    background: var(--color-primary) !important;
+    color: #ffffff !important;
+  }
+
+  .svx-repair-mobile-actions {
+    gap: 9px !important;
+    border: 1px solid var(--color-border) !important;
+    background: var(--color-surface-2) !important;
+    color: var(--color-text) !important;
+  }
+
+  .svx-repair-mobile-actions:hover,
+  .svx-repair-mobile-actions:focus-visible {
+    background: var(--color-primary-soft) !important;
+    color: var(--color-primary) !important;
+    border-color: transparent !important;
+  }
+
+  .svx-repair-mobile-actions span {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 3px !important;
+  }
+
+  .svx-repair-mobile-actions i {
+    display: block !important;
+    width: 3.5px !important;
+    height: 3.5px !important;
+    border-radius: 999px !important;
+    background: currentColor !important;
+    opacity: 0.76 !important;
+  }
+}
+
+@media (max-width: 389px) {
+  .svx-repair-row-actions {
+    grid-template-columns: 1fr !important;
+  }
+}
