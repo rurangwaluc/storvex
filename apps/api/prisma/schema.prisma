@@ -1275,6 +1275,7 @@ model PurchaseOrder {
   items     PurchaseOrderItem[]
   serials   PurchaseOrderItemSerial[]
   bills     SupplierBill[]
+  supplies  SupplierSupply[]
   documents SupplierDocument[]
 
   @@index([tenantId])
@@ -1322,19 +1323,21 @@ model PurchaseOrderItemSerial {
 }
 
 model SupplierSupply {
-  id            String           @id @default(dbgenerated("(gen_random_uuid())::text"))
-  tenantId      String
-  branchId      String?          @db.Text
-  supplierId    String
-  sourceType    SupplySourceType @default(OTHER)
-  sourceDetails String?
-  documentRef   String?
-  notes         String?
-  createdAt     DateTime         @default(now()) @db.Timestamp(6)
+  id              String           @id @default(dbgenerated("(gen_random_uuid())::text"))
+  tenantId        String
+  branchId        String?          @db.Text
+  supplierId      String
+  purchaseOrderId String?
+  sourceType      SupplySourceType @default(OTHER)
+  sourceDetails   String?
+  documentRef     String?
+  notes           String?
+  createdAt       DateTime         @default(now()) @db.Timestamp(6)
 
   Supplier           Supplier             @relation(fields: [supplierId], references: [id], onUpdate: NoAction)
   Tenant             Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   branch             Branch?              @relation(fields: [branchId], references: [id])
+  purchaseOrder      PurchaseOrder?       @relation(fields: [purchaseOrderId], references: [id])
   bills              SupplierBill[]
   documents          SupplierDocument[]
   SupplierSupplyItem SupplierSupplyItem[]
@@ -1342,6 +1345,7 @@ model SupplierSupply {
   @@index([supplierId, createdAt])
   @@index([tenantId, createdAt])
   @@index([branchId, createdAt])
+  @@index([purchaseOrderId])
 }
 
 model SupplierSupplyItem {

@@ -9,6 +9,7 @@ import PageSkeleton from "../../components/ui/PageSkeleton";
 import {
   createSupplierSupply,
   getSupplierById,
+  listSupplierPurchaseOrders,
   listSupplierSupplies,
 } from "../../services/suppliersApi";
 import { searchProducts } from "../../services/inventoryApi";
@@ -120,6 +121,47 @@ function Badge({ children, tone = "neutral", className = "" }) {
 
 function cleanString(value) {
   return String(value || "").trim();
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function purchaseOrderDisplayNumber(order) {
+  const shortId = cleanString(order?.id).slice(0, 8).toUpperCase();
+  return shortId ? `PO-${shortId}` : "Purchase order";
+}
+
+function purchaseOrderStatusLabel(status) {
+  const value = cleanString(status).toUpperCase();
+
+  if (value === "ORDERED") return "Ordered";
+  if (value === "RECEIVED") return "Received";
+  if (value === "CANCELLED") return "Cancelled";
+  return "Draft";
+}
+
+function purchaseOrderSearchText(order) {
+  return [
+    purchaseOrderDisplayNumber(order),
+    purchaseOrderStatusLabel(order?.status),
+    formatDate(order?.orderDate || order?.createdAt),
+    formatMoney(order?.totalAmount),
+    ...(Array.isArray(order?.items)
+      ? order.items.map((item) => item?.productName || item?.product?.name || "")
+      : []),
+  ]
+    .map((item) => cleanString(item).toLowerCase())
+    .join(" ");
 }
 
 function toNumber(value, fallback = 0) {
@@ -335,7 +377,7 @@ function ItemCard({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge tone="primary">Item {index + 1}</Badge>
+              <Badge tone="primary">Required</Badge>
               {cleanString(item.serial) ? <Badge tone="success">Serial saved</Badge> : null}
             </div>
 
@@ -692,6 +734,8 @@ export default function SupplierSupplyCreate() {
   const [saving, setSaving] = useState(false);
   const [supplier, setSupplier] = useState(null);
   const [supplyHistory, setSupplyHistory] = useState([]);
+  const [purchaseOrders, setPurchaseOrders] = useState([]);
+  const [purchaseOrderSearch, setPurchaseOrderSearch] = useState("");
   const [productResultsByIndex, setProductResultsByIndex] = useState({});
   const [productSearchBusyByIndex, setProductSearchBusyByIndex] = useState({});
 
@@ -699,6 +743,7 @@ export default function SupplierSupplyCreate() {
     sourceType: "BOUGHT",
     sourceDetails: "",
     documentRef: "",
+    purchaseOrderId: "",
     notes: "",
     alsoUpdateStock: true,
     items: [{ ...EMPTY_ITEM }],
@@ -706,6 +751,63 @@ export default function SupplierSupplyCreate() {
 
   const currentBranchName = useMemo(() => getCurrentBranchName(), []);
   const currentLocationLabel = useMemo(() => getCurrentLocationLabel(), []);
+
+  const selectedPurchaseOrder = useMemo(
+    () => purchaseOrders.find((order) => order.id === form.purchaseOrderId) || null,
+    [purchaseOrders, form.purchaseOrderId],
+  );
+
+  const filteredPurchaseOrders = useMemo(() => {
+    const query = cleanString(purchaseOrderSearch).toLowerCase();
+
+    if (query.length < 2) return [];
+
+    return purchaseOrders
+      .filter((order) => purchaseOrderSearchText(order).includes(query))
+      .slice(0, 5);
+  }, [purchaseOrders, purchaseOrderSearch]);
+
+  function fillReceivedItemsFromPurchaseOrder() {
+    if (!selectedPurchaseOrder || !Array.isArray(selectedPurchaseOrder.items) || !selectedPurchaseOrder.items.length) {
+      toast.error("Choose a purchase order with items first.");
+      return;
+    }
+
+    const receivedItems = selectedPurchaseOrder.items.map((item) => {
+      const product = item.product || {};
+      const productName = cleanString(item.productName || product.name);
+      const buyPrice = item.unitCost != null ? String(item.unitCost) : "";
+      const sellPrice =
+        product.sellPrice != null && Number(product.sellPrice) > 0
+          ? String(product.sellPrice)
+          : "";
+
+      return {
+        ...EMPTY_ITEM,
+        productId: cleanString(item.productId || product.id),
+        productName,
+        productSearch: productName,
+        category: cleanString(product.category),
+        subcategory: cleanString(product.subcategory),
+        subcategoryOther: cleanString(product.subcategoryOther),
+        brand: cleanString(product.brand),
+        serial: cleanString(product.serial),
+        quantity: String(Math.max(1, Number(item.quantity || 1))),
+        buyPrice,
+        sellPrice,
+        notes: selectedPurchaseOrder.id
+          ? `From ${purchaseOrderDisplayNumber(selectedPurchaseOrder)}`
+          : "",
+      };
+    });
+
+    setForm((current) => ({
+      ...current,
+      items: receivedItems.length ? receivedItems : [{ ...EMPTY_ITEM }],
+    }));
+
+    toast.success("Received items filled from purchase order. Review before saving.");
+  }
 
   const previousDocumentRefs = useMemo(
     () => uniqueCleanValues(supplyHistory.map((supply) => supply?.documentRef)),
@@ -715,7 +817,7 @@ export default function SupplierSupplyCreate() {
   const matchingDocumentRefs = useMemo(() => {
     const query = cleanString(form.documentRef).toLowerCase();
 
-    if (!query) return previousDocumentRefs.slice(0, 5);
+    if (query.length < 2) return [];
 
     return previousDocumentRefs
       .filter((ref) => ref.toLowerCase().includes(query))
@@ -757,13 +859,21 @@ export default function SupplierSupplyCreate() {
       setLoading(true);
 
       try {
-        const [data, suppliesData] = await Promise.all([
+        const [data, suppliesData, purchaseOrdersData] = await Promise.all([
             getSupplierById(String(id)),
             listSupplierSupplies(String(id)),
+            listSupplierPurchaseOrders(String(id)),
           ]);
 
           setSupplier(data?.supplier || data || null);
           setSupplyHistory(Array.isArray(suppliesData?.supplies) ? suppliesData.supplies : []);
+          setPurchaseOrders(
+            Array.isArray(purchaseOrdersData?.purchaseOrders)
+              ? purchaseOrdersData.purchaseOrders.filter(
+                  (order) => !["RECEIVED", "CANCELLED"].includes(cleanString(order.status).toUpperCase()),
+                )
+              : [],
+          );
       } catch (err) {
         console.error(err);
 
@@ -1036,7 +1146,7 @@ export default function SupplierSupplyCreate() {
               <SectionHeading
                 eyebrow="Suppliers"
                 title="Record supplier restock"
-                subtitle="Record items received from this supplier and choose whether quantities should be added to the current selling location now."
+                subtitle="Start with what physically arrived. Then link an order or delivery proof only if you have it."
               />
             </div>
 
@@ -1081,18 +1191,153 @@ export default function SupplierSupplyCreate() {
 
       <form onSubmit={submit} className="grid grid-cols-1 gap-6 min-[1180px]:grid-cols-[minmax(0,1fr)_360px] 2xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-6">
-          <section className={cx(pageCard(), "overflow-hidden")}>
-            <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-              <SectionHeading
-                eyebrow="Supply details"
-                title="Restock proof"
-                subtitle="Add the invoice, receipt, or delivery note number so this restock can be found later."
-              />
-            </div>
 
-            <div className="space-y-5 p-5 sm:p-6">
+
+          {form.items.map((item, index) => (
+            <ItemCard
+              key={index}
+              item={item}
+              index={index}
+              canRemove={form.items.length > 1}
+              onChange={setItem}
+              onRemove={removeItem}
+              productResults={productResultsByIndex[index] || []}
+              productSearchBusy={Boolean(productSearchBusyByIndex[index])}
+              onSearchProducts={searchExistingProductsForItem}
+              onChooseProduct={chooseExistingProduct}
+              onClearProduct={clearSelectedProduct}
+            />
+          ))}
+
+          <section className={cx(pageCard(), "overflow-hidden")}>
+            <details className="group" open={Boolean(form.purchaseOrderId || form.documentRef || form.sourceDetails || form.notes)}>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
+                <div>
+                  <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+                    Optional
+                  </div>
+                  <div className={cx("mt-2 text-xl font-black tracking-[-0.03em]", strongText())}>
+                    Link order or supplier proof
+                  </div>
+                  <div className={cx("mt-2 max-w-2xl text-sm font-semibold leading-6", mutedText())}>
+                    Open this only when the delivery came from a purchase order, invoice, receipt, or delivery note.
+                  </div>
+                </div>
+
+                <span className="shrink-0 rounded-full bg-[var(--color-surface-2)] px-4 py-2 text-xs font-black text-[var(--color-text-muted)] group-open:hidden">
+                  Open optional details
+                </span>
+                <span className="hidden shrink-0 rounded-full bg-[var(--color-surface-2)] px-4 py-2 text-xs font-black text-[var(--color-text-muted)] group-open:inline-flex">
+                  Hide optional details
+                </span>
+              </summary>
+
+              <div className="space-y-5 p-5 sm:p-6">
+                <div className={cx(softPanel(), "p-4")}>
+                  <div className={cx("text-sm font-black", strongText())}>
+                    This is optional. It does not create a bill or payment.
+                  </div>
+                  <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
+                    Use it only to trace where the received stock came from.
+                  </div>
+                </div>
               <div className={cx(softPanel(), "p-5 sm:p-6")}>
                 <div className="grid grid-cols-1 gap-4 min-[700px]:grid-cols-2">
+                  <Field label="Purchase order (optional)" hint="Optional. Use this only when the delivered stock came from a purchase order.">
+                    <div className="space-y-3">
+                      <input
+                        className={inputClass()}
+                        value={purchaseOrderSearch}
+                        onChange={(event) => setPurchaseOrderSearch(event.target.value)}
+                        placeholder="Search PO number or product name..."
+                      />
+
+                      {selectedPurchaseOrder ? (
+                        <div className="flex flex-col gap-2 rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <div className={cx("truncate text-xs font-black", strongText())}>
+                              {purchaseOrderDisplayNumber(selectedPurchaseOrder)}
+                            </div>
+                            <div className={cx("mt-1 text-[11px] font-semibold", mutedText())}>
+                              {purchaseOrderStatusLabel(selectedPurchaseOrder.status)} - {formatDate(selectedPurchaseOrder.orderDate || selectedPurchaseOrder.createdAt)} - {formatMoney(selectedPurchaseOrder.totalAmount)}
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            className={secondaryBtn()}
+                            onClick={() => {
+                              setField("purchaseOrderId", "");
+                              setPurchaseOrderSearch("");
+                            }}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      ) : null}
+
+                      {!selectedPurchaseOrder && cleanString(purchaseOrderSearch).length >= 2 && purchaseOrders.length ? (
+                        <div className="grid gap-2">
+                          {filteredPurchaseOrders.map((order) => (
+                            <button
+                              key={order.id}
+                              type="button"
+                              className="rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-3 text-left transition hover:border-[var(--color-primary)]"
+                              onClick={() => {
+                                setField("purchaseOrderId", order.id);
+                                setPurchaseOrderSearch(purchaseOrderDisplayNumber(order));
+                              }}
+                            >
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="min-w-0">
+                                  <div className={cx("truncate text-xs font-black", strongText())}>
+                                    {purchaseOrderDisplayNumber(order)}
+                                  </div>
+                                  <div className={cx("mt-1 text-[11px] font-semibold", mutedText())}>
+                                    {purchaseOrderStatusLabel(order.status)} - {formatDate(order.orderDate || order.createdAt)}
+                                  </div>
+                                </div>
+
+                                <div className="shrink-0 text-left sm:text-right">
+                                  <div className={cx("text-xs font-black", strongText())}>
+                                    {formatMoney(order.totalAmount)}
+                                  </div>
+                                  <div className={cx("mt-1 text-[11px] font-semibold", mutedText())}>
+                                    {Number(order.itemsCount || 0)} item line{Number(order.itemsCount || 0) === 1 ? "" : "s"}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {Array.isArray(order.items) && order.items.length ? (
+                                <div className={cx("mt-2 truncate text-[11px] font-semibold", mutedText())}>
+                                  {order.items.slice(0, 3).map((item) => item.productName || item.product?.name || "Item").join(", ")}
+                                </div>
+                              ) : null}
+                            </button>
+                          ))}
+
+                          {!filteredPurchaseOrders.length ? (
+                            <div className={cx("rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3 text-xs font-semibold leading-5", mutedText())}>
+                              No purchase order matched your search.
+                            </div>
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {!selectedPurchaseOrder && cleanString(purchaseOrderSearch).length < 2 && purchaseOrders.length ? (
+                        <div className={cx("text-xs font-semibold leading-5", mutedText())}>
+                          Type at least 2 characters to find a purchase order, or leave this empty.
+                        </div>
+                      ) : null}
+
+                      {!purchaseOrders.length ? (
+                        <div className={cx("rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3 text-xs font-semibold leading-5", mutedText())}>
+                          No active purchase order found for this supplier.
+                        </div>
+                      ) : null}
+                    </div>
+                  </Field>
+
                   <Field label="Stock type">
                     <select
                       className={inputClass()}
@@ -1107,12 +1352,12 @@ export default function SupplierSupplyCreate() {
                     </select>
                   </Field>
 
-                  <Field label="Invoice, receipt, or delivery note number" hint="Start typing to reuse a previous supplier document number, or enter a new one.">
+                  <Field label="Supplier document number (optional)" hint="Optional. Invoice, receipt, delivery note, or supplier reference.">
                     <input
                       className={inputClass()}
                       value={form.documentRef}
                       onChange={(event) => setField("documentRef", event.target.value)}
-                      placeholder="Example: INV-2026-001"
+                      placeholder="Example: DN-DELL-001"
                       list="supplier-restock-document-reference-options"
                     />
                     <datalist id="supplier-restock-document-reference-options">
@@ -1136,10 +1381,61 @@ export default function SupplierSupplyCreate() {
                       </div>
                     ) : form.documentRef ? (
                       <div className={cx("mt-3 text-xs font-bold leading-5", mutedText())}>
-                        No previous number found. This will be saved as a new supplier document number.
+                        No previous document number matched. This will be saved as a new document number.
                       </div>
                     ) : null}
                   </Field>
+
+                  {selectedPurchaseOrder ? (
+                    <div className={cx(softPanel(), "min-[700px]:col-span-2 p-4")}>
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <div className={cx("text-sm font-black", strongText())}>
+                            Expected purchase order items
+                          </div>
+                          <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
+                            Match the received stock against this list before saving.
+                          </div>
+                        </div>
+                        <Badge tone="primary">{formatMoney(selectedPurchaseOrder.totalAmount)}</Badge>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-1 gap-2">
+                        {(selectedPurchaseOrder.items || []).slice(0, 6).map((item) => (
+                          <div
+                            key={item.id}
+                            className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 rounded-[16px] bg-[var(--color-surface-2)] px-3 py-2"
+                          >
+                            <div className={cx("truncate text-xs font-black", strongText())}>
+                              {item.productName || item.product?.name || "Unnamed item"}
+                            </div>
+                            <div className={cx("text-xs font-black", mutedText())}>
+                              {Number(item.quantity || 0)} × {formatMoney(item.unitCost)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-4 flex flex-col gap-2 rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <div className={cx("text-sm font-black", strongText())}>
+                            Use these items as received stock?
+                          </div>
+                          <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
+                            This fills the required stock section above. You can still edit quantity, buying cost, and selling price before saving.
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          className={primaryBtn()}
+                          onClick={fillReceivedItemsFromPurchaseOrder}
+                        >
+                          Fill received items
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
 
                   <label className={cx(softPanel(), "flex cursor-pointer items-start gap-3 p-4 min-[700px]:col-span-2")}>
                     <input
@@ -1151,10 +1447,10 @@ export default function SupplierSupplyCreate() {
 
                     <div>
                       <div className={cx("text-sm font-black", strongText())}>
-                        Add these quantities to stock now
+                        Update stock now
                       </div>
                       <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-                        Keep this enabled when the items have physically arrived at the current selling location.
+                        Keep this checked when the items are physically in this selling location.
                       </div>
                     </div>
                   </label>
@@ -1163,9 +1459,9 @@ export default function SupplierSupplyCreate() {
                     <details className={cx(softPanel(), "group p-4")}>
                       <summary className={cx("flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-black", strongText())}>
                         <span>
-                          Optional restock notes
+                          Optional receiving notes
                           <span className={cx("ml-2 text-xs font-bold", mutedText())}>
-                            Receiving note and supplier promise
+                            Condition, missing item, or supplier promise
                           </span>
                         </span>
                         <span className={cx("rounded-full bg-[var(--color-surface-2)] px-3 py-1 text-xs font-black", mutedText())}>
@@ -1199,24 +1495,9 @@ export default function SupplierSupplyCreate() {
 
                 </div>
               </div>
-            </div>
+              </div>
+            </details>
           </section>
-
-          {form.items.map((item, index) => (
-            <ItemCard
-              key={index}
-              item={item}
-              index={index}
-              canRemove={form.items.length > 1}
-              onChange={setItem}
-              onRemove={removeItem}
-              productResults={productResultsByIndex[index] || []}
-              productSearchBusy={Boolean(productSearchBusyByIndex[index])}
-              onSearchProducts={searchExistingProductsForItem}
-              onChooseProduct={chooseExistingProduct}
-              onClearProduct={clearSelectedProduct}
-            />
-          ))}
 
           <section className={cx(pageCard(), "p-5 sm:p-6")}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -84,6 +84,38 @@ router.post(
 
 
 router.get(
+  "/:id/purchase-orders",
+  ...readBase,
+  requireDbPermission(PERMISSIONS.SUPPLIERS_VIEW),
+  suppliersController.listSupplierPurchaseOrders
+);
+
+router.post(
+  "/:id/purchase-orders",
+  express.json(),
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.SUPPLIERS_EDIT),
+  suppliersController.createSupplierPurchaseOrder
+);
+
+router.put(
+  "/:id/purchase-orders/:purchaseOrderId",
+  express.json(),
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.SUPPLIERS_EDIT),
+  suppliersController.updateSupplierPurchaseOrder
+);
+
+router.patch(
+  "/:id/purchase-orders/:purchaseOrderId/status",
+  express.json(),
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.SUPPLIERS_EDIT),
+  suppliersController.updateSupplierPurchaseOrderStatus
+);
+
+
+router.get(
   "/:id/balance",
   ...readBase,
   requireDbPermission(PERMISSIONS.SUPPLIERS_VIEW),

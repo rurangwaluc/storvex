@@ -124,6 +124,62 @@ export function createSupplierSupply(id, data) {
     body: normalizeSupplyPayload(data),
   });
 }
+
+function normalizePurchaseOrderPayload(data = {}) {
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  return {
+    orderDate: cleanString(data.orderDate) || null,
+    note: cleanString(data.note) || null,
+    items: items.map((item) => ({
+      productId: cleanString(item.productId),
+      quantity: Number(item.quantity || 1),
+      unitCost: Number(item.unitCost || item.buyPrice || 0),
+    })),
+  };
+}
+
+export function listSupplierPurchaseOrders(id, params = {}) {
+  const supplierId = cleanString(id);
+  if (!supplierId) throw new Error("Missing supplier id");
+
+  return apiFetch(`/suppliers/${encodeURIComponent(supplierId)}/purchase-orders${toQuery(params)}`);
+}
+
+export function createSupplierPurchaseOrder(id, data) {
+  const supplierId = cleanString(id);
+  if (!supplierId) throw new Error("Missing supplier id");
+
+  return apiFetch(`/suppliers/${encodeURIComponent(supplierId)}/purchase-orders`, {
+    method: "POST",
+    body: normalizePurchaseOrderPayload(data),
+  });
+}
+
+export function updateSupplierPurchaseOrder(id, purchaseOrderId, data) {
+  const supplierId = cleanString(id);
+  const orderId = cleanString(purchaseOrderId);
+  if (!supplierId) throw new Error("Missing supplier id");
+  if (!orderId) throw new Error("Missing purchase order id");
+
+  return apiFetch(`/suppliers/${encodeURIComponent(supplierId)}/purchase-orders/${encodeURIComponent(orderId)}`, {
+    method: "PUT",
+    body: normalizePurchaseOrderPayload(data),
+  });
+}
+
+export function updateSupplierPurchaseOrderStatus(id, purchaseOrderId, status) {
+  const supplierId = cleanString(id);
+  const orderId = cleanString(purchaseOrderId);
+  if (!supplierId) throw new Error("Missing supplier id");
+  if (!orderId) throw new Error("Missing purchase order id");
+
+  return apiFetch(`/suppliers/${encodeURIComponent(supplierId)}/purchase-orders/${encodeURIComponent(orderId)}/status`, {
+    method: "PATCH",
+    body: { status: cleanString(status).toUpperCase() },
+  });
+}
+
 function normalizeSupplierBillPayload(data = {}) {
   const items = Array.isArray(data.items) ? data.items : [];
 

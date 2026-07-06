@@ -51,6 +51,7 @@ function modelExists(modelName) {
 }
 
 const HAS_SUPPLIER_SUPPLY_BRANCH = modelHasField("SupplierSupply", "branchId");
+const HAS_SUPPLIER_SUPPLY_PURCHASE_ORDER = modelHasField("SupplierSupply", "purchaseOrderId");
 const HAS_BRANCH_INVENTORY = modelExists("BranchInventory");
 const HAS_STOCK_ADJUSTMENT_BRANCH = modelHasField("StockAdjustment", "branchId");
 
@@ -516,12 +517,41 @@ async function getSupplier(req, res) {
         verifiedAt: true,
         createdAt: true,
         updatedAt: true,
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            address: true,
+            shopType: true,
+            logoUrl: true,
+            receiptHeader: true,
+            receiptFooter: true,
+          },
+        },
       },
     });
 
     if (!supplier) return res.status(404).json({ message: "Supplier not found" });
 
-    return res.json(serializeSupplier(supplier));
+    return res.json({
+      ...serializeSupplier(supplier),
+      business: supplier.tenant
+        ? {
+            id: supplier.tenant.id,
+            name: supplier.tenant.name || null,
+            registeredName: supplier.tenant.name || null,
+            email: supplier.tenant.email || null,
+            phone: supplier.tenant.phone || null,
+            address: supplier.tenant.address || null,
+            shopType: supplier.tenant.shopType || null,
+            logoUrl: supplier.tenant.logoUrl || null,
+            receiptHeader: supplier.tenant.receiptHeader || null,
+            receiptFooter: supplier.tenant.receiptFooter || null,
+          }
+        : null,
+    });
   } catch (err) {
     console.error("getSupplier error:", err);
     return res.status(500).json({ message: "Failed to load supplier" });
@@ -692,6 +722,7 @@ async function listSupplies(req, res) {
         tenantId: true,
         branchId: true,
         supplierId: true,
+        purchaseOrderId: true,
         createdAt: true,
         sourceType: true,
         sourceDetails: true,
@@ -704,6 +735,14 @@ async function listSupplies(req, res) {
             code: true,
             status: true,
             isMain: true,
+          },
+        },
+        purchaseOrder: {
+          select: {
+            id: true,
+            status: true,
+            orderDate: true,
+            receivedAt: true,
           },
         },
         SupplierSupplyItem: {
@@ -750,6 +789,7 @@ async function createSupply(req, res) {
 
     const activeBranch = await ensureWritableBranchAccessOrThrow(req);
     const supplierId = cleanStringStrict(req.params.id);
+    const purchaseOrderId = cleanStringStrict(req.body.purchaseOrderId);
     const items = Array.isArray(req.body.items) ? req.body.items : [];
 
     if (!items.length) return res.status(400).json({ message: "At least one supply item is required" });
@@ -785,11 +825,31 @@ async function createSupply(req, res) {
 
       if (!supplier) throw new Error("SUPPLIER_NOT_FOUND");
 
+      let purchaseOrder = null;
+
+      if (purchaseOrderId) {
+        purchaseOrder = await tx.purchaseOrder.findFirst({
+          where: {
+            id: purchaseOrderId,
+            tenantId,
+            supplierId,
+          },
+          select: {
+            id: true,
+            status: true,
+          },
+        });
+
+        if (!purchaseOrder) throw new Error("PURCHASE_ORDER_NOT_FOUND");
+        if (purchaseOrder.status === "CANCELLED") throw new Error("PURCHASE_ORDER_CANCELLED");
+      }
+
       const supply = await tx.supplierSupply.create({
         data: {
           tenantId,
           supplierId,
           branchId: HAS_SUPPLIER_SUPPLY_BRANCH ? activeBranch.id : undefined,
+          purchaseOrderId: HAS_SUPPLIER_SUPPLY_PURCHASE_ORDER && purchaseOrderId ? purchaseOrderId : undefined,
           sourceType: normalizeSupplySourceType(req.body.sourceType),
           sourceDetails: cleanString(req.body.sourceDetails),
           documentRef: cleanString(req.body.documentRef),
@@ -800,6 +860,7 @@ async function createSupply(req, res) {
           tenantId: true,
           branchId: true,
           supplierId: true,
+          purchaseOrderId: true,
           sourceType: true,
           sourceDetails: true,
           documentRef: true,
@@ -935,6 +996,17 @@ async function createSupply(req, res) {
         updatedProducts.push(product.id);
       }
 
+      if (purchaseOrderId && HAS_SUPPLIER_SUPPLY_PURCHASE_ORDER) {
+        await tx.purchaseOrder.update({
+          where: { id: purchaseOrderId },
+          data: {
+            status: "RECEIVED",
+            receivedAt: new Date(),
+          },
+          select: { id: true },
+        });
+      }
+
       return {
         branchId: activeBranch.id,
         branchCode: activeBranch.code || null,
@@ -959,6 +1031,507 @@ async function createSupply(req, res) {
 
     console.error("createSupply error:", err);
     return res.status(500).json({ message: "Failed to create supply" });
+  }
+}
+
+
+
+const PURCHASE_ORDER_STATUSES = new Set(["DRAFT", "ORDERED", "RECEIVED", "CANCELLED"]);
+
+function normalizePurchaseOrderStatus(value) {
+  const status = cleanStringStrict(value || "").toUpperCase();
+  return PURCHASE_ORDER_STATUSES.has(status) ? status : null;
+}
+
+function purchaseOrderTotal(items = []) {
+  return items.reduce(
+    (sum, item) => sum + Number(item.quantity || 0) * Number(item.unitCost || 0),
+    0
+  );
+}
+
+function serializePurchaseOrder(row) {
+  if (!row) return null;
+
+  const items = Array.isArray(row.items) ? row.items : [];
+  const totalAmount = purchaseOrderTotal(items);
+
+  return {
+    id: row.id,
+    tenantId: row.tenantId,
+    branchId: row.branchId || null,
+    supplierId: row.supplierId,
+    status: row.status || "DRAFT",
+    orderDate: row.orderDate || null,
+    receivedAt: row.receivedAt || null,
+    note: row.note || null,
+    createdById: row.createdById || null,
+    createdAt: row.createdAt || null,
+    updatedAt: row.updatedAt || null,
+    totalAmount,
+    itemsCount: items.length,
+    totalQuantity: items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+    branch: serializeBranch(row.branch),
+    createdBy: row.createdBy
+      ? {
+          id: row.createdBy.id,
+          name: row.createdBy.name || row.createdBy.email || "Staff member",
+          email: row.createdBy.email || null,
+        }
+      : null,
+    items: items.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      productName: item.product?.name || item.productName || "Unnamed item",
+      quantity: Number(item.quantity || 0),
+      unitCost: Number(item.unitCost || 0),
+      totalCost: Number(item.quantity || 0) * Number(item.unitCost || 0),
+      createdAt: item.createdAt || null,
+      product: item.product
+        ? {
+            id: item.product.id,
+            name: item.product.name || "Unnamed item",
+            category: item.product.category || null,
+            subcategory: item.product.subcategory || null,
+            subcategoryOther: item.product.subcategoryOther || null,
+            brand: item.product.brand || null,
+            serial: item.product.serial || null,
+            costPrice: Number(item.product.costPrice || 0),
+            sellPrice: Number(item.product.sellPrice || 0),
+          }
+        : null,
+    })),
+    bills: Array.isArray(row.bills)
+      ? row.bills.map((bill) => ({
+          id: bill.id,
+          billNumber: bill.billNumber || null,
+          status: bill.status || "UNPAID",
+          totalAmount: Number(bill.totalAmount || 0),
+          paidAmount: Number(bill.paidAmount || 0),
+          balanceDue: Number(bill.balanceDue || 0),
+        }))
+      : [],
+  };
+}
+
+async function listSupplierPurchaseOrders(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+    const supplierId = cleanStringStrict(req.params.id);
+    const status = normalizePurchaseOrderStatus(req.query.status);
+
+    const supplier = await prisma.supplier.findFirst({
+      where: { id: supplierId, tenantId },
+      select: { id: true },
+    });
+
+    if (!supplier) return res.status(404).json({ message: "Supplier not found" });
+
+    const rows = await prisma.purchaseOrder.findMany({
+      where: {
+        tenantId,
+        supplierId,
+        ...(status ? { status } : {}),
+      },
+      orderBy: [{ createdAt: "desc" }],
+      take: 200,
+      include: {
+        branch: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            status: true,
+            isMain: true,
+          },
+        },
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        items: {
+          orderBy: [{ createdAt: "asc" }],
+          include: {
+            product: true,
+          },
+        },
+        bills: {
+          orderBy: [{ createdAt: "desc" }],
+          take: 20,
+        },
+      },
+    });
+
+    return res.json({
+      purchaseOrders: rows.map(serializePurchaseOrder),
+      count: rows.length,
+    });
+  } catch (err) {
+    console.error("listSupplierPurchaseOrders error:", err);
+    return res.status(500).json({ message: "Failed to load purchase orders" });
+  }
+}
+
+async function createSupplierPurchaseOrder(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    const userId = getUserId(req);
+    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+    const activeBranch = await ensureWritableBranchAccessOrThrow(req);
+    const supplierId = cleanStringStrict(req.params.id);
+    const items = Array.isArray(req.body.items) ? req.body.items : [];
+
+    if (!items.length) {
+      return res.status(400).json({ message: "Add at least one purchase order item." });
+    }
+
+    const preparedItems = [];
+
+    for (const item of items) {
+      const productId = cleanStringStrict(item.productId);
+      const quantity = toInt(item.quantity, NaN);
+      const unitCost = toMoney(item.unitCost ?? item.buyPrice, NaN);
+
+      if (!productId) {
+        return res.status(400).json({ message: "Each purchase order item must be linked to a product." });
+      }
+
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        return res.status(400).json({ message: "Each purchase order quantity must be more than 0." });
+      }
+
+      if (!Number.isFinite(unitCost) || unitCost < 0) {
+        return res.status(400).json({ message: "Each purchase order cost must be 0 or more." });
+      }
+
+      preparedItems.push({
+        productId,
+        quantity,
+        unitCost,
+      });
+    }
+
+    const created = await prisma.$transaction(async (tx) => {
+      const supplier = await tx.supplier.findFirst({
+        where: { id: supplierId, tenantId },
+        select: { id: true },
+      });
+
+      if (!supplier) throw new Error("SUPPLIER_NOT_FOUND");
+
+      const products = await tx.product.findMany({
+        where: {
+          tenantId,
+          id: { in: preparedItems.map((item) => item.productId) },
+        },
+        select: { id: true },
+      });
+
+      const foundProductIds = new Set(products.map((product) => product.id));
+      const missingProduct = preparedItems.find((item) => !foundProductIds.has(item.productId));
+
+      if (missingProduct) throw new Error("PRODUCT_NOT_FOUND");
+
+      return tx.purchaseOrder.create({
+        data: {
+          tenantId,
+          branchId: activeBranch.id,
+          supplierId,
+          status: "DRAFT",
+          orderDate: req.body.orderDate ? new Date(req.body.orderDate) : new Date(),
+          note: cleanString(req.body.note),
+          createdById: userId,
+          items: {
+            create: preparedItems.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              unitCost: item.unitCost,
+            })),
+          },
+        },
+        include: {
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              status: true,
+              isMain: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          items: {
+            orderBy: [{ createdAt: "asc" }],
+            include: {
+              product: true,
+            },
+          },
+          bills: true,
+        },
+      });
+    });
+
+    return res.status(201).json({
+      created: true,
+      purchaseOrder: serializePurchaseOrder(created),
+    });
+  } catch (err) {
+    const handled = handleBranchError(res, err);
+    if (handled) return handled;
+
+    if (String(err?.message || "") === "SUPPLIER_NOT_FOUND") {
+      return res.status(404).json({ message: "Supplier not found" });
+    }
+
+    if (String(err?.message || "") === "PRODUCT_NOT_FOUND") {
+      return res.status(400).json({ message: "One purchase order item uses a product that does not exist." });
+    }
+
+    console.error("createSupplierPurchaseOrder error:", err);
+    return res.status(500).json({ message: "Failed to create purchase order" });
+  }
+}
+
+async function updateSupplierPurchaseOrder(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+    const supplierId = cleanStringStrict(req.params.id);
+    const purchaseOrderId = cleanStringStrict(req.params.purchaseOrderId);
+    const items = Array.isArray(req.body.items) ? req.body.items : [];
+
+    if (!items.length) {
+      return res.status(400).json({ message: "Add at least one purchase order item." });
+    }
+
+    const preparedItems = [];
+
+    for (const item of items) {
+      const productId = cleanStringStrict(item.productId);
+      const quantity = toInt(item.quantity, NaN);
+      const unitCost = toMoney(item.unitCost ?? item.buyPrice, NaN);
+
+      if (!productId) {
+        return res.status(400).json({ message: "Each purchase order item must be linked to a product." });
+      }
+
+      if (!Number.isInteger(quantity) || quantity <= 0) {
+        return res.status(400).json({ message: "Each purchase order quantity must be more than 0." });
+      }
+
+      if (!Number.isFinite(unitCost) || unitCost < 0) {
+        return res.status(400).json({ message: "Each purchase order cost must be 0 or more." });
+      }
+
+      preparedItems.push({
+        productId,
+        quantity,
+        unitCost,
+      });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.purchaseOrder.findFirst({
+        where: {
+          id: purchaseOrderId,
+          tenantId,
+          supplierId,
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      });
+
+      if (!existing) throw new Error("PURCHASE_ORDER_NOT_FOUND");
+      if (existing.status !== "DRAFT") throw new Error("PURCHASE_ORDER_NOT_DRAFT");
+
+      const products = await tx.product.findMany({
+        where: {
+          tenantId,
+          id: { in: preparedItems.map((item) => item.productId) },
+        },
+        select: { id: true },
+      });
+
+      const foundProductIds = new Set(products.map((product) => product.id));
+      const missingProduct = preparedItems.find((item) => !foundProductIds.has(item.productId));
+
+      if (missingProduct) throw new Error("PRODUCT_NOT_FOUND");
+
+      await tx.purchaseOrderItem.deleteMany({
+        where: { purchaseOrderId },
+      });
+
+      return tx.purchaseOrder.update({
+        where: { id: purchaseOrderId },
+        data: {
+          orderDate: req.body.orderDate ? new Date(req.body.orderDate) : new Date(),
+          note: cleanString(req.body.note),
+          items: {
+            create: preparedItems.map((item) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              unitCost: item.unitCost,
+            })),
+          },
+        },
+        include: {
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              status: true,
+              isMain: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          items: {
+            orderBy: [{ createdAt: "asc" }],
+            include: {
+              product: true,
+            },
+          },
+          bills: true,
+        },
+      });
+    });
+
+    return res.json({
+      updated: true,
+      purchaseOrder: serializePurchaseOrder(updated),
+    });
+  } catch (err) {
+    if (String(err?.message || "") === "PURCHASE_ORDER_NOT_FOUND") {
+      return res.status(404).json({ message: "Purchase order not found" });
+    }
+
+    if (String(err?.message || "") === "PURCHASE_ORDER_NOT_DRAFT") {
+      return res.status(400).json({ message: "Only draft purchase orders can be edited." });
+    }
+
+    if (String(err?.message || "") === "PRODUCT_NOT_FOUND") {
+      return res.status(400).json({ message: "One purchase order item uses a product that does not exist." });
+    }
+
+    console.error("updateSupplierPurchaseOrder error:", err);
+    return res.status(500).json({ message: "Failed to update purchase order" });
+  }
+}
+
+
+async function updateSupplierPurchaseOrderStatus(req, res) {
+  try {
+    const tenantId = getTenantId(req);
+    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+    const supplierId = cleanStringStrict(req.params.id);
+    const purchaseOrderId = cleanStringStrict(req.params.purchaseOrderId);
+    const nextStatus = normalizePurchaseOrderStatus(req.body.status);
+
+    if (!nextStatus) {
+      return res.status(400).json({ message: "Choose a valid purchase order status." });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const existing = await tx.purchaseOrder.findFirst({
+        where: {
+          id: purchaseOrderId,
+          tenantId,
+          supplierId,
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      });
+
+      if (!existing) throw new Error("PURCHASE_ORDER_NOT_FOUND");
+
+      if (existing.status === "RECEIVED" && nextStatus !== "RECEIVED") {
+        throw new Error("RECEIVED_PURCHASE_ORDER_LOCKED");
+      }
+
+      if (existing.status === "CANCELLED" && nextStatus !== "CANCELLED") {
+        throw new Error("CANCELLED_PURCHASE_ORDER_LOCKED");
+      }
+
+      const data = {
+        status: nextStatus,
+        ...(nextStatus === "RECEIVED" ? { receivedAt: new Date() } : {}),
+        ...(nextStatus !== "RECEIVED" ? { receivedAt: null } : {}),
+      };
+
+      return tx.purchaseOrder.update({
+        where: { id: purchaseOrderId },
+        data,
+        include: {
+          branch: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              status: true,
+              isMain: true,
+            },
+          },
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          items: {
+            orderBy: [{ createdAt: "asc" }],
+            include: {
+              product: true,
+            },
+          },
+          bills: true,
+        },
+      });
+    });
+
+    return res.json({
+      updated: true,
+      purchaseOrder: serializePurchaseOrder(updated),
+    });
+  } catch (err) {
+    if (String(err?.message || "") === "PURCHASE_ORDER_NOT_FOUND") {
+      return res.status(404).json({ message: "Purchase order not found" });
+    }
+
+    if (String(err?.message || "") === "RECEIVED_PURCHASE_ORDER_LOCKED") {
+      return res.status(400).json({ message: "A received purchase order cannot be changed here." });
+    }
+
+    if (String(err?.message || "") === "CANCELLED_PURCHASE_ORDER_LOCKED") {
+      return res.status(400).json({ message: "A cancelled purchase order cannot be reopened here." });
+    }
+
+    console.error("updateSupplierPurchaseOrderStatus error:", err);
+    return res.status(500).json({ message: "Failed to update purchase order" });
   }
 }
 
@@ -1807,6 +2380,10 @@ module.exports = {
   deactivateSupplier,
   listSupplies,
   createSupply,
+  listSupplierPurchaseOrders,
+  createSupplierPurchaseOrder,
+  updateSupplierPurchaseOrder,
+  updateSupplierPurchaseOrderStatus,
   getSupplierBalance,
   listSupplierBills,
   createSupplierBill,
