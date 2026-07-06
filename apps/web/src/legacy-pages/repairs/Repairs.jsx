@@ -1069,6 +1069,22 @@ export default function Repairs() {
     void refreshAll();
   }, []);
 
+  useEffect(() => {
+    if (!repairActionMenu) return undefined;
+
+    function handleCloseFloatingMenu() {
+      closeRepairActionMenu();
+    }
+
+    window.addEventListener("scroll", handleCloseFloatingMenu, true);
+    window.addEventListener("resize", handleCloseFloatingMenu);
+
+    return () => {
+      window.removeEventListener("scroll", handleCloseFloatingMenu, true);
+      window.removeEventListener("resize", handleCloseFloatingMenu);
+    };
+  }, [repairActionMenu]);
+
   const filtered = useMemo(() => {
     let list = repairs;
 
