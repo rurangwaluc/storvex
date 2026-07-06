@@ -1,9 +1,33 @@
 const prisma = require("../../config/database");
-const { RepairStatus, UserRole } = require("@prisma/client");
+const { RepairStatus, RepairApprovalStatus, UserRole } = require("@prisma/client");
 
 function cleanString(value) {
   const s = String(value || "").trim();
   return s || null;
+}
+
+function toNumber(value, fallback = 0) {
+  if (value === undefined) return undefined;
+  if (value === null || value === "") return fallback;
+
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) {
+    throw createCodedError("INVALID_REPAIR_AMOUNT");
+  }
+
+  return number;
+}
+
+function normalizeDateField(value, code) {
+  if (value === undefined) return undefined;
+  if (!value) return null;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    throw createCodedError(code);
+  }
+
+  return date;
 }
 
 function getTenantId(req) {
@@ -44,7 +68,7 @@ function businessLocationLabel(location) {
   const code = cleanString(location?.code);
   const name = cleanString(location?.name);
 
-  if (code && name) return `${code} • ${name}`;
+  if (code && name) return `${code} ${name}`;
   if (name) return name;
   if (code) return code;
 
@@ -117,6 +141,7 @@ function decorateRepair(repair) {
   const next = {
     ...repair,
     storeLocation: toBusinessLocation(repair.branch),
+    money: repairMoneySummary(repair),
   };
 
   return next;
@@ -270,15 +295,11 @@ function sendRepairLocationError(res, err) {
 }
 
 function normalizeWarrantyEnd(value) {
-  if (value === undefined) return undefined;
-  if (!value) return null;
+  return normalizeDateField(value, "INVALID_WARRANTY_DATE");
+}
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    throw createCodedError("INVALID_WARRANTY_DATE");
-  }
-
-  return date;
+function normalizeExpectedPickupAt(value) {
+  return normalizeDateField(value, "INVALID_PICKUP_DATE");
 }
 
 function normalizeRepairStatus(value) {
@@ -293,6 +314,42 @@ function normalizeRepairStatus(value) {
   }
 
   return status;
+}
+
+function normalizeRepairApprovalStatus(value) {
+  if (value === undefined) return undefined;
+
+  const status = cleanString(value) || RepairApprovalStatus.NOT_REQUESTED;
+
+  if (!Object.values(RepairApprovalStatus).includes(status)) {
+    throw createCodedError("INVALID_REPAIR_APPROVAL_STATUS");
+  }
+
+  return status;
+}
+
+async function generateRepairNumber(tenantId) {
+  const count = await prisma.repair.count({
+    where: { tenantId },
+  });
+
+  return `REP-${String(count + 1).padStart(4, "0")}`;
+}
+
+function repairMoneySummary(repair) {
+  const estimatedCost = Number(repair?.estimatedCost || 0);
+  const depositPaid = Number(repair?.depositPaid || 0);
+  const finalAmount = Number(repair?.finalAmount || 0);
+  const chargeAmount = finalAmount > 0 ? finalAmount : estimatedCost;
+  const balance = Math.max(chargeAmount - depositPaid, 0);
+
+  return {
+    estimatedCost,
+    depositPaid,
+    finalAmount,
+    chargeAmount,
+    balance,
+  };
 }
 
 async function findScopedRepairOrThrow(req, id, extraSelect = {}) {
@@ -324,7 +381,19 @@ async function findScopedRepairOrThrow(req, id, extraSelect = {}) {
 
 // CREATE REPAIR
 async function createRepair(req, res) {
-  const { customerId, device, serial, issue, warrantyEnd } = req.body;
+  const {
+    customerId,
+    device,
+    serial,
+    issue,
+    warrantyEnd,
+    expectedPickupAt,
+    estimatedCost,
+    depositPaid,
+    finalAmount,
+    approvalStatus,
+    approvalNote,
+  } = req.body;
   const tenantId = getTenantId(req);
 
   if (!customerId || !cleanString(device) || !cleanString(issue)) {
@@ -357,11 +426,18 @@ async function createRepair(req, res) {
     const repairData = {
       tenantId,
       customerId,
+      repairNumber: await generateRepairNumber(tenantId),
       device: cleanString(device),
       serial: cleanString(serial),
       issue: cleanString(issue),
       status: RepairStatus.RECEIVED,
+      approvalStatus: normalizeRepairApprovalStatus(approvalStatus) || RepairApprovalStatus.NOT_REQUESTED,
+      approvalNote: cleanString(approvalNote),
       warrantyEnd: warrantyEnd ? normalizeWarrantyEnd(warrantyEnd) : null,
+      expectedPickupAt: expectedPickupAt ? normalizeExpectedPickupAt(expectedPickupAt) : null,
+      estimatedCost: toNumber(estimatedCost, 0) ?? 0,
+      depositPaid: toNumber(depositPaid, 0) ?? 0,
+      finalAmount: toNumber(finalAmount, 0) ?? 0,
     };
 
     if (hasRepairBranchField()) {
@@ -385,8 +461,22 @@ async function createRepair(req, res) {
     const locationError = sendRepairLocationError(res, err);
     if (locationError) return locationError;
 
-    if (String(err?.code || err?.message || "") === "INVALID_WARRANTY_DATE") {
+    const code = String(err?.code || err?.message || "");
+
+    if (code === "INVALID_WARRANTY_DATE") {
       return res.status(400).json({ message: "Warranty date is invalid" });
+    }
+
+    if (code === "INVALID_PICKUP_DATE") {
+      return res.status(400).json({ message: "Expected pickup date is invalid" });
+    }
+
+    if (code === "INVALID_REPAIR_AMOUNT") {
+      return res.status(400).json({ message: "Repair amounts must be zero or more" });
+    }
+
+    if (code === "INVALID_REPAIR_APPROVAL_STATUS") {
+      return res.status(400).json({ message: "Repair approval status is invalid" });
     }
 
     console.error("Failed to create repair:", err);
@@ -403,7 +493,7 @@ async function getRepairs(req, res) {
     const scope = resolveRepairBranchScope(req);
 
     const repairs = await prisma.repair.findMany({
-      where: applyRepairBranchScope({ tenantId }, scope),
+      where: applyRepairBranchScope({ tenantId, archivedAt: null }, scope),
       orderBy: { createdAt: "desc" },
       include: includeRepairRelations(),
     });
@@ -458,7 +548,18 @@ async function getRepairById(req, res) {
 // UPDATE REPAIR DETAILS
 async function updateRepair(req, res) {
   const { id } = req.params;
-  const { device, serial, issue, warrantyEnd } = req.body;
+  const {
+    device,
+    serial,
+    issue,
+    warrantyEnd,
+    expectedPickupAt,
+    estimatedCost,
+    depositPaid,
+    finalAmount,
+    approvalStatus,
+    approvalNote,
+  } = req.body;
 
   try {
     const tenantId = getTenantId(req);
@@ -470,10 +571,31 @@ async function updateRepair(req, res) {
       ...(device !== undefined ? { device: cleanString(device) } : {}),
       ...(serial !== undefined ? { serial: cleanString(serial) } : {}),
       ...(issue !== undefined ? { issue: cleanString(issue) } : {}),
+      ...(approvalNote !== undefined ? { approvalNote: cleanString(approvalNote) } : {}),
     };
 
     if (warrantyEnd !== undefined) {
       data.warrantyEnd = normalizeWarrantyEnd(warrantyEnd);
+    }
+
+    if (expectedPickupAt !== undefined) {
+      data.expectedPickupAt = normalizeExpectedPickupAt(expectedPickupAt);
+    }
+
+    if (estimatedCost !== undefined) {
+      data.estimatedCost = toNumber(estimatedCost, 0);
+    }
+
+    if (depositPaid !== undefined) {
+      data.depositPaid = toNumber(depositPaid, 0);
+    }
+
+    if (finalAmount !== undefined) {
+      data.finalAmount = toNumber(finalAmount, 0);
+    }
+
+    if (approvalStatus !== undefined) {
+      data.approvalStatus = normalizeRepairApprovalStatus(approvalStatus);
     }
 
     const result = await prisma.repair.updateMany({
@@ -498,8 +620,22 @@ async function updateRepair(req, res) {
     const locationError = sendRepairLocationError(res, err);
     if (locationError) return locationError;
 
-    if (String(err?.code || err?.message || "") === "INVALID_WARRANTY_DATE") {
+    const code = String(err?.code || err?.message || "");
+
+    if (code === "INVALID_WARRANTY_DATE") {
       return res.status(400).json({ message: "Warranty date is invalid" });
+    }
+
+    if (code === "INVALID_PICKUP_DATE") {
+      return res.status(400).json({ message: "Expected pickup date is invalid" });
+    }
+
+    if (code === "INVALID_REPAIR_AMOUNT") {
+      return res.status(400).json({ message: "Repair amounts must be zero or more" });
+    }
+
+    if (code === "INVALID_REPAIR_APPROVAL_STATUS") {
+      return res.status(400).json({ message: "Repair approval status is invalid" });
     }
 
     console.error("Failed to update repair:", err);
@@ -654,7 +790,7 @@ async function archiveRepair(req, res) {
 
     const result = await prisma.repair.updateMany({
       where: applyRepairBranchScope({ id, tenantId }, scope),
-      data: { status: RepairStatus.DELIVERED },
+      data: { archivedAt: new Date() },
     });
 
     if (result.count === 0) {

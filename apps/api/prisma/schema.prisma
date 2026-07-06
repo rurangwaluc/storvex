@@ -810,17 +810,26 @@ model SaleRefundItem {
 }
 
 model Repair {
-  id           String       @id @default(uuid())
-  tenantId     String
-  branchId     String?      @db.Text
-  customerId   String
-  technicianId String?
-  device       String
-  serial       String?
-  issue        String
-  status       RepairStatus
-  warrantyEnd  DateTime?
-  createdAt    DateTime     @default(now())
+  id               String               @id @default(uuid())
+  tenantId         String
+  branchId         String?              @db.Text
+  customerId       String
+  technicianId     String?
+  repairNumber     String?              @db.Text
+  device           String
+  serial           String?
+  issue            String
+  status           RepairStatus
+  approvalStatus   RepairApprovalStatus @default(NOT_REQUESTED)
+  approvalNote     String?
+  expectedPickupAt DateTime?
+  warrantyEnd      DateTime?
+  estimatedCost    Float                @default(0)
+  depositPaid      Float                @default(0)
+  finalAmount      Float                @default(0)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @default(now()) @updatedAt
+  archivedAt       DateTime?
 
   customer   Customer @relation(fields: [customerId], references: [id])
   technician User?    @relation("TechnicianRepairs", fields: [technicianId], references: [id])
@@ -828,6 +837,9 @@ model Repair {
   branch     Branch?  @relation(fields: [branchId], references: [id])
 
   @@index([tenantId])
+  @@index([tenantId, repairNumber])
+  @@index([tenantId, status])
+  @@index([tenantId, archivedAt])
   @@index([branchId])
   @@index([tenantId, branchId, createdAt])
 }
@@ -1893,9 +1905,23 @@ enum SubscriptionAccessMode {
 
 enum RepairStatus {
   RECEIVED
+  CHECKING
+  WAITING_APPROVAL
+  APPROVED
+  IN_REPAIR
+  READY_FOR_PICKUP
+  COLLECTED
+  CANCELLED
   IN_PROGRESS
   COMPLETED
   DELIVERED
+}
+
+enum RepairApprovalStatus {
+  NOT_REQUESTED
+  WAITING
+  APPROVED
+  DECLINED
 }
 
 enum ExpenseCategory {

@@ -3,11 +3,31 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import { getCurrentShopType, supportsRepairs } from "../../utils/categoryFeatures";
 import { listCustomers } from "../../services/customersApi";
 import { createRepair } from "../../services/repairsApi";
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
+}
+
+
+function RepairsUnavailable() {
+  return (
+    <div className="mx-auto max-w-3xl">
+      <section className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] p-6 text-center shadow-[var(--shadow-card)]">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-text-soft)]">
+          Not used for this business type
+        </div>
+        <h1 className="mt-3 text-2xl font-black tracking-tight text-[var(--color-text)]">
+          Repairs are not enabled here
+        </h1>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[var(--color-text-muted)]">
+          Repair jobs are meant for businesses that actually receive customer items for service, such as electronics, spare parts, and selected lighting/service shops.
+        </p>
+      </section>
+    </div>
+  );
 }
 
 const strong = () => "text-[var(--color-text)]";
@@ -83,6 +103,9 @@ function CreateSkeleton() {
 }
 
 export default function RepairCreate() {
+  const shopType = getCurrentShopType();
+  if (!supportsRepairs(shopType)) return <RepairsUnavailable />;
+
   const navigate = useNavigate();
   const mountedRef = useRef(true);
 

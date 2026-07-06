@@ -1,71 +1,130 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { createPortal } from "react-dom";
 import { jwtDecode } from "jwt-decode";
 import toast from "react-hot-toast";
 
-import AsyncButton from "../../components/ui/AsyncButton";
 import {
   archiveRepair,
   assignTechnician,
+  createRepair,
   deleteRepair,
   getRepairTechnicians,
   getRepairs,
+  updateRepair,
   updateRepairStatus,
 } from "../../services/repairsApi";
+import { listCustomers } from "../../services/customersApi";
+import { getCurrentShopType, supportsRepairs } from "../../utils/categoryFeatures";
+import "./Repairs.css";
 
 const REPAIR_STATUSES = [
   { value: "RECEIVED", label: "Received" },
+  { value: "CHECKING", label: "Checking" },
+  { value: "WAITING_APPROVAL", label: "Waiting approval" },
+  { value: "APPROVED", label: "Approved" },
+  { value: "IN_REPAIR", label: "In repair" },
+  { value: "READY_FOR_PICKUP", label: "Ready for pickup" },
+  { value: "COLLECTED", label: "Collected" },
+  { value: "CANCELLED", label: "Cancelled" },
   { value: "IN_PROGRESS", label: "In progress" },
   { value: "COMPLETED", label: "Completed" },
   { value: "DELIVERED", label: "Delivered" },
 ];
 
-const PAGE_SIZE = 12;
+const APPROVAL_STATUSES = [
+  { value: "NOT_REQUESTED", label: "Not requested" },
+  { value: "WAITING", label: "Waiting approval" },
+  { value: "APPROVED", label: "Customer approved" },
+  { value: "DECLINED", label: "Customer declined" },
+];
+
+const PAGE_SIZE = 4;
+
+const EMPTY_REPAIR_FORM = {
+  customerId: "",
+  device: "",
+  serial: "",
+  issue: "",
+  warrantyEnd: "",
+  expectedPickupAt: "",
+  estimatedCost: "",
+  depositPaid: "",
+  finalAmount: "",
+  approvalStatus: "NOT_REQUESTED",
+  approvalNote: "",
+};
+
+function normalizeCustomers(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.customers)) return data.customers;
+  if (Array.isArray(data?.items)) return data.items;
+  return [];
+}
+
+function cleanString(value) {
+  const text = String(value || "").trim();
+  return text || "";
+}
+
+function cleanDisplayText(value) {
+  return String(value || "").replace(/\s*•\s*/g, " ").trim();
+}
+
+function toInputDate(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toISOString().slice(0, 10);
+}
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
-const strong = () => "text-[var(--color-text)]";
-const muted = () => "text-[var(--color-text-muted)]";
-const soft = () => "text-[var(--color-text-muted)]";
-const card = () =>
-  "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-const raised = () =>
-  "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)]";
-const panel = () =>
-  "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
-const input = () => "app-input";
+function strongText() {
+  return "text-[var(--color-text)]";
+}
+
+function mutedText() {
+  return "text-[var(--color-text-muted)]";
+}
+
+function softText() {
+  return "text-[var(--color-text-soft)]";
+}
+
+function pageCard() {
+  return "svx-repair-card";
+}
+
+function softPanel() {
+  return "svx-repair-panel";
+}
+
+function inputClass() {
+  return "app-input";
+}
 
 function primaryBtn(disabled = false) {
   return cx(
-    "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-5 text-sm font-semibold text-white transition hover:opacity-95",
+    "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-primary)] px-5 text-sm font-black text-white transition hover:opacity-95",
     disabled && "cursor-not-allowed opacity-60",
   );
 }
 
 function secondaryBtn(disabled = false) {
   return cx(
-    "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] px-5 text-sm font-semibold text-[var(--color-text)] transition hover:opacity-90",
+    "inline-flex h-11 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 text-sm font-black text-[var(--color-text)] transition hover:border-[var(--color-primary)]",
     disabled && "cursor-not-allowed opacity-60",
   );
 }
 
 function dangerBtn(disabled = false) {
   return cx(
-    "inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition",
-    disabled
-      ? "cursor-not-allowed bg-[rgba(219,80,74,0.08)] text-[var(--color-danger)] opacity-50"
-      : "bg-[rgba(219,80,74,0.12)] text-[var(--color-danger)] hover:opacity-90",
-  );
-}
-
-function warnBtn(disabled = false) {
-  return cx(
-    "inline-flex h-11 items-center justify-center rounded-2xl px-5 text-sm font-semibold transition",
-    disabled
-      ? "cursor-not-allowed bg-[rgba(217,119,6,0.08)] text-[#b45309] opacity-50"
-      : "bg-[#fff1c9] text-[#92400e] hover:opacity-90",
+    "inline-flex h-11 items-center justify-center rounded-2xl border border-[rgba(219,80,74,0.35)] bg-[rgba(219,80,74,0.10)] px-5 text-sm font-black text-[var(--color-danger)] transition hover:opacity-90",
+    disabled && "cursor-not-allowed opacity-60",
   );
 }
 
@@ -81,7 +140,7 @@ function getCurrentRole() {
   }
 }
 
-function formatShortDate(value) {
+function formatDate(value) {
   if (!value) return "—";
 
   const date = new Date(value);
@@ -90,16 +149,31 @@ function formatShortDate(value) {
   return date.toLocaleDateString(undefined, {
     day: "numeric",
     month: "short",
+    year: "numeric",
   });
 }
 
-function formatDate(value) {
-  if (!value) return "—";
+function formatMoney(value) {
+  const amount = Number(value || 0);
+  const safeAmount = Number.isFinite(amount) ? amount : 0;
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  return `Rwf ${safeAmount.toLocaleString("en-US", {
+    maximumFractionDigits: 0,
+  })}`;
+}
 
-  return date.toLocaleDateString();
+function approvalLabel(value) {
+  const status = String(value || "NOT_REQUESTED").toUpperCase();
+  return APPROVAL_STATUSES.find((item) => item.value === status)?.label || "Not requested";
+}
+
+function repairBalance(repair) {
+  const money = repair?.money || {};
+  const estimatedCost = Number(money.estimatedCost ?? repair?.estimatedCost ?? 0);
+  const depositPaid = Number(money.depositPaid ?? repair?.depositPaid ?? 0);
+  const finalAmount = Number(money.finalAmount ?? repair?.finalAmount ?? 0);
+  const chargeAmount = Number(money.chargeAmount ?? (finalAmount > 0 ? finalAmount : estimatedCost));
+  return Math.max(chargeAmount - depositPaid, 0);
 }
 
 function statusLabel(status) {
@@ -107,36 +181,40 @@ function statusLabel(status) {
   return REPAIR_STATUSES.find((item) => item.value === value)?.label || value || "Unknown";
 }
 
-function statusToneClass(status) {
+function statusTone(status) {
   const value = String(status || "").toUpperCase();
 
-  if (value === "DELIVERED") return "bg-[#dcfce7] text-[#15803d]";
-  if (value === "COMPLETED") return "bg-[#dff1ff] text-[#1d75b9]";
-  if (value === "IN_PROGRESS") return "bg-[#fff1c9] text-[#92400e]";
+  if (value === "COLLECTED" || value === "DELIVERED") return "success";
+  if (value === "READY_FOR_PICKUP" || value === "COMPLETED") return "primary";
+  if (
+    value === "CHECKING" ||
+    value === "WAITING_APPROVAL" ||
+    value === "APPROVED" ||
+    value === "IN_REPAIR" ||
+    value === "IN_PROGRESS"
+  ) {
+    return "warning";
+  }
+  if (value === "CANCELLED") return "danger";
 
-  return "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
+  return "neutral";
 }
 
-function SkeletonBlock({ className = "" }) {
-  return (
-    <div
-      className={cx(
-        "animate-pulse rounded-[18px] bg-[var(--color-surface-2)]",
-        className,
-      )}
-    />
-  );
-}
+function Badge({ children, tone = "neutral" }) {
+  const classes =
+    tone === "success"
+      ? "is-success"
+      : tone === "warning"
+        ? "is-warning"
+        : tone === "danger"
+          ? "is-danger"
+          : tone === "primary"
+            ? "is-primary"
+            : "";
 
-function StatusBadge({ status }) {
   return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold",
-        statusToneClass(status),
-      )}
-    >
-      {statusLabel(status)}
+    <span className={cx("svx-repair-badge", classes)}>
+      {children}
     </span>
   );
 }
@@ -145,128 +223,360 @@ function SectionHeading({ eyebrow, title, subtitle }) {
   return (
     <div>
       {eyebrow ? (
-        <div className={cx("text-[11px] font-semibold uppercase tracking-[0.18em]", soft())}>
+        <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>
           {eyebrow}
         </div>
       ) : null}
 
-      <h1 className={cx("mt-3 text-[1.7rem] font-black tracking-tight sm:text-[2rem]", strong())}>
+      <h1 className={cx("mt-3 text-[2rem] font-black leading-tight tracking-[-0.04em] sm:text-[2.45rem]", strongText())}>
         {title}
       </h1>
 
       {subtitle ? (
-        <p className={cx("mt-3 text-sm leading-6", muted())}>{subtitle}</p>
+        <p className={cx("mt-3 max-w-3xl text-sm font-semibold leading-6", mutedText())}>
+          {subtitle}
+        </p>
       ) : null}
     </div>
   );
 }
 
 function SummaryCard({ label, value, note, tone = "neutral" }) {
-  const iconTone =
+  const stripe =
     tone === "success"
-      ? "bg-[#dcfce7] text-[#15803d]"
+      ? "bg-[var(--color-success)]"
       : tone === "warning"
-        ? "bg-[#fff1c9] text-[#92400e]"
+        ? "bg-[var(--color-warning)]"
         : tone === "danger"
-          ? "bg-[rgba(219,80,74,0.12)] text-[var(--color-danger)]"
-          : "bg-[#dff1ff] text-[#1d75b9]";
+          ? "bg-[var(--color-danger)]"
+          : "bg-[var(--color-border)]";
 
   return (
-    <article className={cx(card(), "p-5 sm:p-6")}>
-      <div className="flex items-start gap-4">
-        <div
-          className={cx(
-            "flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] shadow-[var(--shadow-soft)]",
-            iconTone,
-          )}
-        >
-          <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.9">
-            <path d="M14 7l3-3 3 3-3 3zM3 21l7-7" />
-            <path d="m11 13-4-4 2-2 4 4" />
-          </svg>
-        </div>
+    <article className={cx("svx-repair-summary", `is-${tone}`, softPanel(), "p-5")}>
+      <div className={cx("absolute left-0 top-0 h-full w-1.5", stripe)} />
 
-        <div className="min-w-0 flex-1">
-          <div className={cx("text-sm font-semibold", strong())}>{label}</div>
-          <div className={cx("mt-1.5 text-[1.6rem] font-black leading-tight tracking-tight", strong())}>
-            {value}
-          </div>
-          {note ? <div className={cx("mt-1.5 text-sm", muted())}>{note}</div> : null}
+      <div className="pl-3">
+        <div className={cx("text-[10px] font-black uppercase tracking-[0.2em]", softText())}>
+          {label}
         </div>
+        <div className={cx("mt-3 text-2xl font-black tracking-[-0.04em]", strongText())}>
+          {value}
+        </div>
+        {note ? <div className={cx("mt-2 text-xs font-semibold leading-5", mutedText())}>{note}</div> : null}
       </div>
     </article>
   );
 }
 
-function ListSkeleton() {
+function RepairsUnavailable() {
   return (
-    <div className="space-y-3">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className={cx(card(), "p-4 sm:p-5")}>
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <SkeletonBlock className="h-7 w-24 rounded-full" />
-              <SkeletonBlock className="h-7 w-20 rounded-full" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <SkeletonBlock className="h-14" />
-              <SkeletonBlock className="h-14" />
-              <SkeletonBlock className="h-14" />
-              <SkeletonBlock className="h-14" />
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <SkeletonBlock className="h-11 w-24 rounded-2xl" />
-            </div>
-          </div>
+    <main className="svx-repairs-page mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <section className={cx(pageCard(), "p-6 text-center sm:p-8")}>
+        <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>
+          Not used for this business type
         </div>
-      ))}
-    </div>
+        <h1 className={cx("mt-3 text-2xl font-black tracking-[-0.03em]", strongText())}>
+          Repairs are not enabled here
+        </h1>
+        <p className={cx("mx-auto mt-3 max-w-xl text-sm font-semibold leading-6", mutedText())}>
+          Repair jobs are meant for businesses that receive customer items for service, such as electronics, selected spare parts, and selected lighting shops.
+        </p>
+      </section>
+    </main>
   );
 }
 
-function EmptyState({ canAdd }) {
+function ListSkeleton() {
   return (
-    <div className={cx(panel(), "px-4 py-16 text-center")}>
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[18px] bg-[var(--color-surface)] shadow-[var(--shadow-soft)]">
-        <svg viewBox="0 0 24 24" className="h-7 w-7 text-[var(--color-text-muted)]" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M14 7l3-3 3 3-3 3zM3 21l7-7" />
-          <path d="m11 13-4-4 2-2 4 4" />
-        </svg>
+    <main className="svx-repairs-page mx-auto w-full max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+      <div className={cx(pageCard(), "h-64 animate-pulse")} />
+      <div className={cx(pageCard(), "h-40 animate-pulse")} />
+      <div className={cx(pageCard(), "h-72 animate-pulse")} />
+    </main>
+  );
+}
+
+function EmptyState({ canCreate, onCreate }) {
+  return (
+    <div className={cx(softPanel(), "px-5 py-16 text-center")}>
+      <div className={cx("text-base font-black", strongText())}>No repairs yet</div>
+      <div className={cx("mx-auto mt-2 max-w-xl text-sm font-semibold leading-6", mutedText())}>
+        Repair jobs will appear here after a customer leaves an item for service.
       </div>
 
-      <div className={cx("text-base font-bold", strong())}>No repairs yet</div>
-      <div className={cx("mt-2 text-sm leading-6", muted())}>
-        Repairs logged here track device intake, technician assignment, and customer handover.
-      </div>
-
-      {canAdd ? (
-        <Link to="/app/repairs/new" className={cx(primaryBtn(), "mt-5")}>
+      {canCreate ? (
+        <button type="button" onClick={onCreate} className={cx(primaryBtn(), "mt-5")}>
           Log first repair
-        </Link>
+        </button>
       ) : null}
     </div>
   );
 }
 
-function ConfirmDialog({
+function RepairFormModal({
   open,
-  title,
-  body,
+  mode,
+  form,
+  customers,
+  customerSearch,
+  loadingCustomers,
   busy,
-  confirmLabel,
-  confirmClass,
-  onCancel,
-  onConfirm,
+  onClose,
+  onSubmit,
+  onFieldChange,
+  onCustomerSearchChange,
+  onChooseCustomer,
 }) {
+  if (!open) return null;
+
+  const isEdit = mode === "edit";
+  const selectedCustomer = customers.find((customer) => customer.id === form.customerId) || null;
+  const customerQuery = cleanString(customerSearch).toLowerCase();
+
+  const customerResults = customerQuery
+    ? customers
+        .filter((customer) =>
+          [
+            customer.name,
+            customer.phone,
+            customer.email,
+            customer.tin,
+            customer.idNumber,
+          ]
+            .map((item) => String(item || "").toLowerCase())
+            .join(" ")
+            .includes(customerQuery),
+        )
+        .slice(0, 6)
+    : [];
+
+  return createPortal(
+    <div className="svx-repair-modal-backdrop">
+      <section className="svx-repair-modal-panel" role="dialog" aria-modal="true">
+        <div className="svx-repair-modal-header">
+          <div>
+            <div className="svx-repair-eyebrow">Repair intake</div>
+            <h2>{isEdit ? "Edit repair" : "New repair"}</h2>
+            <p>
+              {isEdit
+                ? "Correct the intake details for this repair record."
+                : "Search the customer, choose the item from stock when it exists, and record the reported problem."}
+            </p>
+          </div>
+
+          <button type="button" className="svx-repair-icon-button" onClick={onClose} disabled={busy}>
+            ×
+          </button>
+        </div>
+
+        <form className="svx-repair-form" onSubmit={onSubmit}>
+          <div className="svx-repair-form-grid">
+            <label className="svx-repair-field svx-repair-search-field">
+              <span>
+                Customer {!isEdit ? <strong>*</strong> : null}
+              </span>
+              <input
+                className="app-input"
+                value={customerSearch}
+                onChange={(event) => onCustomerSearchChange(event.target.value)}
+                placeholder={isEdit ? "Customer locked for this repair" : "Search customer name, phone, or email"}
+                disabled={busy || loadingCustomers || isEdit}
+              />
+              <em>{isEdit ? "Customer stays locked for traceability." : "Search and choose the customer leaving the item."}</em>
+
+              {!isEdit && customerSearch && !selectedCustomer ? (
+                <div className="svx-repair-search-results">
+                  {loadingCustomers ? (
+                    <div className="svx-repair-search-empty">Loading customers...</div>
+                  ) : customerResults.length ? (
+                    customerResults.map((customer) => (
+                      <button
+                        key={customer.id}
+                        type="button"
+                        className="svx-repair-search-result"
+                        onClick={() => onChooseCustomer(customer)}
+                      >
+                        <strong>{customer.name || "Unnamed customer"}</strong>
+                        <span>{customer.phone || customer.email || "No contact saved"}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="svx-repair-search-empty">No customer found. Create the customer first.</div>
+                  )}
+                </div>
+              ) : null}
+            </label>
+
+            <label className="svx-repair-field">
+              <span>Item / device <strong>*</strong></span>
+              <input
+                className="app-input"
+                value={form.device}
+                onChange={(event) => onFieldChange("device", event.target.value)}
+                placeholder="Example: Samsung Galaxy A54"
+                disabled={busy}
+                required
+              />
+              <em>This is the customer item being left for repair, not your stock item.</em>
+            </label>
+
+            <label className="svx-repair-field">
+              <span>Serial / IMEI</span>
+              <input
+                className="app-input"
+                value={form.serial}
+                onChange={(event) => onFieldChange("serial", event.target.value)}
+                placeholder="Enter serial, IMEI, or customer device number when available"
+                disabled={busy}
+              />
+              <em>Useful when the customer leaves a specific device.</em>
+            </label>
+
+            <label className="svx-repair-field">
+              <span>Warranty end date</span>
+              <input
+                type="date"
+                className="app-input"
+                value={form.warrantyEnd}
+                onChange={(event) => onFieldChange("warrantyEnd", event.target.value)}
+                disabled={busy}
+              />
+              <em>Leave empty when no warranty applies.</em>
+            </label>
+
+            <label className="svx-repair-field">
+              <span>Expected pickup</span>
+              <input
+                type="date"
+                className="app-input"
+                value={form.expectedPickupAt}
+                onChange={(event) => onFieldChange("expectedPickupAt", event.target.value)}
+                disabled={busy}
+              />
+              <em>When the customer should come back.</em>
+            </label>
+
+            <label className="svx-repair-field">
+              <span>Approval status</span>
+              <select
+                className="app-input"
+                value={form.approvalStatus}
+                onChange={(event) => onFieldChange("approvalStatus", event.target.value)}
+                disabled={busy}
+              >
+                {APPROVAL_STATUSES.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+              <em>Use this when the customer must approve the quotation.</em>
+            </label>
+
+            <label className="svx-repair-field">
+              <span>Estimated cost</span>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                className="app-input"
+                value={form.estimatedCost}
+                onChange={(event) => onFieldChange("estimatedCost", event.target.value)}
+                placeholder="0"
+                disabled={busy}
+              />
+              <em>Expected amount before repair is completed.</em>
+            </label>
+
+            <label className="svx-repair-field">
+              <span>Deposit paid</span>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                className="app-input"
+                value={form.depositPaid}
+                onChange={(event) => onFieldChange("depositPaid", event.target.value)}
+                placeholder="0"
+                disabled={busy}
+              />
+              <em>Money paid before or during repair.</em>
+            </label>
+
+            <label className="svx-repair-field">
+              <span>Final amount</span>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                className="app-input"
+                value={form.finalAmount}
+                onChange={(event) => onFieldChange("finalAmount", event.target.value)}
+                placeholder="0"
+                disabled={busy}
+              />
+              <em>Leave empty until repair is finished.</em>
+            </label>
+
+            <label className="svx-repair-field">
+              <span>Approval note</span>
+              <input
+                className="app-input"
+                value={form.approvalNote}
+                onChange={(event) => onFieldChange("approvalNote", event.target.value)}
+                placeholder="Example: Customer approved by phone"
+                disabled={busy}
+              />
+              <em>Optional note about quotation approval.</em>
+            </label>
+
+            <label className="svx-repair-field svx-repair-field-wide">
+              <span>Reported problem <strong>*</strong></span>
+              <textarea
+                className="app-input svx-repair-textarea"
+                value={form.issue}
+                onChange={(event) => onFieldChange("issue", event.target.value)}
+                placeholder="Describe what the customer says is wrong..."
+                disabled={busy}
+                required
+              />
+              <em>Keep it simple and clear. The technician can add deeper notes later.</em>
+            </label>
+          </div>
+
+          {selectedCustomer ? (
+            <div className="svx-repair-selected-customer">
+              <div>
+                <span>Selected customer</span>
+                <strong>{selectedCustomer.name}</strong>
+              </div>
+              <p>{selectedCustomer.phone || selectedCustomer.email || "No contact saved"}</p>
+            </div>
+          ) : null}
+
+          <div className="svx-repair-modal-actions">
+            <button type="button" className="svx-repair-button is-secondary" onClick={onClose} disabled={busy}>
+              Cancel
+            </button>
+            <button type="submit" className="svx-repair-button is-primary" disabled={busy}>
+              {busy ? (isEdit ? "Saving..." : "Logging...") : isEdit ? "Save repair" : "Log repair"}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>,
+    document.body,
+  );
+}
+
+function ConfirmDialog({ open, title, body, busy, confirmLabel, confirmClass, onCancel, onConfirm }) {
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]">
-      <div className={cx(card(), "w-full max-w-md p-5 sm:p-6")}>
-        <div className={cx("text-lg font-bold", strong())}>{title}</div>
-        <p className={cx("mt-3 text-sm leading-6", muted())}>{body}</p>
+      <div className={cx(pageCard(), "w-full max-w-md p-5 sm:p-6")}>
+        <div className={cx("text-lg font-black", strongText())}>{title}</div>
+        <p className={cx("mt-3 text-sm font-semibold leading-6", mutedText())}>{body}</p>
 
         <div className="mt-5 flex items-center justify-end gap-2">
           <button type="button" disabled={busy} onClick={onCancel} className={secondaryBtn(busy)}>
@@ -279,7 +589,7 @@ function ConfirmDialog({
             onClick={onConfirm}
             className={confirmClass || dangerBtn(busy)}
           >
-            {busy ? "Working…" : confirmLabel}
+            {busy ? "Working..." : confirmLabel}
           </button>
         </div>
       </div>
@@ -287,7 +597,7 @@ function ConfirmDialog({
   );
 }
 
-function RepairCard({
+function RepairRow({
   repair,
   technicians,
   canChangeStatus,
@@ -296,105 +606,107 @@ function RepairCard({
   canDelete,
   onStatusChange,
   onAssign,
+  onOpenRepair,
   onOpenArchive,
   onOpenDelete,
+  openMenuId,
+  onToggleMenu,
+  onCloseMenu,
   statusBusy,
   assignBusy,
-  index,
 }) {
-  const status = String(repair.status || "").toUpperCase();
-
   return (
-    <div
-      className={cx(
-        card(),
-        "relative overflow-hidden p-4 sm:p-5",
-        index % 2 === 0 ? "bg-[var(--color-card)]" : "bg-[var(--color-surface)]",
-      )}
-    >
-      <div
-        className={cx(
-          "absolute left-0 top-0 h-full w-1.5 opacity-80",
-          status === "DELIVERED"
-            ? "bg-[#15803d]"
-            : status === "COMPLETED"
-              ? "bg-[#4aa8ff]"
-              : status === "IN_PROGRESS"
-                ? "bg-[#b88900]"
-                : "bg-[var(--color-border)]",
-        )}
-      />
+    <article className={cx(pageCard(), "svx-repair-row p-4 sm:p-5")}>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_240px]">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={statusTone(repair.status)}>{statusLabel(repair.status)}</Badge>
+            {repair.repairNumber ? <Badge>{repair.repairNumber}</Badge> : null}
+            {repair.storeLocation?.label ? <Badge>{cleanDisplayText(repair.storeLocation.label)}</Badge> : null}
+            <Badge tone={repair.approvalStatus === "APPROVED" ? "success" : repair.approvalStatus === "DECLINED" ? "danger" : repair.approvalStatus === "WAITING" ? "warning" : "neutral"}>
+              {approvalLabel(repair.approvalStatus)}
+            </Badge>
+          </div>
 
-      <div className="absolute inset-x-0 top-0 h-px bg-[var(--color-border)]" />
-
-      <div className="pl-2">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={cx("text-base font-black tracking-tight", strong())}>
-                  {repair.device || "Unknown device"}
-                </span>
-                <StatusBadge status={repair.status} />
+              <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+                Item received
               </div>
-
-              {repair.serial ? (
-                <div className={cx("mt-0.5 text-xs", muted())}>Serial / IMEI: {repair.serial}</div>
-              ) : null}
-
-              {repair.issue ? (
-                <div className={cx("mt-1 text-sm leading-5", muted())}>{repair.issue}</div>
-              ) : null}
+              <div className={cx("mt-2 truncate text-lg font-black tracking-[-0.03em]", strongText())}>
+                {repair.device || "Unnamed item"}
+              </div>
+              <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
+                {repair.serial ? `Serial or IMEI: ${repair.serial}` : "No serial or IMEI saved"}
+              </div>
             </div>
 
-            <div className="flex shrink-0 flex-wrap gap-2">
-              {canArchive ? (
-                <button type="button" onClick={() => onOpenArchive(repair)} className={warnBtn()}>
-                  Archive
-                </button>
-              ) : null}
+            <div className="min-w-0">
+              <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+                Customer
+              </div>
+              <div className={cx("mt-2 truncate text-sm font-black", strongText())}>
+                {repair.customer?.name || "Customer not shown"}
+              </div>
+              <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
+                {repair.customer?.phone || "No phone saved"}
+              </div>
+            </div>
 
-              {canDelete ? (
-                <button type="button" onClick={() => onOpenDelete(repair)} className={dangerBtn()}>
-                  Delete
-                </button>
-              ) : null}
+            <div className="min-w-0">
+              <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+                Reported problem
+              </div>
+              <div className={cx("mt-2 line-clamp-2 text-sm font-semibold leading-5", mutedText())}>
+                {repair.issue || "No issue description"}
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className={cx(raised(), "p-3")}>
-              <div className={cx("text-[10px] font-semibold uppercase tracking-[0.18em]", soft())}>
-                Customer
-              </div>
-              <div className={cx("mt-2 text-sm font-bold leading-snug", strong())}>
-                {repair.customer?.name || "—"}
-              </div>
-              <div className={cx("text-xs", muted())}>{repair.customer?.phone || ""}</div>
-            </div>
-
-            <div className={cx(raised(), "p-3")}>
-              <div className={cx("text-[10px] font-semibold uppercase tracking-[0.18em]", soft())}>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className={cx(softPanel(), "p-3")}>
+              <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
                 Received
               </div>
-              <div className={cx("mt-2 text-sm font-bold", strong())}>
-                {formatShortDate(repair.createdAt)}
-              </div>
-              {repair.warrantyEnd ? (
-                <div className={cx("text-xs", muted())}>
-                  Warranty: {formatDate(repair.warrantyEnd)}
-                </div>
-              ) : null}
+              <div className={cx("mt-2 text-sm font-black", strongText())}>{formatDate(repair.createdAt)}</div>
             </div>
 
-            <div className={cx(raised(), "p-3")}>
-              <div className={cx("text-[10px] font-semibold uppercase tracking-[0.18em]", soft())}>
+            <div className={cx(softPanel(), "p-3")}>
+              <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+                Expected pickup
+              </div>
+              <div className={cx("mt-2 text-sm font-black", strongText())}>{formatDate(repair.expectedPickupAt)}</div>
+            </div>
+
+            <div className={cx(softPanel(), "p-3")}>
+              <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+                Estimate / deposit
+              </div>
+              <div className={cx("mt-2 text-sm font-black", strongText())}>
+                {formatMoney(repair.estimatedCost)}
+              </div>
+              <div className={cx("mt-1 text-xs font-semibold", mutedText())}>
+                Paid: {formatMoney(repair.depositPaid)}
+              </div>
+            </div>
+
+            <div className={cx(softPanel(), "p-3")}>
+              <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+                Balance
+              </div>
+              <div className={cx("mt-2 text-sm font-black", repairBalance(repair) > 0 ? "text-[var(--color-warning)]" : strongText())}>
+                {formatMoney(repairBalance(repair))}
+              </div>
+            </div>
+
+            <div className={cx(softPanel(), "p-3 sm:col-span-1 xl:col-span-2")}>
+              <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
                 Technician
               </div>
 
               {canAssign ? (
                 <select
-                  className="mt-2 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2 py-1.5 text-xs font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+                  className={cx(inputClass(), "mt-2 h-10 text-xs")}
                   value={repair.technicianId || ""}
                   onChange={(event) => onAssign(repair.id, event.target.value)}
                   disabled={assignBusy === repair.id}
@@ -407,20 +719,20 @@ function RepairCard({
                   ))}
                 </select>
               ) : (
-                <div className={cx("mt-2 text-sm font-bold", strong())}>
+                <div className={cx("mt-2 text-sm font-black", strongText())}>
                   {repair.technician?.name || "Unassigned"}
                 </div>
               )}
             </div>
 
-            <div className={cx(raised(), "p-3")}>
-              <div className={cx("text-[10px] font-semibold uppercase tracking-[0.18em]", soft())}>
+            <div className={cx(softPanel(), "p-3 sm:col-span-1 xl:col-span-2")}>
+              <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
                 Status
               </div>
 
               {canChangeStatus ? (
                 <select
-                  className="mt-2 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-2 py-1.5 text-xs font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-primary)]"
+                  className={cx(inputClass(), "mt-2 h-10 text-xs")}
                   value={repair.status || ""}
                   onChange={(event) => onStatusChange(repair.id, event.target.value)}
                   disabled={statusBusy === repair.id}
@@ -433,24 +745,81 @@ function RepairCard({
                 </select>
               ) : (
                 <div className="mt-2">
-                  <StatusBadge status={repair.status} />
+                  <Badge tone={statusTone(repair.status)}>{statusLabel(repair.status)}</Badge>
                 </div>
               )}
             </div>
           </div>
-
-          {repair.storeLocation?.label ? (
-            <div className={cx("text-xs", muted())}>
-              Store location: {repair.storeLocation.label}
-            </div>
-          ) : null}
         </div>
+
+        <aside className={cx(softPanel(), "svx-repair-row-actions p-4")}>
+          <div>
+            <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+              Repair actions
+            </div>
+            <p className={cx("mt-2 text-xs font-semibold leading-5", mutedText())}>
+              Edit intake details or correct customer item information.
+            </p>
+          </div>
+
+          <div className="svx-repair-actions">
+            <button type="button" onClick={() => onOpenRepair(repair)} className={primaryBtn()}>
+              Edit repair
+            </button>
+
+            {(canArchive || canDelete) ? (
+              <div className="svx-repair-more-wrap">
+                <button
+                  type="button"
+                  className="svx-repair-more-button"
+                  onClick={() => onToggleMenu(repair.id)}
+                  aria-expanded={openMenuId === repair.id}
+                >
+                  More actions
+                  <span>⋯</span>
+                </button>
+
+                {openMenuId === repair.id ? (
+                  <div className="svx-repair-more-menu">
+                    {canArchive ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onCloseMenu();
+                          onOpenArchive(repair);
+                        }}
+                      >
+                        Archive repair
+                      </button>
+                    ) : null}
+
+                    {canDelete ? (
+                      <button
+                        type="button"
+                        className="is-danger"
+                        onClick={() => {
+                          onCloseMenu();
+                          onOpenDelete(repair);
+                        }}
+                      >
+                        Delete repair
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </aside>
       </div>
-    </div>
+    </article>
   );
 }
 
 export default function Repairs() {
+  const shopType = getCurrentShopType();
+  if (!supportsRepairs(shopType)) return <RepairsUnavailable />;
+
   const role = useMemo(() => getCurrentRole(), []);
 
   const canCreate = role === "OWNER" || role === "CASHIER";
@@ -469,12 +838,22 @@ export default function Repairs() {
 
   const [statusBusy, setStatusBusy] = useState("");
   const [assignBusy, setAssignBusy] = useState("");
+  const [openActionMenuId, setOpenActionMenuId] = useState("");
 
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [archiveBusy, setArchiveBusy] = useState(false);
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
+
+  const [customers, setCustomers] = useState([]);
+  const [customersLoading, setCustomersLoading] = useState(false);
+  const [repairModalOpen, setRepairModalOpen] = useState(false);
+  const [repairModalMode, setRepairModalMode] = useState("create");
+  const [repairForm, setRepairForm] = useState(EMPTY_REPAIR_FORM);
+  const [repairFormBusy, setRepairFormBusy] = useState(false);
+  const [editingRepair, setEditingRepair] = useState(null);
+  const [customerSearch, setCustomerSearch] = useState("");
 
   const mountedRef = useRef(true);
 
@@ -517,7 +896,6 @@ export default function Repairs() {
 
   useEffect(() => {
     void refreshAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = useMemo(() => {
@@ -554,25 +932,28 @@ export default function Repairs() {
     setVisibleCount(PAGE_SIZE);
   }, [q, filterStatus]);
 
-  const visible = useMemo(
-    () => filtered.slice(0, visibleCount),
-    [filtered, visibleCount],
-  );
-
+  const visible = useMemo(() => filtered.slice(0, visibleCount), [filtered, visibleCount]);
   const hasMore = visibleCount < filtered.length;
 
   const summary = useMemo(
     () => ({
       total: repairs.length,
       received: repairs.filter((repair) => repair.status === "RECEIVED").length,
-      inProgress: repairs.filter((repair) => repair.status === "IN_PROGRESS").length,
-      completed: repairs.filter((repair) => repair.status === "COMPLETED").length,
-      delivered: repairs.filter((repair) => repair.status === "DELIVERED").length,
+      inProgress: repairs.filter((repair) =>
+        ["CHECKING", "WAITING_APPROVAL", "APPROVED", "IN_REPAIR", "IN_PROGRESS"].includes(repair.status),
+      ).length,
+      completed: repairs.filter((repair) =>
+        ["READY_FOR_PICKUP", "COMPLETED"].includes(repair.status),
+      ).length,
+      delivered: repairs.filter((repair) =>
+        ["COLLECTED", "DELIVERED"].includes(repair.status),
+      ).length,
     }),
     [repairs],
   );
 
   async function handleStatusChange(id, status) {
+    setOpenActionMenuId("");
     setStatusBusy(id);
 
     try {
@@ -597,6 +978,7 @@ export default function Repairs() {
   }
 
   async function handleAssign(repairId, technicianId) {
+    setOpenActionMenuId("");
     setAssignBusy(repairId);
 
     const value = technicianId === "" ? null : technicianId;
@@ -624,6 +1006,148 @@ export default function Repairs() {
     }
   }
 
+  async function loadCustomersForModal() {
+    setCustomersLoading(true);
+
+    try {
+      const data = await listCustomers();
+      const rows = normalizeCustomers(data).filter((customer) => customer.isActive !== false);
+      setCustomers(rows);
+    } catch (error) {
+      toast.error(error?.message || "Failed to load customers");
+      setCustomers([]);
+    } finally {
+      setCustomersLoading(false);
+    }
+  }
+
+  function setRepairFormField(key, value) {
+    setRepairForm((current) => ({ ...current, [key]: value }));
+  }
+
+  function handleCustomerSearchChange(value) {
+    setCustomerSearch(value);
+
+    if (repairForm.customerId) {
+      const selected = customers.find((customer) => customer.id === repairForm.customerId);
+      const selectedName = cleanString(selected?.name);
+      const next = cleanString(value);
+
+      if (selectedName && next !== selectedName) {
+        setRepairForm((current) => ({ ...current, customerId: "" }));
+      }
+    }
+  }
+
+  function chooseRepairCustomer(customer) {
+    setRepairForm((current) => ({ ...current, customerId: customer.id || "" }));
+    setCustomerSearch(customer.name || customer.phone || "");
+  }
+
+  function openCreateRepairModal() {
+    setEditingRepair(null);
+    setRepairModalMode("create");
+    setRepairForm(EMPTY_REPAIR_FORM);
+    setCustomerSearch("");
+    setRepairModalOpen(true);
+    void loadCustomersForModal();
+  }
+
+  function openEditRepairModal(repair) {
+    setEditingRepair(repair);
+    setRepairModalMode("edit");
+    setRepairForm({
+      customerId: repair.customerId || "",
+      device: repair.device || "",
+      serial: repair.serial || "",
+      issue: repair.issue || "",
+      warrantyEnd: toInputDate(repair.warrantyEnd),
+      expectedPickupAt: toInputDate(repair.expectedPickupAt),
+      estimatedCost: repair.estimatedCost == null || Number(repair.estimatedCost) === 0 ? "" : String(repair.estimatedCost),
+      depositPaid: repair.depositPaid == null || Number(repair.depositPaid) === 0 ? "" : String(repair.depositPaid),
+      finalAmount: repair.finalAmount == null || Number(repair.finalAmount) === 0 ? "" : String(repair.finalAmount),
+      approvalStatus: repair.approvalStatus || "NOT_REQUESTED",
+      approvalNote: repair.approvalNote || "",
+    });
+    setCustomerSearch(repair.customer?.name || repair.customer?.phone || "");
+    setRepairModalOpen(true);
+    void loadCustomersForModal();
+  }
+
+  function closeRepairModal() {
+    if (repairFormBusy) return;
+    setRepairModalOpen(false);
+    setEditingRepair(null);
+    setRepairForm(EMPTY_REPAIR_FORM);
+    setCustomerSearch("");
+  }
+
+  async function submitRepairForm(event) {
+    event.preventDefault();
+
+    const device = String(repairForm.device || "").trim();
+    const serial = String(repairForm.serial || "").trim();
+    const issue = String(repairForm.issue || "").trim();
+
+    if (repairModalMode === "create" && !repairForm.customerId) {
+      toast.error("Choose the customer leaving the item.");
+      return;
+    }
+
+    if (!device) {
+      toast.error("Item or device name is required.");
+      return;
+    }
+
+    if (!issue) {
+      toast.error("Reported problem is required.");
+      return;
+    }
+
+    setRepairFormBusy(true);
+
+    const repairPayload = {
+      device,
+      serial: serial || null,
+      issue,
+      warrantyEnd: repairForm.warrantyEnd || null,
+      expectedPickupAt: repairForm.expectedPickupAt || null,
+      estimatedCost: repairForm.estimatedCost || 0,
+      depositPaid: repairForm.depositPaid || 0,
+      finalAmount: repairForm.finalAmount || 0,
+      approvalStatus: repairForm.approvalStatus || "NOT_REQUESTED",
+      approvalNote: repairForm.approvalNote || null,
+    };
+
+    try {
+      if (repairModalMode === "edit" && editingRepair?.id) {
+        const updated = await updateRepair(editingRepair.id, repairPayload);
+
+        setRepairs((current) =>
+          current.map((repair) =>
+            repair.id === editingRepair.id ? { ...repair, ...updated } : repair,
+          ),
+        );
+
+        toast.success("Repair updated");
+      } else {
+        const created = await createRepair({
+          customerId: repairForm.customerId,
+          ...repairPayload,
+        });
+
+        setRepairs((current) => [created, ...current]);
+        toast.success("Repair logged");
+      }
+
+      closeRepairModal();
+    } catch (error) {
+      toast.error(error?.message || "Failed to save repair");
+    } finally {
+      setRepairFormBusy(false);
+    }
+  }
+
   async function confirmArchive() {
     if (!archiveTarget) return;
 
@@ -632,8 +1156,8 @@ export default function Repairs() {
     try {
       await archiveRepair(archiveTarget.id);
       setRepairs((prev) => prev.filter((repair) => repair.id !== archiveTarget.id));
-      toast.success("Repair archived");
       setArchiveTarget(null);
+      toast.success("Repair archived");
     } catch (error) {
       toast.error(error?.message || "Failed to archive repair");
     } finally {
@@ -649,8 +1173,8 @@ export default function Repairs() {
     try {
       await deleteRepair(deleteTarget.id);
       setRepairs((prev) => prev.filter((repair) => repair.id !== deleteTarget.id));
-      toast.success("Repair deleted");
       setDeleteTarget(null);
+      toast.success("Repair deleted");
     } catch (error) {
       toast.error(error?.message || "Failed to delete repair");
     } finally {
@@ -658,177 +1182,177 @@ export default function Repairs() {
     }
   }
 
+  if (loading) {
+    return <ListSkeleton />;
+  }
+
   return (
-    <div className="space-y-6">
-      <section className="space-y-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+    <main className="svx-repairs-page mx-auto w-full max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:px-8">
+      <section className={cx(pageCard(), "p-5 sm:p-6")}>
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <SectionHeading
-            eyebrow="Operations"
-            title="Repairs"
-            subtitle="Track every device intake, technician assignment, and repair status from intake to customer handover."
+            eyebrow="Repair jobs"
+            title="Repair control"
+            subtitle="Track customer items received for service, who is handling them, and what stage each repair is in."
           />
 
           <div className="flex flex-wrap gap-2">
-            <AsyncButton loading={loading} onClick={refreshAll} className={secondaryBtn()}>
+            <button type="button" onClick={() => void refreshAll()} className={secondaryBtn()}>
               Refresh
-            </AsyncButton>
+            </button>
 
             {canCreate ? (
-              <Link to="/app/repairs/new" className={primaryBtn()}>
+              <button type="button" onClick={openCreateRepairModal} className={primaryBtn()}>
                 New repair
-              </Link>
+              </button>
             ) : null}
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard label="Total repairs" value={summary.total} note="All repair records" />
-          <SummaryCard label="Received" value={summary.received} note="Awaiting technician" />
-          <SummaryCard label="In progress" value={summary.inProgress} note="Under active service" tone="warning" />
-          <SummaryCard label="Delivered" value={summary.delivered} note="Completed handovers" tone="success" />
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <SummaryCard label="Total repairs" value={summary.total} note="All repair records" tone="primary" />
+          <SummaryCard label="Received" value={summary.received} note="Waiting to be checked" tone="primary" />
+          <SummaryCard label="In service" value={summary.inProgress} note="Being checked or repaired" tone="warning" />
+          <SummaryCard label="Collected" value={summary.delivered} note="Returned to customer" tone="success" />
         </div>
       </section>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className={cx(card(), "h-fit p-5 sm:p-6")}>
-          <div className={cx("text-base font-bold", strong())}>Filter repairs</div>
-
-          <div className="mt-4 space-y-4">
-            <div>
-              <label className={cx("mb-1.5 block text-sm font-medium", strong())}>Search</label>
+      <section className={cx(pageCard(), "p-5 sm:p-6")}>
+        <div className="svx-repair-filter-grid">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_240px]">
+            <label>
+              <div className={cx("mb-2 text-sm font-black", strongText())}>Search</div>
               <input
-                className={input()}
-                placeholder="Device, customer, serial, issue…"
+                className={inputClass()}
                 value={q}
                 onChange={(event) => setQ(event.target.value)}
+                placeholder="Search item, customer, phone, serial, or issue"
               />
-            </div>
+            </label>
 
-            <div>
-              <label className={cx("mb-1.5 block text-sm font-medium", strong())}>Status</label>
-
-              <div className="flex flex-col gap-2">
-                {[{ value: "ALL", label: "All repairs" }, ...REPAIR_STATUSES].map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setFilterStatus(option.value)}
-                    className={cx(
-                      "rounded-2xl border px-4 py-2.5 text-left text-sm font-semibold transition",
-                      filterStatus === option.value
-                        ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                        : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] hover:opacity-80",
-                    )}
-                  >
-                    {option.label}
-                  </button>
+            <label>
+              <div className={cx("mb-2 text-sm font-black", strongText())}>Status</div>
+              <select
+                className={inputClass()}
+                value={filterStatus}
+                onChange={(event) => setFilterStatus(event.target.value)}
+              >
+                <option value="ALL">All repairs</option>
+                {REPAIR_STATUSES.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
                 ))}
-              </div>
-            </div>
-
-            <div className={cx(panel(), "p-4")}>
-              <div className={cx("text-[11px] font-semibold uppercase tracking-[0.18em]", soft())}>
-                Showing
-              </div>
-              <div className={cx("mt-2.5 text-lg font-bold", strong())}>
-                {filtered.length} repair{filtered.length === 1 ? "" : "s"}
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <section className={cx(card(), "overflow-hidden")}>
-          <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className={cx("text-xl font-bold", strong())}>Repair log</div>
-                <div className={cx("mt-1.5 text-sm leading-6", muted())}>
-                  Update statuses, assign technicians, and manage repair lifecycle.
-                </div>
-              </div>
-
-              {!loading ? (
-                <span className="inline-flex items-center self-start rounded-full bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-muted)]">
-                  {visible.length} of {filtered.length}
-                </span>
-              ) : null}
-            </div>
+              </select>
+            </label>
           </div>
 
-          <div className="p-5 sm:p-6">
-            {loading ? (
-              <ListSkeleton />
-            ) : filtered.length === 0 ? (
-              <EmptyState canAdd={canCreate} />
-            ) : (
-              <>
-                <div className="space-y-3">
-                  {visible.map((repair, index) => (
-                    <RepairCard
-                      key={repair.id}
-                      repair={repair}
-                      technicians={technicians}
-                      canChangeStatus={canChangeStatus}
-                      canAssign={canAssign}
-                      canArchive={canArchive}
-                      canDelete={canDelete}
-                      onStatusChange={handleStatusChange}
-                      onAssign={handleAssign}
-                      onOpenArchive={setArchiveTarget}
-                      onOpenDelete={setDeleteTarget}
-                      statusBusy={statusBusy}
-                      assignBusy={assignBusy}
-                      index={index}
-                    />
-                  ))}
-                </div>
-
-                <div className="mt-5 flex justify-center">
-                  {hasMore ? (
-                    <button
-                      type="button"
-                      onClick={() => setVisibleCount((prev) => prev + PAGE_SIZE)}
-                      className={secondaryBtn()}
-                    >
-                      Load more
-                    </button>
-                  ) : (
-                    <div className={cx("text-sm", muted())}>
-                      All {filtered.length} repairs shown
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
+          <div className={cx("svx-repair-showing", softPanel(), "p-4")}>
+            <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
+              Showing
+            </div>
+            <div className={cx("mt-2 text-2xl font-black", strongText())}>{filtered.length}</div>
+            <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
+              Repair job{filtered.length === 1 ? "" : "s"} from current filters
+            </div>
           </div>
-        </section>
-      </div>
+        </div>
+      </section>
+
+      <section className={cx(pageCard(), "overflow-hidden")}>
+        <div className="svx-repair-log-header flex flex-col gap-3 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+          <div>
+            <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>
+              Repair log
+            </div>
+            <h2 className={cx("mt-2 text-2xl font-black tracking-[-0.04em]", strongText())}>
+              Jobs in service
+            </h2>
+            <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>
+              Update status, assign technicians, and open records when details need correction.
+            </p>
+          </div>
+
+          <Badge>{visible.length} of {filtered.length}</Badge>
+        </div>
+
+        <div className="space-y-3 p-4 sm:p-5">
+          {visible.length ? (
+            visible.map((repair) => (
+              <RepairRow
+                key={repair.id}
+                repair={repair}
+                technicians={technicians}
+                canChangeStatus={canChangeStatus}
+                canAssign={canAssign}
+                canArchive={canArchive}
+                canDelete={canDelete}
+                onStatusChange={handleStatusChange}
+                onAssign={handleAssign}
+                onOpenRepair={openEditRepairModal}
+                onOpenArchive={setArchiveTarget}
+                onOpenDelete={setDeleteTarget}
+                openMenuId={openActionMenuId}
+                onToggleMenu={(id) => setOpenActionMenuId((current) => (current === id ? "" : id))}
+                onCloseMenu={() => setOpenActionMenuId("")}
+                statusBusy={statusBusy}
+                assignBusy={assignBusy}
+              />
+            ))
+          ) : (
+            <EmptyState canCreate={canCreate} onCreate={openCreateRepairModal} />
+          )}
+
+          {hasMore ? (
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                className={secondaryBtn()}
+                onClick={() => setVisibleCount((current) => current + PAGE_SIZE)}
+              >
+                Load more repairs
+              </button>
+            </div>
+          ) : null}
+        </div>
+      </section>
+
+      <RepairFormModal
+        open={repairModalOpen}
+        mode={repairModalMode}
+        form={repairForm}
+        customers={customers}
+        customerSearch={customerSearch}
+        loadingCustomers={customersLoading}
+        busy={repairFormBusy}
+        onClose={closeRepairModal}
+        onSubmit={submitRepairForm}
+        onFieldChange={setRepairFormField}
+        onCustomerSearchChange={handleCustomerSearchChange}
+        onChooseCustomer={chooseRepairCustomer}
+      />
 
       <ConfirmDialog
         open={Boolean(archiveTarget)}
         title="Archive repair?"
-        body={`Archive the repair for "${archiveTarget?.device || "this device"}"? Archived repairs are removed from the active list.`}
+        body="This removes the repair from the active list but keeps the record for history."
         busy={archiveBusy}
-        confirmLabel="Archive repair"
-        confirmClass={warnBtn(archiveBusy)}
-        onCancel={() => {
-          if (!archiveBusy) setArchiveTarget(null);
-        }}
+        confirmLabel="Archive"
+        confirmClass={secondaryBtn(archiveBusy)}
+        onCancel={() => setArchiveTarget(null)}
         onConfirm={confirmArchive}
       />
 
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title="Delete repair?"
-        body={`Permanently delete the repair for "${deleteTarget?.device || "this device"}"? This cannot be undone.`}
+        body="This permanently removes the repair record. Use delete only when the record was created by mistake."
         busy={deleteBusy}
-        confirmLabel="Delete repair"
+        confirmLabel="Delete"
         confirmClass={dangerBtn(deleteBusy)}
-        onCancel={() => {
-          if (!deleteBusy) setDeleteTarget(null);
-        }}
+        onCancel={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
       />
-    </div>
+    </main>
   );
 }

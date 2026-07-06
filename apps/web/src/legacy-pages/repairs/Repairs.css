@@ -1,0 +1,878 @@
+/* Storvex Repairs: follows Expenses/Suppliers visual language */
+:root {
+  --repair-neutral-card: #ffffff;
+  --repair-neutral-panel: #ffffff;
+}
+
+[data-theme="dark"],
+.dark {
+  --repair-neutral-card: #1f1f1f;
+  --repair-neutral-panel: #1f1f1f;
+}
+
+.svx-repairs-page {
+  color: var(--color-text);
+}
+
+.svx-repair-card {
+  border: 1px solid var(--color-border);
+  border-radius: 28px;
+  background: var(--repair-neutral-card);
+  box-shadow: var(--shadow-card);
+}
+
+.svx-repair-panel {
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--repair-neutral-panel);
+}
+
+.svx-repair-note {
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface-2);
+}
+
+.svx-repair-badge,
+.svx-repair-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
+  word-break: keep-all;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.svx-repair-badge {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+}
+
+.svx-repair-badge.is-primary {
+  border-color: transparent;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.svx-repair-badge.is-success {
+  background: rgba(16, 185, 129, 0.14);
+  color: var(--color-success);
+  border-color: transparent;
+}
+
+.svx-repair-badge.is-warning {
+  background: rgba(245, 158, 11, 0.16);
+  color: var(--color-warning);
+  border-color: transparent;
+}
+
+.svx-repair-badge.is-danger {
+  background: rgba(219, 80, 74, 0.12);
+  color: var(--color-danger);
+  border-color: transparent;
+}
+
+.svx-repair-summary {
+  position: relative;
+  overflow: hidden;
+}
+
+.svx-repair-summary::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--color-border);
+}
+
+.svx-repair-summary.is-primary::before {
+  background: var(--color-primary);
+}
+
+.svx-repair-summary.is-warning::before {
+  background: var(--color-warning);
+}
+
+.svx-repair-summary.is-success::before {
+  background: var(--color-success);
+}
+
+.svx-repair-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(220px, 0.45fr) minmax(150px, 0.25fr);
+  gap: 14px;
+  align-items: end;
+}
+
+.svx-repair-log-header {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.svx-repair-row {
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.svx-repair-row:hover {
+  border-color: var(--color-primary);
+}
+
+.svx-repair-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.svx-repairs-page .app-input,
+.svx-repairs-page select,
+.svx-repairs-page textarea {
+  background: var(--color-surface);
+}
+
+.svx-repairs-page button,
+.svx-repairs-page a,
+.svx-repairs-page span {
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+html:not(.dark) body:not(.dark) .svx-repairs-page,
+:root:not([data-theme="dark"]) .svx-repairs-page,
+[data-theme="light"] .svx-repairs-page {
+  --repair-neutral-card: #ffffff;
+  --repair-neutral-panel: #ffffff;
+}
+
+html:not(.dark) body:not(.dark) .svx-repairs-page .svx-repair-card,
+html:not(.dark) body:not(.dark) .svx-repairs-page .svx-repair-panel,
+:root:not([data-theme="dark"]) .svx-repairs-page .svx-repair-card,
+:root:not([data-theme="dark"]) .svx-repairs-page .svx-repair-panel,
+[data-theme="light"] .svx-repairs-page .svx-repair-card,
+[data-theme="light"] .svx-repairs-page .svx-repair-panel {
+  background: #ffffff !important;
+  color: var(--color-text) !important;
+}
+
+html:not(.dark) body:not(.dark) .svx-repairs-page .app-input,
+html:not(.dark) body:not(.dark) .svx-repairs-page select,
+html:not(.dark) body:not(.dark) .svx-repairs-page textarea,
+:root:not([data-theme="dark"]) .svx-repairs-page .app-input,
+:root:not([data-theme="dark"]) .svx-repairs-page select,
+:root:not([data-theme="dark"]) .svx-repairs-page textarea,
+[data-theme="light"] .svx-repairs-page .app-input,
+[data-theme="light"] .svx-repairs-page select,
+[data-theme="light"] .svx-repairs-page textarea {
+  background: #ffffff !important;
+  color: var(--color-text) !important;
+}
+
+.svx-repairs-page button,
+.svx-repairs-page .svx-repair-badge.is-primary {
+  box-shadow: none !important;
+}
+
+.svx-repairs-page,
+.svx-repairs-page * {
+  max-width: 100%;
+}
+
+@media (max-width: 1180px) {
+  .svx-repair-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-repair-filter-grid .svx-repair-showing {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-repairs-page {
+    padding-bottom: 28px;
+  }
+
+  .svx-repair-filter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-repair-filter-grid .svx-repair-showing {
+    grid-column: auto;
+  }
+
+  .svx-repair-card {
+    border-radius: 24px;
+  }
+
+  .svx-repair-panel {
+    border-radius: 20px;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-repair-card {
+    border-radius: 22px;
+  }
+
+  .svx-repair-badge,
+  .svx-repair-pill {
+    font-size: 11px;
+    padding: 6px 9px;
+  }
+
+  .svx-repairs-page button,
+  .svx-repairs-page a {
+    min-height: 42px;
+  }
+}
+
+/* Repair modal workflow */
+.svx-repair-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(2, 6, 23, 0.62);
+  backdrop-filter: blur(10px);
+}
+
+.svx-repair-modal-panel {
+  width: min(920px, 100%);
+  max-height: min(88vh, 860px);
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 30px;
+  background: var(--repair-neutral-card);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.38);
+}
+
+.svx-repair-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--color-border);
+  padding: 24px;
+}
+
+.svx-repair-eyebrow {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.svx-repair-modal-header h2 {
+  margin: 10px 0 0;
+  color: var(--color-text);
+  font-size: clamp(1.45rem, 2.8vw, 2rem);
+  font-weight: 1000;
+  letter-spacing: -0.04em;
+}
+
+.svx-repair-modal-header p {
+  margin: 10px 0 0;
+  max-width: 620px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.svx-repair-icon-button {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.svx-repair-form {
+  padding: 24px;
+}
+
+.svx-repair-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.svx-repair-field {
+  min-width: 0;
+}
+
+.svx-repair-field span {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.svx-repair-field strong {
+  color: var(--color-danger);
+}
+
+.svx-repair-field em {
+  display: block;
+  margin-top: 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.svx-repair-field-wide {
+  grid-column: span 2;
+}
+
+.svx-repair-textarea {
+  min-height: 116px;
+  resize: vertical;
+}
+
+.svx-repair-selected-customer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin-top: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface-2);
+  padding: 16px;
+}
+
+.svx-repair-selected-customer span {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.svx-repair-selected-customer strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.svx-repair-selected-customer p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.svx-repair-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.svx-repair-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 16px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 900;
+  box-shadow: none;
+  transition: opacity 160ms ease, border-color 160ms ease;
+}
+
+.svx-repair-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.svx-repair-button.is-primary {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.svx-repair-button.is-secondary {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+@media (max-width: 720px) {
+  .svx-repair-modal-backdrop {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .svx-repair-modal-panel {
+    max-height: 92vh;
+    border-radius: 26px;
+  }
+
+  .svx-repair-modal-header,
+  .svx-repair-form {
+    padding: 20px;
+  }
+
+  .svx-repair-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-repair-field-wide {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 460px) {
+  .svx-repair-modal-header {
+    align-items: flex-start;
+  }
+
+  .svx-repair-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-repair-field-wide {
+    grid-column: auto;
+  }
+
+  .svx-repair-selected-customer {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-repair-modal-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .svx-repair-button {
+    width: 100%;
+  }
+}
+
+/* Repair modal theme lock: dark/light mode */
+.svx-repair-modal-panel {
+  background: var(--repair-neutral-card) !important;
+  color: var(--color-text) !important;
+}
+
+.svx-repair-modal-header {
+  background: var(--repair-neutral-card);
+}
+
+.svx-repair-modal-panel .app-input,
+.svx-repair-modal-panel select,
+.svx-repair-modal-panel textarea {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+.svx-repair-modal-panel .app-input::placeholder,
+.svx-repair-modal-panel textarea::placeholder {
+  color: var(--color-text-muted) !important;
+}
+
+.svx-repair-selected-customer,
+.svx-repair-icon-button,
+.svx-repair-button.is-secondary {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* Light mode must stay clean white, not navy/dark */
+html:not(.dark) body:not(.dark) .svx-repair-modal-panel,
+:root:not([data-theme="dark"]) .svx-repair-modal-panel,
+[data-theme="light"] .svx-repair-modal-panel {
+  background: #ffffff !important;
+  color: var(--color-text) !important;
+}
+
+html:not(.dark) body:not(.dark) .svx-repair-modal-header,
+:root:not([data-theme="dark"]) .svx-repair-modal-header,
+[data-theme="light"] .svx-repair-modal-header {
+  background: #ffffff !important;
+}
+
+html:not(.dark) body:not(.dark) .svx-repair-modal-panel .app-input,
+html:not(.dark) body:not(.dark) .svx-repair-modal-panel select,
+html:not(.dark) body:not(.dark) .svx-repair-modal-panel textarea,
+:root:not([data-theme="dark"]) .svx-repair-modal-panel .app-input,
+:root:not([data-theme="dark"]) .svx-repair-modal-panel select,
+:root:not([data-theme="dark"]) .svx-repair-modal-panel textarea,
+[data-theme="light"] .svx-repair-modal-panel .app-input,
+[data-theme="light"] .svx-repair-modal-panel select,
+[data-theme="light"] .svx-repair-modal-panel textarea {
+  background: #ffffff !important;
+  color: var(--color-text) !important;
+}
+
+html:not(.dark) body:not(.dark) .svx-repair-selected-customer,
+html:not(.dark) body:not(.dark) .svx-repair-icon-button,
+html:not(.dark) body:not(.dark) .svx-repair-button.is-secondary,
+:root:not([data-theme="dark"]) .svx-repair-selected-customer,
+:root:not([data-theme="dark"]) .svx-repair-icon-button,
+:root:not([data-theme="dark"]) .svx-repair-button.is-secondary,
+[data-theme="light"] .svx-repair-selected-customer,
+[data-theme="light"] .svx-repair-icon-button,
+[data-theme="light"] .svx-repair-button.is-secondary {
+  background: #ffffff !important;
+  color: var(--color-text) !important;
+}
+
+/* Dark mode must match Storvex charcoal, not blue panels */
+[data-theme="dark"] .svx-repair-modal-panel,
+.dark .svx-repair-modal-panel {
+  background: #1f1f1f !important;
+  color: var(--color-text) !important;
+}
+
+[data-theme="dark"] .svx-repair-modal-header,
+.dark .svx-repair-modal-header {
+  background: #1f1f1f !important;
+}
+
+[data-theme="dark"] .svx-repair-modal-panel .app-input,
+[data-theme="dark"] .svx-repair-modal-panel select,
+[data-theme="dark"] .svx-repair-modal-panel textarea,
+.dark .svx-repair-modal-panel .app-input,
+.dark .svx-repair-modal-panel select,
+.dark .svx-repair-modal-panel textarea {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+}
+
+[data-theme="dark"] .svx-repair-selected-customer,
+[data-theme="dark"] .svx-repair-icon-button,
+[data-theme="dark"] .svx-repair-button.is-secondary,
+.dark .svx-repair-selected-customer,
+.dark .svx-repair-icon-button,
+.dark .svx-repair-button.is-secondary {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+}
+
+/* Modal should never introduce glow/shiny styles */
+.svx-repair-modal-panel *,
+.svx-repair-modal-backdrop button {
+  box-shadow: none;
+}
+
+.svx-repair-button.is-primary {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+}
+
+/* Repairs PWA/mobile density: use two columns where possible */
+@media (min-width: 390px) and (max-width: 759px) {
+  .svx-repairs-page {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .svx-repairs-page > section:first-of-type .grid.grid-cols-1 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-repairs-page > section:first-of-type .grid.grid-cols-1 > .svx-repair-summary {
+    min-height: 118px;
+  }
+
+  .svx-repairs-page > section:first-of-type .grid.grid-cols-1 > .svx-repair-summary:nth-child(1),
+  .svx-repairs-page > section:first-of-type .grid.grid-cols-1 > .svx-repair-summary:nth-child(2),
+  .svx-repairs-page > section:first-of-type .grid.grid-cols-1 > .svx-repair-summary:nth-child(3),
+  .svx-repairs-page > section:first-of-type .grid.grid-cols-1 > .svx-repair-summary:nth-child(4) {
+    grid-column: auto !important;
+  }
+
+  .svx-repair-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-repair-filter-grid label:first-child {
+    grid-column: span 2;
+  }
+
+  .svx-repair-filter-grid .svx-repair-showing {
+    grid-column: auto !important;
+  }
+
+  .svx-repair-filter-grid label,
+  .svx-repair-filter-grid .svx-repair-showing {
+    min-width: 0;
+  }
+
+  .svx-repair-filter-grid .app-input {
+    min-width: 0;
+  }
+}
+
+@media (min-width: 520px) and (max-width: 759px) {
+  .svx-repair-filter-grid label:first-child {
+    grid-column: auto;
+  }
+
+  .svx-repair-filter-grid {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.85fr) minmax(130px, 0.45fr) !important;
+  }
+}
+
+@media (max-width: 389px) {
+  .svx-repairs-page > section:first-of-type .grid.grid-cols-1 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-repair-filter-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Repair rows: keep compact columns on medium-small screens */
+@media (min-width: 430px) and (max-width: 759px) {
+  .svx-repair-row .mt-4.grid.gap-3.sm\:grid-cols-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-repair-row .mt-4.grid.gap-3.sm\:grid-cols-3 > :last-child {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 429px) {
+  .svx-repair-row .mt-4.grid.gap-3.sm\:grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Modal form: two columns on PWA widths where usable */
+@media (min-width: 390px) and (max-width: 720px) {
+  .svx-repair-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-repair-field-wide {
+    grid-column: span 2 !important;
+  }
+}
+
+@media (max-width: 389px) {
+  .svx-repair-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-repair-field-wide {
+    grid-column: auto !important;
+  }
+}
+
+/* Repair modal search pickers */
+.svx-repair-search-field {
+  position: relative;
+}
+
+.svx-repair-search-results {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% - 2px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--repair-neutral-card);
+  padding: 6px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+}
+
+.svx-repair-search-result {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--color-text);
+  padding: 11px 12px;
+  text-align: left;
+  box-shadow: none !important;
+}
+
+.svx-repair-search-result:hover {
+  background: var(--color-surface-2);
+}
+
+.svx-repair-search-result strong {
+  display: block;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.svx-repair-search-result span {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.svx-repair-search-empty {
+  border-radius: 14px;
+  color: var(--color-text-muted);
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+html:not(.dark) body:not(.dark) .svx-repair-search-results,
+:root:not([data-theme="dark"]) .svx-repair-search-results,
+[data-theme="light"] .svx-repair-search-results {
+  background: #ffffff !important;
+}
+
+[data-theme="dark"] .svx-repair-search-results,
+.dark .svx-repair-search-results {
+  background: #1f1f1f !important;
+}
+
+@media (max-width: 460px) {
+  .svx-repair-search-results {
+    position: static;
+    margin-top: 8px;
+    max-height: 220px;
+  }
+}
+
+/* Repair row action polish */
+.svx-repair-row-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.svx-repair-more-wrap {
+  position: relative;
+}
+
+.svx-repair-more-button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: none !important;
+}
+
+.svx-repair-more-button:hover,
+.svx-repair-more-button[aria-expanded="true"] {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-color: transparent;
+}
+
+.svx-repair-more-button span {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.svx-repair-more-menu {
+  position: absolute;
+  z-index: 20;
+  right: 0;
+  top: calc(100% + 8px);
+  width: 190px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--repair-neutral-card);
+  padding: 6px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.34);
+}
+
+.svx-repair-more-menu button {
+  display: flex;
+  width: 100%;
+  min-height: 40px;
+  align-items: center;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--color-text);
+  padding: 0 12px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 900;
+  box-shadow: none !important;
+}
+
+.svx-repair-more-menu button:hover {
+  background: var(--color-surface-2);
+}
+
+.svx-repair-more-menu button.is-danger {
+  color: var(--color-danger);
+}
+
+.svx-repair-more-menu button.is-danger:hover {
+  background: rgba(219, 80, 74, 0.1);
+}
+
+html:not(.dark) body:not(.dark) .svx-repair-more-menu,
+:root:not([data-theme="dark"]) .svx-repair-more-menu,
+[data-theme="light"] .svx-repair-more-menu {
+  background: #ffffff !important;
+}
+
+[data-theme="dark"] .svx-repair-more-menu,
+.dark .svx-repair-more-menu {
+  background: #1f1f1f !important;
+}
+
+@media (max-width: 759px) {
+  .svx-repair-row-actions {
+    gap: 12px;
+  }
+
+  .svx-repair-more-menu {
+    position: static;
+    width: 100%;
+    margin-top: 8px;
+  }
+}

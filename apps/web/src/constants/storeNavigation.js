@@ -42,3 +42,12 @@ export const STORE_NAV_ITEMS = [
     ],
   },
 ];
+
+export function getVisibleStoreNavigation() {
+  const shopType = getCurrentShopType();
+
+  return STORE_NAVIGATION.filter((item) => {
+    if (item.to === "/app/repairs") return supportsRepairs(shopType);
+    return true;
+  });
+}
