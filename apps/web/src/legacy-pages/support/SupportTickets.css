@@ -1,0 +1,1647 @@
+.svx-support-page {
+  display: grid;
+  gap: 22px;
+  color: var(--color-text);
+}
+
+.svx-support-hero,
+.svx-support-panel,
+.svx-support-modal-card {
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  box-shadow: var(--shadow-card);
+}
+
+.svx-support-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: start;
+  border-radius: 30px;
+  padding: 28px;
+}
+
+.svx-support-eyebrow {
+  margin: 0 0 14px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.svx-support-title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 1000;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.svx-support-copy {
+  margin: 14px 0 0;
+  max-width: 720px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.8;
+}
+
+.svx-support-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.svx-support-btn {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 16px;
+  border: 1px solid transparent;
+  padding: 0 18px;
+  font-size: 13px;
+  font-weight: 1000;
+  line-height: 1;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.svx-support-btn:hover {
+  transform: translateY(-1px);
+}
+
+.svx-support-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  transform: none;
+}
+
+.svx-support-btn-primary {
+  background: var(--color-primary);
+  color: #ffffff;
+}
+
+.svx-support-btn-secondary {
+  border-color: var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.svx-support-btn-quiet {
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.svx-support-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.svx-support-stat {
+  position: relative;
+  overflow: hidden;
+  min-height: 112px;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface);
+  padding: 18px;
+}
+
+.svx-support-stat::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--color-primary);
+  opacity: 0.65;
+}
+
+.svx-support-stat.is-warning::before {
+  background: #facc15;
+}
+
+.svx-support-stat.is-success::before {
+  background: #34d399;
+}
+
+.svx-support-stat-label {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 1000;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.svx-support-stat-value {
+  margin-top: 16px;
+  color: var(--color-text);
+  font-size: 26px;
+  font-weight: 1000;
+  line-height: 1;
+}
+
+.svx-support-stat-note {
+  margin-top: 10px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.svx-support-panel {
+  overflow: hidden;
+  border-radius: 30px;
+}
+
+.svx-support-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(180px, 240px) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.svx-support-field {
+  display: grid;
+  gap: 8px;
+}
+
+.svx-support-label {
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 1000;
+}
+
+.svx-support-input,
+.svx-support-select,
+.svx-support-textarea {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 850;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background 160ms ease;
+}
+
+.svx-support-input,
+.svx-support-select {
+  min-height: 46px;
+  padding: 0 14px;
+}
+
+.svx-support-textarea {
+  min-height: 128px;
+  resize: vertical;
+  padding: 14px;
+  line-height: 1.65;
+}
+
+.svx-support-input::placeholder,
+.svx-support-textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+.svx-support-input:focus,
+.svx-support-select:focus,
+.svx-support-textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px var(--color-primary-ring);
+}
+
+.svx-support-count {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  padding: 0 14px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 1000;
+  white-space: nowrap;
+}
+
+.svx-support-list {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+}
+
+.svx-support-ticket {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface);
+  padding: 16px;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.svx-support-ticket:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-primary) 48%, var(--color-border));
+}
+
+.svx-support-ticket-main {
+  min-width: 0;
+}
+
+.svx-support-ticket-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.svx-support-badge {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 1000;
+  line-height: 1;
+}
+
+.svx-support-badge.is-open {
+  background: rgba(59, 130, 246, 0.14);
+  color: #60a5fa;
+}
+
+.svx-support-badge.is-progress {
+  background: rgba(250, 204, 21, 0.14);
+  color: #facc15;
+}
+
+.svx-support-badge.is-waiting {
+  background: rgba(244, 114, 182, 0.14);
+  color: #f472b6;
+}
+
+.svx-support-badge.is-done {
+  background: rgba(52, 211, 153, 0.14);
+  color: #34d399;
+}
+
+.svx-support-badge.is-urgent {
+  background: rgba(248, 113, 113, 0.16);
+  color: #f87171;
+}
+
+.svx-support-ticket-title {
+  margin: 12px 0 0;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 1000;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.svx-support-ticket-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.5;
+}
+
+.svx-support-ticket-side {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: right;
+}
+
+.svx-support-open {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--color-surface-2);
+  padding: 0 14px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 1000;
+}
+
+.svx-support-empty,
+.svx-support-loading {
+  display: grid;
+  min-height: 360px;
+  place-items: center;
+  padding: 28px;
+  text-align: center;
+}
+
+.svx-support-empty-card {
+  max-width: 460px;
+  border: 1px solid var(--color-border);
+  border-radius: 28px;
+  background: var(--color-surface);
+  padding: 28px;
+}
+
+.svx-support-empty-icon {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 16px;
+  place-items: center;
+  border-radius: 20px;
+  background: var(--color-surface-2);
+  color: var(--color-primary);
+}
+
+.svx-support-empty-title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 17px;
+  font-weight: 1000;
+}
+
+.svx-support-empty-copy {
+  margin: 10px auto 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.75;
+}
+
+.svx-support-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.svx-support-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.svx-support-modal-card {
+  position: relative;
+  z-index: 1;
+  width: min(760px, 100%);
+  max-height: min(86vh, 860px);
+  overflow: auto;
+  border-radius: 30px;
+  padding: 24px;
+}
+
+.svx-support-modal-head {
+  display: flex;
+  gap: 16px;
+  align-items: start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.svx-support-modal-title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 24px;
+  font-weight: 1000;
+  letter-spacing: -0.035em;
+}
+
+.svx-support-modal-copy {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 760;
+  line-height: 1.7;
+}
+
+.svx-support-close {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-size: 18px;
+  font-weight: 1000;
+}
+
+.svx-support-form {
+  display: grid;
+  gap: 14px;
+}
+
+.svx-support-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.svx-support-upload {
+  display: grid;
+  gap: 12px;
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  border-radius: 22px;
+  background: var(--color-surface);
+  padding: 16px;
+}
+
+.svx-support-upload-label {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--color-surface-2);
+  padding: 0 14px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 1000;
+  cursor: pointer;
+}
+
+.svx-support-upload-note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.6;
+}
+
+.svx-support-file-list {
+  display: grid;
+  gap: 8px;
+}
+
+.svx-support-file {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border-radius: 16px;
+  background: var(--color-surface-2);
+  padding: 10px 12px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.svx-support-file span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-support-file button {
+  border: 0;
+  background: transparent;
+  color: var(--color-danger);
+  font-size: 12px;
+  font-weight: 1000;
+}
+
+.svx-support-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.svx-support-skeleton {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.svx-support-skeleton-row {
+  height: 96px;
+  border-radius: 24px;
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 0%,
+    var(--color-surface-2) 48%,
+    var(--color-surface) 100%
+  );
+  background-size: 220% 100%;
+  animation: svx-support-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes svx-support-pulse {
+  0% {
+    background-position: 120% 0;
+  }
+
+  100% {
+    background-position: -120% 0;
+  }
+}
+
+@media (max-width: 1180px) {
+  .svx-support-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-support-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(170px, 220px);
+  }
+
+  .svx-support-count {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-support-page {
+    gap: 16px;
+  }
+
+  .svx-support-hero {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    border-radius: 24px;
+  }
+
+  .svx-support-actions {
+    justify-content: stretch;
+  }
+
+  .svx-support-actions .svx-support-btn {
+    flex: 1 1 150px;
+  }
+
+  .svx-support-summary {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .svx-support-stat {
+    min-height: 104px;
+    border-radius: 20px;
+    padding: 15px;
+  }
+
+  .svx-support-toolbar {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .svx-support-list {
+    padding: 16px;
+  }
+
+  .svx-support-ticket {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    border-radius: 20px;
+  }
+
+  .svx-support-ticket-side {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .svx-support-open {
+    justify-self: end;
+  }
+
+  .svx-support-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-support-modal {
+    padding: 12px;
+    align-items: end;
+  }
+
+  .svx-support-modal-card {
+    max-height: 92vh;
+    border-radius: 26px 26px 0 0;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 420px) {
+  .svx-support-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-support-title {
+    font-size: 2rem;
+  }
+
+  .svx-support-form-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .svx-support-form-actions .svx-support-btn {
+    width: 100%;
+  }
+}
+
+/* Storvex color correction: support must use the app design system only */
+.svx-support-stat::before,
+.svx-support-stat.is-warning::before,
+.svx-support-stat.is-success::before {
+  background: var(--color-primary) !important;
+  opacity: 0.7;
+}
+
+.svx-support-badge,
+.svx-support-badge.is-open,
+.svx-support-badge.is-progress,
+.svx-support-badge.is-waiting,
+.svx-support-badge.is-done,
+.svx-support-badge.is-urgent {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text-muted) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.svx-support-badge.is-open,
+.svx-support-badge.is-progress {
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+  border-color: transparent !important;
+}
+
+.svx-support-badge.is-waiting {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+}
+
+.svx-support-badge.is-done {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text-muted) !important;
+}
+
+.svx-support-badge.is-urgent {
+  background: color-mix(in srgb, var(--color-danger) 14%, var(--color-surface-2)) !important;
+  color: var(--color-danger) !important;
+  border-color: transparent !important;
+}
+
+.svx-support-empty-icon {
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+}
+
+.svx-support-ticket:hover {
+  border-color: var(--color-primary) !important;
+}
+
+.svx-support-upload {
+  border-color: var(--color-border) !important;
+  background: var(--color-surface) !important;
+}
+
+.svx-support-upload-label {
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+}
+
+.svx-support-btn-primary {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+}
+
+.svx-support-btn-secondary,
+.svx-support-open,
+.svx-support-close {
+  border-color: var(--color-border) !important;
+  background: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+}
+
+.svx-support-skeleton-row {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 0%,
+    var(--color-surface-2) 48%,
+    var(--color-surface) 100%
+  ) !important;
+}
+
+/* Final Storvex correction: Support must match Expenses, not a blue helpdesk */
+:root {
+  --support-neutral-card: #ffffff;
+  --support-neutral-panel: #ffffff;
+}
+
+[data-theme="dark"],
+.dark {
+  --support-neutral-card: #1f1f1f;
+  --support-neutral-panel: #1f1f1f;
+}
+
+.svx-support-page {
+  color: var(--color-text) !important;
+}
+
+/* Match Expenses: neutral cards in both themes */
+.svx-support-hero,
+.svx-support-panel,
+.svx-support-modal-card,
+.svx-support-stat,
+.svx-support-empty-card,
+.svx-support-ticket {
+  background: var(--support-neutral-card) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* Hero should feel like Storvex internal page, not a marketing banner */
+.svx-support-hero {
+  box-shadow: none !important;
+  border-radius: 30px !important;
+}
+
+html:not(.dark) body:not(.dark) .svx-support-hero,
+html:not(.dark) body:not(.dark) .svx-support-panel,
+html:not(.dark) body:not(.dark) .svx-support-modal-card,
+html:not(.dark) body:not(.dark) .svx-support-stat,
+html:not(.dark) body:not(.dark) .svx-support-empty-card,
+html:not(.dark) body:not(.dark) .svx-support-ticket,
+:root:not([data-theme="dark"]) .svx-support-hero,
+:root:not([data-theme="dark"]) .svx-support-panel,
+:root:not([data-theme="dark"]) .svx-support-modal-card,
+:root:not([data-theme="dark"]) .svx-support-stat,
+:root:not([data-theme="dark"]) .svx-support-empty-card,
+:root:not([data-theme="dark"]) .svx-support-ticket,
+[data-theme="light"] .svx-support-hero,
+[data-theme="light"] .svx-support-panel,
+[data-theme="light"] .svx-support-modal-card,
+[data-theme="light"] .svx-support-stat,
+[data-theme="light"] .svx-support-empty-card,
+[data-theme="light"] .svx-support-ticket {
+  background: #ffffff !important;
+  color: var(--color-text) !important;
+}
+
+/* Dark mode should match Expenses dark neutral cards */
+[data-theme="dark"] .svx-support-hero,
+[data-theme="dark"] .svx-support-panel,
+[data-theme="dark"] .svx-support-modal-card,
+[data-theme="dark"] .svx-support-stat,
+[data-theme="dark"] .svx-support-empty-card,
+[data-theme="dark"] .svx-support-ticket,
+.dark .svx-support-hero,
+.dark .svx-support-panel,
+.dark .svx-support-modal-card,
+.dark .svx-support-stat,
+.dark .svx-support-empty-card,
+.dark .svx-support-ticket {
+  background: #1f1f1f !important;
+}
+
+/* Remove blue-card feeling from empty/list area */
+.svx-support-list,
+.svx-support-empty,
+.svx-support-loading {
+  background: transparent !important;
+}
+
+/* Inputs and filters should use Storvex surfaces only */
+.svx-support-input,
+.svx-support-select,
+.svx-support-textarea,
+.svx-support-count,
+.svx-support-open,
+.svx-support-close,
+.svx-support-upload,
+.svx-support-upload-label,
+.svx-support-file {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+html:not(.dark) body:not(.dark) .svx-support-input,
+html:not(.dark) body:not(.dark) .svx-support-select,
+html:not(.dark) body:not(.dark) .svx-support-textarea,
+html:not(.dark) body:not(.dark) .svx-support-count,
+html:not(.dark) body:not(.dark) .svx-support-open,
+html:not(.dark) body:not(.dark) .svx-support-close,
+html:not(.dark) body:not(.dark) .svx-support-upload,
+html:not(.dark) body:not(.dark) .svx-support-upload-label,
+html:not(.dark) body:not(.dark) .svx-support-file {
+  background: #ffffff !important;
+  color: var(--color-text) !important;
+}
+
+/* Stat cards: same calm vertical accent style as Expenses */
+.svx-support-stat::before,
+.svx-support-stat.is-warning::before,
+.svx-support-stat.is-success::before {
+  background: var(--color-primary) !important;
+  opacity: 0.7 !important;
+}
+
+/* Badges: no new color system */
+.svx-support-badge,
+.svx-support-badge.is-open,
+.svx-support-badge.is-progress,
+.svx-support-badge.is-waiting,
+.svx-support-badge.is-done {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text-muted) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.svx-support-badge.is-open,
+.svx-support-badge.is-progress {
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+  border-color: transparent !important;
+}
+
+.svx-support-badge.is-urgent {
+  background: rgba(219, 80, 74, 0.12) !important;
+  color: var(--color-danger) !important;
+  border-color: transparent !important;
+}
+
+/* Buttons: only Storvex primary and neutral secondary */
+.svx-support-btn,
+.svx-support-btn-primary,
+.svx-support-btn-secondary,
+.svx-support-open,
+.svx-support-close,
+.svx-support-upload-label {
+  box-shadow: none !important;
+}
+
+.svx-support-btn-primary {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+}
+
+.svx-support-btn-secondary,
+.svx-support-open,
+.svx-support-close {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+.svx-support-btn-secondary:hover,
+.svx-support-open:hover,
+.svx-support-close:hover,
+.svx-support-ticket:hover {
+  border-color: var(--color-primary) !important;
+}
+
+/* Empty state icon should be Storvex primary, not a separate helpdesk blue */
+.svx-support-empty-icon {
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+}
+
+/* Modal backdrop and card should feel same as expense modal */
+.svx-support-modal-backdrop {
+  background: rgba(2, 6, 23, 0.62) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.svx-support-modal-card {
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.38) !important;
+}
+
+/* Remove accidental marketing scale on Support title */
+.svx-support-title {
+  font-size: clamp(1.7rem, 3vw, 2.35rem) !important;
+  line-height: 1.05 !important;
+  letter-spacing: -0.04em !important;
+}
+
+/* Keep PWA clean */
+.svx-support-page,
+.svx-support-page * {
+  max-width: 100%;
+}
+
+/* Store support detail page: match Storvex/Expenses neutral design */
+.svx-support-detail-page {
+  display: grid;
+  gap: 24px;
+  color: var(--color-text);
+}
+
+.svx-support-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 24px;
+  align-items: start;
+}
+
+.svx-support-detail-card,
+.svx-support-detail-conversation {
+  border: 1px solid var(--color-border);
+  border-radius: 30px;
+  background: var(--support-neutral-card, var(--color-card));
+  color: var(--color-text);
+  box-shadow: var(--shadow-card);
+}
+
+.svx-support-detail-panel {
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.svx-support-detail-conversation {
+  overflow: hidden;
+}
+
+.svx-support-detail-sidebar {
+  display: grid;
+  gap: 22px;
+}
+
+.svx-support-detail-page .svx-support-detail-card,
+.svx-support-detail-page .svx-support-detail-conversation {
+  background: var(--support-neutral-card, var(--color-card)) !important;
+}
+
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-detail-card,
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-detail-conversation,
+:root:not([data-theme="dark"]) .svx-support-detail-page .svx-support-detail-card,
+:root:not([data-theme="dark"]) .svx-support-detail-page .svx-support-detail-conversation,
+[data-theme="light"] .svx-support-detail-page .svx-support-detail-card,
+[data-theme="light"] .svx-support-detail-page .svx-support-detail-conversation {
+  background: #ffffff !important;
+}
+
+[data-theme="dark"] .svx-support-detail-page .svx-support-detail-card,
+[data-theme="dark"] .svx-support-detail-page .svx-support-detail-conversation,
+.dark .svx-support-detail-page .svx-support-detail-card,
+.dark .svx-support-detail-page .svx-support-detail-conversation {
+  background: #1f1f1f !important;
+}
+
+.svx-support-message-row {
+  display: flex;
+}
+
+.svx-support-message-row.is-platform {
+  justify-content: flex-start;
+}
+
+.svx-support-message-row.is-store {
+  justify-content: flex-end;
+}
+
+.svx-support-message-bubble {
+  max-width: 760px;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  padding: 16px;
+  box-shadow: none;
+}
+
+.svx-support-message-bubble.is-platform {
+  background: var(--color-surface-2);
+  color: var(--color-text);
+}
+
+.svx-support-message-bubble.is-store {
+  border-color: transparent;
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+}
+
+.svx-support-message-bubble.is-store .text-white\/75,
+.svx-support-message-bubble.is-store .text-white {
+  color: var(--color-text-muted) !important;
+}
+
+.svx-support-message-bubble.is-store p,
+.svx-support-message-bubble.is-store div {
+  color: var(--color-text) !important;
+}
+
+.svx-support-detail-page textarea,
+.svx-support-detail-page input,
+.svx-support-detail-page select {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+.svx-support-detail-page textarea:focus,
+.svx-support-detail-page input:focus,
+.svx-support-detail-page select:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 4px var(--color-primary-ring) !important;
+}
+
+.svx-support-next-note {
+  border: 1px solid var(--color-border);
+  border-radius: 22px;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  padding: 16px;
+  font-size: 14px;
+  font-weight: 760;
+  line-height: 1.75;
+}
+
+.svx-support-detail-page .svx-support-badge {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text-muted) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.svx-support-detail-page .svx-support-badge.is-open,
+.svx-support-detail-page .svx-support-badge.is-progress {
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+  border-color: transparent !important;
+}
+
+.svx-support-detail-page .svx-support-badge.is-urgent {
+  background: rgba(219, 80, 74, 0.12) !important;
+  color: var(--color-danger) !important;
+  border-color: transparent !important;
+}
+
+@media (max-width: 1180px) {
+  .svx-support-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-support-detail-sidebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-support-detail-sidebar > * {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-support-detail-page {
+    gap: 16px;
+  }
+
+  .svx-support-detail-card,
+  .svx-support-detail-conversation {
+    border-radius: 24px;
+  }
+
+  .svx-support-detail-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-support-message-row,
+  .svx-support-message-row.is-platform,
+  .svx-support-message-row.is-store {
+    justify-content: stretch;
+  }
+
+  .svx-support-message-bubble {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 20px;
+  }
+}
+
+/* Support detail final neutral correction: remove blue-tinted inner panels */
+.svx-support-detail-page .svx-support-detail-panel,
+.svx-support-detail-page .svx-support-message-bubble,
+.svx-support-detail-page .svx-support-next-note,
+.svx-support-detail-page textarea,
+.svx-support-detail-page input,
+.svx-support-detail-page select,
+.svx-support-detail-page .svx-support-upload,
+.svx-support-detail-page .svx-support-upload-label,
+.svx-support-detail-page .svx-support-file,
+.svx-support-detail-page .rounded-\[22px\],
+.svx-support-detail-page .rounded-\[18px\] {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* Light mode: inner panels should stay clean white like Expenses */
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-detail-panel,
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-message-bubble,
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-next-note,
+html:not(.dark) body:not(.dark) .svx-support-detail-page textarea,
+html:not(.dark) body:not(.dark) .svx-support-detail-page input,
+html:not(.dark) body:not(.dark) .svx-support-detail-page select,
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-upload,
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-upload-label,
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-file,
+:root:not([data-theme="dark"]) .svx-support-detail-page .svx-support-detail-panel,
+:root:not([data-theme="dark"]) .svx-support-detail-page .svx-support-message-bubble,
+:root:not([data-theme="dark"]) .svx-support-detail-page .svx-support-next-note,
+:root:not([data-theme="dark"]) .svx-support-detail-page textarea,
+:root:not([data-theme="dark"]) .svx-support-detail-page input,
+:root:not([data-theme="dark"]) .svx-support-detail-page select,
+:root:not([data-theme="dark"]) .svx-support-detail-page .svx-support-upload,
+:root:not([data-theme="dark"]) .svx-support-detail-page .svx-support-upload-label,
+:root:not([data-theme="dark"]) .svx-support-detail-page .svx-support-file,
+[data-theme="light"] .svx-support-detail-page .svx-support-detail-panel,
+[data-theme="light"] .svx-support-detail-page .svx-support-message-bubble,
+[data-theme="light"] .svx-support-detail-page .svx-support-next-note,
+[data-theme="light"] .svx-support-detail-page textarea,
+[data-theme="light"] .svx-support-detail-page input,
+[data-theme="light"] .svx-support-detail-page select,
+[data-theme="light"] .svx-support-detail-page .svx-support-upload,
+[data-theme="light"] .svx-support-detail-page .svx-support-upload-label,
+[data-theme="light"] .svx-support-detail-page .svx-support-file {
+  background: #ffffff !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+}
+
+/* Store owner message should not look like an external chat app */
+.svx-support-message-bubble.is-store {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+html:not(.dark) body:not(.dark) .svx-support-message-bubble.is-store,
+:root:not([data-theme="dark"]) .svx-support-message-bubble.is-store,
+[data-theme="light"] .svx-support-message-bubble.is-store {
+  background: #ffffff !important;
+}
+
+/* Keep only tiny status accents, not full colored panels */
+.svx-support-detail-page .svx-support-badge,
+.svx-support-detail-page .svx-support-badge.is-open,
+.svx-support-detail-page .svx-support-badge.is-progress,
+.svx-support-detail-page .svx-support-badge.is-waiting,
+.svx-support-detail-page .svx-support-badge.is-done {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text-muted) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.svx-support-detail-page .svx-support-badge.is-open,
+.svx-support-detail-page .svx-support-badge.is-progress {
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+  border-color: transparent !important;
+}
+
+.svx-support-detail-page .svx-support-badge.is-urgent {
+  background: rgba(219, 80, 74, 0.12) !important;
+  color: var(--color-danger) !important;
+  border-color: transparent !important;
+}
+
+/* Buttons should follow Expenses behavior */
+.svx-support-detail-page .bg-\[var\(--color-surface-2\)\],
+.svx-support-detail-page .bg-\[var\(--color-primary-soft\)\] {
+  box-shadow: none !important;
+}
+
+.svx-support-detail-page button,
+.svx-support-detail-page a {
+  box-shadow: none !important;
+}
+
+/* Close ticket should be calm, not green/mint */
+.svx-support-detail-page button[class*="text-\\[var\\(--color-primary\\)"] {
+  color: var(--color-primary) !important;
+}
+
+/* Improve top spacing/action placement on detail page */
+.svx-support-detail-page > section:first-child {
+  display: grid;
+  gap: 18px;
+}
+
+.svx-support-detail-page > section:first-child > div:first-child {
+  align-items: start !important;
+}
+
+@media (max-width: 720px) {
+  .svx-support-detail-page > section:first-child > div:first-child {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-support-detail-page > section:first-child .flex.flex-wrap.gap-2 {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-support-detail-page > section:first-child .flex.flex-wrap.gap-2 > * {
+    width: 100% !important;
+  }
+
+  .svx-support-detail-page textarea {
+    min-height: 120px !important;
+  }
+}
+
+/* Support detail final production polish */
+.svx-support-detail-page {
+  max-width: 100%;
+}
+
+.svx-support-detail-page .svx-support-detail-grid {
+  grid-template-columns: minmax(0, 1fr) 320px !important;
+  gap: 20px !important;
+}
+
+/* Conversation and side cards should match Expenses neutral cards */
+.svx-support-detail-page .svx-support-detail-conversation,
+.svx-support-detail-page .svx-support-detail-card {
+  background: var(--support-neutral-card, #1f1f1f) !important;
+  border-color: var(--color-border) !important;
+  box-shadow: var(--shadow-card) !important;
+}
+
+/* Remove blue/navy inner box feel completely */
+.svx-support-detail-page .svx-support-detail-panel,
+.svx-support-detail-page .svx-support-message-bubble,
+.svx-support-detail-page .svx-support-next-note,
+.svx-support-detail-page textarea,
+.svx-support-detail-page input,
+.svx-support-detail-page select,
+.svx-support-detail-page form .rounded-\[22px\],
+.svx-support-detail-page form .rounded-\[18px\],
+.svx-support-detail-page aside .rounded-\[22px\],
+.svx-support-detail-page aside .rounded-\[18px\] {
+  background: transparent !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-border) !important;
+  box-shadow: none !important;
+}
+
+/* Dark mode: use the same neutral family as Expenses, not blue panels */
+[data-theme="dark"] .svx-support-detail-page .svx-support-detail-panel,
+[data-theme="dark"] .svx-support-detail-page .svx-support-message-bubble,
+[data-theme="dark"] .svx-support-detail-page .svx-support-next-note,
+[data-theme="dark"] .svx-support-detail-page textarea,
+[data-theme="dark"] .svx-support-detail-page input,
+[data-theme="dark"] .svx-support-detail-page select,
+[data-theme="dark"] .svx-support-detail-page form .rounded-\[22px\],
+[data-theme="dark"] .svx-support-detail-page form .rounded-\[18px\],
+[data-theme="dark"] .svx-support-detail-page aside .rounded-\[22px\],
+[data-theme="dark"] .svx-support-detail-page aside .rounded-\[18px\],
+.dark .svx-support-detail-page .svx-support-detail-panel,
+.dark .svx-support-detail-page .svx-support-message-bubble,
+.dark .svx-support-detail-page .svx-support-next-note,
+.dark .svx-support-detail-page textarea,
+.dark .svx-support-detail-page input,
+.dark .svx-support-detail-page select,
+.dark .svx-support-detail-page form .rounded-\[22px\],
+.dark .svx-support-detail-page form .rounded-\[18px\],
+.dark .svx-support-detail-page aside .rounded-\[22px\],
+.dark .svx-support-detail-page aside .rounded-\[18px\] {
+  background: #1f1f1f !important;
+}
+
+/* Light mode: clean white cards like Expenses */
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-detail-conversation,
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-detail-card,
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-detail-panel,
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-message-bubble,
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-next-note,
+html:not(.dark) body:not(.dark) .svx-support-detail-page textarea,
+html:not(.dark) body:not(.dark) .svx-support-detail-page input,
+html:not(.dark) body:not(.dark) .svx-support-detail-page select,
+html:not(.dark) body:not(.dark) .svx-support-detail-page form .rounded-\[22px\],
+html:not(.dark) body:not(.dark) .svx-support-detail-page form .rounded-\[18px\],
+html:not(.dark) body:not(.dark) .svx-support-detail-page aside .rounded-\[22px\],
+html:not(.dark) body:not(.dark) .svx-support-detail-page aside .rounded-\[18px\],
+[data-theme="light"] .svx-support-detail-page .svx-support-detail-conversation,
+[data-theme="light"] .svx-support-detail-page .svx-support-detail-card,
+[data-theme="light"] .svx-support-detail-page .svx-support-detail-panel,
+[data-theme="light"] .svx-support-detail-page .svx-support-message-bubble,
+[data-theme="light"] .svx-support-detail-page .svx-support-next-note,
+[data-theme="light"] .svx-support-detail-page textarea,
+[data-theme="light"] .svx-support-detail-page input,
+[data-theme="light"] .svx-support-detail-page select,
+[data-theme="light"] .svx-support-detail-page form .rounded-\[22px\],
+[data-theme="light"] .svx-support-detail-page form .rounded-\[18px\],
+[data-theme="light"] .svx-support-detail-page aside .rounded-\[22px\],
+[data-theme="light"] .svx-support-detail-page aside .rounded-\[18px\] {
+  background: #ffffff !important;
+}
+
+/* Message thread should feel like a business record, not a chat app */
+.svx-support-detail-page .svx-support-message-row {
+  justify-content: stretch !important;
+}
+
+.svx-support-detail-page .svx-support-message-bubble {
+  width: 100% !important;
+  max-width: 100% !important;
+  border-radius: 22px !important;
+  padding: 16px !important;
+}
+
+.svx-support-detail-page .svx-support-message-bubble.is-store,
+.svx-support-detail-page .svx-support-message-bubble.is-platform {
+  border: 1px solid var(--color-border) !important;
+  background: transparent !important;
+}
+
+[data-theme="dark"] .svx-support-detail-page .svx-support-message-bubble.is-store,
+[data-theme="dark"] .svx-support-detail-page .svx-support-message-bubble.is-platform,
+.dark .svx-support-detail-page .svx-support-message-bubble.is-store,
+.dark .svx-support-detail-page .svx-support-message-bubble.is-platform {
+  background: #1f1f1f !important;
+}
+
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-message-bubble.is-store,
+html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-message-bubble.is-platform,
+[data-theme="light"] .svx-support-detail-page .svx-support-message-bubble.is-store,
+[data-theme="light"] .svx-support-detail-page .svx-support-message-bubble.is-platform {
+  background: #ffffff !important;
+}
+
+/* Compact the oversized conversation card */
+.svx-support-detail-page .svx-support-detail-conversation > div,
+.svx-support-detail-page .svx-support-detail-conversation form {
+  padding-left: 22px !important;
+  padding-right: 22px !important;
+}
+
+.svx-support-detail-page .svx-support-detail-conversation .space-y-4 {
+  padding-top: 18px !important;
+  padding-bottom: 18px !important;
+}
+
+.svx-support-detail-page form {
+  padding-top: 18px !important;
+  padding-bottom: 20px !important;
+}
+
+.svx-support-detail-page textarea {
+  min-height: 108px !important;
+  border-radius: 20px !important;
+}
+
+/* Attachments block should be useful but not huge */
+.svx-support-detail-page form .rounded-\[22px\] {
+  padding: 14px !important;
+}
+
+.svx-support-detail-page form label[class*="cursor-pointer"] {
+  min-height: 38px !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+  border: 1px solid var(--color-border) !important;
+  background: var(--color-surface-2) !important;
+  color: var(--color-text) !important;
+  box-shadow: none !important;
+}
+
+/* Side cards: lighter, tighter, less heavy */
+.svx-support-detail-page aside .svx-support-detail-card {
+  padding: 18px !important;
+}
+
+.svx-support-detail-page aside .svx-support-detail-panel,
+.svx-support-detail-page aside .rounded-\[22px\],
+.svx-support-detail-page aside .rounded-\[18px\] {
+  border-radius: 18px !important;
+  padding: 14px !important;
+}
+
+.svx-support-detail-page aside .space-y-3 {
+  gap: 10px !important;
+}
+
+/* What happens next should be a quiet support note */
+.svx-support-detail-page .svx-support-next-note {
+  font-size: 13px !important;
+  line-height: 1.65 !important;
+  color: var(--color-text-muted) !important;
+}
+
+/* Top badges should be calm */
+.svx-support-detail-page .svx-support-badge,
+.svx-support-detail-page .svx-support-badge.is-open,
+.svx-support-detail-page .svx-support-badge.is-progress,
+.svx-support-detail-page .svx-support-badge.is-waiting,
+.svx-support-detail-page .svx-support-badge.is-done {
+  background: var(--color-surface-2) !important;
+  color: var(--color-text-muted) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.svx-support-detail-page .svx-support-badge.is-open,
+.svx-support-detail-page .svx-support-badge.is-progress {
+  background: var(--color-primary-soft) !important;
+  color: var(--color-primary) !important;
+  border-color: transparent !important;
+}
+
+/* Business blocked can use danger because it is a real warning */
+.svx-support-detail-page .svx-support-badge.is-urgent {
+  background: rgba(219, 80, 74, 0.12) !important;
+  color: var(--color-danger) !important;
+  border-color: transparent !important;
+}
+
+/* Detail page actions */
+.svx-support-detail-page > section:first-child a,
+.svx-support-detail-page > section:first-child button {
+  box-shadow: none !important;
+}
+
+.svx-support-detail-page > section:first-child button:last-child {
+  background: var(--color-surface-2) !important;
+  color: var(--color-primary) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+/* PWA/mobile */
+@media (max-width: 1180px) {
+  .svx-support-detail-page .svx-support-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-support-detail-page .svx-support-detail-sidebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-support-detail-page .svx-support-detail-sidebar {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-support-detail-page .svx-support-detail-conversation,
+  .svx-support-detail-page .svx-support-detail-card {
+    border-radius: 24px !important;
+  }
+
+  .svx-support-detail-page .svx-support-detail-conversation > div,
+  .svx-support-detail-page .svx-support-detail-conversation form {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .svx-support-detail-page > section:first-child .flex.flex-wrap.gap-2 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .svx-support-detail-page > section:first-child .flex.flex-wrap.gap-2 button:last-child {
+    grid-column: 1 / -1 !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .svx-support-detail-page > section:first-child .flex.flex-wrap.gap-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-support-detail-page textarea {
+    min-height: 104px !important;
+  }
+}
+
+/* Support conversation: messages scroll independently */
+.svx-support-detail-conversation {
+  display: grid !important;
+  grid-template-rows: auto minmax(220px, 1fr) auto !important;
+  max-height: calc(100vh - 230px) !important;
+  min-height: 560px !important;
+}
+
+.svx-support-detail-conversation > div:first-child {
+  flex: 0 0 auto !important;
+}
+
+.svx-support-detail-conversation > .space-y-4 {
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  scroll-behavior: smooth !important;
+  padding-right: 18px !important;
+}
+
+.svx-support-detail-conversation > form {
+  flex: 0 0 auto !important;
+  background: inherit !important;
+}
+
+/* Cleaner scrollbar for support messages */
+.svx-support-detail-conversation > .space-y-4 {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.svx-support-detail-conversation > .space-y-4::-webkit-scrollbar {
+  width: 8px;
+}
+
+.svx-support-detail-conversation > .space-y-4::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.svx-support-detail-conversation > .space-y-4::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+.svx-support-detail-conversation > .space-y-4::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Desktop: keep right ticket info visible while conversation scrolls */
+@media (min-width: 1181px) {
+  .svx-support-detail-sidebar {
+    position: sticky !important;
+    top: 96px !important;
+    max-height: calc(100vh - 120px) !important;
+    overflow-y: auto !important;
+    padding-right: 2px !important;
+    scrollbar-width: thin;
+  }
+}
+
+/* Tablet/mobile: avoid trapping too much screen height */
+@media (max-width: 1180px) {
+  .svx-support-detail-conversation {
+    max-height: none !important;
+    min-height: 0 !important;
+  }
+
+  .svx-support-detail-conversation > .space-y-4 {
+    max-height: 460px !important;
+  }
+
+  .svx-support-detail-sidebar {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-support-detail-conversation {
+    grid-template-rows: auto minmax(180px, auto) auto !important;
+  }
+
+  .svx-support-detail-conversation > .space-y-4 {
+    max-height: 360px !important;
+    padding-right: 12px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .svx-support-detail-conversation > .space-y-4 {
+    max-height: 320px !important;
+  }
+}

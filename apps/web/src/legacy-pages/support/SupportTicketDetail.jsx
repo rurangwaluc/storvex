@@ -12,6 +12,7 @@ import {
   uploadSupportFile,
 } from "../../services/supportTicketsApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import "./SupportTickets.css";
 
 const STATUS_LABEL = {
   OPEN: "Open",
@@ -23,20 +24,21 @@ const STATUS_LABEL = {
 
 const PRIORITY_LABEL = {
   NORMAL: "Normal",
-  HIGH: "High",
   URGENT: "Urgent",
   BUSINESS_BLOCKED: "Business blocked",
 };
 
 const CATEGORY_LABEL = {
-  GENERAL: "General help",
-  BILLING_PAYMENT: "Billing or payment",
   ACCOUNT_ACCESS: "Account access",
-  SALES_POS: "Sales or POS",
+  BILLING_PAYMENT: "Billing or payment",
+  ONBOARDING_SETUP: "Setup or onboarding",
+  POS_SALES: "Sales or POS",
   INVENTORY_STOCK: "Inventory or stock",
-  REPORTS: "Reports",
-  BUG_TECHNICAL: "Bug or technical issue",
-  OTHER: "Other",
+  RECEIPTS_INVOICES: "Receipts or invoices",
+  WHATSAPP: "WhatsApp sales",
+  STAFF_USERS: "Staff users",
+  BUG_REPORT: "System problem",
+  OTHER: "General help",
 };
 
 function cx(...classes) {
@@ -101,15 +103,15 @@ function softText() {
 }
 
 function pageCard() {
-  return "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+  return "svx-support-detail-card";
 }
 
 function raisedPanel() {
-  return "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)]";
+  return "svx-support-detail-panel";
 }
 
 function softPanel() {
-  return "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
+  return "svx-support-detail-panel";
 }
 
 function buttonBase(disabled = false) {
@@ -137,8 +139,8 @@ function successBtn(disabled = false) {
   return cx(
     buttonBase(disabled),
     disabled
-      ? "bg-[rgba(21,128,61,0.08)] text-[#15803d]"
-      : "bg-[#dcfce7] text-[#15803d] hover:opacity-90"
+      ? "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
+      : "bg-[var(--color-primary-soft)] text-[var(--color-primary)] hover:opacity-90"
   );
 }
 
@@ -188,24 +190,19 @@ function SectionHeading({ eyebrow, title, subtitle }) {
 function StatusBadge({ status }) {
   const value = String(status || "").toUpperCase();
 
-  const style =
+  const tone =
     value === "OPEN"
-      ? "bg-[rgba(219,80,74,0.12)] text-[var(--color-danger)]"
+      ? "is-open"
       : value === "IN_PROGRESS"
-        ? "bg-[#dff1ff] text-[#077dcb]"
+        ? "is-progress"
         : value === "WAITING_FOR_TENANT"
-          ? "bg-[#fff1c9] text-[#b88900]"
-          : value === "RESOLVED"
-            ? "bg-[#dcfce7] text-[#15803d]"
-            : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
+          ? "is-waiting"
+          : value === "RESOLVED" || value === "CLOSED"
+            ? "is-done"
+            : "";
 
   return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold",
-        style
-      )}
-    >
+    <span className={cx("svx-support-badge", tone)}>
       {STATUS_LABEL[value] || value || "Unknown"}
     </span>
   );
@@ -213,21 +210,10 @@ function StatusBadge({ status }) {
 
 function PriorityBadge({ priority }) {
   const value = String(priority || "").toUpperCase();
-
-  const style =
-    value === "URGENT" || value === "BUSINESS_BLOCKED"
-      ? "bg-[rgba(219,80,74,0.12)] text-[var(--color-danger)]"
-      : value === "HIGH"
-        ? "bg-[#fff1c9] text-[#b88900]"
-        : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
+  const urgent = value === "URGENT" || value === "BUSINESS_BLOCKED";
 
   return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold",
-        style
-      )}
-    >
+    <span className={cx("svx-support-badge", urgent && "is-urgent")}>
       {PRIORITY_LABEL[value] || value || "Normal"}
     </span>
   );
@@ -235,7 +221,7 @@ function PriorityBadge({ priority }) {
 
 function CategoryPill({ category }) {
   return (
-    <span className="inline-flex items-center rounded-full bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-muted)]">
+    <span className="svx-support-badge">
       {CATEGORY_LABEL[category] || category || "Other"}
     </span>
   );
@@ -243,7 +229,7 @@ function CategoryPill({ category }) {
 
 function DetailSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="svx-support-detail-page">
       <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="min-w-0 flex-1">
           <SkeletonBlock className="h-4 w-28" />
@@ -253,7 +239,7 @@ function DetailSkeleton() {
         <SkeletonBlock className="h-11 w-32 rounded-2xl" />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="svx-support-detail-grid">
         <div className={cx(pageCard(), "p-5 sm:p-6")}>
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, index) => (
@@ -360,15 +346,8 @@ function MessageBubble({ message }) {
     : message.tenantUser?.name || "Your team";
 
   return (
-    <div className={cx("flex", platform ? "justify-start" : "justify-end")}>
-      <article
-        className={cx(
-          "max-w-3xl rounded-[24px] border p-4 shadow-[var(--shadow-soft)]",
-          platform
-            ? "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)]"
-            : "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-        )}
-      >
+    <div className={cx("svx-support-message-row", platform ? "is-platform" : "is-store")}>
+      <article className={cx("svx-support-message-bubble", platform ? "is-platform" : "is-store")}>
         <div className="flex flex-wrap items-center gap-2">
           <div className="text-sm font-black">{senderName}</div>
           <div
@@ -728,7 +707,7 @@ export default function SupportTicketDetail() {
 
   if (!ticket) {
     return (
-      <div className="space-y-6">
+      <div className="svx-support-detail-page">
         <SectionHeading
           eyebrow="Support"
           title="Ticket not found"
@@ -743,7 +722,7 @@ export default function SupportTicketDetail() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="svx-support-detail-page">
       <section className="space-y-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <SectionHeading
@@ -776,8 +755,8 @@ export default function SupportTicketDetail() {
         </div>
       </section>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <section className={cx(pageCard(), "overflow-hidden")}>
+      <div className="svx-support-detail-grid">
+        <section className="svx-support-detail-conversation">
           <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
@@ -809,7 +788,7 @@ export default function SupportTicketDetail() {
           <ReplyForm ticket={ticket} onSent={() => load({ silent: false })} />
         </section>
 
-        <aside className="space-y-6">
+        <aside className="svx-support-detail-sidebar">
           <TicketInfoPanel ticket={ticket} />
 
           <div className={cx(pageCard(), "p-5 sm:p-6")}>
@@ -834,12 +813,12 @@ export default function SupportTicketDetail() {
               </div>
 
               {closed ? (
-                <div className="rounded-[22px] border border-[#bbf7d0] bg-[#dcfce7] p-4 text-sm leading-6 text-[#166534]">
+                <div className="svx-support-next-note">
                   This ticket is closed. Create a new ticket if you need more
                   help.
                 </div>
               ) : (
-                <div className="rounded-[22px] border border-[#dff1ff] bg-[#dff1ff] p-4 text-sm leading-6 text-[#075985]">
+                <div className="svx-support-next-note">
                   Reply here when support asks for more information, payment
                   proof, screenshots, or confirmation.
                 </div>

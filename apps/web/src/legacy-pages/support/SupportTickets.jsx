@@ -10,36 +10,42 @@ import {
   uploadSupportFile,
 } from "../../services/supportTicketsApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import "./SupportTickets.css";
 
 const CATEGORY_OPTIONS = [
-  { label: "General help", value: "GENERAL" },
-  { label: "Billing or payment", value: "BILLING_PAYMENT" },
+  { label: "General help", value: "OTHER" },
   { label: "Account access", value: "ACCOUNT_ACCESS" },
-  { label: "Sales or POS", value: "SALES_POS" },
+  { label: "Billing or payment", value: "BILLING_PAYMENT" },
+  { label: "Setup or onboarding", value: "ONBOARDING_SETUP" },
+  { label: "Sales or POS", value: "POS_SALES" },
   { label: "Inventory or stock", value: "INVENTORY_STOCK" },
-  { label: "Reports", value: "REPORTS" },
-  { label: "Bug or technical issue", value: "BUG_TECHNICAL" },
-  { label: "Other", value: "OTHER" },
+  { label: "Receipts or invoices", value: "RECEIPTS_INVOICES" },
+  { label: "WhatsApp sales", value: "WHATSAPP" },
+  { label: "Staff users", value: "STAFF_USERS" },
+  { label: "System problem", value: "BUG_REPORT" },
 ];
 
 const PRIORITY_OPTIONS = [
   { label: "Normal", value: "NORMAL" },
-  { label: "High", value: "HIGH" },
   { label: "Urgent", value: "URGENT" },
   { label: "Business blocked", value: "BUSINESS_BLOCKED" },
 ];
 
 const STATUS_FILTERS = [
-  { label: "All tickets", value: "ALL" },
+  { label: "All requests", value: "ALL" },
   { label: "Open", value: "OPEN" },
   { label: "In progress", value: "IN_PROGRESS" },
-  { label: "Waiting for us", value: "WAITING_FOR_TENANT" },
+  { label: "Waiting for you", value: "WAITING_FOR_TENANT" },
   { label: "Resolved", value: "RESOLVED" },
   { label: "Closed", value: "CLOSED" },
 ];
 
 const CATEGORY_LABEL = Object.fromEntries(
   CATEGORY_OPTIONS.map((item) => [item.value, item.label])
+);
+
+const PRIORITY_LABEL = Object.fromEntries(
+  PRIORITY_OPTIONS.map((item) => [item.value, item.label])
 );
 
 const STATUS_LABEL = Object.fromEntries(
@@ -49,20 +55,12 @@ const STATUS_LABEL = Object.fromEntries(
   ])
 );
 
-const PRIORITY_LABEL = Object.fromEntries(
-  PRIORITY_OPTIONS.map((item) => [item.value, item.label])
-);
-
 const EMPTY_FORM = {
   title: "",
-  category: "GENERAL",
+  category: "OTHER",
   priority: "NORMAL",
   message: "",
 };
-
-function cx(...classes) {
-  return classes.filter(Boolean).join(" ");
-}
 
 function cleanString(value) {
   const text = String(value || "").trim();
@@ -109,392 +107,121 @@ function relativeTime(value) {
   return formatDate(value);
 }
 
-function strongText() {
-  return "text-[var(--color-text)]";
-}
-
-function mutedText() {
-  return "text-[var(--color-text-muted)]";
-}
-
-function softText() {
-  return "text-[var(--color-text-muted)]";
-}
-
-function pageCard() {
-  return "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-}
-
-function raisedPanel() {
-  return "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)]";
-}
-
-function softPanel() {
-  return "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
-}
-
-function inputClass() {
-  return "app-input";
-}
-
-function buttonBase(disabled = false) {
-  return cx(
-    "inline-flex h-11 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold transition",
-    disabled && "cursor-not-allowed opacity-60"
-  );
-}
-
-function primaryBtn(disabled = false) {
-  return cx(
-    buttonBase(disabled),
-    "bg-[var(--color-primary)] text-white hover:opacity-95"
-  );
-}
-
-function secondaryBtn(disabled = false) {
-  return cx(
-    buttonBase(disabled),
-    "bg-[var(--color-surface-2)] text-[var(--color-text)] hover:opacity-90"
-  );
-}
-
-function SkeletonBlock({ className = "" }) {
-  return (
-    <div
-      className={cx(
-        "animate-pulse rounded-[20px] bg-[var(--color-surface-2)]",
-        className
-      )}
-    />
-  );
-}
-
-function SectionHeading({ eyebrow, title, subtitle }) {
-  return (
-    <div>
-      {eyebrow ? (
-        <div
-          className={cx(
-            "text-[11px] font-semibold uppercase tracking-[0.18em]",
-            softText()
-          )}
-        >
-          {eyebrow}
-        </div>
-      ) : null}
-
-      <h1
-        className={cx(
-          "mt-3 text-[1.7rem] font-black tracking-tight sm:text-[2rem]",
-          strongText()
-        )}
-      >
-        {title}
-      </h1>
-
-      {subtitle ? (
-        <p className={cx("mt-3 max-w-3xl text-sm leading-6", mutedText())}>
-          {subtitle}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
-function StatusBadge({ status }) {
+function statusClass(status) {
   const value = String(status || "").toUpperCase();
 
-  const style =
-    value === "OPEN"
-      ? "bg-[rgba(219,80,74,0.12)] text-[var(--color-danger)]"
-      : value === "IN_PROGRESS"
-        ? "bg-[#dff1ff] text-[#077dcb]"
-        : value === "WAITING_FOR_TENANT"
-          ? "bg-[#fff1c9] text-[#b88900]"
-          : value === "RESOLVED"
-            ? "bg-[#dcfce7] text-[#15803d]"
-            : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
+  if (value === "OPEN") return "is-open";
+  if (value === "IN_PROGRESS") return "is-progress";
+  if (value === "WAITING_FOR_TENANT") return "is-waiting";
+  if (value === "RESOLVED" || value === "CLOSED") return "is-done";
 
-  return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold",
-        style
-      )}
-    >
-      {STATUS_LABEL[value] || value || "Unknown"}
-    </span>
-  );
+  return "";
 }
 
-function PriorityBadge({ priority }) {
+function priorityClass(priority) {
   const value = String(priority || "").toUpperCase();
 
-  const style =
-    value === "URGENT" || value === "BUSINESS_BLOCKED"
-      ? "bg-[rgba(219,80,74,0.12)] text-[var(--color-danger)]"
-      : value === "HIGH"
-        ? "bg-[#fff1c9] text-[#b88900]"
-        : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
-
-  return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold",
-        style
-      )}
-    >
-      {PRIORITY_LABEL[value] || value || "Normal"}
-    </span>
-  );
+  return value === "URGENT" || value === "BUSINESS_BLOCKED" ? "is-urgent" : "";
 }
 
-function CategoryPill({ category }) {
-  return (
-    <span className="inline-flex items-center rounded-full bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-muted)]">
-      {CATEGORY_LABEL[category] || category || "Other"}
-    </span>
-  );
+function SupportBadge({ children, className = "" }) {
+  return <span className={`svx-support-badge ${className}`}>{children}</span>;
 }
 
-function SummaryCard({ label, value, note, tone = "neutral" }) {
-  const iconTone =
-    tone === "danger"
-      ? "bg-[rgba(219,80,74,0.12)] text-[var(--color-danger)]"
-      : tone === "warning"
-        ? "bg-[#fff1c9] text-[#b88900]"
-        : tone === "success"
-          ? "bg-[#dcfce7] text-[#15803d]"
-          : "bg-[#dff1ff] text-[#077dcb]";
-
+function SupportStat({ label, value, note, tone = "" }) {
   return (
-    <article className={cx(pageCard(), "p-5 sm:p-6")}>
-      <div className="flex items-start gap-4 sm:gap-5">
-        <div
-          className={cx(
-            "flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] shadow-[var(--shadow-soft)]",
-            iconTone
-          )}
-        >
-          <svg
-            viewBox="0 0 24 24"
-            className="h-7 w-7"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.9"
-          >
-            <path d="M4 6.8A2.8 2.8 0 0 1 6.8 4h10.4A2.8 2.8 0 0 1 20 6.8v7.4a2.8 2.8 0 0 1-2.8 2.8H9l-5 3V6.8Z" />
-            <path d="M8 9h8M8 12.5h5" strokeLinecap="round" />
-          </svg>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className={cx("text-sm font-semibold", strongText())}>
-            {label}
-          </div>
-          <div
-            className={cx(
-              "mt-2 text-[1.7rem] font-black leading-tight tracking-[-0.02em]",
-              strongText()
-            )}
-          >
-            {value}
-          </div>
-          {note ? (
-            <div className={cx("mt-2 text-sm leading-6", mutedText())}>
-              {note}
-            </div>
-          ) : null}
-        </div>
-      </div>
+    <article className={`svx-support-stat ${tone ? `is-${tone}` : ""}`}>
+      <p className="svx-support-stat-label">{label}</p>
+      <div className="svx-support-stat-value">{value}</div>
+      <div className="svx-support-stat-note">{note}</div>
     </article>
   );
 }
 
-function ListSkeleton() {
+function LoadingList() {
   return (
-    <div className="space-y-3">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className={cx(pageCard(), "p-4 sm:p-5")}>
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <SkeletonBlock className="h-7 w-36 rounded-full" />
-              <SkeletonBlock className="h-7 w-24 rounded-full" />
-              <SkeletonBlock className="h-7 w-28 rounded-full" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <SkeletonBlock className="h-16" />
-              <SkeletonBlock className="h-16" />
-              <SkeletonBlock className="h-16" />
-              <SkeletonBlock className="h-16" />
-            </div>
-          </div>
-        </div>
-      ))}
+    <div className="svx-support-loading">
+      <div className="svx-support-skeleton">
+        <div className="svx-support-skeleton-row" />
+        <div className="svx-support-skeleton-row" />
+        <div className="svx-support-skeleton-row" />
+      </div>
     </div>
   );
 }
 
 function EmptyState({ onAdd }) {
   return (
-    <div className={cx(softPanel(), "px-4 py-16 text-center")}>
-      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-[20px] bg-[var(--color-surface)] shadow-[var(--shadow-soft)]">
-        <svg
-          viewBox="0 0 24 24"
-          className="h-8 w-8 text-[var(--color-text-muted)]"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
-        >
-          <path d="M4 6.8A2.8 2.8 0 0 1 6.8 4h10.4A2.8 2.8 0 0 1 20 6.8v7.4a2.8 2.8 0 0 1-2.8 2.8H9l-5 3V6.8Z" />
-          <path d="M8 9h8M8 12.5h5" strokeLinecap="round" />
-        </svg>
-      </div>
+    <div className="svx-support-empty">
+      <div className="svx-support-empty-card">
+        <div className="svx-support-empty-icon">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M4 6.8A2.8 2.8 0 0 1 6.8 4h10.4A2.8 2.8 0 0 1 20 6.8v7.4a2.8 2.8 0 0 1-2.8 2.8H9l-5 3V6.8Z" />
+            <path d="M8 9h8M8 12.5h5" strokeLinecap="round" />
+          </svg>
+        </div>
 
-      <div className={cx("text-base font-bold", strongText())}>
-        No support tickets found
-      </div>
-      <div className={cx("mx-auto mt-2 max-w-md text-sm leading-6", mutedText())}>
-        Create a ticket when your business needs help with billing, access,
-        stock, sales, reports, or a technical issue.
-      </div>
+        <h3 className="svx-support-empty-title">No support requests yet</h3>
+        <p className="svx-support-empty-copy">
+          Create a request when you need help with access, payments, stock,
+          sales, receipts, WhatsApp sales, or a system problem.
+        </p>
 
-      {onAdd ? (
-        <button type="button" onClick={onAdd} className={cx(primaryBtn(), "mt-5")}>
-          Create first ticket
-        </button>
-      ) : null}
+        {onAdd ? (
+          <button type="button" className="svx-support-btn svx-support-btn-primary" onClick={onAdd}>
+            Create request
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
 
-function TicketCard({ ticket, index }) {
+function TicketCard({ ticket }) {
   const messageCount = Number(ticket?._count?.messages || 0);
   const attachmentCount = Number(ticket?._count?.attachments || 0);
+  const status = String(ticket?.status || "").toUpperCase();
+  const priority = String(ticket?.priority || "").toUpperCase();
 
   return (
-    <Link
-      to={`/app/support/${ticket.id}`}
-      className={cx(
-        pageCard(),
-        "relative block overflow-hidden p-4 transition hover:opacity-95 sm:p-5",
-        index % 2 === 0 ? "bg-[var(--color-card)]" : "bg-[var(--color-surface)]"
-      )}
-    >
-      <div
-        className={cx(
-          "absolute left-0 top-0 h-full w-1.5 opacity-80",
-          ticket.status === "OPEN"
-            ? "bg-[var(--color-danger)]"
-            : ticket.status === "WAITING_FOR_TENANT"
-              ? "bg-[#b88900]"
-              : ticket.status === "RESOLVED"
-                ? "bg-[#15803d]"
-                : "bg-[var(--color-primary)]"
-        )}
-      />
-
-      <div className="absolute inset-x-0 top-0 h-px bg-[var(--color-border)]" />
-
-      <div className="pl-2">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={cx(
-                    "text-[1.1rem] font-black tracking-tight",
-                    strongText()
-                  )}
-                >
-                  {ticket.title || "Untitled support ticket"}
-                </span>
-                <StatusBadge status={ticket.status} />
-                <PriorityBadge priority={ticket.priority} />
-                <CategoryPill category={ticket.category} />
-              </div>
-
-              <div className={cx("mt-2 text-sm leading-6", mutedText())}>
-                Last message {relativeTime(ticket.lastMessageAt)} · created{" "}
-                {formatDate(ticket.createdAt)}
-              </div>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2">
-              <span className={cx(secondaryBtn(), "pointer-events-none h-10 px-4")}>
-                Open
-              </span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className={cx(raisedPanel(), "p-3.5")}>
-              <div
-                className={cx(
-                  "text-[10px] font-semibold uppercase tracking-[0.18em]",
-                  softText()
-                )}
-              >
-                Messages
-              </div>
-              <div className={cx("mt-2.5 text-sm font-bold", strongText())}>
-                {formatNumber(messageCount)}
-              </div>
-            </div>
-
-            <div className={cx(raisedPanel(), "p-3.5")}>
-              <div
-                className={cx(
-                  "text-[10px] font-semibold uppercase tracking-[0.18em]",
-                  softText()
-                )}
-              >
-                Files
-              </div>
-              <div className={cx("mt-2.5 text-sm font-bold", strongText())}>
-                {formatNumber(attachmentCount)}
-              </div>
-            </div>
-
-            <div className={cx(raisedPanel(), "p-3.5")}>
-              <div
-                className={cx(
-                  "text-[10px] font-semibold uppercase tracking-[0.18em]",
-                  softText()
-                )}
-              >
-                Assigned to
-              </div>
-              <div className={cx("mt-2.5 text-sm font-bold", strongText())}>
-                {ticket.assignedToPlatformUser?.name || "Storvex support"}
-              </div>
-            </div>
-
-            <div className={cx(raisedPanel(), "p-3.5")}>
-              <div
-                className={cx(
-                  "text-[10px] font-semibold uppercase tracking-[0.18em]",
-                  softText()
-                )}
-              >
-                Created by
-              </div>
-              <div className={cx("mt-2.5 text-sm font-bold", strongText())}>
-                {ticket.createdBy?.name || "Your team"}
-              </div>
-            </div>
-          </div>
+    <Link to={`/app/support/${ticket.id}`} className="svx-support-ticket">
+      <div className="svx-support-ticket-main">
+        <div className="svx-support-ticket-tags">
+          <SupportBadge className={statusClass(status)}>
+            {STATUS_LABEL[status] || "Open"}
+          </SupportBadge>
+          <SupportBadge className={priorityClass(priority)}>
+            {PRIORITY_LABEL[priority] || "Normal"}
+          </SupportBadge>
+          <SupportBadge>{CATEGORY_LABEL[ticket.category] || "General help"}</SupportBadge>
         </div>
+
+        <h3 className="svx-support-ticket-title">
+          {ticket.title || "Support request"}
+        </h3>
+
+        <div className="svx-support-ticket-meta">
+          <span>Last reply {relativeTime(ticket.lastMessageAt)}</span>
+          <span>Created {formatDate(ticket.createdAt)}</span>
+          <span>{formatNumber(messageCount)} message{messageCount === 1 ? "" : "s"}</span>
+          <span>{formatNumber(attachmentCount)} file{attachmentCount === 1 ? "" : "s"}</span>
+        </div>
+      </div>
+
+      <div className="svx-support-ticket-side">
+        <span>{ticket.assignedToPlatformUser?.name || "Storvex support"}</span>
+        <span className="svx-support-open">Open</span>
       </div>
     </Link>
   );
 }
 
-function CreateTicketForm({ onCreated, onCancel }) {
+function CreateTicketModal({ open, onClose, onCreated }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [files, setFiles] = useState([]);
   const [busy, setBusy] = useState(false);
+
+  if (!open) return null;
 
   function setField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -524,12 +251,12 @@ function CreateTicketForm({ onCreated, onCancel }) {
     const message = cleanString(form.message);
 
     if (title.length < 4) {
-      toast.error("Ticket title must be at least 4 characters");
+      toast.error("Add a clear title");
       return;
     }
 
     if (message.length < 5) {
-      toast.error("Explain the issue with at least 5 characters");
+      toast.error("Explain the problem");
       return;
     }
 
@@ -546,7 +273,7 @@ function CreateTicketForm({ onCreated, onCancel }) {
         attachments,
       });
 
-      toast.success("Support ticket created");
+      toast.success("Support request created");
       setForm(EMPTY_FORM);
       setFiles([]);
       onCreated();
@@ -555,162 +282,154 @@ function CreateTicketForm({ onCreated, onCancel }) {
         return;
       }
 
-      toast.error(error?.message || "Failed to create support ticket");
+      toast.error(error?.message || "Failed to create support request");
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <div className={cx(pageCard(), "p-5 sm:p-6")}>
-      <div className={cx("text-base font-bold", strongText())}>
-        Create support ticket
-      </div>
-      <p className={cx("mt-1.5 text-sm leading-6", mutedText())}>
-        Share the problem, add screenshots or payment proof, and Storvex support
-        will reply inside this ticket.
-      </p>
+    <div className="svx-support-modal" role="dialog" aria-modal="true">
+      <button
+        type="button"
+        aria-label="Close support form"
+        className="svx-support-modal-backdrop"
+        onClick={busy ? undefined : onClose}
+      />
 
-      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-        <div>
-          <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>
-            Title <span className="text-[var(--color-danger)]">*</span>
-          </label>
-          <input
-            className={inputClass()}
-            placeholder="Example: Payment completed but account is still read-only"
-            value={form.title}
-            onChange={(event) => setField("title", event.target.value)}
-            required
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <section className="svx-support-modal-card">
+        <div className="svx-support-modal-head">
           <div>
-            <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>
-              Category <span className="text-[var(--color-danger)]">*</span>
-            </label>
-            <select
-              className={inputClass()}
-              value={form.category}
-              onChange={(event) => setField("category", event.target.value)}
-              required
-            >
-              {CATEGORY_OPTIONS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
+            <h2 className="svx-support-modal-title">New support request</h2>
+            <p className="svx-support-modal-copy">
+              Explain the issue clearly. Add a screenshot or payment proof when it helps.
+            </p>
           </div>
 
-          <div>
-            <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>
-              Priority <span className="text-[var(--color-danger)]">*</span>
-            </label>
-            <select
-              className={inputClass()}
-              value={form.priority}
-              onChange={(event) => setField("priority", event.target.value)}
-              required
-            >
-              {PRIORITY_OPTIONS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <button type="button" className="svx-support-close" onClick={onClose} disabled={busy}>
+            ×
+          </button>
         </div>
 
-        <div>
-          <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>
-            Message <span className="text-[var(--color-danger)]">*</span>
-          </label>
-          <textarea
-            className="min-h-[120px] w-full resize-none rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-ring)]"
-            placeholder="Explain what happened, what you expected, and what you need support to do..."
-            value={form.message}
-            onChange={(event) => setField("message", event.target.value)}
-            required
-          />
-        </div>
-
-        <div className={cx(softPanel(), "p-4")}>
-          <div
-            className={cx(
-              "text-[11px] font-semibold uppercase tracking-[0.18em]",
-              softText()
-            )}
-          >
-            Attachments
-          </div>
-
-          <label className={cx(secondaryBtn(busy), "mt-3 cursor-pointer")}>
-            Add screenshots or proof
+        <form onSubmit={handleSubmit} className="svx-support-form">
+          <div className="svx-support-field">
+            <label className="svx-support-label">Title</label>
             <input
-              type="file"
-              multiple
-              disabled={busy}
-              className="hidden"
-              onChange={(event) => {
-                const selectedFiles = Array.from(event.target.files || []);
-                setFiles(selectedFiles.slice(0, 5));
-                event.currentTarget.value = "";
-              }}
+              className="svx-support-input"
+              placeholder="Example: Payment was made but access is still blocked"
+              value={form.title}
+              onChange={(event) => setField("title", event.target.value)}
+              required
             />
-          </label>
+          </div>
 
-          {files.length ? (
-            <div className="mt-3 space-y-2">
-              {files.map((file) => (
-                <div
-                  key={`${file.name}-${file.size}-${file.lastModified}`}
-                  className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--color-card)] px-4 py-3 text-sm font-semibold text-[var(--color-text)]"
-                >
-                  <span className="min-w-0 truncate">{file.name}</span>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() =>
-                      setFiles((current) => current.filter((item) => item !== file))
-                    }
-                    className="rounded-xl px-2 py-1 text-xs font-bold text-[var(--color-danger)] disabled:opacity-60"
+          <div className="svx-support-form-grid">
+            <div className="svx-support-field">
+              <label className="svx-support-label">Issue type</label>
+              <select
+                className="svx-support-select"
+                value={form.category}
+                onChange={(event) => setField("category", event.target.value)}
+                required
+              >
+                {CATEGORY_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="svx-support-field">
+              <label className="svx-support-label">How serious is it?</label>
+              <select
+                className="svx-support-select"
+                value={form.priority}
+                onChange={(event) => setField("priority", event.target.value)}
+                required
+              >
+                {PRIORITY_OPTIONS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="svx-support-field">
+            <label className="svx-support-label">What happened?</label>
+            <textarea
+              className="svx-support-textarea"
+              placeholder="Tell us what happened, what you expected, and what you need help with."
+              value={form.message}
+              onChange={(event) => setField("message", event.target.value)}
+              required
+            />
+          </div>
+
+          <div className="svx-support-upload">
+            <label className="svx-support-upload-label">
+              Add screenshot or proof
+              <input
+                type="file"
+                multiple
+                disabled={busy}
+                hidden
+                onChange={(event) => {
+                  const selectedFiles = Array.from(event.target.files || []);
+                  setFiles(selectedFiles.slice(0, 5));
+                  event.currentTarget.value = "";
+                }}
+              />
+            </label>
+
+            <p className="svx-support-upload-note">
+              Optional. Add up to 5 files when support needs proof or screenshots.
+            </p>
+
+            {files.length ? (
+              <div className="svx-support-file-list">
+                {files.map((file) => (
+                  <div
+                    key={`${file.name}-${file.size}-${file.lastModified}`}
+                    className="svx-support-file"
                   >
-                    Remove
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className={cx("mt-3 text-xs leading-5", mutedText())}>
-              Optional. Upload up to 5 files.
-            </div>
-          )}
-        </div>
+                    <span>{file.name}</span>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setFiles((current) => current.filter((item) => item !== file))}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-          {onCancel ? (
+          <div className="svx-support-form-actions">
             <button
               type="button"
+              className="svx-support-btn svx-support-btn-secondary"
+              onClick={onClose}
               disabled={busy}
-              onClick={onCancel}
-              className={secondaryBtn(busy)}
             >
               Cancel
             </button>
-          ) : null}
 
-          <AsyncButton
-            type="submit"
-            loading={busy}
-            disabled={busy}
-            className={primaryBtn(busy)}
-          >
-            Create ticket
-          </AsyncButton>
-        </div>
-      </form>
+            <AsyncButton
+              type="submit"
+              loading={busy}
+              disabled={busy}
+              className="svx-support-btn svx-support-btn-primary"
+            >
+              Send request
+            </AsyncButton>
+          </div>
+        </form>
+      </section>
     </div>
   );
 }
@@ -740,9 +459,7 @@ export default function SupportTickets() {
     if (!silent) setLoading(true);
 
     try {
-      const data = await listMySupportTickets({
-        take: 100,
-      });
+      const data = await listMySupportTickets({ take: 100 });
 
       if (!mountedRef.current || requestRef.current !== requestId) return;
 
@@ -751,7 +468,7 @@ export default function SupportTickets() {
       if (!mountedRef.current || requestRef.current !== requestId) return;
 
       if (!handleSubscriptionBlockedError(error, { toastId: "support-load-blocked" })) {
-        toast.error(error?.message || "Failed to load support tickets");
+        toast.error(error?.message || "Failed to load support requests");
       }
 
       setTickets([]);
@@ -763,7 +480,6 @@ export default function SupportTickets() {
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = useMemo(() => {
@@ -827,155 +543,90 @@ export default function SupportTickets() {
   }
 
   return (
-    <div className="space-y-6">
-      <section className="space-y-5">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <SectionHeading
-            eyebrow="Support"
-            title="Support tickets"
-            subtitle="Ask for help, send payment proof, attach screenshots, and keep every reply in one clear conversation."
-          />
+    <div className="svx-support-page">
+      <section className="svx-support-hero">
+        <div>
+          <p className="svx-support-eyebrow">Storvex support</p>
+          <h1 className="svx-support-title">Get help fast</h1>
+          <p className="svx-support-copy">
+            Send an issue to Storvex, attach proof when needed, and keep every reply in one clean request.
+          </p>
+        </div>
 
-          <div className="flex flex-wrap gap-2">
-            <AsyncButton loading={loading} onClick={() => load({ silent: false })} className={secondaryBtn()}>
-              Refresh
-            </AsyncButton>
+        <div className="svx-support-actions">
+          <AsyncButton
+            loading={loading}
+            onClick={() => load({ silent: false })}
+            className="svx-support-btn svx-support-btn-secondary"
+          >
+            Refresh
+          </AsyncButton>
 
-            <button
-              type="button"
-              onClick={() => setShowForm((prev) => !prev)}
-              className={primaryBtn()}
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="svx-support-btn svx-support-btn-primary"
+          >
+            New request
+          </button>
+        </div>
+      </section>
+
+      <section className="svx-support-summary">
+        <SupportStat label="All requests" value={formatNumber(summary.total)} note="Every issue sent to Storvex" />
+        <SupportStat label="Open" value={formatNumber(summary.open)} note="Waiting for support review" />
+        <SupportStat label="Waiting for you" value={formatNumber(summary.waiting)} note="Needs your reply" tone="warning" />
+        <SupportStat label="Done" value={formatNumber(summary.closed)} note="Resolved or closed" tone="success" />
+      </section>
+
+      <section className="svx-support-panel">
+        <div className="svx-support-toolbar">
+          <div className="svx-support-field">
+            <label className="svx-support-label">Search requests</label>
+            <input
+              className="svx-support-input"
+              placeholder="Search title, status, or issue type"
+              value={q}
+              onChange={(event) => setQ(event.target.value)}
+            />
+          </div>
+
+          <div className="svx-support-field">
+            <label className="svx-support-label">Status</label>
+            <select
+              className="svx-support-select"
+              value={filterStatus}
+              onChange={(event) => setFilterStatus(event.target.value)}
             >
-              {showForm ? "Close form" : "New ticket"}
-            </button>
+              {STATUS_FILTERS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="svx-support-count">
+            {formatNumber(filtered.length)} shown
           </div>
         </div>
 
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard label="Total tickets" value={formatNumber(summary.total)} note="All support requests" />
-          <SummaryCard label="Open" value={formatNumber(summary.open)} note="Waiting for review" tone="danger" />
-          <SummaryCard label="Waiting for you" value={formatNumber(summary.waiting)} note="Needs your reply" tone="warning" />
-          <SummaryCard label="Resolved or closed" value={formatNumber(summary.closed)} note="Completed requests" tone="success" />
-        </section>
+        <div className="svx-support-list">
+          {loading ? (
+            <LoadingList />
+          ) : filtered.length === 0 ? (
+            <EmptyState onAdd={tickets.length === 0 ? () => setShowForm(true) : null} />
+          ) : (
+            filtered.map((ticket) => <TicketCard key={ticket.id} ticket={ticket} />)
+          )}
+        </div>
       </section>
 
-      {showForm ? (
-        <CreateTicketForm
-          onCreated={handleCreated}
-          onCancel={() => setShowForm(false)}
-        />
-      ) : null}
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className={cx(pageCard(), "h-fit p-5 sm:p-6")}>
-          <div className={cx("text-base font-bold", strongText())}>
-            Filter tickets
-          </div>
-
-          <div className="mt-4 space-y-4">
-            <div>
-              <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>
-                Search
-              </label>
-              <input
-                className={inputClass()}
-                placeholder="Title, status, category..."
-                value={q}
-                onChange={(event) => setQ(event.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>
-                Status
-              </label>
-              <div className="flex flex-col gap-2">
-                {STATUS_FILTERS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setFilterStatus(option.value)}
-                    className={cx(
-                      "rounded-2xl border px-4 py-2.5 text-left text-sm font-semibold transition",
-                      filterStatus === option.value
-                        ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white"
-                        : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] hover:opacity-80"
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className={cx(softPanel(), "p-4")}>
-              <div
-                className={cx(
-                  "text-[11px] font-semibold uppercase tracking-[0.18em]",
-                  softText()
-                )}
-              >
-                Showing
-              </div>
-              <div className={cx("mt-2.5 text-lg font-bold", strongText())}>
-                {formatNumber(filtered.length)} ticket
-                {filtered.length === 1 ? "" : "s"}
-              </div>
-            </div>
-
-            <div className={cx(softPanel(), "p-4")}>
-              <div
-                className={cx(
-                  "text-[11px] font-semibold uppercase tracking-[0.18em]",
-                  softText()
-                )}
-              >
-                Best use
-              </div>
-              <div className={cx("mt-2.5 text-sm leading-6", mutedText())}>
-                Use support tickets for billing proof, account access issues,
-                blocked work, bugs, or questions that need the Storvex team.
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <section className={cx(pageCard(), "overflow-hidden")}>
-          <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className={cx("text-xl font-bold", strongText())}>
-                  Ticket inbox
-                </div>
-                <div className={cx("mt-1.5 text-sm leading-6", mutedText())}>
-                  Open a ticket to read replies, send more information, or add
-                  proof files.
-                </div>
-              </div>
-
-              {!loading ? (
-                <span className="inline-flex items-center self-start rounded-full bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-muted)]">
-                  {formatNumber(filtered.length)} shown
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="p-5 sm:p-6">
-            {loading ? (
-              <ListSkeleton />
-            ) : filtered.length === 0 ? (
-              <EmptyState onAdd={tickets.length === 0 ? () => setShowForm(true) : null} />
-            ) : (
-              <div className="space-y-3">
-                {filtered.map((ticket, index) => (
-                  <TicketCard key={ticket.id} ticket={ticket} index={index} />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
+      <CreateTicketModal
+        open={showForm}
+        onClose={() => setShowForm(false)}
+        onCreated={handleCreated}
+      />
     </div>
   );
 }
