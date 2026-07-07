@@ -90,6 +90,7 @@ import WarrantyEdit from "./legacy-pages/warranties/WarrantyEdit";
 
 import { listDeliveryNotes } from "./services/deliveryNotesApi";
 import Expenses from "./legacy-pages/expenses/Expenses";
+import Money from "./legacy-pages/money/Money";
 
 import SupportTickets from "./legacy-pages/support/SupportTickets";
 import SupportTicketDetail from "./legacy-pages/support/SupportTicketDetail";
@@ -225,6 +226,7 @@ export default function App() {
               <Route path="pos/drawer" element={<CashDrawer />} />
 
               <Route path="expenses" element={<Expenses />} />
+              <Route path="money" element={<Money />} />
 
               <Route path="customers" element={<CustomerList />} />
               <Route path="customers/new" element={<CustomerCreate />} />

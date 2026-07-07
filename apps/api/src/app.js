@@ -28,6 +28,7 @@ const interstoreRoutes = require("./modules/interStore/interStore.routes");
 
 const supplierRoutes = require("./modules/suppliers/suppliers.routes");
 const expenseRoutes = require("./modules/expenses/expenses.routes");
+const moneyRoutes = require("./modules/money/money.routes");
 const billingRoutes = require("./modules/billing/billing.routes");
 const auditRoutes = require("./modules/audit/audit.routes");
 const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
@@ -107,6 +108,7 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/employees", employeeRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/money", moneyRoutes);
 app.use("/api/billing", billingRoutes);
 app.use("/api/suppliers", supplierRoutes);
 app.use("/api/branches", branchesRoutes);

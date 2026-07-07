@@ -216,7 +216,11 @@ model Tenant {
   saleWarranties           SaleWarranty[]
   auditLogs                AuditLog[]
 
-  supportTickets SupportTicket[]
+  supportTickets        SupportTicket[]
+  ownerLoans            OwnerLoan[]
+  ownerLoanPayments     OwnerLoanPayment[]
+  moneyAccounts         MoneyAccount[]
+  moneyAccountMovements MoneyAccountMovement[]
 
   @@map("Tenant")
 }
@@ -265,6 +269,12 @@ model Branch {
   saleWarranties    SaleWarranty[]
   proformas         Proforma[]
   auditLogs         AuditLog[]
+
+  ownerLoans        OwnerLoan[]
+  ownerLoanPayments OwnerLoanPayment[]
+
+  moneyAccounts         MoneyAccount[]
+  moneyAccountMovements MoneyAccountMovement[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -1475,6 +1485,109 @@ model SupplierPayment {
   @@index([paidAt])
 }
 
+model OwnerLoan {
+  id             String                 @id @default(dbgenerated("(gen_random_uuid())::text")) @db.Text
+  tenantId       String                 @db.Text
+  branchId       String?                @db.Text
+  type           OwnerLoanType
+  partyName      String                 @db.Text
+  partyPhone     String?                @db.Text
+  originalAmount Float                  @default(0)
+  paidAmount     Float                  @default(0)
+  balanceDue     Float                  @default(0)
+  status         OwnerLoanStatus        @default(OPEN)
+  paymentMethod  OwnerLoanPaymentMethod @default(CASH)
+  reference      String?                @db.Text
+  note           String?                @db.Text
+  startedAt      DateTime               @default(now())
+  dueDate        DateTime?
+  createdById    String?                @db.Text
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @default(now()) @updatedAt
+  archivedAt     DateTime?
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch   Branch?            @relation(fields: [branchId], references: [id])
+  payments OwnerLoanPayment[]
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@index([tenantId, type, status])
+  @@index([tenantId, startedAt])
+  @@index([tenantId, archivedAt])
+}
+
+model OwnerLoanPayment {
+  id          String                 @id @default(dbgenerated("(gen_random_uuid())::text")) @db.Text
+  tenantId    String                 @db.Text
+  branchId    String?                @db.Text
+  loanId      String                 @db.Text
+  amount      Float                  @default(0)
+  method      OwnerLoanPaymentMethod @default(CASH)
+  reference   String?                @db.Text
+  note        String?                @db.Text
+  paidAt      DateTime               @default(now())
+  createdById String?                @db.Text
+  createdAt   DateTime               @default(now())
+
+  tenant Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch Branch?   @relation(fields: [branchId], references: [id])
+  loan   OwnerLoan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@index([loanId])
+  @@index([tenantId, paidAt])
+}
+
+model MoneyAccount {
+  id          String           @id @default(dbgenerated("(gen_random_uuid())::text")) @db.Text
+  tenantId    String           @db.Text
+  branchId    String?          @db.Text
+  accountType MoneyAccountType
+  label       String           @db.Text
+  balance     Float            @default(0)
+  isSystem    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @default(now()) @updatedAt
+
+  tenant    Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch    Branch?                @relation(fields: [branchId], references: [id])
+  movements MoneyAccountMovement[]
+
+  @@unique([tenantId, branchId, accountType])
+  @@index([tenantId])
+  @@index([branchId])
+  @@index([tenantId, accountType])
+}
+
+model MoneyAccountMovement {
+  id            String                 @id @default(dbgenerated("(gen_random_uuid())::text")) @db.Text
+  tenantId      String                 @db.Text
+  branchId      String?                @db.Text
+  accountId     String                 @db.Text
+  direction     MoneyMovementDirection
+  reason        MoneyMovementReason    @default(OTHER)
+  amount        Float                  @default(0)
+  balanceBefore Float                  @default(0)
+  balanceAfter  Float                  @default(0)
+  sourceType    String?                @db.Text
+  sourceId      String?                @db.Text
+  note          String?                @db.Text
+  createdById   String?                @db.Text
+  createdAt     DateTime               @default(now())
+
+  tenant  Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  branch  Branch?      @relation(fields: [branchId], references: [id])
+  account MoneyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([branchId])
+  @@index([accountId])
+  @@index([tenantId, createdAt])
+  @@index([sourceType, sourceId])
+}
+
 model SupplierDocument {
   id              String               @id @default(uuid())
   tenantId        String
@@ -2145,6 +2258,45 @@ enum SupplierPaymentMethod {
   CASH
   MOMO
   BANK
+  OTHER
+}
+
+enum OwnerLoanType {
+  GIVEN_OUT
+  RECEIVED
+}
+
+enum OwnerLoanStatus {
+  OPEN
+  PARTIAL
+  PAID
+  CANCELLED
+}
+
+enum OwnerLoanPaymentMethod {
+  CASH
+  MOMO
+  BANK
+  OTHER
+}
+
+enum MoneyAccountType {
+  MOMO
+  BANK
+  OTHER
+}
+
+enum MoneyMovementDirection {
+  IN
+  OUT
+}
+
+enum MoneyMovementReason {
+  OPENING_BALANCE
+  LOAN_GIVEN_OUT
+  LOAN_RECEIVED
+  LOAN_REPAYMENT
+  OWNER_ADJUSTMENT
   OTHER
 }
 

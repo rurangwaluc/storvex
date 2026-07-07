@@ -354,6 +354,7 @@ function pickPageTitle(pathname) {
   if (path.startsWith("/app/billing")) return "Billing";
   if (path.startsWith("/app/audit")) return "Audit logs";
   if (path.startsWith("/app/employees")) return "Employees";
+  if (path.startsWith("/app/money")) return "Money";
   if (path.startsWith("/app/expenses")) return "Expenses";
 
   return "";

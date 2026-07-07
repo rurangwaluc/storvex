@@ -195,6 +195,15 @@ function Icon({ type }) {
         </svg>
       );
 
+    case "money":
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.9">
+          <rect x="3" y="6" width="18" height="12" rx="2.5" />
+          <path d="M7 10h10M7 14h5" strokeLinecap="round" />
+          <path d="M16 14h1.5" strokeLinecap="round" />
+        </svg>
+      );
+
     case "expenses":
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.9">
@@ -375,6 +384,12 @@ const NAV_ITEMS = [
         to: "/app/reports",
         label: "Business reports",
         icon: "reports",
+        roles: ["OWNER", "MANAGER"],
+      },
+      {
+        to: "/app/money",
+        label: "Money",
+        icon: "money",
         roles: ["OWNER", "MANAGER"],
       },
       {
