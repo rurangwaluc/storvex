@@ -1,6 +1,7 @@
 "use strict";
 
 const prisma = require("../../config/database");
+const { recordMoneyAccountMovement, handleMoneyAccountError } = require("../money/moneyAccount.service");
 const {
   reserveSaleDocumentNumbersTx,
   reserveWarrantyDocumentNumberTx,
@@ -41,15 +42,15 @@ function normalizeSaleType(value) {
 }
 
 function normalizePaymentMethod(value) {
-  const v = String(value || "CASH").trim().toUpperCase();
+  const method = String(value || "").trim().toUpperCase();
 
-  if (v === "CASH") return "CASH";
-  if (v === "MOMO" || v === "MOBILE_MONEY" || v === "MTN_MOMO" || v === "AIRTEL_MONEY") {
-    return "MOMO";
+  // Store card-style payments as Other money because SalePaymentMethod supports
+  // CASH, MOMO, BANK, and OTHER in the current database.
+  if (method === "CARD") return "OTHER";
+
+  if (["CASH", "MOMO", "BANK", "OTHER"].includes(method)) {
+    return method;
   }
-  if (v === "CARD" || v === "VISA" || v === "MASTERCARD") return "CARD";
-  if (v === "BANK" || v === "BANK_TRANSFER" || v === "TRANSFER") return "BANK";
-  if (v === "OTHER") return "OTHER";
 
   return null;
 }
@@ -1381,6 +1382,19 @@ async function createSale(req, res) {
               amount: total,
               note: `Cash sale ${sale.receiptNumber || sale.id}`,
             });
+          } else {
+            await recordMoneyAccountMovement(tx, {
+              tenantId,
+              branchId,
+              method: selectedPaymentMethod,
+              direction: "IN",
+              reason: "OTHER",
+              amount: total,
+              sourceType: "SalePayment",
+              sourceId: payment.id,
+              note: `Sale payment ${sale.receiptNumber || sale.id}`,
+              createdById: userId,
+            });
           }
         }
 
@@ -1425,7 +1439,20 @@ async function createSale(req, res) {
               amount: initialPaid,
               note: `Credit deposit ${sale.receiptNumber || sale.id}`,
             });
-          }
+          } else {
+              await recordMoneyAccountMovement(tx, {
+                tenantId,
+                branchId,
+                method: selectedPaymentMethod,
+                direction: "IN",
+                reason: "OTHER",
+                amount: initialPaid,
+                sourceType: "SalePayment",
+                sourceId: payment.id,
+                note: `Credit sale payment ${sale.receiptNumber || sale.id}`,
+                createdById: userId,
+              });
+            }
         }
 
         return {
@@ -1918,7 +1945,20 @@ async function addSalePayment(req, res) {
             amount: payAmount,
             note: `Credit payment for sale ${sale.id} (${sale.branchId || "no-branch"})`,
           });
-        }
+        } else {
+            await recordMoneyAccountMovement(tx, {
+              tenantId,
+              branchId: sale.branchId || null,
+              method: payMethod,
+              direction: "IN",
+              reason: "OTHER",
+              amount: payAmount,
+              sourceType: "SalePayment",
+              sourceId: payment.id,
+              note: `Credit payment ${sale.id}`,
+              createdById: userId,
+            });
+          }
 
         return {
           payment,
@@ -1957,6 +1997,9 @@ async function addSalePayment(req, res) {
       cashMovement: toCashMovementDto(result.movement),
     });
   } catch (err) {
+    const moneyHandled = handleMoneyAccountError(res, err);
+    if (moneyHandled) return moneyHandled;
+
     const msg = String(err?.message || "");
 
     if (msg === "BRANCH_ACCESS_DENIED") {

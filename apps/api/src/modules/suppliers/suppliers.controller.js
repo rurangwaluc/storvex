@@ -1,6 +1,7 @@
 // src/modules/suppliers/suppliers.controller.js
 const { Prisma } = require("@prisma/client");
 const prisma = require("../../config/database");
+const { recordMoneyAccountMovement, handleMoneyAccountError } = require("../money/moneyAccount.service");
 
 function cleanString(value) {
   const s = value == null ? "" : String(value).trim();
@@ -2172,6 +2173,19 @@ async function createSupplierPayment(req, res) {
           userId,
           note: `Supplier payment to ${supplier.name}${bill.billNumber ? ` for ${bill.billNumber}` : ""}`,
         });
+      } else {
+        await recordMoneyAccountMovement(tx, {
+          tenantId,
+          branchId: activeBranch.id,
+          method,
+          direction: "OUT",
+          reason: "OTHER",
+          amount,
+          sourceType: "SupplierPayment",
+          sourceId: bill.id,
+          note: `Supplier payment to ${supplier.name}${bill.billNumber ? ` for ${bill.billNumber}` : ""}`,
+          createdById: userId,
+        });
       }
 
       const newPaidAmount = Number(bill.paidAmount || 0) + amount;
@@ -2248,6 +2262,9 @@ async function createSupplierPayment(req, res) {
       bill: serializeSupplierBill(result.bill),
     });
   } catch (err) {
+    const moneyHandled = handleMoneyAccountError(res, err);
+    if (moneyHandled) return moneyHandled;
+
     const handled = handleBranchError(res, err);
     if (handled) return handled;
 

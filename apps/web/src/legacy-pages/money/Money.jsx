@@ -299,11 +299,11 @@ function LoanFormModal({ onClose, onSaved }) {
 
         <div className="svx-money-form-grid">
           <label>
-            <span>Reference optional</span>
+            <span>Proof or transaction ID optional</span>
             <input
               value={form.reference}
               onChange={(event) => update("reference", event.target.value)}
-              placeholder="Transaction ID, bank slip, note"
+              placeholder="MoMo code, bank slip, receipt number"
             />
           </label>
 
@@ -399,11 +399,11 @@ function LoanPaymentModal({ loan, onClose, onSaved }) {
         </div>
 
         <label>
-          <span>Reference optional</span>
+          <span>Proof or transaction ID optional</span>
           <input
             value={form.reference}
             onChange={(event) => update("reference", event.target.value)}
-            placeholder="Transaction ID, bank slip, note"
+            placeholder="MoMo code, bank slip, receipt number"
           />
         </label>
 
