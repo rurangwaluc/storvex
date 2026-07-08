@@ -231,7 +231,10 @@ async function getMySupportTicketsSummary(req, res) {
     ]);
 
     const active = open + inProgress + waitingForYou;
-    const badgeCount = waitingForYou > 0 ? waitingForYou : active;
+
+    // Sidebar badge must only mean the owner needs to act.
+    // Open or in-progress tickets are active, but they should not create a badge.
+    const badgeCount = waitingForYou;
 
     return res.json({
       active,
@@ -241,14 +244,12 @@ async function getMySupportTicketsSummary(req, res) {
       urgent,
       blocked,
       badgeCount,
-      needsAttention: waitingForYou > 0 || blocked > 0,
+      needsAttention: waitingForYou > 0,
       latestWaiting,
       message:
         waitingForYou > 0
           ? `${waitingForYou} support request${waitingForYou === 1 ? "" : "s"} waiting for your reply`
-          : active > 0
-            ? `${active} active support request${active === 1 ? "" : "s"}`
-            : "No support requests need attention",
+          : "No support requests need your reply",
     });
   } catch (err) {
     console.error("getMySupportTicketsSummary error:", err);
