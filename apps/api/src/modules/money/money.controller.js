@@ -377,7 +377,17 @@ async function getLatestDrawerSnapshot(tenantId, branchId) {
     };
   }
 
-  const rows = await prisma.$queryRaw`
+  const cashBalanceRows = await prisma.$queryRaw`
+    select
+      coalesce(sum(case when cm.type = 'IN' then cm.amount else 0 end), 0) as total_in,
+      coalesce(sum(case when cm.type = 'OUT' then cm.amount else 0 end), 0) as total_out,
+      count(cm.id)::int as movement_count
+    from public.cash_movements cm
+    where cm.tenant_id::text = ${String(tenantId)}::text
+      and cm.branch_id::text = ${String(branchId)}::text
+  `;
+
+  const latestSessionRows = await prisma.$queryRaw`
     select
       cs.id,
       cs.branch_id,
@@ -385,70 +395,56 @@ async function getLatestDrawerSnapshot(tenantId, branchId) {
       cs.opened_at,
       cs.closed_at,
       cs.counted_cash,
-      (
-        cs.opening_cash
-        + coalesce(sum(case when cm.type = 'IN' then cm.amount else 0 end), 0)
-        - coalesce(sum(case when cm.type = 'OUT' then cm.amount else 0 end), 0)
-      ) as expected_cash,
-      coalesce(sum(case when cm.type = 'IN' then cm.amount else 0 end), 0) as total_in,
-      coalesce(sum(case when cm.type = 'OUT' then cm.amount else 0 end), 0) as total_out,
-      count(cm.id)::int as movement_count
+      cs.closing_reason,
+      cs.closing_explanation
     from public.cash_sessions cs
-    left join public.cash_movements cm
-      on cm.session_id = cs.id
-      and cm.tenant_id = cs.tenant_id
-      and cm.branch_id = cs.branch_id
     where cs.tenant_id::text = ${String(tenantId)}::text
       and cs.branch_id::text = ${String(branchId)}::text
-    group by cs.id
     order by
       case when cs.closed_at is null then 0 else 1 end,
       coalesce(cs.closed_at, cs.opened_at) desc
     limit 1
   `;
 
-  const row = rows?.[0] || null;
+  const cashBalance = cashBalanceRows?.[0] || {};
+  const session = latestSessionRows?.[0] || null;
 
-  if (!row) {
+  const totalIn = safeNumber(cashBalance.total_in);
+  const totalOut = safeNumber(cashBalance.total_out);
+  const cashInBusiness = Math.max(0, totalIn - totalOut);
+
+  if (!session) {
     return {
       open: false,
-      expectedCash: 0,
+      expectedCash: cashInBusiness,
       openingCash: 0,
-      totalIn: 0,
-      totalOut: 0,
-      movementCount: 0,
+      totalIn,
+      totalOut,
+      movementCount: safeNumber(cashBalance.movement_count),
       difference: 0,
       session: null,
     };
   }
 
-  const expectedCash = safeNumber(row.expected_cash);
-  const countedCash =
-    row.counted_cash === null || typeof row.counted_cash === "undefined"
-      ? null
-      : safeNumber(row.counted_cash);
-
-  // For the owner Money page:
-  // - open drawer: show expected cash right now
-  // - closed drawer: show counted cash if available, otherwise last expected cash
-  const displayCash = countedCash === null ? expectedCash : countedCash;
-
   return {
-    open: !row.closed_at,
-    expectedCash: displayCash,
-    openingCash: safeNumber(row.opening_cash),
-    totalIn: safeNumber(row.total_in),
-    totalOut: safeNumber(row.total_out),
-    movementCount: safeNumber(row.movement_count),
-    difference: countedCash === null ? 0 : countedCash - expectedCash,
+    open: !session.closed_at,
+    expectedCash: cashInBusiness,
+    openingCash: safeNumber(session.opening_cash),
+    totalIn,
+    totalOut,
+    movementCount: safeNumber(cashBalance.movement_count),
+    difference: 0,
     session: {
-      id: row.id,
-      branchId: row.branch_id,
-      openedAt: row.opened_at,
-      closedAt: row.closed_at,
-      countedCash,
-      closingReason: null,
-      closingExplanation: null,
+      id: session.id,
+      branchId: session.branch_id,
+      openedAt: session.opened_at,
+      closedAt: session.closed_at,
+      countedCash:
+        session.counted_cash === null || typeof session.counted_cash === "undefined"
+          ? null
+          : safeNumber(session.counted_cash),
+      closingReason: session.closing_reason || null,
+      closingExplanation: session.closing_explanation || null,
     },
   };
 }
