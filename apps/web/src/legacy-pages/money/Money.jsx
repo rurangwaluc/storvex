@@ -562,7 +562,7 @@ export default function Money() {
               {drawer?.open ? "Cash drawer open" : "Cash drawer closed"}
             </Badge>
             <Badge tone={netTone(summary.netPosition)}>
-              Money picture {formatMoney(moneyInBusinessNow)}
+              Business money picture {formatMoney(moneyInBusinessNow)}
             </Badge>
             <Badge>Updated {formatDateTime(payload.generatedAt)}</Badge>
           </div>
@@ -619,7 +619,7 @@ export default function Money() {
           tone={debtTone(summary.loansIReceived)}
         />
         <StatCard
-          label="Money picture"
+          label="Business money picture"
           value={formatMoney(summary.netPosition)}
           note="Money coming in, minus money you owe"
           tone={netTone(summary.netPosition)}
@@ -638,15 +638,15 @@ export default function Money() {
           <div className="svx-money-position-body">
             <div className="svx-money-available-main">
               <div>
-                <span>Money in the business now</span>
+                <span>Money I have now</span>
                 <strong>{formatMoney(moneyInBusinessNow)}</strong>
                 <p>
-                  This is the money the business has right now in Cash, MoMo, Bank, and Other.
+                  This is money currently in Cash, MoMo, Bank, and Other money.
                 </p>
               </div>
 
               <div className="svx-money-available-note">
-                <b>Check money before recording a loan</b>
+                <b>Check balance before recording a loan</b>
                 <span>
                   Storvex checks the selected payment method first. No loan can make
                   Cash, MoMo, Bank, or Other money go below zero.
@@ -671,9 +671,9 @@ export default function Money() {
                 <small>Money in the bank</small>
               </div>
               <div>
-                <span>Other</span>
+                <span>Other money</span>
                 <strong>{formatMoney(otherBalance)}</strong>
-                <small>Other payment money</small>
+                <small>Card, cheque, or other payments</small>
               </div>
             </div>
           </div>
@@ -894,19 +894,19 @@ export default function Money() {
 
           <div className="svx-money-drawer-box">
             <div>
-              <span>Expected cash</span>
+              <span>Cash expected</span>
               <strong>{formatMoney(drawer?.expectedCash || 0)}</strong>
             </div>
             <div>
-              <span>Money in</span>
+              <span>Cash added</span>
               <strong>{formatMoney(drawer?.totalIn || 0)}</strong>
             </div>
             <div>
-              <span>Money out</span>
+              <span>Cash removed</span>
               <strong>{formatMoney(drawer?.totalOut || 0)}</strong>
             </div>
             <div>
-              <span>Drawer difference</span>
+              <span>Cash difference</span>
               <strong className={`is-${netTone(-(drawer?.difference || 0))}`}>
                 {formatMoney(drawer?.difference || 0)}
               </strong>

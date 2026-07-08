@@ -1,5 +1,6 @@
 // src/modules/expenses/expenses.controller.js
 const prisma = require("../../config/database");
+const { recordMoneyAccountMovement, handleMoneyAccountError } = require("../money/moneyAccount.service");
 const logAudit = require("../../utils/auditLogger");
 const {
   AuditAction,
@@ -61,6 +62,17 @@ function normalizeExpensePaidFrom(input) {
   const raw = input == null ? "CASH_DRAWER" : String(input).trim().toUpperCase();
   if (!raw) return "CASH_DRAWER";
   return EXPENSE_PAID_FROM_VALUES.includes(raw) ? raw : null;
+}
+
+function moneyMethodFromExpensePaidFrom(paidFrom) {
+  const value = String(paidFrom || "").trim().toUpperCase();
+
+  if (value === "BANK") return "BANK";
+  if (value === "MOMO") return "MOMO";
+  if (value === "OWNER_MONEY") return "OTHER";
+  if (value === "OTHER") return "OTHER";
+
+  return null;
 }
 
 function makeAccessError(code, message, status = 403, extra = {}) {
@@ -708,6 +720,29 @@ async function approveExpense(req, res) {
           userId,
           expense: existing,
         });
+      } else {
+        const moneyMethod = moneyMethodFromExpensePaidFrom(existing.paidFrom);
+
+        if (!moneyMethod) {
+          throw makeAccessError(
+            "EXPENSE_PAYMENT_SOURCE_INVALID",
+            "Choose where this expense was paid from.",
+            400
+          );
+        }
+
+        await recordMoneyAccountMovement(tx, {
+          tenantId,
+          branchId: existing.branchId,
+          method: moneyMethod,
+          direction: "OUT",
+          reason: "OTHER",
+          amount: Number(existing.amount || 0),
+          sourceType: "Expense",
+          sourceId: existing.id,
+          note: `Approved expense: ${existing.title || existing.category || existing.id}`,
+          createdById: userId,
+        });
       }
 
       await tx.expense.updateMany({
@@ -749,6 +784,9 @@ async function approveExpense(req, res) {
 
     return res.json(updated);
   } catch (error) {
+    const moneyHandled = handleMoneyAccountError(res, error);
+    if (moneyHandled) return moneyHandled;
+
     console.error("approveExpense error:", error);
     return handleStoreLocationError(res, error, "Failed to approve expense");
   }

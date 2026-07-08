@@ -1267,3 +1267,125 @@ html:not(.dark) body:not(.dark) .svx-money-modal-header,
     grid-template-columns: 1fr;
   }
 }
+
+/* Final owner-money readability: keep RWF values on one line */
+.svx-money-stat strong,
+.svx-money-stat-card strong,
+.svx-money-position-main strong,
+.svx-money-account-grid article strong,
+.svx-money-simple-picture article strong,
+.svx-money-row strong,
+.svx-money-mini-card strong,
+.svx-money-cash-grid strong,
+.svx-money-loan-amount,
+.svx-money-balance-checker strong {
+  white-space: nowrap;
+  overflow: visible;
+  word-break: normal;
+  overflow-wrap: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Make large balances fit before wrapping. Billion-ready. */
+.svx-money-position-main strong {
+  font-size: clamp(34px, 4.2vw, 58px);
+  letter-spacing: -0.075em;
+  line-height: 0.95;
+}
+
+.svx-money-account-grid article strong {
+  font-size: clamp(17px, 1.45vw, 25px);
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.svx-money-stat strong,
+.svx-money-stat-card strong {
+  font-size: clamp(18px, 1.65vw, 28px);
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.svx-money-row strong,
+.svx-money-mini-card strong,
+.svx-money-cash-grid strong {
+  font-size: clamp(14px, 1.15vw, 19px);
+  letter-spacing: -0.04em;
+}
+
+.svx-money-account-grid article,
+.svx-money-stat,
+.svx-money-stat-card,
+.svx-money-row,
+.svx-money-mini-card,
+.svx-money-cash-grid article {
+  min-width: 0;
+}
+
+/* On small screens, keep numbers on one line by scaling down instead of wrapping. */
+@media (max-width: 760px) {
+  .svx-money-position-main strong {
+    font-size: clamp(30px, 8vw, 46px);
+  }
+
+  .svx-money-account-grid article strong,
+  .svx-money-stat strong,
+  .svx-money-stat-card strong {
+    font-size: clamp(16px, 5vw, 23px);
+  }
+}
+
+@media (max-width: 420px) {
+  .svx-money-position-main strong {
+    font-size: clamp(26px, 7.6vw, 36px);
+    letter-spacing: -0.08em;
+  }
+
+  .svx-money-account-grid article strong,
+  .svx-money-stat strong,
+  .svx-money-stat-card strong {
+    font-size: clamp(14px, 4.35vw, 19px);
+    letter-spacing: -0.07em;
+  }
+}
+
+/* Money account cards must stay readable up to billions */
+.svx-money-account-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.svx-money-account-grid article {
+  min-width: 0;
+}
+
+.svx-money-account-grid article strong {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  max-width: 100%;
+  font-size: clamp(20px, 2.15vw, 30px);
+  letter-spacing: -0.075em;
+  line-height: 0.95;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 760px) {
+  .svx-money-account-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-money-account-grid article strong {
+    font-size: clamp(17px, 5vw, 25px);
+  }
+}
+
+@media (max-width: 420px) {
+  .svx-money-account-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-money-account-grid article strong {
+    font-size: clamp(20px, 7vw, 28px);
+  }
+}
