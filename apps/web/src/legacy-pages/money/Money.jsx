@@ -494,6 +494,9 @@ export default function Money() {
   const suppliers = payload.iOweSuppliers || EMPTY_SUMMARY.iOweSuppliers;
   const loanSummary = payload.loans || EMPTY_SUMMARY.loans;
   const paymentSplit = Array.isArray(payload.paymentSplit) ? payload.paymentSplit : [];
+  const recentMoneyMovements = Array.isArray(payload.recentMoneyMovements)
+    ? payload.recentMoneyMovements
+    : [];
   const moneyAccounts = Array.isArray(payload.moneyAccounts) ? payload.moneyAccounts : [];
 
   const accountBalance = useCallback(
@@ -880,7 +883,63 @@ export default function Money() {
         </article>
       </section>
 
-      <section className="svx-money-owner-grid">
+              <section className="svx-money-card svx-money-movements-card">
+          <div className="svx-money-card-head">
+            <div>
+              <span className="svx-money-badge">RECENT</span>
+              <h2>Recent money movements</h2>
+            </div>
+          </div>
+
+          {recentMoneyMovements.length > 0 ? (
+            <div className="svx-money-movement-list">
+              {recentMoneyMovements.map((movement) => {
+                const isOut = cleanString(movement.direction).toUpperCase() === "OUT";
+                const movementAmount = toNumber(movement.amount, 0);
+                const sourceType = cleanString(movement.sourceType);
+                const label =
+                  sourceType === "SalePayment"
+                    ? "Sale payment"
+                    : sourceType === "Expense"
+                      ? "Approved expense"
+                      : sourceType === "SupplierPayment"
+                        ? "Supplier payment"
+                        : sourceType === "OwnerLoan"
+                          ? "Loan movement"
+                          : sourceType === "CashMovement"
+                            ? "Cash movement"
+                            : "Money movement";
+
+                return (
+                  <article
+                    key={`${movement.sourceType || "movement"}-${movement.id || movement.sourceId}`}
+                    className={`svx-money-movement-row ${isOut ? "is-out" : "is-in"}`}
+                  >
+                    <div>
+                      <strong>{label}</strong>
+                      <span>
+                        {movement.accountLabel || "Money"} · {movement.note || movement.reason || "Recorded movement"}
+                      </span>
+                    </div>
+
+                    <b>
+                      {isOut ? "-" : "+"}
+                      {formatMoney(movementAmount)}
+                    </b>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="svx-money-empty">
+              <span className="svx-money-empty-icon">▣</span>
+              <strong>No money movements yet</strong>
+              <p>Sales, expenses, supplier payments, loans, and cash movements will appear here.</p>
+            </div>
+          )}
+        </section>
+
+<section className="svx-money-owner-grid">
         <article className="svx-money-card">
           <div className="svx-money-card-header">
             <div>

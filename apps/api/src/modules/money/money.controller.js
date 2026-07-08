@@ -450,6 +450,70 @@ async function getLatestDrawerSnapshot(tenantId, branchId) {
 }
 
 
+async function getRecentMoneyMovements(tenantId, branchId) {
+  const accountMovements = await prisma.moneyAccountMovement.findMany({
+    where: {
+      tenantId,
+      ...(branchId ? { branchId } : {}),
+    },
+    orderBy: [{ createdAt: "desc" }],
+    take: 80,
+    include: {
+      account: true,
+    },
+  });
+
+  const cashRows = branchId
+    ? await prisma.$queryRaw`
+        select id, tenant_id, branch_id, type, reason, amount, note, created_at, created_by
+        from public.cash_movements
+        where tenant_id::text = ${String(tenantId)}::text
+          and branch_id::text = ${String(branchId)}::text
+        order by created_at desc
+        limit 80
+      `
+    : await prisma.$queryRaw`
+        select id, tenant_id, branch_id, type, reason, amount, note, created_at, created_by
+        from public.cash_movements
+        where tenant_id::text = ${String(tenantId)}::text
+        order by created_at desc
+        limit 80
+      `;
+
+  const nonCashRows = accountMovements.map((movement) => ({
+    id: movement.id,
+    sourceId: movement.sourceId || movement.id,
+    sourceType: movement.sourceType || "MoneyMovement",
+    accountType: movement.account?.accountType || null,
+    accountLabel:
+      movement.account?.label ||
+      ACCOUNT_LABELS[movement.account?.accountType] ||
+      "Money",
+    direction: movement.direction,
+    reason: movement.reason || "OTHER",
+    amount: safeNumber(movement.amount),
+    note: movement.note || null,
+    createdAt: movement.createdAt || null,
+  }));
+
+  const cashMovementRows = (cashRows || []).map((movement) => ({
+    id: movement.id,
+    sourceId: movement.id,
+    sourceType: "CashMovement",
+    accountType: "CASH",
+    accountLabel: "Cash",
+    direction: movement.type,
+    reason: movement.reason || "OTHER",
+    amount: safeNumber(movement.amount),
+    note: movement.note || null,
+    createdAt: movement.created_at || null,
+  }));
+
+  return [...nonCashRows, ...cashMovementRows]
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 40);
+}
+
 async function getCustomerMoneySummary(tenantId) {
   const totals = await prisma.sale.aggregate({
     where: {
@@ -629,6 +693,8 @@ async function getSummary(req, res) {
         getMoneyAccounts(tenantId, branchId).catch(() => []),
       ]);
 
+    const recentMoneyMovements = await getRecentMoneyMovements(tenantId, branchId);
+
     const cashIHave = safeNumber(drawer?.expectedCash);
     const moneyComingToMe = safeNumber(customersOweMe.total) + safeNumber(loans.givenOut.total);
     const moneyIOwe = safeNumber(iOweSuppliers.total) + safeNumber(loans.received.total);
@@ -648,6 +714,7 @@ async function getSummary(req, res) {
       },
       drawer,
       moneyAccounts,
+        recentMoneyMovements,
       customersOweMe,
       iOweSuppliers,
       loans,

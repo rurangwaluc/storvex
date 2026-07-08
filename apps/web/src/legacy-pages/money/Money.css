@@ -1389,3 +1389,151 @@ html:not(.dark) body:not(.dark) .svx-money-modal-header,
     font-size: clamp(20px, 7vw, 28px);
   }
 }
+
+/* Recent money movements */
+.svx-money-movements-card {
+  min-height: 0;
+}
+
+.svx-money-movement-list {
+  display: grid;
+  gap: 10px;
+  max-height: 390px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.svx-money-movement-row {
+  border: 1px solid var(--color-border);
+  background: var(--money-panel);
+  border-radius: 18px;
+  padding: 13px 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.svx-money-movement-row > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.svx-money-movement-row strong {
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.25;
+}
+
+.svx-money-movement-row span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-money-movement-row b {
+  font-size: clamp(13px, 1.15vw, 18px);
+  font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.svx-money-movement-row.is-in b {
+  color: var(--color-primary);
+}
+
+.svx-money-movement-row.is-out b {
+  color: var(--money-danger);
+}
+
+@media (max-width: 520px) {
+  .svx-money-movement-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .svx-money-movement-row b {
+    justify-self: start;
+  }
+}
+
+/* Recent money movements */
+.svx-money-movements-card {
+  min-height: 0;
+}
+
+.svx-money-movement-list {
+  display: grid;
+  gap: 10px;
+  max-height: 390px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.svx-money-movement-row {
+  border: 1px solid var(--color-border);
+  background: var(--money-panel);
+  border-radius: 18px;
+  padding: 13px 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.svx-money-movement-row > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.svx-money-movement-row strong {
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 950;
+  line-height: 1.25;
+}
+
+.svx-money-movement-row span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-money-movement-row b {
+  font-size: clamp(13px, 1.15vw, 18px);
+  font-weight: 950;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.svx-money-movement-row.is-in b {
+  color: var(--color-primary);
+}
+
+.svx-money-movement-row.is-out b {
+  color: var(--money-danger);
+}
+
+@media (max-width: 520px) {
+  .svx-money-movement-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .svx-money-movement-row b {
+    justify-self: start;
+  }
+}
