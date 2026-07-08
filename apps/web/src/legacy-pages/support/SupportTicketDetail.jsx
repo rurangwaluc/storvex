@@ -482,6 +482,7 @@ function ReplyForm({ ticket, onSent }) {
 
   const closed = ticket?.status === "CLOSED";
   const canSubmit = Boolean(ticket?.id && !closed && cleanString(message));
+  const waitingForYou = String(ticket?.status || "").toUpperCase() === "WAITING_FOR_TENANT";
 
   async function uploadFiles() {
     const uploaded = [];
@@ -533,13 +534,29 @@ function ReplyForm({ ticket, onSent }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-[var(--color-border)] p-5 sm:p-6">
-      <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>
-        Reply
-      </label>
+    <form onSubmit={handleSubmit} className="svx-support-reply-form border-t border-[var(--color-border)] p-5 sm:p-6">
+      <div className={`svx-support-reply-topline ${waitingForYou ? "is-needed" : ""}`}>
+        <div className="svx-support-reply-title-block">
+          <span>{waitingForYou ? "Your reply is needed" : "Reply to support"}</span>
+          <p>
+            {waitingForYou
+              ? "Storvex support asked for more information. Reply here to continue."
+              : "Keep the conversation in this ticket so support can see the full history."}
+          </p>
+        </div>
+
+        <AsyncButton
+          type="submit"
+          loading={busy}
+          disabled={!canSubmit || busy}
+          className={primaryBtn(!canSubmit || busy)}
+        >
+          {canSubmit ? "Send reply" : "Write reply first"}
+        </AsyncButton>
+      </div>
 
       <textarea
-        className="min-h-[120px] w-full resize-none rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="svx-support-reply-textarea min-h-[96px] w-full resize-none rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[var(--color-primary-ring)] disabled:cursor-not-allowed disabled:opacity-60"
         placeholder={
           closed
             ? "This ticket is closed."
@@ -551,18 +568,9 @@ function ReplyForm({ ticket, onSent }) {
       />
 
       {!closed ? (
-        <div className={cx(softPanel(), "mt-4 p-4")}>
-          <div
-            className={cx(
-              "text-[11px] font-semibold uppercase tracking-[0.18em]",
-              softText()
-            )}
-          >
-            Attachments
-          </div>
-
-          <label className={cx(secondaryBtn(busy), "mt-3 cursor-pointer")}>
-            Add screenshots or proof
+        <div className="svx-support-attachment-strip">
+          <label className={cx(secondaryBtn(busy), "cursor-pointer")}>
+            Add proof
             <input
               type="file"
               multiple
@@ -577,20 +585,19 @@ function ReplyForm({ ticket, onSent }) {
           </label>
 
           {files.length ? (
-            <div className="mt-3 space-y-2">
+            <div className="svx-support-selected-files">
               {files.map((file) => (
                 <div
                   key={`${file.name}-${file.size}-${file.lastModified}`}
-                  className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--color-card)] px-4 py-3 text-sm font-semibold text-[var(--color-text)]"
+                  className="svx-support-selected-file"
                 >
-                  <span className="min-w-0 truncate">{file.name}</span>
+                  <span>{file.name}</span>
                   <button
                     type="button"
                     disabled={busy}
                     onClick={() =>
                       setFiles((current) => current.filter((item) => item !== file))
                     }
-                    className="rounded-xl px-2 py-1 text-xs font-bold text-[var(--color-danger)] disabled:opacity-60"
                   >
                     Remove
                   </button>
@@ -598,26 +605,16 @@ function ReplyForm({ ticket, onSent }) {
               ))}
             </div>
           ) : (
-            <div className={cx("mt-3 text-xs leading-5", mutedText())}>
-              Optional. Upload up to 5 files.
+            <div className={cx("text-xs leading-5", mutedText())}>
+              Optional screenshots, payment proof, or files.
             </div>
           )}
         </div>
       ) : null}
-
-      <div className="mt-5 flex flex-wrap items-center justify-end gap-2">
-        <AsyncButton
-          type="submit"
-          loading={busy}
-          disabled={!canSubmit || busy}
-          className={primaryBtn(!canSubmit || busy)}
-        >
-          Send reply
-        </AsyncButton>
-      </div>
     </form>
   );
 }
+
 
 export default function SupportTicketDetail() {
   const { id } = useParams();
@@ -631,6 +628,7 @@ export default function SupportTicketDetail() {
 
   const messages = ticket?.messages || [];
   const closed = ticket?.status === "CLOSED";
+  const waitingForYou = String(ticket?.status || "").toUpperCase() === "WAITING_FOR_TENANT";
 
   useEffect(() => {
     mountedRef.current = true;
@@ -722,7 +720,7 @@ export default function SupportTicketDetail() {
   }
 
   return (
-    <div className="svx-support-detail-page">
+    <div className={`svx-support-detail-page ${waitingForYou ? "is-waiting-owner" : ""}`}>
       <section className="space-y-5">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
           <SectionHeading
@@ -756,37 +754,55 @@ export default function SupportTicketDetail() {
       </section>
 
       <div className="svx-support-detail-grid">
-        <section className="svx-support-detail-conversation">
-          <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className={cx("text-xl font-bold", strongText())}>
-                  Conversation
-                </div>
-                <div className={cx("mt-1.5 text-sm leading-6", mutedText())}>
-                  Your team and Storvex support replies in one place.
-                </div>
+        <main className="svx-support-detail-main">
+          {waitingForYou ? (
+            <section className="svx-support-owner-action-card">
+              <div className="svx-support-owner-action-copy">
+                <span>Action needed</span>
+                <h2>Your reply is needed</h2>
+                <p>
+                  Storvex support asked for more information. Reply here so the support team can continue helping you.
+                </p>
               </div>
 
-              <span className="inline-flex items-center self-start rounded-full bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-muted)]">
-                {formatNumber(messages.length)} message
-                {messages.length === 1 ? "" : "s"}
-              </span>
+              <ReplyForm ticket={ticket} onSent={() => load({ silent: false })} />
+            </section>
+          ) : null}
+
+          <section className="svx-support-detail-conversation">
+            <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className={cx("text-xl font-bold", strongText())}>
+                    Conversation history
+                  </div>
+                  <div className={cx("mt-1.5 text-sm leading-6", mutedText())}>
+                    Previous messages between your team and Storvex support.
+                  </div>
+                </div>
+
+                <span className="inline-flex items-center self-start rounded-full bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-muted)]">
+                  {formatNumber(messages.length)} message
+                  {messages.length === 1 ? "" : "s"}
+                </span>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-4 p-5 sm:p-6">
-            {messages.length ? (
-              messages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
-              ))
-            ) : (
-              <EmptyConversation />
-            )}
-          </div>
+            <div className="space-y-4 p-5 sm:p-6">
+              {messages.length ? (
+                messages.map((message) => (
+                  <MessageBubble key={message.id} message={message} />
+                ))
+              ) : (
+                <EmptyConversation />
+              )}
+            </div>
 
-          <ReplyForm ticket={ticket} onSent={() => load({ silent: false })} />
-        </section>
+            {!waitingForYou ? (
+              <ReplyForm ticket={ticket} onSent={() => load({ silent: false })} />
+            ) : null}
+          </section>
+        </main>
 
         <aside className="svx-support-detail-sidebar">
           <TicketInfoPanel ticket={ticket} />

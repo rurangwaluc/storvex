@@ -4,6 +4,8 @@ const controller = require("./supportTickets.controller");
 
 const router = express.Router();
 
+router.get("/summary", controller.getMySupportTicketsSummary);
+
 router.get("/", controller.listMySupportTickets);
 
 router.post("/", controller.createSupportTicket);

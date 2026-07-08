@@ -508,3 +508,31 @@
     min-height: 38px !important;
   }
 }
+
+
+.svx-sidebar-badge {
+  margin-left: auto;
+  min-width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0 7px;
+  font-size: 11px;
+  font-weight: 1000;
+  line-height: 1;
+  box-shadow: 0 10px 24px rgba(47, 141, 255, 0.25);
+}
+
+.svx-sidebar.is-collapsed .svx-sidebar-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 10px;
+}

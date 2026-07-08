@@ -1645,3 +1645,1046 @@ html:not(.dark) body:not(.dark) .svx-support-detail-page .svx-support-message-bu
     max-height: 320px !important;
   }
 }
+
+
+.svx-support-notification {
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+  border-radius: 24px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 5px;
+  text-decoration: none;
+  box-shadow: var(--shadow-soft);
+}
+
+.svx-support-notification strong {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 1000;
+}
+
+.svx-support-notification span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+/* Ticket list item that needs owner action */
+.svx-support-ticket.is-waiting-owner {
+  position: relative;
+  border-color: rgba(245, 158, 11, 0.78) !important;
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.035)),
+    var(--color-surface) !important;
+  box-shadow:
+    0 0 0 1px rgba(245, 158, 11, 0.13),
+    0 18px 44px rgba(245, 158, 11, 0.08) !important;
+}
+
+.svx-support-ticket.is-waiting-owner::before {
+  content: "Needs your reply";
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  border: 1px solid rgba(245, 158, 11, 0.34);
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 1000;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.svx-support-ticket.is-waiting-owner .svx-support-ticket-title {
+  color: #fef3c7 !important;
+}
+
+.svx-support-ticket.is-waiting-owner .svx-support-open {
+  background: #f59e0b !important;
+  color: #111827 !important;
+}
+
+@media (max-width: 720px) {
+  .svx-support-ticket.is-waiting-owner::before {
+    position: static;
+    justify-self: start;
+    margin-bottom: 8px;
+    grid-column: 1 / -1;
+  }
+}
+
+/* Cleaner waiting ticket: no cramped floating badge on the right */
+.svx-support-ticket.is-waiting-owner::before {
+  content: none !important;
+  display: none !important;
+}
+
+.svx-support-ticket.is-waiting-owner {
+  border-color: rgba(245, 158, 11, 0.72) !important;
+  background:
+    linear-gradient(90deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.035) 44%, transparent),
+    var(--color-surface) !important;
+}
+
+.svx-support-ticket.is-waiting-owner::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 4px;
+  border-radius: 999px;
+  background: #f59e0b;
+}
+
+.svx-support-ticket.is-waiting-owner .svx-support-ticket-side {
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.svx-support-ticket.is-waiting-owner .svx-support-open {
+  background: #f59e0b !important;
+  color: #111827 !important;
+  box-shadow: 0 12px 28px rgba(245, 158, 11, 0.22);
+}
+
+.svx-support-ticket.is-waiting-owner .svx-support-badge.is-waiting {
+  border-color: rgba(245, 158, 11, 0.42) !important;
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #fbbf24 !important;
+}
+
+@media (max-width: 720px) {
+  .svx-support-ticket.is-waiting-owner::after {
+    top: 12px;
+    bottom: 12px;
+  }
+
+  .svx-support-ticket.is-waiting-owner .svx-support-ticket-side {
+    align-items: flex-start;
+  }
+}
+
+/* Final waiting-for-owner ticket polish */
+.svx-support-ticket.is-waiting-owner {
+  position: relative;
+  isolation: isolate;
+  border-color: rgba(245, 158, 11, 0.72) !important;
+  background:
+    linear-gradient(90deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.045) 42%, transparent),
+    var(--color-card) !important;
+  box-shadow:
+    0 0 0 1px rgba(245, 158, 11, 0.12),
+    0 18px 44px rgba(245, 158, 11, 0.08) !important;
+}
+
+.svx-support-ticket.is-waiting-owner::before {
+  content: none !important;
+  display: none !important;
+}
+
+.svx-support-ticket.is-waiting-owner::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 4px;
+  border-radius: 999px;
+  background: #f59e0b;
+}
+
+.svx-support-ticket.is-waiting-owner .svx-support-ticket-title {
+  color: var(--color-text) !important;
+}
+
+.svx-support-ticket.is-waiting-owner .svx-support-badge.is-waiting {
+  border-color: rgba(245, 158, 11, 0.45) !important;
+  background: rgba(245, 158, 11, 0.14) !important;
+  color: #b45309 !important;
+}
+
+.svx-support-ticket.is-waiting-owner .svx-support-ticket-side {
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.svx-support-ticket.is-waiting-owner .svx-support-open {
+  background: #f59e0b !important;
+  color: #111827 !important;
+  box-shadow: 0 12px 28px rgba(245, 158, 11, 0.24);
+}
+
+/* Light mode: keep attention without washing out text */
+:root:not([data-theme="dark"]) .svx-support-ticket.is-waiting-owner {
+  border-color: rgba(217, 119, 6, 0.72) !important;
+  background:
+    linear-gradient(90deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.045) 40%, #ffffff),
+    #ffffff !important;
+}
+
+:root:not([data-theme="dark"]) .svx-support-ticket.is-waiting-owner .svx-support-ticket-title {
+  color: #111827 !important;
+}
+
+:root:not([data-theme="dark"]) .svx-support-ticket.is-waiting-owner .svx-support-ticket-meta,
+:root:not([data-theme="dark"]) .svx-support-ticket.is-waiting-owner .svx-support-ticket-side span:first-child {
+  color: #475569 !important;
+}
+
+:root:not([data-theme="dark"]) .svx-support-ticket.is-waiting-owner .svx-support-badge.is-waiting {
+  background: #fff7ed !important;
+  border-color: rgba(217, 119, 6, 0.34) !important;
+  color: #b45309 !important;
+}
+
+:root:not([data-theme="dark"]) .svx-support-ticket.is-waiting-owner .svx-support-open {
+  background: #f59e0b !important;
+  color: #111827 !important;
+}
+
+/* Dark mode: keep it premium, not loud */
+:root[data-theme="dark"] .svx-support-ticket.is-waiting-owner .svx-support-badge.is-waiting {
+  color: #fbbf24 !important;
+}
+
+:root[data-theme="dark"] .svx-support-ticket.is-waiting-owner .svx-support-ticket-title {
+  color: #fff7ed !important;
+}
+
+@media (max-width: 720px) {
+  .svx-support-ticket.is-waiting-owner::after {
+    top: 12px;
+    bottom: 12px;
+  }
+
+  .svx-support-ticket.is-waiting-owner .svx-support-ticket-side {
+    align-items: flex-start;
+  }
+}
+
+/* Ticket detail: keep reply action reachable */
+.svx-support-detail-grid {
+  align-items: start;
+}
+
+.svx-support-conversation-shell {
+  display: grid;
+  grid-template-rows: auto minmax(180px, 1fr) auto;
+  max-height: calc(100dvh - 250px);
+  min-height: 520px;
+}
+
+.svx-support-conversation-head {
+  background: var(--color-card);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.svx-support-conversation-messages {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.svx-support-reply-dock {
+  border-top: 1px solid var(--color-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0), var(--color-card) 18%),
+    var(--color-card);
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+}
+
+.svx-support-reply-dock form,
+.svx-support-reply-dock .svx-support-form {
+  margin: 0;
+}
+
+.svx-support-reply-dock .svx-support-textarea {
+  min-height: 96px;
+  max-height: 168px;
+}
+
+.svx-support-reply-dock .svx-support-form-actions {
+  position: sticky;
+  bottom: 0;
+  background: var(--color-card);
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
+}
+
+:root[data-theme="dark"] .svx-support-reply-dock {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0), var(--color-card) 18%),
+    var(--color-card);
+}
+
+@media (max-width: 1180px) {
+  .svx-support-conversation-shell {
+    max-height: none;
+    min-height: 0;
+  }
+
+  .svx-support-conversation-messages {
+    max-height: 48dvh;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-support-conversation-shell {
+    grid-template-rows: auto auto auto;
+  }
+
+  .svx-support-conversation-messages {
+    max-height: 42dvh;
+  }
+
+  .svx-support-reply-dock {
+    position: sticky;
+    bottom: 0;
+  }
+
+  .svx-support-reply-dock .svx-support-textarea {
+    min-height: 86px;
+  }
+}
+
+/* Support ticket reply must always expose the send action */
+.svx-support-reply-form {
+  display: grid;
+  gap: 14px;
+  background: var(--color-card);
+}
+
+.svx-support-reply-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.svx-support-reply-topline .svx-support-btn,
+.svx-support-reply-topline button {
+  min-width: 132px;
+  white-space: nowrap;
+}
+
+.svx-support-reply-form .svx-support-textarea,
+.svx-support-reply-form textarea {
+  min-height: 86px !important;
+  max-height: 132px !important;
+}
+
+.svx-support-reply-form .svx-support-upload,
+.svx-support-reply-form [class*="upload"] {
+  margin-top: 0 !important;
+}
+
+.svx-support-reply-dock {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.svx-support-conversation-shell {
+  grid-template-rows: auto minmax(150px, 1fr) auto !important;
+  max-height: calc(100dvh - 210px) !important;
+}
+
+.svx-support-conversation-messages {
+  max-height: none !important;
+}
+
+@media (max-width: 720px) {
+  .svx-support-reply-topline {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .svx-support-reply-topline .svx-support-btn,
+  .svx-support-reply-topline button {
+    width: 100%;
+  }
+
+  .svx-support-conversation-shell {
+    max-height: none !important;
+  }
+}
+
+/* Final support reply layout: Send button must be reachable immediately */
+.svx-support-reply-form {
+  display: grid;
+  gap: 14px;
+  background: var(--color-card);
+}
+
+.svx-support-reply-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.svx-support-reply-topline button,
+.svx-support-reply-topline .svx-support-btn {
+  min-width: 132px;
+  white-space: nowrap;
+}
+
+.svx-support-reply-textarea {
+  min-height: 96px !important;
+  max-height: 132px !important;
+}
+
+.svx-support-attachment-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface-2);
+  padding: 12px;
+}
+
+.svx-support-selected-files {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 8px;
+}
+
+.svx-support-selected-file {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 14px;
+  background: var(--color-card);
+  padding: 9px 10px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.svx-support-selected-file span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-support-selected-file button {
+  color: var(--color-danger);
+  font-size: 11px;
+  font-weight: 1000;
+}
+
+.svx-support-conversation-shell {
+  grid-template-rows: auto minmax(120px, 1fr) auto !important;
+  max-height: calc(100dvh - 190px) !important;
+}
+
+.svx-support-reply-dock {
+  overflow: visible !important;
+}
+
+@media (max-width: 720px) {
+  .svx-support-reply-topline,
+  .svx-support-attachment-strip {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .svx-support-reply-topline button,
+  .svx-support-reply-topline .svx-support-btn {
+    width: 100%;
+  }
+
+  .svx-support-conversation-shell {
+    max-height: none !important;
+  }
+}
+
+/* Final support reply clarity */
+.svx-support-reply-form {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-card);
+}
+
+.svx-support-reply-topline {
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-surface);
+  padding: 14px;
+}
+
+.svx-support-reply-topline.is-needed {
+  border-color: rgba(245, 158, 11, 0.55);
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(245, 158, 11, 0.035)),
+    var(--color-surface);
+}
+
+.svx-support-reply-title-block {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.svx-support-reply-title-block span {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 1000;
+  line-height: 1.2;
+}
+
+.svx-support-reply-title-block p {
+  margin: 0;
+  max-width: 620px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.svx-support-reply-topline.is-needed .svx-support-reply-title-block span {
+  color: #fbbf24;
+}
+
+:root:not([data-theme="dark"]) .svx-support-reply-topline.is-needed .svx-support-reply-title-block span {
+  color: #92400e;
+}
+
+.svx-support-reply-textarea {
+  border-radius: 20px !important;
+  background: var(--color-surface) !important;
+  font-size: 14px !important;
+  font-weight: 850 !important;
+  line-height: 1.6 !important;
+}
+
+.svx-support-reply-topline button:disabled {
+  opacity: 0.78 !important;
+  background: var(--color-surface-2) !important;
+  color: var(--color-text-muted) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.svx-support-attachment-strip {
+  border-style: dashed !important;
+  background: transparent !important;
+}
+
+.svx-support-attachment-strip label {
+  min-height: 40px !important;
+  border-radius: 14px !important;
+}
+
+.svx-support-attachment-strip > div:last-child {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+@media (max-width: 720px) {
+  .svx-support-reply-topline {
+    padding: 12px;
+  }
+
+  .svx-support-reply-title-block p {
+    max-width: none;
+  }
+}
+
+/* Final support ticket detail structure */
+.svx-support-detail-page.is-waiting-owner .svx-support-conversation-shell {
+  max-height: none !important;
+  min-height: 0 !important;
+  grid-template-rows: auto auto auto minmax(160px, auto) !important;
+}
+
+.svx-support-priority-reply {
+  border-bottom: 1px solid var(--color-border);
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.10), rgba(47, 141, 255, 0.035)),
+    var(--color-card);
+  padding: 18px 20px 20px;
+  display: grid;
+  gap: 14px;
+}
+
+.svx-support-priority-reply-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.svx-support-priority-reply-copy strong {
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 1000;
+  line-height: 1.2;
+}
+
+.svx-support-priority-reply-copy span {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.5;
+}
+
+.svx-support-priority-reply .svx-support-reply-form {
+  border: 1px solid var(--color-border) !important;
+  border-radius: 22px;
+  background: var(--color-card);
+  padding: 16px !important;
+}
+
+.svx-support-priority-reply .svx-support-reply-topline {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.svx-support-priority-reply .svx-support-reply-title-block {
+  display: none !important;
+}
+
+.svx-support-priority-reply .svx-support-reply-textarea {
+  min-height: 104px !important;
+  max-height: 150px !important;
+}
+
+.svx-support-priority-reply .svx-support-attachment-strip {
+  padding: 10px !important;
+  border-radius: 16px !important;
+}
+
+.svx-support-history-label {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-card);
+  padding: 12px 20px;
+}
+
+.svx-support-history-label span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 1000;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.svx-support-detail-page.is-waiting-owner .svx-support-conversation-messages {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+:root:not([data-theme="dark"]) .svx-support-priority-reply {
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.10), rgba(47, 141, 255, 0.035)),
+    #ffffff;
+}
+
+@media (max-width: 720px) {
+  .svx-support-priority-reply {
+    padding: 14px;
+  }
+
+  .svx-support-priority-reply .svx-support-reply-form {
+    padding: 14px !important;
+  }
+}
+
+/* Support ticket detail: action-first layout */
+.svx-support-owner-action-card {
+  border: 1px solid rgba(245, 158, 11, 0.56);
+  border-radius: 30px;
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(47, 141, 255, 0.04)),
+    var(--color-card);
+  box-shadow:
+    0 0 0 1px rgba(245, 158, 11, 0.10),
+    var(--shadow-card);
+  padding: 20px;
+  display: grid;
+  grid-template-columns: minmax(240px, 0.75fr) minmax(360px, 1.25fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.svx-support-owner-action-copy {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 4px 0;
+}
+
+.svx-support-owner-action-copy span {
+  width: max-content;
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+  padding: 7px 11px;
+  font-size: 10px;
+  font-weight: 1000;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.svx-support-owner-action-copy h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 1000;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.svx-support-owner-action-copy p {
+  margin: 0;
+  max-width: 520px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.65;
+}
+
+.svx-support-owner-action-card .svx-support-reply-form {
+  border: 1px solid var(--color-border) !important;
+  border-radius: 24px;
+  background: var(--color-card);
+  padding: 16px !important;
+  box-shadow: none;
+}
+
+.svx-support-owner-action-card .svx-support-reply-topline {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.svx-support-owner-action-card .svx-support-reply-title-block {
+  display: none !important;
+}
+
+.svx-support-owner-action-card .svx-support-reply-textarea {
+  min-height: 118px !important;
+  max-height: 180px !important;
+}
+
+.svx-support-owner-action-card .svx-support-attachment-strip {
+  background: var(--color-surface-2) !important;
+  border-radius: 18px !important;
+  padding: 10px !important;
+}
+
+.svx-support-detail-page.is-waiting-owner .svx-support-conversation-shell {
+  max-height: none !important;
+  min-height: 0 !important;
+  grid-template-rows: auto minmax(120px, auto) !important;
+}
+
+.svx-support-detail-page.is-waiting-owner .svx-support-conversation-messages {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.svx-support-detail-page.is-waiting-owner .svx-support-reply-dock {
+  display: none !important;
+}
+
+.svx-support-priority-reply,
+.svx-support-history-label {
+  display: none !important;
+}
+
+:root:not([data-theme="dark"]) .svx-support-owner-action-card {
+  border-color: rgba(217, 119, 6, 0.42);
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.10), rgba(47, 141, 255, 0.035)),
+    #ffffff;
+}
+
+:root:not([data-theme="dark"]) .svx-support-owner-action-copy span {
+  background: #fff7ed;
+  color: #92400e;
+  border-color: rgba(217, 119, 6, 0.28);
+}
+
+@media (max-width: 1100px) {
+  .svx-support-owner-action-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-support-owner-action-card {
+    border-radius: 24px;
+    padding: 14px;
+  }
+
+  .svx-support-owner-action-card .svx-support-reply-form {
+    padding: 14px !important;
+  }
+}
+
+/* Support ticket detail: action-first page structure */
+.svx-support-detail-main {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+
+.svx-support-owner-action-card {
+  border: 1px solid rgba(245, 158, 11, 0.56);
+  border-radius: 30px;
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(47, 141, 255, 0.04)),
+    var(--color-card);
+  box-shadow:
+    0 0 0 1px rgba(245, 158, 11, 0.10),
+    var(--shadow-card);
+  padding: 20px;
+  display: grid;
+  grid-template-columns: minmax(240px, 0.72fr) minmax(360px, 1.28fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.svx-support-owner-action-copy {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.svx-support-owner-action-copy span {
+  width: max-content;
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  border-radius: 999px;
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+  padding: 7px 11px;
+  font-size: 10px;
+  font-weight: 1000;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.svx-support-owner-action-copy h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 1000;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.svx-support-owner-action-copy p {
+  margin: 0;
+  max-width: 520px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.65;
+}
+
+.svx-support-owner-action-card .svx-support-reply-form {
+  border: 1px solid var(--color-border) !important;
+  border-radius: 24px;
+  background: var(--color-card);
+  padding: 16px !important;
+}
+
+.svx-support-owner-action-card .svx-support-reply-topline {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+.svx-support-owner-action-card .svx-support-reply-title-block {
+  display: none !important;
+}
+
+.svx-support-owner-action-card .svx-support-reply-textarea {
+  min-height: 118px !important;
+  max-height: 180px !important;
+}
+
+.svx-support-owner-action-card .svx-support-attachment-strip {
+  background: var(--color-surface-2) !important;
+  border-radius: 18px !important;
+  padding: 10px !important;
+}
+
+:root:not([data-theme="dark"]) .svx-support-owner-action-card {
+  border-color: rgba(217, 119, 6, 0.42);
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.10), rgba(47, 141, 255, 0.035)),
+    #ffffff;
+}
+
+:root:not([data-theme="dark"]) .svx-support-owner-action-copy span {
+  background: #fff7ed;
+  color: #92400e;
+  border-color: rgba(217, 119, 6, 0.28);
+}
+
+@media (max-width: 1100px) {
+  .svx-support-owner-action-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-support-owner-action-card {
+    border-radius: 24px;
+    padding: 14px;
+  }
+
+  .svx-support-owner-action-card .svx-support-reply-form {
+    padding: 14px !important;
+  }
+}
+
+/* Final ticket detail layout: never hide important support actions */
+.svx-support-detail-page,
+.svx-support-detail-grid,
+.svx-support-detail-main,
+.svx-support-detail-conversation,
+.svx-support-detail-sidebar,
+.svx-support-conversation-shell,
+.svx-support-conversation-messages,
+.svx-support-reply-dock,
+.svx-support-reply-form {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.svx-support-detail-grid {
+  align-items: start !important;
+}
+
+.svx-support-detail-conversation {
+  display: block !important;
+}
+
+.svx-support-conversation-shell {
+  display: block !important;
+  min-height: 0 !important;
+}
+
+.svx-support-conversation-messages {
+  display: grid !important;
+  gap: 14px !important;
+}
+
+.svx-support-reply-dock {
+  position: static !important;
+  bottom: auto !important;
+  z-index: auto !important;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-card) !important;
+}
+
+.svx-support-reply-form {
+  position: static !important;
+  display: grid !important;
+  gap: 14px !important;
+  border-top: 1px solid var(--color-border) !important;
+  background: var(--color-card) !important;
+}
+
+.svx-support-reply-topline {
+  position: static !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 14px !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 20px !important;
+  background: var(--color-surface) !important;
+  padding: 14px !important;
+}
+
+.svx-support-reply-title-block {
+  display: grid !important;
+  gap: 4px !important;
+}
+
+.svx-support-reply-title-block span {
+  color: var(--color-text) !important;
+  font-size: 14px !important;
+  font-weight: 1000 !important;
+}
+
+.svx-support-reply-title-block p {
+  margin: 0 !important;
+  color: var(--color-text-muted) !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+  line-height: 1.45 !important;
+}
+
+.svx-support-reply-topline button,
+.svx-support-reply-topline .svx-support-btn {
+  min-width: 142px !important;
+  white-space: nowrap !important;
+}
+
+.svx-support-reply-textarea,
+.svx-support-reply-form textarea {
+  display: block !important;
+  min-height: 120px !important;
+  max-height: none !important;
+  overflow: auto !important;
+}
+
+.svx-support-attachment-strip {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  border: 1px dashed var(--color-border) !important;
+  border-radius: 18px !important;
+  background: var(--color-surface-2) !important;
+  padding: 12px !important;
+}
+
+.svx-support-detail-sidebar {
+  position: static !important;
+  display: grid !important;
+  gap: 18px !important;
+}
+
+.svx-support-detail-sidebar > * {
+  display: block !important;
+}
+
+/* If older sticky/action-card experiments exist, force them not to trap layout */
+.svx-support-owner-action-card,
+.svx-support-priority-reply {
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+@media (max-width: 900px) {
+  .svx-support-reply-topline,
+  .svx-support-attachment-strip {
+    grid-template-columns: 1fr !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .svx-support-reply-topline button,
+  .svx-support-reply-topline .svx-support-btn {
+    width: 100% !important;
+  }
+}

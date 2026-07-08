@@ -90,3 +90,7 @@ export async function uploadSupportFile(uploadUrl, file) {
 
   return true;
 }
+
+export async function getMySupportTicketsSummary() {
+  return apiFetch("/support/tickets/summary");
+}

@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import AsyncButton from "../../components/ui/AsyncButton";
 import {
   createSupportAttachmentUpload,
+  getMySupportTicketsSummary,
   createSupportTicket,
   listMySupportTickets,
   uploadSupportFile,
@@ -184,7 +185,10 @@ function TicketCard({ ticket }) {
   const priority = String(ticket?.priority || "").toUpperCase();
 
   return (
-    <Link to={`/app/support/${ticket.id}`} className="svx-support-ticket">
+    <Link
+      to={`/app/support/${ticket.id}`}
+      className={`svx-support-ticket ${status === "WAITING_FOR_TENANT" ? "is-waiting-owner" : ""}`}
+    >
       <div className="svx-support-ticket-main">
         <div className="svx-support-ticket-tags">
           <SupportBadge className={statusClass(status)}>
@@ -210,7 +214,9 @@ function TicketCard({ ticket }) {
 
       <div className="svx-support-ticket-side">
         <span>{ticket.assignedToPlatformUser?.name || "Storvex support"}</span>
-        <span className="svx-support-open">Open</span>
+        <span className="svx-support-open">
+          {status === "WAITING_FOR_TENANT" ? "Reply" : "Open"}
+        </span>
       </div>
     </Link>
   );
@@ -436,6 +442,7 @@ function CreateTicketModal({ open, onClose, onCreated }) {
 
 export default function SupportTickets() {
   const [loading, setLoading] = useState(true);
+  const [supportSummary, setSupportSummary] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [q, setQ] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
@@ -452,6 +459,19 @@ export default function SupportTickets() {
     };
   }, []);
 
+  async function loadSupportSummary() {
+    try {
+      const summary = await getMySupportTicketsSummary();
+      if (mountedRef.current) {
+        setSupportSummary(summary);
+      }
+    } catch {
+      if (mountedRef.current) {
+        setSupportSummary(null);
+      }
+    }
+  }
+
   async function load({ silent = false } = {}) {
     const requestId = requestRef.current + 1;
     requestRef.current = requestId;
@@ -459,6 +479,8 @@ export default function SupportTickets() {
     if (!silent) setLoading(true);
 
     try {
+      await loadSupportSummary();
+
       const data = await listMySupportTickets({ take: 100 });
 
       if (!mountedRef.current || requestRef.current !== requestId) return;
@@ -571,6 +593,13 @@ export default function SupportTickets() {
           </button>
         </div>
       </section>
+
+      {supportSummary?.needsAttention ? (
+        <Link to="/app/support?status=WAITING_FOR_TENANT" className="svx-support-notification">
+          <strong>Support is waiting for you</strong>
+          <span>{supportSummary.message || "Open support to reply."}</span>
+        </Link>
+      ) : null}
 
       <section className="svx-support-summary">
         <SupportStat label="All requests" value={formatNumber(summary.total)} note="Every issue sent to Storvex" />

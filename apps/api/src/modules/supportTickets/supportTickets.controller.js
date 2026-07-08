@@ -179,6 +179,86 @@ function attachmentInputList(value) {
     .slice(0, 5);
 }
 
+async function getMySupportTicketsSummary(req, res) {
+  const tenantId = getTenantId(req);
+
+  if (!tenantId) {
+    return res.status(400).json({
+      message: "Business context is required",
+      code: "TENANT_CONTEXT_REQUIRED",
+    });
+  }
+
+  try {
+    const [
+      open,
+      inProgress,
+      waitingForYou,
+      urgent,
+      blocked,
+      latestWaiting,
+    ] = await Promise.all([
+      prisma.supportTicket.count({
+        where: { tenantId, status: SupportTicketStatus.OPEN },
+      }),
+      prisma.supportTicket.count({
+        where: { tenantId, status: SupportTicketStatus.IN_PROGRESS },
+      }),
+      prisma.supportTicket.count({
+        where: { tenantId, status: SupportTicketStatus.WAITING_FOR_TENANT },
+      }),
+      prisma.supportTicket.count({
+        where: { tenantId, priority: SupportTicketPriority.URGENT },
+      }),
+      prisma.supportTicket.count({
+        where: { tenantId, priority: SupportTicketPriority.BUSINESS_BLOCKED },
+      }),
+      prisma.supportTicket.findFirst({
+        where: { tenantId, status: SupportTicketStatus.WAITING_FOR_TENANT },
+        orderBy: [{ lastMessageAt: "desc" }, { createdAt: "desc" }],
+        select: {
+          id: true,
+          title: true,
+          status: true,
+          priority: true,
+          lastMessageAt: true,
+          updatedAt: true,
+          assignedToPlatformUser: {
+            select: { id: true, name: true },
+          },
+        },
+      }),
+    ]);
+
+    const active = open + inProgress + waitingForYou;
+    const badgeCount = waitingForYou > 0 ? waitingForYou : active;
+
+    return res.json({
+      active,
+      open,
+      inProgress,
+      waitingForYou,
+      urgent,
+      blocked,
+      badgeCount,
+      needsAttention: waitingForYou > 0 || blocked > 0,
+      latestWaiting,
+      message:
+        waitingForYou > 0
+          ? `${waitingForYou} support request${waitingForYou === 1 ? "" : "s"} waiting for your reply`
+          : active > 0
+            ? `${active} active support request${active === 1 ? "" : "s"}`
+            : "No support requests need attention",
+    });
+  } catch (err) {
+    console.error("getMySupportTicketsSummary error:", err);
+    return res.status(500).json({
+      message: "Failed to load support summary",
+      code: "SUPPORT_SUMMARY_FAILED",
+    });
+  }
+}
+
 async function listMySupportTickets(req, res) {
   const tenantId = getTenantId(req);
 
@@ -593,6 +673,7 @@ async function closeMySupportTicket(req, res) {
 }
 
 module.exports = {
+  getMySupportTicketsSummary,
   listMySupportTickets,
   createSupportTicket,
   getMySupportTicketById,

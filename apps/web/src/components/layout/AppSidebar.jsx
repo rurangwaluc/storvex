@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import { useEffect, useMemo, useState } from "react";
-import { clearActiveBranchId } from "../../services/apiClient";
+import { apiFetch, clearActiveBranchId } from "../../services/apiClient";
 import "./AppSidebar.css";
 
 const LOGO_FOR_LIGHT_THEME_SRC = "/storvex_dark.webp";
@@ -671,8 +671,13 @@ function NavItemButton({ item, active, collapsed, onClick }) {
       </span>
 
       {!collapsed ? (
-        <span className="min-w-0 flex-1 truncate text-[14px] font-bold">
-          {item.label}
+        <span className="min-w-0 flex flex-1 items-center gap-2 text-[14px] font-bold">
+          <span className="min-w-0 truncate">{item.label}</span>
+          {item.badge ? (
+            <span className="svx-sidebar-badge" aria-label={`${item.badge} support updates`}>
+              {item.badge > 99 ? "99+" : item.badge}
+            </span>
+          ) : null}
         </span>
       ) : null}
     </button>
@@ -688,7 +693,33 @@ export default function AppSidebar({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [supportSummary, setSupportSummary] = useState(null);
+  const supportBadgeCount = Number(supportSummary?.badgeCount || 0);
   const logoSrc = useThemeLogoSrc();
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadSupportSummary() {
+      try {
+        const summary = await apiFetch("/support/tickets/summary");
+        if (alive) setSupportSummary(summary);
+      } catch {
+        if (alive) setSupportSummary(null);
+      }
+    }
+
+    loadSupportSummary();
+
+    const interval = window.setInterval(loadSupportSummary, 60000);
+
+    return () => {
+      alive = false;
+      window.clearInterval(interval);
+    };
+  }, []);
+
+
   const [hoverOpen, setHoverOpen] = useState(false);
 
   const token =
@@ -698,7 +729,19 @@ export default function AppSidebar({
 
   const roles = useMemo(() => getDecodedRoles(token), [token]);
   const primaryRole = roles[0] || null;
-  const filteredNav = useMemo(() => filterNavByRoles(NAV_ITEMS, roles), [roles]);
+  const filteredNav = useMemo(() => {
+    return filterNavByRoles(NAV_ITEMS, roles).map((group) => ({
+      ...group,
+      items: group.items.map((item) =>
+        item.to === "/app/support"
+          ? {
+              ...item,
+              badge: supportBadgeCount > 0 ? supportBadgeCount : null,
+            }
+          : item
+      ),
+    }));
+  }, [roles, supportBadgeCount]);
 
   const effectiveCollapsed = collapsed && !hoverOpen;
 
