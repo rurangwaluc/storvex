@@ -364,38 +364,48 @@ async function recordMoneyMovement(tx, params) {
 }
 
 async function getLatestDrawerSnapshot(tenantId, branchId) {
-  const branchFilter = branchId ? `and cs.branch_id = $2` : "";
-  const params = branchId ? [tenantId, branchId] : [tenantId];
+  if (!tenantId || !branchId) {
+    return {
+      open: false,
+      expectedCash: 0,
+      openingCash: 0,
+      totalIn: 0,
+      totalOut: 0,
+      movementCount: 0,
+      difference: 0,
+      session: null,
+    };
+  }
 
-  const rows = await prisma.$queryRawUnsafe(
-    `
-      select
-        cs.id,
-        cs.branch_id,
-        cs.opened_at,
-        cs.closed_at,
-        cs.opening_cash,
-        cs.expected_cash_at_close,
-        cs.expected_cash,
-        cs.counted_cash,
-        cs.cash_difference,
-        cs.closing_reason,
-        cs.closing_explanation,
-        coalesce(sum(case when cm.type = 'IN' then cm.amount else 0 end), 0) as total_in,
-        coalesce(sum(case when cm.type = 'OUT' then cm.amount else 0 end), 0) as total_out,
-        count(cm.id)::int as movement_count
-      from cash_sessions cs
-      left join cash_movements cm on cm.session_id = cs.id
-      where cs.tenant_id = $1
-      ${branchFilter}
-      group by cs.id
-      order by
-        case when cs.closed_at is null then 0 else 1 end,
-        coalesce(cs.closed_at, cs.opened_at) desc
-      limit 1
-    `,
-    ...params,
-  );
+  const rows = await prisma.$queryRaw`
+    select
+      cs.id,
+      cs.branch_id,
+      cs.opening_cash,
+      cs.opened_at,
+      cs.closed_at,
+      cs.counted_cash,
+      (
+        cs.opening_cash
+        + coalesce(sum(case when cm.type = 'IN' then cm.amount else 0 end), 0)
+        - coalesce(sum(case when cm.type = 'OUT' then cm.amount else 0 end), 0)
+      ) as expected_cash,
+      coalesce(sum(case when cm.type = 'IN' then cm.amount else 0 end), 0) as total_in,
+      coalesce(sum(case when cm.type = 'OUT' then cm.amount else 0 end), 0) as total_out,
+      count(cm.id)::int as movement_count
+    from public.cash_sessions cs
+    left join public.cash_movements cm
+      on cm.session_id = cs.id
+      and cm.tenant_id = cs.tenant_id
+      and cm.branch_id = cs.branch_id
+    where cs.tenant_id::text = ${String(tenantId)}::text
+      and cs.branch_id::text = ${String(branchId)}::text
+    group by cs.id
+    order by
+      case when cs.closed_at is null then 0 else 1 end,
+      coalesce(cs.closed_at, cs.opened_at) desc
+    limit 1
+  `;
 
   const row = rows?.[0] || null;
 
@@ -412,41 +422,37 @@ async function getLatestDrawerSnapshot(tenantId, branchId) {
     };
   }
 
-  const expectedCash =
-    row.expected_cash_at_close != null
-      ? row.expected_cash_at_close
-      : row.expected_cash != null
-        ? row.expected_cash
-        : safeNumber(row.opening_cash) + safeNumber(row.total_in) - safeNumber(row.total_out);
+  const expectedCash = safeNumber(row.expected_cash);
+  const countedCash =
+    row.counted_cash === null || typeof row.counted_cash === "undefined"
+      ? null
+      : safeNumber(row.counted_cash);
 
-  const countedCash = row.counted_cash == null ? null : safeNumber(row.counted_cash);
-
-  const difference =
-    row.cash_difference != null
-      ? safeNumber(row.cash_difference)
-      : countedCash == null
-        ? 0
-        : countedCash - safeNumber(expectedCash);
+  // For the owner Money page:
+  // - open drawer: show expected cash right now
+  // - closed drawer: show counted cash if available, otherwise last expected cash
+  const displayCash = countedCash === null ? expectedCash : countedCash;
 
   return {
     open: !row.closed_at,
-    expectedCash: safeNumber(expectedCash),
+    expectedCash: displayCash,
     openingCash: safeNumber(row.opening_cash),
     totalIn: safeNumber(row.total_in),
     totalOut: safeNumber(row.total_out),
     movementCount: safeNumber(row.movement_count),
-    difference,
+    difference: countedCash === null ? 0 : countedCash - expectedCash,
     session: {
       id: row.id,
       branchId: row.branch_id,
       openedAt: row.opened_at,
       closedAt: row.closed_at,
       countedCash,
-      closingReason: row.closing_reason,
-      closingExplanation: row.closing_explanation,
+      closingReason: null,
+      closingExplanation: null,
     },
   };
 }
+
 
 async function getCustomerMoneySummary(tenantId) {
   const totals = await prisma.sale.aggregate({

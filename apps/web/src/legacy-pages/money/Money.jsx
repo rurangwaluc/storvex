@@ -507,6 +507,17 @@ export default function Money() {
     [moneyAccounts],
   );
 
+  const cashBalance = toNumber(summary.cashIHave, 0);
+  const momoBalance = accountBalance("MOMO");
+  const bankBalance = accountBalance("BANK");
+  const otherBalance = accountBalance("OTHER");
+
+  const moneyInBusinessNow = cashBalance + momoBalance + bankBalance + otherBalance;
+  const moneyNotInMyHandsYet =
+    toNumber(summary.customersOweMe, 0) + toNumber(summary.loansIGaveOut, 0);
+  const moneyIMustPay =
+    toNumber(summary.iOweSuppliers, 0) + toNumber(summary.loansIReceived, 0);
+
   const openLoans = useMemo(() => {
     return loans.filter((loan) => ["OPEN", "PARTIAL"].includes(cleanString(loan.status).toUpperCase()));
   }, [loans]);
@@ -551,7 +562,7 @@ export default function Money() {
               {drawer?.open ? "Cash drawer open" : "Cash drawer closed"}
             </Badge>
             <Badge tone={netTone(summary.netPosition)}>
-              Net position {formatMoney(summary.netPosition)}
+              Money picture {formatMoney(moneyInBusinessNow)}
             </Badge>
             <Badge>Updated {formatDateTime(payload.generatedAt)}</Badge>
           </div>
@@ -579,7 +590,7 @@ export default function Money() {
       <section className="svx-money-stat-grid" aria-label="Money summary">
         <StatCard
           label="Cash I have"
-          value={formatMoney(summary.cashIHave)}
+          value={formatMoney(cashBalance)}
           note="Expected cash from the drawer"
           tone="primary"
         />
@@ -608,9 +619,9 @@ export default function Money() {
           tone={debtTone(summary.loansIReceived)}
         />
         <StatCard
-          label="Net position"
+          label="Money picture"
           value={formatMoney(summary.netPosition)}
-          note="Cash plus money coming in, minus money you owe"
+          note="Money coming in, minus money you owe"
           tone={netTone(summary.netPosition)}
         />
       </section>
@@ -620,24 +631,22 @@ export default function Money() {
           <div className="svx-money-card-header">
             <div>
               <span className="svx-money-section-kicker">At a glance</span>
-              <h2>Owner money position</h2>
+              <h2>Where my money is</h2>
             </div>
           </div>
 
           <div className="svx-money-position-body">
             <div className="svx-money-available-main">
               <div>
-                <span>Net position</span>
-                <strong className={`is-${netTone(summary.netPosition)}`}>
-                  {formatMoney(summary.netPosition)}
-                </strong>
+                <span>Money in the business now</span>
+                <strong>{formatMoney(moneyInBusinessNow)}</strong>
                 <p>
-                  Cash plus money coming to you, minus money you owe.
+                  This is the money the business has right now in Cash, MoMo, Bank, and Other.
                 </p>
               </div>
 
               <div className="svx-money-available-note">
-                <b>Before giving out a loan</b>
+                <b>Check money before recording a loan</b>
                 <span>
                   Storvex checks the selected payment method first. No loan can make
                   Cash, MoMo, Bank, or Other money go below zero.
@@ -647,24 +656,24 @@ export default function Money() {
 
             <div className="svx-money-account-grid" aria-label="Money account balances">
               <div>
-                <span>Cash drawer</span>
-                <strong>{formatMoney(summary.cashIHave)}</strong>
-                <small>Physical cash available</small>
+                <span>Cash</span>
+                <strong>{formatMoney(cashBalance)}</strong>
+                <small>Physical cash in the drawer</small>
               </div>
               <div>
                 <span>MoMo</span>
-                <strong>{formatMoney(accountBalance("MOMO"))}</strong>
-                <small>Mobile money balance</small>
+                <strong>{formatMoney(momoBalance)}</strong>
+                <small>Money on MoMo</small>
               </div>
               <div>
                 <span>Bank</span>
-                <strong>{formatMoney(accountBalance("BANK"))}</strong>
-                <small>Bank money balance</small>
+                <strong>{formatMoney(bankBalance)}</strong>
+                <small>Money in the bank</small>
               </div>
               <div>
-                <span>Other money</span>
-                <strong>{formatMoney(accountBalance("OTHER"))}</strong>
-                <small>Other tracked balance</small>
+                <span>Other</span>
+                <strong>{formatMoney(otherBalance)}</strong>
+                <small>Other payment money</small>
               </div>
             </div>
           </div>

@@ -1168,3 +1168,102 @@ html:not(.dark) body:not(.dark) .svx-money-modal-header,
     font-size: clamp(18px, 7vw, 24px);
   }
 }
+
+/* Owner-first money language */
+.svx-money-position-main strong {
+  font-size: clamp(34px, 5vw, 64px);
+  line-height: 0.95;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.svx-money-account-grid article small,
+.svx-money-simple-picture article small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.svx-money-simple-picture {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.svx-money-simple-picture article {
+  border: 1px solid var(--color-border);
+  background: var(--money-card);
+  border-radius: 20px;
+  padding: 15px;
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.svx-money-simple-picture article span {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.svx-money-simple-picture article strong {
+  color: var(--color-text);
+  font-size: clamp(18px, 2vw, 27px);
+  font-weight: 950;
+  letter-spacing: -0.055em;
+  line-height: 1;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 620px) {
+  .svx-money-simple-picture {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-money-position-main strong {
+    font-size: clamp(30px, 10vw, 48px);
+  }
+}
+
+/* Clear owner-first money picture */
+.svx-money-simple-picture {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.svx-money-simple-picture article {
+  border: 1px solid var(--color-border);
+  background: var(--money-card);
+  border-radius: 20px;
+  padding: 15px;
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.svx-money-simple-picture article span,
+.svx-money-simple-picture article small {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.svx-money-simple-picture article strong {
+  color: var(--color-text);
+  font-size: clamp(18px, 2vw, 27px);
+  font-weight: 950;
+  letter-spacing: -0.055em;
+  line-height: 1;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 620px) {
+  .svx-money-simple-picture {
+    grid-template-columns: 1fr;
+  }
+}
