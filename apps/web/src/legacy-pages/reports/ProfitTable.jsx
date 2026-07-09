@@ -453,7 +453,7 @@ export default function ProfitTable() {
 
           <div className="svx-profit-seller-list">
             {topSellers.length > 0 ? (
-              topSellers.slice(0, 8).map((item, index) => (
+              topSellers.slice(0, 5).map((item, index) => (
                 <TopSellerRow
                   key={item.productId || item.id || `${sellerName(item)}-${index}`}
                   item={item}
