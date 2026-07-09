@@ -145,8 +145,8 @@ function methodLabel(method) {
   if (value === "CASH") return "Cash";
   if (value === "MOMO") return "MoMo";
   if (value === "BANK") return "Bank";
-  if (value === "CARD") return "Card";
-  if (value === "OTHER") return "Other";
+  if (value === "CARD") return "Other / card / cheque";
+  if (value === "OTHER") return "Other / card / cheque";
 
   return "Other";
 }
@@ -417,7 +417,7 @@ export default function CashFlowReport() {
           <MoneyTile label="Cash" value={money(currentMoney.cash)} helper="Physical cash in drawer" />
           <MoneyTile label="MoMo" value={money(currentMoney.momo)} helper="Money on MoMo" />
           <MoneyTile label="Bank" value={money(currentMoney.bank)} helper="Money in the bank" />
-          <MoneyTile label="Other" value={money(currentMoney.other)} helper="Card, cheque, or other payments" />
+          <MoneyTile label="Other / card / cheque" value={money(currentMoney.other)} helper="Card, cheque, or other payments" />
         </div>
       </section>
 

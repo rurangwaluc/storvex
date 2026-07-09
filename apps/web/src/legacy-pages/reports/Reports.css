@@ -768,3 +768,182 @@
     white-space: normal;
   }
 }
+
+/* Money report mobile hero polish */
+@media (max-width: 760px) {
+  .svx-money-report-page .svx-report-hero {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 22px !important;
+    padding: 24px 18px !important;
+    border-radius: 26px !important;
+  }
+
+  .svx-money-report-page .svx-report-hero h1 {
+    max-width: 100% !important;
+    font-size: clamp(42px, 14vw, 64px) !important;
+    line-height: 0.9 !important;
+    letter-spacing: -0.08em !important;
+    text-wrap: balance !important;
+    word-break: normal !important;
+  }
+
+  .svx-money-report-page .svx-report-hero span {
+    max-width: 100% !important;
+    font-size: 12.5px !important;
+    line-height: 1.55 !important;
+  }
+
+  .svx-money-report-page .svx-report-hero aside {
+    width: 100% !important;
+    min-width: 0 !important;
+    justify-self: stretch !important;
+    padding: 16px !important;
+    border-radius: 18px !important;
+  }
+
+  .svx-money-report-page .svx-report-hero aside strong {
+    font-size: clamp(15px, 4vw, 18px) !important;
+    line-height: 1.2 !important;
+    white-space: normal !important;
+  }
+
+  .svx-money-report-page .svx-report-owner-answer {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+    padding: 20px 18px !important;
+    border-radius: 24px !important;
+  }
+
+  .svx-money-report-page .svx-report-owner-answer h2 {
+    font-size: clamp(25px, 7vw, 34px) !important;
+    line-height: 0.98 !important;
+    letter-spacing: -0.06em !important;
+  }
+
+  .svx-money-report-page .svx-report-owner-answer strong {
+    font-size: 13.5px !important;
+    line-height: 1.6 !important;
+  }
+
+  .svx-money-report-page .svx-report-secondary-link {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-money-report-page .svx-report-hero h1 {
+    font-size: clamp(38px, 13vw, 50px) !important;
+    line-height: 0.92 !important;
+  }
+
+  .svx-money-report-page .svx-report-hero {
+    padding: 22px 16px !important;
+  }
+}
+
+/* Keep big money readable without wrapping badly */
+.svx-money-report-page .svx-report-money-value,
+.svx-money-report-page .svx-report-money-tile strong,
+.svx-money-report-page .svx-report-section-head > strong,
+.svx-money-report-page .svx-report-money-row p {
+  font-variant-numeric: tabular-nums !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+@media (max-width: 520px) {
+  .svx-money-report-page .svx-report-money-row p {
+    white-space: nowrap !important;
+    justify-self: start !important;
+    max-width: 100% !important;
+  }
+}
+
+/* Final Money report PWA layout fix */
+@media (max-width: 760px) {
+  .svx-business-reports.svx-money-report-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-inline: 14px !important;
+    overflow-x: hidden !important;
+  }
+
+  .svx-money-report-page .svx-report-hero {
+    display: block !important;
+    width: 100% !important;
+    padding: 24px 18px !important;
+  }
+
+  .svx-money-report-page .svx-report-hero > div {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .svx-money-report-page .svx-report-hero h1 {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-top: 10px !important;
+    font-size: clamp(42px, 12.2vw, 56px) !important;
+    line-height: 0.92 !important;
+    letter-spacing: -0.085em !important;
+    text-wrap: balance !important;
+  }
+
+  .svx-money-report-page .svx-report-hero aside {
+    width: 100% !important;
+    margin-top: 22px !important;
+  }
+
+  .svx-money-report-page .svx-report-kpi-grid,
+  .svx-money-report-page .svx-report-money-grid,
+  .svx-money-report-page .svx-money-report-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-money-report-page .svx-report-section-head {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .svx-money-report-page .svx-report-section-head > strong {
+    justify-self: start !important;
+    max-width: 100% !important;
+    font-size: clamp(30px, 9vw, 42px) !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  .svx-money-report-page .svx-report-money-value,
+  .svx-money-report-page .svx-report-money-tile strong,
+  .svx-money-report-page .svx-report-money-row p {
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  .svx-money-report-page .svx-report-money-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .svx-money-report-page .svx-report-money-row p {
+    justify-self: start !important;
+    font-size: clamp(18px, 6vw, 26px) !important;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1180px) {
+  .svx-money-report-page .svx-report-hero {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-money-report-page .svx-report-hero aside {
+    width: 100% !important;
+  }
+}

@@ -1057,7 +1057,10 @@ function normalizePaymentMethod(method) {
   if (value === "CASH") return "CASH";
   if (value === "MOMO" || value === "MOBILE_MONEY" || value === "MTN_MOMO") return "MOMO";
   if (value === "BANK" || value === "BANK_TRANSFER" || value === "TRANSFER") return "BANK";
-  if (value === "CARD" || value === "VISA" || value === "MASTERCARD") return "CARD";
+
+  // The current SalePaymentMethod database enum stores card-style payments as OTHER.
+  // Reports must not show a separate Card row until Card is a real payment account.
+  if (value === "CARD" || value === "VISA" || value === "MASTERCARD") return "OTHER";
 
   return "OTHER";
 }
@@ -1078,13 +1081,12 @@ function emptyMethodSplit() {
     CASH: { method: "CASH", label: "Cash", amount: 0, count: 0 },
     MOMO: { method: "MOMO", label: "Mobile money", amount: 0, count: 0 },
     BANK: { method: "BANK", label: "Bank", amount: 0, count: 0 },
-    CARD: { method: "CARD", label: "Card", amount: 0, count: 0 },
-    OTHER: { method: "OTHER", label: "Other", amount: 0, count: 0 },
+    OTHER: { method: "OTHER", label: "Other / card / cheque", amount: 0, count: 0 },
   };
 }
 
 function splitToArray(split) {
-  return ["CASH", "MOMO", "BANK", "CARD", "OTHER"].map((key) => split[key]);
+  return ["CASH", "MOMO", "BANK", "OTHER"].map((key) => split[key]);
 }
 
 async function tableColumnExists(tableName, columnName) {
@@ -1298,11 +1300,12 @@ async function buildCashFlowSummary({ user, query }) {
 
   for (const row of paymentRows || []) {
     const method = normalizePaymentMethod(row.method);
+    const bucket = methodSplit[method] ? method : "OTHER";
     const amount = money(row._sum?.amount);
     const count = Number(row._count?._all || 0);
 
-    methodSplit[method].amount += amount;
-    methodSplit[method].count += count;
+    methodSplit[bucket].amount += amount;
+    methodSplit[bucket].count += count;
   }
 
   const paymentMethodSplit = splitToArray(methodSplit);
@@ -1389,7 +1392,7 @@ async function buildCashFlowSummary({ user, query }) {
         cashPayments: methodSplit.CASH.amount,
         momoPayments: methodSplit.MOMO.amount,
         bankPayments: methodSplit.BANK.amount,
-        cardPayments: methodSplit.CARD.amount,
+        cardPayments: 0,
         otherPayments: methodSplit.OTHER.amount,
         approvedExpenses,
       },
