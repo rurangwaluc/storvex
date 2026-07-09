@@ -985,35 +985,6 @@ async function buildFinancialSummary({ user, query }) {
   const grossProfit = revenue - costOfGoodsSold;
   const profitEstimate = grossProfit - approvedExpenses;
 
-  const topSellerRows = Array.isArray(topSellers.topSellers) ? topSellers.topSellers : [];
-  const topSellerProductIds = topSellerRows
-    .map((item) => item.productId)
-    .filter(Boolean);
-
-  const topSellerImages =
-    topSellerProductIds.length > 0
-      ? await prisma.productImage.findMany({
-          where: {
-            tenantId: branchScope.tenantId,
-            productId: { in: topSellerProductIds },
-          },
-          orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
-          select: {
-            productId: true,
-            url: true,
-            altText: true,
-          },
-        })
-      : [];
-
-  const imageByProductId = new Map();
-
-  for (const image of topSellerImages) {
-    if (!imageByProductId.has(image.productId)) {
-      imageByProductId.set(image.productId, image);
-    }
-  }
-
   return {
     branchScope,
     range: { from: start.toISOString(), to: end.toISOString() },
@@ -1028,15 +999,7 @@ async function buildFinancialSummary({ user, query }) {
       unitsSold: cogs.unitsSold,
       stockAdjustmentsCount: stockAdjustments._count._all,
     },
-    topSellers: topSellerRows.map((item) => {
-      const image = imageByProductId.get(item.productId);
-
-      return {
-        ...item,
-        imageUrl: image?.url || null,
-        imageAlt: image?.altText || item.name || "Product image",
-      };
-    }),
+    topSellers: Array.isArray(topSellers.topSellers) ? topSellers.topSellers : [],
   };
 }
 

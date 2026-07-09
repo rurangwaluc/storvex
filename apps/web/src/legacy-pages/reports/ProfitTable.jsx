@@ -168,17 +168,10 @@ function ProfitStep({ label, value, helper, tone = "neutral" }) {
 function TopSellerRow({ item, index }) {
   const revenue = sellerRevenue(item);
   const quantity = sellerQty(item);
-  const imageUrl = item?.imageUrl || item?.image || item?.thumbnailUrl || null;
 
   return (
     <article className="svx-profit-seller-row">
-      <div className="svx-profit-seller-media">
-        {imageUrl ? (
-          <img src={imageUrl} alt={item?.imageAlt || sellerName(item)} loading="lazy" />
-        ) : (
-          <span>{index + 1}</span>
-        )}
-      </div>
+      <div className="svx-profit-seller-rank">{index + 1}</div>
 
       <div className="svx-profit-seller-main">
         <strong>{sellerName(item)}</strong>
