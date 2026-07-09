@@ -102,7 +102,7 @@ function pageTitle(pathname) {
   if (path.startsWith("/app/documents/delivery-notes")) return "Delivery notes";
   if (path.startsWith("/app/documents")) return "Document center";
   if (path.startsWith("/app/whatsapp")) return "WhatsApp sales";
-  if (path.startsWith("/app/reports")) return "Reports";
+  if (path.startsWith("/app/reports")) return "Business reports";
   if (path.startsWith("/app/money")) return "Money";
   if (path.startsWith("/app/expenses")) return "Expenses";
   if (path.startsWith("/app/repairs")) return "Repair jobs";

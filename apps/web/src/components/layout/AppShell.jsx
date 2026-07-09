@@ -313,11 +313,11 @@ function pickPageTitle(pathname) {
 
   if (path === "/app") return "Dashboard";
 
-  if (path === "/app/reports") return "Reports";
-  if (path.startsWith("/app/reports/cash-flow")) return "Cash flow report";
-  if (path.startsWith("/app/reports/income-statement")) return "Income statement";
-  if (path.startsWith("/app/reports/trial-balance")) return "Trial balance";
-  if (path.startsWith("/app/reports/profit-table")) return "Profit table";
+  if (path === "/app/reports") return "Business reports";
+  if (path.startsWith("/app/reports/cash-flow")) return "Money report";
+  if (path.startsWith("/app/reports/income-statement")) return "Sales and profit report";
+  if (path.startsWith("/app/reports/trial-balance")) return "Owner checks";
+  if (path.startsWith("/app/reports/profit-table")) return "Best selling products";
 
   if (path.startsWith("/app/whatsapp")) return "WhatsApp";
 

@@ -9,50 +9,61 @@ import {
   getInsights,
   getReportsDashboard,
 } from "../../services/reportsApi";
+import { getMoneySummary } from "../../services/moneyApi";
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import { cn } from "../../lib/cn";
+import "../dashboard/Dashboard.css";
+import "./Reports.css";
 
-const CARD = () =>
-  "rounded-[34px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+const CARD =
+  "rounded-[30px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+const PANEL =
+  "rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
 
-const PANEL = () =>
-  "rounded-[26px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
-
-const REPORT_LINKS = [
+const OWNER_REPORTS = [
   {
-    title: "Cash flow",
-    text: "Money in, money out, net cash flow, drawer control, payment method split.",
+    title: "Money report",
+    text: "Cash, MoMo, bank, other money, money in, and money out.",
     to: "/app/reports/cash-flow",
-    badge: "Money control",
-    emoji: "💵",
-    primary: true,
+    tag: "Money",
   },
   {
-    title: "Income statement",
-    text: "Sales, expenses, estimated profit, margin, and business result.",
+    title: "Sales and profit",
+    text: "Sales made, expenses paid, and estimated profit.",
     to: "/app/reports/income-statement",
-    badge: "Profit & loss",
-    emoji: "📈",
+    tag: "Profit",
   },
   {
-    title: "Trial balance",
-    text: "Owner control balance for sales, expenses, profit estimate, and checks.",
-    to: "/app/reports/trial-balance",
-    badge: "Accounting view",
-    emoji: "⚖️",
-  },
-  {
-    title: "Profit table",
-    text: "Plain owner view of sales, expenses, profit margin, and top products.",
+    title: "Products report",
+    text: "Best sellers, slow stock, low stock, and stock movement.",
     to: "/app/reports/profit-table",
-    badge: "Owner profit",
-    emoji: "🏆",
+    tag: "Stock",
+  },
+  {
+    title: "Owner checks",
+    text: "Check business records, sales, expenses, and control gaps.",
+    to: "/app/reports/trial-balance",
+    tag: "Control",
   },
 ];
 
-function todayISO() {
-  const d = new Date();
+const RANGE_PRESETS = [
+  { key: "today", label: "Today" },
+  { key: "yesterday", label: "Yesterday" },
+  { key: "week", label: "This week" },
+  { key: "month", label: "This month" },
+  { key: "year", label: "This year" },
+  { key: "custom", label: "Choose dates" },
+];
+
+function cleanNumber(value) {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function isoDate(date) {
+  const d = new Date(date);
 
   return [
     d.getFullYear(),
@@ -61,44 +72,80 @@ function todayISO() {
   ].join("-");
 }
 
+function todayISO() {
+  return isoDate(new Date());
+}
+
+function startOfWeekISO() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+
+  return isoDate(d);
+}
+
 function startOfMonthISO() {
   const d = new Date();
   d.setDate(1);
 
-  return [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, "0"),
-    "01",
-  ].join("-");
+  return isoDate(d);
+}
+
+function startOfYearISO() {
+  const d = new Date();
+  d.setMonth(0, 1);
+
+  return isoDate(d);
+}
+
+function rangeForPreset(key) {
+  const today = todayISO();
+
+  if (key === "yesterday") {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    const yesterday = isoDate(d);
+
+    return { from: yesterday, to: yesterday };
+  }
+
+  if (key === "week") return { from: startOfWeekISO(), to: today };
+  if (key === "month") return { from: startOfMonthISO(), to: today };
+  if (key === "year") return { from: startOfYearISO(), to: today };
+
+  return { from: today, to: today };
+}
+
+function getValue(source, paths, fallback = 0) {
+  for (const path of paths) {
+    const value = path
+      .split(".")
+      .reduce((current, key) => current?.[key], source);
+
+    if (value !== undefined && value !== null) return value;
+  }
+
+  return fallback;
 }
 
 function money(value) {
-  const n = Number(value || 0);
-
   return `Rwf ${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
-  }).format(Math.round(n))}`;
+  }).format(Math.round(cleanNumber(value)))}`;
 }
 
-function numberValue(value) {
-  const n = Number(value || 0);
-  return Number.isFinite(n) ? n : 0;
-}
-
-function pctFmt(value) {
-  if (value === null || value === undefined) return "—";
-
-  const n = Number(value);
-  if (!Number.isFinite(n)) return "—";
-
-  return `${n > 0 ? "+" : ""}${n.toFixed(1)}%`;
+function numberLabel(value) {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 0,
+  }).format(cleanNumber(value));
 }
 
 function formatDate(value) {
   if (!value) return "—";
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return value;
 
   return date.toLocaleDateString("en-GB", {
     day: "2-digit",
@@ -107,450 +154,547 @@ function formatDate(value) {
   });
 }
 
-function Badge({ children, tone = "neutral" }) {
-  const styles = {
-    success: "bg-emerald-500/10 text-emerald-600",
-    warning: "bg-amber-500/10 text-amber-600",
-    danger: "bg-red-500/10 text-red-600",
-    info: "bg-[var(--color-primary-soft)] text-[var(--color-primary)]",
-    neutral: "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
+function fileSafe(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function accountBalance(moneySummary, accountType) {
+  const accounts = Array.isArray(moneySummary?.moneyAccounts)
+    ? moneySummary.moneyAccounts
+    : [];
+
+  const found = accounts.find(
+    (account) =>
+      String(account.accountType || "").toUpperCase() ===
+      String(accountType || "").toUpperCase(),
+  );
+
+  return cleanNumber(found?.balance);
+}
+
+function cashBalance(moneySummary) {
+  return cleanNumber(
+    getValue(moneySummary, [
+      "cashDrawer.expectedCash",
+      "cashDrawer.cashExpected",
+      "cashDrawer.expected",
+      "summary.cashIHave",
+      "summary.cash",
+    ]),
+  );
+}
+
+function ownerSentence(numbers) {
+  const sales = cleanNumber(numbers.sales);
+  const moneyReceived = cleanNumber(numbers.moneyReceived);
+  const expenses = cleanNumber(numbers.expenses);
+  const profit = cleanNumber(numbers.profit);
+
+  if (sales === 0 && moneyReceived === 0 && expenses === 0) {
+    return "No sales, payments, or approved expenses were recorded in this period.";
+  }
+
+  if (profit >= 0) {
+    return `You sold ${money(sales)}, received ${money(moneyReceived)}, spent ${money(expenses)}, and your estimated profit is ${money(profit)}.`;
+  }
+
+  return `You sold ${money(sales)}, received ${money(moneyReceived)}, but expenses are higher than sales by ${money(Math.abs(profit))}.`;
+}
+
+function KpiCard({ label, value, helper, tone = "blue" }) {
+  const tones = {
+    blue: "before:bg-[var(--dashboard-primary)]",
+    green: "before:bg-[var(--dashboard-success)]",
+    amber: "before:bg-[var(--dashboard-warning)]",
+    red: "before:bg-[var(--dashboard-danger)]",
   };
 
   return (
-    <span
+    <article
       className={cn(
-        "inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.13em]",
-        styles[tone] || styles.neutral,
+        CARD,
+        "svx-report-kpi-card relative overflow-hidden p-5 before:absolute before:left-0 before:top-0 before:h-full before:w-1.5",
+        tones[tone],
       )}
     >
-      {children}
-    </span>
-  );
-}
+      <p className="svx-report-kpi-label">{label}</p>
 
-function SectionHeader({ eyebrow, title, text, action }) {
-  return (
-    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        {eyebrow ? (
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-            {eyebrow}
-          </p>
-        ) : null}
-
-        <h2 className="mt-1 text-xl font-black tracking-[-0.035em] text-[var(--color-text)] sm:text-2xl">
-          {title}
-        </h2>
-
-        {text ? (
-          <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-            {text}
-          </p>
-        ) : null}
-      </div>
-
-      {action ? <div className="shrink-0">{action}</div> : null}
-    </div>
-  );
-}
-
-function KpiCard({ label, value, note, tone = "info" }) {
-  const barStyles = {
-    success: "bg-emerald-500",
-    info: "bg-[var(--color-primary)]",
-    warning: "bg-amber-500",
-    danger: "bg-red-500",
-    neutral: "bg-[var(--color-text-muted)]",
-  };
-
-  return (
-    <article className={cn(CARD(), "relative overflow-hidden p-5 sm:p-6")}>
-      <div className={cn("absolute inset-x-0 top-0 h-1.5", barStyles[tone] || barStyles.info)} />
-
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-        {label}
-      </p>
-
-      <div className="mt-4 text-3xl font-black tracking-[-0.055em] text-[var(--color-text)] sm:text-4xl">
+      <strong className="svx-report-money-value mt-4 block font-black leading-none text-[var(--color-text)]">
         {value}
-      </div>
+      </strong>
 
-      <p className="mt-2 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-        {note}
+      <p className="mt-3 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
+        {helper}
       </p>
     </article>
   );
 }
 
-function ReportCard({ report }) {
+function MoneyTile({ label, value, helper }) {
   return (
-    <Link
-      to={report.to}
-      className={cn(
-        "group relative overflow-hidden rounded-[34px] border p-5 transition hover:-translate-y-1 sm:p-6",
-        report.primary
-          ? "border-transparent bg-[var(--color-primary)] text-white shadow-[var(--shadow-card)]"
-          : "border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] shadow-[var(--shadow-card)] hover:border-[var(--color-primary)]",
-      )}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div
-          className={cn(
-            "flex h-14 w-14 items-center justify-center rounded-2xl text-2xl shadow-[var(--shadow-soft)]",
-            report.primary ? "bg-white/15" : "bg-[var(--color-primary-soft)]",
-          )}
-        >
-          {report.emoji}
-        </div>
+    <div className="svx-report-money-tile">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <p>{helper}</p>
+    </div>
+  );
+}
 
-        <span
-          className={cn(
-            "rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em]",
-            report.primary
-              ? "bg-white/15 text-white"
-              : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
-          )}
-        >
-          {report.badge}
-        </span>
+function AttentionTile({ label, value, helper, tone = "blue" }) {
+  return (
+    <article className={`svx-report-attention-tile is-${tone}`}>
+      <div>
+        <span>{label}</span>
+        <strong>{value}</strong>
+      </div>
+      <p>{helper}</p>
+    </article>
+  );
+}
+
+function ReportLink({ report }) {
+  return (
+    <Link to={report.to} className="svx-report-link-card">
+      <div className="svx-report-link-top">
+        <span>{report.tag}</span>
+        <small>→</small>
       </div>
 
-      <h3 className="mt-6 text-xl font-black tracking-[-0.035em]">
-        {report.title}
-      </h3>
-
-      <p
-        className={cn(
-          "mt-2 text-sm font-semibold leading-6",
-          report.primary ? "text-white/75" : "text-[var(--color-text-muted)]",
-        )}
-      >
-        {report.text}
-      </p>
-
-      <div
-        className={cn(
-          "mt-6 inline-flex h-11 items-center justify-center rounded-2xl px-4 text-sm font-black transition group-hover:translate-x-1",
-          report.primary
-            ? "bg-white text-[var(--color-primary)]"
-            : "bg-[var(--color-surface-2)] text-[var(--color-text)]",
-        )}
-      >
-        Open report →
+      <div>
+        <h3>{report.title}</h3>
+        <p>{report.text}</p>
       </div>
+
+      <strong>Open report</strong>
     </Link>
   );
 }
 
-function InsightTile({ label, value, note, tone = "neutral" }) {
+function DownloadCard({
+  selectedPreset,
+  setSelectedPreset,
+  range,
+  setRange,
+  downloading,
+  onDownload,
+}) {
+  const custom = selectedPreset === "custom";
+
+  function choosePreset(key) {
+    setSelectedPreset(key);
+
+    if (key !== "custom") {
+      setRange(rangeForPreset(key));
+    }
+  }
+
   return (
-    <div className={cn(PANEL(), "p-4")}>
-      <div className="flex items-start justify-between gap-3">
+    <section className={cn(CARD, "svx-report-download-card p-5 sm:p-6")}>
+      <div className="svx-report-download-head">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
-            {label}
-          </p>
-
-          <p className="mt-2 text-lg font-black tracking-[-0.035em] text-[var(--color-text)]">
-            {value}
-          </p>
-
-          {note ? (
-            <p className="mt-1 text-xs font-semibold leading-5 text-[var(--color-text-muted)]">
-              {note}
-            </p>
-          ) : null}
+          <p className="svx-report-eyebrow">Download report</p>
+          <h2>Choose any date and download a business report</h2>
+          <span>
+            Use this when the owner needs a daily, weekly, monthly, yearly, or custom report.
+          </span>
         </div>
 
-        {tone !== "neutral" ? <Badge tone={tone}>Check</Badge> : null}
+        <AsyncButton
+          loading={downloading}
+          disabled={downloading || !range.from || !range.to}
+          onClick={onDownload}
+          className="svx-report-primary-button"
+        >
+          Download PDF
+        </AsyncButton>
       </div>
-    </div>
-  );
-}
 
-function ActionRow({ title, text, tone = "neutral" }) {
-  return (
-    <div className={cn(PANEL(), "p-4")}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-black text-[var(--color-text)]">{title}</p>
-          <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-            {text}
-          </p>
+      <div className="svx-report-range-controls">
+        <div className="svx-report-range-buttons">
+          {RANGE_PRESETS.map((preset) => (
+            <button
+              key={preset.key}
+              type="button"
+              onClick={() => choosePreset(preset.key)}
+              className={selectedPreset === preset.key ? "is-active" : ""}
+            >
+              {preset.label}
+            </button>
+          ))}
         </div>
 
-        <Badge tone={tone}>{tone === "success" ? "Good" : tone === "danger" ? "Urgent" : "Review"}</Badge>
+        <div className="svx-report-date-grid">
+          <label>
+            <span>From</span>
+            <input
+              type="date"
+              value={range.from}
+              disabled={!custom}
+              onChange={(event) =>
+                setRange((current) => ({ ...current, from: event.target.value }))
+              }
+            />
+          </label>
+
+          <label>
+            <span>To</span>
+            <input
+              type="date"
+              value={range.to}
+              disabled={!custom}
+              onChange={(event) =>
+                setRange((current) => ({ ...current, to: event.target.value }))
+              }
+            />
+          </label>
+        </div>
+
+        <div className="svx-report-period">
+          Report period: <strong>{formatDate(range.from)} to {formatDate(range.to)}</strong>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
 
 export default function Reports() {
-  const [range] = useState({
-    from: startOfMonthISO(),
-    to: todayISO(),
-  });
-
-  const [dashboard, setDashboard] = useState(null);
-  const [insights, setInsights] = useState(null);
+  const [selectedPreset, setSelectedPreset] = useState("month");
+  const [range, setRange] = useState(() => rangeForPreset("month"));
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [dailyPdfBusy, setDailyPdfBusy] = useState(false);
-  const [periodPdfBusy, setPeriodPdfBusy] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [summary, setSummary] = useState(null);
+  const [insights, setInsights] = useState(null);
+  const [moneySummary, setMoneySummary] = useState(null);
 
-  const summary = dashboard || {};
-  const comparison = insights?.comparison || {};
-  const current = comparison?.current || {};
-  const percent = comparison?.percent || {};
-  const reorderItems = Array.isArray(insights?.reorderSuggestions?.items)
-    ? insights.reorderSuggestions.items
-    : [];
-  const collectionItems = Array.isArray(insights?.collections?.items)
-    ? insights.collections.items
-    : [];
-
-  const profit = numberValue(summary?.profitEstimate);
-  const revenue = numberValue(summary?.sales?.total);
-  const expenses = numberValue(summary?.expenses?.approvedTotal);
-
-  const rangeLabel = useMemo(() => {
-    return `${formatDate(range.from)} — ${formatDate(range.to)}`;
-  }, [range]);
-
-  async function load({ quiet = false } = {}) {
-    if (!quiet) setLoading(true);
-
-    try {
-      const [dashboardData, insightsData] = await Promise.all([
-        getReportsDashboard(range),
-        getInsights(range, 10, 5),
-      ]);
-
-      setDashboard(dashboardData || null);
-      setInsights(insightsData || null);
-    } catch (error) {
-      console.error("Reports hub failed:", error);
-      toast.error(error?.response?.data?.message || "Failed to load reports");
-    } finally {
-      if (!quiet) setLoading(false);
-    }
-  }
+  const rangeLabel = useMemo(
+    () => `${formatDate(range.from)} to ${formatDate(range.to)}`,
+    [range.from, range.to],
+  );
 
   useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      setLoading(true);
+
+      try {
+        const [dashboard, insightData, moneyData] = await Promise.all([
+          getReportsDashboard(range),
+          getInsights(range, 8, 5),
+          getMoneySummary().catch(() => null),
+        ]);
+
+        if (!alive) return;
+
+        setSummary(dashboard);
+        setInsights(insightData);
+        setMoneySummary(moneyData);
+      } catch (error) {
+        if (!alive) return;
+        toast.error(
+          error?.response?.data?.message ||
+            error?.message ||
+            "Failed to load reports",
+        );
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
-  async function refresh() {
-    setRefreshing(true);
+    return () => {
+      alive = false;
+    };
+  }, [range.from, range.to, range.branchId, range.allBranches]);
 
-    try {
-      await load({ quiet: true });
-      toast.success("Reports refreshed");
-    } finally {
-      setRefreshing(false);
+  const numbers = useMemo(() => {
+    const sales = getValue(summary, [
+      "sales.total",
+      "sales.salesTotal",
+      "sales.cash.total",
+      "revenue",
+      "summary.revenue",
+      "period.revenue",
+    ]);
+
+    const moneyReceived = getValue(
+      summary,
+      [
+        "payments.total",
+        "payments.paymentsTotal",
+        "sales.paymentsTotal",
+        "cashFlow.summary.moneyIn",
+        "moneyIn",
+      ],
+      sales,
+    );
+
+    const expenses = getValue(summary, [
+      "expenses.approvedTotal",
+      "expenses.approvedExpenseTotal",
+      "approvedExpenses",
+      "summary.expenses",
+      "period.expensesApproved",
+    ]);
+
+    const profit = getValue(
+      summary,
+      [
+        "profitEstimate",
+        "profitEstimateToday",
+        "summary.profitEstimate",
+        "period.profitEstimate",
+      ],
+      cleanNumber(sales) - cleanNumber(expenses),
+    );
+
+    const customersOwe = getValue(
+      summary,
+      ["ownerChecks.customersOweMe.total"],
+      getValue(
+        moneySummary,
+        [
+          "summary.customersOweMe",
+          "customersOweMe.total",
+          "customersOwe.total",
+        ],
+        0,
+      ),
+    );
+
+    const overdue = getValue(summary, ["ownerChecks.overdueCustomerMoney.total"], 0);
+
+    const salesCount = getValue(summary, [
+      "sales.count",
+      "sales.salesCount",
+      "sales.cash.count",
+      "sales.credit.count",
+      "salesCount",
+    ]);
+
+    const expenseCount = getValue(summary, [
+      "expenses.approvedCount",
+      "expenses.approvedExpenseCount",
+    ]);
+
+    const suppliersOwe = getValue(
+      summary,
+      ["ownerChecks.iOweSuppliers.total"],
+      getValue(moneySummary, ["summary.iOweSuppliers", "iOweSuppliers.total", "suppliers.total"], 0),
+    );
+
+    const stockToReview = getValue(summary, ["ownerChecks.stockToReview.count"], 0);
+
+    return {
+      sales,
+      moneyReceived,
+      expenses,
+      profit,
+      customersOwe,
+      overdue,
+      salesCount,
+      expenseCount,
+      suppliersOwe,
+      stockToReview,
+    };
+  }, [summary, moneySummary]);
+
+  const currentMoney = useMemo(() => {
+    const cash = cashBalance(moneySummary);
+    const momo = accountBalance(moneySummary, "MOMO");
+    const bank = accountBalance(moneySummary, "BANK");
+    const other = accountBalance(moneySummary, "OTHER");
+    const total = cash + momo + bank + other;
+
+    return { cash, momo, bank, other, total };
+  }, [moneySummary]);
+
+  const attentionCount = useMemo(() => {
+    let count = 0;
+    if (cleanNumber(numbers.customersOwe) > 0) count += 1;
+    if (cleanNumber(numbers.suppliersOwe) > 0) count += 1;
+    if (cleanNumber(numbers.overdue) > 0) count += 1;
+    if (cleanNumber(numbers.stockToReview) > 0) count += 1;
+    return count;
+  }, [numbers.customersOwe, numbers.suppliersOwe, numbers.overdue, numbers.stockToReview]);
+
+  async function handleDownload() {
+    if (!range.from || !range.to) {
+      toast.error("Choose report dates first");
+      return;
     }
-  }
 
-  async function downloadDailyPdf() {
-    setDailyPdfBusy(true);
+    setDownloading(true);
 
     try {
-      const blob = await downloadDailyClosePdf(todayISO());
-      downloadBlob(blob, `storvex-daily-close-${todayISO()}.pdf`);
-      toast.success("Daily close PDF downloaded");
+      const sameDay = range.from === range.to;
+      const blob = sameDay
+        ? await downloadDailyClosePdf(range.from, {
+            branchId: range.branchId,
+            allBranches: range.allBranches,
+          })
+        : await downloadPeriodPdf(range, 12, 5);
+
+      const filename = sameDay
+        ? `storvex-business-report-${fileSafe(range.from)}.pdf`
+        : `storvex-business-report-${fileSafe(range.from)}-to-${fileSafe(range.to)}.pdf`;
+
+      downloadBlob(blob, filename);
+      toast.success("Report downloaded");
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to download daily close PDF");
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to download report",
+      );
     } finally {
-      setDailyPdfBusy(false);
+      setDownloading(false);
     }
   }
 
-  async function downloadPeriodReportPdf() {
-    setPeriodPdfBusy(true);
-
-    try {
-      const blob = await downloadPeriodPdf(range, 10, 5);
-      downloadBlob(blob, `storvex-period-report-${range.from}-to-${range.to}.pdf`);
-      toast.success("Period report PDF downloaded");
-    } catch (error) {
-      toast.error(error?.response?.data?.message || "Failed to download period PDF");
-    } finally {
-      setPeriodPdfBusy(false);
-    }
-  }
-
-  if (loading) {
-    return <PageSkeleton variant="dashboard" />;
+  if (loading && !summary) {
+    return <PageSkeleton />;
   }
 
   return (
-    <div className="space-y-6">
-      <section className={cn(CARD(), "relative overflow-hidden p-5 sm:p-6 lg:p-7")}>
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[rgba(74,163,255,0.14)] blur-3xl" />
-
-        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div className="min-w-0">
-            <div className="inline-flex max-w-full items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-              <span className="truncate">
-                Reports command center • {summary?.branchScope?.label || "Current branch"} • {rangeLabel}
-              </span>
-            </div>
-
-            <h1 className="mt-5 text-3xl font-black tracking-[-0.055em] text-[var(--color-text)] sm:text-4xl lg:text-5xl">
-              Owner reports.
-            </h1>
-
-            <p className="mt-3 max-w-3xl text-base font-medium leading-8 text-[var(--color-text-muted)]">
-              Clear money, profit, stock, credit, and branch-aware reporting for business control.
-              Start with the report you need, then use PDFs when you want a close or period summary.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row xl:shrink-0">
-            <AsyncButton
-              loading={refreshing}
-              loadingText="Refreshing..."
-              variant="secondary"
-              onClick={refresh}
-              className="w-full sm:w-auto"
-            >
-              Refresh
-            </AsyncButton>
-
-            <AsyncButton
-              loading={periodPdfBusy}
-              loadingText="Preparing..."
-              onClick={downloadPeriodReportPdf}
-              className="w-full sm:w-auto"
-            >
-              Download period PDF
-            </AsyncButton>
-          </div>
+    <main className="svx-owner-dashboard svx-business-reports">
+      <section className="svx-report-hero svx-dashboard-card">
+        <div>
+          <p className="svx-report-eyebrow">Business reports</p>
+          <h1>Know exactly what happened in the business</h1>
+          <span>
+            Simple owner reports for sales, money received, expenses, profit, customers who owe you, and stock movement.
+          </span>
         </div>
 
-        <div className="relative mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <InsightTile label="Revenue" value={money(revenue)} note={`${summary?.sales?.count || 0} sale records`} tone="success" />
-          <InsightTile label="Expenses" value={money(expenses)} note={`${summary?.expenses?.approvedCount || 0} approved expenses`} tone={expenses > 0 ? "warning" : "success"} />
-          <InsightTile label="Profit estimate" value={money(profit)} note="Sales minus approved expenses" tone={profit > 0 ? "success" : profit < 0 ? "danger" : "neutral"} />
-          <InsightTile label="Trend" value={pctFmt(percent?.profit)} note="Profit vs previous period" tone={numberValue(percent?.profit) >= 0 ? "success" : "warning"} />
+        <aside>
+          <p>Showing</p>
+          <strong>{rangeLabel}</strong>
+          <span>{summary?.branchScope?.label || "Current branch"}</span>
+        </aside>
+      </section>
+
+      <section className="svx-report-owner-answer svx-dashboard-card">
+        <div>
+          <p className="svx-report-eyebrow">Owner answer</p>
+          <h2>What happened in this period</h2>
+          <strong>{ownerSentence(numbers)}</strong>
+        </div>
+
+        <div className="svx-report-owner-status">
+          <span>{attentionCount > 0 ? `${attentionCount} need attention` : "No urgent issue"}</span>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {REPORT_LINKS.map((report) => (
-          <ReportCard key={report.to} report={report} />
-        ))}
-      </section>
+      <DownloadCard
+        selectedPreset={selectedPreset}
+        setSelectedPreset={setSelectedPreset}
+        range={range}
+        setRange={setRange}
+        downloading={downloading}
+        onDownload={handleDownload}
+      />
 
-      <section className={cn(CARD(), "p-5 sm:p-6 lg:p-7")}>
-        <SectionHeader
-          eyebrow="Owner actions"
-          title="What needs attention"
-          text="Reports are not just numbers. They should tell the owner where to act."
-          action={<Badge tone="info">Current period</Badge>}
+      <section className="svx-report-kpi-grid">
+        <KpiCard
+          label="Sales made"
+          value={money(numbers.sales)}
+          helper={`${numberLabel(numbers.salesCount)} sale${cleanNumber(numbers.salesCount) === 1 ? "" : "s"} in this period`}
+          tone="blue"
         />
+        <KpiCard
+          label="Money received"
+          value={money(numbers.moneyReceived)}
+          helper="Money paid into cash, MoMo, bank, or other methods"
+          tone="green"
+        />
+        <KpiCard
+          label="Expenses"
+          value={money(numbers.expenses)}
+          helper={`${numberLabel(numbers.expenseCount)} approved expense${cleanNumber(numbers.expenseCount) === 1 ? "" : "s"}`}
+          tone="amber"
+        />
+        <KpiCard
+          label="Profit estimate"
+          value={money(numbers.profit)}
+          helper={cleanNumber(numbers.profit) >= 0 ? "Sales minus approved expenses" : "Expenses are higher than sales"}
+          tone={cleanNumber(numbers.profit) >= 0 ? "green" : "red"}
+        />
+      </section>
 
-        <div className="grid gap-3 lg:grid-cols-3">
-          <ActionRow
-            title="Revenue trend"
-            text={`Revenue change compared to previous period: ${pctFmt(percent?.revenue)}.`}
-            tone={numberValue(percent?.revenue) >= 0 ? "success" : "warning"}
+      <section className="svx-report-money-position svx-dashboard-card">
+        <div className="svx-report-section-head">
+          <div>
+            <p className="svx-report-eyebrow">Money position</p>
+            <h2>Where the business money is now</h2>
+          </div>
+          <strong>{money(currentMoney.total)}</strong>
+        </div>
+
+        <div className="svx-report-money-grid">
+          <MoneyTile label="Cash" value={money(currentMoney.cash)} helper="Physical cash in drawer" />
+          <MoneyTile label="MoMo" value={money(currentMoney.momo)} helper="Money on MoMo" />
+          <MoneyTile label="Bank" value={money(currentMoney.bank)} helper="Money in the bank" />
+          <MoneyTile label="Other" value={money(currentMoney.other)} helper="Card, cheque, or other payments" />
+        </div>
+      </section>
+
+      <section className="svx-report-attention svx-dashboard-card">
+        <div className="svx-report-section-head">
+          <div>
+            <p className="svx-report-eyebrow">Needs attention</p>
+            <h2>What the owner should check</h2>
+          </div>
+        </div>
+
+        <div className="svx-report-attention-grid">
+          <AttentionTile
+            label="Customers owe me"
+            value={money(numbers.customersOwe)}
+            helper="Customer credit still unpaid."
+            tone={cleanNumber(numbers.customersOwe) > 0 ? "warning" : "good"}
           />
-
-          <ActionRow
-            title="Reorder pressure"
-            text={`${reorderItems.length} product${reorderItems.length === 1 ? "" : "s"} suggested for reorder based on low stock and sales.`}
-            tone={reorderItems.length ? "warning" : "success"}
+          <AttentionTile
+            label="I owe suppliers"
+            value={money(numbers.suppliersOwe)}
+            helper="Supplier bills still unpaid."
+            tone={cleanNumber(numbers.suppliersOwe) > 0 ? "danger" : "good"}
           />
-
-          <ActionRow
-            title="Credit collections"
-            text={`${collectionItems.length} overdue customer${collectionItems.length === 1 ? "" : "s"} need follow-up.`}
-            tone={collectionItems.length ? "danger" : "success"}
+          <AttentionTile
+            label="Overdue customer money"
+            value={money(numbers.overdue)}
+            helper="Money that should already have been collected."
+            tone={cleanNumber(numbers.overdue) > 0 ? "danger" : "good"}
+          />
+          <AttentionTile
+            label="Stock to review"
+            value={numberLabel(numbers.stockToReview)}
+            helper="Products that may need restocking."
+            tone={cleanNumber(numbers.stockToReview) > 0 ? "warning" : "good"}
           />
         </div>
       </section>
 
-      <section className="grid gap-5 lg:grid-cols-2">
-        <section className={cn(CARD(), "p-5 sm:p-6")}>
-          <SectionHeader
-            eyebrow="PDF reports"
-            title="Download owner summaries"
-            text="Use these when you need a close report or a period report for review."
-          />
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className={cn(PANEL(), "p-5")}>
-              <p className="text-sm font-black text-[var(--color-text)]">
-                Daily close PDF
-              </p>
-              <p className="mt-2 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-                Today’s cash, revenue, expenses, profit estimate, top sellers, reorder and collection actions.
-              </p>
-
-              <AsyncButton
-                loading={dailyPdfBusy}
-                loadingText="Preparing..."
-                onClick={downloadDailyPdf}
-                className="mt-5 w-full"
-              >
-                Download today
-              </AsyncButton>
-            </div>
-
-            <div className={cn(PANEL(), "p-5")}>
-              <p className="text-sm font-black text-[var(--color-text)]">
-                Period report PDF
-              </p>
-              <p className="mt-2 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-                Current month summary with revenue, expenses, profit estimate, top sellers, and owner actions.
-              </p>
-
-              <AsyncButton
-                loading={periodPdfBusy}
-                loadingText="Preparing..."
-                onClick={downloadPeriodReportPdf}
-                className="mt-5 w-full"
-              >
-                Download period
-              </AsyncButton>
-            </div>
+      <section className="svx-report-links svx-dashboard-card">
+        <div className="svx-report-section-head">
+          <div>
+            <p className="svx-report-eyebrow">Open report</p>
+            <h2>Choose what you want to understand</h2>
           </div>
-        </section>
+        </div>
 
-        <section className={cn(CARD(), "p-5 sm:p-6")}>
-          <SectionHeader
-            eyebrow="Data coverage"
-            title="Available report sources"
-            text="The current backend already exposes these report APIs."
-          />
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {[
-              "Sales summary",
-              "Expense summary",
-              "Repair summary",
-              "Dashboard summary",
-              "Daily close",
-              "Top sellers",
-              "Insights",
-              "Financial summary",
-              "Income statement",
-              "Cash flow",
-              "Branch performance",
-              "PDF reports",
-            ].map((item) => (
-              <div
-                key={item}
-                className={cn(PANEL(), "px-4 py-3 text-sm font-black text-[var(--color-text)]")}
-              >
-                {item}
-              </div>
-            ))}
-          </div>
-        </section>
+        <div className="svx-report-link-grid">
+          {OWNER_REPORTS.map((report) => (
+            <ReportLink key={report.to} report={report} />
+          ))}
+        </div>
       </section>
-    </div>
+
+    </main>
   );
 }

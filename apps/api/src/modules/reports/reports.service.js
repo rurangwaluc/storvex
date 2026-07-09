@@ -538,12 +538,110 @@ async function buildRepairSummary({ user, query }) {
   };
 }
 
+async function buildCurrentOwnerChecks(branchScope) {
+  const tenantId = branchScope.tenantId;
+  const now = new Date();
+
+  const saleWhere = withSaleBranch(
+    {
+      tenantId,
+      saleType: "CREDIT",
+      balanceDue: { gt: 0 },
+      isDraft: false,
+      isCancelled: false,
+    },
+    branchScope
+  );
+
+  const overdueSaleWhere = withSaleBranch(
+    {
+      tenantId,
+      saleType: "CREDIT",
+      balanceDue: { gt: 0 },
+      dueDate: { lt: now },
+      isDraft: false,
+      isCancelled: false,
+    },
+    branchScope
+  );
+
+  const supplierWhere = {
+    tenantId,
+    balanceDue: { gt: 0 },
+  };
+
+  const productsForStockReview = await prisma.product.findMany({
+    where: {
+      tenantId,
+      isActive: true,
+    },
+    select: {
+      id: true,
+      name: true,
+      stockQty: true,
+      minStockLevel: true,
+    },
+    orderBy: [{ stockQty: "asc" }, { name: "asc" }],
+  });
+
+  const stockRows = productsForStockReview
+    .filter((product) => {
+      const stockQty = Number(product.stockQty || 0);
+      const minStockLevel = Number(product.minStockLevel || 0);
+
+      return stockQty <= 0 || (minStockLevel > 0 && stockQty <= minStockLevel);
+    })
+    .slice(0, 50);
+
+  const [customersOweAgg, overdueAgg, supplierAgg] = await Promise.all([
+    prisma.sale.aggregate({
+      where: saleWhere,
+      _sum: { balanceDue: true },
+      _count: { _all: true },
+    }),
+    prisma.sale.aggregate({
+      where: overdueSaleWhere,
+      _sum: { balanceDue: true },
+      _count: { _all: true },
+    }),
+    prisma.supplierBill.aggregate({
+      where: supplierWhere,
+      _sum: { balanceDue: true },
+      _count: { _all: true },
+    }),
+  ]);
+
+  return {
+    customersOweMe: {
+      total: money(customersOweAgg._sum.balanceDue),
+      count: Number(customersOweAgg._count._all || 0),
+    },
+    overdueCustomerMoney: {
+      total: money(overdueAgg._sum.balanceDue),
+      count: Number(overdueAgg._count._all || 0),
+    },
+    iOweSuppliers: {
+      total: money(supplierAgg._sum.balanceDue),
+      count: Number(supplierAgg._count._all || 0),
+    },
+    stockToReview: {
+      count: Number((stockRows || []).length),
+      products: (stockRows || []).map((row) => ({
+        productId: row.productId || row.id,
+        name: row.name,
+        stockQty: Number(row.stockQty || 0),
+        minStockLevel: Number(row.minStockLevel || 0),
+      })),
+    },
+  };
+}
+
 async function buildDashboardSummary({ user, query }) {
   const branchScope = await resolveReportBranchScope({ user, query });
   const { start, end } = parseRange(query);
   const tenantId = branchScope.tenantId;
 
-  const [sales, expenses, repairs] = await Promise.all([
+  const [sales, expenses, repairs, ownerChecks] = await Promise.all([
     prisma.sale.aggregate({
       where: withSaleBranch(completedSaleWhere(tenantId, start, end), branchScope),
       _sum: { total: true },
@@ -570,6 +668,7 @@ async function buildDashboardSummary({ user, query }) {
       ),
       _count: { _all: true },
     }),
+    buildCurrentOwnerChecks(branchScope),
   ]);
 
   const repairsByStatus = {};
@@ -585,6 +684,7 @@ async function buildDashboardSummary({ user, query }) {
     expenses: { approvedCount: expenses._count._all, approvedTotal: cost },
     profitEstimate: revenue - cost,
     repairs: { byStatus: repairsByStatus },
+    ownerChecks,
   };
 }
 
