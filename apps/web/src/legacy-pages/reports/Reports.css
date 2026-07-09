@@ -947,3 +947,608 @@
     width: 100% !important;
   }
 }
+
+/* Sales and profit report */
+.svx-profit-report-page {
+  display: grid;
+  gap: 22px;
+}
+
+.svx-profit-report-kpi {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--dashboard-border-soft);
+  border-radius: 24px;
+  background: var(--dashboard-card);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.svx-profit-report-kpi::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--dashboard-primary);
+}
+
+.svx-profit-report-kpi.is-green::before {
+  background: var(--dashboard-success);
+}
+
+.svx-profit-report-kpi.is-amber::before {
+  background: var(--dashboard-warning);
+}
+
+.svx-profit-report-kpi.is-red::before {
+  background: var(--dashboard-danger);
+}
+
+.svx-profit-report-kpi > span {
+  display: block;
+  margin-top: 8px;
+  color: var(--dashboard-muted);
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.svx-profit-flow-card,
+.svx-profit-panel,
+.svx-profit-note {
+  border: 1px solid var(--dashboard-border-soft);
+  border-radius: 30px;
+  background: var(--dashboard-card);
+  padding: 26px;
+  box-shadow: var(--shadow-card);
+}
+
+.svx-profit-steps {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.svx-profit-step {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  border: 1px solid var(--dashboard-border-soft);
+  border-left: 5px solid var(--dashboard-border-strong);
+  border-radius: 18px;
+  background: var(--dashboard-card-soft);
+  padding: 16px;
+}
+
+.svx-profit-step.is-blue {
+  border-left-color: var(--dashboard-primary);
+}
+
+.svx-profit-step.is-green {
+  border-left-color: var(--dashboard-success);
+}
+
+.svx-profit-step.is-amber {
+  border-left-color: var(--dashboard-warning);
+}
+
+.svx-profit-step.is-red {
+  border-left-color: var(--dashboard-danger);
+}
+
+.svx-profit-step strong {
+  display: block;
+  color: var(--dashboard-text);
+  font-size: 15px;
+  font-weight: 950;
+}
+
+.svx-profit-step span {
+  display: block;
+  margin-top: 5px;
+  color: var(--dashboard-muted);
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.svx-profit-step p {
+  color: var(--dashboard-text);
+  font-size: clamp(18px, 2vw, 26px);
+  font-weight: 950;
+  letter-spacing: -0.055em;
+  white-space: nowrap;
+}
+
+.svx-profit-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+}
+
+.svx-profit-fact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.svx-profit-fact {
+  border: 1px solid var(--dashboard-border-soft);
+  border-radius: 18px;
+  background: var(--dashboard-card-soft);
+  padding: 16px;
+}
+
+.svx-profit-fact span {
+  display: block;
+  color: var(--dashboard-muted);
+  font-size: 10px;
+  font-weight: 1000;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.svx-profit-fact strong {
+  display: block;
+  margin-top: 10px;
+  color: var(--dashboard-text);
+  font-size: clamp(24px, 3vw, 38px);
+  font-weight: 950;
+  letter-spacing: -0.06em;
+}
+
+.svx-profit-fact p {
+  margin-top: 5px;
+  color: var(--dashboard-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.svx-profit-seller-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.svx-profit-seller-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--dashboard-border-soft);
+  border-radius: 18px;
+  background: var(--dashboard-card-soft);
+  padding: 14px;
+}
+
+.svx-profit-seller-media {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--dashboard-border-soft);
+  border-radius: 16px;
+  background: var(--dashboard-primary-soft);
+  color: var(--dashboard-primary);
+  font-size: 13px;
+  font-weight: 1000;
+}
+
+.svx-profit-seller-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.svx-profit-seller-main {
+  min-width: 0;
+}
+
+.svx-profit-seller-main strong {
+  display: block;
+  overflow: hidden;
+  color: var(--dashboard-text);
+  font-size: 14px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-profit-seller-main span {
+  display: block;
+  margin-top: 4px;
+  color: var(--dashboard-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.svx-profit-seller-row p {
+  color: var(--dashboard-text);
+  font-size: clamp(16px, 1.7vw, 22px);
+  font-weight: 950;
+  letter-spacing: -0.055em;
+  white-space: nowrap;
+}
+
+.svx-profit-note h2 {
+  margin-top: 6px;
+  color: var(--dashboard-text);
+  font-size: clamp(24px, 2.2vw, 34px);
+  font-weight: 950;
+  letter-spacing: -0.055em;
+  line-height: 1;
+}
+
+.svx-profit-note p:not(.svx-report-eyebrow) {
+  margin-top: 10px;
+  color: var(--dashboard-muted);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.svx-profit-report-page .svx-report-money-value,
+.svx-profit-report-page .svx-profit-step p,
+.svx-profit-report-page .svx-profit-seller-row p {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  .svx-profit-grid,
+  .svx-profit-fact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-profit-flow-card,
+  .svx-profit-panel,
+  .svx-profit-note {
+    border-radius: 22px;
+    padding: 18px;
+  }
+
+  .svx-profit-step,
+  .svx-profit-seller-row {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-profit-step p,
+  .svx-profit-seller-row p {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-business-reports.svx-profit-report-page {
+    width: 100%;
+    max-width: 100%;
+    padding-inline: 14px;
+    overflow-x: hidden;
+  }
+
+  .svx-profit-report-page .svx-report-hero {
+    display: block;
+    width: 100%;
+    padding: 24px 18px;
+  }
+
+  .svx-profit-report-page .svx-report-hero > div {
+    max-width: none;
+  }
+
+  .svx-profit-report-page .svx-report-hero h1 {
+    width: 100%;
+    max-width: 100%;
+    margin-top: 10px;
+    font-size: clamp(42px, 12.2vw, 56px);
+    line-height: 0.92;
+    letter-spacing: -0.085em;
+    text-wrap: balance;
+  }
+
+  .svx-profit-report-page .svx-report-hero aside {
+    width: 100%;
+    margin-top: 22px;
+  }
+
+  .svx-profit-report-page .svx-report-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-profit-report-page .svx-report-owner-answer {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 20px 18px;
+    border-radius: 24px;
+  }
+
+  .svx-profit-report-page .svx-report-secondary-link {
+    width: 100%;
+  }
+}
+
+/* Final Sales and profit PWA polish */
+@media (max-width: 920px) {
+  .svx-profit-report-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-inline: 14px !important;
+    overflow-x: hidden !important;
+  }
+
+  .svx-profit-report-page .svx-report-hero {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+    padding: 24px 18px !important;
+    border-radius: 26px !important;
+  }
+
+  .svx-profit-report-page .svx-report-hero > div {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .svx-profit-report-page .svx-report-hero h1 {
+    width: 100% !important;
+    max-width: 100% !important;
+    font-size: clamp(40px, 11.5vw, 58px) !important;
+    line-height: 0.92 !important;
+    letter-spacing: -0.08em !important;
+    text-wrap: balance !important;
+  }
+
+  .svx-profit-report-page .svx-report-hero aside {
+    width: 100% !important;
+    min-width: 0 !important;
+    justify-self: stretch !important;
+    margin-top: 0 !important;
+  }
+
+  .svx-profit-report-page .svx-report-owner-answer,
+  .svx-profit-report-page .svx-report-date-card {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    padding: 20px 18px !important;
+    border-radius: 24px !important;
+  }
+
+  .svx-profit-report-page .svx-report-owner-answer h2,
+  .svx-profit-report-page .svx-report-date-card h2 {
+    font-size: clamp(26px, 7vw, 36px) !important;
+    line-height: 0.98 !important;
+    letter-spacing: -0.06em !important;
+  }
+
+  .svx-profit-report-page .svx-report-secondary-link {
+    width: 100% !important;
+  }
+
+  .svx-profit-report-page .svx-report-kpi-grid,
+  .svx-profit-report-page .svx-report-date-grid,
+  .svx-profit-report-page .svx-profit-grid,
+  .svx-profit-report-page .svx-profit-fact-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-profit-report-page .svx-profit-flow-card,
+  .svx-profit-report-page .svx-profit-panel,
+  .svx-profit-report-page .svx-profit-note {
+    border-radius: 24px !important;
+    padding: 20px 18px !important;
+  }
+
+  .svx-profit-report-page .svx-profit-step,
+  .svx-profit-report-page .svx-profit-seller-row {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .svx-profit-report-page .svx-profit-step p,
+  .svx-profit-report-page .svx-profit-seller-row p {
+    justify-self: start !important;
+    max-width: 100% !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    font-size: clamp(18px, 5.5vw, 26px) !important;
+  }
+
+  .svx-profit-report-page .svx-profit-seller-main strong {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+
+  .svx-profit-report-page .svx-report-money-value,
+  .svx-profit-report-page .svx-profit-fact strong {
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-profit-report-page {
+    padding-inline: 12px !important;
+  }
+
+  .svx-profit-report-page .svx-report-hero h1 {
+    font-size: clamp(38px, 10.8vw, 48px) !important;
+    line-height: 0.94 !important;
+  }
+
+  .svx-profit-report-page .svx-report-range-buttons {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .svx-profit-report-page .svx-report-range-buttons button {
+    width: 100% !important;
+  }
+}
+
+/* Final override: Sales profit must be true one-column on PWA/tablet narrow screens */
+@media (max-width: 1100px) {
+  .svx-profit-report-page {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding-inline: 14px !important;
+    overflow-x: hidden !important;
+  }
+
+  .svx-profit-report-page .svx-report-hero {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 18px !important;
+    align-items: start !important;
+    padding: 22px 18px !important;
+  }
+
+  .svx-profit-report-page .svx-report-hero > div {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  .svx-profit-report-page .svx-report-hero h1 {
+    max-width: 100% !important;
+    font-size: clamp(38px, 9.8vw, 58px) !important;
+    line-height: 0.95 !important;
+    letter-spacing: -0.08em !important;
+    text-wrap: balance !important;
+  }
+
+  .svx-profit-report-page .svx-report-hero aside {
+    width: 100% !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    justify-self: stretch !important;
+  }
+
+  .svx-profit-report-page .svx-profit-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-profit-report-page .svx-profit-fact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-profit-report-page .svx-profit-fact-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-profit-report-page .svx-profit-panel {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .svx-profit-report-page .svx-profit-seller-row {
+    grid-template-columns: 52px minmax(0, 1fr) !important;
+  }
+
+  .svx-profit-report-page .svx-profit-seller-row p {
+    grid-column: 2 / -1 !important;
+    justify-self: start !important;
+    margin-top: 2px !important;
+  }
+
+  .svx-profit-report-page .svx-profit-fact {
+    min-height: auto !important;
+  }
+
+  .svx-profit-report-page .svx-profit-fact strong {
+    font-size: clamp(28px, 9vw, 42px) !important;
+  }
+
+  .svx-profit-report-page .svx-profit-note {
+    margin-bottom: 18px !important;
+  }
+}
+
+@media (max-width: 520px) {
+  .svx-profit-report-page .svx-report-hero h1 {
+    font-size: clamp(36px, 11vw, 48px) !important;
+    line-height: 0.96 !important;
+  }
+
+  .svx-profit-report-page .svx-report-hero span {
+    font-size: 12px !important;
+    line-height: 1.55 !important;
+  }
+
+  .svx-profit-report-page .svx-report-hero aside {
+    padding: 15px !important;
+    border-radius: 18px !important;
+  }
+
+  .svx-profit-report-page .svx-report-hero aside strong {
+    font-size: 15px !important;
+    white-space: normal !important;
+  }
+}
+
+/* Balanced Sales profit PWA layout: one column for reading, two columns for safe number cards */
+@media (max-width: 760px) {
+  .svx-profit-report-page .svx-report-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .svx-profit-report-page .svx-profit-fact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  .svx-profit-report-page .svx-profit-report-kpi {
+    min-height: 118px !important;
+    padding: 16px !important;
+    border-radius: 18px !important;
+  }
+
+  .svx-profit-report-page .svx-profit-report-kpi .svx-report-money-value {
+    font-size: clamp(22px, 6.4vw, 30px) !important;
+    line-height: 1 !important;
+    letter-spacing: -0.055em !important;
+    white-space: nowrap !important;
+  }
+
+  .svx-profit-report-page .svx-profit-report-kpi > span {
+    font-size: 10.5px !important;
+    line-height: 1.35 !important;
+  }
+
+  .svx-profit-report-page .svx-profit-fact {
+    min-height: 126px !important;
+    padding: 16px !important;
+    border-radius: 18px !important;
+  }
+
+  .svx-profit-report-page .svx-profit-fact strong {
+    font-size: clamp(30px, 9vw, 44px) !important;
+    line-height: 0.95 !important;
+  }
+
+  .svx-profit-report-page .svx-profit-fact p {
+    font-size: 10.5px !important;
+    line-height: 1.35 !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-profit-report-page .svx-report-kpi-grid,
+  .svx-profit-report-page .svx-profit-fact-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-profit-report-page .svx-profit-report-kpi,
+  .svx-profit-report-page .svx-profit-fact {
+    min-height: auto !important;
+  }
+}
