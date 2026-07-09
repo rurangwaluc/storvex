@@ -3,18 +3,27 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { getCashFlowReport } from "../../services/reportsApi";
-import AsyncButton from "../../components/ui/AsyncButton";
+import { getMoneySummary } from "../../services/moneyApi";
 import PageSkeleton from "../../components/ui/PageSkeleton";
-import { cn } from "../../lib/cn";
+import "../dashboard/Dashboard.css";
+import "./Reports.css";
 
-const CARD = () =>
-  "rounded-[34px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
+const RANGE_PRESETS = [
+  { key: "today", label: "Today" },
+  { key: "yesterday", label: "Yesterday" },
+  { key: "week", label: "This week" },
+  { key: "month", label: "This month" },
+  { key: "year", label: "This year" },
+];
 
-const PANEL = () =>
-  "rounded-[26px] border border-[var(--color-border)] bg-[var(--color-surface-2)]";
+function cleanNumber(value) {
+  const n = Number(value || 0);
+  return Number.isFinite(n) ? n : 0;
+}
 
-function todayISO() {
-  const d = new Date();
+function isoDate(date) {
+  const d = new Date(date);
+
   return [
     d.getFullYear(),
     String(d.getMonth() + 1).padStart(2, "0"),
@@ -22,44 +31,68 @@ function todayISO() {
   ].join("-");
 }
 
-function daysAgoISO(days) {
+function todayISO() {
+  return isoDate(new Date());
+}
+
+function startOfWeekISO() {
   const d = new Date();
-  d.setDate(d.getDate() - Number(days || 0));
-  return [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, "0"),
-    String(d.getDate()).padStart(2, "0"),
-  ].join("-");
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+
+  return isoDate(d);
 }
 
 function startOfMonthISO() {
   const d = new Date();
   d.setDate(1);
-  return [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, "0"),
-    "01",
-  ].join("-");
+
+  return isoDate(d);
+}
+
+function startOfYearISO() {
+  const d = new Date();
+  d.setMonth(0, 1);
+
+  return isoDate(d);
+}
+
+function rangeForPreset(key) {
+  const today = todayISO();
+
+  if (key === "yesterday") {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    const yesterday = isoDate(d);
+
+    return { from: yesterday, to: yesterday };
+  }
+
+  if (key === "week") return { from: startOfWeekISO(), to: today };
+  if (key === "month") return { from: startOfMonthISO(), to: today };
+  if (key === "year") return { from: startOfYearISO(), to: today };
+
+  return { from: today, to: today };
 }
 
 function money(value) {
-  const n = Number(value || 0);
-
   return `Rwf ${new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
-  }).format(Math.round(n))}`;
+  }).format(Math.round(cleanNumber(value)))}`;
 }
 
-function numberValue(value) {
-  const n = Number(value || 0);
-  return Number.isFinite(n) ? n : 0;
+function numberLabel(value) {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 0,
+  }).format(cleanNumber(value));
 }
 
 function formatDate(value) {
   if (!value) return "—";
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
+  if (Number.isNaN(date.getTime())) return value;
 
   return date.toLocaleDateString("en-GB", {
     day: "2-digit",
@@ -68,657 +101,425 @@ function formatDate(value) {
   });
 }
 
-function pct(part, total) {
-  const p = numberValue(part);
-  const t = numberValue(total);
+function getValue(source, paths, fallback = 0) {
+  for (const path of paths) {
+    const value = path
+      .split(".")
+      .reduce((current, key) => current?.[key], source);
 
-  if (t <= 0) return 0;
+    if (value !== undefined && value !== null) return value;
+  }
 
-  return Math.max(0, Math.min(100, (p / t) * 100));
+  return fallback;
 }
 
-function toneForAmount(value) {
-  const n = numberValue(value);
+function accountBalance(moneySummary, accountType) {
+  const accounts = Array.isArray(moneySummary?.moneyAccounts)
+    ? moneySummary.moneyAccounts
+    : [];
 
-  if (n > 0) return "success";
-  if (n < 0) return "danger";
+  const found = accounts.find(
+    (account) =>
+      String(account.accountType || "").toUpperCase() ===
+      String(accountType || "").toUpperCase(),
+  );
 
-  return "neutral";
+  return cleanNumber(found?.balance);
 }
 
-function Badge({ children, tone = "neutral" }) {
-  const styles = {
-    success: "bg-emerald-500/10 text-emerald-600",
-    warning: "bg-amber-500/10 text-amber-600",
-    danger: "bg-red-500/10 text-red-600",
-    info: "bg-[var(--color-primary-soft)] text-[var(--color-primary)]",
-    neutral: "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]",
-  };
-
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.13em]",
-        styles[tone] || styles.neutral,
-      )}
-    >
-      {children}
-    </span>
+function cashBalance(moneySummary) {
+  return cleanNumber(
+    getValue(moneySummary, [
+      "cashDrawer.expectedCash",
+      "cashDrawer.cashExpected",
+      "cashDrawer.expected",
+      "summary.cashIHave",
+      "summary.cash",
+    ]),
   );
 }
 
-function SectionHeader({ eyebrow, title, text, action }) {
-  return (
-    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-      <div>
-        {eyebrow ? (
-          <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-primary)]">
-            {eyebrow}
-          </p>
-        ) : null}
+function methodLabel(method) {
+  const value = String(method || "").toUpperCase();
 
-        <h2 className="mt-1 text-xl font-black tracking-[-0.035em] text-[var(--color-text)] sm:text-2xl">
-          {title}
-        </h2>
+  if (value === "CASH") return "Cash";
+  if (value === "MOMO") return "MoMo";
+  if (value === "BANK") return "Bank";
+  if (value === "CARD") return "Card";
+  if (value === "OTHER") return "Other";
 
-        {text ? (
-          <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-            {text}
-          </p>
-        ) : null}
-      </div>
-
-      {action ? <div className="shrink-0">{action}</div> : null}
-    </div>
-  );
+  return "Other";
 }
 
-function KpiCard({ label, value, note, tone = "info" }) {
-  const barStyles = {
-    success: "bg-emerald-500",
-    info: "bg-[var(--color-primary)]",
-    warning: "bg-amber-500",
-    danger: "bg-red-500",
-    neutral: "bg-[var(--color-text-muted)]",
-  };
+function moneyAnswer(cashFlow) {
+  const moneyIn = cleanNumber(cashFlow?.moneyIn);
+  const moneyOut = cleanNumber(cashFlow?.moneyOut);
 
+  if (moneyIn === 0 && moneyOut === 0) {
+    return "No money came in or went out during this period.";
+  }
+
+  if (moneyIn >= moneyOut) {
+    return `Money came in: ${money(moneyIn)}. Money went out: ${money(moneyOut)}. Money left after spending: ${money(moneyIn - moneyOut)}.`;
+  }
+
+  return `Money came in: ${money(moneyIn)}. Money went out: ${money(moneyOut)}. Spending was higher than money received by ${money(moneyOut - moneyIn)}.`;
+}
+
+function KpiCard({ label, value, helper, tone = "blue" }) {
   return (
-    <article className={cn(CARD(), "relative overflow-hidden p-5 sm:p-6")}>
-      <div className={cn("absolute inset-x-0 top-0 h-1.5", barStyles[tone] || barStyles.info)} />
-
-      <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-        {label}
-      </p>
-
-      <div className="mt-4 text-3xl font-black tracking-[-0.055em] text-[var(--color-text)] sm:text-4xl">
-        {value}
-      </div>
-
-      <p className="mt-2 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-        {note}
-      </p>
+    <article className={`svx-report-kpi-card svx-money-report-kpi is-${tone}`}>
+      <p className="svx-report-kpi-label">{label}</p>
+      <strong className="svx-report-money-value">{value}</strong>
+      <span>{helper}</span>
     </article>
   );
 }
 
-function DetailTile({ label, value, tone = "neutral" }) {
+function MoneyTile({ label, value, helper }) {
   return (
-    <div className={cn(PANEL(), "p-4")}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
-            {label}
-          </p>
+    <article className="svx-report-money-tile">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <p>{helper}</p>
+    </article>
+  );
+}
 
-          <p className="mt-2 break-words text-sm font-black text-[var(--color-text)]">
-            {value || "—"}
-          </p>
-        </div>
-
-        {tone !== "neutral" ? <Badge tone={tone}>Check</Badge> : null}
+function MovementRow({ label, amount, count, tone = "in" }) {
+  return (
+    <div className={`svx-report-money-row is-${tone}`}>
+      <div>
+        <strong>{label}</strong>
+        <span>{numberLabel(count)} record{cleanNumber(count) === 1 ? "" : "s"}</span>
       </div>
+      <p>{money(amount)}</p>
     </div>
   );
 }
 
-function ProgressRow({ label, amount, total, count }) {
-  const percentage = pct(amount, total);
+function RangeControls({ selectedPreset, setSelectedPreset, range, setRange }) {
+  function choosePreset(key) {
+    setSelectedPreset(key);
+    setRange(rangeForPreset(key));
+  }
 
   return (
-    <div className={cn(PANEL(), "p-4")}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-black text-[var(--color-text)]">
-            {label}
-          </p>
-
-          <p className="mt-1 text-xs font-semibold text-[var(--color-text-muted)]">
-            {Number(count || 0)} record{Number(count || 0) === 1 ? "" : "s"}
-          </p>
-        </div>
-
-        <p className="shrink-0 text-sm font-black text-[var(--color-text)]">
-          {money(amount)}
-        </p>
+    <section className="svx-report-date-card svx-dashboard-card">
+      <div>
+        <p className="svx-report-eyebrow">Report dates</p>
+        <h2>Choose the money period</h2>
       </div>
 
-      <div className="mt-4 h-3 overflow-hidden rounded-full bg-[var(--color-card)]">
-        <div
-          className="h-full rounded-full bg-[var(--color-primary)]"
-          style={{ width: `${percentage}%` }}
-        />
+      <div className="svx-report-range-buttons">
+        {RANGE_PRESETS.map((preset) => (
+          <button
+            key={preset.key}
+            type="button"
+            className={selectedPreset === preset.key ? "is-active" : ""}
+            onClick={() => choosePreset(preset.key)}
+          >
+            {preset.label}
+          </button>
+        ))}
       </div>
 
-      <p className="mt-2 text-right text-xs font-bold text-[var(--color-text-muted)]">
-        {Math.round(percentage)}%
-      </p>
-    </div>
-  );
-}
+      <div className="svx-report-date-grid">
+        <label>
+          <span>From</span>
+          <input
+            type="date"
+            value={range.from}
+            onChange={(event) => {
+              setSelectedPreset("custom");
+              setRange((current) => ({ ...current, from: event.target.value }));
+            }}
+          />
+        </label>
 
-function MethodCard({ item, total }) {
-  const amount = numberValue(item?.amount);
-  const percentage = pct(amount, total);
-
-  return (
-    <div className={cn(PANEL(), "p-4")}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-black text-[var(--color-text)]">
-            {item?.label || item?.method || "Other"}
-          </p>
-
-          <p className="mt-1 text-xs font-semibold text-[var(--color-text-muted)]">
-            {Number(item?.count || 0)} payment{Number(item?.count || 0) === 1 ? "" : "s"}
-          </p>
-        </div>
-
-        <p className="text-sm font-black text-[var(--color-text)]">
-          {money(amount)}
-        </p>
+        <label>
+          <span>To</span>
+          <input
+            type="date"
+            value={range.to}
+            onChange={(event) => {
+              setSelectedPreset("custom");
+              setRange((current) => ({ ...current, to: event.target.value }));
+            }}
+          />
+        </label>
       </div>
 
-      <div className="mt-4 h-3 overflow-hidden rounded-full bg-[var(--color-card)]">
-        <div
-          className="h-full rounded-full bg-[var(--color-primary)]"
-          style={{ width: `${percentage}%` }}
-        />
+      <div className="svx-report-period">
+        Report period: <strong>{formatDate(range.from)} to {formatDate(range.to)}</strong>
       </div>
-    </div>
-  );
-}
-
-function DrawerReasonRow({ item }) {
-  const moneyIn = numberValue(item?.moneyIn);
-  const moneyOut = numberValue(item?.moneyOut);
-  const net = moneyIn - moneyOut;
-
-  return (
-    <div className={cn(PANEL(), "p-4")}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-sm font-black text-[var(--color-text)]">
-            {item?.label || item?.reason || "Drawer movement"}
-          </p>
-
-          <p className="mt-1 text-xs font-semibold text-[var(--color-text-muted)]">
-            {Number(item?.count || 0)} movement{Number(item?.count || 0) === 1 ? "" : "s"}
-          </p>
-        </div>
-
-        <Badge tone={toneForAmount(net)}>
-          {net >= 0 ? "+" : ""}
-          {money(net)}
-        </Badge>
-      </div>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <DetailTile label="Money in" value={money(moneyIn)} />
-        <DetailTile label="Money out" value={money(moneyOut)} />
-      </div>
-    </div>
-  );
-}
-
-function EmptyState({ title, text }) {
-  return (
-    <div className={cn(PANEL(), "px-5 py-8 text-center")}>
-      <p className="text-sm font-black text-[var(--color-text)]">{title}</p>
-      <p className="mt-1 text-sm font-semibold text-[var(--color-text-muted)]">{text}</p>
-    </div>
-  );
-}
-
-function RangeButton({ active, children, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "h-10 rounded-2xl px-4 text-sm font-black transition",
-        active
-          ? "bg-[var(--color-primary)] text-white shadow-[var(--shadow-soft)]"
-          : "border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]",
-      )}
-    >
-      {children}
-    </button>
+    </section>
   );
 }
 
 export default function CashFlowReport() {
-  const [range, setRange] = useState({
-    from: startOfMonthISO(),
-    to: todayISO(),
-  });
-
-  const [preset, setPreset] = useState("MONTH");
+  const [selectedPreset, setSelectedPreset] = useState("month");
+  const [range, setRange] = useState(() => rangeForPreset("month"));
   const [payload, setPayload] = useState(null);
+  const [moneySummary, setMoneySummary] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      setLoading(true);
+
+      try {
+        const [cashFlowData, moneyData] = await Promise.all([
+          getCashFlowReport(range),
+          getMoneySummary().catch(() => null),
+        ]);
+
+        if (!alive) return;
+
+        setPayload(cashFlowData);
+        setMoneySummary(moneyData);
+      } catch (error) {
+        if (!alive) return;
+        toast.error(
+          error?.response?.data?.message ||
+            error?.message ||
+            "Failed to load money report",
+        );
+      } finally {
+        if (alive) setLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      alive = false;
+    };
+  }, [range.from, range.to, range.branchId, range.allBranches]);
 
   const cashFlow = payload?.cashFlow || {};
-  const branchScope = payload?.branchScope || {};
-  const dataQuality = payload?.dataQuality || {};
 
-  const methodSplit = Array.isArray(cashFlow?.paymentMethodSplit)
+  const currentMoney = useMemo(() => {
+    const cash = cashBalance(moneySummary);
+    const momo = accountBalance(moneySummary, "MOMO");
+    const bank = accountBalance(moneySummary, "BANK");
+    const other = accountBalance(moneySummary, "OTHER");
+
+    return {
+      cash,
+      momo,
+      bank,
+      other,
+      total: cash + momo + bank + other,
+    };
+  }, [moneySummary]);
+
+  const methodSplit = Array.isArray(cashFlow.paymentMethodSplit)
     ? cashFlow.paymentMethodSplit
     : [];
 
-  const moneyInBreakdown = Array.isArray(cashFlow?.moneyInBreakdown)
+  const moneyInBreakdown = Array.isArray(cashFlow.moneyInBreakdown)
     ? cashFlow.moneyInBreakdown
     : [];
 
-  const moneyOutBreakdown = Array.isArray(cashFlow?.moneyOutBreakdown)
+  const moneyOutBreakdown = Array.isArray(cashFlow.moneyOutBreakdown)
     ? cashFlow.moneyOutBreakdown
     : [];
 
-  const drawerReasons = Array.isArray(cashFlow?.drawerBreakdown?.byReason)
+  const drawerReasons = Array.isArray(cashFlow.drawerBreakdown?.byReason)
     ? cashFlow.drawerBreakdown.byReason
     : [];
 
-  const moneyIn = numberValue(cashFlow?.moneyIn);
-  const moneyOut = numberValue(cashFlow?.moneyOut);
-  const netCashFlow = numberValue(cashFlow?.netCashFlow);
-  const openingCash = numberValue(cashFlow?.openingCash);
-  const expectedClosingCash = numberValue(cashFlow?.expectedClosingCash);
-  const countedCash = numberValue(cashFlow?.countedCash);
-  const cashDifference =
-    cashFlow?.cashDifference === null || cashFlow?.cashDifference === undefined
-      ? null
-      : numberValue(cashFlow.cashDifference);
-
-  const hasCountedCash = countedCash > 0;
-  const cashCheckTone =
-    cashDifference === null ? "neutral" : Math.abs(cashDifference) <= 0 ? "success" : "warning";
-
-  const rangeLabel = useMemo(() => {
-    return `${formatDate(range.from)} — ${formatDate(range.to)}`;
-  }, [range]);
-
-  async function loadReport({ quiet = false } = {}) {
-    if (!quiet) setLoading(true);
-
-    try {
-      const data = await getCashFlowReport(range);
-      setPayload(data || null);
-    } catch (error) {
-      console.error("Cash flow report failed:", error);
-      toast.error(error?.response?.data?.message || "Failed to load cash flow report");
-    } finally {
-      if (!quiet) setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadReport();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [range.from, range.to]);
-
-  async function refresh() {
-    setRefreshing(true);
-
-    try {
-      await loadReport({ quiet: true });
-      toast.success("Cash flow refreshed");
-    } finally {
-      setRefreshing(false);
-    }
-  }
-
-  function applyPreset(nextPreset) {
-    setPreset(nextPreset);
-
-    if (nextPreset === "TODAY") {
-      setRange({ from: todayISO(), to: todayISO() });
-      return;
-    }
-
-    if (nextPreset === "7D") {
-      setRange({ from: daysAgoISO(6), to: todayISO() });
-      return;
-    }
-
-    if (nextPreset === "30D") {
-      setRange({ from: daysAgoISO(29), to: todayISO() });
-      return;
-    }
-
-    setRange({ from: startOfMonthISO(), to: todayISO() });
-  }
-
-  function updateRange(key, value) {
-    setPreset("CUSTOM");
-    setRange((current) => ({ ...current, [key]: value }));
-  }
-
-  if (loading) {
-    return <PageSkeleton variant="dashboard" />;
+  if (loading && !payload) {
+    return <PageSkeleton />;
   }
 
   return (
-    <div className="space-y-6">
-      <section className={cn(CARD(), "relative overflow-hidden p-5 sm:p-6 lg:p-7")}>
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[rgba(74,163,255,0.14)] blur-3xl" />
-
-        <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-          <div className="min-w-0">
-            <div className="inline-flex max-w-full items-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-              <span className="truncate">
-                Cash flow • {branchScope?.label || "Current branch"} • {rangeLabel}
-              </span>
-            </div>
-
-            <h1 className="mt-5 text-3xl font-black tracking-[-0.055em] text-[var(--color-text)] sm:text-4xl lg:text-5xl">
-              Cash flow report.
-            </h1>
-
-            <p className="mt-3 max-w-3xl text-base font-medium leading-8 text-[var(--color-text-muted)]">
-              Track money coming in, money going out, payment methods, drawer movement,
-              and expected cash at closing.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row xl:shrink-0">
-             <Link
-                to="/app/reports"
-                className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 text-sm font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 sm:w-auto"
-            >
-                Back to reports
-            </Link>
-            <AsyncButton
-              loading={refreshing}
-              loadingText="Refreshing..."
-              variant="secondary"
-              onClick={refresh}
-              className="w-full sm:w-auto"
-            >
-              Refresh
-            </AsyncButton>
-          </div>
+    <main className="svx-owner-dashboard svx-business-reports svx-money-report-page">
+      <section className="svx-report-hero svx-dashboard-card">
+        <div>
+          <p className="svx-report-eyebrow">Money report</p>
+          <h1>See where money came from and where it went</h1>
+          <span>
+            Simple report for cash, MoMo, bank, other payments, approved expenses, and cash drawer movement.
+          </span>
         </div>
 
-        <div className="relative mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <DetailTile label="Branch view" value={branchScope?.label || "Current branch"} />
-          <DetailTile label="From" value={formatDate(range.from)} />
-          <DetailTile label="To" value={formatDate(range.to)} />
-          <DetailTile
-            label="Cash check"
-            value={
-              cashDifference === null
-                ? "Not counted yet"
-                : cashDifference === 0
-                  ? "Balanced"
-                  : `${money(cashDifference)} difference`
-            }
-            tone={cashCheckTone}
-          />
-        </div>
+        <aside>
+          <p>Showing</p>
+          <strong>{formatDate(range.from)} to {formatDate(range.to)}</strong>
+          <span>{payload?.branchScope?.label || "Current branch"}</span>
+        </aside>
       </section>
 
-      <section className={cn(CARD(), "p-5 sm:p-6 lg:p-7")}>
-        <SectionHeader
-          eyebrow="Period"
-          title="Choose report period"
-          text="Use a quick period or choose your own dates."
-          action={<Badge tone="info">{preset === "CUSTOM" ? "Custom" : preset}</Badge>}
-        />
-
-        <div className="flex flex-wrap gap-2">
-          <RangeButton active={preset === "TODAY"} onClick={() => applyPreset("TODAY")}>
-            Today
-          </RangeButton>
-          <RangeButton active={preset === "7D"} onClick={() => applyPreset("7D")}>
-            Last 7 days
-          </RangeButton>
-          <RangeButton active={preset === "30D"} onClick={() => applyPreset("30D")}>
-            Last 30 days
-          </RangeButton>
-          <RangeButton active={preset === "MONTH"} onClick={() => applyPreset("MONTH")}>
-            This month
-          </RangeButton>
+      <section className="svx-report-owner-answer svx-dashboard-card">
+        <div>
+          <p className="svx-report-eyebrow">Owner answer</p>
+          <h2>What happened to money in this period</h2>
+          <strong>{moneyAnswer(cashFlow)}</strong>
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <Link to="/app/reports" className="svx-report-secondary-link">
+          Back to reports
+        </Link>
+      </section>
+
+      <RangeControls
+        selectedPreset={selectedPreset}
+        setSelectedPreset={setSelectedPreset}
+        range={range}
+        setRange={setRange}
+      />
+
+      <section className="svx-report-kpi-grid">
+        <KpiCard
+          label="Money came in"
+          value={money(cashFlow.moneyIn)}
+          helper="Payments received in this period"
+          tone="green"
+        />
+        <KpiCard
+          label="Money went out"
+          value={money(cashFlow.moneyOut)}
+          helper="Approved expenses and recorded money out"
+          tone="amber"
+        />
+        <KpiCard
+          label="Money left after spending"
+          value={money(Math.max(0, cleanNumber(cashFlow.netCashFlow)))}
+          helper={
+            cleanNumber(cashFlow.netCashFlow) >= 0
+              ? "Money in minus money out"
+              : `Short by ${money(Math.abs(cleanNumber(cashFlow.netCashFlow)))}`
+          }
+          tone={cleanNumber(cashFlow.netCashFlow) >= 0 ? "green" : "red"}
+        />
+        <KpiCard
+          label="Business money now"
+          value={money(currentMoney.total)}
+          helper="Cash, MoMo, bank, and other money now"
+          tone="blue"
+        />
+      </section>
+
+      <section className="svx-report-money-position svx-dashboard-card">
+        <div className="svx-report-section-head">
           <div>
-            <label className="mb-1.5 block text-sm font-black text-[var(--color-text)]">
-              From
-            </label>
-            <input
-              type="date"
-              value={range.from}
-              onChange={(event) => updateRange("from", event.target.value)}
-              className="h-12 w-full rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-bold text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(74,163,255,0.12)]"
-            />
+            <p className="svx-report-eyebrow">Money now</p>
+            <h2>Where the business money is now</h2>
           </div>
+          <strong>{money(currentMoney.total)}</strong>
+        </div>
 
-          <div>
-            <label className="mb-1.5 block text-sm font-black text-[var(--color-text)]">
-              To
-            </label>
-            <input
-              type="date"
-              value={range.to}
-              onChange={(event) => updateRange("to", event.target.value)}
-              className="h-12 w-full rounded-[18px] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-4 text-sm font-bold text-[var(--color-text)] outline-none transition focus:border-[var(--color-primary)] focus:ring-4 focus:ring-[rgba(74,163,255,0.12)]"
-            />
-          </div>
+        <div className="svx-report-money-grid">
+          <MoneyTile label="Cash" value={money(currentMoney.cash)} helper="Physical cash in drawer" />
+          <MoneyTile label="MoMo" value={money(currentMoney.momo)} helper="Money on MoMo" />
+          <MoneyTile label="Bank" value={money(currentMoney.bank)} helper="Money in the bank" />
+          <MoneyTile label="Other" value={money(currentMoney.other)} helper="Card, cheque, or other payments" />
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
-          label="Money in"
-          value={money(moneyIn)}
-          note="Payments received during this period."
-          tone="success"
-        />
-
-        <KpiCard
-          label="Money out"
-          value={money(moneyOut)}
-          note="Approved expenses during this period."
-          tone={moneyOut > 0 ? "warning" : "success"}
-        />
-
-        <KpiCard
-          label="Net cash flow"
-          value={money(netCashFlow)}
-          note="Money in minus money out."
-          tone={toneForAmount(netCashFlow)}
-        />
-
-        <KpiCard
-          label="Expected closing cash"
-          value={money(expectedClosingCash)}
-          note="Opening cash plus drawer movement."
-          tone="info"
-        />
-      </section>
-
-      <section className="grid gap-5 lg:grid-cols-2">
-        <section className={cn(CARD(), "p-5 sm:p-6")}>
-          <SectionHeader
-            eyebrow="Cash drawer"
-            title="Drawer control"
-            text="Compare opening cash, expected closing cash, and counted cash."
-            action={
-              <Badge tone={hasCountedCash ? cashCheckTone : "neutral"}>
-                {hasCountedCash ? "Counted" : "Not counted"}
-              </Badge>
-            }
-          />
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <DetailTile label="Opening cash" value={money(openingCash)} />
-            <DetailTile label="Expected closing cash" value={money(expectedClosingCash)} />
-            <DetailTile
-              label="Counted cash"
-              value={hasCountedCash ? money(countedCash) : "Not counted yet"}
-            />
-            <DetailTile
-              label="Difference"
-              value={cashDifference === null ? "Not available" : money(cashDifference)}
-              tone={cashCheckTone}
-            />
+      <section className="svx-money-report-grid">
+        <article className="svx-dashboard-card svx-money-report-panel">
+          <div className="svx-report-section-head">
+            <div>
+              <p className="svx-report-eyebrow">Money received</p>
+              <h2>Payment methods</h2>
+            </div>
           </div>
 
-          <div className={cn(PANEL(), "mt-4 p-4")}>
-            <p className="text-sm font-black text-[var(--color-text)]">
-              Owner meaning
-            </p>
-            <p className="mt-2 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-              If counted cash is different from expected closing cash, the owner should review
-              cash sales, expenses, withdrawals, and drawer movements for this period.
-            </p>
+          <div className="svx-report-money-list">
+            {methodSplit.length > 0 ? (
+              methodSplit.map((item) => (
+                <MovementRow
+                  key={item.method}
+                  label={methodLabel(item.method)}
+                  amount={item.amount}
+                  count={item.count}
+                  tone="in"
+                />
+              ))
+            ) : (
+              <p className="svx-report-empty-text">No payment method records in this period.</p>
+            )}
           </div>
-        </section>
+        </article>
 
-        <section className={cn(CARD(), "p-5 sm:p-6")}>
-          <SectionHeader
-            eyebrow="Payment methods"
-            title="Payment method split"
-            text="How customers paid during this period."
-          />
-
-          {!methodSplit.length ? (
-            <EmptyState title="No payment method data" text="Payments will appear here after sales are recorded." />
-          ) : (
-            <div className="space-y-3">
-              {methodSplit.map((item) => (
-                <MethodCard key={item.method || item.label} item={item} total={moneyIn} />
-              ))}
+        <article className="svx-dashboard-card svx-money-report-panel">
+          <div className="svx-report-section-head">
+            <div>
+              <p className="svx-report-eyebrow">Money movement</p>
+              <h2>Money in and money out</h2>
             </div>
-          )}
-        </section>
-      </section>
+          </div>
 
-      <section className="grid gap-5 lg:grid-cols-2">
-        <section className={cn(CARD(), "p-5 sm:p-6")}>
-          <SectionHeader
-            eyebrow="Money in"
-            title="Where money came from"
-            text="Main sources of money received."
-          />
+          <div className="svx-report-money-list">
+            {moneyInBreakdown.map((item) => (
+              <MovementRow
+                key={item.key}
+                label={item.label}
+                amount={item.amount}
+                count={item.count}
+                tone="in"
+              />
+            ))}
 
-          {!moneyInBreakdown.length ? (
-            <EmptyState title="No money-in records" text="Money received will appear here." />
-          ) : (
-            <div className="space-y-3">
-              {moneyInBreakdown.map((item) => (
-                <ProgressRow
-                  key={item.key || item.label}
-                  label={item.label}
-                  amount={item.amount}
-                  total={moneyIn}
-                  count={item.count}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className={cn(CARD(), "p-5 sm:p-6")}>
-          <SectionHeader
-            eyebrow="Money out"
-            title="Where money went"
-            text="Main uses of money during this period."
-          />
-
-          {!moneyOutBreakdown.length ? (
-            <EmptyState title="No money-out records" text="Approved expenses and drawer money out will appear here." />
-          ) : (
-            <div className="space-y-3">
-              {moneyOutBreakdown.map((item) => (
-                <ProgressRow
-                  key={item.key || item.label}
-                  label={item.label}
-                  amount={item.amount}
-                  total={moneyOut}
-                  count={item.count}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      </section>
-
-      <section className={cn(CARD(), "p-5 sm:p-6 lg:p-7")}>
-        <SectionHeader
-          eyebrow="Drawer movement"
-          title="Cash drawer movement categories"
-          text="Money added to or removed from the cash drawer."
-          action={<Badge tone="info">{drawerReasons.length} categories</Badge>}
-        />
-
-        {!drawerReasons.length ? (
-          <EmptyState
-            title="No drawer movement"
-            text="Drawer deposits, withdrawals, float money, and cash expenses will appear here."
-          />
-        ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
-            {drawerReasons.map((item) => (
-              <DrawerReasonRow key={item.reason || item.label} item={item} />
+            {moneyOutBreakdown.map((item) => (
+              <MovementRow
+                key={item.key}
+                label={item.label}
+                amount={item.amount}
+                count={item.count}
+                tone="out"
+              />
             ))}
           </div>
-        )}
+        </article>
       </section>
 
-      <section className={cn(CARD(), "p-5 sm:p-6")}>
-        <SectionHeader
-          eyebrow="Data check"
-          title="Report coverage"
-          text="This shows what the report was able to read for this period."
-        />
+      <section className="svx-dashboard-card svx-money-report-panel">
+        <div className="svx-report-section-head">
+          <div>
+            <p className="svx-report-eyebrow">Cash drawer</p>
+            <h2>Cash drawer movement</h2>
+          </div>
+        </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <DetailTile
-            label="Payment source"
-            value={dataQuality?.paymentMethodSplitSource || "Sale payments"}
-          />
-          <DetailTile
-            label="Drawer source"
-            value={dataQuality?.drawerSource || "Cash drawer records"}
-          />
-          <DetailTile
-            label="Cash sessions"
+        <div className="svx-report-money-grid">
+          <MoneyTile label="Opening cash" value={money(cashFlow.openingCash)} helper="Cash when drawer started" />
+          <MoneyTile label="Cash expected" value={money(cashFlow.expectedClosingCash)} helper="What the drawer should have" />
+          <MoneyTile label="Cash counted" value={money(cashFlow.countedCash)} helper="What was counted when closed" />
+          <MoneyTile
+            label="Cash difference"
             value={
-              dataQuality?.cashSessionsBranchFiltered
-                ? "Branch filtered"
-                : "Store-wide or not available"
+              cashFlow.cashDifference === null || cashFlow.cashDifference === undefined
+                ? "Not counted yet"
+                : money(Math.abs(cleanNumber(cashFlow.cashDifference)))
             }
-          />
-          <DetailTile
-            label="Cash movements"
-            value={
-              dataQuality?.cashMovementsBranchFiltered
-                ? "Branch filtered"
-                : "Store-wide or not available"
+            helper={
+              cleanNumber(cashFlow.cashDifference) === 0
+                ? "No difference"
+                : "Check drawer closing"
             }
           />
         </div>
+
+        {drawerReasons.length > 0 ? (
+          <div className="svx-report-money-list svx-report-drawer-list">
+            {drawerReasons.map((item) => (
+              <MovementRow
+                key={item.reason}
+                label={item.reason || "Cash movement"}
+                amount={Math.max(cleanNumber(item.moneyIn), cleanNumber(item.moneyOut))}
+                count={item.count}
+                tone={cleanNumber(item.moneyOut) > 0 ? "out" : "in"}
+              />
+            ))}
+          </div>
+        ) : null}
       </section>
-    </div>
+    </main>
   );
 }
