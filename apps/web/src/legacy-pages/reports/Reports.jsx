@@ -31,13 +31,13 @@ const OWNER_REPORTS = [
   {
     title: "Sales and profit",
     text: "Sales made, expenses paid, and estimated profit.",
-    to: "/app/reports/income-statement",
+    to: "/app/reports/profit-table",
     tag: "Profit",
   },
   {
     title: "Products report",
-    text: "Best sellers, slow stock, low stock, and stock movement.",
-    to: "/app/reports/profit-table",
+    text: "Best sellers, low stock, slow stock, and stock movement.",
+    to: "/app/reports",
     tag: "Stock",
   },
   {
