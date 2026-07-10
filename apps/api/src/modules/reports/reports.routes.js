@@ -17,6 +17,7 @@ const {
   dailyClosePdf,
   periodPdf,
   insights,
+  productsReport,
   financialSummary,
   incomeStatement,
   cashFlowSummary,
@@ -38,6 +39,7 @@ router.get("/dashboard", dashboard);
 router.get("/daily-close", dailyClose);
 router.get("/top-sellers", topSellers);
 router.get("/insights", insights);
+router.get("/products", productsReport);
 
 router.get("/financial-summary", financialSummary);
 router.get("/income-statement", incomeStatement);

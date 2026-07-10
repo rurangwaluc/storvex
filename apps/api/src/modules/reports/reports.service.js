@@ -962,6 +962,127 @@ async function buildInsights({ user, query }) {
   };
 }
 
+async function getSlowProducts(branchScope, start, end, limit, slowSalesThreshold = 0) {
+  const tenantId = branchScope.tenantId;
+  const branchId = branchScope.mode === "SINGLE_BRANCH" ? branchScope.branchId : null;
+
+  const rows =
+    branchId != null
+      ? await prisma.$queryRaw`
+        SELECT
+          p.id as "productId",
+          p.name as "name",
+          COALESCE(bi."qtyOnHand", 0)::int as "stockQty",
+          COALESCE(SUM(si.quantity), 0)::int as "soldQty",
+          COALESCE(SUM(si.quantity * si.price), 0)::float8 as "revenue"
+        FROM "Product" p
+        LEFT JOIN "BranchInventory" bi
+          ON bi."productId" = p.id
+         AND bi."tenantId" = ${tenantId}
+         AND bi."branchId" = ${branchId}
+        LEFT JOIN "SaleItem" si
+          ON si."productId" = p.id
+        LEFT JOIN "Sale" s
+          ON s.id = si."saleId"
+         AND s."tenantId" = ${tenantId}
+         AND s."branchId" = ${branchId}
+         AND s."createdAt" >= ${start}
+         AND s."createdAt" <= ${end}
+         AND COALESCE(s."isDraft", false) = false
+         AND COALESCE(s."isCancelled", false) = false
+        WHERE p."tenantId" = ${tenantId}
+          AND p."isActive" = true
+          AND COALESCE(bi."qtyOnHand", 0) > 0
+        GROUP BY p.id, p.name, bi."qtyOnHand"
+        HAVING COALESCE(SUM(si.quantity), 0) <= ${slowSalesThreshold}
+        ORDER BY "soldQty" ASC, "stockQty" DESC, p.name ASC
+        LIMIT ${limit};
+      `
+      : await prisma.$queryRaw`
+        SELECT
+          p.id as "productId",
+          p.name as "name",
+          p."stockQty"::int as "stockQty",
+          COALESCE(SUM(si.quantity), 0)::int as "soldQty",
+          COALESCE(SUM(si.quantity * si.price), 0)::float8 as "revenue"
+        FROM "Product" p
+        LEFT JOIN "SaleItem" si
+          ON si."productId" = p.id
+        LEFT JOIN "Sale" s
+          ON s.id = si."saleId"
+         AND s."tenantId" = ${tenantId}
+         AND s."createdAt" >= ${start}
+         AND s."createdAt" <= ${end}
+         AND COALESCE(s."isDraft", false) = false
+         AND COALESCE(s."isCancelled", false) = false
+        WHERE p."tenantId" = ${tenantId}
+          AND p."isActive" = true
+          AND p."stockQty" > 0
+        GROUP BY p.id, p.name, p."stockQty"
+        HAVING COALESCE(SUM(si.quantity), 0) <= ${slowSalesThreshold}
+        ORDER BY "soldQty" ASC, p."stockQty" DESC, p.name ASC
+        LIMIT ${limit};
+      `;
+
+  return (rows || []).map((row) => ({
+    productId: row.productId,
+    name: row.name,
+    stockQty: Number(row.stockQty || 0),
+    soldQty: Number(row.soldQty || 0),
+    revenue: money(row.revenue),
+  }));
+}
+
+async function buildProductsReport({ user, query }) {
+  const branchScope = await resolveReportBranchScope({ user, query });
+  const { start, end } = parseRange(query);
+
+  const limit = getLimit(query, 5, 20);
+  const stockThreshold = getThreshold(query, 5, 10000);
+  const slowSalesThreshold = Math.max(0, Number(query?.slowSalesThreshold || 0));
+
+  const [topSellersPayload, reorderItems, slowProducts] = await Promise.all([
+    buildTopSellers({ user, query: { ...query, limit } }),
+    getReorderSuggestions(branchScope, start, end, limit, stockThreshold),
+    getSlowProducts(branchScope, start, end, limit, slowSalesThreshold),
+  ]);
+
+  const topSellers = Array.isArray(topSellersPayload?.topSellers)
+    ? topSellersPayload.topSellers
+    : [];
+
+  const totalUnitsSold = topSellers.reduce(
+    (sum, item) => sum + Number(item.soldQty || 0),
+    0
+  );
+
+  const totalRevenueFromShownProducts = topSellers.reduce(
+    (sum, item) => sum + money(item.revenue),
+    0
+  );
+
+  return {
+    branchScope,
+    range: { from: start.toISOString(), to: end.toISOString() },
+    limits: {
+      shownPerList: limit,
+      stockThreshold,
+      slowSalesThreshold,
+    },
+    summary: {
+      sellingProductsCount: topSellers.length,
+      unitsSold: totalUnitsSold,
+      productSales: totalRevenueFromShownProducts,
+      needRestockCount: reorderItems.length,
+      slowProductsCount: slowProducts.length,
+    },
+    bestSellers: topSellers,
+    needRestock: reorderItems,
+    slowProducts,
+  };
+}
+
+
 async function buildFinancialSummary({ user, query }) {
   const branchScope = await resolveReportBranchScope({ user, query });
   const { start, end } = parseRange(query);
@@ -1496,6 +1617,7 @@ module.exports = {
   buildTopSellers,
   buildDailyClose,
   buildInsights,
+  buildProductsReport,
   buildFinancialSummary,
   buildIncomeStatement,
   buildCashFlowSummary,

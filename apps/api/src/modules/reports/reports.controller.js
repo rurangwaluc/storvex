@@ -13,6 +13,7 @@ const {
   buildTopSellers,
   buildDailyClose,
   buildInsights,
+  buildProductsReport,
   buildFinancialSummary,
   buildIncomeStatement,
   buildCashFlowSummary,
@@ -223,6 +224,23 @@ async function insights(req, res) {
   } catch (err) {
     console.error("insights error:", err);
     return sendReportError(res, err, "Failed to load insights");
+  }
+}
+
+// ---------------------------------
+// GET /reports/products?from&to&limit&threshold
+// ---------------------------------
+async function productsReport(req, res) {
+  try {
+    const payload = await buildProductsReport({
+      user: req.user,
+      query: req.query,
+    });
+
+    return res.json(payload);
+  } catch (err) {
+    console.error("productsReport error:", err);
+    return sendReportError(res, err, "Failed to load products report");
   }
 }
 
@@ -950,6 +968,7 @@ module.exports = {
   dailyClose,
   topSellers,
   insights,
+  productsReport,
   financialSummary,
   incomeStatement,
   cashFlowSummary,

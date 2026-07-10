@@ -53,6 +53,10 @@ export function getInsights(range, limit = 10, threshold = 5) {
   return apiFetch(`/reports/insights${qsWithExtras(range, { limit, threshold })}`);
 }
 
+export function getProductsReport(range, limit = 5, threshold = 5) {
+  return apiFetch(`/reports/products${qsWithExtras(range, { limit, threshold })}`);
+}
+
 export function getSalesSummary(range) {
   return apiFetch(`/reports/sales-summary${qsFromRange(range)}`);
 }
