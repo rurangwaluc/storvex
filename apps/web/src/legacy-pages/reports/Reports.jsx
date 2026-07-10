@@ -37,7 +37,7 @@ const OWNER_REPORTS = [
   {
     title: "Products report",
     text: "Best sellers, low stock, slow stock, and stock movement.",
-    to: "/app/reports",
+    to: "/app/reports/products",
     tag: "Stock",
   },
   {
