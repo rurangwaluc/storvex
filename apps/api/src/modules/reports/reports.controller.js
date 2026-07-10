@@ -14,6 +14,7 @@ const {
   buildDailyClose,
   buildInsights,
   buildProductsReport,
+  buildOwnerChecksReport,
   buildFinancialSummary,
   buildIncomeStatement,
   buildCashFlowSummary,
@@ -247,6 +248,23 @@ async function productsReport(req, res) {
 // ---------------------------------
 // GET /reports/financial-summary
 // ---------------------------------
+// ---------------------------------
+// GET /reports/owner-checks
+// ---------------------------------
+async function ownerChecksReport(req, res) {
+  try {
+    const payload = await buildOwnerChecksReport({
+      user: req.user,
+      query: req.query,
+    });
+
+    return res.json(payload);
+  } catch (err) {
+    console.error("ownerChecksReport error:", err);
+    return sendReportError(res, err, "Failed to load owner checks");
+  }
+}
+
 async function financialSummary(req, res) {
   try {
     const payload = await buildFinancialSummary({
@@ -969,6 +987,7 @@ module.exports = {
   topSellers,
   insights,
   productsReport,
+  ownerChecksReport,
   financialSummary,
   incomeStatement,
   cashFlowSummary,

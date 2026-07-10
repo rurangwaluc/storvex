@@ -37,6 +37,7 @@ import IncomeStatement from "./legacy-pages/reports/IncomeStatement";
 import TrialBalance from "./legacy-pages/reports/TrialBalance";
 import ProfitTable from "./legacy-pages/reports/ProfitTable";
 import ProductsReport from "./legacy-pages/reports/ProductsReport";
+import OwnerChecksReport from "./legacy-pages/reports/OwnerChecksReport";
 
 import CustomerCreate from "./legacy-pages/customers/CustomerCreate";
 import CustomerEdit from "./legacy-pages/customers/CustomerEdit";
@@ -429,6 +430,7 @@ export default function App() {
               <Route path="reports/trial-balance" element={<TrialBalance />} />
               <Route path="reports/profit-table" element={<ProfitTable />} />
               <Route path="reports/products" element={<ProductsReport />} />
+              <Route path="reports/owner-checks" element={<OwnerChecksReport />} />
             </Route>
 
             <Route

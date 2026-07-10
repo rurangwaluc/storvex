@@ -1083,6 +1083,17 @@ async function buildProductsReport({ user, query }) {
 }
 
 
+async function buildOwnerChecksReport({ user, query }) {
+  const branchScope = await resolveReportBranchScope({ user, query });
+  const ownerChecks = await buildCurrentOwnerChecks(branchScope);
+
+  return {
+    branchScope,
+    checkedAt: new Date().toISOString(),
+    ownerChecks,
+  };
+}
+
 async function buildFinancialSummary({ user, query }) {
   const branchScope = await resolveReportBranchScope({ user, query });
   const { start, end } = parseRange(query);
@@ -1618,6 +1629,7 @@ module.exports = {
   buildDailyClose,
   buildInsights,
   buildProductsReport,
+  buildOwnerChecksReport,
   buildFinancialSummary,
   buildIncomeStatement,
   buildCashFlowSummary,

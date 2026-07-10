@@ -18,6 +18,7 @@ const {
   periodPdf,
   insights,
   productsReport,
+  ownerChecksReport,
   financialSummary,
   incomeStatement,
   cashFlowSummary,
@@ -40,6 +41,7 @@ router.get("/daily-close", dailyClose);
 router.get("/top-sellers", topSellers);
 router.get("/insights", insights);
 router.get("/products", productsReport);
+router.get("/owner-checks", ownerChecksReport);
 
 router.get("/financial-summary", financialSummary);
 router.get("/income-statement", incomeStatement);

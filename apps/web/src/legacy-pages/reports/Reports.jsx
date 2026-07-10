@@ -42,8 +42,8 @@ const OWNER_REPORTS = [
   },
   {
     title: "Owner checks",
-    text: "Check business records, sales, expenses, and control gaps.",
-    to: "/app/reports/trial-balance",
+    text: "Customer money, supplier money, overdue money, and stock issues.",
+    to: "/app/reports/owner-checks",
     tag: "Control",
   },
 ];
