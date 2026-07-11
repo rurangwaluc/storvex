@@ -296,6 +296,20 @@ async function getTenantDashboard(req, res) {
           category: true,
           subcategory: true,
           subcategoryOther: true,
+          images: {
+            orderBy: [
+              { isPrimary: "desc" },
+              { sortOrder: "asc" },
+              { createdAt: "asc" },
+            ],
+            take: 1,
+            select: {
+              id: true,
+              url: true,
+              altText: true,
+              isPrimary: true,
+            },
+          },
         },
       }),
 
