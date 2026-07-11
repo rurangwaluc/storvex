@@ -1101,9 +1101,12 @@
 }
 
 @media (max-width: 720px) {
-  .svx-product-watch-list .svx-product-row:nth-child(n + 4),
   .svx-recent-panel .svx-row-stack .svx-activity-row:nth-child(n + 4),
   .svx-action-center-grid .svx-action-center-card:nth-child(n + 4) {
+    display: none;
+  }
+
+  .svx-product-watch-list .svx-product-row:nth-child(n + 6) {
     display: none;
   }
 
