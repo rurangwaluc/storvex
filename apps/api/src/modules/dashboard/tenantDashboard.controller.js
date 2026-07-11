@@ -181,6 +181,8 @@ async function getTenantDashboard(req, res) {
     const todayStart = startOfDay(now);
     const todayEnd = endOfDay(now);
     const monthStart = startOfMonth(now);
+    const weekStart = startOfDay(now);
+    weekStart.setDate(weekStart.getDate() - 6);
 
     const thresholdRaw = Number(process.env.LOW_STOCK_THRESHOLD || 5);
     const threshold =
@@ -200,6 +202,7 @@ async function getTenantDashboard(req, res) {
       pendingDeals,
       recentAudit,
       paymentRows,
+      weeklySalesRows,
       ownerFinancialToday,
       ownerCashFlowToday,
       ownerChecksPayload,
@@ -331,6 +334,18 @@ async function getTenantDashboard(req, res) {
         _sum: { amount: true },
       }),
 
+      prisma.sale.findMany({
+        where: {
+          tenantId,
+          createdAt: { gte: weekStart, lte: todayEnd },
+        },
+        select: {
+          createdAt: true,
+          total: true,
+        },
+        orderBy: { createdAt: "asc" },
+      }),
+
       buildFinancialSummary({
         user: req.user,
         query: {
@@ -352,6 +367,32 @@ async function getTenantDashboard(req, res) {
         query: {},
       }),
     ]);
+
+    const weeklySalesMap = new Map();
+
+    for (let i = 0; i < 7; i += 1) {
+      const day = startOfDay(weekStart);
+      day.setDate(weekStart.getDate() + i);
+
+      weeklySalesMap.set(localDateISO(day), {
+        date: localDateISO(day),
+        label: day.toLocaleDateString("en-US", { weekday: "short" }),
+        amount: 0,
+        salesCount: 0,
+      });
+    }
+
+    for (const sale of weeklySalesRows || []) {
+      const key = localDateISO(sale.createdAt);
+      const current = weeklySalesMap.get(key);
+
+      if (current) {
+        current.amount += money(sale.total);
+        current.salesCount += 1;
+      }
+    }
+
+    const weeklySales = Array.from(weeklySalesMap.values());
 
     const paymentSummary = emptyPaymentSummary();
 
@@ -428,6 +469,7 @@ async function getTenantDashboard(req, res) {
 
       todaySales: money(todaySalesAgg?._sum?.total),
       monthlyRevenue: money(monthSalesAgg?._sum?.total),
+      weeklySales,
 
       ownerToday: {
         sales: money(todayFinancial.revenue ?? todaySalesAgg?._sum?.total),

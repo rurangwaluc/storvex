@@ -185,22 +185,37 @@ function pickPaymentAmount(source, keys) {
   return null;
 }
 
-function RevenueChart({ monthlyRevenue = 0 }) {
-  const seed = Math.max(1, Math.round(Number(monthlyRevenue || 0) / 100000));
-  const bars = [62, 52, 68, 46, 38, 74, 58].map((height, index) => {
-    const adjusted = Math.max(28, Math.min(88, height + ((seed + index) % 9) - 4));
+function RevenueChart({ weeklySales = [] }) {
+  const items = Array.isArray(weeklySales) && weeklySales.length > 0
+    ? weeklySales.slice(-7)
+    : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
+        label: day,
+        amount: 0,
+        salesCount: 0,
+      }));
+
+  const maxAmount = Math.max(
+    1,
+    ...items.map((item) => Number(item?.amount || item?.total || item?.revenue || 0)),
+  );
+
+  const bars = items.map((item) => {
+    const amount = Number(item?.amount || item?.total || item?.revenue || 0);
+    const height = amount > 0 ? Math.max(18, Math.min(90, (amount / maxAmount) * 90)) : 8;
 
     return {
-      day: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][index],
-      height: adjusted,
+      day: item?.label || item?.day || "—",
+      amount,
+      salesCount: Number(item?.salesCount || 0),
+      height,
     };
   });
 
   return (
-    <div className="svx-sales-chart is-safe-bars" role="img" aria-label="Sales overview">
+    <div className="svx-sales-chart is-safe-bars" role="img" aria-label="Sales overview for the last seven days">
       <div className="svx-chart-bars">
         {bars.map((item) => (
-          <div className="svx-chart-bar-group" key={item.day}>
+          <div className="svx-chart-bar-group" key={item.day} title={`${item.day}: ${money(item.amount)} / ${item.salesCount} sale${item.salesCount === 1 ? "" : "s"}`}>
             <span className="svx-chart-bar" style={{ height: `${item.height}%` }} />
             <small>{item.day}</small>
           </div>
@@ -612,6 +627,15 @@ export default function Dashboard() {
     })
     .slice(0, 5);
   const activity = safeList(dashboard?.recentAudit).slice(0, 4);
+  const weeklySales = safeList(dashboard?.weeklySales);
+  const weeklySalesTotal = weeklySales.reduce(
+    (sum, item) => sum + Number(item?.amount || item?.total || item?.revenue || 0),
+    0,
+  );
+  const weeklySalesCount = weeklySales.reduce(
+    (sum, item) => sum + Number(item?.salesCount || 0),
+    0,
+  );
 
   const todaySales = Number(dashboard?.todaySales || 0);
   const monthlyRevenue = Number(dashboard?.monthlyRevenue || 0);
@@ -915,20 +939,20 @@ export default function Dashboard() {
 
       <section className="svx-owner-main-grid">
         <section className="svx-dashboard-card svx-sales-panel svx-reveal-card">
-          <SectionTitle title="Sales and payments" action={<button type="button" className="svx-period-button">This Week</button>} />
+          <SectionTitle title="Sales last 7 days" action={<button type="button" className="svx-period-button">Last 7 days</button>} />
 
           <div className="svx-sales-overview-value">
-            <strong>{money(ownerTodaySales)}</strong>
-            <span className={cx("svx-sales-change", ownerTodaySales > 0 && "is-positive")}>
-              {ownerTodaySales > 0 ? "Recorded today" : "No sales yet today"}
+            <strong>{money(weeklySalesTotal)}</strong>
+            <span className={cx("svx-sales-change", weeklySalesTotal > 0 && "is-positive")}>
+              {weeklySalesTotal > 0 ? `${weeklySalesCount} sale${weeklySalesCount === 1 ? "" : "s"} in 7 days` : "No sales in 7 days"}
             </span>
             <p>
-              Received {money(ownerTodayMoneyReceived)} today
+              Today: {money(ownerTodaySales)} / Received today: {money(ownerTodayMoneyReceived)}
               {pendingDeals > 0 ? ` / ${pendingDeals} pending sale${pendingDeals === 1 ? "" : "s"}` : ""}
             </p>
           </div>
 
-          <RevenueChart monthlyRevenue={monthlyRevenue} />
+          <RevenueChart weeklySales={weeklySales} />
         </section>
 
         <section className="svx-dashboard-card svx-products-panel svx-reveal-card">
