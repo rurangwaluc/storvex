@@ -1,8 +1,34 @@
 const prisma = require("../../config/database");
 
+const {
+  buildFinancialSummary,
+  buildCashFlowSummary,
+  buildOwnerChecksReport,
+} = require("../reports/reports.service");
+
 function money(n) {
   const x = Number(n);
   return Number.isFinite(x) ? x : 0;
+}
+
+function normalizePaymentMethod(value) {
+  const method = String(value || "").trim().toUpperCase();
+
+  if (method === "CASH") return "cash";
+  if (method === "MOMO" || method === "MOBILE_MONEY") return "momo";
+  if (method === "BANK" || method === "BANK_TRANSFER") return "bank";
+
+  return "other";
+}
+
+function emptyPaymentSummary() {
+  return {
+    total: 0,
+    cash: 0,
+    momo: 0,
+    bank: 0,
+    other: 0,
+  };
 }
 
 function startOfDay(d) {
@@ -22,6 +48,16 @@ function startOfMonth(d) {
   x.setDate(1);
   x.setHours(0, 0, 0, 0);
   return x;
+}
+
+function localDateISO(d) {
+  const x = new Date(d);
+
+  return [
+    x.getFullYear(),
+    String(x.getMonth() + 1).padStart(2, "0"),
+    String(x.getDate()).padStart(2, "0"),
+  ].join("-");
 }
 
 function safeDateLabel(value, prefix = "Ends") {
@@ -163,6 +199,10 @@ async function getTenantDashboard(req, res) {
       activeRepairs,
       pendingDeals,
       recentAudit,
+      paymentRows,
+      ownerFinancialToday,
+      ownerCashFlowToday,
+      ownerChecksPayload,
     ] = await Promise.all([
       prisma.tenant.findUnique({
         where: { id: tenantId },
@@ -281,7 +321,94 @@ async function getTenantDashboard(req, res) {
           createdAt: true,
         },
       }),
+
+      prisma.salePayment.groupBy({
+        by: ["method"],
+        where: {
+          tenantId,
+          createdAt: { gte: todayStart, lte: todayEnd },
+        },
+        _sum: { amount: true },
+      }),
+
+      buildFinancialSummary({
+        user: req.user,
+        query: {
+          from: localDateISO(now),
+          to: localDateISO(now),
+        },
+      }),
+
+      buildCashFlowSummary({
+        user: req.user,
+        query: {
+          from: localDateISO(now),
+          to: localDateISO(now),
+        },
+      }),
+
+      buildOwnerChecksReport({
+        user: req.user,
+        query: {},
+      }),
     ]);
+
+    const paymentSummary = emptyPaymentSummary();
+
+    for (const row of paymentRows || []) {
+      const key = normalizePaymentMethod(row.method);
+      const amount = money(row?._sum?.amount);
+
+      paymentSummary[key] += amount;
+      paymentSummary.total += amount;
+    }
+
+    const todayFinancial = ownerFinancialToday?.summary || {};
+    const todayCashFlow = ownerCashFlowToday?.cashFlow || {};
+    const ownerChecks = ownerChecksPayload?.ownerChecks || {};
+
+    const customersOweMe = ownerChecks.customersOweMe || { total: 0, count: 0 };
+    const overdueCustomerMoney = ownerChecks.overdueCustomerMoney || { total: 0, count: 0 };
+    const iOweSuppliers = ownerChecks.iOweSuppliers || { total: 0, count: 0 };
+    const stockToReview = ownerChecks.stockToReview || { count: 0, products: [] };
+
+    const ownerAttentionCount =
+      Number(customersOweMe.count || 0) +
+      Number(overdueCustomerMoney.count || 0) +
+      Number(iOweSuppliers.count || 0) +
+      Number(stockToReview.count || 0);
+
+    let ownerPriority = {
+      title: "No urgent owner action",
+      text: "Money, stock, and follow-ups look calm right now.",
+      tone: "success",
+    };
+
+    if (money(overdueCustomerMoney.total) > 0) {
+      ownerPriority = {
+        title: "Collect overdue customer money",
+        text: `Customers are overdue by Rwf ${money(overdueCustomerMoney.total).toLocaleString("en-US")}.`,
+        tone: "danger",
+      };
+    } else if (money(customersOweMe.total) > 0) {
+      ownerPriority = {
+        title: "Review customer credit",
+        text: `Customers still owe Rwf ${money(customersOweMe.total).toLocaleString("en-US")}.`,
+        tone: "warning",
+      };
+    } else if (money(iOweSuppliers.total) > 0) {
+      ownerPriority = {
+        title: "Check supplier bills",
+        text: `You owe suppliers Rwf ${money(iOweSuppliers.total).toLocaleString("en-US")}.`,
+        tone: "warning",
+      };
+    } else if (Number(stockToReview.count || 0) > 0) {
+      ownerPriority = {
+        title: "Review low stock",
+        text: `${stockToReview.count} product${stockToReview.count === 1 ? "" : "s"} need owner review.`,
+        tone: "warning",
+      };
+    }
 
     return res.json({
       threshold,
@@ -301,6 +428,27 @@ async function getTenantDashboard(req, res) {
 
       todaySales: money(todaySalesAgg?._sum?.total),
       monthlyRevenue: money(monthSalesAgg?._sum?.total),
+
+      ownerToday: {
+        sales: money(todayFinancial.revenue ?? todaySalesAgg?._sum?.total),
+        moneyReceived: money(todayCashFlow.moneyIn ?? paymentSummary.total),
+        expenses: money(todayFinancial.approvedExpenses),
+        productCost: money(todayFinancial.costOfGoodsSold),
+        profitEstimate: money(todayFinancial.profitEstimate),
+        salesCount: Number(todayFinancial.salesCount || 0),
+      },
+
+      paymentSummary,
+
+      ownerChecks: {
+        customersOweMe,
+        overdueCustomerMoney,
+        iOweSuppliers,
+        stockToReview,
+      },
+
+      ownerPriority,
+      ownerAttentionCount,
 
       productCount,
       lowStockCount,

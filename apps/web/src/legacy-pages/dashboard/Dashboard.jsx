@@ -626,6 +626,20 @@ export default function Dashboard() {
   const listingDrafts = Number(listing?.draftCount || 0);
   const listingMissingImages = Number(listing?.missingImagesCount || 0);
 
+  const ownerToday = dashboard?.ownerToday || {};
+  const ownerChecks = dashboard?.ownerChecks || {};
+  const ownerPriority = dashboard?.ownerPriority || {};
+  const ownerAttentionCount = Number(dashboard?.ownerAttentionCount || 0);
+
+  const ownerTodaySales = Number(ownerToday?.sales ?? todaySales ?? 0);
+  const ownerTodayMoneyReceived = Number(ownerToday?.moneyReceived ?? 0);
+  const ownerTodayProfit = Number(ownerToday?.profitEstimate ?? 0);
+  const ownerTodaySalesCount = Number(ownerToday?.salesCount ?? 0);
+
+  const customersOweMe = ownerChecks?.customersOweMe || { total: 0, count: 0 };
+  const overdueCustomerMoney = ownerChecks?.overdueCustomerMoney || { total: 0, count: 0 };
+  const ownerStockToReview = ownerChecks?.stockToReview || { count: lowStockCount + outOfStockCount, products: [] };
+
   const paymentSummary = dashboard?.paymentSummary || dashboard?.paymentsToday || dashboard?.payments || {};
   const paymentMethods = [
     ["Cash", pickPaymentAmount(paymentSummary, ["cash", "cashAmount", "cashTotal"])],
@@ -637,6 +651,17 @@ export default function Dashboard() {
 
   const focusItems = useMemo(() => {
     const items = [];
+
+    if (ownerPriority?.title && ownerPriority.title !== "No urgent owner action") {
+      items.push({
+        icon: AlertTriangle,
+        tone: ownerPriority.tone === "danger" ? "danger" : ownerPriority.tone === "warning" ? "warning" : "info",
+        title: ownerPriority.title,
+        text: ownerPriority.text || "Needs owner attention.",
+        action: "Open checks",
+        to: "/app/reports/owner-checks",
+      });
+    }
 
     if (lowStockCount > 0 || outOfStockCount > 0) {
       items.push({
@@ -751,6 +776,7 @@ export default function Dashboard() {
     subscription,
     listingPublished,
     missing,
+    ownerPriority,
   ]);
 
   const actionCenterItems = useMemo(() => {
@@ -811,41 +837,42 @@ export default function Dashboard() {
   const metrics = useMemo(
     () => [
       {
-        label: "Today sales",
-        value: money(todaySales),
-        note: todaySales > 0 ? "Money recorded today" : "No sales yet today",
+        label: "Sales today",
+        value: money(ownerTodaySales),
+        note: ownerTodaySalesCount > 0 ? `${ownerTodaySalesCount} completed sale${ownerTodaySalesCount === 1 ? "" : "s"}` : "No sales yet today",
         icon: BarChart3,
-        tone: todaySales > 0 ? "success" : "neutral",
+        tone: ownerTodaySales > 0 ? "success" : "neutral",
       },
       {
-        label: "Payments today",
-        value: money(todaySales),
-        note: "Cash, MoMo, bank, and card",
+        label: "Money received",
+        value: money(ownerTodayMoneyReceived),
+        note: ownerTodayMoneyReceived > 0 ? "Payments received today" : "No payments yet today",
         icon: CreditCard,
-        tone: pendingDeals > 0 ? "warning" : todaySales > 0 ? "success" : "neutral",
+        tone: ownerTodayMoneyReceived > 0 ? "success" : "neutral",
       },
       {
-        label: "Stock attention",
-        value: String(lowStockCount + outOfStockCount),
-        note: lowStockCount + outOfStockCount > 0 ? "Needs owner review" : "Stock looks calm",
-        icon: Boxes,
-        tone: lowStockCount + outOfStockCount > 0 ? "warning" : "success",
+        label: "Profit estimate",
+        value: money(ownerTodayProfit),
+        note: "After costs and expenses",
+        icon: BarChart3,
+        tone: ownerTodayProfit > 0 ? "success" : ownerTodayProfit < 0 ? "danger" : "neutral",
       },
       {
-        label: "Product listing",
-        value: String(listingPublished),
-        note: listingMissingImages > 0 ? `${listingMissingImages} missing images` : "Owner-controlled visibility",
-        icon: ShoppingCart,
-        tone: listingMissingImages > 0 ? "warning" : listingPublished > 0 ? "success" : "neutral",
+        label: "Owner attention",
+        value: String(ownerAttentionCount || Number(ownerStockToReview?.count || 0)),
+        note: ownerPriority?.title || "No urgent owner action",
+        icon: AlertTriangle,
+        tone: ownerPriority?.tone === "danger" ? "danger" : ownerAttentionCount > 0 ? "warning" : "success",
       },
     ],
     [
-      lowStockCount,
-      listingMissingImages,
-      listingPublished,
-      outOfStockCount,
-      pendingDeals,
-      todaySales,
+      ownerAttentionCount,
+      ownerPriority,
+      ownerStockToReview,
+      ownerTodayMoneyReceived,
+      ownerTodayProfit,
+      ownerTodaySales,
+      ownerTodaySalesCount,
     ],
   );
 
@@ -859,7 +886,7 @@ export default function Dashboard() {
         <div className="svx-owner-hero-copy">
           <Badge tone="info">{categoryLabel(businessCategory)}</Badge>
           <h1>{firstName ? `${greeting()}, ${firstName}.` : `${greeting()}.`}</h1>
-          <p>Here is what your store needs you to know today.</p>
+          <p>{ownerPriority?.text || "Here is what your store needs you to know today."}</p>
         </div>
 
         <div className="svx-owner-hero-actions">
@@ -891,11 +918,14 @@ export default function Dashboard() {
           <SectionTitle title="Sales and payments" action={<button type="button" className="svx-period-button">This Week</button>} />
 
           <div className="svx-sales-overview-value">
-            <strong>{money(todaySales)}</strong>
-            <span className={cx("svx-sales-change", todaySales > 0 && "is-positive")}>
-              {todaySales > 0 ? "Recorded today" : "No sales yet today"}
+            <strong>{money(ownerTodaySales)}</strong>
+            <span className={cx("svx-sales-change", ownerTodaySales > 0 && "is-positive")}>
+              {ownerTodaySales > 0 ? "Recorded today" : "No sales yet today"}
             </span>
-            <p>{pendingDeals > 0 ? `${pendingDeals} pending sale${pendingDeals === 1 ? "" : "s"}` : "No pending sales pressure"}</p>
+            <p>
+              Received {money(ownerTodayMoneyReceived)} today
+              {pendingDeals > 0 ? ` / ${pendingDeals} pending sale${pendingDeals === 1 ? "" : "s"}` : ""}
+            </p>
           </div>
 
           <RevenueChart monthlyRevenue={monthlyRevenue} />
