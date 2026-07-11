@@ -2,6 +2,7 @@
 
 const { RepairStatus } = require("@prisma/client");
 const PDFDocument = require("pdfkit");
+const path = require("path");
 
 const {
   parseRange,
@@ -983,6 +984,7 @@ function renderPeriodPdf(doc, dash, topList, meta, tenant, actions) {
 }
 
 
+
 // === PREMIUM OWNER PERIOD PDF START ===
 function ownerPdfDate(value) {
   const d = new Date(value);
@@ -1051,6 +1053,10 @@ function ownerPdfGeneratedAt() {
   });
 }
 
+function ownerPdfReportId(range) {
+  return `SVX-${String(range.fromISO || "").replace(/-/g, "")}-${String(range.toISO || "").replace(/-/g, "")}`;
+}
+
 function ownerPdfFitText(doc, text, x, y, options = {}) {
   const {
     width,
@@ -1080,54 +1086,102 @@ function ownerPdfFitText(doc, text, x, y, options = {}) {
   doc.fillColor("#0f172a");
 }
 
-function ownerPdfHeader(doc, { title, subtitle, businessName, period }) {
+
+function ownerPdfLogoPath() {
+  const fs = require("fs");
+
+  const exactPath = path.resolve(
+    __dirname,
+    "../../../../web/public/storvex_icon_pdf.png"
+  );
+
+  return fs.existsSync(exactPath) ? exactPath : null;
+}
+
+function ownerPdfLogo(doc, x, y, size = 38) {
+  const logoPath = ownerPdfLogoPath();
+
+  if (logoPath) {
+    try {
+      doc.image(logoPath, x, y, {
+        width: size,
+        height: size,
+        fit: [size, size],
+      });
+      doc.fillColor("#0f172a");
+      return;
+    } catch {
+      // Fall back to a simple mark if the image cannot be rendered.
+    }
+  }
+
+  doc
+    .roundedRect(x, y, size, size, 12)
+    .fill("#07111f");
+
+  doc
+    .fillColor("#38bdf8")
+    .font("Helvetica-Bold")
+    .fontSize(15)
+    .text("S", x, y + 10, {
+      width: size,
+      align: "center",
+      lineBreak: false,
+    });
+
+  doc.fillColor("#0f172a");
+}
+
+function ownerPdfHeader(doc, { title, subtitle, businessName, period, reportId }) {
   const margin = doc.page.margins.left;
   const width = doc.page.width - margin * 2;
 
-  doc.rect(0, 0, doc.page.width, 126).fill("#07111f");
+  doc.rect(0, 0, doc.page.width, 136).fill("#07111f");
+
+  ownerPdfLogo(doc, margin, 26, 38);
 
   doc
     .fillColor("#60a5fa")
     .font("Helvetica-Bold")
     .fontSize(8)
-    .text("STORVEX", margin, 28, {
+    .text("STORVEX", margin + 50, 29, {
       characterSpacing: 2,
       lineBreak: false,
     });
 
-  ownerPdfFitText(doc, title, margin, 50, {
-    width: width * 0.58,
-    size: 32,
-    minSize: 22,
+  ownerPdfFitText(doc, title, margin + 50, 47, {
+    width: width * 0.55,
+    size: 30,
+    minSize: 21,
     color: "#ffffff",
   });
 
   doc
     .fillColor("#cbd5e1")
     .font("Helvetica-Bold")
-    .fontSize(9.5)
-    .text(subtitle, margin, 92, {
-      width: width * 0.62,
+    .fontSize(9.2)
+    .text(subtitle, margin + 50, 86, {
+      width: width * 0.55,
       lineBreak: false,
     });
 
-  const cardW = 210;
+  const cardW = 218;
   const cardX = margin + width - cardW;
 
   doc
-    .roundedRect(cardX, 28, cardW, 72, 16)
+    .roundedRect(cardX, 26, cardW, 84, 18)
     .fillAndStroke("#0f2437", "#1d4ed8");
 
   doc
     .fillColor("#93c5fd")
     .font("Helvetica-Bold")
-    .fontSize(6.5)
-    .text("BUSINESS", cardX + 16, 43, {
+    .fontSize(6.2)
+    .text("BUSINESS", cardX + 16, 41, {
       characterSpacing: 1.7,
       lineBreak: false,
     });
 
-  ownerPdfFitText(doc, businessName, cardX + 16, 58, {
+  ownerPdfFitText(doc, businessName, cardX + 16, 55, {
     width: cardW - 32,
     size: 12,
     minSize: 8,
@@ -1137,8 +1191,17 @@ function ownerPdfHeader(doc, { title, subtitle, businessName, period }) {
   doc
     .fillColor("#dbeafe")
     .font("Helvetica-Bold")
-    .fontSize(8.5)
-    .text(period, cardX + 16, 80, {
+    .fontSize(8.2)
+    .text(period, cardX + 16, 76, {
+      width: cardW - 32,
+      lineBreak: false,
+    });
+
+  doc
+    .fillColor("#93c5fd")
+    .font("Helvetica-Bold")
+    .fontSize(6.2)
+    .text(reportId, cardX + 16, 94, {
       width: cardW - 32,
       lineBreak: false,
     });
@@ -1156,33 +1219,33 @@ function ownerPdfAnswer(doc, { x, y, width, title, text, tone = "blue" }) {
 
   const color = colors[tone] || colors.blue;
 
-  doc.roundedRect(x, y, width, 76, 18).fillAndStroke("#f8fafc", "#dbeafe");
-  doc.roundedRect(x, y, 6, 76, 3).fill(color);
+  doc.roundedRect(x, y, width, 78, 20).fillAndStroke("#f8fafc", "#dbeafe");
+  doc.roundedRect(x, y, 7, 78, 3).fill(color);
 
   doc
     .fillColor(color)
     .font("Helvetica-Bold")
-    .fontSize(7)
-    .text("OWNER ANSWER", x + 20, y + 15, {
-      characterSpacing: 1.6,
+    .fontSize(6.8)
+    .text("OWNER ANSWER", x + 22, y + 16, {
+      characterSpacing: 1.7,
       lineBreak: false,
     });
 
   doc
     .fillColor("#0f172a")
     .font("Helvetica-Bold")
-    .fontSize(16)
-    .text(title, x + 20, y + 30, {
-      width: width - 40,
+    .fontSize(16.5)
+    .text(title, x + 22, y + 31, {
+      width: width - 44,
       lineBreak: false,
     });
 
   doc
     .fillColor("#334155")
     .font("Helvetica-Bold")
-    .fontSize(10.2)
-    .text(text, x + 20, y + 53, {
-      width: width - 40,
+    .fontSize(10.4)
+    .text(text, x + 22, y + 55, {
+      width: width - 44,
       lineGap: 1,
     });
 
@@ -1199,8 +1262,11 @@ function ownerPdfMetric(doc, { x, y, width, height, label, value, helper, tone =
 
   const color = colors[tone] || colors.blue;
 
-  doc.roundedRect(x, y, width, height, 16).fillAndStroke("#ffffff", "#e2e8f0");
-  doc.circle(x + 18, y + 18, 4).fill(color);
+  doc.roundedRect(x, y, width, height, 18).fillAndStroke("#ffffff", "#e2e8f0");
+
+  doc
+    .roundedRect(x + 14, y + 14, 9, 9, 4)
+    .fill(color);
 
   doc
     .fillColor("#64748b")
@@ -1254,16 +1320,16 @@ function ownerPdfSection(doc, { x, y, eyebrow, title }) {
 }
 
 function ownerPdfRow(doc, { x, y, width, rank, title, meta, value }) {
-  doc.roundedRect(x, y, width, 43, 13).fillAndStroke("#ffffff", "#e2e8f0");
+  doc.roundedRect(x, y, width, 44, 14).fillAndStroke("#ffffff", "#e2e8f0");
 
-  doc.roundedRect(x + 12, y + 10, 23, 23, 8).fill("#eff6ff");
+  doc.roundedRect(x + 12, y + 10, 24, 24, 9).fill("#eff6ff");
 
   doc
     .fillColor("#2563eb")
     .font("Helvetica-Bold")
     .fontSize(8)
-    .text(String(rank), x + 12, y + 17.5, {
-      width: 23,
+    .text(String(rank), x + 12, y + 18, {
+      width: 24,
       align: "center",
       lineBreak: false,
     });
@@ -1272,8 +1338,8 @@ function ownerPdfRow(doc, { x, y, width, rank, title, meta, value }) {
     .fillColor("#0f172a")
     .font("Helvetica-Bold")
     .fontSize(9.8)
-    .text(title, x + 45, y + 10, {
-      width: width - 45 - 105,
+    .text(title, x + 46, y + 10, {
+      width: width - 46 - 108,
       lineBreak: false,
     });
 
@@ -1281,13 +1347,13 @@ function ownerPdfRow(doc, { x, y, width, rank, title, meta, value }) {
     .fillColor("#64748b")
     .font("Helvetica-Bold")
     .fontSize(8)
-    .text(meta, x + 45, y + 26, {
-      width: width - 45 - 105,
+    .text(meta, x + 46, y + 27, {
+      width: width - 46 - 108,
       lineBreak: false,
     });
 
-  ownerPdfFitText(doc, value, x + width - 100, y + 16, {
-    width: 86,
+  ownerPdfFitText(doc, value, x + width - 102, y + 17, {
+    width: 88,
     size: 10.5,
     minSize: 7,
     align: "right",
@@ -1295,7 +1361,7 @@ function ownerPdfRow(doc, { x, y, width, rank, title, meta, value }) {
 
   doc.fillColor("#0f172a");
 
-  return y + 51;
+  return y + 52;
 }
 
 function ownerPdfMainAnswer({ financial, ownerChecks }) {
@@ -1304,10 +1370,10 @@ function ownerPdfMainAnswer({ financial, ownerChecks }) {
   const overdue = ownerPdfAmount(ownerChecks?.ownerChecks?.overdueCustomerMoney);
 
   if (overdue > 0) {
-    return `Sales: ${ownerPdfMoney(revenue)}. Profit estimate: ${ownerPdfMoney(profit)}. Collect overdue: ${ownerPdfMoney(overdue)}.`;
+    return `Sales: ${ownerPdfMoney(revenue)}. Profit: ${ownerPdfMoney(profit)}. Collect overdue: ${ownerPdfMoney(overdue)}.`;
   }
 
-  return `Sales: ${ownerPdfMoney(revenue)}. Profit estimate: ${ownerPdfMoney(profit)}. No overdue customer money found.`;
+  return `Sales: ${ownerPdfMoney(revenue)}. Profit: ${ownerPdfMoney(profit)}. No overdue customer money found.`;
 }
 
 function ownerPdfActions({ products, ownerChecks }) {
@@ -1369,6 +1435,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
   const businessName = ownerPdfText(tenant?.name || tenant?.displayName, "Business");
   const period = range.fromISO === range.toISO ? range.fromISO : `${range.fromISO} to ${range.toISO}`;
   const generatedAt = ownerPdfGeneratedAt();
+  const reportId = ownerPdfReportId(range);
 
   const margin = doc.page.margins.left;
   const pageW = doc.page.width - margin * 2;
@@ -1391,9 +1458,10 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     subtitle: `Generated ${generatedAt}`,
     businessName,
     period,
+    reportId,
   });
 
-  let y = 150;
+  let y = 154;
 
   ownerPdfAnswer(doc, {
     x: margin,
@@ -1404,7 +1472,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     tone: ownerPdfAmount(checks.overdueCustomerMoney) > 0 ? "red" : "green",
   });
 
-  y += 100;
+  y += 102;
 
   const gap = 14;
   const metricW = (pageW - gap * 3) / 4;
@@ -1413,7 +1481,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     x: margin,
     y,
     width: metricW,
-    height: 82,
+    height: 84,
     label: "Sales made",
     value: ownerPdfMoney(revenue),
     helper: ownerPdfCountLabel(salesCount, "completed sale", "completed sales"),
@@ -1424,7 +1492,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     x: margin + metricW + gap,
     y,
     width: metricW,
-    height: 82,
+    height: 84,
     label: "Money received",
     value: ownerPdfMoney(moneyReceived),
     helper: "Payments received",
@@ -1435,7 +1503,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     x: margin + (metricW + gap) * 2,
     y,
     width: metricW,
-    height: 82,
+    height: 84,
     label: "Expenses",
     value: ownerPdfMoney(expenses),
     helper: "Approved expenses",
@@ -1446,27 +1514,27 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     x: margin + (metricW + gap) * 3,
     y,
     width: metricW,
-    height: 82,
+    height: 84,
     label: "Profit estimate",
     value: ownerPdfMoney(profit),
     helper: "After costs",
     tone: profit >= 0 ? "green" : "red",
   });
 
-  y += 112;
+  y += 116;
 
-  doc.roundedRect(margin, y, pageW, 54, 16).fillAndStroke("#f8fafc", "#e2e8f0");
+  doc.roundedRect(margin, y, pageW, 58, 18).fillAndStroke("#f8fafc", "#e2e8f0");
 
   doc
     .fillColor("#64748b")
     .font("Helvetica-Bold")
-    .fontSize(7)
-    .text("PRODUCT COST", margin + 18, y + 12, {
+    .fontSize(6.8)
+    .text("PRODUCT COST", margin + 18, y + 13, {
       characterSpacing: 1.2,
       lineBreak: false,
     });
 
-  ownerPdfFitText(doc, ownerPdfMoney(productCost), margin + 18, y + 28, {
+  ownerPdfFitText(doc, ownerPdfMoney(productCost), margin + 18, y + 30, {
     width: 150,
     size: 13,
     minSize: 8,
@@ -1476,7 +1544,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     .fillColor("#64748b")
     .font("Helvetica-Bold")
     .fontSize(8.5)
-    .text("Used to estimate profit.", margin + 184, y + 18, {
+    .text("Used only to estimate profit.", margin + 184, y + 18, {
       width: pageW - 202,
       lineBreak: false,
     });
@@ -1485,12 +1553,12 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     .fillColor("#94a3b8")
     .font("Helvetica-Bold")
     .fontSize(8)
-    .text("This is not a cash payment by itself.", margin + 184, y + 33, {
+    .text("This is not a cash payment by itself.", margin + 184, y + 35, {
       width: pageW - 202,
       lineBreak: false,
     });
 
-  y += 84;
+  y += 88;
 
   const colGap = 20;
   const colW = (pageW - colGap) / 2;
@@ -1556,9 +1624,10 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     subtitle: `Generated ${generatedAt}`,
     businessName,
     period,
+    reportId,
   });
 
-  y = 150;
+  y = 154;
 
   const customersOwe = ownerPdfAmount(checks.customersOweMe);
   const customersOweCount = ownerPdfCount(checks.customersOweMe);
@@ -1580,13 +1649,13 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     tone: overdue > 0 ? "red" : "green",
   });
 
-  y += 100;
+  y += 102;
 
   ownerPdfMetric(doc, {
     x: margin,
     y,
     width: metricW,
-    height: 82,
+    height: 84,
     label: "Customer credit",
     value: ownerPdfMoney(customersOwe),
     helper: ownerPdfCountLabel(customersOweCount, "unpaid sale", "unpaid sales"),
@@ -1597,7 +1666,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     x: margin + metricW + gap,
     y,
     width: metricW,
-    height: 82,
+    height: 84,
     label: "Overdue money",
     value: ownerPdfMoney(overdue),
     helper: ownerPdfCountLabel(overdueCount, "overdue sale", "overdue sales"),
@@ -1608,8 +1677,8 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     x: margin + (metricW + gap) * 2,
     y,
     width: metricW,
-    height: 82,
-    label: "I owe suppliers",
+    height: 84,
+    label: "Supplier bills",
     value: ownerPdfMoney(suppliersOwe),
     helper: ownerPdfCountLabel(suppliersOweCount, "unpaid bill", "unpaid bills"),
     tone: suppliersOwe > 0 ? "amber" : "green",
@@ -1619,14 +1688,14 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     x: margin + (metricW + gap) * 3,
     y,
     width: metricW,
-    height: 82,
+    height: 84,
     label: "Stock review",
     value: String(stockCount),
     helper: ownerPdfCountLabel(stockCount, "product at limit", "products at limit"),
     tone: stockCount > 0 ? "amber" : "green",
   });
 
-  y += 116;
+  y += 118;
 
   y = ownerPdfSection(doc, {
     x: margin,
@@ -1660,12 +1729,12 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
 
   y += 24;
 
-  doc.roundedRect(margin, y, pageW, 68, 18).fillAndStroke("#f8fafc", "#e2e8f0");
+  doc.roundedRect(margin, y, pageW, 70, 20).fillAndStroke("#f8fafc", "#e2e8f0");
 
   doc
     .fillColor("#2563eb")
     .font("Helvetica-Bold")
-    .fontSize(7)
+    .fontSize(6.8)
     .text("NOTE", margin + 20, y + 17, {
       characterSpacing: 1.7,
       lineBreak: false,
@@ -1675,7 +1744,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     .fillColor("#0f172a")
     .font("Helvetica-Bold")
     .fontSize(15)
-    .text("This report is for owner decisions only.", margin + 20, y + 31, {
+    .text("This report is for owner decisions only.", margin + 20, y + 32, {
       width: pageW - 40,
       lineBreak: false,
     });
@@ -1683,8 +1752,8 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
   doc
     .fillColor("#64748b")
     .font("Helvetica-Bold")
-    .fontSize(9)
-    .text("Full details remain inside Sales, Stock, Suppliers, Customers, Expenses, and Money pages.", margin + 20, y + 52, {
+    .fontSize(8.8)
+    .text("Full details remain inside Sales, Stock, Suppliers, Customers, Expenses, and Money pages.", margin + 20, y + 53, {
       width: pageW - 40,
       lineBreak: false,
     });
@@ -1692,6 +1761,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
   doc.fillColor("#0f172a");
 }
 // === PREMIUM OWNER PERIOD PDF END ===
+
 
 
 module.exports = {
