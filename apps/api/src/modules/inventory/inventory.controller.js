@@ -319,17 +319,41 @@ function normalizeListingInput(body = {}, product = null, businessCategory = nul
   };
 }
 
-function listingValidationErrors({ product, imageCount, listing }) {
+function listingValidationErrors({
+  product,
+  approvedImageCount,
+  listing,
+}) {
   const errors = [];
 
-  if (!product?.isActive) errors.push("Product must be active before publishing");
-  if (!imageCount) errors.push("Add at least one product image before publishing");
-  if (!listing.marketplaceTitle) errors.push("Listing product name is required");
-  if (!listing.marketplaceDescription) errors.push("Listing description is required");
-  if (!Number.isFinite(listing.marketplacePrice) || listing.marketplacePrice < 0) {
+  if (!product?.isActive) {
+    errors.push("Product must be active before publishing");
+  }
+
+  if (!approvedImageCount) {
+    errors.push(
+      "Approve at least one cleaned product image before publishing",
+    );
+  }
+
+  if (!listing.marketplaceTitle) {
+    errors.push("Listing product name is required");
+  }
+
+  if (!listing.marketplaceDescription) {
+    errors.push("Listing description is required");
+  }
+
+  if (
+    !Number.isFinite(listing.marketplacePrice) ||
+    listing.marketplacePrice < 0
+  ) {
     errors.push("Listing price must be 0 or more");
   }
-  if (!listing.marketplaceCategory) errors.push("Listing category is required");
+
+  if (!listing.marketplaceCategory) {
+    errors.push("Listing category is required");
+  }
 
   return errors;
 }
@@ -2726,10 +2750,36 @@ async function deleteProductImage(req, res) {
         id: true,
         key: true,
         isPrimary: true,
+        imageType: true,
       },
     });
 
-    if (!existing) return res.status(404).json({ message: "Image not found" });
+    if (!existing) {
+      return res.status(404).json({
+        message: "Image not found",
+      });
+    }
+
+    if (existing.imageType === "ORIGINAL") {
+      const cleanedDependants =
+        await prisma.productImage.count({
+          where: {
+            tenantId,
+            productId,
+            imageType: "CLEANED",
+            sourceImageId: existing.id,
+          },
+        });
+
+      if (cleanedDependants > 0) {
+        return res.status(409).json({
+          message:
+            "Remove this image's cleaned versions before deleting the original",
+          code: "ORIGINAL_IMAGE_HAS_CLEANED_VERSIONS",
+          cleanedImageCount: cleanedDependants,
+        });
+      }
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.productImage.delete({ where: { id: imageId } });
@@ -2961,12 +3011,27 @@ async function publishProductListing(req, res) {
       marketplaceAttributes: true,
     });
 
-    const imageCount = await prisma.productImage.count({
-      where: { tenantId, productId },
-    });
+    const approvedImageCount =
+      await prisma.productImage.count({
+        where: {
+          tenantId,
+          productId,
+          imageType: "CLEANED",
+          isMarketplaceApproved: true,
+        },
+      });
 
-    const listing = normalizeListingInput(req.body || {}, product, businessCategory);
-    const errors = listingValidationErrors({ product, imageCount, listing });
+    const listing = normalizeListingInput(
+      req.body || {},
+      product,
+      businessCategory,
+    );
+
+    const errors = listingValidationErrors({
+      product,
+      approvedImageCount,
+      listing,
+    });
 
     if (errors.length) {
       return res.status(400).json({
@@ -3008,7 +3073,7 @@ async function publishProductListing(req, res) {
           name: product.name,
           marketplacePublished: true,
           businessCategory,
-          imageCount,
+          approvedImageCount,
         },
       });
 
