@@ -437,12 +437,126 @@ export function setPrimaryProductImage(productId, imageId, options = {}) {
 }
 
 /**
+ * Image Studio.
+ *
+ * The business-facing UI uses these actions to prepare product
+ * images for public listing without exposing provider details.
+ */
+export function getProductImageStudio(productId, options = {}) {
+  const id = cleanString(productId);
+
+  if (!id) {
+    return Promise.reject(new Error("Product id is required"));
+  }
+
+  return apiFetch(
+    `${INVENTORY_BASE}/products/${encodeURIComponent(id)}/image-studio`,
+    {
+      method: "GET",
+      ...withBranchOptions(options),
+    },
+  );
+}
+
+export function cleanProductImage(productId, imageId, options = {}) {
+  const id = cleanString(productId);
+  const imgId = cleanString(imageId);
+
+  if (!id) {
+    return Promise.reject(new Error("Product id is required"));
+  }
+
+  if (!imgId) {
+    return Promise.reject(new Error("Image id is required"));
+  }
+
+  return apiFetch(
+    `${INVENTORY_BASE}/products/${encodeURIComponent(id)}/images/${encodeURIComponent(imgId)}/clean`,
+    {
+      method: "POST",
+      ...withBranchOptions(options),
+    },
+  );
+}
+
+export function approveProductImageForListing(
+  productId,
+  imageId,
+  options = {},
+) {
+  const id = cleanString(productId);
+  const imgId = cleanString(imageId);
+
+  if (!id) {
+    return Promise.reject(new Error("Product id is required"));
+  }
+
+  if (!imgId) {
+    return Promise.reject(new Error("Image id is required"));
+  }
+
+  return apiFetch(
+    `${INVENTORY_BASE}/products/${encodeURIComponent(id)}/images/${encodeURIComponent(imgId)}/approve`,
+    {
+      method: "PATCH",
+      ...withBranchOptions(options),
+    },
+  );
+}
+
+export function removeProductImageListingApproval(
+  productId,
+  imageId,
+  options = {},
+) {
+  const id = cleanString(productId);
+  const imgId = cleanString(imageId);
+
+  if (!id) {
+    return Promise.reject(new Error("Product id is required"));
+  }
+
+  if (!imgId) {
+    return Promise.reject(new Error("Image id is required"));
+  }
+
+  return apiFetch(
+    `${INVENTORY_BASE}/products/${encodeURIComponent(id)}/images/${encodeURIComponent(imgId)}/approval`,
+    {
+      method: "DELETE",
+      ...withBranchOptions(options),
+    },
+  );
+}
+
+export function useProductImageAsMain(productId, imageId, options = {}) {
+  const id = cleanString(productId);
+  const imgId = cleanString(imageId);
+
+  if (!id) {
+    return Promise.reject(new Error("Product id is required"));
+  }
+
+  if (!imgId) {
+    return Promise.reject(new Error("Image id is required"));
+  }
+
+  return apiFetch(
+    `${INVENTORY_BASE}/products/${encodeURIComponent(id)}/images/${encodeURIComponent(imgId)}/use-as-main`,
+    {
+      method: "PATCH",
+      ...withBranchOptions(options),
+    },
+  );
+}
+
+/**
  * Product listing draft and publish actions.
  *
  * Draft update saves public-facing listing details.
  * Publish requires backend validation:
  * - active product
- * - at least one image
+ * - at least one approved cleaned image
  * - public title
  * - public description
  * - public price
@@ -681,6 +795,11 @@ const inventoryApi = {
   addProductImage,
   deleteProductImage,
   setPrimaryProductImage,
+  getProductImageStudio,
+  cleanProductImage,
+  approveProductImageForListing,
+  removeProductImageListingApproval,
+  useProductImageAsMain,
   updateProductListingDraft,
   updateMarketplaceDraft,
   publishProductListing,
