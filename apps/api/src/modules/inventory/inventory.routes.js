@@ -12,6 +12,7 @@ const productImageUpload = multer({
 
 const inventoryController = require("./inventory.controller");
 const inventoryImagesController = require("./inventory.images.controller");
+const inventoryImageStudioController = require("./inventory.imageStudio.controller");
 
 const authenticate = require("../../middlewares/authenticate");
 const requireTenant = require("../../middlewares/requireTenant");
@@ -125,6 +126,42 @@ router.patch(
   ...writeBase,
   requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
   inventoryController.setPrimaryProductImage
+);
+
+// Image Studio
+router.get(
+  "/products/:id/image-studio",
+  ...readBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_VIEW),
+  inventoryImageStudioController.getImageStudioState
+);
+
+router.post(
+  "/products/:id/images/:imageId/clean",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryImageStudioController.cleanProductImage
+);
+
+router.patch(
+  "/products/:id/images/:imageId/approve",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryImageStudioController.approveProductImage
+);
+
+router.delete(
+  "/products/:id/images/:imageId/approval",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryImageStudioController.removeProductImageApproval
+);
+
+router.patch(
+  "/products/:id/images/:imageId/use-as-main",
+  ...writeBase,
+  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
+  inventoryImageStudioController.useProductImageAsMain
 );
 
 // Product listing controls
