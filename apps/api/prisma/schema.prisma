@@ -532,14 +532,22 @@ model Product {
 }
 
 model ProductImage {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   tenantId  String
   productId String
-  url       String   @db.Text
-  key       String?  @db.Text
-  altText   String?  @db.Text
-  sortOrder Int      @default(0)
-  isPrimary Boolean  @default(false)
+  url       String  @db.Text
+  key       String? @db.Text
+  altText   String? @db.Text
+  sortOrder Int     @default(0)
+  isPrimary Boolean @default(false)
+
+  imageType             ProductImageType @default(ORIGINAL)
+  sourceImageId         String?
+  isMarketplaceApproved Boolean          @default(false)
+  approvedAt            DateTime?
+  approvedById          String?
+  studioVersion         Int              @default(1)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
@@ -549,6 +557,33 @@ model ProductImage {
   @@index([tenantId])
   @@index([tenantId, productId])
   @@index([tenantId, productId, isPrimary])
+  @@index([tenantId, productId, imageType])
+  @@index([tenantId, sourceImageId])
+  @@index([tenantId, productId, isMarketplaceApproved])
+}
+
+model ProductImageStudioRun {
+  id            String                   @id @default(uuid())
+  tenantId      String
+  productId     String
+  sourceImageId String
+  resultImageId String?
+  status        ProductImageStudioStatus @default(PENDING)
+
+  failureCode    String?
+  failureMessage String? @db.Text
+  requestedById  String?
+
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, productId])
+  @@index([tenantId, sourceImageId])
+  @@index([tenantId, productId, status])
+  @@index([resultImageId])
 }
 
 model BranchInventory {
@@ -2341,4 +2376,17 @@ enum ProductMarketplaceStatus {
   DRAFT
   PUBLISHED
   UNPUBLISHED
+}
+
+enum ProductImageType {
+  ORIGINAL
+  CLEANED
+}
+
+enum ProductImageStudioStatus {
+  PENDING
+  PROCESSING
+  REVIEW
+  READY
+  FAILED
 }
