@@ -3,7 +3,7 @@ const prisma = require("../../config/database");
 const {
   createSupportUploadUrl,
   createSignedDownloadUrl,
-} = require("../../lib/r2");
+} = require("./supportAttachmentStorage");
 
 const ALLOWED_FILE_TYPES = new Set([
   "image/jpeg",

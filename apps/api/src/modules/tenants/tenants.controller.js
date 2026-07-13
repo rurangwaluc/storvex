@@ -1,8 +1,11 @@
 // src/modules/tenants/tenants.controller.js
 const crypto = require("crypto");
 const prisma = require("../../config/database");
-const { PutObjectCommand } = require("@aws-sdk/client-s3");
-const { signGetUrl, getR2Client, deleteObject } = require("../../utils/r2");
+const {
+  deleteObject,
+  signGetUrl,
+  uploadObject,
+} = require("../../lib/storage/objectStorage");
 
 function getTenantId(req) {
   return req.user?.tenantId || null;
@@ -130,15 +133,11 @@ async function uploadTenantLogo(req, res) {
     const rand = crypto.randomBytes(8).toString("hex");
     const key = `tenants/${tenantId}/logo_${Date.now()}_${rand}.${allowed.ext}`;
 
-    const client = getR2Client();
-    await client.send(
-      new PutObjectCommand({
-        Bucket: process.env.R2_BUCKET,
-        Key: key,
-        Body: file.buffer,
-        ContentType: allowed.contentType,
-      })
-    );
+    await uploadObject({
+      key,
+      body: file.buffer,
+      contentType: allowed.contentType,
+    });
 
     // Save new key
     const tenant = await prisma.tenant.update({

@@ -1,6 +1,6 @@
 "use strict";
 
-const { signGetUrl } = require("../../utils/r2");
+const { signGetUrl } = require("../../lib/storage/objectStorage");
 
 function hasField(model, fieldName) {
   return typeof model?.fields?.[fieldName] !== "undefined";

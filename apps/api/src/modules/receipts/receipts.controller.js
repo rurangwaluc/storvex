@@ -93,7 +93,7 @@ async function getSignedLogoUrl(tenant) {
   if (!tenant?.logoKey) return null;
 
   try {
-    const { signGetUrl } = require("../../utils/r2");
+    const { signGetUrl } = require("../../lib/storage/objectStorage");
     return await signGetUrl(tenant.logoKey, 300);
   } catch (err) {
     console.error("signGetUrl failed:", err?.message || err);
