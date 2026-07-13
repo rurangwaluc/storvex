@@ -3,6 +3,7 @@ const crypto = require("crypto");
 const prisma = require("../../config/database");
 const {
   deleteObject,
+  downloadObject,
   isConfigured: isObjectStorageConfigured,
   uploadObject,
 } = require("../../lib/storage/objectStorage");
@@ -95,15 +96,94 @@ function buildStudioObjectKey({
   ].join("/");
 }
 
-async function downloadSourceImage(url) {
-  const sourceUrl = cleanString(url);
+function validateDownloadedImage({
+  body,
+  contentType,
+}) {
+  const normalizedContentType = String(
+    contentType || "",
+  )
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+
+  if (!ALLOWED_CONTENT_TYPES.has(normalizedContentType)) {
+    throw createServiceError(
+      "The source image format is not supported",
+      {
+        status: 422,
+        code: "IMAGE_SOURCE_FORMAT_UNSUPPORTED",
+      },
+    );
+  }
+
+  const imageBody = Buffer.isBuffer(body)
+    ? body
+    : Buffer.from(body || []);
+
+  if (!imageBody.length) {
+    throw createServiceError(
+      "The source image is empty",
+      {
+        status: 422,
+        code: "IMAGE_SOURCE_EMPTY",
+      },
+    );
+  }
+
+  if (imageBody.length > MAX_SOURCE_BYTES) {
+    throw createServiceError(
+      "The source image is too large to process",
+      {
+        status: 413,
+        code: "IMAGE_SOURCE_TOO_LARGE",
+      },
+    );
+  }
+
+  return {
+    body: imageBody,
+    contentType: normalizedContentType,
+  };
+}
+
+async function downloadSourceImage(sourceImage) {
+  const objectKey = cleanString(sourceImage?.key);
+
+  if (objectKey) {
+    try {
+      const storedObject = await downloadObject(
+        objectKey,
+      );
+
+      return validateDownloadedImage({
+        body: storedObject.body,
+        contentType: storedObject.contentType,
+      });
+    } catch (error) {
+      console.error(
+        "Image Studio direct object download failed:",
+        error?.message || error,
+      );
+
+      throw createServiceError(
+        "Could not read the source image from object storage",
+        {
+          status: Number(error?.status) || 502,
+          code: "IMAGE_SOURCE_STORAGE_DOWNLOAD_FAILED",
+        },
+      );
+    }
+  }
+
+  const sourceUrl = cleanString(sourceImage?.url);
 
   if (!sourceUrl) {
     throw createServiceError(
-      "Source image URL is missing",
+      "Source image location is missing",
       {
         status: 422,
-        code: "IMAGE_SOURCE_URL_MISSING",
+        code: "IMAGE_SOURCE_LOCATION_MISSING",
       },
     );
   }
@@ -134,49 +214,13 @@ async function downloadSourceImage(url) {
     );
   }
 
-  const contentType = String(
-    response.headers.get("content-type") || "",
-  )
-    .split(";")[0]
-    .trim()
-    .toLowerCase();
-
-  if (!ALLOWED_CONTENT_TYPES.has(contentType)) {
-    throw createServiceError(
-      "The source image format is not supported",
-      {
-        status: 422,
-        code: "IMAGE_SOURCE_FORMAT_UNSUPPORTED",
-      },
-    );
-  }
-
-  const body = Buffer.from(await response.arrayBuffer());
-
-  if (!body.length) {
-    throw createServiceError(
-      "The source image is empty",
-      {
-        status: 422,
-        code: "IMAGE_SOURCE_EMPTY",
-      },
-    );
-  }
-
-  if (body.length > MAX_SOURCE_BYTES) {
-    throw createServiceError(
-      "The source image is too large to process",
-      {
-        status: 413,
-        code: "IMAGE_SOURCE_TOO_LARGE",
-      },
-    );
-  }
-
-  return {
-    body,
-    contentType,
-  };
+  return validateDownloadedImage({
+    body: Buffer.from(
+      await response.arrayBuffer(),
+    ),
+    contentType:
+      response.headers.get("content-type"),
+  });
 }
 
 async function processWithMockProvider(source) {
@@ -478,7 +522,7 @@ async function cleanProductImage({
     });
 
     const source = await downloadSourceImage(
-      sourceImage.url,
+      sourceImage,
     );
 
     const processed = await processWithProvider(

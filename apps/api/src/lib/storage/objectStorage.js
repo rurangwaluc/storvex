@@ -26,12 +26,43 @@ function cleanStorageKey(value) {
   return String(value || "").trim().replace(/^\/+/, "");
 }
 
+function isLocalStorageEndpoint(endpoint) {
+  try {
+    const url = new URL(endpoint);
+    const hostname = url.hostname.toLowerCase();
+
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1" ||
+      hostname.endsWith(".localhost")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function getBooleanEnv(name) {
+  const value = getEnv(name).toLowerCase();
+
+  if (["true", "1", "yes", "on"].includes(value)) {
+    return true;
+  }
+
+  if (["false", "0", "no", "off"].includes(value)) {
+    return false;
+  }
+
+  return null;
+}
+
 function getStorageConfig() {
   const accountId = getEnv("R2_ACCOUNT_ID");
 
+  const configuredEndpoint = firstEnv("OBJECT_STORAGE_ENDPOINT");
   const bucket = firstEnv("OBJECT_STORAGE_BUCKET", "R2_BUCKET");
   const endpoint =
-    firstEnv("OBJECT_STORAGE_ENDPOINT") ||
+    configuredEndpoint ||
     (accountId
       ? `https://${accountId}.r2.cloudflarestorage.com`
       : "");
@@ -62,6 +93,16 @@ function getStorageConfig() {
     ) || 300,
   );
 
+  const configuredForcePathStyle =
+    getBooleanEnv("OBJECT_STORAGE_FORCE_PATH_STYLE");
+
+  const forcePathStyle =
+    configuredForcePathStyle ??
+    (
+      Boolean(configuredEndpoint) &&
+      isLocalStorageEndpoint(configuredEndpoint)
+    );
+
   return {
     bucket,
     endpoint,
@@ -74,7 +115,7 @@ function getStorageConfig() {
       defaultSignedUrlTtlSeconds > 0
         ? defaultSignedUrlTtlSeconds
         : 300,
-    forcePathStyle: !getEnv("OBJECT_STORAGE_ENDPOINT"),
+    forcePathStyle,
   };
 }
 
@@ -282,6 +323,66 @@ async function uploadObject({
   };
 }
 
+async function bodyToBuffer(body) {
+  if (!body) {
+    return Buffer.alloc(0);
+  }
+
+  if (Buffer.isBuffer(body)) {
+    return body;
+  }
+
+  if (typeof body.transformToByteArray === "function") {
+    return Buffer.from(await body.transformToByteArray());
+  }
+
+  const chunks = [];
+
+  for await (const chunk of body) {
+    chunks.push(
+      Buffer.isBuffer(chunk)
+        ? chunk
+        : Buffer.from(chunk),
+    );
+  }
+
+  return Buffer.concat(chunks);
+}
+
+async function downloadObject(key) {
+  const storageKey = cleanStorageKey(key);
+
+  if (!storageKey) {
+    throw new Error("Object storage key is required");
+  }
+
+  const client = requireClient();
+  const bucket = requireBucket();
+
+  const response = await client.send(
+    new GetObjectCommand({
+      Bucket: bucket,
+      Key: storageKey,
+    }),
+  );
+
+  return {
+    body: await bodyToBuffer(response.Body),
+    contentType:
+      String(
+        response.ContentType ||
+          "application/octet-stream",
+      )
+        .split(";")[0]
+        .trim()
+        .toLowerCase(),
+    contentLength:
+      Number(response.ContentLength || 0),
+    objectKey: storageKey,
+    storageKey,
+  };
+}
+
 async function deleteObject(key) {
   const storageKey = cleanStorageKey(key);
 
@@ -307,6 +408,7 @@ module.exports = {
   createPresignedImageUpload,
   createPresignedUpload,
   deleteObject,
+  downloadObject,
   getClient,
   isConfigured,
   signGetUrl,

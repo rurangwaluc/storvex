@@ -93,3 +93,6 @@ apps/web/dist/
 # Next
 apps/platform/.next/
 apps/platform/out/
+
+# Local S3-compatible development storage
+apps/api/.local/

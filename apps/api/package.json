@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
-    "worker:whatsapp": "node src/modules/whatsapp/whatsapp.broadcasts.worker.js"
+    "worker:whatsapp": "node src/modules/whatsapp/whatsapp.broadcasts.worker.js",
+    "storage:local": "s3rver --address 127.0.0.1 --port 4569 --directory .local/s3 --configure-bucket storvex-private --silent"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +17,7 @@
     "@types/node": "^25.0.3",
     "nodemon": "^3.1.11",
     "prisma": "^6.19.2",
+    "s3rver": "^3.7.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
