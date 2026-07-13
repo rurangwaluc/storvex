@@ -1,4 +1,6 @@
-const prisma = require("../../config/database");const PDFDocument = require("pdfkit");
+const prisma = require("../../config/database");
+const { deleteObject } = require("../../lib/storage/objectStorage");
+const PDFDocument = require("pdfkit");
 const ExcelJS = require("exceljs");
 
 const INVENTORY_AUDIT_ACTIONS = {
@@ -2720,7 +2722,11 @@ async function deleteProductImage(req, res) {
 
     const existing = await prisma.productImage.findFirst({
       where: { id: imageId, tenantId, productId },
-      select: { id: true, isPrimary: true },
+      select: {
+        id: true,
+        key: true,
+        isPrimary: true,
+      },
     });
 
     if (!existing) return res.status(404).json({ message: "Image not found" });
@@ -2758,6 +2764,17 @@ async function deleteProductImage(req, res) {
         },
       });
     });
+
+    if (existing.key) {
+      try {
+        await deleteObject(existing.key);
+      } catch (storageError) {
+        console.error(
+          "deleteProductImage object cleanup failed:",
+          storageError?.message || storageError,
+        );
+      }
+    }
 
     return res.json({ message: "Image removed" });
   } catch (err) {
