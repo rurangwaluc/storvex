@@ -507,6 +507,7 @@ async function cleanProductImage({
     });
 
   let uploadedObjectKey = null;
+  let replacedObjectKeys = [];
 
   try {
     await prisma.productImageStudioRun.update({
@@ -546,40 +547,140 @@ async function cleanProductImage({
 
     const result =
       await prisma.$transaction(async (tx) => {
-        const maximumSortOrder =
-          await tx.productImage.aggregate({
+        const existingCleanedImages =
+          await tx.productImage.findMany({
+            where: {
+              tenantId,
+              productId,
+              imageType: "CLEANED",
+              sourceImageId: sourceImage.id,
+            },
+            orderBy: [
+              {
+                studioVersion: "desc",
+              },
+              {
+                updatedAt: "desc",
+              },
+              {
+                createdAt: "desc",
+              },
+            ],
+          });
+
+        const currentCleanedImage =
+          existingCleanedImages[0] || null;
+
+        const previousWasMain =
+          existingCleanedImages.some(
+            (image) => image.isPrimary,
+          );
+
+        replacedObjectKeys =
+          existingCleanedImages
+            .map((image) => cleanString(image.key))
+            .filter(
+              (key) =>
+                key &&
+                key !== uploaded.objectKey,
+            );
+
+        if (previousWasMain) {
+          await tx.productImage.updateMany({
             where: {
               tenantId,
               productId,
             },
-            _max: {
-              sortOrder: true,
+            data: {
+              isPrimary: false,
             },
           });
 
-        const cleanedImage =
-          await tx.productImage.create({
+          await tx.productImage.update({
+            where: {
+              id: sourceImage.id,
+            },
             data: {
-              tenantId,
-              productId,
-              url: uploaded.publicUrl,
-              key: uploaded.objectKey,
-              altText:
-                sourceImage.altText ||
-                `${product.name} cleaned image`,
-              sortOrder:
-                Number(
-                  maximumSortOrder._max.sortOrder || 0,
-                ) + 1,
-              isPrimary: false,
-              imageType: "CLEANED",
-              sourceImageId: sourceImage.id,
-              isMarketplaceApproved: false,
-              approvedAt: null,
-              approvedById: null,
-              studioVersion: 1,
+              isPrimary: true,
             },
           });
+        }
+
+        let cleanedImage;
+
+        if (currentCleanedImage) {
+          cleanedImage =
+            await tx.productImage.update({
+              where: {
+                id: currentCleanedImage.id,
+              },
+              data: {
+                url: uploaded.publicUrl,
+                key: uploaded.objectKey,
+                altText:
+                  sourceImage.altText ||
+                  `${product.name} cleaned image`,
+                isPrimary: false,
+                isMarketplaceApproved: false,
+                approvedAt: null,
+                approvedById: null,
+                studioVersion:
+                  Number(
+                    currentCleanedImage.studioVersion || 0,
+                  ) + 1,
+              },
+            });
+
+          const duplicateIds =
+            existingCleanedImages
+              .slice(1)
+              .map((image) => image.id);
+
+          if (duplicateIds.length) {
+            await tx.productImage.deleteMany({
+              where: {
+                id: {
+                  in: duplicateIds,
+                },
+              },
+            });
+          }
+        } else {
+          const maximumSortOrder =
+            await tx.productImage.aggregate({
+              where: {
+                tenantId,
+                productId,
+              },
+              _max: {
+                sortOrder: true,
+              },
+            });
+
+          cleanedImage =
+            await tx.productImage.create({
+              data: {
+                tenantId,
+                productId,
+                url: uploaded.publicUrl,
+                key: uploaded.objectKey,
+                altText:
+                  sourceImage.altText ||
+                  `${product.name} cleaned image`,
+                sortOrder:
+                  Number(
+                    maximumSortOrder._max.sortOrder || 0,
+                  ) + 1,
+                isPrimary: false,
+                imageType: "CLEANED",
+                sourceImageId: sourceImage.id,
+                isMarketplaceApproved: false,
+                approvedAt: null,
+                approvedById: null,
+                studioVersion: 1,
+              },
+            });
+        }
 
         const completedRun =
           await tx.productImageStudioRun.update({
@@ -603,9 +704,13 @@ async function cleanProductImage({
           branchId,
           metadata: {
             imageStudioRunCreated: true,
+            imageStudioResultReplaced:
+              Boolean(currentCleanedImage),
             imageStudioProvider: processed.provider,
             sourceImageId: sourceImage.id,
             resultImageId: cleanedImage.id,
+            studioVersion:
+              cleanedImage.studioVersion,
           },
         });
 
@@ -615,6 +720,22 @@ async function cleanProductImage({
           resultImage: cleanedImage,
         };
       });
+
+    uploadedObjectKey = null;
+
+    for (const oldObjectKey of [
+      ...new Set(replacedObjectKeys),
+    ]) {
+      try {
+        await deleteObject(oldObjectKey);
+      } catch (cleanupError) {
+        console.error(
+          "Image Studio replaced object cleanup failed:",
+          oldObjectKey,
+          cleanupError?.message || cleanupError,
+        );
+      }
+    }
 
     return result;
   } catch (error) {

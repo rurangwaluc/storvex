@@ -429,7 +429,7 @@ function StudioImage({
 
 function OriginalStudioGroup({
   original,
-  cleanedImages,
+  cleanedImage,
   productName,
   actionBusy,
   onPreview,
@@ -443,7 +443,12 @@ function OriginalStudioGroup({
     actionBusy === `clean-${original.id}`;
 
   return (
-    <article className="svx-product-images-studio-group">
+    <article
+      className={cx(
+        "svx-product-images-studio-group",
+        cleanedImage ? "has-result" : "is-awaiting",
+      )}
+    >
       <div className="svx-product-images-studio-original">
         <button
           type="button"
@@ -472,15 +477,24 @@ function OriginalStudioGroup({
                 Main image
               </StatusBadge>
             ) : null}
+
+            {cleanedImage ? (
+              <StatusBadge tone="neutral">
+                Result available
+              </StatusBadge>
+            ) : null}
           </div>
 
           <strong>
-            Prepare this photo for the product listing
+            {cleanedImage
+              ? "Prepare a new cleaned version"
+              : "Prepare this photo for the product listing"}
           </strong>
 
           <p>
-            Create a separate cleaned copy. Your original photo
-            remains unchanged.
+            {cleanedImage
+              ? "Cleaning again safely replaces the current result. The original photo remains unchanged."
+              : "Create one cleaned result, review it, and approve it before customers can see it."}
           </p>
 
           <ActionButton
@@ -490,39 +504,25 @@ function OriginalStudioGroup({
             loading={cleaning}
             disabled={Boolean(actionBusy)}
           >
-            Clean image
+            {cleanedImage ? "Clean again" : "Clean image"}
           </ActionButton>
         </div>
       </div>
 
-      <div className="svx-product-images-studio-results">
-        {cleanedImages.length ? (
-          cleanedImages.map((image) => (
-            <StudioImage
-              key={image.id}
-              image={image}
-              productName={productName}
-              actionBusy={actionBusy}
-              onPreview={onPreview}
-              onApprove={onApprove}
-              onRemoveApproval={onRemoveApproval}
-              onUseAsMain={onUseAsMain}
-              onDelete={onDelete}
-            />
-          ))
-        ) : (
-          <div className="svx-product-images-studio-empty">
-            <Sparkles size={20} strokeWidth={2.2} />
-            <div>
-              <strong>No cleaned version yet</strong>
-              <p>
-                Clean the original photo, review the new version,
-                then approve it for the listing.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
+      {cleanedImage ? (
+        <div className="svx-product-images-studio-results">
+          <StudioImage
+            image={cleanedImage}
+            productName={productName}
+            actionBusy={actionBusy}
+            onPreview={onPreview}
+            onApprove={onApprove}
+            onRemoveApproval={onRemoveApproval}
+            onUseAsMain={onUseAsMain}
+            onDelete={onDelete}
+          />
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -828,6 +828,20 @@ export default function ProductImages() {
   async function handleCleanImage(image) {
     if (!image?.id || imageActionBusy) return;
 
+    const currentResult =
+      cleanedForOriginal(image.id);
+
+    if (currentResult) {
+      const confirmed = window.confirm(
+        currentResult.isMarketplaceApproved ||
+          currentResult.isPrimary
+          ? "Clean this photo again? The current approved or main result will be replaced and the new result will need review and approval."
+          : "Clean this photo again? The current cleaned result will be safely replaced.",
+      );
+
+      if (!confirmed) return;
+    }
+
     setImageActionBusy(`clean-${image.id}`);
 
     try {
@@ -835,7 +849,9 @@ export default function ProductImages() {
       await reloadImageWorkspace();
 
       toast.success(
-        "Cleaned image is ready for review",
+        currentResult
+          ? "Cleaned result replaced and ready for review"
+          : "Cleaned image is ready for review",
       );
     } catch (error) {
       if (
@@ -930,17 +946,81 @@ export default function ProductImages() {
     ? studio.images
     : [];
 
-  const libraryImages = studioImages.length
+  const sourceImages = studioImages.length
     ? studioImages
     : images;
 
-  const originalImages = libraryImages.filter(
+  const originalImages = sourceImages.filter(
     (image) => !isCleanedImage(image),
   );
 
-  const cleanedImages = libraryImages.filter(
+  const allCleanedImages = sourceImages.filter(
     isCleanedImage,
   );
+
+  function cleanedImageTime(image) {
+    const value =
+      image?.updatedAt ||
+      image?.createdAt ||
+      "";
+
+    const timestamp = new Date(value).getTime();
+
+    return Number.isFinite(timestamp)
+      ? timestamp
+      : 0;
+  }
+
+  function cleanedForOriginal(originalId) {
+    return (
+      allCleanedImages
+        .filter(
+          (image) =>
+            cleanString(image.sourceImageId) ===
+            cleanString(originalId),
+        )
+        .sort((left, right) => {
+          const versionDifference =
+            Number(right?.studioVersion || 0) -
+            Number(left?.studioVersion || 0);
+
+          if (versionDifference) {
+            return versionDifference;
+          }
+
+          return (
+            cleanedImageTime(right) -
+            cleanedImageTime(left)
+          );
+        })[0] || null
+    );
+  }
+
+  const cleanedImages = originalImages
+    .map((original) =>
+      cleanedForOriginal(original.id),
+    )
+    .filter(Boolean);
+
+  const libraryImages = [
+    ...originalImages,
+    ...cleanedImages,
+  ].sort((left, right) => {
+    if (left.isPrimary !== right.isPrimary) {
+      return left.isPrimary ? -1 : 1;
+    }
+
+    const sortDifference =
+      Number(left.sortOrder || 0) -
+      Number(right.sortOrder || 0);
+
+    if (sortDifference) return sortDifference;
+
+    return (
+      cleanedImageTime(left) -
+      cleanedImageTime(right)
+    );
+  });
 
   const primaryImage =
     libraryImages.find(
@@ -952,14 +1032,6 @@ export default function ProductImages() {
   const approvedCount = cleanedImages.filter(
     (image) => image.isMarketplaceApproved,
   ).length;
-
-  function cleanedForOriginal(originalId) {
-    return cleanedImages.filter(
-      (image) =>
-        cleanString(image.sourceImageId) ===
-        cleanString(originalId),
-    );
-  }
 
   if (loading && !product) {
     return (
@@ -1314,9 +1386,9 @@ export default function ProductImages() {
               <h2>Clean and approve images</h2>
 
               <p>
-                Each cleaned image is saved separately. Review
-                it before approving it for the public product
-                listing.
+                Each original keeps one current cleaned result.
+                Cleaning again safely replaces it and starts a
+                new review.
               </p>
             </div>
 
@@ -1362,7 +1434,7 @@ export default function ProductImages() {
                 <OriginalStudioGroup
                   key={original.id}
                   original={original}
-                  cleanedImages={cleanedForOriginal(
+                  cleanedImage={cleanedForOriginal(
                     original.id,
                   )}
                   productName={
