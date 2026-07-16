@@ -100,8 +100,26 @@ function normalizeListingPayload(payload = {}) {
   return cleanObject({
     listingTitle: cleanString(payload.listingTitle || payload.marketplaceTitle || payload.title),
     listingDescription: cleanString(payload.listingDescription || payload.marketplaceDescription || payload.description),
-    listingPrice: payload.listingPrice ?? payload.marketplacePrice ?? payload.price,
-    listingCategory: cleanString(payload.listingCategory || payload.marketplaceCategory || payload.publicCategory),
+    listingPrice:
+      payload.listingPrice ??
+      payload.marketplacePrice ??
+      payload.price,
+    listingSalePrice:
+      payload.listingSalePrice ??
+      payload.marketplaceSalePrice,
+    listingSaleStartsAt: cleanString(
+      payload.listingSaleStartsAt ||
+      payload.marketplaceSaleStartsAt,
+    ),
+    listingSaleEndsAt: cleanString(
+      payload.listingSaleEndsAt ||
+      payload.marketplaceSaleEndsAt,
+    ),
+    listingCategory: cleanString(
+      payload.listingCategory ||
+      payload.marketplaceCategory ||
+      payload.publicCategory,
+    ),
     listingAttributes: cleanPlainObject(payload.listingAttributes || payload.marketplaceAttributes || payload.attributes),
     listingSlug: cleanString(payload.listingSlug || payload.marketplaceSlug || payload.slug),
   });

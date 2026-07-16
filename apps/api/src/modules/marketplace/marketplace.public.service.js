@@ -64,6 +64,100 @@ function chooseApprovedImage(images) {
   };
 }
 
+function chooseApprovedImages(images) {
+  const approved = Array.isArray(images)
+    ? images.filter(
+        (image) =>
+          image?.isMarketplaceApproved === true &&
+          String(image?.imageType || "").toUpperCase() ===
+            "CLEANED" &&
+          cleanString(image?.url, 2000),
+      )
+    : [];
+
+  approved.sort((left, right) => {
+    if (Boolean(left.isPrimary) !== Boolean(right.isPrimary)) {
+      return left.isPrimary ? -1 : 1;
+    }
+
+    const sortDifference =
+      Number(left.sortOrder || 0) -
+      Number(right.sortOrder || 0);
+
+    if (sortDifference !== 0) {
+      return sortDifference;
+    }
+
+    return String(left.url || "").localeCompare(
+      String(right.url || ""),
+    );
+  });
+
+  return approved.map((image) => ({
+    url: image.url,
+    altText: image.altText || null,
+    isPrimary: Boolean(image.isPrimary),
+  }));
+}
+
+function activeMarketplacePricing(product, now = new Date()) {
+  const regularPrice = Math.max(
+    0,
+    Number(
+      product.marketplacePrice ??
+      product.sellPrice ??
+      0
+    ),
+  );
+
+  const rawSalePrice = Number(
+    product.marketplaceSalePrice,
+  );
+
+  const validSalePrice =
+    Number.isFinite(rawSalePrice) &&
+    rawSalePrice >= 0 &&
+    rawSalePrice < regularPrice;
+
+  const startsAt = product.marketplaceSaleStartsAt
+    ? new Date(product.marketplaceSaleStartsAt)
+    : null;
+
+  const endsAt = product.marketplaceSaleEndsAt
+    ? new Date(product.marketplaceSaleEndsAt)
+    : null;
+
+  const hasStarted =
+    !startsAt ||
+    Number.isNaN(startsAt.getTime()) ||
+    now >= startsAt;
+
+  const hasNotEnded =
+    !endsAt ||
+    Number.isNaN(endsAt.getTime()) ||
+    now <= endsAt;
+
+  const onSale =
+    validSalePrice &&
+    hasStarted &&
+    hasNotEnded;
+
+  return {
+    regularPrice,
+    salePrice: onSale ? rawSalePrice : null,
+    price: onSale ? rawSalePrice : regularPrice,
+    onSale,
+    saleStartsAt:
+      startsAt && !Number.isNaN(startsAt.getTime())
+        ? startsAt.toISOString()
+        : null,
+    saleEndsAt:
+      endsAt && !Number.isNaN(endsAt.getTime())
+        ? endsAt.toISOString()
+        : null,
+  };
+}
+
 function publicStoreLocation(tenant) {
   return {
     countryCode: tenant?.countryCode || "RW",
@@ -277,7 +371,12 @@ function serializePublicProduct(product, seller) {
     product.branchInventory,
   );
 
-  const image = chooseApprovedImage(product.images);
+  const images = chooseApprovedImages(
+    product.images,
+  );
+
+  const image = images[0] || null;
+  const pricing = activeMarketplacePricing(product);
 
   if (availableQuantity <= 0 || !image) return null;
 
@@ -291,10 +390,12 @@ function serializePublicProduct(product, seller) {
     },
     title: product.marketplaceTitle || product.name,
     description: product.marketplaceDescription || null,
-    price: Math.max(
-      0,
-      Number(product.marketplacePrice ?? product.sellPrice ?? 0),
-    ),
+    price: pricing.price,
+    regularPrice: pricing.regularPrice,
+    salePrice: pricing.salePrice,
+    onSale: pricing.onSale,
+    saleStartsAt: pricing.saleStartsAt,
+    saleEndsAt: pricing.saleEndsAt,
     currency: seller.tenant.currencyCode || "RWF",
     category:
       product.marketplaceCategory ||
@@ -306,6 +407,7 @@ function serializePublicProduct(product, seller) {
         ? product.marketplaceAttributes
         : {},
     image,
+    images: images.slice(0, 4),
     availableQuantity,
     pickupEnabled: Boolean(seller.pickupEnabled),
     deliveryEnabled: Boolean(seller.deliveryEnabled),
@@ -343,6 +445,9 @@ const publicProductSelect = {
   marketplaceTitle: true,
   marketplaceDescription: true,
   marketplacePrice: true,
+  marketplaceSalePrice: true,
+  marketplaceSaleStartsAt: true,
+  marketplaceSaleEndsAt: true,
   marketplaceCategory: true,
   marketplaceAttributes: true,
   marketplaceSlug: true,

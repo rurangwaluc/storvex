@@ -296,6 +296,42 @@ function normalizeListingInput(body = {}, product = null, businessCategory = nul
 
   const price = toMoney(rawPrice);
 
+  const rawSalePrice =
+    body.listingSalePrice != null ||
+    body.marketplaceSalePrice != null
+      ? (
+          body.listingSalePrice ??
+          body.marketplaceSalePrice
+        )
+      : product?.marketplaceSalePrice;
+
+  const salePrice =
+    rawSalePrice === null ||
+    rawSalePrice === undefined ||
+    rawSalePrice === ""
+      ? null
+      : toMoney(rawSalePrice);
+
+  const rawSaleStartsAt =
+    body.listingSaleStartsAt ??
+    body.marketplaceSaleStartsAt ??
+    product?.marketplaceSaleStartsAt ??
+    null;
+
+  const rawSaleEndsAt =
+    body.listingSaleEndsAt ??
+    body.marketplaceSaleEndsAt ??
+    product?.marketplaceSaleEndsAt ??
+    null;
+
+  const saleStartsAt = rawSaleStartsAt
+    ? new Date(rawSaleStartsAt)
+    : null;
+
+  const saleEndsAt = rawSaleEndsAt
+    ? new Date(rawSaleEndsAt)
+    : null;
+
   const category =
     cleanString(body.listingCategory || body.marketplaceCategory || body.publicCategory || product?.marketplaceCategory) ||
     cleanString(product?.category) ||
@@ -310,7 +346,24 @@ function normalizeListingInput(body = {}, product = null, businessCategory = nul
   return {
     marketplaceTitle: title,
     marketplaceDescription: description,
-    marketplacePrice: Number.isFinite(price) ? price : NaN,
+    marketplacePrice:
+      Number.isFinite(price) ? price : NaN,
+    marketplaceSalePrice:
+      salePrice === null
+        ? null
+        : Number.isFinite(salePrice)
+          ? salePrice
+          : NaN,
+    marketplaceSaleStartsAt:
+      saleStartsAt &&
+      !Number.isNaN(saleStartsAt.getTime())
+        ? saleStartsAt
+        : null,
+    marketplaceSaleEndsAt:
+      saleEndsAt &&
+      !Number.isNaN(saleEndsAt.getTime())
+        ? saleEndsAt
+        : null,
     marketplaceCategory: category,
     marketplaceAttributes: {
       ...attributes,
@@ -355,6 +408,41 @@ function listingValidationErrors({
     errors.push("Listing category is required");
   }
 
+  if (
+    listing.marketplaceSalePrice !== null &&
+    (
+      !Number.isFinite(
+        listing.marketplaceSalePrice,
+      ) ||
+      listing.marketplaceSalePrice < 0
+    )
+  ) {
+    errors.push("Sale price must be 0 or more");
+  }
+
+  if (
+    Number.isFinite(
+      listing.marketplaceSalePrice,
+    ) &&
+    listing.marketplaceSalePrice >=
+      listing.marketplacePrice
+  ) {
+    errors.push(
+      "Sale price must be lower than the normal Marketplace price",
+    );
+  }
+
+  if (
+    listing.marketplaceSaleStartsAt &&
+    listing.marketplaceSaleEndsAt &&
+    listing.marketplaceSaleEndsAt <=
+      listing.marketplaceSaleStartsAt
+  ) {
+    errors.push(
+      "Sale end must be after the sale start",
+    );
+  }
+
   return errors;
 }
 
@@ -381,6 +469,9 @@ function productSelect() {
     marketplaceTitle: true,
     marketplaceDescription: true,
     marketplacePrice: true,
+    marketplaceSalePrice: true,
+    marketplaceSaleStartsAt: true,
+    marketplaceSaleEndsAt: true,
     marketplaceCategory: true,
     marketplaceAttributes: true,
     marketplaceSlug: true,
@@ -416,8 +507,16 @@ function withListingAliases(product) {
     listingStatus: product.marketplaceStatus || null,
     listingTitle: product.marketplaceTitle || null,
     listingDescription: product.marketplaceDescription || null,
-    listingPrice: product.marketplacePrice ?? null,
-    listingCategory: product.marketplaceCategory || null,
+    listingPrice:
+      product.marketplacePrice ?? null,
+    listingSalePrice:
+      product.marketplaceSalePrice ?? null,
+    listingSaleStartsAt:
+      product.marketplaceSaleStartsAt ?? null,
+    listingSaleEndsAt:
+      product.marketplaceSaleEndsAt ?? null,
+    listingCategory:
+      product.marketplaceCategory || null,
     listingAttributes: product.marketplaceAttributes || null,
     listingSlug: product.marketplaceSlug || null,
     listingPublishedAt: product.marketplacePublishedAt || null,
@@ -2931,6 +3030,9 @@ async function updateProductListingDraft(req, res) {
       marketplaceTitle: true,
       marketplaceDescription: true,
       marketplacePrice: true,
+      marketplaceSalePrice: true,
+      marketplaceSaleStartsAt: true,
+      marketplaceSaleEndsAt: true,
       marketplaceCategory: true,
       marketplaceAttributes: true,
     });
@@ -2944,9 +3046,18 @@ async function updateProductListingDraft(req, res) {
         data: {
           marketplaceTitle: listing.marketplaceTitle,
           marketplaceDescription: listing.marketplaceDescription,
-          marketplacePrice: Number.isFinite(listing.marketplacePrice)
-            ? listing.marketplacePrice
-            : null,
+          marketplacePrice:
+            Number.isFinite(
+              listing.marketplacePrice,
+            )
+              ? listing.marketplacePrice
+              : null,
+          marketplaceSalePrice:
+            listing.marketplaceSalePrice,
+          marketplaceSaleStartsAt:
+            listing.marketplaceSaleStartsAt,
+          marketplaceSaleEndsAt:
+            listing.marketplaceSaleEndsAt,
           marketplaceCategory: listing.marketplaceCategory,
           marketplaceAttributes: listing.marketplaceAttributes,
           marketplaceSlug: nextSlug ? `${nextSlug}-${product.id.slice(0, 6)}` : null,
@@ -3007,6 +3118,9 @@ async function publishProductListing(req, res) {
       marketplaceTitle: true,
       marketplaceDescription: true,
       marketplacePrice: true,
+      marketplaceSalePrice: true,
+      marketplaceSaleStartsAt: true,
+      marketplaceSaleEndsAt: true,
       marketplaceCategory: true,
       marketplaceAttributes: true,
     });
@@ -3050,7 +3164,14 @@ async function publishProductListing(req, res) {
         data: {
           marketplaceTitle: listing.marketplaceTitle,
           marketplaceDescription: listing.marketplaceDescription,
-          marketplacePrice: listing.marketplacePrice,
+          marketplacePrice:
+            listing.marketplacePrice,
+          marketplaceSalePrice:
+            listing.marketplaceSalePrice,
+          marketplaceSaleStartsAt:
+            listing.marketplaceSaleStartsAt,
+          marketplaceSaleEndsAt:
+            listing.marketplaceSaleEndsAt,
           marketplaceCategory: listing.marketplaceCategory,
           marketplaceAttributes: listing.marketplaceAttributes,
           marketplaceSlug: nextSlug,

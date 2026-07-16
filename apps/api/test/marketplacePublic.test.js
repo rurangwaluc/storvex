@@ -189,3 +189,163 @@ test("temporarily closed stores remain visible for discovery", () => {
 
   assert.equal(product.seller.temporarilyClosed, true);
 });
+
+
+test("returns multiple approved Marketplace images", () => {
+  const product = serializePublicProduct(
+    {
+      name: "Laptop",
+      sellPrice: 700000,
+      marketplaceSlug: "laptop",
+      marketplaceTitle: "Laptop",
+      marketplacePrice: 650000,
+      marketplaceCategory: "Electronics",
+      marketplaceAttributes: {},
+      branchInventory: [
+        {
+          qtyOnHand: 4,
+          qtyReserved: 1,
+        },
+      ],
+      images: [
+        {
+          url: "laptop-back.webp",
+          altText: "Laptop back",
+          imageType: "CLEANED",
+          isMarketplaceApproved: true,
+          isPrimary: false,
+          sortOrder: 1,
+        },
+        {
+          url: "laptop-front.webp",
+          altText: "Laptop front",
+          imageType: "CLEANED",
+          isMarketplaceApproved: true,
+          isPrimary: true,
+          sortOrder: 0,
+        },
+      ],
+    },
+    {
+      publicSlug: "seller",
+      displayName: "Seller",
+      pickupEnabled: true,
+      deliveryEnabled: false,
+      temporarilyClosed: false,
+      tenant: {
+        name: "Seller",
+        currencyCode: "RWF",
+      },
+    },
+  );
+
+  assert.equal(product.images.length, 2);
+  assert.equal(
+    product.image.url,
+    "laptop-front.webp",
+  );
+  assert.equal(
+    product.images[1].url,
+    "laptop-back.webp",
+  );
+});
+
+test("uses an active Marketplace sale price", () => {
+  const product = serializePublicProduct(
+    {
+      name: "Laptop",
+      sellPrice: 700000,
+      marketplaceSlug: "laptop",
+      marketplaceTitle: "Laptop",
+      marketplacePrice: 650000,
+      marketplaceSalePrice: 600000,
+      marketplaceSaleStartsAt: new Date(
+        Date.now() - 60000,
+      ),
+      marketplaceSaleEndsAt: new Date(
+        Date.now() + 60000,
+      ),
+      marketplaceCategory: "Electronics",
+      marketplaceAttributes: {},
+      branchInventory: [
+        {
+          qtyOnHand: 4,
+          qtyReserved: 1,
+        },
+      ],
+      images: [
+        {
+          url: "laptop.webp",
+          imageType: "CLEANED",
+          isMarketplaceApproved: true,
+          isPrimary: true,
+          sortOrder: 0,
+        },
+      ],
+    },
+    {
+      publicSlug: "seller",
+      displayName: "Seller",
+      pickupEnabled: true,
+      deliveryEnabled: false,
+      temporarilyClosed: false,
+      tenant: {
+        name: "Seller",
+        currencyCode: "RWF",
+      },
+    },
+  );
+
+  assert.equal(product.onSale, true);
+  assert.equal(product.price, 600000);
+  assert.equal(product.regularPrice, 650000);
+  assert.equal(product.salePrice, 600000);
+});
+
+test("ignores an expired Marketplace sale", () => {
+  const product = serializePublicProduct(
+    {
+      name: "Laptop",
+      sellPrice: 700000,
+      marketplaceSlug: "laptop",
+      marketplaceTitle: "Laptop",
+      marketplacePrice: 650000,
+      marketplaceSalePrice: 600000,
+      marketplaceSaleEndsAt: new Date(
+        Date.now() - 60000,
+      ),
+      marketplaceCategory: "Electronics",
+      marketplaceAttributes: {},
+      branchInventory: [
+        {
+          qtyOnHand: 4,
+          qtyReserved: 1,
+        },
+      ],
+      images: [
+        {
+          url: "laptop.webp",
+          imageType: "CLEANED",
+          isMarketplaceApproved: true,
+          isPrimary: true,
+          sortOrder: 0,
+        },
+      ],
+    },
+    {
+      publicSlug: "seller",
+      displayName: "Seller",
+      pickupEnabled: true,
+      deliveryEnabled: false,
+      temporarilyClosed: false,
+      tenant: {
+        name: "Seller",
+        currencyCode: "RWF",
+      },
+    },
+  );
+
+  assert.equal(product.onSale, false);
+  assert.equal(product.price, 650000);
+  assert.equal(product.salePrice, null);
+});
