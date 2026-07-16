@@ -607,59 +607,36 @@ export default function MarketplaceHome() {
 
         <section className="svx-commerce-hero">
           <div className="svx-commerce-hero-inner">
-          <div className="svx-market-hero">
-            <div className="svx-market-hero-copy">
-              <span className="svx-market-hero-eyebrow">
-                Storvex Marketplace
-              </span>
 
-              <h1>
-                Products available from real local stores.
-              </h1>
+            <div className="svx-commerce-promo">
+              <div className="svx-commerce-promo-copy">
+                <span>Storvex Marketplace</span>
 
-              <p>
-                Search products, compare stores, and confirm pickup
-                or delivery directly with the seller.
-              </p>
+                <h1>Find products already available in real stores.</h1>
 
-              <form
-                className="svx-market-hero-search"
-                onSubmit={handleSearchSubmit}
-              >
-                <Search size={19} strokeWidth={2.2} />
+                <p>
+                  Browse seller-published stock, confirm with the store,
+                  then arrange pickup or seller-managed delivery.
+                </p>
 
-                <input
-                  value={searchInput}
-                  onChange={(event) =>
-                    setSearchInput(event.target.value)
-                  }
-                  placeholder="Search products or stores"
-                  aria-label="Search products or stores"
-                />
-
-                <button type="submit">
-                  Search
-                </button>
-              </form>
-
-              <a
+                <a
                 href="#marketplace-products"
-                className="svx-market-hero-browse"
+                className="svx-commerce-promo-products-link"
               >
-                Browse available products
-                <ArrowRight size={16} />
+                Browse products
+                <ArrowRight size={17} />
               </a>
-            </div>
+              </div>
 
-            <div className="svx-market-hero-feature">
+              <div className="svx-commerce-promo-visual">
               {products[0] ? (
                 <Link
                   to={`/marketplace/${encodeURIComponent(
                     products[0].seller.slug,
                   )}/${encodeURIComponent(products[0].slug)}`}
-                  className="svx-market-featured-product"
+                  className="svx-commerce-hero-product"
                 >
-                  <div className="svx-market-featured-image">
+                  <div className="svx-commerce-hero-product-image">
                     <img
                       src={products[0].image?.url}
                       alt={
@@ -671,7 +648,7 @@ export default function MarketplaceHome() {
                     <span>Available now</span>
                   </div>
 
-                  <div className="svx-market-featured-content">
+                  <div className="svx-commerce-hero-product-content">
                     <p>
                       <Store size={14} />
                       {products[0].seller.name}
@@ -686,7 +663,7 @@ export default function MarketplaceHome() {
                       )}
                     </strong>
 
-                    <div className="svx-market-featured-meta">
+                    <div className="svx-commerce-hero-product-meta">
                       <span>
                         <ShoppingBag size={13} />
                         {products[0].availableQuantity} available
@@ -704,15 +681,15 @@ export default function MarketplaceHome() {
                       ) : null}
                     </div>
 
-                    <span className="svx-market-featured-action">
+                    <span className="svx-commerce-hero-product-action">
                       View product
                       <ArrowRight size={15} />
                     </span>
                   </div>
                 </Link>
               ) : (
-                <div className="svx-market-featured-empty">
-                  <ShoppingBag size={30} />
+                <div className="svx-commerce-hero-product-empty">
+                  <ShoppingBag size={28} />
                   <strong>Available products</strong>
                   <span>
                     Published products will appear here.
@@ -720,20 +697,19 @@ export default function MarketplaceHome() {
                 </div>
               )}
             </div>
+            </div>
 
-            <div className="svx-market-hero-facts">
+            <aside className="svx-commerce-customer-panel">
               <div>
-                <Store size={18} />
-
+                <Store size={22} />
                 <span>
-                  <strong>Real local stores</strong>
-                  Businesses manage their products through Storvex.
+                  <strong>Real businesses</strong>
+                  Products come from Storvex-managed stores.
                 </span>
               </div>
 
               <div>
-                <ShoppingBag size={18} />
-
+                <Check size={22} />
                 <span>
                   <strong>Available stock</strong>
                   Reserved stock is removed before products appear.
@@ -741,16 +717,19 @@ export default function MarketplaceHome() {
               </div>
 
               <div>
-                <Truck size={18} />
-
+                <Truck size={22} />
                 <span>
-                  <strong>Pickup or delivery</strong>
-                  Final arrangements are confirmed with the seller.
+                  <strong>Seller fulfilment</strong>
+                  The store confirms pickup or delivery with you.
                 </span>
               </div>
-            </div>
+
+              <Link to="/signup">
+                Own a store?
+                <ArrowRight size={15} />
+              </Link>
+            </aside>
           </div>
-        </div>
         </section>
 
         <section className="svx-commerce-page-shell">
