@@ -38,3 +38,7 @@
 - [ ] Add pickup and delivery fulfilment.
 - [ ] Create an internal sale only after handover and payment.
 - [ ] Ensure cancelled and failed deliveries never become sales.
+
+- [x] Make `/marketplace` a real e-commerce discovery homepage.
+- [x] Match the public Marketplace to the Storvex landing-page brand system.
+- [x] Replace native app-store claims with accurate PWA messaging.

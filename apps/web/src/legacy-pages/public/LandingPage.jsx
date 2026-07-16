@@ -33,6 +33,7 @@ const iconSrc = "/storvex_icon.webp";
 const navItems = [
   { label: "Features", href: "#features" },
   { label: "How it works", href: "#how-it-works" },
+  { label: "Marketplace", href: "/marketplace" },
   { label: "Pricing", href: "/signup" },
   { label: "Resources", href: "#resources", hasCaret: true },
 ];
@@ -587,21 +588,29 @@ function MobileReadySection() {
           </div>
 
           <div className="svx-store-badges">
-            <a href="/signup" aria-label="Download on the App Store" className="svx-app-badge">
-              <span className="svx-apple-mark"></span>
+            <Link
+              to="/marketplace"
+              aria-label="Open Storvex Marketplace"
+              className="svx-app-badge"
+            >
+              <span className="svx-play-mark">S</span>
               <span>
-                <small>Download on the</small>
-                App Store
+                <small>Browse products on</small>
+                Marketplace
               </span>
-            </a>
+            </Link>
 
-            <a href="/signup" aria-label="Get it on Google Play" className="svx-app-badge">
-              <span className="svx-play-mark">▶</span>
+            <Link
+              to="/signup"
+              aria-label="Start using the Storvex web app"
+              className="svx-app-badge"
+            >
+              <span className="svx-play-mark">↗</span>
               <span>
-                <small>Get it on</small>
-                Google Play
+                <small>Installable</small>
+                Web app
               </span>
-            </a>
+            </Link>
           </div>
         </div>
 
