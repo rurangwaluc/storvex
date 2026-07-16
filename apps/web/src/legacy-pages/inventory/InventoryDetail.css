@@ -1680,3 +1680,62 @@
   text-align: center;
   vertical-align: middle;
 }
+
+
+/* Marketplace owner sale controls */
+
+.svx-detail-listing-sale-box {
+  display: grid;
+  gap: 11px;
+  border: 1px solid var(--detail-border);
+  border-radius: 18px;
+  background: var(--detail-card);
+  padding: 13px;
+}
+
+.svx-detail-listing-sale-head strong {
+  display: block;
+  color: var(--detail-text);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.svx-detail-listing-sale-head span {
+  display: block;
+  margin-top: 4px;
+  color: var(--detail-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.svx-detail-listing-clear-sale {
+  min-height: 44px;
+  align-self: end;
+  border: 1px solid var(--detail-border);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--detail-muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.svx-detail-listing-clear-sale:hover {
+  border-color: rgba(21, 156, 255, 0.48);
+  color: var(--detail-text);
+}
+
+.svx-detail-listing-clear-sale:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+}
+
+@media (max-width: 720px) {
+  .svx-detail-listing-sale-box {
+    padding: 11px;
+  }
+
+  .svx-detail-listing-clear-sale {
+    width: 100%;
+  }
+}

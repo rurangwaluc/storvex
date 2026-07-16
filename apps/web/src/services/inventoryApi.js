@@ -97,32 +97,58 @@ function normalizeProductImagePayload(payload = {}) {
 }
 
 function normalizeListingPayload(payload = {}) {
-  return cleanObject({
-    listingTitle: cleanString(payload.listingTitle || payload.marketplaceTitle || payload.title),
-    listingDescription: cleanString(payload.listingDescription || payload.marketplaceDescription || payload.description),
+  const normalized = cleanObject({
+    listingTitle: cleanString(
+      payload.listingTitle ||
+      payload.marketplaceTitle ||
+      payload.title,
+    ),
+    listingDescription: cleanString(
+      payload.listingDescription ||
+      payload.marketplaceDescription ||
+      payload.description,
+    ),
     listingPrice:
       payload.listingPrice ??
       payload.marketplacePrice ??
       payload.price,
-    listingSalePrice:
-      payload.listingSalePrice ??
-      payload.marketplaceSalePrice,
-    listingSaleStartsAt: cleanString(
-      payload.listingSaleStartsAt ||
-      payload.marketplaceSaleStartsAt,
-    ),
-    listingSaleEndsAt: cleanString(
-      payload.listingSaleEndsAt ||
-      payload.marketplaceSaleEndsAt,
-    ),
     listingCategory: cleanString(
       payload.listingCategory ||
       payload.marketplaceCategory ||
       payload.publicCategory,
     ),
-    listingAttributes: cleanPlainObject(payload.listingAttributes || payload.marketplaceAttributes || payload.attributes),
-    listingSlug: cleanString(payload.listingSlug || payload.marketplaceSlug || payload.slug),
+    listingAttributes: cleanPlainObject(
+      payload.listingAttributes ||
+      payload.marketplaceAttributes ||
+      payload.attributes,
+    ),
+    listingSlug: cleanString(
+      payload.listingSlug ||
+      payload.marketplaceSlug ||
+      payload.slug,
+    ),
   });
+
+  normalized.listingSalePrice =
+    payload.listingSalePrice === "" ||
+    payload.listingSalePrice === null ||
+    payload.listingSalePrice === undefined
+      ? null
+      : payload.listingSalePrice;
+
+  normalized.listingSaleStartsAt =
+    cleanString(
+      payload.listingSaleStartsAt ||
+      payload.marketplaceSaleStartsAt,
+    ) || null;
+
+  normalized.listingSaleEndsAt =
+    cleanString(
+      payload.listingSaleEndsAt ||
+      payload.marketplaceSaleEndsAt,
+    ) || null;
+
+  return normalized;
 }
 
 function downloadBlob(blob, filename) {

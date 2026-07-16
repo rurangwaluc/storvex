@@ -175,20 +175,79 @@ function productListingStatus(product) {
   };
 }
 
-function listingFormFromProduct(product, fallbackCategory) {
+function toDateTimeLocalInput(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(
+    date.getTime() - offset * 60 * 1000,
+  );
+
+  return localDate.toISOString().slice(0, 16);
+}
+
+function listingFormFromProduct(
+  product,
+  fallbackCategory,
+) {
   return {
-    title: cleanString(product?.listingTitle || product?.marketplaceTitle || product?.name),
-    description: cleanString(product?.listingDescription || product?.marketplaceDescription),
-    price: cleanString(product?.listingPrice ?? product?.marketplacePrice ?? product?.sellPrice ?? ""),
-    category: cleanString(product?.listingCategory || product?.marketplaceCategory || fallbackCategory),
+    title: cleanString(
+      product?.listingTitle ||
+      product?.marketplaceTitle ||
+      product?.name,
+    ),
+    description: cleanString(
+      product?.listingDescription ||
+      product?.marketplaceDescription,
+    ),
+    price: cleanString(
+      product?.listingPrice ??
+      product?.marketplacePrice ??
+      product?.sellPrice ??
+      "",
+    ),
+    salePrice: cleanString(
+      product?.listingSalePrice ??
+      product?.marketplaceSalePrice ??
+      "",
+    ),
+    saleStartsAt: toDateTimeLocalInput(
+      product?.listingSaleStartsAt ??
+      product?.marketplaceSaleStartsAt,
+    ),
+    saleEndsAt: toDateTimeLocalInput(
+      product?.listingSaleEndsAt ??
+      product?.marketplaceSaleEndsAt,
+    ),
+    category: cleanString(
+      product?.listingCategory ||
+      product?.marketplaceCategory ||
+      fallbackCategory,
+    ),
   };
 }
 
 function listingPayloadFromForm(form) {
+  const salePrice =
+    cleanString(form.salePrice) === ""
+      ? null
+      : Number(form.salePrice);
+
   return {
     listingTitle: cleanString(form.title),
-    listingDescription: cleanString(form.description),
+    listingDescription: cleanString(
+      form.description,
+    ),
     listingPrice: Number(form.price || 0),
+    listingSalePrice: salePrice,
+    listingSaleStartsAt:
+      cleanString(form.saleStartsAt) || null,
+    listingSaleEndsAt:
+      cleanString(form.saleEndsAt) || null,
     listingCategory: cleanString(form.category),
   };
 }
@@ -670,6 +729,9 @@ export default function InventoryDetail() {
     title: "",
     description: "",
     price: "",
+    salePrice: "",
+    saleStartsAt: "",
+    saleEndsAt: "",
     category: "",
   });
   const [stockSaving, setStockSaving] = useState(false);
@@ -778,6 +840,42 @@ export default function InventoryDetail() {
 
     if (!Number.isFinite(payload.listingPrice) || payload.listingPrice < 0) {
       toast.error("Listing price must be 0 or more");
+      return null;
+    }
+
+    if (
+      payload.listingSalePrice !== null &&
+      (
+        !Number.isFinite(
+          payload.listingSalePrice,
+        ) ||
+        payload.listingSalePrice < 0
+      )
+    ) {
+      toast.error("Sale price must be 0 or more");
+      return null;
+    }
+
+    if (
+      payload.listingSalePrice !== null &&
+      payload.listingSalePrice >=
+        payload.listingPrice
+    ) {
+      toast.error(
+        "Sale price must be lower than the normal listing price",
+      );
+      return null;
+    }
+
+    if (
+      payload.listingSaleStartsAt &&
+      payload.listingSaleEndsAt &&
+      new Date(payload.listingSaleEndsAt) <=
+        new Date(payload.listingSaleStartsAt)
+    ) {
+      toast.error(
+        "Sale end must be after the sale start",
+      );
       return null;
     }
 
@@ -1168,7 +1266,7 @@ export default function InventoryDetail() {
 
                     <div className="svx-detail-listing-field-grid">
                       <label className="svx-detail-listing-field">
-                        <span>Listing price</span>
+                        <span>Normal price</span>
                         <input
                           type="number"
                           min="0"
@@ -1188,6 +1286,67 @@ export default function InventoryDetail() {
                           disabled={Boolean(listingSaving)}
                         />
                       </label>
+                    </div>
+
+                    <div className="svx-detail-listing-sale-box">
+                      <div className="svx-detail-listing-sale-head">
+                        <div>
+                          <strong>Sale price</strong>
+                          <span>
+                            Optional. Customers see the lower price only while the sale is active.
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="svx-detail-listing-field-grid">
+                        <label className="svx-detail-listing-field">
+                          <span>Lower sale price</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={listingForm.salePrice}
+                            onChange={(event) => updateListingField("salePrice", event.target.value)}
+                            placeholder="Leave empty when not on sale"
+                            disabled={Boolean(listingSaving)}
+                          />
+                        </label>
+
+                        <label className="svx-detail-listing-field">
+                          <span>Sale starts</span>
+                          <input
+                            type="datetime-local"
+                            value={listingForm.saleStartsAt}
+                            onChange={(event) => updateListingField("saleStartsAt", event.target.value)}
+                            disabled={Boolean(listingSaving)}
+                          />
+                        </label>
+
+                        <label className="svx-detail-listing-field">
+                          <span>Sale ends</span>
+                          <input
+                            type="datetime-local"
+                            value={listingForm.saleEndsAt}
+                            onChange={(event) => updateListingField("saleEndsAt", event.target.value)}
+                            disabled={Boolean(listingSaving)}
+                          />
+                        </label>
+
+                        <button
+                          type="button"
+                          className="svx-detail-listing-clear-sale"
+                          onClick={() =>
+                            setListingForm((current) => ({
+                              ...current,
+                              salePrice: "",
+                              saleStartsAt: "",
+                              saleEndsAt: "",
+                            }))
+                          }
+                          disabled={Boolean(listingSaving)}
+                        >
+                          Clear sale
+                        </button>
+                      </div>
                     </div>
 
                     <label className="svx-detail-listing-field">

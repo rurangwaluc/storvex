@@ -296,13 +296,22 @@ function normalizeListingInput(body = {}, product = null, businessCategory = nul
 
   const price = toMoney(rawPrice);
 
-  const rawSalePrice =
-    body.listingSalePrice != null ||
-    body.marketplaceSalePrice != null
-      ? (
-          body.listingSalePrice ??
-          body.marketplaceSalePrice
-        )
+  const hasListingSalePrice =
+    Object.prototype.hasOwnProperty.call(
+      body,
+      "listingSalePrice",
+    );
+
+  const hasMarketplaceSalePrice =
+    Object.prototype.hasOwnProperty.call(
+      body,
+      "marketplaceSalePrice",
+    );
+
+  const rawSalePrice = hasListingSalePrice
+    ? body.listingSalePrice
+    : hasMarketplaceSalePrice
+      ? body.marketplaceSalePrice
       : product?.marketplaceSalePrice;
 
   const salePrice =
@@ -312,17 +321,41 @@ function normalizeListingInput(body = {}, product = null, businessCategory = nul
       ? null
       : toMoney(rawSalePrice);
 
-  const rawSaleStartsAt =
-    body.listingSaleStartsAt ??
-    body.marketplaceSaleStartsAt ??
-    product?.marketplaceSaleStartsAt ??
-    null;
+  const hasListingSaleStartsAt =
+    Object.prototype.hasOwnProperty.call(
+      body,
+      "listingSaleStartsAt",
+    );
 
-  const rawSaleEndsAt =
-    body.listingSaleEndsAt ??
-    body.marketplaceSaleEndsAt ??
-    product?.marketplaceSaleEndsAt ??
-    null;
+  const hasMarketplaceSaleStartsAt =
+    Object.prototype.hasOwnProperty.call(
+      body,
+      "marketplaceSaleStartsAt",
+    );
+
+  const hasListingSaleEndsAt =
+    Object.prototype.hasOwnProperty.call(
+      body,
+      "listingSaleEndsAt",
+    );
+
+  const hasMarketplaceSaleEndsAt =
+    Object.prototype.hasOwnProperty.call(
+      body,
+      "marketplaceSaleEndsAt",
+    );
+
+  const rawSaleStartsAt = hasListingSaleStartsAt
+    ? body.listingSaleStartsAt
+    : hasMarketplaceSaleStartsAt
+      ? body.marketplaceSaleStartsAt
+      : product?.marketplaceSaleStartsAt ?? null;
+
+  const rawSaleEndsAt = hasListingSaleEndsAt
+    ? body.listingSaleEndsAt
+    : hasMarketplaceSaleEndsAt
+      ? body.marketplaceSaleEndsAt
+      : product?.marketplaceSaleEndsAt ?? null;
 
   const saleStartsAt = rawSaleStartsAt
     ? new Date(rawSaleStartsAt)

@@ -7,6 +7,8 @@ import {
   ChevronRight,
   Cpu,
   Drill,
+  GitCompareArrows,
+  Heart,
   Home,
   LampCeiling,
   MapPin,
@@ -17,6 +19,7 @@ import {
   Search,
   Settings2,
   ShoppingBag,
+  ShoppingCart,
   Store,
   Sun,
   Truck,
@@ -91,6 +94,187 @@ function formatMoney(value, currency = "RWF") {
   } catch {
     return `${amount.toLocaleString()} ${currency}`;
   }
+}
+
+const marketplaceStorageKeys = {
+  cart: "storvex-marketplace-cart",
+  wishlist: "storvex-marketplace-wishlist",
+  compare: "storvex-marketplace-compare",
+};
+
+const marketplaceCollectionEvent =
+  "storvex-marketplace-collection-change";
+
+function marketplaceProductKey(product) {
+  return [
+    cleanString(product?.seller?.slug),
+    cleanString(product?.slug),
+  ]
+    .filter(Boolean)
+    .join(":");
+}
+
+function readMarketplaceCollection(storageKey) {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const parsed = JSON.parse(
+      window.localStorage.getItem(storageKey) || "[]",
+    );
+
+    return Array.isArray(parsed)
+      ? parsed.filter(
+          (value) =>
+            typeof value === "string" &&
+            value.trim(),
+        )
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeMarketplaceCollection(storageKey, values) {
+  if (typeof window === "undefined") return;
+
+  const unique = Array.from(
+    new Set(
+      values.filter(
+        (value) =>
+          typeof value === "string" &&
+          value.trim(),
+      ),
+    ),
+  );
+
+  window.localStorage.setItem(
+    storageKey,
+    JSON.stringify(unique),
+  );
+
+  window.dispatchEvent(
+    new CustomEvent(marketplaceCollectionEvent, {
+      detail: {
+        storageKey,
+        values: unique,
+      },
+    }),
+  );
+}
+
+function useMarketplaceCollection(storageKey) {
+  const [values, setValues] = useState(() =>
+    readMarketplaceCollection(storageKey),
+  );
+
+  useEffect(() => {
+    function syncCollection(event) {
+      if (
+        event?.type === marketplaceCollectionEvent &&
+        event?.detail?.storageKey === storageKey
+      ) {
+        setValues(
+          Array.isArray(event.detail.values)
+            ? event.detail.values
+            : [],
+        );
+        return;
+      }
+
+      if (
+        event?.type === "storage" &&
+        event?.key !== storageKey
+      ) {
+        return;
+      }
+
+      setValues(readMarketplaceCollection(storageKey));
+    }
+
+    window.addEventListener(
+      marketplaceCollectionEvent,
+      syncCollection,
+    );
+    window.addEventListener("storage", syncCollection);
+
+    return () => {
+      window.removeEventListener(
+        marketplaceCollectionEvent,
+        syncCollection,
+      );
+      window.removeEventListener(
+        "storage",
+        syncCollection,
+      );
+    };
+  }, [storageKey]);
+
+  function has(value) {
+    return values.includes(value);
+  }
+
+  function add(value, maximum = Number.POSITIVE_INFINITY) {
+    if (!value || values.includes(value)) {
+      return {
+        changed: false,
+        full: false,
+      };
+    }
+
+    if (values.length >= maximum) {
+      return {
+        changed: false,
+        full: true,
+      };
+    }
+
+    writeMarketplaceCollection(
+      storageKey,
+      [...values, value],
+    );
+
+    return {
+      changed: true,
+      full: false,
+    };
+  }
+
+  function remove(value) {
+    if (!values.includes(value)) return false;
+
+    writeMarketplaceCollection(
+      storageKey,
+      values.filter((item) => item !== value),
+    );
+
+    return true;
+  }
+
+  function toggle(value, maximum = Number.POSITIVE_INFINITY) {
+    if (has(value)) {
+      remove(value);
+
+      return {
+        active: false,
+        full: false,
+      };
+    }
+
+    const result = add(value, maximum);
+
+    return {
+      active: result.changed,
+      full: result.full,
+    };
+  }
+
+  return {
+    values,
+    has,
+    add,
+    remove,
+    toggle,
+  };
 }
 
 function marketplaceErrorMessage(error) {
@@ -240,54 +424,299 @@ function MarketplaceHeader() {
 }
 
 function ProductCard({ product }) {
-  return (
-    <Link
-      to={`/marketplace/${encodeURIComponent(
-        product.seller.slug,
-      )}/${encodeURIComponent(product.slug)}`}
-      className="svx-commerce-product-card"
-    >
-      <div className="svx-commerce-product-image">
-        <img
-          src={product.image?.url}
-          alt={product.image?.altText || product.title}
-          loading="lazy"
-        />
+  const cart = useMarketplaceCollection(
+    marketplaceStorageKeys.cart,
+  );
+  const wishlist = useMarketplaceCollection(
+    marketplaceStorageKeys.wishlist,
+  );
+  const compare = useMarketplaceCollection(
+    marketplaceStorageKeys.compare,
+  );
 
-        {product.seller?.temporarilyClosed ? (
-          <span className="is-closed">Store closed</span>
-        ) : product.availableQuantity <= 3 ? (
-          <span>Few remaining</span>
-        ) : (
-          <span className="is-available">Available</span>
-        )}
+  const key = marketplaceProductKey(product);
+
+  const images =
+    Array.isArray(product?.images) &&
+    product.images.length
+      ? product.images
+      : product?.image
+        ? [product.image]
+        : [];
+
+  const [activeImageIndex, setActiveImageIndex] =
+    useState(0);
+  const [compareMessage, setCompareMessage] =
+    useState("");
+
+  const productUrl = `/marketplace/${encodeURIComponent(
+    product.seller.slug,
+  )}/${encodeURIComponent(product.slug)}`;
+
+  const inCart = cart.has(key);
+  const inWishlist = wishlist.has(key);
+  const inCompare = compare.has(key);
+
+  const primaryImage = images[0] || product.image;
+  const secondaryImage = images[1] || null;
+  const activeImage =
+    images[activeImageIndex] || primaryImage;
+
+  useEffect(() => {
+    if (activeImageIndex >= images.length) {
+      setActiveImageIndex(0);
+    }
+  }, [activeImageIndex, images.length]);
+
+  function toggleCart() {
+    cart.toggle(key);
+  }
+
+  function toggleWishlist() {
+    wishlist.toggle(key);
+  }
+
+  function toggleCompare() {
+    const result = compare.toggle(key, 4);
+
+    if (result.full) {
+      setCompareMessage(
+        "You can compare up to 4 products.",
+      );
+
+      window.setTimeout(() => {
+        setCompareMessage("");
+      }, 2600);
+      return;
+    }
+
+    setCompareMessage("");
+  }
+
+  return (
+    <article
+      className={cx(
+        "svx-commerce-product-card",
+        product.onSale && "is-on-sale",
+      )}
+    >
+      <div className="svx-commerce-product-media">
+        <Link
+          to={productUrl}
+          className="svx-commerce-product-image"
+          aria-label={`View ${product.title}`}
+        >
+          {primaryImage ? (
+            <>
+              <img
+                className="svx-commerce-product-image-primary"
+                src={
+                  activeImage?.url ||
+                  primaryImage.url
+                }
+                alt={
+                  activeImage?.altText ||
+                  primaryImage.altText ||
+                  product.title
+                }
+                loading="lazy"
+              />
+
+              {secondaryImage ? (
+                <img
+                  className="svx-commerce-product-image-secondary"
+                  src={secondaryImage.url}
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                />
+              ) : null}
+            </>
+          ) : null}
+
+          <div className="svx-commerce-product-badges">
+            {product.onSale ? (
+              <span className="is-sale">Sale</span>
+            ) : null}
+
+            {product.seller?.temporarilyClosed ? (
+              <span className="is-closed">
+                Store closed
+              </span>
+            ) : product.availableQuantity <= 3 ? (
+              <span>Few remaining</span>
+            ) : (
+              <span className="is-available">
+                Available
+              </span>
+            )}
+          </div>
+        </Link>
+
+        <div className="svx-commerce-product-quick-actions">
+          <button
+            type="button"
+            className={cx(
+              inWishlist && "is-active",
+            )}
+            onClick={toggleWishlist}
+            aria-label={
+              inWishlist
+                ? `Remove ${product.title} from wishlist`
+                : `Add ${product.title} to wishlist`
+            }
+            aria-pressed={inWishlist}
+            title={
+              inWishlist
+                ? "Remove from wishlist"
+                : "Add to wishlist"
+            }
+          >
+            <Heart
+              size={17}
+              fill={
+                inWishlist
+                  ? "currentColor"
+                  : "none"
+              }
+            />
+          </button>
+
+          <button
+            type="button"
+            className={cx(
+              inCompare && "is-active",
+            )}
+            onClick={toggleCompare}
+            aria-label={
+              inCompare
+                ? `Remove ${product.title} from comparison`
+                : `Compare ${product.title}`
+            }
+            aria-pressed={inCompare}
+            title={
+              inCompare
+                ? "Remove from comparison"
+                : "Compare product"
+            }
+          >
+            <GitCompareArrows size={17} />
+          </button>
+        </div>
+
+        {images.length > 1 ? (
+          <div
+            className="svx-commerce-product-image-switcher"
+            aria-label="Choose product image"
+          >
+            {images.slice(0, 4).map((image, index) => (
+              <button
+                type="button"
+                key={`${image.url}-${index}`}
+                className={
+                  activeImageIndex === index
+                    ? "is-active"
+                    : ""
+                }
+                onClick={() =>
+                  setActiveImageIndex(index)
+                }
+                aria-label={`Show product image ${
+                  index + 1
+                }`}
+                aria-pressed={
+                  activeImageIndex === index
+                }
+              />
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="svx-commerce-product-content">
-        <p>
-          <Store size={13} />
-          {product.seller?.name}
-        </p>
+        <Link
+          to={productUrl}
+          className="svx-commerce-product-main-link"
+        >
+          <p>
+            <Store size={13} />
+            <span>{product.seller?.name}</span>
+          </p>
 
-        <h3>{product.title}</h3>
+          <h3>{product.title}</h3>
+        </Link>
 
         <div className="svx-commerce-product-meta">
-          {product.pickupEnabled ? <span>Pickup</span> : null}
-          {product.deliveryEnabled ? <span>Delivery</span> : null}
+          {product.pickupEnabled ? (
+            <span>Pickup</span>
+          ) : null}
+
+          {product.deliveryEnabled ? (
+            <span>Delivery</span>
+          ) : null}
         </div>
 
-        <div className="svx-commerce-product-price">
-          <strong>
-            {formatMoney(product.price, product.currency)}
-          </strong>
+        <div
+          className={cx(
+            "svx-commerce-product-price",
+            product.onSale && "is-sale",
+          )}
+        >
+          <div>
+            <strong>
+              {formatMoney(
+                product.price,
+                product.currency,
+              )}
+            </strong>
+
+            {product.onSale ? (
+              <del>
+                {formatMoney(
+                  product.regularPrice,
+                  product.currency,
+                )}
+              </del>
+            ) : null}
+          </div>
+
+          <Link
+            to={productUrl}
+            aria-label={`View ${product.title}`}
+          >
+            <ArrowRight size={15} />
+          </Link>
+        </div>
+
+        <button
+          type="button"
+          className={cx(
+            "svx-commerce-product-cart-button",
+            inCart && "is-active",
+          )}
+          onClick={toggleCart}
+          aria-pressed={inCart}
+        >
+          {inCart ? (
+            <Check size={16} />
+          ) : (
+            <ShoppingCart size={16} />
+          )}
 
           <span>
-            View
-            <ArrowRight size={14} />
+            {inCart ? "In cart" : "Add to cart"}
           </span>
-        </div>
+        </button>
+
+        <span
+          className="svx-commerce-product-action-message"
+          role="status"
+          aria-live="polite"
+        >
+          {compareMessage}
+        </span>
       </div>
-    </Link>
+    </article>
   );
 }
 
