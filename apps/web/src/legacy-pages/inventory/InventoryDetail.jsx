@@ -30,6 +30,7 @@ import {
   unpublishProductListing,
   updateProductListingDraft,
 } from "../../services/inventoryApi";
+import { useAuthRole } from "../../auth/useAuthRole";
 import "./InventoryDetail.css";
 
 const PAGE_SIZE = 6;
@@ -231,25 +232,35 @@ function listingFormFromProduct(
   };
 }
 
-function listingPayloadFromForm(form) {
-  const salePrice =
-    cleanString(form.salePrice) === ""
-      ? null
-      : Number(form.salePrice);
-
-  return {
+function listingPayloadFromForm(
+  form,
+  { includeSale = false } = {},
+) {
+  const payload = {
     listingTitle: cleanString(form.title),
     listingDescription: cleanString(
       form.description,
     ),
     listingPrice: Number(form.price || 0),
-    listingSalePrice: salePrice,
-    listingSaleStartsAt:
-      cleanString(form.saleStartsAt) || null,
-    listingSaleEndsAt:
-      cleanString(form.saleEndsAt) || null,
     listingCategory: cleanString(form.category),
   };
+
+  if (!includeSale) {
+    return payload;
+  }
+
+  payload.listingSalePrice =
+    cleanString(form.salePrice) === ""
+      ? null
+      : Number(form.salePrice);
+
+  payload.listingSaleStartsAt =
+    cleanString(form.saleStartsAt) || null;
+
+  payload.listingSaleEndsAt =
+    cleanString(form.saleEndsAt) || null;
+
+  return payload;
 }
 
 function branchLabel(product) {
@@ -716,6 +727,8 @@ function EmptyState({ title, text }) {
 export default function InventoryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const userRole = useAuthRole();
+  const isOwner = userRole === "OWNER";
 
   const [product, setProduct] = useState(null);
   const [stockRows, setStockRows] = useState([]);
@@ -826,7 +839,12 @@ export default function InventoryDetail() {
   }
 
   function validateListing({ publishing = false } = {}) {
-    const payload = listingPayloadFromForm(listingForm);
+    const payload = listingPayloadFromForm(
+      listingForm,
+      {
+        includeSale: isOwner,
+      },
+    );
 
     if (!payload.listingTitle) {
       toast.error("Listing title is required");
@@ -844,6 +862,7 @@ export default function InventoryDetail() {
     }
 
     if (
+      isOwner &&
       payload.listingSalePrice !== null &&
       (
         !Number.isFinite(
@@ -857,6 +876,7 @@ export default function InventoryDetail() {
     }
 
     if (
+      isOwner &&
       payload.listingSalePrice !== null &&
       payload.listingSalePrice >=
         payload.listingPrice
@@ -868,6 +888,7 @@ export default function InventoryDetail() {
     }
 
     if (
+      isOwner &&
       payload.listingSaleStartsAt &&
       payload.listingSaleEndsAt &&
       new Date(payload.listingSaleEndsAt) <=
@@ -1288,8 +1309,9 @@ export default function InventoryDetail() {
                       </label>
                     </div>
 
-                    <div className="svx-detail-listing-sale-box">
-                      <div className="svx-detail-listing-sale-head">
+                    {isOwner ? (
+                      <div className="svx-detail-listing-sale-box">
+                        <div className="svx-detail-listing-sale-head">
                         <div>
                           <strong>Sale price</strong>
                           <span>
@@ -1347,7 +1369,8 @@ export default function InventoryDetail() {
                           Clear sale
                         </button>
                       </div>
-                    </div>
+                      </div>
+                    ) : null}
 
                     <label className="svx-detail-listing-field">
                       <span>Listing description</span>

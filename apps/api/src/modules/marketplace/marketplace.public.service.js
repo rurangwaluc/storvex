@@ -110,11 +110,19 @@ function activeMarketplacePricing(product, now = new Date()) {
     ),
   );
 
-  const rawSalePrice = Number(
-    product.marketplaceSalePrice,
-  );
+  const saleValue = product.marketplaceSalePrice;
+
+  const hasSaleValue =
+    saleValue !== null &&
+    saleValue !== undefined &&
+    saleValue !== "";
+
+  const rawSalePrice = hasSaleValue
+    ? Number(saleValue)
+    : Number.NaN;
 
   const validSalePrice =
+    hasSaleValue &&
     Number.isFinite(rawSalePrice) &&
     rawSalePrice >= 0 &&
     rawSalePrice < regularPrice;

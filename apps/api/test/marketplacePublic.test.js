@@ -349,3 +349,52 @@ test("ignores an expired Marketplace sale", () => {
   assert.equal(product.price, 650000);
   assert.equal(product.salePrice, null);
 });
+
+
+test("does not treat a missing sale price as zero", () => {
+  const product = serializePublicProduct(
+    {
+      name: "Laptop",
+      sellPrice: 700000,
+      marketplaceSlug: "laptop",
+      marketplaceTitle: "Laptop",
+      marketplacePrice: 650000,
+      marketplaceSalePrice: null,
+      marketplaceSaleStartsAt: null,
+      marketplaceSaleEndsAt: null,
+      marketplaceCategory: "Electronics",
+      marketplaceAttributes: {},
+      branchInventory: [
+        {
+          qtyOnHand: 4,
+          qtyReserved: 0,
+        },
+      ],
+      images: [
+        {
+          url: "laptop.webp",
+          imageType: "CLEANED",
+          isMarketplaceApproved: true,
+          isPrimary: true,
+          sortOrder: 0,
+        },
+      ],
+    },
+    {
+      publicSlug: "seller",
+      displayName: "Seller",
+      pickupEnabled: true,
+      deliveryEnabled: false,
+      temporarilyClosed: false,
+      tenant: {
+        name: "Seller",
+        currencyCode: "RWF",
+      },
+    },
+  );
+
+  assert.equal(product.onSale, false);
+  assert.equal(product.price, 650000);
+  assert.equal(product.regularPrice, 650000);
+  assert.equal(product.salePrice, null);
+});

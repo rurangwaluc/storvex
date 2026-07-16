@@ -84,15 +84,22 @@ function cleanString(value) {
 
 function formatMoney(value, currency = "RWF") {
   const amount = Math.max(0, Number(value || 0));
+  const currencyCode = cleanString(currency).toUpperCase() || "RWF";
+
+  if (currencyCode === "RWF") {
+    return `Rwf ${new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: 0,
+    }).format(amount)}`;
+  }
 
   try {
-    return new Intl.NumberFormat("en-RW", {
+    return new Intl.NumberFormat("en", {
       style: "currency",
-      currency,
+      currency: currencyCode,
       maximumFractionDigits: 0,
     }).format(amount);
   } catch {
-    return `${amount.toLocaleString()} ${currency}`;
+    return `${currencyCode} ${amount.toLocaleString()}`;
   }
 }
 

@@ -279,6 +279,53 @@ function normalizeImageInput(body = {}) {
   };
 }
 
+const MARKETPLACE_SALE_FIELDS = [
+  "listingSalePrice",
+  "listingSaleStartsAt",
+  "listingSaleEndsAt",
+  "marketplaceSalePrice",
+  "marketplaceSaleStartsAt",
+  "marketplaceSaleEndsAt",
+];
+
+function requestContainsMarketplaceSaleFields(body) {
+  const source =
+    body && typeof body === "object"
+      ? body
+      : {};
+
+  return MARKETPLACE_SALE_FIELDS.some((field) =>
+    Object.prototype.hasOwnProperty.call(
+      source,
+      field,
+    ),
+  );
+}
+
+function requireOwnerForMarketplaceSale(req, res) {
+  if (!requestContainsMarketplaceSaleFields(req.body)) {
+    return true;
+  }
+
+  const role = String(
+    req.user?.role || "",
+  )
+    .trim()
+    .toUpperCase();
+
+  if (role === "OWNER") {
+    return true;
+  }
+
+  res.status(403).json({
+    message:
+      "Only the business owner can manage Marketplace sales.",
+    code: "OWNER_REQUIRED_FOR_MARKETPLACE_SALE",
+  });
+
+  return false;
+}
+
 function normalizeListingInput(body = {}, product = null, businessCategory = null) {
   const title = cleanString(body.listingTitle || body.marketplaceTitle || body.title || product?.marketplaceTitle || product?.name);
   const description = cleanString(
@@ -3047,6 +3094,10 @@ async function updateProductListingDraft(req, res) {
   const userId = getUserId(req);
   if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
 
+  if (!requireOwnerForMarketplaceSale(req, res)) {
+    return;
+  }
+
   const productId = req.params.id;
   const activeBranchId = getActiveBranchId(req);
 
@@ -3135,6 +3186,10 @@ async function publishProductListing(req, res) {
   const tenantId = getTenantId(req);
   const userId = getUserId(req);
   if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+  if (!requireOwnerForMarketplaceSale(req, res)) {
+    return;
+  }
 
   const productId = req.params.id;
   const activeBranchId = getActiveBranchId(req);
