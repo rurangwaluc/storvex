@@ -607,36 +607,48 @@ export default function MarketplaceHome() {
 
         <section className="svx-commerce-hero">
           <div className="svx-commerce-hero-inner">
+          <section className="svx-market-discovery-hero">
+            <div className="svx-market-discovery-copy">
+              <span className="svx-market-discovery-eyebrow">
+                Storvex Marketplace
+              </span>
 
-            <div className="svx-commerce-promo">
-              <div className="svx-commerce-promo-copy">
-                <span>Storvex Marketplace</span>
+              <h1>Find products available near you.</h1>
 
-                <h1>Find products already available in real stores.</h1>
+              <p>
+                Search products and stores, then confirm pickup or
+                delivery directly with the seller.
+              </p>
 
-                <p>
-                  Browse seller-published stock, confirm with the store,
-                  then arrange pickup or seller-managed delivery.
-                </p>
-
-                <a
-                href="#marketplace-products"
-                className="svx-commerce-promo-products-link"
+              <form
+                className="svx-market-discovery-search"
+                onSubmit={submitSearch}
               >
-                Browse products
-                <ArrowRight size={17} />
-              </a>
-              </div>
+                <Search size={19} strokeWidth={2.2} />
 
-              <div className="svx-commerce-promo-visual">
+                <input
+                  value={searchInput}
+                  onChange={(event) =>
+                    setSearchInput(event.target.value)
+                  }
+                  placeholder="Search products or stores"
+                  aria-label="Search products or stores"
+                />
+
+                <button type="submit">Search</button>
+              </form>
+            </div>
+
+            <div className="svx-market-discovery-visual">
               {products[0] ? (
-                <Link
-                  to={`/marketplace/${encodeURIComponent(
-                    products[0].seller.slug,
-                  )}/${encodeURIComponent(products[0].slug)}`}
-                  className="svx-commerce-hero-product"
-                >
-                  <div className="svx-commerce-hero-product-image">
+                <>
+                  <Link
+                    to={`/marketplace/${encodeURIComponent(
+                      products[0].seller.slug,
+                    )}/${encodeURIComponent(products[0].slug)}`}
+                    className="svx-market-discovery-image"
+                    aria-label={`View ${products[0].title}`}
+                  >
                     <img
                       src={products[0].image?.url}
                       alt={
@@ -644,92 +656,71 @@ export default function MarketplaceHome() {
                         products[0].title
                       }
                     />
+                  </Link>
 
-                    <span>Available now</span>
-                  </div>
+                  <div className="svx-market-discovery-product">
+                    <span>{products[0].seller.name}</span>
 
-                  <div className="svx-commerce-hero-product-content">
-                    <p>
-                      <Store size={14} />
-                      {products[0].seller.name}
-                    </p>
+                    <strong>{products[0].title}</strong>
 
-                    <h2>{products[0].title}</h2>
-
-                    <strong>
+                    <b>
                       {formatMoney(
                         products[0].price,
                         products[0].currency,
                       )}
-                    </strong>
+                    </b>
 
-                    <div className="svx-commerce-hero-product-meta">
-                      <span>
-                        <ShoppingBag size={13} />
-                        {products[0].availableQuantity} available
-                      </span>
-
-                      {products[0].pickupEnabled ? (
-                        <span>Pickup</span>
-                      ) : null}
-
-                      {products[0].deliveryEnabled ? (
-                        <span>
-                          <Truck size={13} />
-                          Delivery
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <span className="svx-commerce-hero-product-action">
+                    <Link
+                      to={`/marketplace/${encodeURIComponent(
+                        products[0].seller.slug,
+                      )}/${encodeURIComponent(products[0].slug)}`}
+                    >
                       View product
                       <ArrowRight size={15} />
-                    </span>
+                    </Link>
                   </div>
-                </Link>
+                </>
               ) : (
-                <div className="svx-commerce-hero-product-empty">
-                  <ShoppingBag size={28} />
-                  <strong>Available products</strong>
+                <div className="svx-market-discovery-empty">
+                  <strong>Products available from real stores</strong>
+
                   <span>
-                    Published products will appear here.
+                    Published Marketplace products will appear here.
                   </span>
                 </div>
               )}
             </div>
-            </div>
 
-            <aside className="svx-commerce-customer-panel">
+            <div className="svx-market-discovery-facts">
               <div>
-                <Store size={22} />
-                <span>
-                  <strong>Real businesses</strong>
-                  Products come from Storvex-managed stores.
-                </span>
+                <span>01</span>
+
+                <p>
+                  <strong>Real local stores</strong>
+                  Products come from businesses using Storvex.
+                </p>
               </div>
 
               <div>
-                <Check size={22} />
-                <span>
+                <span>02</span>
+
+                <p>
                   <strong>Available stock</strong>
-                  Reserved stock is removed before products appear.
-                </span>
+                  Reserved quantities are removed before display.
+                </p>
               </div>
 
               <div>
-                <Truck size={22} />
-                <span>
-                  <strong>Seller fulfilment</strong>
-                  The store confirms pickup or delivery with you.
-                </span>
-              </div>
+                <span>03</span>
 
-              <Link to="/signup">
-                Own a store?
-                <ArrowRight size={15} />
-              </Link>
-            </aside>
-          </div>
+                <p>
+                  <strong>Pickup or delivery</strong>
+                  Final arrangements are confirmed with the seller.
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
         </section>
 
         <section className="svx-commerce-page-shell">
