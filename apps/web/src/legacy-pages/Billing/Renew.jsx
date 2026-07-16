@@ -6,6 +6,10 @@ import apiClient from "../../services/apiClient";
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import { useTheme } from "../../hooks/useTheme";
+import {
+  normalizeSubscriptionPlan,
+  normalizeSubscriptionPlans,
+} from "../../utils/subscriptionPlans";
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
@@ -189,138 +193,27 @@ function daysUntil(value) {
   return Math.max(0, Math.ceil((end - Date.now()) / (1000 * 60 * 60 * 24)));
 }
 
-function normalizeCycleFromPlan(plan) {
-  const cycleKey = cleanString(plan?.cycleKey).toUpperCase();
-  const label = cleanString(plan?.cycleLabel || plan?.label).toLowerCase();
-  const days = toNumber(plan?.days, 0);
-
-  if (["M1", "MONTHLY", "MONTH"].includes(cycleKey)) return "MONTHLY";
-  if (["M3", "QUARTERLY", "QUARTER"].includes(cycleKey)) return "QUARTERLY";
-  if (["M6", "HALF_YEAR", "HALF_YEARLY", "SIX_MONTHS"].includes(cycleKey)) return "HALF_YEAR";
-  if (["Y1", "YEARLY", "ANNUAL", "ANNUALLY"].includes(cycleKey)) return "YEARLY";
-
-  if (label.includes("1 year") || label.includes("year") || days >= 360) return "YEARLY";
-  if (label.includes("6 months") || label.includes("6 month") || days >= 175) return "HALF_YEAR";
-  if (label.includes("3 months") || label.includes("3 month") || days >= 85) return "QUARTERLY";
-
-  return "MONTHLY";
-}
-
-function normalizeSegmentFromPlan(plan) {
-  const tierKey = cleanString(plan?.tierKey).toUpperCase();
-  const label = cleanString(plan?.tierLabel || plan?.label).toLowerCase();
-
-  if (tierKey === "ENTERPRISE" || label.includes("enterprise")) return "ENTERPRISE";
-  if (tierKey === "SOLO" || label.includes("solo")) return "SOLO";
-  if (tierKey === "DUO" || label.includes("duo")) return "DUO";
-
-  if (tierKey === "TEAM_3" || label.includes("team 3")) return "TEAM_3";
-  if (tierKey === "TEAM_4" || label.includes("team 4")) return "TEAM_4";
-  if (tierKey === "TEAM_5" || label.includes("team 5")) return "TEAM_5";
-  if (tierKey === "TEAM_10" || label.includes("team 10")) return "TEAM_10";
-
-  const staffLimit = Number(plan?.staffLimit);
-  if (staffLimit === 1) return "SOLO";
-  if (staffLimit === 2) return "DUO";
-  if (staffLimit === 3) return "TEAM_3";
-  if (staffLimit === 4) return "TEAM_4";
-  if (staffLimit === 5) return "TEAM_5";
-  if (staffLimit === 10) return "TEAM_10";
-
-  return "OTHER";
-}
-
-function segmentLabel(segment) {
-  if (segment === "SOLO") return "Solo";
-  if (segment === "DUO") return "Duo";
-  if (segment === "TEAM_3") return "Team 3";
-  if (segment === "TEAM_4") return "Team 4";
-  if (segment === "TEAM_5") return "Team 5";
-  if (segment === "TEAM_10") return "Team 10";
-  if (segment === "ENTERPRISE") return "Enterprise";
-  return "Other";
-}
-
-function cycleLabel(cycle) {
-  if (cycle === "MONTHLY") return "Monthly";
-  if (cycle === "QUARTERLY") return "3 months";
-  if (cycle === "HALF_YEAR") return "6 months";
-  if (cycle === "YEARLY") return "1 year";
-  return "Other";
-}
-
-function cycleRank(cycle) {
-  if (cycle === "MONTHLY") return 1;
-  if (cycle === "QUARTERLY") return 2;
-  if (cycle === "HALF_YEAR") return 3;
-  if (cycle === "YEARLY") return 4;
-  return 99;
-}
-
-function segmentRank(segment) {
-  if (segment === "SOLO") return 1;
-  if (segment === "DUO") return 2;
-  if (segment === "TEAM_3") return 3;
-  if (segment === "TEAM_4") return 4;
-  if (segment === "TEAM_5") return 5;
-  if (segment === "TEAM_10") return 10;
-  return 99;
-}
-
 function normalizePlan(plan) {
-  const segment = normalizeSegmentFromPlan(plan);
-  const cycle = normalizeCycleFromPlan(plan);
-
-  return {
-    ...plan,
-    key: cleanString(plan?.key),
-    label: cleanString(plan?.label) || "Plan",
-    segment,
-    cycle,
-    staffLimit: Number.isFinite(Number(plan?.staffLimit)) ? Number(plan.staffLimit) : null,
-    branchLimit: Number.isFinite(Number(plan?.branchLimit)) ? Number(plan.branchLimit) : null,
-    days: Number.isFinite(Number(plan?.days)) ? Number(plan.days) : 30,
-    price: Number.isFinite(Number(plan?.price)) ? Number(plan.price) : 0,
-    currency: cleanString(plan?.currency) || "RWF",
-    isEnterprise: Boolean(plan?.isEnterprise) || segment === "ENTERPRISE",
-  };
+  return normalizeSubscriptionPlan(plan);
 }
 
 function groupPlans(plans) {
-  const normalized = Array.isArray(plans) ? plans.map(normalizePlan).filter((p) => p.key) : [];
-
-  const standard = normalized
-    .filter((plan) => !plan.isEnterprise && plan.segment !== "ENTERPRISE")
-    .sort((a, b) => {
-      const segmentDiff = segmentRank(a.segment) - segmentRank(b.segment);
-      if (segmentDiff !== 0) return segmentDiff;
-      return cycleRank(a.cycle) - cycleRank(b.cycle);
-    });
-
-  const segments = Array.from(new Set(standard.map((p) => p.segment))).sort(
-    (a, b) => segmentRank(a) - segmentRank(b),
+  const normalized = normalizeSubscriptionPlans(plans).filter(
+    (plan) => !plan.isEnterprise,
   );
 
-  const cycles = Array.from(new Set(standard.map((p) => p.cycle))).sort(
-    (a, b) => cycleRank(a) - cycleRank(b),
-  );
-
-  const maxStaffLimit = standard.reduce((max, plan) => {
-    const staffLimit = Number(plan.staffLimit);
-    if (!Number.isFinite(staffLimit)) return max;
-    return Math.max(max, staffLimit);
+  const maxStaffLimit = normalized.reduce((maximum, plan) => {
+    if (plan.staffLimit == null) return maximum;
+    return Math.max(maximum, plan.staffLimit);
   }, 0);
 
-  const maxBranchLimit = standard.reduce((max, plan) => {
-    const branchLimit = Number(plan.branchLimit);
-    if (!Number.isFinite(branchLimit)) return max;
-    return Math.max(max, branchLimit);
+  const maxBranchLimit = normalized.reduce((maximum, plan) => {
+    if (plan.branchLimit == null) return maximum;
+    return Math.max(maximum, plan.branchLimit);
   }, 0);
 
   return {
-    standard,
-    segments,
-    cycles,
+    standard: normalized,
     maxStaffLimit,
     maxBranchLimit,
   };
@@ -478,12 +371,12 @@ function PlanCard({ plan, active, disabled, reason, onSelect }) {
           </div>
 
           <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-            {segmentLabel(plan.segment)} • {cycleLabel(plan.cycle)}
+            {plan.audience}
           </div>
         </div>
 
         <Badge tone={active ? "primary" : "neutral"} className="shrink-0">
-          {plan.days} days
+          {plan.recommended ? "Recommended" : plan.cycleLabel || "Monthly"}
         </Badge>
       </div>
 
@@ -627,8 +520,6 @@ export default function Renew() {
 
   const [me, setMe] = useState(null);
   const [plans, setPlans] = useState([]);
-  const [selectedSegment, setSelectedSegment] = useState("");
-  const [selectedCycle, setSelectedCycle] = useState("");
   const [planKey, setPlanKey] = useState("");
   const [phone, setPhone] = useState(localStorage.getItem("storvex_ownerPhone") || "");
   const [paymentRef, setPaymentRef] = useState("");
@@ -642,21 +533,15 @@ export default function Renew() {
     grouped.maxStaffLimit > 0 && activeStaff > grouped.maxStaffLimit,
   );
 
-  const visiblePlans = useMemo(() => {
-    return grouped.standard.filter(
-      (plan) =>
-        (!selectedSegment || plan.segment === selectedSegment) &&
-        (!selectedCycle || plan.cycle === selectedCycle),
-    );
-  }, [grouped.standard, selectedSegment, selectedCycle]);
+  const visiblePlans = grouped.standard;
 
   const selectedPlan = useMemo(
     () =>
-      visiblePlans.find((plan) => plan.key === planKey) ||
       grouped.standard.find((plan) => plan.key === planKey) ||
-      visiblePlans[0] ||
+      grouped.standard.find((plan) => plan.recommended) ||
+      grouped.standard[0] ||
       null,
-    [visiblePlans, grouped.standard, planKey],
+    [grouped.standard, planKey],
   );
 
   const selectedPlanInsufficient = useMemo(() => {
@@ -691,21 +576,32 @@ export default function Renew() {
           setPhone(meData.store.phone);
         }
 
-        const list = Array.isArray(planData?.plans) ? planData.plans : [];
-        const normalizedPlans = list.map(normalizePlan);
-        const filtered = normalizedPlans.filter((plan) => !plan.isEnterprise);
+        const filtered = normalizeSubscriptionPlans(
+          planData?.plans,
+        ).filter((plan) => !plan.isEnterprise);
 
         setPlans(filtered);
 
         if (filtered.length) {
-          const currentPlanKey = meData?.subscription?.nextPlanKey || meData?.subscription?.planKey;
+          const currentPlanKey =
+            meData?.subscription?.nextPlanKey ||
+            meData?.subscription?.planKey;
+
+          const activeStaffCount = pickActiveStaff(meData);
+          const activeBranchCount = pickActiveBranches(meData);
+
           const matched =
             filtered.find((plan) => plan.key === currentPlanKey) ||
-            filtered.find((plan) => Number(plan.staffLimit) >= pickActiveStaff(meData)) ||
+            filtered.find(
+              (plan) =>
+                (plan.staffLimit == null ||
+                  plan.staffLimit >= activeStaffCount) &&
+                (plan.branchLimit == null ||
+                  plan.branchLimit >= activeBranchCount),
+            ) ||
+            filtered.find((plan) => plan.recommended) ||
             filtered[0];
 
-          setSelectedSegment(matched.segment);
-          setSelectedCycle(matched.cycle);
           setPlanKey(matched.key);
         }
       } catch (err) {
@@ -722,35 +618,6 @@ export default function Renew() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function chooseSegment(segment) {
-    setSelectedSegment(segment);
-
-    const firstPlan =
-      grouped.standard.find((plan) => plan.segment === segment && plan.cycle === selectedCycle) ||
-      grouped.standard.find((plan) => plan.segment === segment && plan.cycle === "HALF_YEAR") ||
-      grouped.standard.find((plan) => plan.segment === segment) ||
-      null;
-
-    if (firstPlan) {
-      setSelectedCycle(firstPlan.cycle);
-      setPlanKey(firstPlan.key);
-    }
-  }
-
-  function chooseCycle(cycle) {
-    setSelectedCycle(cycle);
-
-    const match =
-      grouped.standard.find((plan) => plan.segment === selectedSegment && plan.cycle === cycle) ||
-      grouped.standard.find((plan) => plan.cycle === cycle) ||
-      null;
-
-    if (match) {
-      setSelectedSegment(match.segment);
-      setPlanKey(match.key);
-    }
-  }
 
   async function startRenewal(event) {
     event.preventDefault();
@@ -903,43 +770,20 @@ export default function Renew() {
                 </div>
 
                 <form onSubmit={startRenewal} className="space-y-6">
-                  <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-2">
-                    <div className="min-w-0">
-                      <div className={cx("text-sm font-black", strongText())}>1. Choose business size</div>
-                      <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-                        Select the plan family that matches your current store team.
-                      </div>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {grouped.segments.map((segment) => (
-                          <FilterChip
-                            key={segment}
-                            active={selectedSegment === segment}
-                            onClick={() => chooseSegment(segment)}
-                          >
-                            {segmentLabel(segment)}
-                          </FilterChip>
-                        ))}
-                      </div>
+                  <div className="min-w-0">
+                    <div className={cx("text-sm font-black", strongText())}>
+                      1. Choose your plan
                     </div>
 
-                    <div className="min-w-0">
-                      <div className={cx("text-sm font-black", strongText())}>2. Choose billing cycle</div>
-                      <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
-                        Pick the renewal duration that matches your commitment.
-                      </div>
-
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {grouped.cycles.map((cycle) => (
-                          <FilterChip
-                            key={cycle}
-                            active={selectedCycle === cycle}
-                            onClick={() => chooseCycle(cycle)}
-                          >
-                            {cycleLabel(cycle)}
-                          </FilterChip>
-                        ))}
-                      </div>
+                    <div
+                      className={cx(
+                        "mt-1 text-xs font-semibold leading-5",
+                        mutedText(),
+                      )}
+                    >
+                      Plans come directly from Storvex billing and already
+                      include the correct price, staff capacity, locations,
+                      Marketplace access and business tools.
                     </div>
                   </div>
 
@@ -1020,8 +864,14 @@ export default function Renew() {
                           </div>
 
                           <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
-                            <InfoStat label="Cycle" value={cycleLabel(selectedPlan.cycle)} />
-                            <InfoStat label="Duration" value={`${selectedPlan.days} days`} />
+                            <InfoStat
+                              label="Billing"
+                              value={selectedPlan.cycleLabel || "Monthly"}
+                            />
+                            <InfoStat
+                              label="Best for"
+                              value={selectedPlan.audience}
+                            />
                             <InfoStat label="Staff" value={selectedPlan.staffLimit ?? "Custom"} />
                             <InfoStat label="Branches" value={selectedPlan.branchLimit ?? "Custom"} />
                           </div>
@@ -1119,10 +969,12 @@ export default function Renew() {
                 </div>
 
                 <div className={cx("mt-4 rounded-2xl bg-[var(--color-surface-2)] p-4 text-xs font-semibold leading-5", mutedText())}>
-                  Grace window: {formatDate(sub?.graceEndDate)}
-                  {graceDaysLeft == null
-                    ? ""
-                    : ` • ${graceDaysLeft} day${graceDaysLeft === 1 ? "" : "s"} left`}
+                  <span>Grace window: {formatDate(sub?.graceEndDate)}</span>
+                  {graceDaysLeft == null ? null : (
+                    <span className="mt-1 block">
+                      {graceDaysLeft} day{graceDaysLeft === 1 ? "" : "s"} left
+                    </span>
+                  )}
                 </div>
               </div>
             </aside>

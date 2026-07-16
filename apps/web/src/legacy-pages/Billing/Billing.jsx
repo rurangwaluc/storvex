@@ -4,38 +4,13 @@ import toast from "react-hot-toast";
 import apiClient from "../../services/apiClient";
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
+import {
+  findSubscriptionPlan,
+  normalizeSubscriptionPlans,
+  pickRecommendedPlan,
+  planCapacityLabel,
+} from "../../utils/subscriptionPlans";
 import "./Billing.css";
-
-const LAUNCH_PLANS = [
-  {
-    key: "LAUNCH_STARTER",
-    name: "Starter",
-    price: 10000,
-    currency: "RWF",
-    bestFor: "Owner-run stores",
-    short: "Daily control for sales, stock, customers, and WhatsApp updates.",
-    highlights: ["Sales + stock", "Expenses + customers", "Basic reports", "1 store location", "Owner + 1 staff"],
-  },
-  {
-    key: "LAUNCH_GROWTH",
-    name: "Growth",
-    price: 25000,
-    currency: "RWF",
-    bestFor: "Stores with staff",
-    short: "Best for serious stores managing staff, cash, suppliers, repairs, and reports.",
-    badge: "Recommended",
-    highlights: ["Staff accounts", "Cash control", "Suppliers", "Repairs", "Better reports"],
-  },
-  {
-    key: "LAUNCH_BUSINESS",
-    name: "Business",
-    price: 45000,
-    currency: "RWF",
-    bestFor: "Growing stores",
-    short: "For expansion with managers, multiple locations, and stronger visibility.",
-    highlights: ["Multiple locations", "Manager access", "Advanced reports", "Priority support", "Marketplace boost"],
-  },
-];
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
@@ -141,13 +116,12 @@ function pickEffectiveBranchLimit(overview) {
   return Number.isFinite(Number(raw)) ? Number(raw) : null;
 }
 
-function findLaunchPlan(planKey) {
-  const key = cleanString(planKey).toUpperCase();
-  return LAUNCH_PLANS.find((plan) => plan.key === key) || null;
-}
-
-function pickCurrentPlan(subscription) {
-  return findLaunchPlan(subscription?.nextPlanKey) || findLaunchPlan(subscription?.planKey) || null;
+function pickCurrentPlan(plans, subscription) {
+  return (
+    findSubscriptionPlan(plans, subscription?.nextPlanKey) ||
+    findSubscriptionPlan(plans, subscription?.planKey) ||
+    null
+  );
 }
 
 function subscriptionMeta(subscription) {
@@ -237,25 +211,47 @@ function CapacityLine({ label, value, limit, tone }) {
   );
 }
 
-function LaunchPlanRow({ plan, active, onSelect }) {
+function LaunchPlanRow({
+  plan,
+  active,
+  disabled,
+  disabledReason,
+  onSelect,
+}) {
   return (
     <button
       type="button"
       onClick={() => onSelect(plan.key)}
-      className={cx("svx-billing-plan-row", active && "is-active")}
+      disabled={disabled}
+      className={cx(
+        "svx-billing-plan-row",
+        active && "is-active",
+        disabled && "is-disabled",
+      )}
     >
       <div className="svx-billing-plan-main">
         <div>
           <div className="svx-billing-plan-top">
             <strong>{plan.name}</strong>
-            {plan.badge ? <Badge tone="primary">{plan.badge}</Badge> : null}
+            {plan.recommended ? (
+              <Badge tone="primary">Recommended</Badge>
+            ) : null}
           </div>
-          <p>{plan.bestFor}</p>
+          <p>{plan.audience}</p>
         </div>
-        <span>{formatMoney(plan.price, plan.currency)} / month</span>
+
+        <span>
+          {formatMoney(plan.price, plan.currency)} / month
+        </span>
       </div>
 
-      <div className="svx-billing-plan-note">{plan.short}</div>
+      <div className="svx-billing-plan-note">
+        {plan.shortDescription}
+      </div>
+
+      <div className="svx-billing-plan-capacity">
+        {planCapacityLabel(plan)}
+      </div>
 
       <div className="svx-billing-plan-features">
         {plan.highlights.slice(0, 3).map((item) => (
@@ -265,6 +261,12 @@ function LaunchPlanRow({ plan, active, onSelect }) {
           </span>
         ))}
       </div>
+
+      {disabledReason ? (
+        <div className="svx-billing-plan-disabled-note">
+          {disabledReason}
+        </div>
+      ) : null}
     </button>
   );
 }
@@ -355,7 +357,8 @@ export default function Billing({ embedded = false } = {}) {
     payments: [],
   });
 
-  const [planKey, setPlanKey] = useState("LAUNCH_GROWTH");
+  const [plans, setPlans] = useState([]);
+  const [planKey, setPlanKey] = useState("");
   const [phone, setPhone] = useState(localStorage.getItem("storvex_ownerPhone") || "");
   const [paymentRef, setPaymentRef] = useState("");
 
@@ -365,20 +368,36 @@ export default function Billing({ embedded = false } = {}) {
   const branchLimit = useMemo(() => pickEffectiveBranchLimit(overview), [overview]);
 
   const selectedPlan = useMemo(() => {
-    return LAUNCH_PLANS.find((plan) => plan.key === planKey) || LAUNCH_PLANS[1];
-  }, [planKey]);
+    return (
+      findSubscriptionPlan(plans, planKey) ||
+      pickRecommendedPlan(plans)
+    );
+  }, [plans, planKey]);
 
-  const currentPlan = useMemo(() => pickCurrentPlan(overview.subscription), [overview.subscription]);
+  const currentPlan = useMemo(
+    () => pickCurrentPlan(plans, overview.subscription),
+    [plans, overview.subscription],
+  );
+
   const displayPlan = currentPlan || selectedPlan;
 
   async function loadBilling({ silent = false } = {}) {
     if (!silent) setLoading(true);
 
     try {
-      const { data } = await apiClient.get("/billing/overview");
-      const nextOverview = pickOverviewPayload(data || {});
+      const [{ data: overviewData }, { data: planData }] =
+        await Promise.all([
+          apiClient.get("/billing/overview"),
+          apiClient.get("/billing/plans"),
+        ]);
+
+      const nextOverview = pickOverviewPayload(overviewData || {});
+      const nextPlans = normalizeSubscriptionPlans(
+        planData?.plans,
+      ).filter((plan) => !plan.isEnterprise);
 
       setOverview(nextOverview);
+      setPlans(nextPlans);
 
       if (!phone && nextOverview?.store?.phone) {
         setPhone(nextOverview.store.phone);
@@ -389,9 +408,15 @@ export default function Billing({ embedded = false } = {}) {
         nextOverview?.subscription?.planKey ||
         "";
 
-      const match = findLaunchPlan(currentPlanKey) || LAUNCH_PLANS[1];
+      const match =
+        findSubscriptionPlan(nextPlans, currentPlanKey) ||
+        pickRecommendedPlan(nextPlans);
 
-      setPlanKey((current) => (findLaunchPlan(current) ? current : match.key));
+      setPlanKey((current) => {
+        return findSubscriptionPlan(nextPlans, current)?.key ||
+          match?.key ||
+          "";
+      });
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to load billing");
     } finally {
@@ -505,13 +530,15 @@ export default function Billing({ embedded = false } = {}) {
           <div className="svx-billing-card-head">
             <div>
               <span>Current plan</span>
-              <h3>{displayPlan?.name || "Launch plan"}</h3>
+              <h3>{displayPlan?.name || "Storvex plan"}</h3>
             </div>
             <Badge tone="primary">Launch pricing</Badge>
           </div>
 
           <div className="svx-billing-current-amount">
-            {displayPlan ? formatMoney(displayPlan.price, displayPlan.currency) : "Launch price"}
+            {displayPlan
+              ? formatMoney(displayPlan.price, displayPlan.currency)
+              : formatMoney(subscription?.priceAmount, subscription?.currency)}
             <span>/ month</span>
           </div>
 
@@ -557,16 +584,48 @@ export default function Billing({ embedded = false } = {}) {
 
         <form onSubmit={startRenewal} className="svx-billing-renewal-layout">
           <div className="svx-billing-plan-list">
-            {LAUNCH_PLANS.map((plan) => (
-              <LaunchPlanRow key={plan.key} plan={plan} active={plan.key === selectedPlan.key} onSelect={setPlanKey} />
-            ))}
+            {plans.map((plan) => {
+              const staffTooHigh =
+                plan.staffLimit != null &&
+                activeStaff > plan.staffLimit;
+
+              const branchesTooHigh =
+                plan.branchLimit != null &&
+                activeBranches > plan.branchLimit;
+
+              const disabled = staffTooHigh || branchesTooHigh;
+
+              const disabledReason = staffTooHigh
+                ? `This store needs at least ${activeStaff} active-user spaces.`
+                : branchesTooHigh
+                  ? `This store needs at least ${activeBranches} location spaces.`
+                  : "";
+
+              return (
+                <LaunchPlanRow
+                  key={plan.key}
+                  plan={plan}
+                  active={plan.key === selectedPlan?.key}
+                  disabled={disabled}
+                  disabledReason={disabledReason}
+                  onSelect={setPlanKey}
+                />
+              );
+            })}
           </div>
 
           <aside className="svx-billing-renewal-panel">
             <div className="svx-billing-selected">
               <span>Selected plan</span>
-              <strong>{selectedPlan.name}</strong>
-              <p>{formatMoney(selectedPlan.price, selectedPlan.currency)} / month</p>
+              <strong>{selectedPlan?.name || "Choose a plan"}</strong>
+              <p>
+                {selectedPlan
+                  ? `${formatMoney(
+                      selectedPlan.price,
+                      selectedPlan.currency,
+                    )} / month`
+                  : "No plan available"}
+              </p>
             </div>
 
             <label>

@@ -906,3 +906,36 @@
     justify-self: start;
   }
 }
+
+/* Authoritative Subscription Plans V2 states */
+.svx-billing-plan-capacity {
+  color: var(--billing-text);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.5;
+}
+
+.svx-billing-plan-row.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.svx-billing-plan-row.is-disabled:hover {
+  transform: none;
+  border-color: var(--billing-border);
+  box-shadow: none;
+}
+
+.svx-billing-plan-disabled-note {
+  border-top: 1px solid var(--billing-border);
+  padding-top: 10px;
+  color: #b45309;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+:root.dark .svx-billing-plan-disabled-note,
+.dark .svx-billing-plan-disabled-note {
+  color: #fbbf24;
+}

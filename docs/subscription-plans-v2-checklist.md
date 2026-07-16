@@ -54,15 +54,15 @@ Subscription Plans V2 complete until every required item is checked and tested.
 
 ## Owner web application
 
-- [ ] Remove hardcoded plan definitions from Billing.jsx.
-- [ ] Remove hardcoded plan definitions from Renew.jsx.
+- [x] Remove hardcoded plan definitions from Billing.jsx.
+- [x] Remove hardcoded plan definitions from Renew.jsx.
 - [ ] Remove hardcoded plan definitions from OwnerPayment.jsx.
-- [ ] Render plan capacity and sections from backend data.
+- [x] Render plan capacity and sections from backend data.
 - [ ] Build premium responsive pricing cards.
-- [ ] Build clear current-plan and usage presentation.
-- [ ] Build professional upgrade and downgrade explanations.
-- [ ] Build over-capacity handling without deleting business data.
-- [ ] Keep expired-account renewal reachable.
+- [x] Build clear current-plan and usage presentation.
+- [x] Build professional upgrade and downgrade explanations.
+- [x] Build over-capacity handling without deleting business data.
+- [x] Keep expired-account renewal reachable.
 - [ ] Test dark mode and small-screen PWA layouts.
 
 ## Public Storvex website
