@@ -647,64 +647,147 @@ export default function MarketplaceHome() {
                 </a>
               </div>
 
-              <div className="svx-marketplace-hero-visual">
-                {products[0] ? (
-                  <Link
-                    to={`/marketplace/${encodeURIComponent(
-                      products[0].seller.slug,
-                    )}/${encodeURIComponent(products[0].slug)}`}
-                    className="svx-marketplace-hero-product"
-                    aria-label={`View ${products[0].title}`}
+              <div
+                className="svx-marketplace-hero-visual"
+                aria-hidden="true"
+              >
+                <div className="svx-marketplace-network">
+                  <svg
+                    viewBox="0 0 620 390"
+                    role="presentation"
+                    focusable="false"
                   >
-                    <div className="svx-marketplace-hero-product-image">
-                      <img
-                        src={products[0].image?.url}
-                        alt={
-                          products[0].image?.altText ||
-                          products[0].title
-                        }
+                    <g className="svx-marketplace-network-lines">
+                      <path d="M310 188 L128 88" />
+                      <path d="M310 188 L492 88" />
+                      <path d="M310 188 L105 276" />
+                      <path d="M310 188 L515 276" />
+                      <path d="M310 188 L310 326" />
+                    </g>
+
+                    <g className="svx-marketplace-network-node">
+                      <rect
+                        x="58"
+                        y="48"
+                        width="140"
+                        height="76"
+                        rx="12"
                       />
-                    </div>
+                      <circle cx="88" cy="76" r="15" />
+                      <path d="M81 70h14v12H81z" />
+                      <path d="M85 67h6" />
+                      <text x="145" y="76">Electronics</text>
+                      <text className="is-muted" x="145" y="96">
+                        Phones and devices
+                      </text>
+                    </g>
 
-                    <div className="svx-marketplace-hero-product-info">
-                      <span>{products[0].seller.name}</span>
+                    <g className="svx-marketplace-network-node">
+                      <rect
+                        x="422"
+                        y="48"
+                        width="140"
+                        height="76"
+                        rx="12"
+                      />
+                      <circle cx="452" cy="76" r="15" />
+                      <path d="M445 83l14-14" />
+                      <path d="M451 69l8 8" />
+                      <text x="509" y="76">Hardware</text>
+                      <text className="is-muted" x="509" y="96">
+                        Tools and materials
+                      </text>
+                    </g>
 
-                      <strong>{products[0].title}</strong>
+                    <g className="svx-marketplace-network-node">
+                      <rect
+                        x="35"
+                        y="242"
+                        width="155"
+                        height="76"
+                        rx="12"
+                      />
+                      <circle cx="66" cy="270" r="15" />
+                      <path d="M58 271l8-7 8 7v9H58z" />
+                      <text x="130" y="270">
+                        Home &amp; kitchen
+                      </text>
+                      <text className="is-muted" x="130" y="290">
+                        Everyday materials
+                      </text>
+                    </g>
 
-                      <b>
-                        {formatMoney(
-                          products[0].price,
-                          products[0].currency,
-                        )}
-                      </b>
+                    <g className="svx-marketplace-network-node">
+                      <rect
+                        x="430"
+                        y="242"
+                        width="155"
+                        height="76"
+                        rx="12"
+                      />
+                      <circle cx="461" cy="270" r="15" />
+                      <path d="M456 276h10" />
+                      <path d="M457 272a6 6 0 1 1 8 0" />
+                      <text x="525" y="270">Lighting</text>
+                      <text className="is-muted" x="525" y="290">
+                        Bulbs and fixtures
+                      </text>
+                    </g>
 
-                      <small>
-                        {products[0].availableQuantity} available
-                        {products[0].pickupEnabled
-                          ? " — Pickup"
-                          : ""}
-                        {products[0].deliveryEnabled
-                          ? " — Delivery"
-                          : ""}
-                      </small>
+                    <g className="svx-marketplace-network-node">
+                      <rect
+                        x="245"
+                        y="320"
+                        width="130"
+                        height="54"
+                        rx="12"
+                      />
+                      <circle cx="272" cy="347" r="14" />
+                      <path d="M266 353l12-12" />
+                      <circle cx="267" cy="352" r="3" />
+                      <text x="326" y="344">Spare parts</text>
+                      <text className="is-muted" x="326" y="360">
+                        Parts and replacements
+                      </text>
+                    </g>
 
-                      <em>
-                        View product
-                        <ArrowRight size={14} />
-                      </em>
-                    </div>
-                  </Link>
-                ) : (
-                  <div className="svx-marketplace-hero-empty">
-                    <ShoppingBag size={28} />
+                    <g className="svx-marketplace-network-center">
+                      <circle cx="310" cy="188" r="76" />
+                      <circle cx="310" cy="188" r="57" />
 
-                    <strong>Products from real stores</strong>
+                      <path d="M286 179h48l-5-16h-38z" />
+                      <path d="M291 179v34h38v-34" />
+                      <path d="M301 213v-17h18v17" />
+                      <path d="M286 179c0 7 10 7 10 0" />
+                      <path d="M296 179c0 7 10 7 10 0" />
+                      <path d="M306 179c0 7 10 7 10 0" />
+                      <path d="M316 179c0 7 10 7 10 0" />
+                      <path d="M326 179c0 7 10 7 10 0" />
+
+                      <text x="310" y="230">Marketplace</text>
+                      <text className="is-muted" x="310" y="248">
+                        Local stores in one place
+                      </text>
+                    </g>
+                  </svg>
+
+                  <div className="svx-marketplace-network-status">
+                    <span>
+                      <Check size={15} />
+                      Available stock
+                    </span>
 
                     <span>
-                      Published products will appear here.
+                      <Store size={15} />
+                      Local sellers
+                    </span>
+
+                    <span>
+                      <Truck size={15} />
+                      Pickup or delivery
                     </span>
                   </div>
-                )}
+                </div>
               </div>
             </div>
           </div>
