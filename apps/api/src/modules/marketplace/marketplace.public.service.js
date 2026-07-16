@@ -103,6 +103,175 @@ function serializePublicSeller(profile, tenant, counts = {}) {
   };
 }
 
+
+function normalizeMarketplaceCategory(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const MARKETPLACE_CATEGORY_CHILDREN = Object.freeze({
+  electronics: Object.freeze([
+    "electronics",
+    "phone",
+    "phones",
+    "smartphone",
+    "smartphones",
+    "feature phone",
+    "feature phones",
+    "laptop",
+    "laptops",
+    "computer",
+    "computers",
+    "desktop",
+    "desktops",
+    "monitor",
+    "monitors",
+    "television",
+    "televisions",
+    "tv",
+    "tvs",
+    "tablet",
+    "tablets",
+    "accessory",
+    "accessories",
+    "charger",
+    "chargers",
+    "earphone",
+    "earphones",
+    "headphone",
+    "headphones",
+    "keyboard",
+    "keyboards",
+    "mouse",
+    "mice",
+    "printer",
+    "printers",
+  ]),
+
+  hardware: Object.freeze([
+    "hardware",
+    "quincaillerie",
+    "building material",
+    "building materials",
+    "tool",
+    "tools",
+    "plumbing",
+    "lock",
+    "locks",
+    "screw",
+    "screws",
+    "paint",
+    "cement",
+  ]),
+
+  "home and kitchen": Object.freeze([
+    "home and kitchen",
+    "home kitchen",
+    "cookware",
+    "cooking pot",
+    "cooking pots",
+    "sink",
+    "sinks",
+    "tile",
+    "tiles",
+    "cabinet",
+    "cabinets",
+    "kitchen appliance",
+    "kitchen appliances",
+  ]),
+
+  lighting: Object.freeze([
+    "lighting",
+    "light",
+    "lights",
+    "bulb",
+    "bulbs",
+    "led bulb",
+    "led bulbs",
+    "ceiling light",
+    "ceiling lights",
+    "flood light",
+    "flood lights",
+    "solar light",
+    "solar lights",
+  ]),
+
+  "spare parts": Object.freeze([
+    "spare part",
+    "spare parts",
+    "screen",
+    "screens",
+    "battery",
+    "batteries",
+    "brake pad",
+    "brake pads",
+    "filter",
+    "filters",
+    "replacement part",
+    "replacement parts",
+  ]),
+});
+
+function normalizeMainMarketplaceCategory(value) {
+  const normalized = normalizeMarketplaceCategory(value);
+
+  if (normalized === "home kitchen") {
+    return "home and kitchen";
+  }
+
+  if (
+    normalized === "hardware quincaillerie" ||
+    normalized === "quincaillerie"
+  ) {
+    return "hardware";
+  }
+
+  return normalized;
+}
+
+function isMainMarketplaceCategory(value) {
+  const normalized = normalizeMainMarketplaceCategory(value);
+
+  return Object.prototype.hasOwnProperty.call(
+    MARKETPLACE_CATEGORY_CHILDREN,
+    normalized,
+  );
+}
+
+function productMatchesMarketplaceCategory(product, requestedCategory) {
+  const requested =
+    normalizeMainMarketplaceCategory(requestedCategory);
+
+  if (!requested) return true;
+
+  const productValues = [
+    product?.marketplaceCategory,
+    product?.category,
+    product?.subcategory,
+    product?.subcategoryOther,
+    product?.marketplaceAttributes?.businessCategory,
+    product?.marketplaceAttributes?.category,
+    product?.marketplaceAttributes?.subcategory,
+    product?.marketplaceAttributes?.subSubcategory,
+    product?.marketplaceAttributes?.productType,
+  ]
+    .map(normalizeMainMarketplaceCategory)
+    .filter(Boolean);
+
+  if (!isMainMarketplaceCategory(requested)) {
+    return productValues.includes(requested);
+  }
+
+  const children = MARKETPLACE_CATEGORY_CHILDREN[requested];
+
+  return productValues.some((value) => children.includes(value));
+}
+
 function serializePublicProduct(product, seller) {
   const availableQuantity = calculateAvailableQuantity(
     product.branchInventory,
@@ -169,6 +338,8 @@ const publicProductSelect = {
   name: true,
   sellPrice: true,
   category: true,
+  subcategory: true,
+  subcategoryOther: true,
   marketplaceTitle: true,
   marketplaceDescription: true,
   marketplacePrice: true,
@@ -358,7 +529,14 @@ async function getPublicStore(publicSlug, query = {}) {
   if (!seller) return null;
 
   const search = cleanString(query.search, 100);
-  const category = cleanString(query.category, 120);
+  const requestedCategory = cleanString(
+    query.category,
+    120,
+  );
+
+  const category = isMainMarketplaceCategory(requestedCategory)
+    ? ""
+    : requestedCategory;
   const page = safeInteger(query.page, 1, 1, 100000);
   const limit = safeInteger(
     query.limit,
@@ -433,6 +611,12 @@ async function getPublicStore(publicSlug, query = {}) {
   });
 
   const visibleProducts = products
+    .filter((product) =>
+      productMatchesMarketplaceCategory(
+        product,
+        requestedCategory,
+      ),
+    )
     .map((product) => serializePublicProduct(product, seller))
     .filter(Boolean);
 
@@ -497,7 +681,14 @@ async function getPublicProduct(storeSlug, productSlug) {
 
 async function listPublicProducts(query = {}) {
   const search = cleanString(query.search, 100);
-  const category = cleanString(query.category, 120);
+  const requestedCategory = cleanString(
+    query.category,
+    120,
+  );
+
+  const category = isMainMarketplaceCategory(requestedCategory)
+    ? ""
+    : requestedCategory;
   const storeSlug = cleanString(query.store, 72);
   const page = safeInteger(query.page, 1, 1, 100000);
   const limit = safeInteger(
@@ -604,6 +795,12 @@ async function listPublicProducts(query = {}) {
   });
 
   const visibleProducts = products
+    .filter((product) =>
+      productMatchesMarketplaceCategory(
+        product,
+        requestedCategory,
+      ),
+    )
     .map((product) => {
       const seller = sellerByTenant.get(product.tenantId);
 
