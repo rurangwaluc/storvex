@@ -619,42 +619,84 @@ export default function MarketplaceHome() {
                   then arrange pickup or seller-managed delivery.
                 </p>
 
-                <button
-                  type="button"
-                  onClick={() =>
-                    document
-                      .getElementById("marketplace-products")
-                      ?.scrollIntoView({ behavior: "smooth" })
-                  }
-                >
-                  Browse available products
-                  <ArrowRight size={17} />
-                </button>
+                <a
+                href="#marketplace-products"
+                className="svx-commerce-promo-products-link"
+              >
+                Browse products
+                <ArrowRight size={17} />
+              </a>
               </div>
 
               <div className="svx-commerce-promo-visual">
-                <div className="svx-commerce-promo-device">
-                  <ShoppingBag size={44} />
-                  <strong>{products.length || "New"}</strong>
-                  <span>products available</span>
-                </div>
+              {products[0] ? (
+                <Link
+                  to={`/marketplace/${encodeURIComponent(
+                    products[0].seller.slug,
+                  )}/${encodeURIComponent(products[0].slug)}`}
+                  className="svx-commerce-hero-product"
+                >
+                  <div className="svx-commerce-hero-product-image">
+                    <img
+                      src={products[0].image?.url}
+                      alt={
+                        products[0].image?.altText ||
+                        products[0].title
+                      }
+                    />
 
-                <div className="svx-commerce-promo-stat">
-                  <Store size={20} />
+                    <span>Available now</span>
+                  </div>
+
+                  <div className="svx-commerce-hero-product-content">
+                    <p>
+                      <Store size={14} />
+                      {products[0].seller.name}
+                    </p>
+
+                    <h2>{products[0].title}</h2>
+
+                    <strong>
+                      {formatMoney(
+                        products[0].price,
+                        products[0].currency,
+                      )}
+                    </strong>
+
+                    <div className="svx-commerce-hero-product-meta">
+                      <span>
+                        <ShoppingBag size={13} />
+                        {products[0].availableQuantity} available
+                      </span>
+
+                      {products[0].pickupEnabled ? (
+                        <span>Pickup</span>
+                      ) : null}
+
+                      {products[0].deliveryEnabled ? (
+                        <span>
+                          <Truck size={13} />
+                          Delivery
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <span className="svx-commerce-hero-product-action">
+                      View product
+                      <ArrowRight size={15} />
+                    </span>
+                  </div>
+                </Link>
+              ) : (
+                <div className="svx-commerce-hero-product-empty">
+                  <ShoppingBag size={28} />
+                  <strong>Available products</strong>
                   <span>
-                    <strong>{stores.length || "Growing"}</strong>
-                    verified stores
+                    Published products will appear here.
                   </span>
                 </div>
-
-                <div className="svx-commerce-promo-stat is-second">
-                  <Truck size={20} />
-                  <span>
-                    <strong>Flexible</strong>
-                    pickup and delivery
-                  </span>
-                </div>
-              </div>
+              )}
+            </div>
             </div>
 
             <aside className="svx-commerce-customer-panel">
