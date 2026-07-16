@@ -624,7 +624,7 @@ export default function MarketplaceHome() {
 
               <form
                 className="svx-market-hero-search"
-                onSubmit={submitSearch}
+                onSubmit={handleSearchSubmit}
               >
                 <Search size={19} strokeWidth={2.2} />
 
