@@ -11,8 +11,7 @@ import {
   PackageCheck,
   RefreshCw,
   Save,
-  ShoppingBag,
-  Smartphone,
+  Settings,
   Store,
   Truck,
 } from "lucide-react";
@@ -30,7 +29,7 @@ const PAYMENT_OPTIONS = [
   {
     value: "CASH_ON_DELIVERY",
     label: "Cash on delivery",
-    detail: "Customer pays in cash when the product is handed over.",
+    detail: "Customer pays cash when receiving the product.",
   },
   {
     value: "MOMO_ON_DELIVERY",
@@ -40,14 +39,57 @@ const PAYMENT_OPTIONS = [
   {
     value: "PAY_ON_PICKUP",
     label: "Pay on pickup",
-    detail: "Customer completes payment when collecting from the store.",
+    detail: "Customer pays when collecting from the store.",
   },
   {
     value: "SELLER_APPROVED_OTHER",
-    label: "Another approved method",
+    label: "Another agreed method",
     detail: "The store agrees on another payment method with the customer.",
   },
 ];
+
+const CHECK_LABELS = {
+  public_identity: {
+    title: "Add a store description",
+    detail: "Tell customers what your store sells.",
+    link: "#store-profile",
+  },
+  customer_contact: {
+    title: "Add customer contact",
+    detail: "Add a phone or WhatsApp number.",
+    link: "#store-profile",
+  },
+  public_link: {
+    title: "Choose your store link",
+    detail: "Save the public link customers will open.",
+    link: "#store-profile",
+  },
+  fulfilment: {
+    title: "Choose pickup or delivery",
+    detail: "Tell customers how they can receive products.",
+    link: "#orders-delivery",
+  },
+  payment_methods: {
+    title: "Choose payment methods",
+    detail: "Select how customers can pay.",
+    link: "#payment-choices",
+  },
+  published_products: {
+    title: "Choose a product",
+    detail: "Publish at least one product from Stock.",
+    link: "/app/inventory",
+  },
+  available_stock: {
+    title: "Check product stock",
+    detail: "A published product must have available stock.",
+    link: "/app/inventory",
+  },
+  approved_images: {
+    title: "Approve a product photo",
+    detail: "Approve one cleaned product photo from Stock.",
+    link: "/app/inventory",
+  },
+};
 
 function cleanString(value) {
   return String(value || "").trim();
@@ -109,24 +151,15 @@ function getErrorMessage(error, fallback) {
   );
 }
 
-function StatusPill({ tone = "neutral", children }) {
-  return (
-    <span className={cx("svx-marketplace-status", `is-${tone}`)}>
-      {children}
-    </span>
-  );
-}
-
 function ToggleRow({
   title,
   detail,
   checked,
   onChange,
-  disabled = false,
   icon: Icon,
 }) {
   return (
-    <label className={cx("svx-marketplace-toggle-row", disabled && "is-disabled")}>
+    <label className="svx-marketplace-toggle-row">
       <span className="svx-marketplace-toggle-copy">
         <span className="svx-marketplace-toggle-icon">
           <Icon size={18} strokeWidth={2.2} />
@@ -141,7 +174,6 @@ function ToggleRow({
       <input
         type="checkbox"
         checked={checked}
-        disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
       />
 
@@ -152,29 +184,42 @@ function ToggleRow({
   );
 }
 
-function ReadinessCard({ check }) {
-  const complete = Boolean(check?.done);
+function SetupItem({ check }) {
+  const content = CHECK_LABELS[check?.key] || {
+    title: check?.label || "Complete setup",
+    detail: check?.detail || "Complete this Marketplace step.",
+    link: "#store-profile",
+  };
 
-  return (
-    <article
-      className={cx(
-        "svx-marketplace-readiness-item",
-        complete ? "is-complete" : "is-missing",
-      )}
-    >
-      <span className="svx-marketplace-readiness-icon">
-        {complete ? (
-          <Check size={17} strokeWidth={2.7} />
-        ) : (
-          <AlertCircle size={17} strokeWidth={2.4} />
-        )}
+  const isPageLink = content.link.startsWith("#");
+
+  const inner = (
+    <>
+      <span className="svx-marketplace-task-icon">
+        <AlertCircle size={17} strokeWidth={2.4} />
       </span>
 
-      <div>
-        <strong>{check?.label || "Marketplace setup"}</strong>
-        <p>{check?.detail || "Complete this setup item."}</p>
-      </div>
-    </article>
+      <span className="svx-marketplace-task-copy">
+        <strong>{content.title}</strong>
+        <small>{content.detail}</small>
+      </span>
+
+      <ChevronRight size={17} />
+    </>
+  );
+
+  if (isPageLink) {
+    return (
+      <a className="svx-marketplace-task" href={content.link}>
+        {inner}
+      </a>
+    );
+  }
+
+  return (
+    <Link className="svx-marketplace-task" to={content.link}>
+      {inner}
+    </Link>
   );
 }
 
@@ -182,9 +227,9 @@ function LoadingView() {
   return (
     <div className="svx-marketplace-page">
       <PageSkeleton
-        titleWidth="250px"
-        subtitleWidth="520px"
-        cardCount={5}
+        titleWidth="220px"
+        subtitleWidth="460px"
+        cardCount={4}
       />
     </div>
   );
@@ -245,7 +290,6 @@ export default function SettingsMarketplace() {
 
   const missingChecks = checks.filter((check) => !check?.done);
   const completedChecks = checks.filter((check) => check?.done);
-  const visibleChecks = [...missingChecks, ...completedChecks];
 
   const readinessPercent = Math.max(
     0,
@@ -349,7 +393,7 @@ export default function SettingsMarketplace() {
 
   async function changeMarketplaceVisibility(enable) {
     if (dirty) {
-      toast.error("Save your Marketplace settings first");
+      toast.error("Save your changes first");
       return;
     }
 
@@ -368,8 +412,8 @@ export default function SettingsMarketplace() {
 
       toast.success(
         enable
-          ? "Store is now visible on Marketplace"
-          : "Store removed from Marketplace",
+          ? "Your store is now visible"
+          : "Your store is now private",
       );
     } catch (error) {
       const details = getErrorDetails(error);
@@ -384,9 +428,7 @@ export default function SettingsMarketplace() {
       toast.error(
         getErrorMessage(
           error,
-          enable
-            ? "Complete the required setup before making the store visible."
-            : "The store could not be removed from Marketplace.",
+          "Complete the missing setup before making the store visible.",
         ),
       );
     } finally {
@@ -406,7 +448,7 @@ export default function SettingsMarketplace() {
         </span>
 
         <div>
-          <h2>Marketplace is temporarily unavailable</h2>
+          <h2>Marketplace is unavailable</h2>
           <p>{loadError}</p>
 
           <button type="button" onClick={loadMarketplace}>
@@ -420,121 +462,65 @@ export default function SettingsMarketplace() {
 
   return (
     <div className="svx-marketplace-page">
-      <section className="svx-marketplace-hero">
-        <div className="svx-marketplace-hero-copy">
-          <p className="svx-marketplace-eyebrow">
-            Customer discovery
-          </p>
+      <div className="svx-marketplace-page-nav">
+        <Link to="/app/settings">
+          <Settings size={16} />
+          All settings
+        </Link>
+      </div>
 
-          <h1>Marketplace</h1>
+      <section className="svx-marketplace-status-card">
+        <div className="svx-marketplace-status-copy">
+          <p>Marketplace</p>
 
-          <p>
-            Control how customers discover your store, contact you,
-            choose pickup or delivery, and pay when products are handed
-            over.
-          </p>
-        </div>
-
-        <div className="svx-marketplace-hero-state">
-          <StatusPill
-            tone={
-              marketplaceEnabled
-                ? profile?.temporarilyClosed
-                  ? "warning"
-                  : "success"
-                : marketplaceReady
-                  ? "primary"
-                  : "neutral"
-            }
-          >
+          <h1>
             {marketplaceEnabled
               ? profile?.temporarilyClosed
-                ? "Temporarily closed"
-                : "Visible on Marketplace"
-              : marketplaceReady
-                ? "Ready to publish"
-                : "Setup required"}
-          </StatusPill>
+                ? "Your store is temporarily closed"
+                : "Your store is visible"
+              : "Your store is private"}
+          </h1>
 
-          <strong>{readinessPercent}% ready</strong>
           <span>
-            {readiness?.summary?.done || 0} of{" "}
-            {readiness?.summary?.total || checks.length} checks complete
+            {marketplaceEnabled
+              ? "Customers can discover the products you publish."
+              : marketplaceReady
+                ? "Your setup is complete. You can make the store visible."
+                : `${missingChecks.length} setup ${
+                    missingChecks.length === 1 ? "step" : "steps"
+                  } remaining.`}
           </span>
         </div>
-      </section>
 
-      <section className="svx-marketplace-overview-grid">
-        <article className="svx-marketplace-readiness-card">
-          <div className="svx-marketplace-section-head">
-            <div>
-              <p>Store readiness</p>
-              <h2>
-                {marketplaceReady
-                  ? "Ready for customers"
-                  : "Complete the missing setup"}
-              </h2>
-            </div>
-
-            <span className="svx-marketplace-score">
-              {readinessPercent}%
-            </span>
-          </div>
-
-          <div className="svx-marketplace-progress">
-            <span style={{ width: `${readinessPercent}%` }} />
-          </div>
-
-          <div className="svx-marketplace-readiness-list">
-            {visibleChecks.map((check) => (
-              <ReadinessCard key={check.key} check={check} />
-            ))}
-          </div>
-        </article>
-
-        <article className="svx-marketplace-visibility-card">
-          <div className="svx-marketplace-visibility-icon">
-            <ShoppingBag size={24} strokeWidth={2.2} />
-          </div>
-
-          <div>
-            <p>Public visibility</p>
-            <h2>
-              {marketplaceEnabled
-                ? "Your store can be discovered"
-                : "Your store is still private"}
-            </h2>
-
+        <div className="svx-marketplace-status-actions">
+          <div className="svx-marketplace-ready-count">
+            <strong>{readinessPercent}%</strong>
             <span>
-              Customers only see products you deliberately publish from
-              Stock. Internal products remain private.
+              {readiness?.summary?.done || 0} of{" "}
+              {readiness?.summary?.total || checks.length} complete
             </span>
           </div>
 
           {marketplaceEnabled && publicUrl ? (
             <Link
               to={publicUrl}
-              className="svx-marketplace-public-link"
+              className="svx-marketplace-preview-link"
             >
-              Preview public store
+              View public store
               <ExternalLink size={15} />
             </Link>
           ) : null}
 
           <AsyncButton
             loading={activationBusy}
-            loadingText={
-              marketplaceEnabled
-                ? "Removing store..."
-                : "Making store visible..."
-            }
+            loadingText="Updating store..."
             disabled={
               activationBusy ||
               dirty ||
               (!marketplaceEnabled && !marketplaceReady)
             }
             className={cx(
-              "svx-marketplace-visibility-button",
+              "svx-marketplace-main-action",
               marketplaceEnabled && "is-secondary",
             )}
             onClick={() =>
@@ -542,33 +528,94 @@ export default function SettingsMarketplace() {
             }
           >
             {marketplaceEnabled
-              ? "Remove from Marketplace"
+              ? "Make store private"
               : "Make store visible"}
           </AsyncButton>
-
-          {dirty ? (
-            <small>Save changes before updating visibility.</small>
-          ) : null}
-        </article>
+        </div>
       </section>
 
-      <section className="svx-marketplace-form-card">
-        <div className="svx-marketplace-section-head">
+      {!marketplaceReady ? (
+        <section className="svx-marketplace-setup-card">
+          <div className="svx-marketplace-card-heading">
+            <div>
+              <p>Next steps</p>
+              <h2>Finish these {missingChecks.length} steps</h2>
+            </div>
+          </div>
+
+          <div className="svx-marketplace-task-list">
+            {missingChecks.map((check) => (
+              <SetupItem key={check.key} check={check} />
+            ))}
+          </div>
+
+          {completedChecks.length ? (
+            <details className="svx-marketplace-completed">
+              <summary>
+                <Check size={16} />
+                {completedChecks.length} completed
+              </summary>
+
+              <div>
+                {completedChecks.map((check) => (
+                  <span key={check.key}>
+                    <Check size={14} />
+                    {CHECK_LABELS[check.key]?.title || check.label}
+                  </span>
+                ))}
+              </div>
+            </details>
+          ) : null}
+        </section>
+      ) : null}
+
+      <section className="svx-marketplace-products-card">
+        <div className="svx-marketplace-products-icon">
+          <PackageCheck size={23} strokeWidth={2.2} />
+        </div>
+
+        <div>
+          <p>Products</p>
+          <h2>
+            {Number(readiness?.counts?.publishedProducts || 0) > 0
+              ? `${readiness.counts.publishedProducts} ${
+                  readiness.counts.publishedProducts === 1
+                    ? "product is"
+                    : "products are"
+                } visible`
+              : "Choose products customers can see"}
+          </h2>
+
+          <span>
+            Products stay private until you publish them from Stock.
+          </span>
+        </div>
+
+        <Link to="/app/inventory">
+          Open Stock
+          <ChevronRight size={17} />
+        </Link>
+      </section>
+
+      <section
+        id="store-profile"
+        className="svx-marketplace-form-card"
+      >
+        <div className="svx-marketplace-card-heading">
           <div>
-            <p>Public store profile</p>
-            <h2>What customers will see</h2>
+            <p>Store profile</p>
+            <h2>How customers see your store</h2>
             <span>
-              Use clear information that helps a customer trust and
-              contact the business.
+              Add the information customers need before contacting you.
             </span>
           </div>
 
-          <Store size={23} strokeWidth={2.2} />
+          <Store size={22} />
         </div>
 
         <div className="svx-marketplace-form-grid">
           <label className="svx-marketplace-field">
-            <span>Public store name</span>
+            <span>Store name</span>
             <input
               value={form.displayName}
               onChange={(event) =>
@@ -580,7 +627,7 @@ export default function SettingsMarketplace() {
           </label>
 
           <label className="svx-marketplace-field">
-            <span>Public store link</span>
+            <span>Store link</span>
 
             <div className="svx-marketplace-slug-input">
               <small>/marketplace/</small>
@@ -596,15 +643,15 @@ export default function SettingsMarketplace() {
           </label>
 
           <label className="svx-marketplace-field is-wide">
-            <span>Customer-friendly description</span>
+            <span>Store description</span>
             <textarea
               value={form.description}
               onChange={(event) =>
                 updateField("description", event.target.value)
               }
-              placeholder="Explain what the store sells and why customers should choose it."
+              placeholder="Tell customers what your store sells."
               maxLength={1200}
-              rows={5}
+              rows={4}
             />
 
             <small>
@@ -640,24 +687,23 @@ export default function SettingsMarketplace() {
         </div>
       </section>
 
-      <section className="svx-marketplace-form-card">
-        <div className="svx-marketplace-section-head">
+      <section
+        id="orders-delivery"
+        className="svx-marketplace-form-card"
+      >
+        <div className="svx-marketplace-card-heading">
           <div>
-            <p>Customer handover</p>
-            <h2>Pickup and delivery</h2>
-            <span>
-              The seller remains responsible for confirming every order
-              and arranging delivery or pickup.
-            </span>
+            <p>Orders and delivery</p>
+            <h2>How customers receive products</h2>
           </div>
 
-          <Truck size={23} strokeWidth={2.2} />
+          <Truck size={22} />
         </div>
 
         <div className="svx-marketplace-toggle-stack">
           <ToggleRow
-            title="Customer pickup"
-            detail="Customers can collect confirmed orders from the store."
+            title="Pickup from store"
+            detail="Customers can collect confirmed products from your store."
             checked={form.pickupEnabled}
             onChange={(value) =>
               updateField("pickupEnabled", value)
@@ -666,8 +712,8 @@ export default function SettingsMarketplace() {
           />
 
           <ToggleRow
-            title="Seller-managed delivery"
-            detail="The store confirms the address, fee, and delivery time with the customer."
+            title="Store delivery"
+            detail="Your store confirms the address, fee and delivery time."
             checked={form.deliveryEnabled}
             onChange={(value) =>
               updateField("deliveryEnabled", value)
@@ -677,7 +723,7 @@ export default function SettingsMarketplace() {
 
           <ToggleRow
             title="Temporarily closed"
-            detail="Keep the public store visible but stop customers from placing new requests."
+            detail="Keep the store visible but stop new customer requests."
             checked={form.temporarilyClosed}
             onChange={(value) =>
               updateField("temporarilyClosed", value)
@@ -689,7 +735,7 @@ export default function SettingsMarketplace() {
         {form.deliveryEnabled ? (
           <div className="svx-marketplace-delivery-panel">
             <label className="svx-marketplace-field">
-              <span>Default delivery fee</span>
+              <span>Usual delivery fee</span>
 
               <div className="svx-marketplace-money-input">
                 <input
@@ -741,7 +787,6 @@ export default function SettingsMarketplace() {
                       type="button"
                       key={area}
                       onClick={() => removeDeliveryArea(area)}
-                      title={`Remove ${area}`}
                     >
                       <MapPin size={14} />
                       {area}
@@ -749,9 +794,7 @@ export default function SettingsMarketplace() {
                     </button>
                   ))
                 ) : (
-                  <small>
-                    Add at least one area before enabling delivery.
-                  </small>
+                  <small>Add at least one delivery area.</small>
                 )}
               </div>
             </div>
@@ -759,18 +802,20 @@ export default function SettingsMarketplace() {
         ) : null}
       </section>
 
-      <section className="svx-marketplace-form-card">
-        <div className="svx-marketplace-section-head">
+      <section
+        id="payment-choices"
+        className="svx-marketplace-form-card"
+      >
+        <div className="svx-marketplace-card-heading">
           <div>
-            <p>Payment at handover</p>
-            <h2>Customer payment choices</h2>
+            <p>Payments</p>
+            <h2>How customers can pay</h2>
             <span>
-              Marketplace orders are not automatically treated as paid
-              sales. Payment is completed at delivery or pickup.
+              Payment is completed when the product is handed over.
             </span>
           </div>
 
-          <CircleDollarSign size={23} strokeWidth={2.2} />
+          <CircleDollarSign size={22} />
         </div>
 
         <div className="svx-marketplace-payment-grid">
@@ -799,47 +844,21 @@ export default function SettingsMarketplace() {
         </div>
       </section>
 
-      <section className="svx-marketplace-product-guide">
-        <div className="svx-marketplace-product-guide-icon">
-          <PackageCheck size={24} strokeWidth={2.2} />
+      {dirty ? (
+        <div className="svx-marketplace-save-bar">
+          <span>You have unsaved changes.</span>
+
+          <AsyncButton
+            loading={saving}
+            loadingText="Saving..."
+            disabled={saving}
+            onClick={saveSettings}
+          >
+            <Save size={16} strokeWidth={2.3} />
+            Save changes
+          </AsyncButton>
         </div>
-
-        <div>
-          <p>Product publishing</p>
-          <h2>Products are controlled from Stock</h2>
-          <span>
-            Add the public title, price, description, category, and
-            approved cleaned image from each product page.
-          </span>
-        </div>
-
-        <Link to="/app/inventory">
-          Open Stock
-          <ChevronRight size={17} />
-        </Link>
-      </section>
-
-      <div className="svx-marketplace-save-bar">
-        <div>
-          <Smartphone size={18} strokeWidth={2.2} />
-
-          <span>
-            {dirty
-              ? "You have unsaved Marketplace changes."
-              : "Marketplace settings are saved."}
-          </span>
-        </div>
-
-        <AsyncButton
-          loading={saving}
-          loadingText="Saving Marketplace..."
-          disabled={!dirty || saving}
-          onClick={saveSettings}
-        >
-          <Save size={16} strokeWidth={2.3} />
-          Save Marketplace
-        </AsyncButton>
-      </div>
+      ) : null}
     </div>
   );
 }
