@@ -1619,161 +1619,497 @@
 
 
 /* Final Marketplace network visual */
+
+/* ---------------------------------------------------------
+   HERO SURFACE
+   Keeps the existing approved structure.
+   Uses the same Storvex visual language as the landing page.
+--------------------------------------------------------- */
+
+.svx-commerce-promo {
+  border: 1px solid var(--landing-border);
+  border-radius: 18px;
+  background: var(--landing-card) !important;
+  box-shadow: 0 18px 48px rgba(15, 45, 90, 0.07);
+}
+
+.svx-commerce-promo::before {
+  display: none;
+  content: none;
+}
+
+.svx-commerce-promo-copy {
+  background: transparent;
+}
+
+.svx-commerce-promo-copy > span {
+  border-color: color-mix(
+    in srgb,
+    var(--landing-primary) 22%,
+    transparent
+  );
+  background: var(--landing-primary-soft);
+  color: var(--landing-primary);
+  font-family: var(--landing-body-font);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+}
+
+.svx-commerce-promo-copy h1 {
+  max-width: 640px;
+  color: var(--landing-text);
+  font-family: var(--landing-heading-font);
+  font-size: clamp(38px, 4.1vw, 58px);
+  font-weight: 900;
+  line-height: 0.99;
+  letter-spacing: -0.052em;
+}
+
+.svx-commerce-promo-copy p {
+  max-width: 570px;
+  color: var(--landing-muted);
+  font-family: var(--landing-body-font);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.68;
+}
+
+.svx-commerce-promo-products-link {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 42px;
+  align-items: center;
+  gap: 7px;
+  margin-top: 14px;
+  color: var(--landing-primary);
+  font-family: var(--landing-body-font);
+  font-size: 10px;
+  font-weight: 850;
+  box-shadow: none !important;
+}
+
+.svx-commerce-promo-products-link:hover {
+  color: var(--landing-primary-dark);
+  transform: none;
+  box-shadow: none !important;
+}
+
+/* ---------------------------------------------------------
+   SEARCH
+--------------------------------------------------------- */
+
+.svx-marketplace-hero-search,
+.svx-commerce-promo-copy form {
+  border-color: var(--landing-border);
+  background: var(--landing-bg);
+}
+
+.svx-marketplace-hero-search input,
+.svx-commerce-promo-copy form input {
+  color: var(--landing-text);
+  font-family: var(--landing-body-font);
+  font-weight: 650;
+}
+
+.svx-marketplace-hero-search input::placeholder,
+.svx-commerce-promo-copy form input::placeholder {
+  color: var(--landing-muted-2);
+}
+
+.svx-marketplace-hero-search button,
+.svx-commerce-promo-copy form button {
+  background: var(--landing-primary);
+  color: #ffffff;
+  box-shadow: none !important;
+}
+
+.svx-marketplace-hero-search button:hover,
+.svx-commerce-promo-copy form button:hover {
+  background: var(--landing-primary-dark);
+  transform: none;
+  box-shadow: none !important;
+}
+
+/* ---------------------------------------------------------
+   RIGHT-SIDE MARKETPLACE NETWORK
+--------------------------------------------------------- */
+
 .svx-marketplace-hero-visual {
   display: flex;
   min-width: 0;
   align-items: center;
   justify-content: center;
-  border-left: 1px solid rgba(255, 255, 255, 0.09);
-  background: #0b2844;
-  padding: 24px 30px;
+  border-left: 1px solid var(--landing-border);
+  background: var(--landing-card-soft);
+  padding: 24px 28px;
 }
 
 .svx-marketplace-network {
   width: 100%;
-  max-width: 620px;
+  max-width: 640px;
 }
 
 .svx-marketplace-network svg {
   display: block;
   width: 100%;
   height: auto;
+  overflow: visible;
 }
 
+/* Network connections */
 .svx-marketplace-network-lines path {
   fill: none;
-  stroke: rgba(38, 169, 255, 0.28);
+  stroke: color-mix(
+    in srgb,
+    var(--landing-primary) 35%,
+    transparent
+  );
   stroke-width: 2;
   stroke-dasharray: 5 7;
 }
 
+/* Category node cards */
 .svx-marketplace-network-node > rect {
-  fill: #0e2033;
-  stroke: rgba(255, 255, 255, 0.12);
+  fill: var(--landing-card);
+  stroke: var(--landing-border);
+  stroke-width: 1.25;
 }
 
 .svx-marketplace-network-node > circle {
-  fill: rgba(38, 169, 255, 0.12);
-  stroke: rgba(38, 169, 255, 0.2);
+  fill: var(--landing-primary-soft);
+  stroke: color-mix(
+    in srgb,
+    var(--landing-primary) 24%,
+    transparent
+  );
 }
 
-.svx-marketplace-network-node path {
+/* Category icons */
+.svx-marketplace-network-node path,
+.svx-marketplace-network-node circle + path {
   fill: none;
-  stroke: #29aaff;
+  stroke: var(--landing-primary);
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
+/* Category labels */
 .svx-marketplace-network text {
-  fill: #ffffff;
+  fill: var(--landing-text);
   font-family: var(--landing-body-font);
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 850;
   text-anchor: middle;
 }
 
 .svx-marketplace-network text.is-muted {
-  fill: rgba(255, 255, 255, 0.5);
-  font-size: 8px;
-  font-weight: 600;
+  fill: var(--landing-muted);
+  font-size: 9px;
+  font-weight: 650;
 }
 
+/* Central Marketplace node */
 .svx-marketplace-network-center > circle:first-child {
-  fill: rgba(35, 164, 255, 0.07);
-  stroke: rgba(35, 164, 255, 0.16);
+  fill: color-mix(
+    in srgb,
+    var(--landing-primary) 8%,
+    transparent
+  );
+  stroke: color-mix(
+    in srgb,
+    var(--landing-primary) 18%,
+    transparent
+  );
 }
 
 .svx-marketplace-network-center > circle:nth-child(2) {
-  fill: #102f4e;
-  stroke: rgba(42, 174, 255, 0.46);
+  fill: var(--landing-primary-soft);
+  stroke: color-mix(
+    in srgb,
+    var(--landing-primary) 55%,
+    var(--landing-border)
+  );
   stroke-width: 2;
 }
 
 .svx-marketplace-network-center path {
   fill: none;
-  stroke: #2aaeff;
+  stroke: var(--landing-primary);
   stroke-width: 3;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .svx-marketplace-network-center text {
-  font-size: 13px;
+  fill: var(--landing-text);
+  font-size: 14px;
   font-weight: 900;
 }
 
 .svx-marketplace-network-center text.is-muted {
-  font-size: 8px;
+  fill: var(--landing-muted);
+  font-size: 9px;
+  font-weight: 650;
 }
 
+/* Network status pills */
 .svx-marketplace-network-status {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, auto));
   justify-content: center;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: 8px;
 }
 
 .svx-marketplace-network-status span {
   display: inline-flex;
-  min-height: 31px;
+  min-height: 34px;
   align-items: center;
-  gap: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.11);
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--landing-border);
   border-radius: 999px;
-  background: #0e2033;
-  padding: 0 10px;
-  color: rgba(255, 255, 255, 0.72);
+  background: var(--landing-card);
+  padding: 0 12px;
+  color: var(--landing-muted);
+  font-family: var(--landing-body-font);
   font-size: 9px;
   font-weight: 750;
+  white-space: nowrap;
 }
 
 .svx-marketplace-network-status svg {
-  color: #29aaff;
+  flex: 0 0 auto;
+  color: var(--landing-primary);
 }
+
+/* ---------------------------------------------------------
+   DARK MODE
+--------------------------------------------------------- */
+
+:root[data-theme="dark"] .svx-commerce-promo {
+  border-color: rgba(255, 255, 255, 0.11);
+  background: #07192b !important;
+  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.22);
+}
+
+:root[data-theme="dark"] .svx-commerce-promo-copy h1 {
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .svx-commerce-promo-copy p {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+:root[data-theme="dark"] .svx-commerce-promo-copy > span {
+  border-color: rgba(39, 170, 255, 0.3);
+  background: rgba(39, 170, 255, 0.1);
+  color: #33b1ff;
+}
+
+:root[data-theme="dark"] .svx-marketplace-hero-visual {
+  border-left-color: rgba(255, 255, 255, 0.1);
+  background: #0b2844;
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-network-lines path {
+  stroke: rgba(43, 174, 255, 0.32);
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-network-node > rect {
+  fill: #0d2034;
+  stroke: rgba(255, 255, 255, 0.15);
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-network-node > circle {
+  fill: rgba(39, 170, 255, 0.13);
+  stroke: rgba(39, 170, 255, 0.24);
+}
+
+:root[data-theme="dark"] .svx-marketplace-network text {
+  fill: #ffffff;
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-network text.is-muted {
+  fill: rgba(255, 255, 255, 0.62);
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-network-center > circle:first-child {
+  fill: rgba(39, 170, 255, 0.08);
+  stroke: rgba(39, 170, 255, 0.18);
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-network-center > circle:nth-child(2) {
+  fill: #103454;
+  stroke: rgba(47, 179, 255, 0.58);
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-network-center text {
+  fill: #ffffff;
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-network-center text.is-muted {
+  fill: rgba(255, 255, 255, 0.62);
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-network-status span {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: #0d2034;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+/* ---------------------------------------------------------
+   TABLET
+--------------------------------------------------------- */
 
 @media (max-width: 1180px) {
-  .svx-marketplace-hero-visual {
-    border-top: 1px solid rgba(255, 255, 255, 0.09);
-    border-left: 0;
+  .svx-commerce-promo {
+    grid-template-columns: minmax(0, 1fr);
   }
-}
 
-@media (max-width: 820px) {
   .svx-marketplace-hero-visual {
-    padding: 10px 10px 20px;
+    border-top: 1px solid var(--landing-border);
+    border-left: 0;
+    padding: 24px;
+  }
+
+  :root[data-theme="dark"]
+    .svx-marketplace-hero-visual {
+    border-top-color: rgba(255, 255, 255, 0.1);
   }
 
   .svx-marketplace-network {
-    max-width: 520px;
-  }
-
-  .svx-marketplace-network-status {
-    padding: 0 8px;
+    max-width: 720px;
   }
 }
 
-@media (max-width: 430px) {
-  .svx-marketplace-network-node text.is-muted {
-    display: none;
+/* ---------------------------------------------------------
+   MOBILE / PWA
+--------------------------------------------------------- */
+
+@media (max-width: 820px) {
+  .svx-commerce-promo {
+    width: 100%;
+    min-height: auto;
+    grid-template-columns: minmax(0, 1fr);
+    border-radius: 15px;
+  }
+
+  .svx-commerce-promo-copy {
+    padding: 28px 20px 22px;
+  }
+
+  .svx-commerce-promo-copy h1 {
+    max-width: 520px;
+    font-size: clamp(31px, 9.5vw, 43px);
+    line-height: 1;
+  }
+
+  .svx-commerce-promo-copy p {
+    font-size: 12px;
+    line-height: 1.62;
+  }
+
+  .svx-marketplace-hero-visual {
+    display: flex;
+    position: relative;
+    min-height: auto;
+    padding: 8px 10px 20px;
+  }
+
+  .svx-marketplace-network {
+    max-width: 580px;
+  }
+
+  .svx-marketplace-network text {
+    font-size: 11px;
+  }
+
+  .svx-marketplace-network text.is-muted {
+    font-size: 8.5px;
+  }
+
+  .svx-marketplace-network-status {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+    gap: 7px;
+    padding: 0 8px;
+  }
+
+  .svx-marketplace-network-status span {
+    min-width: 0;
+    min-height: 40px;
+    padding: 5px 7px;
+    font-size: 8px;
+    line-height: 1.25;
+    text-align: center;
+    white-space: normal;
+  }
+}
+
+/* ---------------------------------------------------------
+   SMALL PHONES
+--------------------------------------------------------- */
+
+@media (max-width: 520px) {
+  .svx-commerce-promo-copy {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .svx-marketplace-hero-visual {
+    padding-right: 4px;
+    padding-left: 4px;
+  }
+
+  .svx-marketplace-network svg {
+    width: 100%;
+    min-width: 0;
   }
 
   .svx-marketplace-network text {
     font-size: 10px;
   }
 
-  .svx-marketplace-network-status {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .svx-marketplace-network text.is-muted {
+    font-size: 7.5px;
   }
 
-  .svx-marketplace-network-status span {
-    justify-content: center;
-    text-align: center;
+  .svx-marketplace-network-status {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 0 10px;
   }
 
   .svx-marketplace-network-status span:last-child {
     grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-commerce-promo-copy h1 {
+    font-size: clamp(29px, 9vw, 36px);
+  }
+
+  .svx-marketplace-network-node text.is-muted {
+    display: none;
+  }
+
+  .svx-marketplace-network-status {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-marketplace-network-status span:last-child {
+    grid-column: 1;
   }
 }
