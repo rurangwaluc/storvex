@@ -2597,3 +2597,51 @@
     -webkit-line-clamp: 3;
   }
 }
+
+/* Marketplace mobile category spacing correction */
+@media (max-width: 520px) {
+  .svx-commerce-category-grid {
+    gap: 8px;
+  }
+
+  .svx-commerce-category-grid button {
+    min-height: 124px;
+    grid-template-rows: 36px minmax(0, 1fr);
+    gap: 7px;
+    padding: 10px;
+  }
+
+  .svx-commerce-category-grid button > span {
+    width: 34px;
+    height: 34px;
+  }
+
+  .svx-commerce-category-grid button > span svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .svx-commerce-category-grid button > svg {
+    top: 19px;
+    right: 10px;
+    width: 14px;
+    height: 14px;
+  }
+
+  .svx-commerce-category-grid button strong {
+    font-size: 10.5px;
+  }
+
+  .svx-commerce-category-grid button small {
+    margin-top: 4px;
+    font-size: 7.7px;
+    line-height: 1.4;
+    -webkit-line-clamp: 3;
+  }
+}
+
+@media (max-width: 339px) {
+  .svx-commerce-category-grid button {
+    min-height: 108px;
+  }
+}
