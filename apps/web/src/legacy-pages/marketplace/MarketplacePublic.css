@@ -2489,15 +2489,14 @@
 }
 
 
-/* Marketplace compact category cards
-   Preserve two columns on practical phone widths.
-   Place the icon above the text so descriptions remain readable.
-*/
+/* Marketplace real mobile category cards */
 
+/*
+ * The actual category elements are buttons directly inside
+ * .svx-commerce-category-grid.
+ */
 @media (max-width: 520px) {
-  .svx-commerce-department-grid,
-  .svx-commerce-category-grid,
-  .svx-commerce-category-cards {
+  .svx-commerce-category-grid {
     display: grid;
     width: 100%;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2505,65 +2504,61 @@
     overflow: visible;
   }
 
-  .svx-commerce-department-card,
-  .svx-commerce-category-card {
+  .svx-commerce-category-grid button {
     position: relative;
-    display: flex;
+    display: grid;
+    width: 100%;
     min-width: 0;
     min-height: 142px;
-    align-items: stretch;
-    justify-content: flex-start;
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 40px minmax(0, 1fr);
+    align-items: start;
     gap: 10px;
     overflow: hidden;
     padding: 13px;
+    text-align: left;
   }
 
   /*
-   * Icon remains visually clear at the top.
-   * These selectors support both current category-card structures.
+   * Category icon at the top-left.
    */
-  .svx-commerce-department-card > span,
-  .svx-commerce-category-card > span {
+  .svx-commerce-category-grid button > span {
     display: inline-flex;
     width: 38px;
     height: 38px;
-    flex: 0 0 38px;
+    grid-column: 1;
+    grid-row: 1;
     align-items: center;
     justify-content: center;
-    align-self: flex-start;
     margin: 0;
   }
 
-  .svx-commerce-department-card > span svg,
-  .svx-commerce-category-card > span svg {
+  .svx-commerce-category-grid button > span svg {
     width: 19px;
     height: 19px;
   }
 
   /*
-   * Text receives the full card width instead of being squeezed
-   * between the icon and arrow.
+   * The text wrapper takes the entire second row.
    */
-  .svx-commerce-department-card > div,
-  .svx-commerce-category-card > div {
+  .svx-commerce-category-grid button > div {
     display: block;
     width: 100%;
     min-width: 0;
-    flex: 1 1 auto;
+    grid-column: 1;
+    grid-row: 2;
     margin: 0;
+    padding: 0;
   }
 
-  .svx-commerce-department-card strong,
-  .svx-commerce-category-card strong {
+  .svx-commerce-category-grid button strong {
     display: block;
     padding-right: 0;
     font-size: 11px;
     line-height: 1.25;
   }
 
-  .svx-commerce-department-card small,
-  .svx-commerce-category-card small {
+  .svx-commerce-category-grid button small {
     display: -webkit-box;
     margin-top: 5px;
     overflow: hidden;
@@ -2574,12 +2569,11 @@
   }
 
   /*
-   * Keep the action visible without consuming horizontal text space.
+   * Arrow stays visible without reducing the text width.
    */
-  .svx-commerce-department-card > svg,
-  .svx-commerce-category-card > svg {
+  .svx-commerce-category-grid button > svg {
     position: absolute;
-    top: 18px;
+    top: 24px;
     right: 13px;
     width: 15px;
     height: 15px;
@@ -2588,22 +2582,18 @@
 }
 
 /*
- * Extremely narrow phones need one comfortable column.
+ * Only exceptionally narrow phones use one column.
  */
-@media (max-width: 359px) {
-  .svx-commerce-department-grid,
-  .svx-commerce-category-grid,
-  .svx-commerce-category-cards {
+@media (max-width: 339px) {
+  .svx-commerce-category-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .svx-commerce-department-card,
-  .svx-commerce-category-card {
-    min-height: 116px;
+  .svx-commerce-category-grid button {
+    min-height: 118px;
   }
 
-  .svx-commerce-department-card small,
-  .svx-commerce-category-card small {
+  .svx-commerce-category-grid button small {
     -webkit-line-clamp: 3;
   }
 }
