@@ -901,6 +901,40 @@ function MarketplaceFooter() {
 export default function MarketplaceHome() {
   const [searchParams, setSearchParams] = useSearchParams();
 
+  /*
+   * Marketplace is a normal document page, not a drawer or modal.
+   * Release any stale scroll lock carried over through SPA navigation.
+   */
+  useEffect(() => {
+    const body = document.body;
+    const root = document.documentElement;
+
+    body.style.removeProperty("overflow");
+    body.style.removeProperty("overflow-y");
+    body.style.removeProperty("position");
+    body.style.removeProperty("inset");
+    body.style.removeProperty("width");
+
+    root.style.removeProperty("overflow");
+    root.style.removeProperty("overflow-y");
+
+    body.classList.remove(
+      "overflow-hidden",
+      "modal-open",
+      "drawer-open",
+      "menu-open",
+      "no-scroll",
+    );
+
+    root.classList.remove(
+      "overflow-hidden",
+      "modal-open",
+      "drawer-open",
+      "menu-open",
+      "no-scroll",
+    );
+  }, []);
+
   const initialSearch = cleanString(searchParams.get("search"));
   const initialCategory = cleanString(
     searchParams.get("category"),

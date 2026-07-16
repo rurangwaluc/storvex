@@ -3138,3 +3138,33 @@
     font-size: 10px;
   }
 }
+
+
+/* Marketplace document scrolling safeguard */
+
+html:has(.storvex-marketplace),
+body:has(.storvex-marketplace) {
+  min-height: 100%;
+  overflow-x: clip;
+  overflow-y: auto !important;
+  overscroll-behavior-y: auto;
+}
+
+body:has(.storvex-marketplace) {
+  position: static !important;
+  inset: auto !important;
+  width: auto !important;
+  height: auto !important;
+  touch-action: pan-y;
+}
+
+.storvex-marketplace {
+  width: 100%;
+  min-height: 100vh;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.storvex-marketplace main {
+  overflow: visible;
+}
