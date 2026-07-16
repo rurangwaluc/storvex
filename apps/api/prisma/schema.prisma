@@ -178,7 +178,8 @@ model Tenant {
 
   documentSettings TenantDocumentSettings?
   documentCounter  TenantDocumentCounter?
-  subscription     Subscription?
+  subscription       Subscription?
+  marketplaceProfile MarketplaceSellerProfile?
 
   proformas            Proforma[]
   sessions             UserSession[]
@@ -225,6 +226,36 @@ model Tenant {
   moneyAccountMovements MoneyAccountMovement[]
 
   @@map("Tenant")
+}
+
+model MarketplaceSellerProfile {
+  tenantId String @id @db.Text
+
+  publicSlug  String? @unique @db.Text
+  displayName String? @db.Text
+  description String? @db.Text
+
+  customerPhone String? @db.Text
+  whatsappPhone String? @db.Text
+
+  marketplaceEnabled Boolean @default(false)
+  temporarilyClosed  Boolean @default(false)
+
+  pickupEnabled   Boolean @default(true)
+  deliveryEnabled Boolean @default(false)
+
+  defaultDeliveryFee Float @default(0)
+  deliveryAreas      Json?
+  paymentMethods     Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([marketplaceEnabled])
+  @@index([temporarilyClosed])
+  @@map("MarketplaceSellerProfile")
 }
 
 model Branch {

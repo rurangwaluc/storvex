@@ -4,7 +4,11 @@ const express = require("express");
 const router = express.Router();
 
 const controller = require("./store.controller");
+const marketplaceController = require("./marketplaceSeller.controller");
 const requireDbPermission = require("../../middlewares/requireDbPermission");
+const {
+  requireMarketplaceEntitlement,
+} = require("../../middlewares/requireMarketplaceEntitlement");
 const {
   requireWritableSubscription,
 } = require("../../middlewares/requireActiveSubscription");
@@ -34,6 +38,20 @@ router.get(
   controller.getDocumentConfig
 );
 
+router.get(
+  "/marketplace-profile",
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_VIEW),
+  marketplaceController.getMarketplaceProfile
+);
+
+router.get(
+  "/marketplace-readiness",
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_VIEW),
+  marketplaceController.getMarketplaceProfileReadiness
+);
+
 // Write endpoints
 router.patch(
   "/profile",
@@ -49,6 +67,15 @@ router.patch(
   requireWritableSubscription,
   requireDbPermission(PERMISSIONS.SETTINGS_EDIT_GENERAL),
   controller.patchDocumentConfig
+);
+
+router.patch(
+  "/marketplace-profile",
+  express.json(),
+  requireWritableSubscription,
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_EDIT),
+  marketplaceController.patchMarketplaceProfile
 );
 
 router.post(
