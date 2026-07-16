@@ -10,66 +10,14 @@ import {
 import AsyncButton from "../../components/ui/AsyncButton";
 import AuthPageSkeleton from "../../components/ui/AuthPageSkeleton";
 import apiClient from "../../services/apiClient";
+import {
+  findSubscriptionPlan,
+  normalizeSubscriptionPlans,
+  pickRecommendedPlan,
+  planCapacityLabel,
+} from "../../utils/subscriptionPlans";
 
 const PASSWORD_DRAFT_KEY = "storvex_ownerPasswordDraft";
-
-const LAUNCH_PLANS = [
-  {
-    key: "LAUNCH_STARTER",
-    name: "Starter",
-    price: 10000,
-    currency: "RWF",
-    label: "RWF 10,000 / month",
-    bestFor: "Owner-run stores",
-    short: "Start with daily control for sales, stock, customers, and WhatsApp updates.",
-    features: [
-      "Sales and stock control",
-      "Expenses and customers",
-      "Basic reports",
-      "WhatsApp customer updates",
-      "1 store location",
-      "Owner plus one staff member",
-      "Marketplace profile included",
-    ],
-  },
-  {
-    key: "LAUNCH_GROWTH",
-    name: "Growth",
-    price: 25000,
-    currency: "RWF",
-    label: "RWF 25,000 / month",
-    bestFor: "Stores with staff",
-    short: "Best for serious stores managing staff, cash, suppliers, repairs, and reports.",
-    badge: "Recommended",
-    features: [
-      "Everything in Starter",
-      "Staff accounts",
-      "Cash control",
-      "Supplier records",
-      "Repairs tracking",
-      "Better reports",
-      "Marketplace visibility tools",
-    ],
-  },
-  {
-    key: "LAUNCH_BUSINESS",
-    name: "Business",
-    price: 45000,
-    currency: "RWF",
-    label: "RWF 45,000 / month",
-    bestFor: "Growing stores",
-    short: "Built for expansion with managers, multiple locations, and stronger visibility.",
-    features: [
-      "Everything in Growth",
-      "Multiple store locations",
-      "Manager access",
-      "Advanced reports",
-      "Priority support",
-      "Early marketplace boost access",
-      "Early AI tools access",
-    ],
-  },
-];
 
 function cx(...items) {
   return items.filter(Boolean).join(" ");
@@ -388,8 +336,12 @@ function PlanCard({ plan, active, onSelect }) {
         <span className="ml-2 text-sm font-bold text-[var(--onboard-muted)]">/ month</span>
       </div>
 
-      <ul className="mt-6 grid flex-1 gap-2">
-        {plan.features.map((feature) => (
+      <div className="mt-5 rounded-[18px] border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] px-4 py-3 text-xs font-black leading-5 text-[var(--onboard-text)]">
+        {planCapacityLabel(plan)}
+      </div>
+
+      <ul className="mt-5 grid flex-1 gap-2">
+        {plan.features.slice(0, 6).map((feature) => (
           <FeatureItem key={feature}>{feature}</FeatureItem>
         ))}
       </ul>
@@ -409,8 +361,16 @@ function PlanCard({ plan, active, onSelect }) {
 }
 
 function PlanSummary({ selectedPlan, storeName }) {
+  if (!selectedPlan) {
+    return (
+      <div className="rounded-[24px] border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] p-4 text-sm font-bold text-[var(--onboard-muted)]">
+        Plans are loading.
+      </div>
+    );
+  }
+
   return (
-    <div className="grid gap-3 rounded-[24px] border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] p-4 sm:grid-cols-3">
+    <div className="grid gap-3 rounded-[24px] border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] p-4 sm:grid-cols-2 lg:grid-cols-4">
       <div>
         <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
           Plan
@@ -422,10 +382,19 @@ function PlanSummary({ selectedPlan, storeName }) {
 
       <div>
         <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-          Launch price
+          Monthly price
         </p>
         <p className="mt-1 text-sm font-black text-[var(--onboard-text)]">
-          {formatMoney(selectedPlan.price, selectedPlan.currency)} / month
+          {formatMoney(selectedPlan.price, selectedPlan.currency)}
+        </p>
+      </div>
+
+      <div>
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+          Capacity
+        </p>
+        <p className="mt-1 text-sm font-black leading-5 text-[var(--onboard-text)]">
+          {planCapacityLabel(selectedPlan)}
         </p>
       </div>
 
@@ -467,7 +436,10 @@ export default function OwnerPayment() {
   const passwordReady = Boolean(onboarding?.passwordReady && readPasswordDraft());
 
   const [booting, setBooting] = useState(true);
+  const [loadingPlans, setLoadingPlans] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [plans, setPlans] = useState([]);
+  const [trialDays, setTrialDays] = useState(30);
   const [phone, setPhone] = useState(ownerPhone || "");
 
   const [activationMode, setActivationMode] = useState(() => {
@@ -476,12 +448,62 @@ export default function OwnerPayment() {
   });
 
   const [selectedPlanKey, setSelectedPlanKey] = useState(() => {
-    return localStorage.getItem("storvex_planKey") || "LAUNCH_GROWTH";
+    return localStorage.getItem("storvex_planKey") || "";
   });
 
   const selectedPlan = useMemo(() => {
-    return LAUNCH_PLANS.find((plan) => plan.key === selectedPlanKey) || LAUNCH_PLANS[1];
-  }, [selectedPlanKey]);
+    return (
+      findSubscriptionPlan(plans, selectedPlanKey) ||
+      pickRecommendedPlan(plans)
+    );
+  }, [plans, selectedPlanKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPlans() {
+      setLoadingPlans(true);
+
+      try {
+        const { data } = await apiClient.get("/auth/plans");
+
+        if (cancelled) return;
+
+        const nextPlans = normalizeSubscriptionPlans(
+          data?.plans,
+        ).filter((plan) => !plan.isEnterprise);
+
+        setPlans(nextPlans);
+        setTrialDays(Number(data?.trialDays || 30));
+
+        const storedKey =
+          localStorage.getItem("storvex_planKey") || "";
+
+        const initialPlan =
+          findSubscriptionPlan(nextPlans, storedKey) ||
+          pickRecommendedPlan(nextPlans);
+
+        if (initialPlan) {
+          setSelectedPlanKey(initialPlan.key);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          toast.error(
+            error?.response?.data?.message ||
+              "Failed to load Storvex plans",
+          );
+        }
+      } finally {
+        if (!cancelled) setLoadingPlans(false);
+      }
+    }
+
+    loadPlans();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!intentId || !storeName) {
@@ -501,8 +523,18 @@ export default function OwnerPayment() {
       return;
     }
 
-    setBooting(false);
-  }, [intentId, storeName, emailVerified, phoneVerified, passwordReady, nav]);
+    if (!loadingPlans) {
+      setBooting(false);
+    }
+  }, [
+    intentId,
+    storeName,
+    emailVerified,
+    phoneVerified,
+    passwordReady,
+    loadingPlans,
+    nav,
+  ]);
 
   useEffect(() => {
     saveOnboardingPatch({
@@ -512,12 +544,25 @@ export default function OwnerPayment() {
       email: ownerEmail,
       phone: normalizePhone(phone || ownerPhone),
       signupMode: activationMode,
-      planKey: activationMode === "PAID" ? selectedPlan.key : "",
-      launchPricing: true,
-      marketplaceIncluded: true,
+      planKey:
+        activationMode === "PAID" && selectedPlan
+          ? selectedPlan.key
+          : "",
+      launchPricing: Boolean(selectedPlan?.launchPricing),
+      marketplaceIncluded:
+        selectedPlan?.marketplaceIncluded !== false,
       passwordReady: true,
     });
-  }, [intentId, storeName, ownerName, ownerEmail, ownerPhone, phone, activationMode, selectedPlan]);
+  }, [
+    intentId,
+    storeName,
+    ownerName,
+    ownerEmail,
+    ownerPhone,
+    phone,
+    activationMode,
+    selectedPlan,
+  ]);
 
   function chooseTrial() {
     setActivationMode("TRIAL");
@@ -650,7 +695,7 @@ export default function OwnerPayment() {
     goToLogin(nav);
   }
 
-  if (booting) {
+  if (booting || loadingPlans) {
     return <AuthPageSkeleton titleWidth="w-72" lines={4} showSide={false} />;
   }
 
@@ -658,7 +703,7 @@ export default function OwnerPayment() {
     <OnboardingShell
       activeStep={3}
       title="Choose how to start."
-      subtitle="Start free for 30 days, or keep launch pricing for your store."
+      subtitle={`Start free for ${trialDays} days, or activate the plan that fits your store.`}
       footer={
         <p className="svx-onboard-login-note">
           Need to change security details? <Link to="/verify-otp">Back to security</Link>
@@ -670,11 +715,11 @@ export default function OwnerPayment() {
           <div>
             <span className="svx-onboard-step-pill">Step 3 of 3</span>
 
-            <h2>Start free or keep launch price.</h2>
+            <h2>Start free or choose your plan.</h2>
 
             <p>
-              Try Storvex for 30 days, or activate today and keep your early-owner price while your
-              subscription stays active.
+              Try Storvex first, or activate a paid plan with the exact
+              price and capacity shown by Storvex billing.
             </p>
           </div>
 
@@ -688,13 +733,13 @@ export default function OwnerPayment() {
           <StartOptionCard
             active={activationMode === "TRIAL"}
             title="Start free trial"
-            text="Use Storvex for 30 days before paying. Available once per verified owner."
+            text={`Use Storvex for ${trialDays} days before paying. Available once per verified owner.`}
             badge="No payment today"
             icon={<SparkIcon />}
             onClick={chooseTrial}
           >
             <ul className="grid gap-2">
-              <FeatureItem>30 days free</FeatureItem>
+              <FeatureItem>{trialDays} days free</FeatureItem>
               <FeatureItem>WhatsApp customer updates included</FeatureItem>
               <FeatureItem>Marketplace profile included</FeatureItem>
             </ul>
@@ -715,16 +760,18 @@ export default function OwnerPayment() {
 
           <StartOptionCard
             active={activationMode === "PAID"}
-            title="Keep launch pricing"
-            text="Activate today and keep the early-owner price while your subscription stays active."
-            badge="Early-owner price"
+            title="Choose a paid plan"
+            text="Activate with the plan that matches your current team, locations and business operations."
+            badge="Marketplace included"
             icon={<PriceTagIcon />}
-            onClick={() => choosePaidPlan(selectedPlan)}
+            onClick={() => {
+              if (selectedPlan) choosePaidPlan(selectedPlan);
+            }}
           >
             <PlanSummary selectedPlan={selectedPlan} storeName={storeName} />
 
             <p className="mt-4 text-xs font-bold leading-5 text-[var(--onboard-muted)]">
-              Launch pricing is available during the early rollout.
+              Prices and plan capacity come directly from Storvex billing.
             </p>
           </StartOptionCard>
         </section>
@@ -732,16 +779,19 @@ export default function OwnerPayment() {
         <section className="svx-onboard-card">
           <SectionHeader
             icon={<PriceTagIcon />}
-            title="Launch plans"
-            text="Pick the level that matches how your store works today. You can upgrade as your team grows."
+            title="Storvex plans"
+            text="Pick the plan that matches your team, locations and daily operations. These details come directly from Storvex billing."
           />
 
           <div className="grid gap-5 lg:grid-cols-3">
-            {LAUNCH_PLANS.map((plan) => (
+            {plans.map((plan) => (
               <PlanCard
                 key={plan.key}
                 plan={plan}
-                active={activationMode === "PAID" && selectedPlan.key === plan.key}
+                active={
+                  activationMode === "PAID" &&
+                  selectedPlan?.key === plan.key
+                }
                 onSelect={choosePaidPlan}
               />
             ))}

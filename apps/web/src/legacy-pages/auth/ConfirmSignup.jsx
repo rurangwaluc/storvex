@@ -7,6 +7,10 @@ import PasswordField from "../../components/auth/PasswordField";
 import AsyncButton from "../../components/ui/AsyncButton";
 import AuthPageSkeleton from "../../components/ui/AuthPageSkeleton";
 import apiClient from "../../services/apiClient";
+import {
+  findSubscriptionPlan,
+  normalizeSubscriptionPlans,
+} from "../../utils/subscriptionPlans";
 
 function signupCompleted() {
   try {
@@ -286,7 +290,7 @@ export default function ConfirmSignup() {
   const [loading, setLoading] = useState(false);
 
   const paidPlan = useMemo(
-    () => plans.find((plan) => plan.key === planKeyStored) || null,
+    () => findSubscriptionPlan(plans, planKeyStored),
     [plans, planKeyStored],
   );
 
@@ -339,7 +343,11 @@ export default function ConfirmSignup() {
 
         if (cancelled) return;
 
-        setPlans(Array.isArray(data?.plans) ? data.plans : []);
+        setPlans(
+          normalizeSubscriptionPlans(data?.plans).filter(
+            (plan) => !plan.isEnterprise,
+          ),
+        );
         setTrialDays(Number(data?.trialDays || 30));
       } catch (error) {
         toast.error(error?.response?.data?.message || "Failed to load plans");
@@ -424,7 +432,10 @@ export default function ConfirmSignup() {
     resolvedMode === "TRIAL"
       ? `${trialDays} days of full access before payment is needed.`
       : paidPlan
-        ? `${paidPlan.label} • ${formatMoney(paidPlan.price, paidPlan.currency)}`
+        ? `${paidPlan.label} — ${formatMoney(
+            paidPlan.price,
+            paidPlan.currency,
+          )}`
         : "Paid plan selected.";
 
   if (loadingPlans) {

@@ -143,6 +143,7 @@ export function normalizeSubscriptionPlan(plan) {
   normalized.bestFor = normalized.audience;
   normalized.short = normalized.shortDescription;
   normalized.badge = normalized.recommended ? "Recommended" : "";
+  normalized.features = [...normalized.highlights];
 
   return normalized;
 }

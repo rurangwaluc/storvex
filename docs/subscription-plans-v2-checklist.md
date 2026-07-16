@@ -22,7 +22,7 @@ Subscription Plans V2 complete until every required item is checked and tested.
 - [x] Replace vague feature copy with structured professional plan sections.
 - [x] Add structured entitlement metadata to the server plan catalogue.
 - [x] Return professional plan data through the billing plans API.
-- [ ] Return the same authoritative plan data through public signup APIs.
+- [x] Return the same authoritative plan data through public signup APIs.
 - [ ] Return the same authoritative plan data through mobile signup APIs.
 - [ ] Include Enterprise plan presentation where appropriate.
 
@@ -56,9 +56,9 @@ Subscription Plans V2 complete until every required item is checked and tested.
 
 - [x] Remove hardcoded plan definitions from Billing.jsx.
 - [x] Remove hardcoded plan definitions from Renew.jsx.
-- [ ] Remove hardcoded plan definitions from OwnerPayment.jsx.
+- [x] Remove hardcoded plan definitions from OwnerPayment.jsx.
 - [x] Render plan capacity and sections from backend data.
-- [ ] Build premium responsive pricing cards.
+- [x] Build premium responsive pricing cards.
 - [x] Build clear current-plan and usage presentation.
 - [x] Build professional upgrade and downgrade explanations.
 - [x] Build over-capacity handling without deleting business data.
