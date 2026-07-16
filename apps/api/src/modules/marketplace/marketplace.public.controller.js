@@ -1,0 +1,96 @@
+const {
+  listPublicStores,
+  getPublicStore,
+  getPublicProduct,
+  listPublicProducts,
+} = require("./marketplace.public.service");
+
+function sendError(res, error, fallback) {
+  console.error(fallback, error);
+
+  return res.status(error.status || 500).json({
+    message: error.message || fallback,
+    code: error.code || null,
+  });
+}
+
+async function listStores(req, res) {
+  try {
+    const result = await listPublicStores(req.query || {});
+    return res.json(result);
+  } catch (error) {
+    return sendError(
+      res,
+      error,
+      "Failed to load Marketplace stores",
+    );
+  }
+}
+
+async function getStore(req, res) {
+  try {
+    const result = await getPublicStore(
+      req.params.storeSlug,
+      req.query || {},
+    );
+
+    if (!result) {
+      return res.status(404).json({
+        message: "Marketplace store not found",
+        code: "MARKETPLACE_STORE_NOT_FOUND",
+      });
+    }
+
+    return res.json(result);
+  } catch (error) {
+    return sendError(
+      res,
+      error,
+      "Failed to load Marketplace store",
+    );
+  }
+}
+
+async function getProduct(req, res) {
+  try {
+    const result = await getPublicProduct(
+      req.params.storeSlug,
+      req.params.productSlug,
+    );
+
+    if (!result) {
+      return res.status(404).json({
+        message: "Marketplace product not found",
+        code: "MARKETPLACE_PRODUCT_NOT_FOUND",
+      });
+    }
+
+    return res.json(result);
+  } catch (error) {
+    return sendError(
+      res,
+      error,
+      "Failed to load Marketplace product",
+    );
+  }
+}
+
+async function listProducts(req, res) {
+  try {
+    const result = await listPublicProducts(req.query || {});
+    return res.json(result);
+  } catch (error) {
+    return sendError(
+      res,
+      error,
+      "Failed to load Marketplace products",
+    );
+  }
+}
+
+module.exports = {
+  listStores,
+  getStore,
+  getProduct,
+  listProducts,
+};

@@ -43,6 +43,7 @@ const proformasRoutes = require("./modules/proformas/proformas.routes");
 const warrantiesRoutes = require("./modules/warranties/warranties.routes");
 
 const securityRoutes = require("./modules/settings/security.routes");
+const marketplacePublicRoutes = require("./modules/marketplace/marketplace.public.routes");
 
 const platformRoutes = require("./modules/platform/platform.routes");
 const platformAuthRoutes = require("./modules/platform/platform.auth.routes");
@@ -101,6 +102,10 @@ app.use("/api/platform/support/tickets", platformSupportTicketsRoutes);
 app.use("/api/platform/support/attachments", platformSupportAttachmentsRoutes);
 app.use("/api/support/attachments", supportAttachmentsRoutes);
 app.use("/api/platform", platformRoutes);
+
+// Public Marketplace discovery
+// No authentication or tenant context is required.
+app.use("/api/marketplace", marketplacePublicRoutes);
 
 // Tenant / workspace-level modules
 app.use("/api/tenants", tenantRoutes);

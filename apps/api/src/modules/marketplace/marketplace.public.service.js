@@ -1,0 +1,648 @@
+const prisma = require("../../config/database");
+
+const DEFAULT_PAGE_SIZE = 24;
+const MAX_PAGE_SIZE = 60;
+
+function cleanString(value, maxLength = 200) {
+  const result = String(value || "").trim();
+  return result ? result.slice(0, maxLength) : null;
+}
+
+function safeInteger(value, fallback, min, max) {
+  const parsed = Number.parseInt(value, 10);
+
+  if (!Number.isFinite(parsed)) return fallback;
+
+  return Math.max(min, Math.min(max, parsed));
+}
+
+function normalizeList(value) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((item) => cleanString(item, 120))
+    .filter(Boolean)
+    .filter((item, index, items) => items.indexOf(item) === index);
+}
+
+function calculateAvailableQuantity(rows) {
+  if (!Array.isArray(rows)) return 0;
+
+  return rows.reduce((total, row) => {
+    const onHand = Math.max(0, Number(row?.qtyOnHand || 0));
+    const reserved = Math.max(0, Number(row?.qtyReserved || 0));
+
+    return total + Math.max(0, onHand - reserved);
+  }, 0);
+}
+
+function chooseApprovedImage(images) {
+  const approved = Array.isArray(images)
+    ? images.filter(
+        (image) =>
+          image?.isMarketplaceApproved === true &&
+          String(image?.imageType || "").toUpperCase() === "CLEANED" &&
+          cleanString(image?.url, 2000),
+      )
+    : [];
+
+  approved.sort((a, b) => {
+    if (Boolean(a.isPrimary) !== Boolean(b.isPrimary)) {
+      return a.isPrimary ? -1 : 1;
+    }
+
+    return Number(a.sortOrder || 0) - Number(b.sortOrder || 0);
+  });
+
+  const image = approved[0] || null;
+
+  if (!image) return null;
+
+  return {
+    url: image.url,
+    altText: image.altText || null,
+  };
+}
+
+function publicStoreLocation(tenant) {
+  return {
+    countryCode: tenant?.countryCode || "RW",
+    district: tenant?.district || null,
+    sector: tenant?.sector || null,
+    address: tenant?.address || null,
+  };
+}
+
+function serializePublicSeller(profile, tenant, counts = {}) {
+  return {
+    slug: profile.publicSlug,
+    name: profile.displayName || tenant.name,
+    description: profile.description || null,
+    logoUrl: tenant.logoUrl || null,
+    customerPhone: profile.customerPhone || tenant.phone || null,
+    whatsappPhone:
+      profile.whatsappPhone ||
+      profile.customerPhone ||
+      tenant.phone ||
+      null,
+    temporarilyClosed: Boolean(profile.temporarilyClosed),
+    pickupEnabled: Boolean(profile.pickupEnabled),
+    deliveryEnabled: Boolean(profile.deliveryEnabled),
+    defaultDeliveryFee: Math.max(
+      0,
+      Number(profile.defaultDeliveryFee || 0),
+    ),
+    deliveryAreas: normalizeList(profile.deliveryAreas),
+    paymentMethods: normalizeList(profile.paymentMethods),
+    location: publicStoreLocation(tenant),
+    productCount: Math.max(0, Number(counts.productCount || 0)),
+    availableProductCount: Math.max(
+      0,
+      Number(counts.availableProductCount || 0),
+    ),
+  };
+}
+
+function serializePublicProduct(product, seller) {
+  const availableQuantity = calculateAvailableQuantity(
+    product.branchInventory,
+  );
+
+  const image = chooseApprovedImage(product.images);
+
+  if (availableQuantity <= 0 || !image) return null;
+
+  return {
+    slug: product.marketplaceSlug,
+    seller: {
+      slug: seller.publicSlug,
+      name: seller.displayName || seller.tenant.name,
+      logoUrl: seller.tenant.logoUrl || null,
+      temporarilyClosed: Boolean(seller.temporarilyClosed),
+    },
+    title: product.marketplaceTitle || product.name,
+    description: product.marketplaceDescription || null,
+    price: Math.max(
+      0,
+      Number(product.marketplacePrice ?? product.sellPrice ?? 0),
+    ),
+    currency: seller.tenant.currencyCode || "RWF",
+    category:
+      product.marketplaceCategory ||
+      product.category ||
+      null,
+    attributes:
+      product.marketplaceAttributes &&
+      typeof product.marketplaceAttributes === "object"
+        ? product.marketplaceAttributes
+        : {},
+    image,
+    availableQuantity,
+    pickupEnabled: Boolean(seller.pickupEnabled),
+    deliveryEnabled: Boolean(seller.deliveryEnabled),
+  };
+}
+
+function publishedProductWhere(extra = {}) {
+  return {
+    isActive: true,
+    marketplaceStatus: "PUBLISHED",
+    marketplaceSlug: { not: null },
+    images: {
+      some: {
+        isMarketplaceApproved: true,
+        imageType: "CLEANED",
+      },
+    },
+    branchInventory: {
+      some: {
+        qtyOnHand: { gt: 0 },
+      },
+    },
+    ...extra,
+  };
+}
+
+const publicProductSelect = {
+  id: true,
+  tenantId: true,
+  name: true,
+  sellPrice: true,
+  category: true,
+  marketplaceTitle: true,
+  marketplaceDescription: true,
+  marketplacePrice: true,
+  marketplaceCategory: true,
+  marketplaceAttributes: true,
+  marketplaceSlug: true,
+  marketplacePublishedAt: true,
+  images: {
+    where: {
+      isMarketplaceApproved: true,
+      imageType: "CLEANED",
+    },
+    orderBy: [
+      { isPrimary: "desc" },
+      { sortOrder: "asc" },
+      { createdAt: "asc" },
+    ],
+    select: {
+      url: true,
+      altText: true,
+      isPrimary: true,
+      sortOrder: true,
+      imageType: true,
+      isMarketplaceApproved: true,
+    },
+  },
+  branchInventory: {
+    select: {
+      qtyOnHand: true,
+      qtyReserved: true,
+    },
+  },
+};
+
+const publicSellerInclude = {
+  tenant: {
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      logoUrl: true,
+      countryCode: true,
+      currencyCode: true,
+      district: true,
+      sector: true,
+      address: true,
+      status: true,
+    },
+  },
+};
+
+async function findVisibleSeller(publicSlug) {
+  const slug = cleanString(publicSlug, 72);
+
+  if (!slug) return null;
+
+  return prisma.marketplaceSellerProfile.findFirst({
+    where: {
+      publicSlug: slug,
+      marketplaceEnabled: true,
+      tenant: {
+        status: "ACTIVE",
+      },
+    },
+    include: publicSellerInclude,
+  });
+}
+
+async function listPublicStores(query = {}) {
+  const search = cleanString(query.search, 100);
+  const page = safeInteger(query.page, 1, 1, 100000);
+  const limit = safeInteger(
+    query.limit,
+    DEFAULT_PAGE_SIZE,
+    1,
+    MAX_PAGE_SIZE,
+  );
+
+  const profiles = await prisma.marketplaceSellerProfile.findMany({
+    where: {
+      marketplaceEnabled: true,
+      publicSlug: { not: null },
+      tenant: {
+        status: "ACTIVE",
+      },
+      ...(search
+        ? {
+            OR: [
+              {
+                displayName: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                description: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                tenant: {
+                  name: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    },
+    include: publicSellerInclude,
+    orderBy: [
+      { temporarilyClosed: "asc" },
+      { displayName: "asc" },
+      { createdAt: "desc" },
+    ],
+  });
+
+  const sellerIds = profiles.map((profile) => profile.tenantId);
+
+  const products = sellerIds.length
+    ? await prisma.product.findMany({
+        where: publishedProductWhere({
+          tenantId: { in: sellerIds },
+        }),
+        select: {
+          tenantId: true,
+          branchInventory: {
+            select: {
+              qtyOnHand: true,
+              qtyReserved: true,
+            },
+          },
+        },
+      })
+    : [];
+
+  const countsByTenant = new Map();
+
+  for (const product of products) {
+    const available =
+      calculateAvailableQuantity(product.branchInventory) > 0;
+
+    const counts = countsByTenant.get(product.tenantId) || {
+      productCount: 0,
+      availableProductCount: 0,
+    };
+
+    counts.productCount += 1;
+
+    if (available) {
+      counts.availableProductCount += 1;
+    }
+
+    countsByTenant.set(product.tenantId, counts);
+  }
+
+  const visible = profiles
+    .map((profile) =>
+      serializePublicSeller(
+        profile,
+        profile.tenant,
+        countsByTenant.get(profile.tenantId),
+      ),
+    )
+    .filter((seller) => seller.availableProductCount > 0);
+
+  const total = visible.length;
+  const start = (page - 1) * limit;
+
+  return {
+    stores: visible.slice(start, start + limit),
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    },
+  };
+}
+
+async function getPublicStore(publicSlug, query = {}) {
+  const seller = await findVisibleSeller(publicSlug);
+
+  if (!seller) return null;
+
+  const search = cleanString(query.search, 100);
+  const category = cleanString(query.category, 120);
+  const page = safeInteger(query.page, 1, 1, 100000);
+  const limit = safeInteger(
+    query.limit,
+    DEFAULT_PAGE_SIZE,
+    1,
+    MAX_PAGE_SIZE,
+  );
+
+  const products = await prisma.product.findMany({
+    where: publishedProductWhere({
+      tenantId: seller.tenantId,
+      ...(category
+        ? {
+            OR: [
+              {
+                marketplaceCategory: {
+                  equals: category,
+                  mode: "insensitive",
+                },
+              },
+              {
+                category: {
+                  equals: category,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          }
+        : {}),
+      ...(search
+        ? {
+            OR: [
+              {
+                marketplaceTitle: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                marketplaceDescription: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                name: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                category: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                marketplaceCategory: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          }
+        : {}),
+    }),
+    select: publicProductSelect,
+    orderBy: [
+      { marketplacePublishedAt: "desc" },
+      { name: "asc" },
+    ],
+  });
+
+  const visibleProducts = products
+    .map((product) => serializePublicProduct(product, seller))
+    .filter(Boolean);
+
+  const categories = Array.from(
+    new Set(
+      visibleProducts
+        .map((product) => product.category)
+        .filter(Boolean),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
+
+  const total = visibleProducts.length;
+  const start = (page - 1) * limit;
+
+  return {
+    store: serializePublicSeller(seller, seller.tenant, {
+      productCount: total,
+      availableProductCount: total,
+    }),
+    products: visibleProducts.slice(start, start + limit),
+    categories,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    },
+  };
+}
+
+async function getPublicProduct(storeSlug, productSlug) {
+  const seller = await findVisibleSeller(storeSlug);
+
+  if (!seller) return null;
+
+  const slug = cleanString(productSlug, 120);
+
+  if (!slug) return null;
+
+  const product = await prisma.product.findFirst({
+    where: publishedProductWhere({
+      tenantId: seller.tenantId,
+      marketplaceSlug: slug,
+    }),
+    select: publicProductSelect,
+  });
+
+  if (!product) return null;
+
+  const serialized = serializePublicProduct(product, seller);
+
+  if (!serialized) return null;
+
+  return {
+    store: serializePublicSeller(seller, seller.tenant, {
+      productCount: 1,
+      availableProductCount: 1,
+    }),
+    product: serialized,
+  };
+}
+
+async function listPublicProducts(query = {}) {
+  const search = cleanString(query.search, 100);
+  const category = cleanString(query.category, 120);
+  const storeSlug = cleanString(query.store, 72);
+  const page = safeInteger(query.page, 1, 1, 100000);
+  const limit = safeInteger(
+    query.limit,
+    DEFAULT_PAGE_SIZE,
+    1,
+    MAX_PAGE_SIZE,
+  );
+
+  const sellers = await prisma.marketplaceSellerProfile.findMany({
+    where: {
+      marketplaceEnabled: true,
+      publicSlug: { not: null },
+      ...(storeSlug ? { publicSlug: storeSlug } : {}),
+      tenant: {
+        status: "ACTIVE",
+      },
+    },
+    include: publicSellerInclude,
+  });
+
+  if (!sellers.length) {
+    return {
+      products: [],
+      categories: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        pages: 1,
+      },
+    };
+  }
+
+  const sellerByTenant = new Map(
+    sellers.map((seller) => [seller.tenantId, seller]),
+  );
+
+  const products = await prisma.product.findMany({
+    where: publishedProductWhere({
+      tenantId: {
+        in: sellers.map((seller) => seller.tenantId),
+      },
+      ...(category
+        ? {
+            OR: [
+              {
+                marketplaceCategory: {
+                  equals: category,
+                  mode: "insensitive",
+                },
+              },
+              {
+                category: {
+                  equals: category,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          }
+        : {}),
+      ...(search
+        ? {
+            OR: [
+              {
+                marketplaceTitle: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                marketplaceDescription: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                name: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                category: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                marketplaceCategory: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            ],
+          }
+        : {}),
+    }),
+    select: publicProductSelect,
+    orderBy: [
+      { marketplacePublishedAt: "desc" },
+      { name: "asc" },
+    ],
+  });
+
+  const visibleProducts = products
+    .map((product) => {
+      const seller = sellerByTenant.get(product.tenantId);
+
+      return seller
+        ? serializePublicProduct(product, seller)
+        : null;
+    })
+    .filter(Boolean);
+
+  const categories = Array.from(
+    new Set(
+      visibleProducts
+        .map((product) => product.category)
+        .filter(Boolean),
+    ),
+  ).sort((a, b) => a.localeCompare(b));
+
+  const total = visibleProducts.length;
+  const start = (page - 1) * limit;
+
+  return {
+    products: visibleProducts.slice(start, start + limit),
+    categories,
+    pagination: {
+      page,
+      limit,
+      total,
+      pages: Math.max(1, Math.ceil(total / limit)),
+    },
+  };
+}
+
+module.exports = {
+  calculateAvailableQuantity,
+  chooseApprovedImage,
+  serializePublicProduct,
+  serializePublicSeller,
+  listPublicStores,
+  getPublicStore,
+  getPublicProduct,
+  listPublicProducts,
+};

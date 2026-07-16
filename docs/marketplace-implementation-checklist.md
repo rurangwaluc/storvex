@@ -18,12 +18,12 @@
 - [x] Make the owner Marketplace workspace mobile-first and PWA-safe.
 - [x] Add retryable loading and connection-error handling.
 - [ ] Connect seller readiness to product publishing feedback.
-- [ ] Use branch stock minus reserved stock for public availability.
+- [x] Use branch stock minus reserved stock for public availability.
 
 ## Public discovery
 
-- [ ] Add public seller profile API.
-- [ ] Add public catalogue API.
+- [x] Add public seller profile API.
+- [x] Add public catalogue API.
 - [ ] Add public store page.
 - [ ] Add public product page.
 - [ ] Add search and category discovery.
