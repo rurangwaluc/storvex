@@ -26,7 +26,7 @@
 - [x] Add public catalogue API.
 - [ ] Add public store page.
 - [ ] Add public product page.
-- [ ] Add search and category discovery.
+- [x] Add search and category discovery.
 - [ ] Add SEO-ready public URLs.
 
 ## Orders and fulfilment
