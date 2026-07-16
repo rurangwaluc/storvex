@@ -613,36 +613,6 @@ export default function MarketplaceHome() {
 
         <section className="svx-commerce-hero">
           <div className="svx-commerce-hero-inner">
-            <aside className="svx-commerce-category-panel">
-              <p>Shop by category</p>
-
-              {visibleCategories.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <button
-                    type="button"
-                    key={item.name}
-                    className={cx(
-                      category === item.name && "is-active",
-                      !item.available && "is-unavailable",
-                    )}
-                    onClick={() => chooseCategory(item.name)}
-                  >
-                    <span>
-                      <Icon size={18} strokeWidth={2.1} />
-                    </span>
-
-                    <div>
-                      <strong>{item.shortName}</strong>
-                      <small>{item.description}</small>
-                    </div>
-
-                    <ChevronRight size={16} />
-                  </button>
-                );
-              })}
-            </aside>
 
             <div className="svx-commerce-promo">
               <div className="svx-commerce-promo-copy">
@@ -730,8 +700,8 @@ export default function MarketplaceHome() {
           <div className="svx-commerce-section">
             <div className="svx-commerce-section-heading">
               <div>
-                <span>Browse departments</span>
-                <h2>Shop by business category</h2>
+                <span>Categories</span>
+                <h2>Browse categories</h2>
               </div>
 
               {category ? (
@@ -772,7 +742,7 @@ export default function MarketplaceHome() {
             <div className="svx-commerce-section">
               <div className="svx-commerce-section-heading">
                 <div>
-                  <span>Selected stores</span>
+                  <span>Featured on Storvex</span>
                   <h2>Featured stores</h2>
                 </div>
               </div>
