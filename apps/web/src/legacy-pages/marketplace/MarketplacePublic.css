@@ -1383,170 +1383,192 @@
 }
 
 
-/* Storvex landing-inspired Marketplace hero */
+/* Final Storvex Marketplace hero system */
 
 /*
- * Keep the existing hero layout and positions.
- * Use one unified Storvex surface instead of two disconnected halves.
+ * The Marketplace keeps its current commerce composition but follows
+ * the main Storvex landing hero system:
+ * one surface, one restrained ellipse and real card depth.
  */
 .svx-commerce-promo {
   isolation: isolate;
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--landing-border);
-  background: #0c1d31 !important;
-  box-shadow:
-    0 24px 60px rgba(0, 8, 20, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border-radius: 18px;
+  background: var(--landing-hero-bg) !important;
+  box-shadow: 0 18px 48px rgba(15, 45, 90, 0.08);
+}
+
+/*
+ * This mirrors the landing page ellipse rather than using gradients.
+ */
+.svx-commerce-promo::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  right: -31%;
+  width: 82%;
+  min-width: 520px;
+  height: 126%;
+  border-radius: 9999px;
+  background: var(--landing-ellipse);
+  opacity: 0.68;
+  transform: translateY(-50%) rotate(-18deg);
+  transform-origin: center;
+  pointer-events: none;
 }
 
 .svx-commerce-promo-copy,
 .svx-commerce-promo-visual {
+  position: relative;
+  z-index: 2;
   background: transparent !important;
 }
 
-/*
- * Remove the generated-looking large decorative glow while keeping
- * the approved hero composition intact.
- */
-.svx-commerce-promo::before {
-  opacity: 0.16;
-  background: #159cff;
-}
-
-/* Main message follows the Storvex landing hero hierarchy. */
 .svx-commerce-promo-copy > span {
-  border: 1px solid rgba(21, 156, 255, 0.28);
-  background: rgba(21, 156, 255, 0.1);
-  color: #38bdf8;
+  border-color: color-mix(
+    in srgb,
+    var(--landing-primary) 20%,
+    transparent
+  );
+  background: var(--landing-primary-soft);
+  color: var(--landing-primary);
 }
 
 .svx-commerce-promo-copy h1 {
-  color: #ffffff;
+  color: var(--landing-text);
 }
 
 .svx-commerce-promo-copy p {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--landing-muted);
 }
 
 .svx-commerce-promo-copy button {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 0;
   background: var(--landing-primary);
   color: #ffffff;
-  box-shadow: 0 12px 28px rgba(21, 156, 255, 0.18);
+  box-shadow: 0 16px 30px rgba(37, 99, 235, 0.2);
+  transition:
+    transform 180ms var(--svx-ease-out),
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.svx-commerce-promo-copy button:hover {
+  transform: translateY(-1px);
+  background: var(--landing-primary-dark);
 }
 
 /*
- * Product availability card uses the same restrained dashboard-card
- * language as the main Storvex landing preview.
+ * Availability information follows the landing dashboard card system.
  */
 .svx-commerce-promo-device,
 .svx-commerce-product-counter {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #14263a !important;
-  color: #ffffff;
-  box-shadow:
-    0 18px 38px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--landing-border);
+  background: var(--landing-card) !important;
+  color: var(--landing-text);
+  box-shadow: 0 18px 42px rgba(15, 45, 90, 0.12);
 }
 
 .svx-commerce-promo-device svg,
 .svx-commerce-product-counter svg {
-  color: #19a7ff;
+  color: var(--landing-primary);
 }
 
 .svx-commerce-promo-device strong,
 .svx-commerce-product-counter strong {
-  color: #ffffff;
+  color: var(--landing-text);
 }
 
 .svx-commerce-promo-device small,
 .svx-commerce-product-counter small {
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--landing-muted-2);
 }
 
-/*
- * Supporting cards remain useful and visually connected instead of
- * appearing as unrelated bright white stickers.
- */
+.svx-commerce-promo-stat,
 .svx-commerce-promo-floating-card {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #f8fafc;
-  color: #0d1b3e;
-  box-shadow: 0 16px 34px rgba(0, 8, 20, 0.22);
-}
-
-.svx-commerce-promo-floating-card svg {
-  color: #0d1b3e;
-}
-
-/* Side customer-confidence panel follows the same neutral card system. */
-.svx-commerce-customer-panel {
   border: 1px solid var(--landing-border);
   background: var(--landing-card);
-  box-shadow: 0 16px 38px rgba(0, 8, 20, 0.08);
+  color: var(--landing-text);
+  box-shadow: 0 14px 34px rgba(15, 45, 90, 0.11);
+}
+
+.svx-commerce-promo-stat svg,
+.svx-commerce-promo-floating-card svg {
+  color: var(--landing-primary);
+}
+
+.svx-commerce-promo-stat strong,
+.svx-commerce-promo-floating-card strong {
+  color: var(--landing-text);
+}
+
+.svx-commerce-promo-stat small,
+.svx-commerce-promo-floating-card small {
+  color: var(--landing-muted-2);
 }
 
 /*
- * Light mode matches the clean navy-and-white landing hero:
- * one white content surface and one subtle cool visual field.
+ * Supporting panel uses exactly the same neutral Storvex card language.
  */
-:root:not([data-theme="dark"]) .svx-commerce-promo {
-  background: #ffffff !important;
-  box-shadow:
-    0 24px 60px rgba(13, 27, 62, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
-}
-
-:root:not([data-theme="dark"]) .svx-commerce-promo::before {
-  opacity: 0.08;
-  background: #2563eb;
-}
-
-:root:not([data-theme="dark"]) .svx-commerce-promo-copy h1 {
-  color: #0d1b3e;
-}
-
-:root:not([data-theme="dark"]) .svx-commerce-promo-copy p {
-  color: #657088;
-}
-
-:root:not([data-theme="dark"]) .svx-commerce-promo-copy > span {
-  border-color: rgba(37, 99, 235, 0.18);
-  background: rgba(37, 99, 235, 0.07);
-  color: #2563eb;
-}
-
-:root:not([data-theme="dark"]) .svx-commerce-promo-visual {
-  box-shadow: inset 1px 0 0 rgba(13, 27, 62, 0.06);
-}
-
-:root:not([data-theme="dark"]) .svx-commerce-promo-device,
-:root:not([data-theme="dark"]) .svx-commerce-product-counter {
-  border-color: rgba(13, 27, 62, 0.1);
-  background: #ffffff !important;
-  color: #0d1b3e;
-  box-shadow: 0 18px 38px rgba(13, 27, 62, 0.13);
-}
-
-:root:not([data-theme="dark"]) .svx-commerce-promo-device strong,
-:root:not([data-theme="dark"]) .svx-commerce-product-counter strong {
-  color: #0d1b3e;
-}
-
-:root:not([data-theme="dark"]) .svx-commerce-promo-device small,
-:root:not([data-theme="dark"]) .svx-commerce-product-counter small {
-  color: #657088;
+.svx-commerce-customer-panel {
+  border: 1px solid var(--landing-border);
+  border-radius: 18px;
+  background: var(--landing-card);
+  box-shadow: 0 14px 34px rgba(15, 45, 90, 0.055);
 }
 
 /*
- * Mobile keeps the current approved structure.
- * No grid, order, dimensions, or section placement is changed.
+ * Dark mode uses the main landing-page variables instead of a separate
+ * Marketplace palette.
+ */
+:root[data-theme="dark"] .svx-commerce-promo {
+  background: var(--landing-hero-bg) !important;
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.24);
+}
+
+:root[data-theme="dark"] .svx-commerce-promo::before {
+  background: var(--landing-ellipse);
+  opacity: 0.78;
+}
+
+:root[data-theme="dark"] .svx-commerce-promo-device,
+:root[data-theme="dark"] .svx-commerce-product-counter,
+:root[data-theme="dark"] .svx-commerce-promo-stat,
+:root[data-theme="dark"] .svx-commerce-promo-floating-card {
+  background: var(--landing-card) !important;
+}
+
+/*
+ * Mobile/PWA keeps the accepted one-column hero structure.
+ * Only visual treatment is controlled here.
  */
 @media (max-width: 820px) {
   .svx-commerce-promo {
-    background: #0c1d31 !important;
+    background: var(--landing-hero-bg) !important;
+    border-radius: 16px;
   }
 
-  :root:not([data-theme="dark"]) .svx-commerce-promo {
-    background: #ffffff !important;
+  .svx-commerce-promo::before {
+    top: -58px;
+    right: -210px;
+    width: 560px;
+    min-width: 560px;
+    height: 270px;
+    opacity: 0.58;
+    transform: rotate(-18deg);
+  }
+
+  .svx-commerce-promo-copy {
+    position: relative;
+    z-index: 2;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-commerce-promo::before {
+    right: -270px;
   }
 }
