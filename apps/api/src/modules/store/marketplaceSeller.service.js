@@ -233,9 +233,12 @@ async function getMarketplaceSellerProfile(tenantId) {
     throw error;
   }
 
-  const profile =
-    tenant.marketplaceProfile ||
-    (await prisma.marketplaceSellerProfile.create({
+  let profile = await prisma.marketplaceSellerProfile.findUnique({
+    where: { tenantId },
+  });
+
+  if (!profile) {
+    profile = await prisma.marketplaceSellerProfile.create({
       data: {
         tenantId,
         publicSlug: await uniquePublicSlug(
@@ -248,7 +251,8 @@ async function getMarketplaceSellerProfile(tenantId) {
         whatsappPhone: tenant.phone,
         paymentMethods: [...DEFAULT_PAYMENT_METHODS],
       },
-    }));
+    });
+  }
 
   return {
     tenant,
