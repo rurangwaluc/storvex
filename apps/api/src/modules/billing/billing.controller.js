@@ -65,21 +65,43 @@ function getBranchLimitFromPlan(plan) {
 }
 
 function computeBranchUsage(subscription, activeBranchesCount = null) {
-  const includedBranchLimit = Number.isFinite(Number(subscription?.branchLimit))
-    ? Number(subscription.branchLimit)
-    : null;
+  const rawBranchLimit = subscription?.branchLimit;
+  const rawExtraBranchCount = subscription?.extraBranchCount;
 
-  const extraBranchCount = Number.isFinite(Number(subscription?.extraBranchCount))
-    ? Number(subscription.extraBranchCount)
-    : 0;
+  const includedBranchLimit =
+    rawBranchLimit === null ||
+    rawBranchLimit === undefined ||
+    rawBranchLimit === ""
+      ? null
+      : Number.isFinite(Number(rawBranchLimit)) &&
+          Number(rawBranchLimit) > 0
+        ? Math.floor(Number(rawBranchLimit))
+        : null;
 
-  const effectiveBranchLimit =
-    includedBranchLimit != null ? includedBranchLimit + extraBranchCount : null;
+  const extraBranchCount =
+    rawExtraBranchCount === null ||
+    rawExtraBranchCount === undefined ||
+    rawExtraBranchCount === ""
+      ? 0
+      : Number.isFinite(Number(rawExtraBranchCount)) &&
+          Number(rawExtraBranchCount) >= 0
+        ? Math.floor(Number(rawExtraBranchCount))
+        : 0;
 
   const activeBranches =
-    Number.isFinite(Number(activeBranchesCount)) && Number(activeBranchesCount) >= 0
-      ? Number(activeBranchesCount)
-      : null;
+    activeBranchesCount === null ||
+    activeBranchesCount === undefined ||
+    activeBranchesCount === ""
+      ? null
+      : Number.isFinite(Number(activeBranchesCount)) &&
+          Number(activeBranchesCount) >= 0
+        ? Math.floor(Number(activeBranchesCount))
+        : null;
+
+  const effectiveBranchLimit =
+    includedBranchLimit == null
+      ? null
+      : includedBranchLimit + extraBranchCount;
 
   return {
     activeBranches,
@@ -88,16 +110,16 @@ function computeBranchUsage(subscription, activeBranchesCount = null) {
     effectiveBranchLimit,
     overLimit:
       effectiveBranchLimit != null && activeBranches != null
-        ? Number(activeBranches) > Number(effectiveBranchLimit)
+        ? activeBranches > effectiveBranchLimit
         : false,
     atLimit:
       effectiveBranchLimit != null && activeBranches != null
-        ? Number(activeBranches) >= Number(effectiveBranchLimit)
+        ? activeBranches >= effectiveBranchLimit
         : false,
     canAddBranch:
       effectiveBranchLimit == null || activeBranches == null
         ? true
-        : Number(activeBranches) < Number(effectiveBranchLimit),
+        : activeBranches < effectiveBranchLimit,
   };
 }
 

@@ -44,8 +44,8 @@ Subscription Plans V2 complete until every required item is checked and tested.
 - [ ] Resolve plan defaults, purchased snapshots and platform overrides.
 - [x] Add effective entitlements to authentication responses.
 - [x] Add effective entitlements to billing overview responses.
-- [ ] Keep staff limits server-enforced.
-- [ ] Keep branch limits server-enforced.
+- [x] Keep staff limits server-enforced.
+- [x] Keep branch limits server-enforced.
 - [ ] Add server enforcement for advanced plan capabilities.
 - [ ] Ensure essential security and safe workflows are available on every plan.
 - [ ] Ensure Marketplace order safety never depends on plan level.
@@ -99,15 +99,15 @@ Subscription Plans V2 complete until every required item is checked and tested.
 - [ ] Renewal on the same plan.
 - [ ] Upgrade.
 - [ ] Downgrade.
-- [ ] Existing subscription with historic limits.
+- [x] Existing subscription with historic limits.
 - [ ] Over-staff downgrade.
-- [ ] Over-branch downgrade.
-- [ ] Grace period.
-- [ ] Read-only mode.
-- [ ] Full expiration.
-- [ ] Suspension.
+- [x] Over-branch downgrade.
+- [x] Grace period.
+- [x] Read-only mode.
+- [x] Full expiration.
+- [x] Suspension.
 - [ ] Enterprise custom plan.
 - [ ] Platform override.
-- [ ] Web build.
-- [ ] Mobile typecheck.
-- [ ] Platform build.
+- [x] Web build.
+- [x] Mobile typecheck.
+- [x] Platform build.

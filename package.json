@@ -8,19 +8,17 @@
     "dev:web": "pnpm --filter @storvex/web dev",
     "dev:platform": "pnpm --filter @storvex/platform dev",
     "dev:mobile": "pnpm --filter @storvex/mobile start",
-
     "build:web": "pnpm --filter @storvex/web build",
     "build:platform": "pnpm --filter @storvex/platform build",
-
     "typecheck:mobile": "pnpm --filter @storvex/mobile exec tsc --noEmit",
     "lint:platform": "pnpm --filter @storvex/platform lint",
-
     "check:web": "pnpm build:web",
     "check:mobile": "pnpm typecheck:mobile",
     "check:platform": "pnpm build:platform",
-    "check": "pnpm check:web && pnpm check:mobile && pnpm check:platform",
-
-    "start:api": "pnpm --filter @storvex/api start"
+    "check": "pnpm check:api && pnpm check:web && pnpm check:mobile && pnpm check:platform",
+    "start:api": "pnpm --filter @storvex/api start",
+    "test:api": "pnpm --filter @storvex/api test",
+    "check:api": "pnpm test:api"
   },
   "devDependencies": {
     "typescript": "^5.9.3"

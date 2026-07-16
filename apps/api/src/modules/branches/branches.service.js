@@ -181,21 +181,58 @@ function formatBranchStaffAssignment(assignment) {
 }
 
 function computeBranchUsage(subscription, activeBranchesCount) {
-  const includedBranchLimit = toPositiveIntOrNull(subscription?.branchLimit);
-  const extraBranchCount = toPositiveIntOrNull(subscription?.extraBranchCount) ?? 0;
-  const activeBranches = toPositiveIntOrNull(activeBranchesCount) ?? 0;
+  const rawBranchLimit = subscription?.branchLimit;
+  const rawExtraBranchCount = subscription?.extraBranchCount;
+
+  const includedBranchLimit =
+    rawBranchLimit === null ||
+    rawBranchLimit === undefined ||
+    rawBranchLimit === ""
+      ? null
+      : Number.isFinite(Number(rawBranchLimit)) &&
+          Number(rawBranchLimit) > 0
+        ? Math.floor(Number(rawBranchLimit))
+        : null;
+
+  const extraBranchCount =
+    rawExtraBranchCount === null ||
+    rawExtraBranchCount === undefined ||
+    rawExtraBranchCount === ""
+      ? 0
+      : Number.isFinite(Number(rawExtraBranchCount)) &&
+          Number(rawExtraBranchCount) >= 0
+        ? Math.floor(Number(rawExtraBranchCount))
+        : 0;
+
+  const activeBranches =
+    activeBranchesCount === null ||
+    activeBranchesCount === undefined ||
+    activeBranchesCount === ""
+      ? 0
+      : Number.isFinite(Number(activeBranchesCount)) &&
+          Number(activeBranchesCount) >= 0
+        ? Math.floor(Number(activeBranchesCount))
+        : 0;
 
   const effectiveBranchLimit =
-    includedBranchLimit == null ? null : includedBranchLimit + extraBranchCount;
+    includedBranchLimit == null
+      ? null
+      : includedBranchLimit + extraBranchCount;
 
   const overLimit =
-    effectiveBranchLimit == null ? false : activeBranches > effectiveBranchLimit;
+    effectiveBranchLimit == null
+      ? false
+      : activeBranches > effectiveBranchLimit;
 
   const atLimit =
-    effectiveBranchLimit == null ? false : activeBranches >= effectiveBranchLimit;
+    effectiveBranchLimit == null
+      ? false
+      : activeBranches >= effectiveBranchLimit;
 
   const canAddBranch =
-    effectiveBranchLimit == null ? true : activeBranches < effectiveBranchLimit;
+    effectiveBranchLimit == null
+      ? true
+      : activeBranches < effectiveBranchLimit;
 
   return {
     activeBranches,
