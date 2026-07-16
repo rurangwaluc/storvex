@@ -23,6 +23,21 @@ export function getDocumentSettings() {
   return apiFetch("/store/document-settings");
 }
 
+export function getMarketplaceProfile() {
+  return apiFetch("/store/marketplace-profile");
+}
+
+export function getMarketplaceReadiness() {
+  return apiFetch("/store/marketplace-readiness");
+}
+
+export function updateMarketplaceProfile(payload = {}) {
+  return apiFetch("/store/marketplace-profile", {
+    method: "PATCH",
+    body: payload,
+  });
+}
+
 export function updateDocumentSettings(payload = {}) {
   return apiFetch("/store/document-settings", {
     method: "PATCH",

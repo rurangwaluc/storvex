@@ -66,6 +66,7 @@ import DeliveryNoteEdit from "./legacy-pages/deliveryNotes/DeliveryNoteEdit";
 
 import SettingsLayout from "./legacy-pages/settings/SettingsLayout";
 import SettingsGeneral from "./legacy-pages/settings/SettingsGeneral";
+import SettingsMarketplace from "./legacy-pages/settings/SettingsMarketplace";
 import SettingsDocuments from "./legacy-pages/settings/SettingsDocuments";
 import SettingsBranches from "./legacy-pages/settings/SettingsBranches";
 import SettingsBilling from "./legacy-pages/settings/SettingsBilling";
@@ -157,6 +158,16 @@ export default function App() {
                 <Route index element={<SettingsGeneral />} />
                 <Route path="documents" element={<SettingsDocuments />} />
                 <Route path="branches" element={<SettingsBranches />} />
+
+                <Route
+                  path="marketplace"
+                  element={
+                    <RequireRole roles={["OWNER"]}>
+                      <SettingsMarketplace />
+                    </RequireRole>
+                  }
+                />
+
                 <Route path="members" element={<SettingsMembers />} />
                 <Route path="roles" element={<SettingsRoles />} />
 

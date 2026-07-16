@@ -14,7 +14,9 @@
 - [x] Add server-authoritative seller readiness.
 - [x] Prevent store activation before required readiness is complete.
 - [x] Add seller readiness unit tests.
-- [ ] Build the owner Marketplace setup page.
+- [x] Build the owner Marketplace setup page.
+- [x] Make the owner Marketplace workspace mobile-first and PWA-safe.
+- [x] Add retryable loading and connection-error handling.
 - [ ] Connect seller readiness to product publishing feedback.
 - [ ] Use branch stock minus reserved stock for public availability.
 

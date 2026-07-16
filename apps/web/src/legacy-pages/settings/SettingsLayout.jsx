@@ -67,6 +67,13 @@ const NAV_ITEMS = [
     roles: ["OWNER", "MANAGER"],
   },
   {
+    key: "marketplace",
+    label: "Marketplace",
+    subtitle: "Public store, customer contact, pickup, delivery, and visibility",
+    to: "/app/settings/marketplace",
+    roles: ["OWNER"],
+  },
+  {
     key: "members",
     label: "Members",
     subtitle: "Staff accounts and access control",
@@ -162,6 +169,30 @@ function Icon({ name }) {
         </svg>
       );
 
+    case "marketplace":
+      return (
+        <svg {...common}>
+          <path
+            d="M4 9h16l-1-5H5L4 9Z"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M5 9v11h14V9M9 20v-6h6v6"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M4 9a3 3 0 0 0 5 2 3 3 0 0 0 6 0 3 3 0 0 0 5-2"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+
     case "members":
       return (
         <svg {...common}>
@@ -240,6 +271,7 @@ function currentKeyFromPath(pathname) {
   if (pathname === "/app/settings") return "general";
   if (pathname.includes("/app/settings/documents")) return "documents";
   if (pathname.includes("/app/settings/branches")) return "branches";
+  if (pathname.includes("/app/settings/marketplace")) return "marketplace";
   if (pathname.includes("/app/settings/members")) return "members";
   if (pathname.includes("/app/settings/roles")) return "roles";
   if (pathname.includes("/app/settings/billing")) return "billing";
@@ -397,7 +429,7 @@ export default function SettingsLayout() {
               <SectionHeading
                 eyebrow="Control center"
                 title="Settings"
-                subtitle="Manage store identity, documents, branches, staff access, security, and business controls."
+                subtitle="Manage store identity, documents, branches, Marketplace visibility, staff access, security, and business controls."
               />
             </div>
 
