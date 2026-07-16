@@ -157,7 +157,7 @@ function MarketplaceHeader() {
           <Link to="/marketplace" className="svx-marketplace-nav-active">
             Marketplace
           </Link>
-          <Link to="/signup">Sell on Storvex</Link>
+
         </nav>
 
         <div className="svx-header-actions">
@@ -231,13 +231,7 @@ function MarketplaceHeader() {
               Owner access
             </Link>
 
-            <Link
-              to="/signup"
-              className="svx-mobile-menu-primary"
-              onClick={() => setMenuOpen(false)}
-            >
-              Sell on Storvex
-            </Link>
+
           </div>
         </nav>
       </div>
