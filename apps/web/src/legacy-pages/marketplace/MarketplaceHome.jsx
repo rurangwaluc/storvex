@@ -585,32 +585,7 @@ export default function MarketplaceHome() {
 
       <main>
         <section className="svx-commerce-search-band">
-          <div className="svx-commerce-search-inner">
-            <Link to="/marketplace" className="svx-commerce-wordmark">
-              <img src={iconSrc} alt="" />
-              <span>Marketplace</span>
-            </Link>
 
-            <form onSubmit={submitSearch}>
-              <Search size={19} />
-
-              <input
-                value={searchInput}
-                onChange={(event) =>
-                  setSearchInput(event.target.value)
-                }
-                placeholder="Search products and stores"
-                aria-label="Search Marketplace"
-              />
-
-              <button type="submit">Search</button>
-            </form>
-
-            <Link to="/signup" className="svx-commerce-seller-link">
-              <Building2 size={17} />
-              Sell on Storvex
-            </Link>
-          </div>
         </section>
 
         <nav className="svx-commerce-category-nav">
@@ -797,8 +772,8 @@ export default function MarketplaceHome() {
             <div className="svx-commerce-section">
               <div className="svx-commerce-section-heading">
                 <div>
-                  <span>Featured stores</span>
-                  <h2>Businesses you can explore</h2>
+                  <span>Selected stores</span>
+                  <h2>Featured stores</h2>
                 </div>
               </div>
 

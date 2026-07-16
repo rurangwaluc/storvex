@@ -42,27 +42,11 @@
 .svx-commerce-search-inner {
   display: grid;
   max-width: 1360px;
-  grid-template-columns: auto minmax(320px, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 28px;
   margin: 0 auto;
 }
-
-.svx-commerce-wordmark {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--landing-text);
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.svx-commerce-wordmark img {
-  width: 34px;
-  height: 34px;
-  object-fit: contain;
-}
-
 .svx-commerce-search-inner form {
   display: grid;
   min-height: 52px;
@@ -100,21 +84,6 @@
   font-size: 13px;
   font-weight: 800;
 }
-
-.svx-commerce-seller-link {
-  display: inline-flex;
-  min-height: 44px;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--landing-border);
-  border-radius: 11px;
-  padding: 0 16px;
-  background: var(--landing-card);
-  color: var(--landing-text);
-  font-size: 12px;
-  font-weight: 800;
-}
-
 .svx-commerce-category-nav {
   border-bottom: 1px solid var(--landing-border);
   background: #0d1b3e !important;
@@ -967,16 +936,12 @@
   }
 
   .svx-commerce-search-inner {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
     gap: 12px;
   }
 
-  .svx-commerce-wordmark span,
-  .svx-commerce-seller-link {
-    display: none;
-  }
-
   .svx-commerce-search-inner form {
+    display: grid;
     min-height: 48px;
   }
 
@@ -1105,5 +1070,67 @@
 
   .svx-commerce-footer-links {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+
+/* Existing Marketplace in-place polish */
+.svx-commerce-search-inner form {
+  width: 100%;
+}
+
+.svx-commerce-search-inner form button {
+  min-width: 96px;
+}
+
+@media (max-width: 760px) {
+  .svx-commerce-search-band {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .svx-commerce-search-inner {
+    display: block;
+  }
+
+  .svx-commerce-search-inner form {
+    min-height: 48px;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    padding-left: 12px;
+  }
+
+  .svx-commerce-search-inner input {
+    height: 46px;
+    font-size: 13px;
+  }
+
+  .svx-commerce-search-inner form button {
+    min-width: 78px;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .svx-commerce-category-nav > div {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .svx-commerce-category-nav button {
+    min-height: 46px;
+    padding-right: 13px;
+    padding-left: 13px;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-commerce-search-inner form {
+    grid-template-columns: 18px minmax(0, 1fr);
+    padding: 7px 9px 9px;
+  }
+
+  .svx-commerce-search-inner form button {
+    width: 100%;
+    min-height: 43px;
+    grid-column: 1 / -1;
   }
 }
