@@ -2487,3 +2487,123 @@
     grid-column: 1;
   }
 }
+
+
+/* Marketplace compact category cards
+   Preserve two columns on practical phone widths.
+   Place the icon above the text so descriptions remain readable.
+*/
+
+@media (max-width: 520px) {
+  .svx-commerce-department-grid,
+  .svx-commerce-category-grid,
+  .svx-commerce-category-cards {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+    overflow: visible;
+  }
+
+  .svx-commerce-department-card,
+  .svx-commerce-category-card {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    min-height: 142px;
+    align-items: stretch;
+    justify-content: flex-start;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+    padding: 13px;
+  }
+
+  /*
+   * Icon remains visually clear at the top.
+   * These selectors support both current category-card structures.
+   */
+  .svx-commerce-department-card > span,
+  .svx-commerce-category-card > span {
+    display: inline-flex;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    margin: 0;
+  }
+
+  .svx-commerce-department-card > span svg,
+  .svx-commerce-category-card > span svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  /*
+   * Text receives the full card width instead of being squeezed
+   * between the icon and arrow.
+   */
+  .svx-commerce-department-card > div,
+  .svx-commerce-category-card > div {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    flex: 1 1 auto;
+    margin: 0;
+  }
+
+  .svx-commerce-department-card strong,
+  .svx-commerce-category-card strong {
+    display: block;
+    padding-right: 0;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .svx-commerce-department-card small,
+  .svx-commerce-category-card small {
+    display: -webkit-box;
+    margin-top: 5px;
+    overflow: hidden;
+    font-size: 8px;
+    line-height: 1.45;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+  }
+
+  /*
+   * Keep the action visible without consuming horizontal text space.
+   */
+  .svx-commerce-department-card > svg,
+  .svx-commerce-category-card > svg {
+    position: absolute;
+    top: 18px;
+    right: 13px;
+    width: 15px;
+    height: 15px;
+    margin: 0;
+  }
+}
+
+/*
+ * Extremely narrow phones need one comfortable column.
+ */
+@media (max-width: 359px) {
+  .svx-commerce-department-grid,
+  .svx-commerce-category-grid,
+  .svx-commerce-category-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-commerce-department-card,
+  .svx-commerce-category-card {
+    min-height: 116px;
+  }
+
+  .svx-commerce-department-card small,
+  .svx-commerce-category-card small {
+    -webkit-line-clamp: 3;
+  }
+}
