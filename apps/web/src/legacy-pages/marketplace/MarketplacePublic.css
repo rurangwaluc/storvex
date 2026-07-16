@@ -2113,3 +2113,146 @@
     grid-column: 1;
   }
 }
+
+/* Marketplace network sizing and readability correction */
+
+/*
+ * Only the main illustration should fill the visual area.
+ * Previously this selector also stretched the Lucide status icons.
+ */
+.svx-marketplace-network > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 390px;
+  overflow: visible;
+}
+
+.svx-marketplace-network-status svg {
+  display: block;
+  width: 15px !important;
+  height: 15px !important;
+  max-width: 15px;
+  max-height: 15px;
+  flex: 0 0 15px;
+}
+
+/* Improve readability of the category cards and central node. */
+.svx-marketplace-network-node text {
+  font-family: var(--landing-body-font);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.svx-marketplace-network-node text.is-muted {
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.svx-marketplace-network-center text {
+  font-family: var(--landing-heading-font);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.svx-marketplace-network-center text.is-muted {
+  font-family: var(--landing-body-font);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.svx-marketplace-network-status span {
+  min-height: 34px;
+  padding: 0 11px;
+  font-family: var(--landing-body-font);
+  font-size: 9px;
+  font-weight: 750;
+}
+
+/* Keep the approved desktop hero structure unchanged. */
+@media (min-width: 821px) {
+  .svx-marketplace-network > svg {
+    max-height: 350px;
+  }
+}
+
+/* Compact, readable PWA treatment without horizontal scrolling. */
+@media (max-width: 820px) {
+  .svx-marketplace-hero-visual {
+    overflow: hidden;
+    padding: 14px 10px 18px;
+  }
+
+  .svx-marketplace-network {
+    max-width: 540px;
+  }
+
+  .svx-marketplace-network > svg {
+    max-height: 330px;
+  }
+
+  .svx-marketplace-network-status {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 6px;
+    padding: 0 8px;
+  }
+
+  .svx-marketplace-network-status span {
+    min-width: 0;
+    min-height: 38px;
+    gap: 5px;
+    padding: 5px 6px;
+    font-size: 8px;
+    line-height: 1.25;
+    white-space: normal;
+  }
+
+  .svx-marketplace-network-status svg {
+    width: 14px !important;
+    height: 14px !important;
+    max-width: 14px;
+    max-height: 14px;
+    flex-basis: 14px;
+  }
+}
+
+@media (max-width: 520px) {
+  .svx-marketplace-network > svg {
+    max-height: 285px;
+  }
+
+  .svx-marketplace-network-node text {
+    font-size: 10px;
+  }
+
+  .svx-marketplace-network-node text.is-muted {
+    font-size: 7.5px;
+  }
+
+  .svx-marketplace-network-center text {
+    font-size: 12px;
+  }
+
+  .svx-marketplace-network-center text.is-muted {
+    font-size: 7.5px;
+  }
+
+  .svx-marketplace-network-status {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .svx-marketplace-network-status span:last-child {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 360px) {
+  .svx-marketplace-network-status {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-marketplace-network-status span:last-child {
+    grid-column: 1 / -1;
+  }
+}
