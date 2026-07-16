@@ -296,12 +296,33 @@ async function listBillingPlans(req, res) {
       tierLabel: p.tierLabel,
       cycleKey: p.cycleKey,
       cycleLabel: p.cycleLabel,
-      staffLimit: Number.isFinite(Number(p.staffLimit)) ? Number(p.staffLimit) : null,
+
+      shortDescription: p.shortDescription || null,
+      audience: p.audience || null,
+      recommended: Boolean(p.recommended),
+
+      staffLimit: Number.isFinite(Number(p.staffLimit))
+        ? Number(p.staffLimit)
+        : null,
       branchLimit: getBranchLimitFromPlan(p),
+
       days: p.days,
       price: p.price,
       currency: p.currency,
+
       isEnterprise: Boolean(p.isEnterprise),
+      marketplaceIncluded: Boolean(p.marketplaceIncluded),
+      launchPricing: Boolean(p.launchPricing),
+
+      capacity: p.capacity ? { ...p.capacity } : null,
+      entitlements: p.entitlements ? { ...p.entitlements } : null,
+      sections: Array.isArray(p.sections)
+        ? p.sections.map((section) => ({
+            key: section.key,
+            label: section.label,
+            items: Array.isArray(section.items) ? [...section.items] : [],
+          }))
+        : [],
     }));
 
     return res.json({ plans });
