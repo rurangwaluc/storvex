@@ -1383,387 +1383,332 @@
 }
 
 
-/* Storvex Marketplace discovery hero */
-.svx-commerce-hero {
-  padding-top: 22px;
-  padding-bottom: 22px;
-}
-
-.svx-market-discovery-hero {
-  display: grid;
+/* Product-led Storvex Marketplace hero */
+.svx-commerce-promo {
+  isolation: isolate;
+  position: relative;
   overflow: hidden;
-  grid-template-columns: minmax(0, 0.92fr) minmax(430px, 1.08fr);
   border: 1px solid var(--landing-border);
   border-radius: 18px;
   background: var(--landing-card);
-  box-shadow: 0 18px 46px rgba(15, 45, 90, 0.07);
+  box-shadow: 0 18px 48px rgba(15, 45, 90, 0.07);
 }
 
-.svx-market-discovery-copy {
-  display: flex;
-  min-width: 0;
-  justify-content: center;
-  flex-direction: column;
-  padding: 50px;
+.svx-commerce-promo::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  right: -28%;
+  width: 76%;
+  height: 125%;
+  border-radius: 9999px;
+  background: var(--landing-ellipse);
+  opacity: 0.48;
+  transform: translateY(-50%) rotate(-18deg);
+  pointer-events: none;
 }
 
-.svx-market-discovery-eyebrow {
-  display: inline-flex;
-  width: fit-content;
-  min-height: 28px;
-  align-items: center;
-  border: 1px solid var(--landing-border);
-  border-radius: 999px;
-  background: var(--landing-primary-soft);
-  padding: 0 10px;
-  color: var(--landing-primary);
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.svx-market-discovery-copy h1 {
-  max-width: 620px;
-  margin: 18px 0 0;
-  color: var(--landing-text);
-  font-size: clamp(42px, 5.2vw, 72px);
-  font-weight: 950;
-  line-height: 0.97;
-  letter-spacing: -0.058em;
-}
-
-.svx-market-discovery-copy > p {
-  max-width: 570px;
-  margin: 20px 0 0;
-  color: var(--landing-muted);
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.7;
-}
-
-.svx-market-discovery-search {
-  display: grid;
-  min-height: 56px;
-  max-width: 610px;
-  grid-template-columns: 20px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-  margin-top: 27px;
-  border: 1px solid var(--landing-border);
-  border-radius: 12px;
-  background: var(--landing-bg);
-  padding: 5px 6px 5px 15px;
-}
-
-.svx-market-discovery-search > svg {
-  color: var(--landing-muted);
-}
-
-.svx-market-discovery-search input {
-  min-width: 0;
-  height: 44px;
-  border: 0;
-  outline: 0;
+.svx-commerce-promo-copy,
+.svx-commerce-promo-visual {
+  position: relative;
+  z-index: 2;
   background: transparent;
-  color: var(--landing-text);
-  font-size: 12px;
-  font-weight: 700;
 }
 
-.svx-market-discovery-search button {
-  min-width: 94px;
-  min-height: 44px;
+.svx-commerce-promo-copy h1 {
+  color: var(--landing-text);
+}
+
+.svx-commerce-promo-copy p {
+  color: var(--landing-muted);
+}
+
+.svx-commerce-promo-products-link {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 22px;
   border: 0;
-  border-radius: 9px;
+  border-radius: 10px;
   background: var(--landing-primary);
+  padding: 0 17px;
   color: #ffffff;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: 850;
   box-shadow: none;
 }
 
-.svx-market-discovery-search button:hover {
+.svx-commerce-promo-products-link:hover {
   background: var(--landing-primary-dark);
 }
 
-.svx-market-discovery-visual {
-  position: relative;
+.svx-commerce-hero-product {
   display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(0, 1fr);
-  align-content: center;
-  justify-items: center;
+  width: min(92%, 470px);
+  grid-template-columns: minmax(0, 1.15fr) minmax(150px, 0.85fr);
   overflow: hidden;
-  border-left: 1px solid var(--landing-border);
-  background: #eef4fb;
-  padding: 38px 42px 30px;
+  border: 1px solid var(--landing-border);
+  border-radius: 16px;
+  background: var(--landing-card);
+  color: var(--landing-text);
+  box-shadow: 0 18px 42px rgba(15, 45, 90, 0.12);
 }
 
-.svx-market-discovery-image {
-  display: flex;
-  width: min(100%, 580px);
-  min-height: 310px;
-  align-items: center;
-  justify-content: center;
+.svx-commerce-hero-product-image {
+  position: relative;
+  min-height: 250px;
+  background: #f5f7fa;
 }
 
-.svx-market-discovery-image img {
+.svx-commerce-hero-product-image img {
   width: 100%;
-  height: 310px;
+  height: 100%;
   object-fit: contain;
-  transition: transform 180ms ease;
+  padding: 16px;
 }
 
-.svx-market-discovery-image:hover img {
-  transform: translateY(-3px);
-}
-
-.svx-market-discovery-product {
-  display: grid;
-  width: min(100%, 580px);
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 5px 18px;
-  border-top: 1px solid rgba(13, 27, 62, 0.1);
-  padding-top: 18px;
-}
-
-.svx-market-discovery-product > span {
-  color: #657088;
-  font-size: 9px;
-  font-weight: 850;
+.svx-commerce-hero-product-image > span {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  padding: 5px 8px;
+  color: #047857;
+  font-size: 8px;
+  font-weight: 900;
   text-transform: uppercase;
 }
 
-.svx-market-discovery-product > strong {
-  grid-column: 1;
-  color: #0d1b3e;
+.svx-commerce-hero-product-content {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 18px;
+}
+
+.svx-commerce-hero-product-content > p {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  color: var(--landing-muted);
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.svx-commerce-hero-product-content h2 {
+  margin: 10px 0 0;
+  color: var(--landing-text);
   font-size: 20px;
-  font-weight: 950;
+  font-weight: 900;
   line-height: 1.25;
-  letter-spacing: -0.025em;
 }
 
-.svx-market-discovery-product > b {
-  grid-column: 1;
-  color: #0d1b3e;
-  font-size: 16px;
+.svx-commerce-hero-product-content > strong {
+  margin-top: 12px;
+  color: var(--landing-text);
+  font-size: 18px;
   font-weight: 950;
 }
 
-.svx-market-discovery-product > a {
+.svx-commerce-hero-product-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.svx-commerce-hero-product-meta span {
   display: inline-flex;
-  grid-column: 2;
-  grid-row: 1 / 4;
+  min-height: 25px;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  background: var(--landing-primary-soft);
+  padding: 0 8px;
+  color: var(--landing-primary);
+  font-size: 8px;
+  font-weight: 850;
+}
+
+.svx-commerce-hero-product-action {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  align-self: center;
+  margin-top: auto;
+  padding-top: 18px;
   color: var(--landing-primary);
   font-size: 10px;
   font-weight: 900;
 }
 
-.svx-market-discovery-empty {
+.svx-commerce-hero-product-empty {
   display: grid;
-  min-height: 360px;
+  min-height: 250px;
   justify-items: center;
   align-content: center;
-  gap: 8px;
-  color: #657088;
+  color: var(--landing-muted);
   text-align: center;
 }
 
-.svx-market-discovery-empty strong {
-  color: #0d1b3e;
-  font-size: 18px;
-  font-weight: 900;
-}
-
-.svx-market-discovery-facts {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-top: 1px solid var(--landing-border);
-  background: var(--landing-card);
-}
-
-.svx-market-discovery-facts > div {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: 34px minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  padding: 18px 22px;
-}
-
-.svx-market-discovery-facts > div + div {
-  border-left: 1px solid var(--landing-border);
-}
-
-.svx-market-discovery-facts > div > span {
-  display: inline-flex;
-  width: 32px;
-  height: 32px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9px;
-  background: var(--landing-primary-soft);
-  color: var(--landing-primary);
-  font-size: 9px;
-  font-weight: 950;
-}
-
-.svx-market-discovery-facts p {
-  margin: 0;
-  color: var(--landing-muted);
-  font-size: 9px;
-  font-weight: 650;
-  line-height: 1.45;
-}
-
-.svx-market-discovery-facts strong {
-  display: block;
-  margin-bottom: 3px;
+.svx-commerce-hero-product-empty strong {
+  margin-top: 9px;
   color: var(--landing-text);
-  font-size: 11px;
-  font-weight: 900;
 }
 
-/* Dark mode is intentionally commerce-specific, not a landing-page copy. */
-:root[data-theme="dark"] .svx-market-discovery-hero {
-  background: #0b1a2b;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
+:root[data-theme="dark"] .svx-commerce-promo {
+  background: #0d1c2d;
+  box-shadow: 0 22px 52px rgba(0, 0, 0, 0.22);
 }
 
-:root[data-theme="dark"] .svx-market-discovery-copy h1 {
-  color: #ffffff;
+:root[data-theme="dark"] .svx-commerce-hero-product {
+  background: #17202d;
 }
 
-:root[data-theme="dark"] .svx-market-discovery-copy > p {
-  color: rgba(255, 255, 255, 0.66);
-}
-
-:root[data-theme="dark"] .svx-market-discovery-search {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: #071422;
-}
-
-:root[data-theme="dark"] .svx-market-discovery-search input {
-  color: #ffffff;
-}
-
-:root[data-theme="dark"] .svx-market-discovery-visual {
-  border-left-color: rgba(255, 255, 255, 0.1);
-  background: #102841;
-}
-
-:root[data-theme="dark"] .svx-market-discovery-product {
-  border-top-color: rgba(255, 255, 255, 0.12);
-}
-
-:root[data-theme="dark"] .svx-market-discovery-product > span {
-  color: rgba(255, 255, 255, 0.56);
-}
-
-:root[data-theme="dark"] .svx-market-discovery-product > strong,
-:root[data-theme="dark"] .svx-market-discovery-product > b {
-  color: #ffffff;
-}
-
-:root[data-theme="dark"] .svx-market-discovery-facts {
-  background: #0b1a2b;
-}
-
-@media (max-width: 1080px) {
-  .svx-market-discovery-hero {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .svx-market-discovery-visual {
-    border-top: 1px solid var(--landing-border);
-    border-left: 0;
-  }
-
-  :root[data-theme="dark"] .svx-market-discovery-visual {
-    border-top-color: rgba(255, 255, 255, 0.1);
-  }
+:root[data-theme="dark"] .svx-commerce-hero-product-image {
+  background: #eef1f4;
 }
 
 @media (max-width: 820px) {
-  .svx-commerce-hero {
+  .svx-commerce-promo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-commerce-promo-copy {
+    padding-bottom: 24px;
+  }
+
+  .svx-commerce-promo-visual {
+    display: flex;
+    position: relative;
+    min-height: auto;
+    align-items: stretch;
+    padding: 0 20px 20px;
+  }
+
+  .svx-commerce-hero-product {
+    width: 100%;
+    grid-template-columns: minmax(120px, 42%) minmax(0, 1fr);
+  }
+
+  .svx-commerce-hero-product-image {
+    min-height: 180px;
+  }
+
+  .svx-commerce-hero-product-content {
     padding: 14px;
   }
 
-  .svx-market-discovery-hero {
-    border-radius: 16px;
+  .svx-commerce-hero-product-content h2 {
+    font-size: 16px;
   }
 
-  .svx-market-discovery-copy {
-    padding: 28px 20px 22px;
+  .svx-commerce-hero-product-content > strong {
+    font-size: 15px;
   }
 
-  .svx-market-discovery-copy h1 {
-    font-size: clamp(34px, 10.5vw, 48px);
-  }
-
-  .svx-market-discovery-search {
-    grid-template-columns: 19px minmax(0, 1fr);
-  }
-
-  .svx-market-discovery-search button {
-    width: 100%;
-    grid-column: 1 / -1;
-  }
-
-  .svx-market-discovery-visual {
-    padding: 22px 20px;
-  }
-
-  .svx-market-discovery-image {
-    min-height: 220px;
-  }
-
-  .svx-market-discovery-image img {
-    height: 220px;
-  }
-
-  .svx-market-discovery-facts {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .svx-market-discovery-facts > div:nth-child(3) {
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--landing-border);
-    border-left: 0;
-  }
-
-  :root[data-theme="dark"]
-    .svx-market-discovery-facts
-    > div:nth-child(3) {
-    border-top-color: rgba(255, 255, 255, 0.1);
+  .svx-commerce-promo::before {
+    top: auto;
+    right: -220px;
+    bottom: -130px;
+    width: 540px;
+    height: 300px;
+    transform: rotate(-18deg);
   }
 }
 
 @media (max-width: 390px) {
-  .svx-market-discovery-product {
+  .svx-commerce-hero-product {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .svx-market-discovery-product > a {
-    grid-column: 1;
-    grid-row: auto;
-    margin-top: 8px;
+  .svx-commerce-hero-product-image {
+    min-height: 205px;
   }
+}
 
-  .svx-market-discovery-facts {
-    grid-template-columns: minmax(0, 1fr);
-  }
+/* Marketplace hero contrast correction */
 
-  .svx-market-discovery-facts > div + div,
-  .svx-market-discovery-facts > div:nth-child(3) {
-    grid-column: 1;
-    border-top: 1px solid var(--landing-border);
-    border-left: 0;
-  }
+/*
+ * The Marketplace hero remains a strong commerce surface in both themes.
+ * Light mode changes the surrounding page, not the hero into an unreadable
+ * mixture of dark background and dark text.
+ */
+.svx-commerce-promo,
+:root:not([data-theme="dark"]) .svx-commerce-promo,
+:root[data-theme="dark"] .svx-commerce-promo {
+  background: #0b1d31 !important;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+
+.svx-commerce-promo::before,
+:root:not([data-theme="dark"]) .svx-commerce-promo::before,
+:root[data-theme="dark"] .svx-commerce-promo::before {
+  background: #123b61;
+  opacity: 0.72;
+}
+
+.svx-commerce-promo-copy,
+.svx-commerce-promo-visual,
+:root:not([data-theme="dark"]) .svx-commerce-promo-copy,
+:root:not([data-theme="dark"]) .svx-commerce-promo-visual {
+  background: transparent !important;
+}
+
+.svx-commerce-promo-copy h1,
+:root:not([data-theme="dark"]) .svx-commerce-promo-copy h1 {
+  color: #ffffff !important;
+}
+
+.svx-commerce-promo-copy p,
+:root:not([data-theme="dark"]) .svx-commerce-promo-copy p {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.svx-commerce-promo-copy > span,
+:root:not([data-theme="dark"]) .svx-commerce-promo-copy > span {
+  border-color: rgba(31, 166, 255, 0.32);
+  background: rgba(31, 166, 255, 0.11);
+  color: #38bdf8;
+}
+
+/* The real product preview remains a clean commerce card. */
+.svx-commerce-hero-product,
+:root[data-theme="dark"] .svx-commerce-hero-product {
+  border-color: rgba(13, 27, 62, 0.12);
+  background: #ffffff;
+  color: #0d1b3e;
+  box-shadow: 0 16px 34px rgba(0, 8, 20, 0.2);
+}
+
+.svx-commerce-hero-product-image,
+:root[data-theme="dark"] .svx-commerce-hero-product-image {
+  background: #f3f5f7;
+}
+
+.svx-commerce-hero-product-content h2,
+.svx-commerce-hero-product-content > strong,
+:root[data-theme="dark"] .svx-commerce-hero-product-content h2,
+:root[data-theme="dark"] .svx-commerce-hero-product-content > strong {
+  color: #0d1b3e;
+}
+
+.svx-commerce-hero-product-content > p,
+:root[data-theme="dark"] .svx-commerce-hero-product-content > p {
+  color: #657088;
+}
+
+.svx-commerce-promo-products-link {
+  box-shadow: none !important;
+}
+
+.svx-commerce-promo-products-link:hover {
+  transform: none;
+  box-shadow: none !important;
 }
