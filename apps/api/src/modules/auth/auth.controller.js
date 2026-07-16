@@ -200,6 +200,10 @@ function snapshotPlanOrNull(plan) {
     requestedPriceAmount: Number.isFinite(Number(plan.price)) ? Number(plan.price) : null,
     currency: plan.currency || null,
     requestedCurrency: plan.currency || null,
+    entitlements:
+      plan.entitlements && typeof plan.entitlements === "object"
+        ? { ...plan.entitlements }
+        : null,
   };
 }
 
@@ -587,6 +591,7 @@ async function ownerIntent(req, res) {
         requestedStaffLimit: requestedSnapshot?.staffLimit ?? null,
         requestedPriceAmount: requestedSnapshot?.requestedPriceAmount ?? null,
         requestedCurrency: requestedSnapshot?.requestedCurrency || null,
+        requestedEntitlements: requestedSnapshot?.entitlements || null,
         expiresAt,
         status: "PENDING",
       },
@@ -613,6 +618,7 @@ async function ownerIntent(req, res) {
         requestedStaffLimit: true,
         requestedPriceAmount: true,
         requestedCurrency: true,
+        requestedEntitlements: true,
         status: true,
         expiresAt: true,
         createdAt: true,
@@ -793,6 +799,7 @@ async function confirmSignup(req, res) {
         requestedStaffLimit: true,
         requestedPriceAmount: true,
         requestedCurrency: true,
+        requestedEntitlements: true,
       },
     });
 
@@ -828,6 +835,7 @@ async function confirmSignup(req, res) {
 
     let selectedPlan = null;
     let subscriptionDays = 0;
+    let paidEntitlementSnapshot = null;
 
     if (signupMode === "TRIAL") {
       if (!intent.emailVerified || !intent.phoneVerified) {
@@ -860,10 +868,16 @@ async function confirmSignup(req, res) {
           staffLimit: true,
           branchLimit: true,
           priceAmount: true,
+          entitlementSnapshot: true,
           currency: true,
           createdAt: true,
         },
       });
+
+      paidEntitlementSnapshot =
+        latestSuccessfulPayment?.entitlementSnapshot ||
+        intent.requestedEntitlements ||
+        null;
 
       const paidIntentSatisfied =
         intent.status === "PAID" || Boolean(latestSuccessfulPayment);
@@ -941,6 +955,12 @@ async function confirmSignup(req, res) {
       branchLimit: getBranchLimitFromPlan(selectedPlan, signupMode),
       isEnterprise: Boolean(selectedPlan.isEnterprise),
     };
+
+    planSnapshot.entitlements =
+      paidEntitlementSnapshot ||
+      intent.requestedEntitlements ||
+      planSnapshot.entitlements ||
+      null;
 
     const hashedPassword = await bcrypt.hash(String(password), 12);
 
@@ -1043,6 +1063,7 @@ async function confirmSignup(req, res) {
             extraBranchCount: 0,
             priceAmount: planSnapshot.price,
             currency: planSnapshot.currency,
+            entitlementSnapshot: planSnapshot.entitlements || {},
             startDate,
             endDate,
             graceEndDate: null,
@@ -1072,6 +1093,7 @@ async function confirmSignup(req, res) {
                   requestedStaffLimit: planSnapshot.staffLimit,
                   requestedPriceAmount: planSnapshot.price,
                   requestedCurrency: planSnapshot.currency,
+                  requestedEntitlements: planSnapshot.entitlements || {},
                 }
               : {
                   status: "CONSUMED",
@@ -1082,6 +1104,7 @@ async function confirmSignup(req, res) {
                   requestedStaffLimit: planSnapshot.staffLimit,
                   requestedPriceAmount: planSnapshot.price,
                   requestedCurrency: planSnapshot.currency,
+                  requestedEntitlements: planSnapshot.entitlements || {},
                 },
         });
 
@@ -1182,6 +1205,7 @@ async function confirmSignup(req, res) {
         extraBranchCount: 0,
         priceAmount: result.planSnapshot.price,
         currency: result.planSnapshot.currency,
+        entitlements: result.planSnapshot.entitlements || {},
         startDate: result.startDate,
       },
     });

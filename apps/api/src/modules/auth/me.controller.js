@@ -1,6 +1,9 @@
 const prisma = require("../../config/database");
 const { getGraceDays } = require("../../config/plans");
 const { resolveSubscriptionAccess } = require("../billing/subscriptionAccess");
+const {
+  serializeSubscriptionEntitlements,
+} = require("../billing/subscriptionEntitlements");
 const { buildTrialBanner, getSetupChecklist } = require("../store/store.service");
 const { serializeBusinessCategory } = require("../../config/businessCategories");
 
@@ -328,7 +331,9 @@ async function me(req, res) {
           readOnlySince: true,
           lastPaymentAt: true,
           renewedAt: true,
+          staffLimit: true,
           branchLimit: true,
+          entitlementSnapshot: true,
           extraBranchCount: true,
         },
       }),
@@ -471,6 +476,8 @@ async function me(req, res) {
     const branchUsage = computeBranchEntitlement(subscription, activeBranchesCount);
     const activePermissions = activeBranchPermissions(activeBranch, req.user);
     const businessCategory = serializeBusinessCategory(tenant?.shopType);
+    const effectiveEntitlements =
+      serializeSubscriptionEntitlements(subscription);
 
     return res.json({
       user: {
@@ -542,7 +549,9 @@ async function me(req, res) {
             readOnlySince: subscription.readOnlySince,
             lastPaymentAt: subscription.lastPaymentAt,
             renewedAt: subscription.renewedAt,
+            staffLimit: subscription.staffLimit,
             branchLimit: subscription.branchLimit,
+            entitlements: effectiveEntitlements,
             extraBranchCount: subscription.extraBranchCount ?? 0,
             effectiveBranchLimit: branchUsage.effectiveBranchLimit,
             activeBranches: branchUsage.activeBranches,

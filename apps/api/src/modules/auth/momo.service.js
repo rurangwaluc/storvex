@@ -378,6 +378,7 @@ async function createOrUpdateOwnerSignupPayment({
         requestedStaffLimit: snap.staffLimit,
         requestedPriceAmount: snap.price,
         requestedCurrency: snap.currency,
+        requestedEntitlements: snap.entitlements || {},
       },
     });
 
@@ -444,6 +445,7 @@ async function createOrUpdateRenewalPayment({
       staffLimit: snap.staffLimit,
       branchLimit: snap.branchLimit,
       priceAmount: snap.price,
+      entitlementSnapshot: snap.entitlements || {},
     },
     select: {
       id: true,
@@ -462,6 +464,7 @@ async function createOrUpdateRenewalPayment({
       staffLimit: true,
       branchLimit: true,
       priceAmount: true,
+      entitlementSnapshot: true,
     },
   });
 
@@ -670,6 +673,7 @@ async function getPaymentStatus(reference) {
       staffLimit: true,
       branchLimit: true,
       priceAmount: true,
+      entitlementSnapshot: true,
     },
   });
 

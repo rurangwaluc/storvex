@@ -28,29 +28,29 @@ Subscription Plans V2 complete until every required item is checked and tested.
 
 ## Subscription snapshots and database
 
-- [ ] Design the permanent entitlement snapshot fields.
-- [ ] Add entitlement snapshot storage to Subscription.
-- [ ] Add entitlement snapshot storage to Payment where required.
-- [ ] Add entitlement snapshot storage to OwnerIntent where required.
-- [ ] Create and apply the Prisma migration.
-- [ ] Backfill existing subscriptions safely.
-- [ ] Preserve historic purchased limits until renewal or explicit migration.
+- [x] Design the permanent entitlement snapshot fields.
+- [x] Add entitlement snapshot storage to Subscription.
+- [x] Add entitlement snapshot storage to Payment where required.
+- [x] Add entitlement snapshot storage to OwnerIntent where required.
+- [x] Create and apply the Prisma migration.
+- [x] Backfill existing subscriptions safely.
+- [x] Preserve historic purchased limits until renewal or explicit migration.
 - [ ] Add platform-approved entitlement overrides.
 - [ ] Add entitlement override audit history.
 
 ## Backend authority and enforcement
 
-- [ ] Build one effective-entitlement resolver.
+- [x] Build one effective-entitlement resolver.
 - [ ] Resolve plan defaults, purchased snapshots and platform overrides.
-- [ ] Add effective entitlements to authentication responses.
-- [ ] Add effective entitlements to billing overview responses.
+- [x] Add effective entitlements to authentication responses.
+- [x] Add effective entitlements to billing overview responses.
 - [ ] Keep staff limits server-enforced.
 - [ ] Keep branch limits server-enforced.
 - [ ] Add server enforcement for advanced plan capabilities.
 - [ ] Ensure essential security and safe workflows are available on every plan.
 - [ ] Ensure Marketplace order safety never depends on plan level.
-- [ ] Ensure no delivery-area limit exists.
-- [ ] Ensure no commission calculation exists.
+- [x] Ensure no delivery-area limit exists.
+- [x] Ensure no commission calculation exists.
 
 ## Owner web application
 

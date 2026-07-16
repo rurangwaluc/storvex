@@ -44,6 +44,10 @@ function snapshotFromPlan(plan) {
     staffLimit: Number.isFinite(Number(plan.staffLimit)) ? Number(plan.staffLimit) : null,
     branchLimit: Number.isFinite(Number(plan.branchLimit)) ? Number(plan.branchLimit) : null,
     isEnterprise: Boolean(plan.isEnterprise),
+    entitlements:
+      plan.entitlements && typeof plan.entitlements === "object"
+        ? { ...plan.entitlements }
+        : null,
   };
 }
 
@@ -101,6 +105,7 @@ async function getOwnerIntentOrThrow(intentId) {
       requestedStaffLimit: true,
       requestedPriceAmount: true,
       requestedCurrency: true,
+      requestedEntitlements: true,
     },
   });
 
@@ -174,6 +179,7 @@ async function markSignupPaymentSuccessful({ payment, provider }) {
       requestedStaffLimit: true,
       requestedPriceAmount: true,
       requestedCurrency: true,
+      requestedEntitlements: true,
     },
   });
 
@@ -213,6 +219,7 @@ async function markSignupPaymentSuccessful({ payment, provider }) {
         staffLimit: snap.staffLimit,
         branchLimit: snap.branchLimit,
         priceAmount: snap.price,
+        entitlementSnapshot: snap.entitlements || {},
       },
       select: {
         id: true,
@@ -232,6 +239,7 @@ async function markSignupPaymentSuccessful({ payment, provider }) {
         staffLimit: true,
         branchLimit: true,
         priceAmount: true,
+        entitlementSnapshot: true,
       },
     });
 
@@ -245,6 +253,7 @@ async function markSignupPaymentSuccessful({ payment, provider }) {
         requestedStaffLimit: snap.staffLimit,
         requestedPriceAmount: snap.price,
         requestedCurrency: snap.currency,
+        requestedEntitlements: snap.entitlements || {},
       },
       select: {
         id: true,
@@ -255,6 +264,7 @@ async function markSignupPaymentSuccessful({ payment, provider }) {
         requestedStaffLimit: true,
         requestedPriceAmount: true,
         requestedCurrency: true,
+      requestedEntitlements: true,
       },
     });
 
@@ -344,6 +354,7 @@ async function markRenewalPaymentSuccessful({ payment, provider }) {
         staffLimit: snap.staffLimit,
         branchLimit: snap.branchLimit,
         priceAmount: snap.price,
+        entitlementSnapshot: snap.entitlements || {},
       },
       select: {
         id: true,
@@ -363,6 +374,7 @@ async function markRenewalPaymentSuccessful({ payment, provider }) {
         staffLimit: true,
         branchLimit: true,
         priceAmount: true,
+        entitlementSnapshot: true,
       },
     });
 
@@ -377,6 +389,7 @@ async function markRenewalPaymentSuccessful({ payment, provider }) {
         staffLimit: snap.staffLimit,
         branchLimit: snap.branchLimit,
         priceAmount: snap.price,
+        entitlementSnapshot: snap.entitlements || {},
         currency: snap.currency,
         startDate: renewalStart,
         endDate: newEndDate,
@@ -572,6 +585,7 @@ async function initiateOwnerPayment(req, res) {
           requestedStaffLimit: snap.staffLimit,
           requestedPriceAmount: snap.price,
           requestedCurrency: snap.currency,
+        requestedEntitlements: snap.entitlements || {},
         },
       });
 
@@ -699,6 +713,7 @@ async function getOwnerPaymentStatus(req, res) {
         staffLimit: true,
         branchLimit: true,
         priceAmount: true,
+        entitlementSnapshot: true,
       },
     });
 

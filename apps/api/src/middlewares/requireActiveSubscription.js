@@ -1,4 +1,7 @@
 const prisma = require("../config/database");
+const {
+  serializeSubscriptionEntitlements,
+} = require("../modules/billing/subscriptionEntitlements");
 
 function toValidDate(value) {
   if (!value) return null;
@@ -31,6 +34,7 @@ function serializeSubscription(subscription, activeUsers = null) {
       ? Number(subscription.priceAmount)
       : null,
     currency: subscription.currency || null,
+    entitlements: serializeSubscriptionEntitlements(subscription),
     startDate: subscription.startDate || null,
     endDate: subscription.endDate || null,
     trialStartDate: subscription.trialStartDate || null,
@@ -241,6 +245,7 @@ async function resolveSubscriptionAccess(tenantId) {
       staffLimit: true,
       priceAmount: true,
       currency: true,
+      entitlementSnapshot: true,
       startDate: true,
       endDate: true,
       trialStartDate: true,

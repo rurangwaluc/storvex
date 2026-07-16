@@ -2,6 +2,10 @@ const crypto = require("crypto");
 const prisma = require("../../config/database");
 
 const {
+  serializeSubscriptionEntitlements,
+} = require("./subscriptionEntitlements");
+
+const {
   getGraceDays,
   getPaidPlans,
   getPlanByKey,
@@ -135,6 +139,7 @@ function serializeSubscription(
       ? Number(subscription.priceAmount)
       : null,
     currency: subscription.currency || null,
+    entitlements: serializeSubscriptionEntitlements(subscription),
     startDate: toIsoDate(subscription.startDate),
     endDate: toIsoDate(subscription.endDate),
     trialStartDate: toIsoDate(subscription.trialStartDate),
@@ -228,6 +233,7 @@ async function getSubscriptionOrThrow(tenantId) {
       extraBranchCount: true,
       priceAmount: true,
       currency: true,
+      entitlementSnapshot: true,
       startDate: true,
       endDate: true,
       trialStartDate: true,
@@ -369,6 +375,7 @@ async function getBillingOverview(req, res) {
           staffLimit: true,
           branchLimit: true,
           priceAmount: true,
+          entitlementSnapshot: true,
         },
       }),
     ]);
@@ -461,6 +468,7 @@ async function initiateRenewalPayment(req, res) {
         staffLimit: snap.staffLimit,
         branchLimit: getBranchLimitFromPlan(plan),
         priceAmount: snap.price,
+        entitlementSnapshot: snap.entitlements || {},
       },
       create: {
         tenantId,
@@ -476,6 +484,7 @@ async function initiateRenewalPayment(req, res) {
         staffLimit: snap.staffLimit,
         branchLimit: getBranchLimitFromPlan(plan),
         priceAmount: snap.price,
+        entitlementSnapshot: snap.entitlements || {},
       },
       select: {
         id: true,
@@ -589,6 +598,7 @@ async function devMarkRenewalPaymentSuccessful(req, res) {
           staffLimit: snap.staffLimit,
           branchLimit,
           priceAmount: snap.price,
+          entitlementSnapshot: snap.entitlements || {},
         },
         select: {
           id: true,
@@ -607,6 +617,7 @@ async function devMarkRenewalPaymentSuccessful(req, res) {
           staffLimit: true,
           branchLimit: true,
           priceAmount: true,
+          entitlementSnapshot: true,
         },
       });
 
@@ -622,6 +633,7 @@ async function devMarkRenewalPaymentSuccessful(req, res) {
           branchLimit,
           priceAmount: snap.price,
           currency: snap.currency,
+          entitlementSnapshot: snap.entitlements || {},
           startDate: renewalStart,
           endDate: newEndDate,
           graceEndDate,

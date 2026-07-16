@@ -82,6 +82,7 @@ function subscriptionSelect() {
     extraBranchCount: true,
     priceAmount: true,
     currency: true,
+    entitlementSnapshot: true,
 
     startDate: true,
     endDate: true,
@@ -120,6 +121,7 @@ function paymentSelect() {
     staffLimit: true,
     branchLimit: true,
     priceAmount: true,
+    entitlementSnapshot: true,
     createdAt: true,
     updatedAt: true,
 
@@ -140,6 +142,7 @@ function paymentSelect() {
         requestedCycleKey: true,
         requestedPriceAmount: true,
         requestedCurrency: true,
+        requestedEntitlements: true,
         createdAt: true,
         convertedAt: true,
       },
@@ -238,6 +241,7 @@ function publicSubscriptionRow(subscription) {
       extraBranchCount: subscription.extraBranchCount ?? 0,
       priceAmount: subscription.priceAmount ?? null,
       currency: subscription.currency || null,
+      entitlementSnapshot: subscription.entitlementSnapshot || {},
       nextPlanKey: subscription.nextPlanKey || null,
     },
 

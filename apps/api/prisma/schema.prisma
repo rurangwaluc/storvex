@@ -100,12 +100,13 @@ model OwnerIntent {
   trialEligibilityCheckedAt DateTime?
   trialBlockedReason        String?   @db.Text
 
-  requestedPlanKey     String? @db.Text
-  requestedTierKey     String? @db.Text
-  requestedCycleKey    String? @db.Text
-  requestedStaffLimit  Int?
-  requestedPriceAmount Float?
-  requestedCurrency    String? @db.Text
+  requestedPlanKey      String? @db.Text
+  requestedTierKey      String? @db.Text
+  requestedCycleKey     String? @db.Text
+  requestedStaffLimit   Int?
+  requestedPriceAmount  Float?
+  requestedCurrency     String? @db.Text
+  requestedEntitlements Json?
 
   otps            OtpCode[]
   otpDeliveryLogs OtpDeliveryLog[]
@@ -113,23 +114,24 @@ model OwnerIntent {
 }
 
 model Payment {
-  id          String        @id @default(uuid())
-  intentId    String?
-  amount      Float
-  currency    String        @default("RWF")
-  reference   String        @unique
-  status      PaymentStatus @default(PENDING)
-  provider    String
-  createdAt   DateTime      @default(now())
-  tenantId    String?
-  planKey     String?
-  tierKey     String?       @db.Text
-  cycleKey    String?       @db.Text
-  staffLimit  Int?
-  branchLimit Int?
-  priceAmount Float?
-  purpose     String
-  updatedAt   DateTime      @default(now()) @updatedAt
+  id                  String        @id @default(uuid())
+  intentId            String?
+  amount              Float
+  currency            String        @default("RWF")
+  reference           String        @unique
+  status              PaymentStatus @default(PENDING)
+  provider            String
+  createdAt           DateTime      @default(now())
+  tenantId            String?
+  planKey             String?
+  tierKey             String?       @db.Text
+  cycleKey            String?       @db.Text
+  staffLimit          Int?
+  branchLimit         Int?
+  priceAmount         Float?
+  entitlementSnapshot Json?
+  purpose             String
+  updatedAt           DateTime      @default(now()) @updatedAt
 
   intent OwnerIntent? @relation(fields: [intentId], references: [id])
   tenant Tenant?      @relation(fields: [tenantId], references: [id])
@@ -436,14 +438,15 @@ model Subscription {
   status     SubscriptionStatus
   accessMode SubscriptionAccessMode @default(ACTIVE)
 
-  planKey          String? @db.Text
-  tierKey          String? @db.Text
-  cycleKey         String? @db.Text
-  staffLimit       Int?
-  branchLimit      Int?
-  extraBranchCount Int     @default(0)
-  priceAmount      Float?
-  currency         String? @db.Text
+  planKey             String? @db.Text
+  tierKey             String? @db.Text
+  cycleKey            String? @db.Text
+  staffLimit          Int?
+  branchLimit         Int?
+  extraBranchCount    Int     @default(0)
+  priceAmount         Float?
+  currency            String? @db.Text
+  entitlementSnapshot Json?
 
   startDate      DateTime
   endDate        DateTime
