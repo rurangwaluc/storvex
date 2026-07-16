@@ -1618,19 +1618,21 @@
 }
 
 
-/* Final Marketplace network visual */
+/* Final Marketplace network visual
+   Structure is locked. This block controls only visual quality,
+   typography, contrast and responsive behavior.
+*/
 
 /* ---------------------------------------------------------
-   HERO SURFACE
-   Keeps the existing approved structure.
-   Uses the same Storvex visual language as the landing page.
+   APPROVED HERO SURFACE
 --------------------------------------------------------- */
 
 .svx-commerce-promo {
+  overflow: hidden;
   border: 1px solid var(--landing-border);
   border-radius: 18px;
   background: var(--landing-card) !important;
-  box-shadow: 0 18px 48px rgba(15, 45, 90, 0.07);
+  box-shadow: 0 18px 52px rgba(15, 45, 90, 0.07);
 }
 
 .svx-commerce-promo::before {
@@ -1639,53 +1641,47 @@
 }
 
 .svx-commerce-promo-copy {
-  background: transparent;
+  background: var(--landing-card);
 }
 
 .svx-commerce-promo-copy > span {
   border-color: color-mix(
     in srgb,
-    var(--landing-primary) 22%,
+    var(--landing-primary) 20%,
     transparent
   );
   background: var(--landing-primary-soft);
   color: var(--landing-primary);
   font-family: var(--landing-body-font);
-  font-size: 9px;
-  font-weight: 850;
-  letter-spacing: 0.14em;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
 }
 
 .svx-commerce-promo-copy h1 {
   max-width: 640px;
   color: var(--landing-text);
   font-family: var(--landing-heading-font);
-  font-size: clamp(38px, 4.1vw, 58px);
-  font-weight: 900;
-  line-height: 0.99;
-  letter-spacing: -0.052em;
+  font-size: clamp(42px, 4.25vw, 62px);
+  font-weight: 800;
+  line-height: 1.01;
+  letter-spacing: -0.04em;
 }
 
 .svx-commerce-promo-copy p {
   max-width: 570px;
   color: var(--landing-muted);
   font-family: var(--landing-body-font);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 500;
   line-height: 1.68;
 }
 
 .svx-commerce-promo-products-link {
-  display: inline-flex;
-  width: fit-content;
-  min-height: 42px;
-  align-items: center;
-  gap: 7px;
-  margin-top: 14px;
   color: var(--landing-primary);
   font-family: var(--landing-body-font);
-  font-size: 10px;
-  font-weight: 850;
+  font-size: 12px;
+  font-weight: 700;
   box-shadow: none !important;
 }
 
@@ -1701,15 +1697,23 @@
 
 .svx-marketplace-hero-search,
 .svx-commerce-promo-copy form {
-  border-color: var(--landing-border);
+  border: 1px solid var(--landing-border);
+  border-radius: 12px;
   background: var(--landing-bg);
+  box-shadow: none;
+}
+
+.svx-marketplace-hero-search svg,
+.svx-commerce-promo-copy form > svg {
+  color: var(--landing-muted-2);
 }
 
 .svx-marketplace-hero-search input,
 .svx-commerce-promo-copy form input {
   color: var(--landing-text);
   font-family: var(--landing-body-font);
-  font-weight: 650;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .svx-marketplace-hero-search input::placeholder,
@@ -1721,6 +1725,9 @@
 .svx-commerce-promo-copy form button {
   background: var(--landing-primary);
   color: #ffffff;
+  font-family: var(--landing-body-font);
+  font-size: 12px;
+  font-weight: 700;
   box-shadow: none !important;
 }
 
@@ -1732,7 +1739,7 @@
 }
 
 /* ---------------------------------------------------------
-   RIGHT-SIDE MARKETPLACE NETWORK
+   RIGHT-SIDE NETWORK SURFACE
 --------------------------------------------------------- */
 
 .svx-marketplace-hero-visual {
@@ -1740,9 +1747,10 @@
   min-width: 0;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   border-left: 1px solid var(--landing-border);
   background: var(--landing-card-soft);
-  padding: 24px 28px;
+  padding: 26px 30px 22px;
 }
 
 .svx-marketplace-network {
@@ -1750,82 +1758,84 @@
   max-width: 640px;
 }
 
-.svx-marketplace-network svg {
+.svx-marketplace-network > svg {
   display: block;
   width: 100%;
   height: auto;
+  max-height: 360px;
   overflow: visible;
 }
 
-/* Network connections */
+/* Lines stay subtle. Blue is an accent, not the background. */
 .svx-marketplace-network-lines path {
   fill: none;
   stroke: color-mix(
     in srgb,
-    var(--landing-primary) 35%,
-    transparent
+    var(--landing-primary) 28%,
+    var(--landing-border)
   );
-  stroke-width: 2;
+  stroke-width: 1.75;
   stroke-dasharray: 5 7;
 }
 
-/* Category node cards */
+/* Category cards use the same surfaces as the landing page. */
 .svx-marketplace-network-node > rect {
   fill: var(--landing-card);
   stroke: var(--landing-border);
-  stroke-width: 1.25;
+  stroke-width: 1.2;
 }
 
 .svx-marketplace-network-node > circle {
   fill: var(--landing-primary-soft);
   stroke: color-mix(
     in srgb,
-    var(--landing-primary) 24%,
-    transparent
+    var(--landing-primary) 22%,
+    var(--landing-border)
   );
+  stroke-width: 1;
 }
 
-/* Category icons */
-.svx-marketplace-network-node path,
-.svx-marketplace-network-node circle + path {
+.svx-marketplace-network-node path {
   fill: none;
   stroke: var(--landing-primary);
-  stroke-width: 2;
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-/* Category labels */
-.svx-marketplace-network text {
+/* Make all node writing visible and useful. */
+.svx-marketplace-network-node text {
   fill: var(--landing-text);
-  font-family: var(--landing-body-font);
-  font-size: 12px;
-  font-weight: 850;
+  font-family: var(--landing-heading-font);
+  font-size: 12.5px;
+  font-weight: 700;
   text-anchor: middle;
 }
 
-.svx-marketplace-network text.is-muted {
+.svx-marketplace-network-node text.is-muted {
   fill: var(--landing-muted);
+  font-family: var(--landing-body-font);
   font-size: 9px;
-  font-weight: 650;
+  font-weight: 500;
 }
 
 /* Central Marketplace node */
 .svx-marketplace-network-center > circle:first-child {
   fill: color-mix(
     in srgb,
-    var(--landing-primary) 8%,
+    var(--landing-primary-soft) 72%,
     transparent
   );
   stroke: color-mix(
     in srgb,
     var(--landing-primary) 18%,
-    transparent
+    var(--landing-border)
   );
+  stroke-width: 1.2;
 }
 
 .svx-marketplace-network-center > circle:nth-child(2) {
-  fill: var(--landing-primary-soft);
+  fill: var(--landing-card);
   stroke: color-mix(
     in srgb,
     var(--landing-primary) 55%,
@@ -1837,24 +1847,27 @@
 .svx-marketplace-network-center path {
   fill: none;
   stroke: var(--landing-primary);
-  stroke-width: 3;
+  stroke-width: 2.7;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .svx-marketplace-network-center text {
   fill: var(--landing-text);
-  font-size: 14px;
-  font-weight: 900;
+  font-family: var(--landing-heading-font);
+  font-size: 15px;
+  font-weight: 800;
+  text-anchor: middle;
 }
 
 .svx-marketplace-network-center text.is-muted {
   fill: var(--landing-muted);
+  font-family: var(--landing-body-font);
   font-size: 9px;
-  font-weight: 650;
+  font-weight: 500;
 }
 
-/* Network status pills */
+/* Bottom status row */
 .svx-marketplace-network-status {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, auto));
@@ -1873,26 +1886,35 @@
   border-radius: 999px;
   background: var(--landing-card);
   padding: 0 12px;
-  color: var(--landing-muted);
+  color: var(--landing-text);
   font-family: var(--landing-body-font);
   font-size: 9px;
-  font-weight: 750;
+  font-weight: 600;
   white-space: nowrap;
 }
 
 .svx-marketplace-network-status svg {
-  flex: 0 0 auto;
+  display: block;
+  width: 15px !important;
+  height: 15px !important;
+  max-width: 15px;
+  max-height: 15px;
+  flex: 0 0 15px;
   color: var(--landing-primary);
 }
 
 /* ---------------------------------------------------------
-   DARK MODE
+   DARK MODE — MATCH MAIN STORVEX LANDING
 --------------------------------------------------------- */
 
 :root[data-theme="dark"] .svx-commerce-promo {
-  border-color: rgba(255, 255, 255, 0.11);
-  background: #07192b !important;
-  box-shadow: 0 20px 52px rgba(0, 0, 0, 0.22);
+  border-color: rgba(255, 255, 255, 0.12);
+  background: #1f1f20 !important;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.2);
+}
+
+:root[data-theme="dark"] .svx-commerce-promo-copy {
+  background: #1f1f20;
 }
 
 :root[data-theme="dark"] .svx-commerce-promo-copy h1 {
@@ -1900,56 +1922,67 @@
 }
 
 :root[data-theme="dark"] .svx-commerce-promo-copy p {
-  color: rgba(255, 255, 255, 0.68);
+  color: rgba(255, 255, 255, 0.72);
 }
 
-:root[data-theme="dark"] .svx-commerce-promo-copy > span {
-  border-color: rgba(39, 170, 255, 0.3);
-  background: rgba(39, 170, 255, 0.1);
-  color: #33b1ff;
+:root[data-theme="dark"]
+  .svx-marketplace-hero-search,
+:root[data-theme="dark"]
+  .svx-commerce-promo-copy form {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: #06111f;
 }
 
-:root[data-theme="dark"] .svx-marketplace-hero-visual {
-  border-left-color: rgba(255, 255, 255, 0.1);
-  background: #0b2844;
+:root[data-theme="dark"]
+  .svx-marketplace-hero-search input,
+:root[data-theme="dark"]
+  .svx-commerce-promo-copy form input {
+  color: #ffffff;
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-hero-visual {
+  border-left-color: rgba(255, 255, 255, 0.12);
+  background: #0d1d32;
 }
 
 :root[data-theme="dark"]
   .svx-marketplace-network-lines path {
-  stroke: rgba(43, 174, 255, 0.32);
+  stroke: rgba(21, 156, 255, 0.24);
 }
 
 :root[data-theme="dark"]
   .svx-marketplace-network-node > rect {
-  fill: #0d2034;
-  stroke: rgba(255, 255, 255, 0.15);
+  fill: #1f1f20;
+  stroke: rgba(255, 255, 255, 0.14);
 }
 
 :root[data-theme="dark"]
   .svx-marketplace-network-node > circle {
-  fill: rgba(39, 170, 255, 0.13);
-  stroke: rgba(39, 170, 255, 0.24);
+  fill: rgba(21, 156, 255, 0.14);
+  stroke: rgba(21, 156, 255, 0.24);
 }
 
-:root[data-theme="dark"] .svx-marketplace-network text {
+:root[data-theme="dark"]
+  .svx-marketplace-network-node text {
   fill: #ffffff;
 }
 
 :root[data-theme="dark"]
-  .svx-marketplace-network text.is-muted {
-  fill: rgba(255, 255, 255, 0.62);
+  .svx-marketplace-network-node text.is-muted {
+  fill: rgba(255, 255, 255, 0.66);
 }
 
 :root[data-theme="dark"]
   .svx-marketplace-network-center > circle:first-child {
-  fill: rgba(39, 170, 255, 0.08);
-  stroke: rgba(39, 170, 255, 0.18);
+  fill: rgba(21, 156, 255, 0.08);
+  stroke: rgba(21, 156, 255, 0.18);
 }
 
 :root[data-theme="dark"]
   .svx-marketplace-network-center > circle:nth-child(2) {
-  fill: #103454;
-  stroke: rgba(47, 179, 255, 0.58);
+  fill: #1f1f20;
+  stroke: rgba(21, 156, 255, 0.52);
 }
 
 :root[data-theme="dark"]
@@ -1959,14 +1992,14 @@
 
 :root[data-theme="dark"]
   .svx-marketplace-network-center text.is-muted {
-  fill: rgba(255, 255, 255, 0.62);
+  fill: rgba(255, 255, 255, 0.68);
 }
 
 :root[data-theme="dark"]
   .svx-marketplace-network-status span {
-  border-color: rgba(255, 255, 255, 0.14);
-  background: #0d2034;
-  color: rgba(255, 255, 255, 0.76);
+  border-color: rgba(255, 255, 255, 0.13);
+  background: #1f1f20;
+  color: rgba(255, 255, 255, 0.82);
 }
 
 /* ---------------------------------------------------------
@@ -1986,7 +2019,7 @@
 
   :root[data-theme="dark"]
     .svx-marketplace-hero-visual {
-    border-top-color: rgba(255, 255, 255, 0.1);
+    border-top-color: rgba(255, 255, 255, 0.12);
   }
 
   .svx-marketplace-network {
@@ -2001,9 +2034,9 @@
 @media (max-width: 820px) {
   .svx-commerce-promo {
     width: 100%;
-    min-height: auto;
+    min-height: 0;
     grid-template-columns: minmax(0, 1fr);
-    border-radius: 15px;
+    border-radius: 16px;
   }
 
   .svx-commerce-promo-copy {
@@ -2012,49 +2045,55 @@
 
   .svx-commerce-promo-copy h1 {
     max-width: 520px;
-    font-size: clamp(31px, 9.5vw, 43px);
+    font-size: clamp(32px, 9.6vw, 43px);
     line-height: 1;
+    letter-spacing: -0.035em;
   }
 
   .svx-commerce-promo-copy p {
-    font-size: 12px;
-    line-height: 1.62;
+    max-width: 500px;
+    font-size: 13px;
+    line-height: 1.58;
   }
 
   .svx-marketplace-hero-visual {
-    display: flex;
-    position: relative;
-    min-height: auto;
-    padding: 8px 10px 20px;
+    min-height: 0;
+    padding: 15px 10px 18px;
   }
 
   .svx-marketplace-network {
-    max-width: 580px;
+    max-width: 560px;
   }
 
-  .svx-marketplace-network text {
-    font-size: 11px;
-  }
-
-  .svx-marketplace-network text.is-muted {
-    font-size: 8.5px;
+  .svx-marketplace-network > svg {
+    max-height: 315px;
   }
 
   .svx-marketplace-network-status {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 7px;
+    margin-top: 5px;
     padding: 0 8px;
   }
 
   .svx-marketplace-network-status span {
     min-width: 0;
-    min-height: 40px;
+    min-height: 38px;
+    gap: 5px;
     padding: 5px 7px;
     font-size: 8px;
     line-height: 1.25;
-    text-align: center;
     white-space: normal;
+    text-align: center;
+  }
+
+  .svx-marketplace-network-status svg {
+    width: 14px !important;
+    height: 14px !important;
+    max-width: 14px;
+    max-height: 14px;
+    flex-basis: 14px;
   }
 }
 
@@ -2068,22 +2107,33 @@
     padding-left: 18px;
   }
 
+  .svx-commerce-promo-copy h1 {
+    font-size: clamp(30px, 9.2vw, 37px);
+  }
+
   .svx-marketplace-hero-visual {
-    padding-right: 4px;
-    padding-left: 4px;
+    padding-right: 6px;
+    padding-left: 6px;
   }
 
-  .svx-marketplace-network svg {
-    width: 100%;
-    min-width: 0;
+  .svx-marketplace-network > svg {
+    max-height: 275px;
   }
 
-  .svx-marketplace-network text {
-    font-size: 10px;
+  .svx-marketplace-network-node text {
+    font-size: 10.5px;
   }
 
-  .svx-marketplace-network text.is-muted {
-    font-size: 7.5px;
+  .svx-marketplace-network-node text.is-muted {
+    font-size: 7.8px;
+  }
+
+  .svx-marketplace-network-center text {
+    font-size: 12.5px;
+  }
+
+  .svx-marketplace-network-center text.is-muted {
+    font-size: 7.8px;
   }
 
   .svx-marketplace-network-status {
@@ -2096,11 +2146,7 @@
   }
 }
 
-@media (max-width: 390px) {
-  .svx-commerce-promo-copy h1 {
-    font-size: clamp(29px, 9vw, 36px);
-  }
-
+@media (max-width: 380px) {
   .svx-marketplace-network-node text.is-muted {
     display: none;
   }
@@ -2111,148 +2157,5 @@
 
   .svx-marketplace-network-status span:last-child {
     grid-column: 1;
-  }
-}
-
-/* Marketplace network sizing and readability correction */
-
-/*
- * Only the main illustration should fill the visual area.
- * Previously this selector also stretched the Lucide status icons.
- */
-.svx-marketplace-network > svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  max-height: 390px;
-  overflow: visible;
-}
-
-.svx-marketplace-network-status svg {
-  display: block;
-  width: 15px !important;
-  height: 15px !important;
-  max-width: 15px;
-  max-height: 15px;
-  flex: 0 0 15px;
-}
-
-/* Improve readability of the category cards and central node. */
-.svx-marketplace-network-node text {
-  font-family: var(--landing-body-font);
-  font-size: 12px;
-  font-weight: 850;
-}
-
-.svx-marketplace-network-node text.is-muted {
-  font-size: 9px;
-  font-weight: 650;
-}
-
-.svx-marketplace-network-center text {
-  font-family: var(--landing-heading-font);
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.svx-marketplace-network-center text.is-muted {
-  font-family: var(--landing-body-font);
-  font-size: 9px;
-  font-weight: 650;
-}
-
-.svx-marketplace-network-status span {
-  min-height: 34px;
-  padding: 0 11px;
-  font-family: var(--landing-body-font);
-  font-size: 9px;
-  font-weight: 750;
-}
-
-/* Keep the approved desktop hero structure unchanged. */
-@media (min-width: 821px) {
-  .svx-marketplace-network > svg {
-    max-height: 350px;
-  }
-}
-
-/* Compact, readable PWA treatment without horizontal scrolling. */
-@media (max-width: 820px) {
-  .svx-marketplace-hero-visual {
-    overflow: hidden;
-    padding: 14px 10px 18px;
-  }
-
-  .svx-marketplace-network {
-    max-width: 540px;
-  }
-
-  .svx-marketplace-network > svg {
-    max-height: 330px;
-  }
-
-  .svx-marketplace-network-status {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 7px;
-    margin-top: 6px;
-    padding: 0 8px;
-  }
-
-  .svx-marketplace-network-status span {
-    min-width: 0;
-    min-height: 38px;
-    gap: 5px;
-    padding: 5px 6px;
-    font-size: 8px;
-    line-height: 1.25;
-    white-space: normal;
-  }
-
-  .svx-marketplace-network-status svg {
-    width: 14px !important;
-    height: 14px !important;
-    max-width: 14px;
-    max-height: 14px;
-    flex-basis: 14px;
-  }
-}
-
-@media (max-width: 520px) {
-  .svx-marketplace-network > svg {
-    max-height: 285px;
-  }
-
-  .svx-marketplace-network-node text {
-    font-size: 10px;
-  }
-
-  .svx-marketplace-network-node text.is-muted {
-    font-size: 7.5px;
-  }
-
-  .svx-marketplace-network-center text {
-    font-size: 12px;
-  }
-
-  .svx-marketplace-network-center text.is-muted {
-    font-size: 7.5px;
-  }
-
-  .svx-marketplace-network-status {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .svx-marketplace-network-status span:last-child {
-    grid-column: auto;
-  }
-}
-
-@media (max-width: 360px) {
-  .svx-marketplace-network-status {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .svx-marketplace-network-status span:last-child {
-    grid-column: 1 / -1;
   }
 }
