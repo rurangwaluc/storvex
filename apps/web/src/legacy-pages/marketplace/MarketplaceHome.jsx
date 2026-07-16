@@ -781,7 +781,7 @@ export default function MarketplaceHome() {
                         x="310"
                         y="205"
                       >
-                        Storvex Marketplace
+                        Storvex
                       </text>
 
                       <text
