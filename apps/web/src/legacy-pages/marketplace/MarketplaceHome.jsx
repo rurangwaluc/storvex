@@ -606,9 +606,7 @@ export default function MarketplaceHome() {
           <div className="svx-commerce-hero-inner">
             <div className="svx-marketplace-hero-final">
               <div className="svx-marketplace-hero-copy">
-                <span className="svx-marketplace-hero-kicker">
-                  Storvex Marketplace
-                </span>
+
 
                 <h1>
                   Find products available from local stores.
@@ -752,21 +750,54 @@ export default function MarketplaceHome() {
                     </g>
 
                     <g className="svx-marketplace-network-center">
-                      <circle cx="310" cy="188" r="76" />
-                      <circle cx="310" cy="188" r="57" />
+                      <rect
+                        className="svx-marketplace-hub-shell"
+                        x="234"
+                        y="117"
+                        width="152"
+                        height="142"
+                        rx="24"
+                      />
 
-                      <path d="M286 179h48l-5-16h-38z" />
-                      <path d="M291 179v34h38v-34" />
-                      <path d="M301 213v-17h18v17" />
-                      <path d="M286 179c0 7 10 7 10 0" />
-                      <path d="M296 179c0 7 10 7 10 0" />
-                      <path d="M306 179c0 7 10 7 10 0" />
-                      <path d="M316 179c0 7 10 7 10 0" />
-                      <path d="M326 179c0 7 10 7 10 0" />
+                      <rect
+                        className="svx-marketplace-hub-icon"
+                        x="281"
+                        y="132"
+                        width="58"
+                        height="52"
+                        rx="16"
+                      />
 
-                      <text x="310" y="230">Marketplace</text>
-                      <text className="is-muted" x="310" y="248">
-                        Local stores in one place
+                      <path d="M292 154h36l-4-12h-28z" />
+                      <path d="M296 154v22h28v-22" />
+                      <path d="M304 176v-11h12v11" />
+                      <path d="M292 154c0 6 9 6 9 0" />
+                      <path d="M301 154c0 6 9 6 9 0" />
+                      <path d="M310 154c0 6 9 6 9 0" />
+                      <path d="M319 154c0 6 9 6 9 0" />
+
+                      <text
+                        className="svx-marketplace-hub-title"
+                        x="310"
+                        y="205"
+                      >
+                        Storvex Marketplace
+                      </text>
+
+                      <text
+                        className="svx-marketplace-hub-copy"
+                        x="310"
+                        y="224"
+                      >
+                        Local stores and available stock
+                      </text>
+
+                      <text
+                        className="svx-marketplace-hub-copy"
+                        x="310"
+                        y="240"
+                      >
+                        Pickup or seller delivery
                       </text>
                     </g>
                   </svg>

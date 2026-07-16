@@ -1619,13 +1619,13 @@
 
 
 /* Final Marketplace network visual
-   Structure is locked. This block controls only visual quality,
-   typography, contrast and responsive behavior.
+   Approved structure preserved.
+   Only theme surfaces, typography, readability and responsiveness.
 */
 
-/* ---------------------------------------------------------
-   APPROVED HERO SURFACE
---------------------------------------------------------- */
+/* =========================================================
+   HERO SURFACES
+========================================================= */
 
 .svx-commerce-promo {
   overflow: hidden;
@@ -1641,25 +1641,13 @@
 }
 
 .svx-commerce-promo-copy {
-  background: var(--landing-card);
-}
-
-.svx-commerce-promo-copy > span {
-  border-color: color-mix(
-    in srgb,
-    var(--landing-primary) 20%,
-    transparent
-  );
-  background: var(--landing-primary-soft);
-  color: var(--landing-primary);
-  font-family: var(--landing-body-font);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
+  background: var(--landing-card) !important;
+  color: var(--landing-text);
 }
 
 .svx-commerce-promo-copy h1 {
   max-width: 640px;
+  margin-top: 0;
   color: var(--landing-text);
   font-family: var(--landing-heading-font);
   font-size: clamp(42px, 4.25vw, 62px);
@@ -1691,9 +1679,10 @@
   box-shadow: none !important;
 }
 
-/* ---------------------------------------------------------
+
+/* =========================================================
    SEARCH
---------------------------------------------------------- */
+========================================================= */
 
 .svx-marketplace-hero-search,
 .svx-commerce-promo-copy form {
@@ -1738,9 +1727,10 @@
   box-shadow: none !important;
 }
 
-/* ---------------------------------------------------------
-   RIGHT-SIDE NETWORK SURFACE
---------------------------------------------------------- */
+
+/* =========================================================
+   NETWORK SURFACE
+========================================================= */
 
 .svx-marketplace-hero-visual {
   display: flex;
@@ -1755,30 +1745,38 @@
 
 .svx-marketplace-network {
   width: 100%;
-  max-width: 640px;
+  max-width: 660px;
 }
 
 .svx-marketplace-network > svg {
   display: block;
   width: 100%;
   height: auto;
-  max-height: 360px;
+  max-height: 370px;
   overflow: visible;
 }
 
-/* Lines stay subtle. Blue is an accent, not the background. */
+
+/* =========================================================
+   CONNECTIONS
+========================================================= */
+
 .svx-marketplace-network-lines path {
   fill: none;
   stroke: color-mix(
     in srgb,
-    var(--landing-primary) 28%,
+    var(--landing-primary) 24%,
     var(--landing-border)
   );
-  stroke-width: 1.75;
+  stroke-width: 1.7;
   stroke-dasharray: 5 7;
 }
 
-/* Category cards use the same surfaces as the landing page. */
+
+/* =========================================================
+   CATEGORY NODES
+========================================================= */
+
 .svx-marketplace-network-node > rect {
   fill: var(--landing-card);
   stroke: var(--landing-border);
@@ -1803,11 +1801,10 @@
   stroke-linejoin: round;
 }
 
-/* Make all node writing visible and useful. */
 .svx-marketplace-network-node text {
   fill: var(--landing-text);
   font-family: var(--landing-heading-font);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   text-anchor: middle;
 }
@@ -1815,59 +1812,60 @@
 .svx-marketplace-network-node text.is-muted {
   fill: var(--landing-muted);
   font-family: var(--landing-body-font);
-  font-size: 9px;
+  font-size: 8.8px;
   font-weight: 500;
 }
 
-/* Central Marketplace node */
-.svx-marketplace-network-center > circle:first-child {
-  fill: color-mix(
-    in srgb,
-    var(--landing-primary-soft) 72%,
-    transparent
-  );
-  stroke: color-mix(
-    in srgb,
-    var(--landing-primary) 18%,
-    var(--landing-border)
-  );
-  stroke-width: 1.2;
+
+/* =========================================================
+   PREMIUM CENTRAL HUB
+========================================================= */
+
+.svx-marketplace-hub-shell {
+  fill: var(--landing-card);
+  stroke: var(--landing-border);
+  stroke-width: 1.5;
 }
 
-.svx-marketplace-network-center > circle:nth-child(2) {
-  fill: var(--landing-card);
+.svx-marketplace-hub-icon {
+  fill: var(--landing-primary-soft);
   stroke: color-mix(
     in srgb,
-    var(--landing-primary) 55%,
+    var(--landing-primary) 42%,
     var(--landing-border)
   );
-  stroke-width: 2;
+  stroke-width: 1.5;
 }
 
 .svx-marketplace-network-center path {
   fill: none;
   stroke: var(--landing-primary);
-  stroke-width: 2.7;
+  stroke-width: 2.5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.svx-marketplace-network-center text {
+.svx-marketplace-hub-title {
   fill: var(--landing-text);
   font-family: var(--landing-heading-font);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
   text-anchor: middle;
 }
 
-.svx-marketplace-network-center text.is-muted {
+.svx-marketplace-hub-copy {
   fill: var(--landing-muted);
   font-family: var(--landing-body-font);
-  font-size: 9px;
+  font-size: 8.7px;
   font-weight: 500;
+  text-anchor: middle;
 }
 
-/* Bottom status row */
+
+/* =========================================================
+   STATUS PILLS
+========================================================= */
+
 .svx-marketplace-network-status {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, auto));
@@ -1903,9 +1901,10 @@
   color: var(--landing-primary);
 }
 
-/* ---------------------------------------------------------
-   DARK MODE — MATCH MAIN STORVEX LANDING
---------------------------------------------------------- */
+
+/* =========================================================
+   DARK MODE — SAME STORVEX NEUTRAL CARD LANGUAGE
+========================================================= */
 
 :root[data-theme="dark"] .svx-commerce-promo {
   border-color: rgba(255, 255, 255, 0.12);
@@ -1914,7 +1913,7 @@
 }
 
 :root[data-theme="dark"] .svx-commerce-promo-copy {
-  background: #1f1f20;
+  background: #1f1f20 !important;
 }
 
 :root[data-theme="dark"] .svx-commerce-promo-copy h1 {
@@ -1930,7 +1929,7 @@
 :root[data-theme="dark"]
   .svx-commerce-promo-copy form {
   border-color: rgba(255, 255, 255, 0.12);
-  background: #06111f;
+  background: #161617;
 }
 
 :root[data-theme="dark"]
@@ -1943,68 +1942,57 @@
 :root[data-theme="dark"]
   .svx-marketplace-hero-visual {
   border-left-color: rgba(255, 255, 255, 0.12);
-  background: #0d1d32;
+  background: #18191b;
 }
 
 :root[data-theme="dark"]
   .svx-marketplace-network-lines path {
-  stroke: rgba(21, 156, 255, 0.24);
+  stroke: rgba(21, 156, 255, 0.2);
 }
 
 :root[data-theme="dark"]
-  .svx-marketplace-network-node > rect {
-  fill: #1f1f20;
+  .svx-marketplace-network-node > rect,
+:root[data-theme="dark"]
+  .svx-marketplace-hub-shell,
+:root[data-theme="dark"]
+  .svx-marketplace-network-status span {
+  fill: #242426;
+  background: #242426;
   stroke: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 :root[data-theme="dark"]
-  .svx-marketplace-network-node > circle {
-  fill: rgba(21, 156, 255, 0.14);
-  stroke: rgba(21, 156, 255, 0.24);
+  .svx-marketplace-network-node > circle,
+:root[data-theme="dark"]
+  .svx-marketplace-hub-icon {
+  fill: rgba(21, 156, 255, 0.12);
+  stroke: rgba(21, 156, 255, 0.26);
 }
 
 :root[data-theme="dark"]
-  .svx-marketplace-network-node text {
+  .svx-marketplace-network-node text,
+:root[data-theme="dark"]
+  .svx-marketplace-hub-title {
   fill: #ffffff;
 }
 
 :root[data-theme="dark"]
-  .svx-marketplace-network-node text.is-muted {
-  fill: rgba(255, 255, 255, 0.66);
-}
-
+  .svx-marketplace-network-node text.is-muted,
 :root[data-theme="dark"]
-  .svx-marketplace-network-center > circle:first-child {
-  fill: rgba(21, 156, 255, 0.08);
-  stroke: rgba(21, 156, 255, 0.18);
-}
-
-:root[data-theme="dark"]
-  .svx-marketplace-network-center > circle:nth-child(2) {
-  fill: #1f1f20;
-  stroke: rgba(21, 156, 255, 0.52);
-}
-
-:root[data-theme="dark"]
-  .svx-marketplace-network-center text {
-  fill: #ffffff;
-}
-
-:root[data-theme="dark"]
-  .svx-marketplace-network-center text.is-muted {
+  .svx-marketplace-hub-copy {
   fill: rgba(255, 255, 255, 0.68);
 }
 
 :root[data-theme="dark"]
   .svx-marketplace-network-status span {
-  border-color: rgba(255, 255, 255, 0.13);
-  background: #1f1f20;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.84);
 }
 
-/* ---------------------------------------------------------
+
+/* =========================================================
    TABLET
---------------------------------------------------------- */
+========================================================= */
 
 @media (max-width: 1180px) {
   .svx-commerce-promo {
@@ -2027,9 +2015,10 @@
   }
 }
 
-/* ---------------------------------------------------------
+
+/* =========================================================
    MOBILE / PWA
---------------------------------------------------------- */
+========================================================= */
 
 @media (max-width: 820px) {
   .svx-commerce-promo {
@@ -2040,12 +2029,12 @@
   }
 
   .svx-commerce-promo-copy {
-    padding: 28px 20px 22px;
+    padding: 27px 20px 22px;
   }
 
   .svx-commerce-promo-copy h1 {
     max-width: 520px;
-    font-size: clamp(32px, 9.6vw, 43px);
+    font-size: clamp(31px, 9.4vw, 42px);
     line-height: 1;
     letter-spacing: -0.035em;
   }
@@ -2058,15 +2047,15 @@
 
   .svx-marketplace-hero-visual {
     min-height: 0;
-    padding: 15px 10px 18px;
+    padding: 14px 8px 18px;
   }
 
   .svx-marketplace-network {
-    max-width: 560px;
+    max-width: 570px;
   }
 
   .svx-marketplace-network > svg {
-    max-height: 315px;
+    max-height: 325px;
   }
 
   .svx-marketplace-network-status {
@@ -2097,9 +2086,10 @@
   }
 }
 
-/* ---------------------------------------------------------
+
+/* =========================================================
    SMALL PHONES
---------------------------------------------------------- */
+========================================================= */
 
 @media (max-width: 520px) {
   .svx-commerce-promo-copy {
@@ -2108,32 +2098,32 @@
   }
 
   .svx-commerce-promo-copy h1 {
-    font-size: clamp(30px, 9.2vw, 37px);
+    font-size: clamp(29px, 9vw, 36px);
   }
 
   .svx-marketplace-hero-visual {
-    padding-right: 6px;
-    padding-left: 6px;
+    padding-right: 4px;
+    padding-left: 4px;
   }
 
   .svx-marketplace-network > svg {
-    max-height: 275px;
+    max-height: 285px;
   }
 
   .svx-marketplace-network-node text {
-    font-size: 10.5px;
+    font-size: 10px;
   }
 
   .svx-marketplace-network-node text.is-muted {
-    font-size: 7.8px;
+    font-size: 7.3px;
   }
 
-  .svx-marketplace-network-center text {
-    font-size: 12.5px;
+  .svx-marketplace-hub-title {
+    font-size: 12px;
   }
 
-  .svx-marketplace-network-center text.is-muted {
-    font-size: 7.8px;
+  .svx-marketplace-hub-copy {
+    font-size: 7.3px;
   }
 
   .svx-marketplace-network-status {
