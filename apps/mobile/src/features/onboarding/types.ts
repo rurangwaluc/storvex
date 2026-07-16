@@ -83,12 +83,36 @@ export type VerifyOtpResponse = {
   phoneVerifiedAt?: string | null;
 };
 
+export type SignupPlanSection = {
+  key?: string | null;
+  label?: string | null;
+  items?: string[];
+};
+
+export type SignupPlanCapacity = {
+  staffLimit?: number | null;
+  branchLimit?: number | null;
+  [key: string]: unknown;
+};
+
+export type SignupPlanEntitlements = {
+  planLevel?: string | null;
+  marketplaceEnabled?: boolean;
+  marketplaceIncluded?: boolean;
+  imageStudioEnabled?: boolean;
+  supportLevel?: string | null;
+  reportingLevel?: string | null;
+  [key: string]: unknown;
+};
+
 export type SignupPlan = {
   key: string;
 
   name?: string;
   label?: string;
   description?: string | null;
+  shortDescription?: string | null;
+  audience?: string | null;
 
   tierKey?: string | null;
   cycleKey?: string | null;
@@ -107,8 +131,15 @@ export type SignupPlan = {
   branchLimit?: number | null;
 
   features?: string[];
+  highlights?: string[];
+  sections?: SignupPlanSection[];
+  capacity?: SignupPlanCapacity | null;
+  entitlements?: SignupPlanEntitlements | null;
+
   recommended?: boolean;
   isEnterprise?: boolean;
+  marketplaceIncluded?: boolean;
+  launchPricing?: boolean;
 };
 
 export type SignupPlansResponse = {

@@ -23,7 +23,7 @@ Subscription Plans V2 complete until every required item is checked and tested.
 - [x] Add structured entitlement metadata to the server plan catalogue.
 - [x] Return professional plan data through the billing plans API.
 - [x] Return the same authoritative plan data through public signup APIs.
-- [ ] Return the same authoritative plan data through mobile signup APIs.
+- [x] Return the same authoritative plan data through mobile signup APIs.
 - [ ] Include Enterprise plan presentation where appropriate.
 
 ## Subscription snapshots and database

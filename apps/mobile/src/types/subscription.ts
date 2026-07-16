@@ -28,10 +28,25 @@ export type SubscriptionSummary = {
   lastPaymentAt?: string | null;
   renewedAt?: string | null;
 
+  staffLimit?: number | null;
   branchLimit?: number | null;
   extraBranchCount?: number | null;
   effectiveBranchLimit?: number | null;
   activeBranches?: number | null;
+
+  entitlements?: {
+    planLevel?: string | null;
+    marketplaceEnabled?: boolean;
+    marketplaceIncluded?: boolean;
+    marketplaceCommissionEnabled?: boolean;
+    sellerManagedDelivery?: boolean;
+    deliveryAreaLimit?: number | null;
+    marketplaceOrderLimit?: number | null;
+    imageStudioEnabled?: boolean;
+    supportLevel?: string | null;
+    reportingLevel?: string | null;
+    [key: string]: unknown;
+  } | null;
 
   canAddBranch?: boolean;
   overBranchLimit?: boolean;

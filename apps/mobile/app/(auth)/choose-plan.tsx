@@ -7,13 +7,17 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+
 import { AppButton } from "../../src/components/ui/AppButton";
 import { AppScreen } from "../../src/components/ui/AppScreen";
 import { AppText } from "../../src/components/ui/AppText";
 import { ThemeToggle } from "../../src/components/ui/ThemeToggle";
 import { routes } from "../../src/constants/routes";
 import { useSignupPlans } from "../../src/features/onboarding/hooks";
-import type { SignupPlan } from "../../src/features/onboarding/types";
+import type {
+  SignupPlan,
+  SignupPlanSection,
+} from "../../src/features/onboarding/types";
 import { useThemeMode } from "../../src/lib/theme/useThemeMode";
 import { useOnboardingStore } from "../../src/store/onboardingStore";
 
@@ -28,190 +32,184 @@ function createPalette(isDark: boolean) {
     text: isDark ? "#FFFFFF" : "#06111F",
     muted: isDark ? "#AFC1D6" : "#516173",
     soft: isDark ? "#9FB2C8" : "#64748B",
+    cyan: "#20C8FF",
     cyanSoft: isDark ? "#67E8F9" : "#0369A1",
     panel: isDark ? "rgba(255, 255, 255, 0.07)" : "#F8FAFC",
     panelStrong: isDark ? "rgba(255, 255, 255, 0.10)" : "#FFFFFF",
-    border: isDark ? "rgba(148, 163, 184, 0.16)" : "rgba(15, 23, 42, 0.12)",
+    border: isDark
+      ? "rgba(148, 163, 184, 0.16)"
+      : "rgba(15, 23, 42, 0.12)",
     borderStrong: isDark
-      ? "rgba(125, 211, 252, 0.26)"
-      : "rgba(14, 165, 233, 0.28)",
+      ? "rgba(125, 211, 252, 0.32)"
+      : "rgba(14, 165, 233, 0.34)",
+    selected: isDark
+      ? "rgba(32, 200, 255, 0.13)"
+      : "rgba(14, 165, 233, 0.08)",
+    success: isDark ? "#86EFAC" : "#15803D",
+    danger: isDark ? "#FCA5A5" : "#B91C1C",
     beamTop: isDark
       ? "rgba(32, 200, 255, 0.18)"
       : "rgba(32, 200, 255, 0.10)",
     beamBottom: isDark
       ? "rgba(37, 99, 235, 0.18)"
-      : "rgba(37, 99, 235, 0.10)",
-    grid: isDark ? "rgba(255,255,255,0.05)" : "rgba(15,23,42,0.06)",
+      : "rgba(37, 99, 235, 0.08)",
   };
 }
 
 type Palette = ReturnType<typeof createPalette>;
 
-type TeamOption = {
-  tierKey: string;
-  ownerLabel: string;
-  helper: string;
-  staffLimit: number;
-  branchLimit: number;
-  plans: SignupPlan[];
-};
+function cleanString(value: unknown) {
+  return String(value ?? "").trim();
+}
 
-type PaymentOption = {
-  cycleKey: string;
-  label: string;
-  helper: string;
-  days: number;
-  plan: SignupPlan;
-};
+function nullableNumber(value: unknown) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
 
-function getPlanPrice(plan: SignupPlan) {
-  const price = plan.priceAmount ?? plan.price ?? 0;
-  return Number.isFinite(Number(price)) ? Number(price) : 0;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function planLevel(plan: SignupPlan) {
+  const configured = cleanString(
+    plan.entitlements?.planLevel,
+  ).toUpperCase();
+
+  if (configured) return configured;
+
+  const key = cleanString(plan.key).toUpperCase();
+  const tierKey = cleanString(plan.tierKey).toUpperCase();
+
+  if (key.includes("STARTER") || tierKey.includes("STARTER")) {
+    return "STARTER";
+  }
+
+  if (key.includes("GROWTH") || tierKey.includes("GROWTH")) {
+    return "GROWTH";
+  }
+
+  if (key.includes("BUSINESS") || tierKey.includes("BUSINESS")) {
+    return "BUSINESS";
+  }
+
+  if (key.includes("ENTERPRISE") || tierKey.includes("ENTERPRISE")) {
+    return "ENTERPRISE";
+  }
+
+  return "OTHER";
+}
+
+function planRank(plan: SignupPlan) {
+  const level = planLevel(plan);
+
+  if (level === "STARTER") return 1;
+  if (level === "GROWTH") return 2;
+  if (level === "BUSINESS") return 3;
+  if (level === "ENTERPRISE") return 4;
+
+  return 99;
+}
+
+function planName(plan: SignupPlan) {
+  return (
+    cleanString(plan.label) ||
+    cleanString(plan.name) ||
+    cleanString(plan.tierLabel) ||
+    "Storvex plan"
+  );
+}
+
+function planDescription(plan: SignupPlan) {
+  return (
+    cleanString(plan.shortDescription) ||
+    cleanString(plan.description) ||
+    "Professional control for sales, stock, money and daily store work."
+  );
+}
+
+function planAudience(plan: SignupPlan) {
+  return (
+    cleanString(plan.audience) ||
+    "Retail businesses using Storvex"
+  );
+}
+
+function planPrice(plan: SignupPlan) {
+  return nullableNumber(plan.price ?? plan.priceAmount) ?? 0;
 }
 
 function formatMoney(plan: SignupPlan | null) {
-  if (!plan) return "0 RWF";
+  if (!plan) return "—";
 
-  const price = getPlanPrice(plan);
-  const currency = plan.currency || "RWF";
-
-  return `${price.toLocaleString()} ${currency}`;
-}
-
-function getPlanDays(plan: SignupPlan) {
-  return plan.days || plan.trialDays || 30;
-}
-
-function getCycleKey(plan: SignupPlan) {
-  if (plan.cycleKey) return plan.cycleKey;
-
-  const days = getPlanDays(plan);
-
-  if (days >= 365) return "YEARLY";
-  if (days >= 180) return "SIX_MONTHS";
-  if (days >= 90) return "THREE_MONTHS";
-  return "MONTHLY";
-}
-
-function getCycleLabel(plan: SignupPlan) {
-  if (plan.cycleLabel) return plan.cycleLabel;
-
-  const days = getPlanDays(plan);
-
-  if (days >= 365) return "1 Year";
-  if (days >= 180) return "6 Months";
-  if (days >= 90) return "3 Months";
-  return "Monthly";
-}
-
-function getCycleHelper(plan: SignupPlan) {
-  const days = getPlanDays(plan);
-
-  if (days >= 365) return "Best long-term value";
-  if (days >= 180) return "Good for stable stores";
-  if (days >= 90) return "Quarterly payment";
-  return "Pay month by month";
-}
-
-function getCycleOrder(plan: SignupPlan) {
-  const days = getPlanDays(plan);
-
-  if (days >= 365) return 4;
-  if (days >= 180) return 3;
-  if (days >= 90) return 2;
-  return 1;
-}
-
-function getTierKey(plan: SignupPlan) {
-  if (plan.tierKey) return plan.tierKey;
-  if (plan.key.includes(":")) return plan.key.split(":")[0];
-  if (plan.key.includes("-")) return plan.key.split("-")[0];
-
-  const staff = plan.staffLimit || 1;
-  return `staff_${staff}`;
-}
-
-function getStaffLimit(plan: SignupPlan) {
-  return plan.staffLimit || 1;
-}
-
-function getBranchLimit(plan: SignupPlan) {
-  return plan.branchLimit || 1;
-}
-
-function getOwnerFriendlyTeamLabel(staffLimit: number) {
-  if (staffLimit <= 1) return "Just me";
-  if (staffLimit === 2) return "Owner + 1 staff";
-  if (staffLimit === 3) return "Small team";
-  if (staffLimit <= 5) return `Team of ${staffLimit}`;
-  return `Large team`;
-}
-
-function getOwnerFriendlyTeamHelper(staffLimit: number, branchLimit: number) {
-  if (staffLimit <= 1) {
-    return "For an owner working alone.";
-  }
-
-  if (staffLimit === 2) {
-    return "For owner plus one trusted staff member.";
-  }
-
-  return `${staffLimit} people — ${branchLimit} ${
-    branchLimit === 1 ? "selling location" : "selling locations"
+  return `${Math.round(planPrice(plan)).toLocaleString()} ${
+    cleanString(plan.currency) || "RWF"
   }`;
 }
 
-function groupTeamOptions(plans: SignupPlan[]) {
-  const selfServePlans = plans.filter((plan) => !plan.isEnterprise);
-  const map = new Map<string, TeamOption>();
+function capacityText(plan: SignupPlan) {
+  const staffLimit = nullableNumber(plan.staffLimit);
+  const branchLimit = nullableNumber(plan.branchLimit);
 
-  for (const plan of selfServePlans) {
-    const tierKey = getTierKey(plan);
-    const staffLimit = getStaffLimit(plan);
-    const branchLimit = getBranchLimit(plan);
-    const existing = map.get(tierKey);
+  const staff =
+    staffLimit == null
+      ? "Custom users"
+      : `${staffLimit} active user${staffLimit === 1 ? "" : "s"}`;
 
-    if (existing) {
-      existing.plans.push(plan);
-      continue;
-    }
+  const branches =
+    branchLimit == null
+      ? "Custom locations"
+      : `${branchLimit} store location${
+          branchLimit === 1 ? "" : "s"
+        }`;
 
-    map.set(tierKey, {
-      tierKey,
-      ownerLabel: getOwnerFriendlyTeamLabel(staffLimit),
-      helper: getOwnerFriendlyTeamHelper(staffLimit, branchLimit),
-      staffLimit,
-      branchLimit,
-      plans: [plan],
+  return `${staff} — ${branches}`;
+}
+
+function featureItems(plan: SignupPlan) {
+  const sectionItems = Array.isArray(plan.sections)
+    ? plan.sections.flatMap((section) =>
+        Array.isArray(section.items) ? section.items : [],
+      )
+    : [];
+
+  const direct = Array.isArray(plan.highlights)
+    ? plan.highlights
+    : Array.isArray(plan.features)
+      ? plan.features
+      : [];
+
+  return [...sectionItems, ...direct]
+    .map(cleanString)
+    .filter(Boolean)
+    .filter((item, index, items) => items.indexOf(item) === index)
+    .slice(0, 5);
+}
+
+function normalizedPlans(plans: SignupPlan[]) {
+  return plans
+    .filter((plan) => plan && cleanString(plan.key))
+    .filter(
+      (plan) =>
+        !plan.isEnterprise &&
+        planLevel(plan) !== "ENTERPRISE",
+    )
+    .sort((left, right) => {
+      const rankDifference = planRank(left) - planRank(right);
+
+      if (rankDifference !== 0) return rankDifference;
+
+      return planPrice(left) - planPrice(right);
     });
-  }
-
-  return Array.from(map.values())
-    .map((team) => ({
-      ...team,
-      plans: team.plans.sort((a, b) => getCycleOrder(a) - getCycleOrder(b)),
-    }))
-    .sort((a, b) => a.staffLimit - b.staffLimit);
 }
 
-function getPaymentOptions(team: TeamOption | null): PaymentOption[] {
-  if (!team) return [];
-
-  return team.plans.map((plan) => ({
-    cycleKey: getCycleKey(plan),
-    label: getCycleLabel(plan),
-    helper: getCycleHelper(plan),
-    days: getPlanDays(plan),
-    plan,
-  }));
-}
-
-function getSelectedSummary(team: TeamOption | null, plan: SignupPlan | null) {
-  if (!team || !plan) return "No plan selected yet.";
-
-  return `${team.ownerLabel} — ${getCycleLabel(plan)} — ${team.staffLimit} ${
-    team.staffLimit === 1 ? "person" : "people"
-  }`;
+function recommendedPlan(plans: SignupPlan[]) {
+  return (
+    plans.find((plan) => plan.recommended) ||
+    plans.find((plan) => planLevel(plan) === "GROWTH") ||
+    plans[0] ||
+    null
+  );
 }
 
 function PlanSkeleton({ palette }: { palette: Palette }) {
@@ -223,14 +221,39 @@ function PlanSkeleton({ palette }: { palette: Palette }) {
           style={[
             styles.skeletonCard,
             {
-              backgroundColor: palette.panel,
               borderColor: palette.border,
+              backgroundColor: palette.panel,
             },
           ]}
         >
-          <View style={[styles.skeletonLine, { width: "42%" }]} />
-          <View style={[styles.skeletonLine, { width: "76%" }]} />
-          <View style={[styles.skeletonLine, { width: "58%" }]} />
+          <View style={styles.skeletonHeader}>
+            <View
+              style={[
+                styles.skeletonLine,
+                { width: "38%" },
+              ]}
+            />
+            <View
+              style={[
+                styles.skeletonLine,
+                { width: 74 },
+              ]}
+            />
+          </View>
+
+          <View
+            style={[
+              styles.skeletonLine,
+              { width: "76%" },
+            ]}
+          />
+
+          <View
+            style={[
+              styles.skeletonLine,
+              { width: "58%" },
+            ]}
+          />
         </View>
       ))}
     </View>
@@ -250,7 +273,10 @@ function MissingState({
     <AppScreen
       scroll={false}
       padded={false}
-      contentStyle={{ flexGrow: 1, backgroundColor: palette.page }}
+      contentStyle={{
+        flexGrow: 1,
+        backgroundColor: palette.page,
+      }}
     >
       <View
         style={[
@@ -271,47 +297,65 @@ function MissingState({
             },
           ]}
         >
-          <View
-            style={[
-              styles.backgroundBeamTop,
-              { backgroundColor: palette.beamTop },
-            ]}
-          />
-
-          <View style={styles.header}>
+          <View style={styles.missingHeader}>
             <Image
               source={isDark ? logo : logoDark}
               style={styles.logo}
               resizeMode="contain"
             />
+
             <ThemeToggle />
           </View>
 
           <View style={styles.missingBody}>
-            <View style={styles.missingIcon}>
-              <Image source={icon} style={styles.missingIconImage} />
-            </View>
-
-            <View style={{ gap: 8 }}>
-              <AppText variant="caption" color={palette.cyanSoft}>
-                PAID PLAN
-              </AppText>
-              <AppText variant="title" color={palette.text}>
-                Choose the access path first.
-              </AppText>
-              <AppText variant="muted" color={palette.muted}>
-                Paid plan selection only opens after owner OTP verification and
-                choosing “Pay first”.
-              </AppText>
-            </View>
-
-            <AppButton
-              fullWidth
-              onPress={() => router.replace(routes.choosePath)}
-              style={styles.primaryButton}
+            <View
+              style={[
+                styles.missingIcon,
+                { borderColor: palette.border },
+              ]}
             >
-              Go to choose path
-            </AppButton>
+              <Image
+                source={icon}
+                style={styles.missingIconImage}
+                resizeMode="contain"
+              />
+            </View>
+
+            <AppText variant="title" color={palette.text}>
+              Choose paid access first.
+            </AppText>
+
+            <AppText variant="muted" color={palette.muted}>
+              Return to the access choice and select paid activation before
+              choosing a Storvex plan.
+            </AppText>
+
+            <View style={styles.footerActions}>
+              <AppButton
+                fullWidth
+                onPress={() => router.replace(routes.choosePath)}
+                style={styles.primaryButton}
+              >
+                Go to access choice
+              </AppButton>
+
+              <AppButton
+                fullWidth
+                variant="secondary"
+                onPress={() =>
+                  router.replace(routes.businessIntent)
+                }
+                style={[
+                  styles.secondaryButton,
+                  {
+                    borderColor: palette.border,
+                    backgroundColor: palette.panelStrong,
+                  },
+                ]}
+              >
+                Restart business setup
+              </AppButton>
+            </View>
           </View>
         </View>
       </View>
@@ -319,94 +363,173 @@ function MissingState({
   );
 }
 
-function TeamOptionCard({
-  team,
+function FeatureLine({
+  text,
+  palette,
+}: {
+  text: string;
+  palette: Palette;
+}) {
+  return (
+    <View style={styles.featureLine}>
+      <View style={styles.featureCheck}>
+        <AppText variant="caption" color="#06111F">
+          ✓
+        </AppText>
+      </View>
+
+      <AppText
+        variant="caption"
+        color={palette.text}
+        style={styles.featureText}
+      >
+        {text}
+      </AppText>
+    </View>
+  );
+}
+
+function PlanCard({
+  plan,
   selected,
   palette,
   onPress,
 }: {
-  team: TeamOption;
+  plan: SignupPlan;
   selected: boolean;
   palette: Palette;
   onPress: () => void;
 }) {
+  const features = featureItems(plan);
+
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={`${planName(plan)}, ${formatMoney(plan)} per month`}
       style={({ pressed }) => [
-        styles.choiceCard,
+        styles.planCard,
         {
-          borderColor: selected ? "#20C8FF" : palette.border,
-          backgroundColor: selected ? "rgba(32, 200, 255, 0.14)" : palette.panel,
-          opacity: pressed ? 0.82 : 1,
+          borderColor: selected
+            ? palette.cyan
+            : palette.border,
+          backgroundColor: selected
+            ? palette.selected
+            : palette.panel,
+          opacity: pressed ? 0.84 : 1,
         },
       ]}
     >
-      <View style={{ flex: 1, gap: 4 }}>
-        <AppText variant="label" color={palette.text}>
-          {team.ownerLabel}
+      <View style={styles.planTop}>
+        <View style={styles.planTitleWrap}>
+          <AppText variant="caption" color={palette.cyanSoft}>
+            {planAudience(plan)}
+          </AppText>
+
+          <AppText variant="subtitle" color={palette.text}>
+            {planName(plan)}
+          </AppText>
+        </View>
+
+        {plan.recommended ? (
+          <View style={styles.recommendedBadge}>
+            <AppText variant="caption" color="#06111F">
+              RECOMMENDED
+            </AppText>
+          </View>
+        ) : (
+          <View
+            style={[
+              styles.selectionMark,
+              {
+                borderColor: selected
+                  ? palette.cyan
+                  : palette.borderStrong,
+                backgroundColor: selected
+                  ? palette.cyan
+                  : "transparent",
+              },
+            ]}
+          >
+            <AppText
+              variant="caption"
+              color={selected ? "#06111F" : palette.soft}
+            >
+              {selected ? "✓" : ""}
+            </AppText>
+          </View>
+        )}
+      </View>
+
+      <AppText variant="muted" color={palette.muted}>
+        {planDescription(plan)}
+      </AppText>
+
+      <View style={styles.priceRow}>
+        <AppText variant="title" color={palette.text}>
+          {formatMoney(plan)}
         </AppText>
+
         <AppText variant="caption" color={palette.soft}>
-          {team.helper}
+          per month
         </AppText>
       </View>
 
       <View
         style={[
-          styles.checkBox,
+          styles.capacityStrip,
           {
-            backgroundColor: selected ? "#67E8F9" : "transparent",
-            borderColor: selected ? "#67E8F9" : palette.borderStrong,
+            borderColor: palette.border,
+            backgroundColor: palette.panelStrong,
           },
         ]}
       >
-        <AppText variant="caption" color={selected ? "#06111F" : palette.soft}>
-          {selected ? "✓" : ""}
-        </AppText>
-      </View>
-    </Pressable>
-  );
-}
-
-function PaymentOptionCard({
-  option,
-  selected,
-  palette,
-  onPress,
-}: {
-  option: PaymentOption;
-  selected: boolean;
-  palette: Palette;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.paymentCard,
-        {
-          borderColor: selected ? "#20C8FF" : palette.border,
-          backgroundColor: selected ? "rgba(32, 200, 255, 0.14)" : palette.panel,
-          opacity: pressed ? 0.82 : 1,
-        },
-      ]}
-    >
-      <View style={{ flex: 1, gap: 4 }}>
-        <AppText variant="label" color={palette.text}>
-          {option.label}
-        </AppText>
-        <AppText variant="caption" color={palette.soft}>
-          {option.helper}
+        <AppText variant="caption" color={palette.text}>
+          {capacityText(plan)}
         </AppText>
       </View>
 
-      <View style={styles.paymentPrice}>
-        <AppText variant="label" color={palette.text}>
-          {formatMoney(option.plan)}
+      {features.length ? (
+        <View style={styles.featureList}>
+          {features.map((feature) => (
+            <FeatureLine
+              key={feature}
+              text={feature}
+              palette={palette}
+            />
+          ))}
+        </View>
+      ) : null}
+
+      <View style={styles.cardFooter}>
+        <AppText
+          variant="label"
+          color={selected ? palette.cyanSoft : palette.text}
+        >
+          {selected ? "Selected plan" : `Choose ${planName(plan)}`}
         </AppText>
-        <AppText variant="caption" color={palette.soft}>
-          {option.days} days
-        </AppText>
+
+        <View
+          style={[
+            styles.selectionMark,
+            {
+              borderColor: selected
+                ? palette.cyan
+                : palette.borderStrong,
+              backgroundColor: selected
+                ? palette.cyan
+                : "transparent",
+            },
+          ]}
+        >
+          <AppText
+            variant="caption"
+            color={selected ? "#06111F" : palette.soft}
+          >
+            {selected ? "✓" : "→"}
+          </AppText>
+        </View>
       </View>
     </Pressable>
   );
@@ -424,66 +547,49 @@ export default function ChoosePlanScreen() {
 
   const intent = useOnboardingStore((state) => state.intent);
   const intentId = useOnboardingStore((state) => state.intentId);
-  const signupMode = useOnboardingStore((state) => state.signupMode);
-  const setSelectedPlan = useOnboardingStore((state) => state.setSelectedPlan);
-
-  const plansQuery = useSignupPlans();
-  const plans = plansQuery.data?.plans || [];
-
-  const teamOptions = useMemo(() => groupTeamOptions(plans), [plans]);
-
-  const [selectedTierKey, setSelectedTierKey] = useState<string | null>(null);
-  const [selectedCycleKey, setSelectedCycleKey] = useState<string | null>(null);
-
-  const canChoosePlan =
-    Boolean(intentId) && Boolean(intent) && signupMode === "PAID";
-
-  const selectedTeam =
-    teamOptions.find((team) => team.tierKey === selectedTierKey) ||
-    teamOptions[0] ||
-    null;
-
-  const paymentOptions = useMemo(
-    () => getPaymentOptions(selectedTeam),
-    [selectedTeam],
+  const signupMode = useOnboardingStore(
+    (state) => state.signupMode,
+  );
+  const storedPlanKey = useOnboardingStore(
+    (state) => state.selectedPlanKey,
+  );
+  const setSelectedPlan = useOnboardingStore(
+    (state) => state.setSelectedPlan,
   );
 
-  const selectedPayment =
-    paymentOptions.find((option) => option.cycleKey === selectedCycleKey) ||
-    paymentOptions[0] ||
-    null;
+  const plansQuery = useSignupPlans();
 
-  const selectedPlan = selectedPayment?.plan || null;
+  const plans = useMemo(
+    () => normalizedPlans(plansQuery.data?.plans || []),
+    [plansQuery.data?.plans],
+  );
+
+  const [selectedPlanKey, setSelectedPlanKey] = useState<
+    string | null
+  >(storedPlanKey);
+
+  const selectedPlan =
+    plans.find((plan) => plan.key === selectedPlanKey) ||
+    recommendedPlan(plans);
+
+  const canChoosePlan =
+    Boolean(intentId) &&
+    Boolean(intent) &&
+    signupMode === "PAID";
 
   useEffect(() => {
-    if (teamOptions.length === 0) return;
+    if (!plans.length) return;
 
-    setSelectedTierKey((current) => current || teamOptions[0].tierKey);
-  }, [teamOptions]);
-
-  useEffect(() => {
-    if (paymentOptions.length === 0) return;
-
-    const monthly =
-      paymentOptions.find((option) => option.days <= 31) || paymentOptions[0];
-
-    setSelectedCycleKey((current) => {
-      const stillExists = paymentOptions.some(
-        (option) => option.cycleKey === current,
+    setSelectedPlanKey((current) => {
+      const currentExists = plans.some(
+        (plan) => plan.key === current,
       );
 
-      return stillExists ? current : monthly.cycleKey;
+      if (currentExists) return current;
+
+      return recommendedPlan(plans)?.key || null;
     });
-  }, [paymentOptions]);
-
-  function chooseTeam(team: TeamOption) {
-    setSelectedTierKey(team.tierKey);
-
-    const monthly =
-      team.plans.find((plan) => getPlanDays(plan) <= 31) || team.plans[0];
-
-    setSelectedCycleKey(getCycleKey(monthly));
-  }
+  }, [plans]);
 
   function continueToPayment() {
     if (!selectedPlan) return;
@@ -494,7 +600,11 @@ export default function ChoosePlanScreen() {
 
   if (!canChoosePlan) {
     return (
-      <MissingState palette={palette} isDark={isDark} isTablet={isTablet} />
+      <MissingState
+        palette={palette}
+        isDark={isDark}
+        isTablet={isTablet}
+      />
     );
   }
 
@@ -511,9 +621,9 @@ export default function ChoosePlanScreen() {
         style={[
           styles.page,
           {
-            paddingHorizontal: isTablet ? 40 : 20,
-            paddingTop: isTablet ? 30 : 18,
-            paddingBottom: isTablet ? 30 : 18,
+            paddingHorizontal: isTablet ? 40 : 16,
+            paddingTop: isTablet ? 30 : 16,
+            paddingBottom: isTablet ? 30 : 22,
           },
         ]}
       >
@@ -521,8 +631,8 @@ export default function ChoosePlanScreen() {
           style={[
             styles.stage,
             {
-              maxWidth: isTablet ? 660 : 460,
-              minHeight: compact ? 720 : 790,
+              maxWidth: isTablet ? 680 : 480,
+              minHeight: compact ? 680 : 760,
               backgroundColor: palette.stage,
               borderColor: palette.border,
             },
@@ -534,14 +644,13 @@ export default function ChoosePlanScreen() {
               { backgroundColor: palette.beamTop },
             ]}
           />
+
           <View
             style={[
               styles.backgroundBeamBottom,
               { backgroundColor: palette.beamBottom },
             ]}
           />
-          <View style={[styles.gridLineOne, { backgroundColor: palette.grid }]} />
-          <View style={[styles.gridLineTwo, { backgroundColor: palette.grid }]} />
 
           <View style={styles.header}>
             <Image
@@ -559,17 +668,12 @@ export default function ChoosePlanScreen() {
                   styles.backButton,
                   {
                     borderColor: palette.borderStrong,
-                    backgroundColor: isDark
-                      ? "rgba(14, 165, 233, 0.10)"
-                      : "rgba(2, 6, 23, 0.05)",
+                    backgroundColor: palette.panel,
                     opacity: pressed ? 0.72 : 1,
                   },
                 ]}
               >
-                <AppText
-                  variant="caption"
-                  color={isDark ? "#D7F8FF" : "#06111F"}
-                >
+                <AppText variant="caption" color={palette.text}>
                   Back
                 </AppText>
               </Pressable>
@@ -580,49 +684,91 @@ export default function ChoosePlanScreen() {
             <View style={styles.titleBlock}>
               <View style={styles.kickerRow}>
                 <View style={styles.kickerDot} />
+
                 <AppText variant="caption" color={palette.cyanSoft}>
-                  PAID ACCESS
+                  PAID ACTIVATION
                 </AppText>
               </View>
 
               <AppText variant="display" color={palette.text}>
-                Choose who will use Storvex.
+                Choose the plan that fits your store.
               </AppText>
 
               <AppText variant="muted" color={palette.muted}>
-                Select the number of people first. Then choose how long the
-                owner wants to pay for.
+                Prices, user capacity, locations and included business tools
+                come directly from Storvex billing.
               </AppText>
             </View>
 
             <View
               style={[
-                styles.summaryStrip,
+                styles.progressStrip,
                 {
                   borderColor: palette.border,
                   backgroundColor: palette.panel,
                 },
               ]}
             >
-              <View style={{ flex: 1 }}>
+              <View style={styles.progressCopy}>
                 <AppText variant="caption" color={palette.cyanSoft}>
                   STEP 4 OF 7
                 </AppText>
+
                 <AppText variant="label" color={palette.text}>
-                  {intent?.storeName}
+                  {intent?.storeName || "Business setup"}
                 </AppText>
               </View>
 
-              <View style={styles.summaryBadge}>
+              <View style={styles.progressBadge}>
                 <AppText variant="caption" color="#06111F">
-                  Pay first
+                  MARKETPLACE INCLUDED
                 </AppText>
               </View>
             </View>
 
             {plansQuery.isLoading ? (
               <PlanSkeleton palette={palette} />
-            ) : plansQuery.isError ? (
+            ) : null}
+
+            {plansQuery.isError ? (
+              <View
+                style={[
+                  styles.errorPanel,
+                  {
+                    borderColor: palette.danger,
+                    backgroundColor: palette.panel,
+                  },
+                ]}
+              >
+                <AppText variant="label" color={palette.danger}>
+                  Plans could not be loaded.
+                </AppText>
+
+                <AppText variant="caption" color={palette.muted}>
+                  Check the connection and try again. No price is stored
+                  inside the mobile app.
+                </AppText>
+
+                <AppButton
+                  fullWidth
+                  variant="secondary"
+                  onPress={() => plansQuery.refetch()}
+                  style={[
+                    styles.secondaryButton,
+                    {
+                      borderColor: palette.border,
+                      backgroundColor: palette.panelStrong,
+                    },
+                  ]}
+                >
+                  Retry loading plans
+                </AppButton>
+              </View>
+            ) : null}
+
+            {!plansQuery.isLoading &&
+            !plansQuery.isError &&
+            !plans.length ? (
               <View
                 style={[
                   styles.errorPanel,
@@ -632,118 +778,64 @@ export default function ChoosePlanScreen() {
                   },
                 ]}
               >
-                <AppText variant="subtitle" color={palette.text}>
-                  Plans could not load.
+                <AppText variant="label" color={palette.text}>
+                  No paid plans are available.
                 </AppText>
-                <AppText variant="caption" color={palette.soft}>
-                  Check your backend server and try again.
+
+                <AppText variant="caption" color={palette.muted}>
+                  Return to the access choice or contact Storvex support.
                 </AppText>
-                <AppButton
-                  fullWidth
-                  variant="secondary"
-                  onPress={() => plansQuery.refetch()}
-                  style={styles.secondaryButton}
-                >
-                  Retry loading plans
-                </AppButton>
               </View>
-            ) : (
-              <>
-                <View style={styles.sectionBlock}>
-                  <View style={styles.sectionHeader}>
-                    <View style={styles.sectionNumber}>
-                      <AppText variant="caption" color="#06111F">
-                        1
-                      </AppText>
-                    </View>
+            ) : null}
 
-                    <View style={{ flex: 1 }}>
-                      <AppText variant="subtitle" color={palette.text}>
-                        How many people will use it?
-                      </AppText>
-                      <AppText variant="caption" color={palette.soft}>
-                        This controls staff access.
-                      </AppText>
-                    </View>
-                  </View>
-
-                  <View style={styles.teamGrid}>
-                    {teamOptions.map((team) => (
-                      <TeamOptionCard
-                        key={team.tierKey}
-                        team={team}
-                        selected={selectedTeam?.tierKey === team.tierKey}
-                        palette={palette}
-                        onPress={() => chooseTeam(team)}
-                      />
-                    ))}
-                  </View>
-                </View>
-
-                <View style={styles.sectionBlock}>
-                  <View style={styles.sectionHeader}>
-                    <View style={styles.sectionNumber}>
-                      <AppText variant="caption" color="#06111F">
-                        2
-                      </AppText>
-                    </View>
-
-                    <View style={{ flex: 1 }}>
-                      <AppText variant="subtitle" color={palette.text}>
-                        How long should the owner pay for?
-                      </AppText>
-                      <AppText variant="caption" color={palette.soft}>
-                        This controls the subscription period.
-                      </AppText>
-                    </View>
-                  </View>
-
-                  <View style={styles.paymentList}>
-                    {paymentOptions.map((option) => (
-                      <PaymentOptionCard
-                        key={option.cycleKey}
-                        option={option}
-                        selected={selectedCycleKey === option.cycleKey}
-                        palette={palette}
-                        onPress={() => setSelectedCycleKey(option.cycleKey)}
-                      />
-                    ))}
-                  </View>
-                </View>
-              </>
-            )}
+            {plans.length ? (
+              <View
+                style={styles.planList}
+                accessibilityRole="radiogroup"
+              >
+                {plans.map((plan) => (
+                  <PlanCard
+                    key={plan.key}
+                    plan={plan}
+                    selected={selectedPlan?.key === plan.key}
+                    palette={palette}
+                    onPress={() => setSelectedPlanKey(plan.key)}
+                  />
+                ))}
+              </View>
+            ) : null}
 
             {selectedPlan ? (
               <View
                 style={[
-                  styles.selectedStrip,
+                  styles.selectedSummary,
                   {
                     borderColor: palette.borderStrong,
-                    backgroundColor: "rgba(32, 200, 255, 0.11)",
+                    backgroundColor: palette.selected,
                   },
                 ]}
               >
-                <View style={{ flex: 1, gap: 4 }}>
+                <View style={styles.selectedSummaryCopy}>
                   <AppText variant="caption" color={palette.cyanSoft}>
-                    SELECTED
+                    SELECTED PLAN
                   </AppText>
+
                   <AppText variant="label" color={palette.text}>
-                    {getSelectedSummary(selectedTeam, selectedPlan)}
+                    {planName(selectedPlan)}
                   </AppText>
-                  <AppText variant="caption" color={palette.soft}>
-                    {selectedTeam?.branchLimit || 1}{" "}
-                    {(selectedTeam?.branchLimit || 1) === 1
-                      ? "selling location"
-                      : "selling locations"}
+
+                  <AppText variant="caption" color={palette.muted}>
+                    {capacityText(selectedPlan)}
                   </AppText>
                 </View>
 
-                <View style={{ alignItems: "flex-end", gap: 3 }}>
+                <View style={styles.selectedPrice}>
                   <AppText variant="subtitle" color={palette.text}>
                     {formatMoney(selectedPlan)}
                   </AppText>
+
                   <AppText variant="caption" color={palette.soft}>
-                    Total payment
+                    per month
                   </AppText>
                 </View>
               </View>
@@ -764,13 +856,14 @@ export default function ChoosePlanScreen() {
                 </AppText>
               </View>
 
-              <View style={{ flex: 1, gap: 3 }}>
+              <View style={styles.noteCopy}>
                 <AppText variant="label" color={palette.text}>
-                  Keep it simple for the owner
+                  One clear monthly plan
                 </AppText>
-                <AppText variant="caption" color={palette.soft}>
-                  People controls access. Payment period controls how long the
-                  business can use Storvex.
+
+                <AppText variant="caption" color={palette.muted}>
+                  Marketplace access is included. Storvex does not charge a
+                  Marketplace sales commission at launch.
                 </AppText>
               </View>
             </View>
@@ -792,14 +885,12 @@ export default function ChoosePlanScreen() {
                 style={[
                   styles.secondaryButton,
                   {
-                    backgroundColor: isDark
-                      ? "rgba(255,255,255,0.055)"
-                      : "#FFFFFF",
                     borderColor: palette.border,
+                    backgroundColor: palette.panelStrong,
                   },
                 ]}
               >
-                Change access path
+                Change access choice
               </AppButton>
             </View>
           </View>
@@ -821,77 +912,58 @@ const styles = StyleSheet.create({
     position: "relative",
     overflow: "hidden",
     borderWidth: 1,
-    paddingHorizontal: 22,
-    paddingTop: 20,
+    paddingHorizontal: 18,
+    paddingTop: 18,
     paddingBottom: 20,
     shadowColor: "#000000",
-    shadowOpacity: 0.34,
-    shadowRadius: 34,
-    shadowOffset: { width: 0, height: 24 },
-    elevation: 12,
+    shadowOpacity: 0.26,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 20 },
+    elevation: 10,
   },
 
   missingStage: {
     width: "100%",
-    position: "relative",
-    overflow: "hidden",
     borderWidth: 1,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 20,
-    shadowColor: "#000000",
-    shadowOpacity: 0.28,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 18 },
-    elevation: 10,
+    padding: 20,
+    gap: 24,
   },
 
   backgroundBeamTop: {
     position: "absolute",
-    top: -130,
-    right: -90,
-    width: 270,
-    height: 270,
-    transform: [{ rotate: "18deg" }],
+    width: 260,
+    height: 260,
+    top: -150,
+    right: -100,
+    borderRadius: 130,
   },
 
   backgroundBeamBottom: {
     position: "absolute",
-    left: -120,
-    bottom: 118,
-    width: 240,
-    height: 240,
-    transform: [{ rotate: "-24deg" }],
-  },
-
-  gridLineOne: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 98,
-    height: 1,
-  },
-
-  gridLineTwo: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    top: 322,
-    height: 1,
+    width: 220,
+    height: 220,
+    bottom: -150,
+    left: -100,
+    borderRadius: 110,
   },
 
   header: {
-    minHeight: 46,
+    zIndex: 2,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 14,
-    zIndex: 2,
+  },
+
+  missingHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   logo: {
-    width: 126,
-    height: 34,
+    width: 118,
+    height: 30,
   },
 
   headerActions: {
@@ -902,25 +974,24 @@ const styles = StyleSheet.create({
 
   backButton: {
     borderWidth: 1,
-    paddingHorizontal: 14,
+    paddingHorizontal: 13,
     paddingVertical: 9,
   },
 
   content: {
-    paddingTop: 40,
-    gap: 18,
     zIndex: 2,
+    paddingTop: 34,
+    gap: 18,
   },
 
   missingBody: {
-    paddingTop: 34,
     gap: 18,
-    zIndex: 2,
   },
 
   missingIcon: {
     width: 62,
     height: 62,
+    borderWidth: 1,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#F8FAFC",
@@ -932,7 +1003,7 @@ const styles = StyleSheet.create({
   },
 
   titleBlock: {
-    gap: 14,
+    gap: 12,
   },
 
   kickerRow: {
@@ -947,19 +1018,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#22C55E",
   },
 
-  summaryStrip: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 14,
+  progressStrip: {
     borderWidth: 1,
     padding: 14,
+    gap: 12,
   },
 
-  summaryBadge: {
+  progressCopy: {
+    gap: 3,
+  },
+
+  progressBadge: {
+    alignSelf: "flex-start",
     backgroundColor: "#67E8F9",
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingHorizontal: 9,
+    paddingVertical: 6,
   },
 
   skeletonStack: {
@@ -969,76 +1042,117 @@ const styles = StyleSheet.create({
   skeletonCard: {
     borderWidth: 1,
     padding: 16,
-    gap: 10,
+    gap: 12,
+  },
+
+  skeletonHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
   },
 
   skeletonLine: {
     height: 12,
-    backgroundColor: "rgba(148, 163, 184, 0.28)",
+    backgroundColor: "rgba(148, 163, 184, 0.26)",
   },
 
-  sectionBlock: {
+  planList: {
     gap: 12,
   },
 
-  sectionHeader: {
+  planCard: {
+    width: "100%",
+    borderWidth: 1,
+    padding: 16,
+    gap: 14,
+  },
+
+  planTop: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
     gap: 12,
   },
 
-  sectionNumber: {
-    width: 26,
-    height: 26,
+  planTitleWrap: {
+    flex: 1,
+    gap: 5,
+  },
+
+  recommendedBadge: {
+    backgroundColor: "#67E8F9",
+    paddingHorizontal: 9,
+    paddingVertical: 6,
+  },
+
+  selectionMark: {
+    width: 28,
+    height: 28,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  priceRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "baseline",
+    gap: 8,
+  },
+
+  capacityStrip: {
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+
+  featureList: {
+    gap: 8,
+  },
+
+  featureLine: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 9,
+  },
+
+  featureCheck: {
+    width: 20,
+    height: 20,
+    flexShrink: 0,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#67E8F9",
   },
 
-  teamGrid: {
-    gap: 10,
+  featureText: {
+    flex: 1,
+    lineHeight: 20,
   },
 
-  choiceCard: {
-    borderWidth: 1,
-    padding: 13,
+  cardFooter: {
+    borderTopWidth: 1,
+    borderTopColor: "rgba(148, 163, 184, 0.16)",
+    paddingTop: 12,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: 12,
   },
 
-  checkBox: {
-    width: 24,
-    height: 24,
-    borderWidth: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  paymentList: {
-    gap: 10,
-  },
-
-  paymentCard: {
-    borderWidth: 1,
-    padding: 13,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-
-  paymentPrice: {
-    minWidth: 112,
-    alignItems: "flex-end",
-    gap: 3,
-  },
-
-  selectedStrip: {
+  selectedSummary: {
     borderWidth: 1,
     padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
+    gap: 12,
+  },
+
+  selectedSummaryCopy: {
+    gap: 4,
+  },
+
+  selectedPrice: {
+    alignItems: "flex-start",
+    gap: 3,
   },
 
   errorPanel: {
@@ -1051,15 +1165,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
     flexDirection: "row",
+    alignItems: "flex-start",
     gap: 12,
   },
 
   noteMark: {
     width: 24,
     height: 24,
+    flexShrink: 0,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#67E8F9",
+  },
+
+  noteCopy: {
+    flex: 1,
+    gap: 4,
   },
 
   footerActions: {
