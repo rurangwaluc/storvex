@@ -2883,3 +2883,178 @@
   outline-offset: 2px;
   box-shadow: none !important;
 }
+
+
+/* Marketplace sale date picker polish */
+
+.svx-detail-listing-date-input {
+  width: 100%;
+  min-width: 0;
+  cursor: pointer;
+  color: var(--detail-text);
+  background: var(--detail-card);
+  border-color: var(--detail-border);
+  color-scheme: light dark;
+  font-variant-numeric: tabular-nums;
+}
+
+.svx-detail-listing-date-input:hover:not(:disabled) {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--detail-primary) 44%,
+      var(--detail-border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      var(--detail-primary) 4%,
+      var(--detail-card)
+    );
+}
+
+.svx-detail-listing-date-input:focus {
+  border-color: var(--detail-primary);
+  background: var(--detail-card);
+  outline: 3px solid
+    color-mix(
+      in srgb,
+      var(--detail-primary) 15%,
+      transparent
+    );
+  outline-offset: 1px;
+  box-shadow: none;
+}
+
+.svx-detail-listing-date-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.svx-detail-listing-date-input::-webkit-date-and-time-value {
+  min-height: 1.25em;
+  color: var(--detail-text);
+  text-align: left;
+}
+
+.svx-detail-listing-date-input::-webkit-datetime-edit {
+  min-width: 0;
+  padding: 0;
+  color: var(--detail-text);
+}
+
+.svx-detail-listing-date-input::-webkit-datetime-edit-fields-wrapper {
+  min-width: 0;
+  color: var(--detail-text);
+}
+
+.svx-detail-listing-date-input::-webkit-datetime-edit-text {
+  color: var(--detail-muted);
+  padding-inline: 2px;
+}
+
+.svx-detail-listing-date-input::-webkit-datetime-edit-month-field,
+.svx-detail-listing-date-input::-webkit-datetime-edit-day-field,
+.svx-detail-listing-date-input::-webkit-datetime-edit-year-field,
+.svx-detail-listing-date-input::-webkit-datetime-edit-hour-field,
+.svx-detail-listing-date-input::-webkit-datetime-edit-minute-field,
+.svx-detail-listing-date-input::-webkit-datetime-edit-ampm-field {
+  color: var(--detail-text);
+  border-radius: 4px;
+  padding-block: 2px;
+}
+
+.svx-detail-listing-date-input::-webkit-datetime-edit-month-field:focus,
+.svx-detail-listing-date-input::-webkit-datetime-edit-day-field:focus,
+.svx-detail-listing-date-input::-webkit-datetime-edit-year-field:focus,
+.svx-detail-listing-date-input::-webkit-datetime-edit-hour-field:focus,
+.svx-detail-listing-date-input::-webkit-datetime-edit-minute-field:focus,
+.svx-detail-listing-date-input::-webkit-datetime-edit-ampm-field:focus {
+  color: var(--detail-text);
+  background:
+    color-mix(
+      in srgb,
+      var(--detail-primary) 16%,
+      transparent
+    );
+}
+
+.svx-detail-listing-date-input::-webkit-calendar-picker-indicator {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 5px;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0.72;
+}
+
+.svx-detail-listing-date-input:hover
+  ::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+.svx-detail-listing-date-input:focus
+  ::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .svx-detail-listing-date-input {
+    color-scheme: dark;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .svx-detail-listing-date-input {
+    color-scheme: light;
+  }
+}
+
+/*
+ * Storvex theme overrides take priority over the operating
+ * system preference when the application theme is explicit.
+ */
+html[data-theme="dark"]
+  .svx-detail-listing-date-input,
+html.dark
+  .svx-detail-listing-date-input,
+body[data-theme="dark"]
+  .svx-detail-listing-date-input {
+  color-scheme: dark;
+}
+
+html[data-theme="light"]
+  .svx-detail-listing-date-input,
+html.light
+  .svx-detail-listing-date-input,
+body[data-theme="light"]
+  .svx-detail-listing-date-input {
+  color-scheme: light;
+}
+
+/*
+ * Mobile and installed-PWA users need a comfortable full
+ * input target. The native picker remains device-optimized.
+ */
+@media (max-width: 620px) {
+  .svx-detail-listing-date-input {
+    min-height: 48px;
+    padding-inline: 12px;
+    font-size: 12px;
+  }
+
+  .svx-detail-listing-date-input::-webkit-calendar-picker-indicator {
+    width: 22px;
+    height: 22px;
+    padding: 5px;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 620px) {
+  .svx-detail-listing-date-input {
+    min-height: 50px;
+  }
+}

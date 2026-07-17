@@ -880,6 +880,40 @@ export default function InventoryDetail() {
     }));
   }
 
+  function openNativeDateTimePicker(event) {
+    const input = event.currentTarget;
+
+    if (
+      typeof input.showPicker === "function" &&
+      !input.disabled
+    ) {
+      try {
+        input.showPicker();
+      } catch {
+        /*
+         * Some browsers restrict showPicker() depending on
+         * the interaction context. The native input remains
+         * fully usable when that happens.
+         */
+      }
+    }
+  }
+
+  function updateListingDateField(name, event) {
+    const input = event.currentTarget;
+
+    updateListingField(name, input.value);
+
+    /*
+     * Native date pickers close after selection when the
+     * input releases focus. Keep this inside the next frame
+     * so the selected value is committed first.
+     */
+    window.requestAnimationFrame(() => {
+      input.blur();
+    });
+  }
+
   function validateListing({ publishing = false } = {}) {
     const payload = listingPayloadFromForm(
       listingForm,
@@ -1429,8 +1463,15 @@ export default function InventoryDetail() {
                           <span>Sale starts</span>
                           <input
                             type="datetime-local"
+                            className="svx-detail-listing-date-input"
                             value={listingForm.saleStartsAt}
-                            onChange={(event) => updateListingField("saleStartsAt", event.target.value)}
+                            onClick={openNativeDateTimePicker}
+                            onChange={(event) =>
+                              updateListingDateField(
+                                "saleStartsAt",
+                                event,
+                              )
+                            }
                             disabled={Boolean(listingSaving)}
                           />
                         </label>
@@ -1439,8 +1480,15 @@ export default function InventoryDetail() {
                           <span>Sale ends</span>
                           <input
                             type="datetime-local"
+                            className="svx-detail-listing-date-input"
                             value={listingForm.saleEndsAt}
-                            onChange={(event) => updateListingField("saleEndsAt", event.target.value)}
+                            onClick={openNativeDateTimePicker}
+                            onChange={(event) =>
+                              updateListingDateField(
+                                "saleEndsAt",
+                                event,
+                              )
+                            }
                             disabled={Boolean(listingSaving)}
                           />
                         </label>
