@@ -113,8 +113,8 @@ function buildMarketplaceReadiness({
     readinessCheck(
       "customer_contact",
       "Customer contact",
-      profile?.customerPhone || profile?.whatsappPhone || tenant?.phone,
-      "Add a phone or WhatsApp number customers can use.",
+      tenant?.phone,
+      "Add the business phone in Business settings.",
     ),
     readinessCheck(
       "public_link",
@@ -247,8 +247,6 @@ async function getMarketplaceSellerProfile(tenantId) {
           tenant.name,
         ),
         displayName: tenant.name,
-        customerPhone: tenant.phone,
-        whatsappPhone: tenant.phone,
         paymentMethods: [...DEFAULT_PAYMENT_METHODS],
       },
     });

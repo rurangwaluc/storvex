@@ -109,8 +109,6 @@ function profileSnapshot(profile) {
     displayName: profile?.displayName || "",
     description: profile?.description || "",
     publicSlug: profile?.publicSlug || "",
-    customerPhone: profile?.customerPhone || "",
-    whatsappPhone: profile?.whatsappPhone || "",
     pickupEnabled: profile?.pickupEnabled !== false,
     deliveryEnabled: Boolean(profile?.deliveryEnabled),
     temporarilyClosed: Boolean(profile?.temporarilyClosed),
@@ -416,8 +414,6 @@ export default function SettingsMarketplace() {
       displayName: cleanString(form.displayName),
       description: cleanString(form.description),
       publicSlug: cleanString(form.publicSlug),
-      customerPhone: cleanString(form.customerPhone),
-      whatsappPhone: cleanString(form.whatsappPhone),
       pickupEnabled: Boolean(form.pickupEnabled),
       deliveryEnabled: Boolean(form.deliveryEnabled),
       temporarilyClosed: Boolean(form.temporarilyClosed),
@@ -704,28 +700,18 @@ export default function SettingsMarketplace() {
             />
           </label>
 
-          <label className="svx-marketplace-field">
-            <span>Customer phone</span>
+          <label className="svx-marketplace-field is-wide">
+            <span>Customer contact</span>
             <input
               type="tel"
-              inputMode="tel"
-              value={form.customerPhone}
-              onChange={(event) =>
-                updateField("customerPhone", event.target.value)
-              }
+              value={store?.phone || ""}
+              placeholder="Add the business phone in Business settings"
+              readOnly
             />
-          </label>
-
-          <label className="svx-marketplace-field">
-            <span>WhatsApp phone</span>
-            <input
-              type="tel"
-              inputMode="tel"
-              value={form.whatsappPhone}
-              onChange={(event) =>
-                updateField("whatsappPhone", event.target.value)
-              }
-            />
+            <small>
+              Customers contact this business phone from Marketplace.
+              Change it from Business settings.
+            </small>
           </label>
         </div>
       </SectionCard>
