@@ -526,7 +526,7 @@ export default function MarketplaceCustomerPanel({
     closeTimerRef.current = window.setTimeout(() => {
       setRendered(false);
       closeTimerRef.current = null;
-    }, 520);
+    }, 760);
 
     return () => {
       if (closeTimerRef.current) {
