@@ -27,12 +27,19 @@ import {
   X,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
+import toast from "react-hot-toast";
 
 import {
   listMarketplaceProducts,
   listMarketplaceStores,
 } from "../../services/marketplaceApi";
 import { useTheme } from "../../hooks/useTheme";
+import MarketplaceCustomerPanel from "./MarketplaceCustomerPanel";
+import {
+  marketplaceProductKey,
+  syncMarketplaceProductSnapshots,
+  useMarketplaceCustomerStore,
+} from "./marketplaceCustomerStore";
 
 import "../public/LandingPage.css";
 import "./MarketplacePublic.css";
@@ -103,187 +110,6 @@ function formatMoney(value, currency = "RWF") {
   }
 }
 
-const marketplaceStorageKeys = {
-  cart: "storvex-marketplace-cart",
-  wishlist: "storvex-marketplace-wishlist",
-  compare: "storvex-marketplace-compare",
-};
-
-const marketplaceCollectionEvent =
-  "storvex-marketplace-collection-change";
-
-function marketplaceProductKey(product) {
-  return [
-    cleanString(product?.seller?.slug),
-    cleanString(product?.slug),
-  ]
-    .filter(Boolean)
-    .join(":");
-}
-
-function readMarketplaceCollection(storageKey) {
-  if (typeof window === "undefined") return [];
-
-  try {
-    const parsed = JSON.parse(
-      window.localStorage.getItem(storageKey) || "[]",
-    );
-
-    return Array.isArray(parsed)
-      ? parsed.filter(
-          (value) =>
-            typeof value === "string" &&
-            value.trim(),
-        )
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeMarketplaceCollection(storageKey, values) {
-  if (typeof window === "undefined") return;
-
-  const unique = Array.from(
-    new Set(
-      values.filter(
-        (value) =>
-          typeof value === "string" &&
-          value.trim(),
-      ),
-    ),
-  );
-
-  window.localStorage.setItem(
-    storageKey,
-    JSON.stringify(unique),
-  );
-
-  window.dispatchEvent(
-    new CustomEvent(marketplaceCollectionEvent, {
-      detail: {
-        storageKey,
-        values: unique,
-      },
-    }),
-  );
-}
-
-function useMarketplaceCollection(storageKey) {
-  const [values, setValues] = useState(() =>
-    readMarketplaceCollection(storageKey),
-  );
-
-  useEffect(() => {
-    function syncCollection(event) {
-      if (
-        event?.type === marketplaceCollectionEvent &&
-        event?.detail?.storageKey === storageKey
-      ) {
-        setValues(
-          Array.isArray(event.detail.values)
-            ? event.detail.values
-            : [],
-        );
-        return;
-      }
-
-      if (
-        event?.type === "storage" &&
-        event?.key !== storageKey
-      ) {
-        return;
-      }
-
-      setValues(readMarketplaceCollection(storageKey));
-    }
-
-    window.addEventListener(
-      marketplaceCollectionEvent,
-      syncCollection,
-    );
-    window.addEventListener("storage", syncCollection);
-
-    return () => {
-      window.removeEventListener(
-        marketplaceCollectionEvent,
-        syncCollection,
-      );
-      window.removeEventListener(
-        "storage",
-        syncCollection,
-      );
-    };
-  }, [storageKey]);
-
-  function has(value) {
-    return values.includes(value);
-  }
-
-  function add(value, maximum = Number.POSITIVE_INFINITY) {
-    if (!value || values.includes(value)) {
-      return {
-        changed: false,
-        full: false,
-      };
-    }
-
-    if (values.length >= maximum) {
-      return {
-        changed: false,
-        full: true,
-      };
-    }
-
-    writeMarketplaceCollection(
-      storageKey,
-      [...values, value],
-    );
-
-    return {
-      changed: true,
-      full: false,
-    };
-  }
-
-  function remove(value) {
-    if (!values.includes(value)) return false;
-
-    writeMarketplaceCollection(
-      storageKey,
-      values.filter((item) => item !== value),
-    );
-
-    return true;
-  }
-
-  function toggle(value, maximum = Number.POSITIVE_INFINITY) {
-    if (has(value)) {
-      remove(value);
-
-      return {
-        active: false,
-        full: false,
-      };
-    }
-
-    const result = add(value, maximum);
-
-    return {
-      active: result.changed,
-      full: result.full,
-    };
-  }
-
-  return {
-    values,
-    has,
-    add,
-    remove,
-    toggle,
-  };
-}
-
 function marketplaceErrorMessage(error) {
   return (
     error?.message ||
@@ -294,8 +120,19 @@ function marketplaceErrorMessage(error) {
 
 function MarketplaceHeader() {
   const { isDark, toggleTheme } = useTheme();
+  const customerStore = useMarketplaceCustomerStore();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [customerPanelOpen, setCustomerPanelOpen] =
+    useState(false);
+  const [customerPanelMode, setCustomerPanelMode] =
+    useState("cart");
   const headerRef = useRef(null);
+
+  function openCustomerPanel(mode) {
+    setMenuOpen(false);
+    setCustomerPanelMode(mode);
+    setCustomerPanelOpen(true);
+  }
 
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -307,7 +144,9 @@ function MarketplaceHeader() {
     }
 
     function handleEscape(event) {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
     }
 
     document.addEventListener("mousedown", handleOutside);
@@ -323,123 +162,263 @@ function MarketplaceHeader() {
     };
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!customerPanelOpen) return undefined;
+
+    function handleEscape(event) {
+      if (event.key === "Escape") {
+        setCustomerPanelOpen(false);
+      }
+    }
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [customerPanelOpen]);
+
   return (
-    <header
-      ref={headerRef}
-      className={cx("svx-header", menuOpen && "is-menu-open")}
-    >
-      <div className="svx-header-inner">
-        <Link
-          to="/"
-          aria-label="Storvex home"
-          className="svx-logo-link"
-          onClick={() => setMenuOpen(false)}
-        >
-          <img
-            src={isDark ? whiteLogoSrc : logoSrc}
-            alt="Storvex"
-            className="svx-header-logo"
-            draggable="false"
-          />
-        </Link>
-
-        <nav className="svx-nav" aria-label="Marketplace navigation">
-          <Link to="/">For businesses</Link>
-          <Link to="/marketplace" className="svx-marketplace-nav-active">
-            Marketplace
-          </Link>
-
-        </nav>
-
-        <div className="svx-header-actions">
-          <button
-            type="button"
-            className="svx-theme-toggle"
-            onClick={toggleTheme}
-            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-            aria-pressed={isDark}
-          >
-            <span className={cx("svx-theme-option", !isDark && "active")}>
-              <Sun size={15} strokeWidth={2.4} />
-            </span>
-
-            <span className={cx("svx-theme-option", isDark && "active")}>
-              <Moon size={15} strokeWidth={2.4} />
-            </span>
-          </button>
-
-          <Link to="/login" className="svx-login-link">
-            Owner access
-          </Link>
-
-          <Link to="/signup" className="svx-header-cta">
-            Sell on Storvex
-          </Link>
-
-          <button
-            type="button"
-            className="svx-mobile-menu-button"
-            onClick={() => setMenuOpen((current) => !current)}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={menuOpen}
-          >
-            {menuOpen ? (
-              <X size={21} strokeWidth={2.4} />
-            ) : (
-              <Menu size={21} strokeWidth={2.4} />
-            )}
-          </button>
-        </div>
-      </div>
-
-      <div
-        className="svx-mobile-menu"
-        aria-hidden={!menuOpen}
+    <>
+      <header
+        ref={headerRef}
+        className={cx(
+          "svx-header",
+          menuOpen && "is-menu-open",
+        )}
       >
-        <nav className="svx-mobile-menu-panel">
+        <div className="svx-header-inner">
           <Link
             to="/"
-            className="svx-mobile-menu-link"
+            aria-label="Storvex home"
+            className="svx-logo-link"
             onClick={() => setMenuOpen(false)}
           >
-            <span>For businesses</span>
+            <img
+              src={isDark ? whiteLogoSrc : logoSrc}
+              alt="Storvex"
+              className="svx-header-logo"
+              draggable="false"
+            />
           </Link>
 
-          <Link
-            to="/marketplace"
-            className="svx-mobile-menu-link"
-            onClick={() => setMenuOpen(false)}
+          <nav
+            className="svx-nav"
+            aria-label="Marketplace navigation"
           >
-            <span>Marketplace</span>
-          </Link>
+            <Link to="/">For businesses</Link>
+            <Link
+              to="/marketplace"
+              className="svx-marketplace-nav-active"
+            >
+              Marketplace
+            </Link>
+          </nav>
 
-          <div className="svx-mobile-menu-actions">
+          <div className="svx-header-actions">
+            <div className="svx-marketplace-customer-actions">
+              <button
+                type="button"
+                onClick={() =>
+                  openCustomerPanel("wishlist")
+                }
+                aria-label={`Open wishlist with ${customerStore.wishlist.length} products`}
+              >
+                <Heart size={17} />
+                {customerStore.wishlist.length ? (
+                  <b>
+                    {customerStore.wishlist.length}
+                  </b>
+                ) : null}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  openCustomerPanel("compare")
+                }
+                aria-label={`Open comparison with ${customerStore.compare.length} products`}
+              >
+                <GitCompareArrows size={17} />
+                {customerStore.compare.length ? (
+                  <b>
+                    {customerStore.compare.length}
+                  </b>
+                ) : null}
+              </button>
+
+              <button
+                type="button"
+                className="is-cart"
+                onClick={() =>
+                  openCustomerPanel("cart")
+                }
+                aria-label={`Open cart with ${customerStore.cartCount} items`}
+              >
+                <ShoppingCart size={17} />
+                <span>Cart</span>
+                {customerStore.cartCount ? (
+                  <b>{customerStore.cartCount}</b>
+                ) : null}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="svx-theme-toggle"
+              onClick={toggleTheme}
+              aria-label={
+                isDark
+                  ? "Switch to light mode"
+                  : "Switch to dark mode"
+              }
+              aria-pressed={isDark}
+            >
+              <span
+                className={cx(
+                  "svx-theme-option",
+                  !isDark && "active",
+                )}
+              >
+                <Sun size={15} strokeWidth={2.4} />
+              </span>
+
+              <span
+                className={cx(
+                  "svx-theme-option",
+                  isDark && "active",
+                )}
+              >
+                <Moon size={15} strokeWidth={2.4} />
+              </span>
+            </button>
+
             <Link
               to="/login"
-              className="svx-mobile-menu-secondary"
-              onClick={() => setMenuOpen(false)}
+              className="svx-login-link"
             >
               Owner access
             </Link>
 
+            <Link
+              to="/signup"
+              className="svx-header-cta"
+            >
+              Sell on Storvex
+            </Link>
 
+            <button
+              type="button"
+              className="svx-mobile-menu-button"
+              onClick={() =>
+                setMenuOpen((current) => !current)
+              }
+              aria-label={
+                menuOpen ? "Close menu" : "Open menu"
+              }
+              aria-expanded={menuOpen}
+            >
+              {menuOpen ? (
+                <X size={21} strokeWidth={2.4} />
+              ) : (
+                <Menu size={21} strokeWidth={2.4} />
+              )}
+            </button>
           </div>
-        </nav>
-      </div>
-    </header>
+        </div>
+
+        <div
+          className="svx-mobile-menu"
+          aria-hidden={!menuOpen}
+        >
+          <nav className="svx-mobile-menu-panel">
+            <Link
+              to="/"
+              className="svx-mobile-menu-link"
+              onClick={() => setMenuOpen(false)}
+            >
+              <span>For businesses</span>
+            </Link>
+
+            <Link
+              to="/marketplace"
+              className="svx-mobile-menu-link"
+              onClick={() => setMenuOpen(false)}
+            >
+              <span>Marketplace</span>
+            </Link>
+
+            <button
+              type="button"
+              className="svx-mobile-menu-link"
+              onClick={() =>
+                openCustomerPanel("cart")
+              }
+            >
+              <span>Cart</span>
+              <b>{customerStore.cartCount}</b>
+            </button>
+
+            <button
+              type="button"
+              className="svx-mobile-menu-link"
+              onClick={() =>
+                openCustomerPanel("wishlist")
+              }
+            >
+              <span>Wishlist</span>
+              <b>{customerStore.wishlist.length}</b>
+            </button>
+
+            <button
+              type="button"
+              className="svx-mobile-menu-link"
+              onClick={() =>
+                openCustomerPanel("compare")
+              }
+            >
+              <span>Compare</span>
+              <b>{customerStore.compare.length}</b>
+            </button>
+
+            <div className="svx-mobile-menu-actions">
+              <Link
+                to="/login"
+                className="svx-mobile-menu-secondary"
+                onClick={() => setMenuOpen(false)}
+              >
+                Owner access
+              </Link>
+            </div>
+          </nav>
+        </div>
+      </header>
+
+      <MarketplaceCustomerPanel
+        open={customerPanelOpen}
+        mode={customerPanelMode}
+        store={customerStore}
+        onClose={() =>
+          setCustomerPanelOpen(false)
+        }
+        onModeChange={setCustomerPanelMode}
+        notify={(message) =>
+          toast.success(message)
+        }
+      />
+    </>
   );
 }
 
 function ProductCard({ product }) {
-  const cart = useMarketplaceCollection(
-    marketplaceStorageKeys.cart,
-  );
-  const wishlist = useMarketplaceCollection(
-    marketplaceStorageKeys.wishlist,
-  );
-  const compare = useMarketplaceCollection(
-    marketplaceStorageKeys.compare,
-  );
+  const customerStore =
+    useMarketplaceCustomerStore();
+
+  product.attributes =
+    product.attributes &&
+    typeof product.attributes === "object"
+      ? product.attributes
+      : {};
 
   const key = marketplaceProductKey(product);
 
@@ -460,9 +439,11 @@ function ProductCard({ product }) {
     product.seller.slug,
   )}/${encodeURIComponent(product.slug)}`;
 
-  const inCart = cart.has(key);
-  const inWishlist = wishlist.has(key);
-  const inCompare = compare.has(key);
+  const inCart = customerStore.isInCart(key);
+  const inWishlist =
+    customerStore.isInWishlist(key);
+  const inCompare =
+    customerStore.isInCompare(key);
 
   const primaryImage = images[0] || product.image;
   const secondaryImage = images[1] || null;
@@ -476,28 +457,74 @@ function ProductCard({ product }) {
   }, [activeImageIndex, images.length]);
 
   function toggleCart() {
-    cart.toggle(key);
-  }
-
-  function toggleWishlist() {
-    wishlist.toggle(key);
-  }
-
-  function toggleCompare() {
-    const result = compare.toggle(key, 4);
-
-    if (result.full) {
-      setCompareMessage(
-        "You can compare up to 4 products.",
+    if (inCart) {
+      customerStore.removeFromCart(key);
+      toast.success(
+        `${product.title} removed from cart`,
       );
-
-      window.setTimeout(() => {
-        setCompareMessage("");
-      }, 2600);
       return;
     }
 
-    setCompareMessage("");
+    const result =
+      customerStore.addToCart(product);
+
+    if (!result.ok) {
+      toast.error(
+        result.reason === "STORE_CLOSED"
+          ? "This store is temporarily closed."
+          : "This product is not available.",
+      );
+      return;
+    }
+
+    toast.success(
+      `${product.title} added to cart`,
+    );
+  }
+
+  function toggleWishlist() {
+    const active =
+      customerStore.toggleWishlist(product);
+
+    toast.success(
+      active
+        ? `${product.title} saved to wishlist`
+        : `${product.title} removed from wishlist`,
+    );
+  }
+
+  function toggleCompare() {
+    const result =
+      customerStore.toggleCompare(product);
+
+    if (result.reason === "LIMIT") {
+      setCompareMessage(
+        "You can compare up to 4 products.",
+      );
+      toast.error(
+        "You can compare up to 4 products.",
+      );
+    } else if (result.reason === "CATEGORY") {
+      setCompareMessage(
+        "Compare products from the same category.",
+      );
+      toast.error(
+        "Choose products from the same category.",
+      );
+    } else {
+      setCompareMessage("");
+      toast.success(
+        result.active
+          ? `${product.title} added to comparison`
+          : `${product.title} removed from comparison`,
+      );
+    }
+
+    if (result.reason) {
+      window.setTimeout(() => {
+        setCompareMessage("");
+      }, 2600);
+    }
   }
 
   return (
@@ -995,6 +1022,10 @@ export default function MarketplaceHome() {
   useEffect(() => {
     loadMarketplace();
   }, [loadMarketplace]);
+
+  useEffect(() => {
+    syncMarketplaceProductSnapshots(products);
+  }, [products]);
 
   useEffect(() => {
     const next = {};
