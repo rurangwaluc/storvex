@@ -7433,3 +7433,117 @@ body.svx-marketplace-customer-open:has(.storvex-marketplace) {
     justify-content: flex-start;
   }
 }
+
+
+/* Marketplace final page ending and sale spacing */
+
+/*
+ * The Marketplace footer must own the final browser pixel.
+ * The document background remains dark behind the page so no
+ * white strip can appear below the footer.
+ */
+html:has(.storvex-marketplace),
+body:has(.storvex-marketplace) {
+  min-height: 100%;
+  margin: 0;
+  background: #050d18 !important;
+}
+
+body:has(.storvex-marketplace) #root {
+  min-height: 100%;
+  margin: 0;
+  background: #050d18 !important;
+}
+
+.storvex-marketplace {
+  min-height: 100%;
+  margin: 0;
+}
+
+.storvex-marketplace
+  .svx-footer-section {
+  width: 100%;
+  margin: 0 !important;
+}
+
+.storvex-marketplace
+  .svx-footer-shell {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.storvex-marketplace
+  .svx-footer-main {
+  margin-bottom: 0 !important;
+  padding-bottom:
+    max(28px, env(safe-area-inset-bottom)) !important;
+  background: #050d18 !important;
+}
+
+.storvex-marketplace
+  .svx-footer-bottom {
+  margin-bottom: 0 !important;
+}
+
+.storvex-marketplace
+  .svx-footer-main > :last-child,
+.storvex-marketplace
+  .svx-footer-bottom > :last-child,
+.storvex-marketplace
+  .svx-footer-section > :last-child {
+  margin-bottom: 0 !important;
+}
+
+/*
+ * Give the sale-price surface enough breathing room.
+ */
+.svx-commerce-product-price.is-sale {
+  margin-top: 10px;
+  padding: 11px 10px !important;
+}
+
+.svx-commerce-product-price.is-sale
+  .svx-commerce-product-price-copy {
+  width: 100%;
+  min-width: 0;
+}
+
+.svx-commerce-product-price.is-sale
+  .svx-commerce-product-sale-label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.svx-commerce-product-price.is-sale
+  .svx-commerce-product-saving {
+  display: block;
+  margin-top: 4px;
+}
+
+/*
+ * Storvex buttons remain permanently shadow-free.
+ */
+.storvex-marketplace button,
+.storvex-marketplace a[class*="button"],
+.storvex-marketplace a[class*="primary"],
+.storvex-marketplace a[class*="secondary"] {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .storvex-marketplace button:hover,
+  .storvex-marketplace a[class*="button"]:hover,
+  .storvex-marketplace a[class*="primary"]:hover,
+  .storvex-marketplace a[class*="secondary"]:hover {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+}
+
+@media (max-width: 820px) {
+  .svx-commerce-product-price.is-sale {
+    margin-top: 8px;
+    padding: 9px 8px !important;
+  }
+}
