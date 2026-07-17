@@ -226,3 +226,17 @@ test(
     );
   },
 );
+
+test(
+  "exports generic email delivery for Marketplace requests",
+  () => {
+    const notifications = require(
+      "../src/modules/notifications",
+    );
+
+    assert.equal(
+      typeof notifications.sendEmailMessage,
+      "function",
+    );
+  },
+);

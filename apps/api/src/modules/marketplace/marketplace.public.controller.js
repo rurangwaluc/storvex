@@ -15,6 +15,7 @@ function sendError(res, error, fallback) {
   return res.status(error.status || 500).json({
     message: error.message || fallback,
     code: error.code || null,
+    details: error.details || null,
   });
 }
 

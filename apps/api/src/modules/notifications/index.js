@@ -7,5 +7,6 @@ const { sendSmsOtp } = require("./sms.provider");
 
 module.exports = {
   sendEmailOtp,
+  sendEmailMessage,
   sendSmsOtp,
 };
