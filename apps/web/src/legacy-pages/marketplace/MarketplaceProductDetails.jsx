@@ -466,8 +466,7 @@ export default function MarketplaceProductDetails() {
 
   const location = storeLocation(store);
   const whatsapp = whatsappUrl(
-    store?.whatsappPhone ||
-      store?.customerPhone,
+    store?.customerPhone,
   );
 
   const storeSearchUrl = `/marketplace?search=${encodeURIComponent(
