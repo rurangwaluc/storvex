@@ -232,6 +232,48 @@ function listingFormFromProduct(
   };
 }
 
+function mergeListingPayloadIntoProduct(
+  product,
+  payload,
+) {
+  if (!product || typeof product !== "object") {
+    return product;
+  }
+
+  return {
+    ...product,
+
+    listingTitle: payload.listingTitle,
+    marketplaceTitle: payload.listingTitle,
+
+    listingDescription:
+      payload.listingDescription,
+    marketplaceDescription:
+      payload.listingDescription,
+
+    listingPrice: payload.listingPrice,
+    marketplacePrice: payload.listingPrice,
+
+    listingCategory: payload.listingCategory,
+    marketplaceCategory: payload.listingCategory,
+
+    listingSalePrice:
+      payload.listingSalePrice,
+    marketplaceSalePrice:
+      payload.listingSalePrice,
+
+    listingSaleStartsAt:
+      payload.listingSaleStartsAt,
+    marketplaceSaleStartsAt:
+      payload.listingSaleStartsAt,
+
+    listingSaleEndsAt:
+      payload.listingSaleEndsAt,
+    marketplaceSaleEndsAt:
+      payload.listingSaleEndsAt,
+  };
+}
+
 function listingPayloadFromForm(
   form,
   { includeSale = false } = {},
@@ -920,11 +962,34 @@ export default function InventoryDetail() {
     setListingSaving("draft");
 
     try {
-      const response = await updateProductListingDraft(product.id, payload);
-      const nextProduct = response?.product || response?.data?.product || response?.data || response;
+      const submittedForm = {
+        ...listingForm,
+      };
 
-      if (nextProduct?.id) setProduct(nextProduct);
-      else await loadProduct({ quiet: true });
+      const response =
+        await updateProductListingDraft(
+          product.id,
+          payload,
+        );
+
+      const nextProduct =
+        response?.product ||
+        response?.data?.product ||
+        response?.data ||
+        response;
+
+      if (nextProduct?.id) {
+        setProduct(
+          mergeListingPayloadIntoProduct(
+            nextProduct,
+            payload,
+          ),
+        );
+      } else {
+        await loadProduct({ quiet: true });
+      }
+
+      setListingForm(submittedForm);
 
       toast.success("Listing draft saved");
     } catch (error) {
@@ -941,12 +1006,36 @@ export default function InventoryDetail() {
     setListingSaving("publish");
 
     try {
-      await updateProductListingDraft(product.id, payload);
-      const response = await publishProductListing(product.id);
-      const nextProduct = response?.product || response?.data?.product || response?.data || response;
+      const submittedForm = {
+        ...listingForm,
+      };
 
-      if (nextProduct?.id) setProduct(nextProduct);
-      else await loadProduct({ quiet: true });
+      await updateProductListingDraft(
+        product.id,
+        payload,
+      );
+
+      const response =
+        await publishProductListing(product.id);
+
+      const nextProduct =
+        response?.product ||
+        response?.data?.product ||
+        response?.data ||
+        response;
+
+      if (nextProduct?.id) {
+        setProduct(
+          mergeListingPayloadIntoProduct(
+            nextProduct,
+            payload,
+          ),
+        );
+      } else {
+        await loadProduct({ quiet: true });
+      }
+
+      setListingForm(submittedForm);
 
       toast.success("Product listing published");
     } catch (error) {
