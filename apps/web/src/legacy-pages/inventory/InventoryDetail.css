@@ -2048,3 +2048,307 @@
     min-height: 104px;
   }
 }
+
+
+/* Product setup final composition polish */
+
+/*
+ * Keep Product photos and Product listing as two clearly
+ * separated work areas, not one compressed stream.
+ */
+.svx-detail-setup-simple-grid {
+  grid-template-columns: 1fr !important;
+  gap: 18px !important;
+}
+
+.svx-detail-setup-panel {
+  display: grid;
+  min-width: 0;
+  height: auto;
+  gap: 18px;
+  border-radius: 20px;
+  padding: 20px;
+}
+
+/* Product photos summary */
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:first-child {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:first-child
+  .svx-detail-setup-panel-head {
+  grid-column: 1 / -1;
+  align-items: center;
+  border-bottom: 1px solid var(--detail-border);
+  padding-bottom: 16px;
+}
+
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:first-child
+  .svx-detail-setup-fact {
+  grid-column: span 7;
+  min-height: 96px;
+  align-content: center;
+  border: 1px solid var(--detail-border);
+  border-radius: 16px;
+  background: var(--detail-card);
+  padding: 18px;
+}
+
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:first-child
+  .svx-detail-setup-fact strong {
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:first-child
+  .svx-detail-setup-fact span {
+  max-width: 460px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:first-child
+  .svx-detail-setup-actions {
+  grid-column: span 5;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:first-child
+  .svx-detail-setup-actions > * {
+  min-height: 46px;
+  border-radius: 12px;
+}
+
+/* Listing workspace */
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:nth-child(2) {
+  gap: 20px;
+}
+
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:nth-child(2)
+  .svx-detail-setup-panel-head {
+  align-items: center;
+  border-bottom: 1px solid var(--detail-border);
+  padding-bottom: 16px;
+}
+
+.svx-detail-setup-panel-head h3 {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.svx-detail-setup-panel-head p {
+  max-width: 580px;
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.svx-detail-listing-compact-form {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.svx-detail-listing-compact-form
+  > .svx-detail-listing-field {
+  grid-column: 1 / -1;
+}
+
+.svx-detail-listing-field-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.svx-detail-listing-field {
+  min-width: 0;
+  gap: 7px;
+}
+
+.svx-detail-listing-field > span {
+  color: var(--detail-muted);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.01em;
+}
+
+.svx-detail-setup-simple-grid
+  .svx-detail-listing-field input {
+  height: 48px;
+  border-radius: 12px;
+  padding-inline: 14px;
+  font-size: 13px;
+}
+
+.svx-detail-setup-simple-grid
+  .svx-detail-listing-field textarea {
+  min-height: 112px;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* Sale workspace */
+.svx-detail-listing-sale-box {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+  border: 1px solid var(--detail-border);
+  border-radius: 17px;
+  background:
+    color-mix(
+      in srgb,
+      var(--detail-card) 72%,
+      var(--detail-soft)
+    );
+  padding: 18px;
+}
+
+.svx-detail-listing-sale-head {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid var(--detail-border);
+  padding-bottom: 14px;
+}
+
+.svx-detail-listing-sale-head strong {
+  display: block;
+  color: var(--detail-text);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.svx-detail-listing-sale-head span {
+  display: block;
+  max-width: 650px;
+  margin-top: 4px;
+  color: var(--detail-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.svx-detail-listing-sale-box
+  > .svx-detail-listing-field {
+  grid-column: span 4;
+}
+
+.svx-detail-listing-sale-box
+  .svx-detail-listing-field-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.svx-detail-listing-sale-box
+  input[type="datetime-local"] {
+  min-width: 0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.svx-detail-listing-clear-sale {
+  grid-column: 1 / -1 !important;
+  width: 100%;
+  min-height: 42px;
+  border-radius: 11px;
+  margin: 0;
+}
+
+/* Listing actions */
+.svx-detail-setup-actions.is-three {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 0;
+}
+
+.svx-detail-setup-actions.is-three
+  > *:last-child:nth-child(3) {
+  grid-column: auto;
+}
+
+.svx-detail-setup-actions.is-three > * {
+  min-height: 48px;
+  border-radius: 12px;
+}
+
+@media (max-width: 900px) {
+  .svx-detail-setup-simple-grid
+    > .svx-detail-setup-panel:first-child
+    .svx-detail-setup-fact,
+  .svx-detail-setup-simple-grid
+    > .svx-detail-setup-panel:first-child
+    .svx-detail-setup-actions {
+    grid-column: 1 / -1;
+  }
+
+  .svx-detail-setup-simple-grid
+    > .svx-detail-setup-panel:first-child
+    .svx-detail-setup-actions {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-detail-listing-sale-box
+    > .svx-detail-listing-field {
+    grid-column: span 6;
+  }
+}
+
+@media (max-width: 620px) {
+  .svx-detail-setup-panel {
+    gap: 15px;
+    border-radius: 17px;
+    padding: 15px;
+  }
+
+  .svx-detail-setup-simple-grid
+    > .svx-detail-setup-panel:first-child
+    .svx-detail-setup-actions,
+  .svx-detail-listing-field-grid,
+  .svx-detail-listing-sale-box
+    .svx-detail-listing-field-grid,
+  .svx-detail-setup-actions.is-three {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-detail-listing-sale-box {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .svx-detail-listing-sale-box
+    > .svx-detail-listing-field,
+  .svx-detail-listing-sale-head,
+  .svx-detail-listing-clear-sale {
+    grid-column: 1 !important;
+  }
+
+  .svx-detail-listing-sale-head {
+    display: block;
+  }
+}
