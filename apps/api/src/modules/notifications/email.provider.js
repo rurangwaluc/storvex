@@ -218,4 +218,155 @@ async function sendEmailOtp({ to, code, ttlMinutes }) {
   }
 }
 
-module.exports = { sendEmailOtp };
+
+async function sendEmailMessage({
+  to,
+  subject,
+  text,
+  html = null,
+  entityRef = null,
+}) {
+  const target = cleanString(to);
+  const emailSubject = cleanString(subject);
+
+  if (!target) {
+    return {
+      sent: false,
+      reason: "EMAIL_TARGET_MISSING",
+      provider: "RESEND",
+      messageId: null,
+    };
+  }
+
+  if (!emailSubject || !cleanString(text)) {
+    return {
+      sent: false,
+      reason: "EMAIL_CONTENT_MISSING",
+      provider: "RESEND",
+      messageId: null,
+    };
+  }
+
+  const devEcho =
+    process.env.NODE_ENV !== "production" &&
+    (
+      String(
+        process.env.DEV_EMAIL_ECHO ||
+        process.env.DEV_OTP_ECHO ||
+        "false",
+      ).toLowerCase() === "true"
+    );
+
+  if (devEcho) {
+    console.log("DEV EMAIL:", {
+      to: maskEmail(target),
+      subject: emailSubject,
+    });
+
+    return {
+      sent: true,
+      provider: "DEV_ECHO",
+      messageId: null,
+    };
+  }
+
+  const { apiKey, from } = readResendConfig();
+
+  if (!apiKey) {
+    return {
+      sent: false,
+      reason: "RESEND_API_KEY_MISSING",
+      provider: "RESEND",
+      messageId: null,
+    };
+  }
+
+  if (!from) {
+    return {
+      sent: false,
+      reason: "RESEND_FROM_MISSING",
+      provider: "RESEND",
+      messageId: null,
+    };
+  }
+
+  if (!ResendCtor) {
+    return {
+      sent: false,
+      reason: "RESEND_SDK_NOT_INSTALLED",
+      provider: "RESEND",
+      messageId: null,
+    };
+  }
+
+  try {
+    const resend = new ResendCtor(apiKey);
+
+    const response =
+      await resend.emails.send({
+        from,
+        to: target,
+        subject: emailSubject,
+        text: String(text),
+        ...(html
+          ? { html: String(html) }
+          : {}),
+        headers: {
+          "X-Entity-Ref-ID":
+            cleanString(entityRef) ||
+            `storvex-email-${Date.now()}`,
+        },
+      });
+
+    if (response?.error) {
+      return {
+        sent: false,
+        reason:
+          response.error?.message ||
+          "RESEND_SEND_FAILED",
+        provider: "RESEND",
+        messageId: null,
+      };
+    }
+
+    const messageId =
+      response?.data?.id ||
+      response?.id ||
+      null;
+
+    if (!messageId) {
+      return {
+        sent: false,
+        reason:
+          "RESEND_NO_MESSAGE_ID",
+        provider: "RESEND",
+        messageId: null,
+      };
+    }
+
+    return {
+      sent: true,
+      provider: "RESEND",
+      messageId,
+    };
+  } catch (error) {
+    console.error(
+      "Resend email failed:",
+      error,
+    );
+
+    return {
+      sent: false,
+      reason:
+        error?.message ||
+        "RESEND_SEND_FAILED",
+      provider: "RESEND",
+      messageId: null,
+    };
+  }
+}
+
+module.exports = {
+  sendEmailOtp,
+  sendEmailMessage,
+};

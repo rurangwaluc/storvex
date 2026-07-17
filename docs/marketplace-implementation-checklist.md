@@ -32,7 +32,7 @@
 ## Orders and fulfilment
 
 - [x] Add Marketplace order request models.
-- [ ] Add customer order request API.
+- [x] Add customer order request API.
 - [ ] Add seller confirmation and rejection.
 - [ ] Add stock reservation and release.
 - [ ] Add pickup and delivery fulfilment.

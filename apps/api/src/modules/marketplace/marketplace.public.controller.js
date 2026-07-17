@@ -1,4 +1,8 @@
 const {
+  submitMarketplaceRequest,
+} = require("./marketplace.request.service");
+
+const {
   listPublicStores,
   getPublicStore,
   getPublicProduct,
@@ -88,7 +92,28 @@ async function listProducts(req, res) {
   }
 }
 
+
+async function createRequest(req, res) {
+  try {
+    const result =
+      await submitMarketplaceRequest(
+        req.body || {},
+      );
+
+    return res
+      .status(result.created ? 201 : 200)
+      .json(result);
+  } catch (error) {
+    return sendError(
+      res,
+      error,
+      "Failed to submit Marketplace request",
+    );
+  }
+}
+
 module.exports = {
+  createRequest,
   listStores,
   getStore,
   getProduct,

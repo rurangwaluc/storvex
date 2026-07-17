@@ -990,6 +990,7 @@ async function listPublicProducts(query = {}) {
 module.exports = {
   calculateAvailableQuantity,
   chooseApprovedImage,
+  activeMarketplacePricing,
   serializePublicProduct,
   serializePublicSeller,
   listPublicStores,
