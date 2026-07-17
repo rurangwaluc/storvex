@@ -7038,3 +7038,56 @@ body.svx-marketplace-customer-open:has(.storvex-marketplace) {
     filter: none !important;
   }
 }
+
+
+/* Marketplace CTA permanent dark surface */
+
+/*
+ * The CTA remains dark in both light and dark modes.
+ * It uses the same neutral black surface language as the
+ * Marketplace product cards, not the theme-dependent card token.
+ */
+.svx-footer-cta {
+  background: #1f1f1f !important;
+  color: #ffffff;
+}
+
+.svx-footer-cta h2 {
+  color: #ffffff !important;
+}
+
+.svx-footer-cta-copy > p {
+  color: rgba(255, 255, 255, 0.66) !important;
+}
+
+.svx-footer-cta-points span {
+  color: rgba(255, 255, 255, 0.66) !important;
+}
+
+.svx-footer-cta-points svg {
+  color: #25a3ff;
+}
+
+.svx-footer-secondary {
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: none !important;
+}
+
+.svx-footer-primary {
+  box-shadow: none !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .svx-footer-primary:hover,
+  .svx-footer-secondary:hover {
+    box-shadow: none !important;
+  }
+
+  .svx-footer-secondary:hover {
+    border-color: rgba(255, 255, 255, 0.34) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: #ffffff !important;
+  }
+}
