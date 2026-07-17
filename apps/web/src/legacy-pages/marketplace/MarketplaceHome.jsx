@@ -1112,7 +1112,7 @@ export default function MarketplaceHome() {
         }),
         listMarketplaceStores({
           search,
-          limit: 8,
+          limit: 4,
         }),
       ]);
 
@@ -1494,6 +1494,16 @@ export default function MarketplaceHome() {
                   <span>Featured on Storvex</span>
                   <h2>Featured stores</h2>
                 </div>
+
+                <button
+                  type="button"
+                  className="svx-commerce-view-all-stores"
+                  aria-disabled="true"
+                  title="The complete stores page is coming later"
+                >
+                  <span>View all stores</span>
+                  <ArrowRight size={15} />
+                </button>
               </div>
 
               <div className="svx-commerce-store-grid">

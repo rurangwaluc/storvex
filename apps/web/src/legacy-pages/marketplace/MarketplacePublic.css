@@ -7349,3 +7349,87 @@ body.svx-marketplace-customer-open:has(.storvex-marketplace) {
     width: min(100% - 22px, 1440px);
   }
 }
+
+
+/* Marketplace final Featured stores layout */
+
+.svx-commerce-store-grid {
+  display: grid;
+  width: 100%;
+  max-width: 100%;
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr)) !important;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 16px;
+}
+
+.svx-commerce-store-card {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.svx-commerce-view-all-stores {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--landing-muted);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: default;
+  box-shadow: none !important;
+  filter: none !important;
+  opacity: 0.78;
+}
+
+.svx-commerce-view-all-stores svg {
+  flex: 0 0 auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .svx-commerce-store-card:hover,
+  .svx-commerce-view-all-stores:hover {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .svx-commerce-store-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 620px) {
+  .svx-commerce-store-grid {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+    gap: 10px;
+  }
+
+  .svx-commerce-view-all-stores {
+    min-height: 34px;
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 460px) {
+  .svx-commerce-section-heading {
+    align-items: flex-start;
+  }
+
+  .svx-commerce-view-all-stores {
+    justify-content: flex-start;
+  }
+}
