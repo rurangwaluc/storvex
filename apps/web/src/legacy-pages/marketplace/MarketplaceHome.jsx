@@ -97,7 +97,7 @@ function cleanString(value) {
   return String(value || "").trim();
 }
 
-function formatMoney(value, currency = "RWF") {
+export function formatMoney(value, currency = "RWF") {
   const amount = Math.max(0, Number(value || 0));
   const currencyCode = cleanString(currency).toUpperCase() || "RWF";
 
@@ -118,7 +118,7 @@ function formatMoney(value, currency = "RWF") {
   }
 }
 
-function marketplaceErrorMessage(error) {
+export function marketplaceErrorMessage(error) {
   return (
     error?.message ||
     error?.data?.message ||
@@ -126,7 +126,7 @@ function marketplaceErrorMessage(error) {
   );
 }
 
-function MarketplaceHeader() {
+export function MarketplaceHeader() {
   const { isDark, toggleTheme } = useTheme();
   const customerStore = useMarketplaceCustomerStore();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -910,7 +910,7 @@ function LoadingProducts() {
   );
 }
 
-function MarketplaceFooter() {
+export function MarketplaceFooter() {
   const year = new Date().getFullYear();
 
   return (
