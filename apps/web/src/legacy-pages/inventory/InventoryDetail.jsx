@@ -1010,13 +1010,16 @@ export default function InventoryDetail() {
         ...listingForm,
       };
 
-      await updateProductListingDraft(
-        product.id,
-        payload,
-      );
-
+      /*
+       * Publish the complete listing in one request.
+       * Sending an empty publish payload previously cleared
+       * the persisted sale price and schedule.
+       */
       const response =
-        await publishProductListing(product.id);
+        await publishProductListing(
+          product.id,
+          payload,
+        );
 
       const nextProduct =
         response?.product ||

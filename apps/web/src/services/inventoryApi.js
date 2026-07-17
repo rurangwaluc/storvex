@@ -129,24 +129,83 @@ function normalizeListingPayload(payload = {}) {
     ),
   });
 
-  normalized.listingSalePrice =
-    payload.listingSalePrice === "" ||
-    payload.listingSalePrice === null ||
-    payload.listingSalePrice === undefined
-      ? null
-      : payload.listingSalePrice;
+  const hasListingSalePrice =
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "listingSalePrice",
+    );
 
-  normalized.listingSaleStartsAt =
-    cleanString(
-      payload.listingSaleStartsAt ||
-      payload.marketplaceSaleStartsAt,
-    ) || null;
+  const hasMarketplaceSalePrice =
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "marketplaceSalePrice",
+    );
 
-  normalized.listingSaleEndsAt =
-    cleanString(
-      payload.listingSaleEndsAt ||
-      payload.marketplaceSaleEndsAt,
-    ) || null;
+  if (
+    hasListingSalePrice ||
+    hasMarketplaceSalePrice
+  ) {
+    const salePrice = hasListingSalePrice
+      ? payload.listingSalePrice
+      : payload.marketplaceSalePrice;
+
+    normalized.listingSalePrice =
+      salePrice === "" ||
+      salePrice === null ||
+      salePrice === undefined
+        ? null
+        : salePrice;
+  }
+
+  const hasListingSaleStartsAt =
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "listingSaleStartsAt",
+    );
+
+  const hasMarketplaceSaleStartsAt =
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "marketplaceSaleStartsAt",
+    );
+
+  if (
+    hasListingSaleStartsAt ||
+    hasMarketplaceSaleStartsAt
+  ) {
+    const saleStartsAt =
+      hasListingSaleStartsAt
+        ? payload.listingSaleStartsAt
+        : payload.marketplaceSaleStartsAt;
+
+    normalized.listingSaleStartsAt =
+      cleanString(saleStartsAt) || null;
+  }
+
+  const hasListingSaleEndsAt =
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "listingSaleEndsAt",
+    );
+
+  const hasMarketplaceSaleEndsAt =
+    Object.prototype.hasOwnProperty.call(
+      payload,
+      "marketplaceSaleEndsAt",
+    );
+
+  if (
+    hasListingSaleEndsAt ||
+    hasMarketplaceSaleEndsAt
+  ) {
+    const saleEndsAt =
+      hasListingSaleEndsAt
+        ? payload.listingSaleEndsAt
+        : payload.marketplaceSaleEndsAt;
+
+    normalized.listingSaleEndsAt =
+      cleanString(saleEndsAt) || null;
+  }
 
   return normalized;
 }
