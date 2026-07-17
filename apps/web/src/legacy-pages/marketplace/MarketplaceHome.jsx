@@ -910,53 +910,57 @@ function LoadingProducts() {
   );
 }
 
-export function MarketplaceFooter() {
+export function MarketplaceFooter({
+  showCta = true,
+} = {}) {
   const year = new Date().getFullYear();
 
   return (
     <section className="svx-footer-section">
       <div className="svx-footer-shell">
-        <div className="svx-footer-cta">
-          <div className="svx-footer-cta-copy">
-            <h2>
-              Put your products where customers are already looking.
-            </h2>
+        {showCta ? (
+          <div className="svx-footer-cta">
+            <div className="svx-footer-cta-copy">
+              <h2>
+                Put your products where customers are already looking.
+              </h2>
 
-            <p>
-              Manage your store with Storvex, publish selected products,
-              and confirm every customer request before it becomes a
-              sale.
-            </p>
+              <p>
+                Manage your store with Storvex, publish selected products,
+                and confirm every customer request before it becomes a
+                sale.
+              </p>
+            </div>
+
+            <div className="svx-footer-cta-actions">
+              <Link to="/signup" className="svx-footer-primary">
+                <span>Start selling on Storvex</span>
+                <ArrowRight size={17} />
+              </Link>
+
+              <Link to="/login" className="svx-footer-secondary">
+                Owner access
+              </Link>
+            </div>
+
+            <div className="svx-footer-cta-points">
+              <span>
+                <Check size={15} />
+                Publish only what is available
+              </span>
+
+              <span>
+                <Check size={15} />
+                Keep stock and sales connected
+              </span>
+
+              <span>
+                <Check size={15} />
+                Confirm before recording a sale
+              </span>
+            </div>
           </div>
-
-          <div className="svx-footer-cta-actions">
-            <Link to="/signup" className="svx-footer-primary">
-              <span>Start selling on Storvex</span>
-              <ArrowRight size={17} />
-            </Link>
-
-            <Link to="/login" className="svx-footer-secondary">
-              Owner access
-            </Link>
-          </div>
-
-          <div className="svx-footer-cta-points">
-            <span>
-              <Check size={15} />
-              Publish only what is available
-            </span>
-
-            <span>
-              <Check size={15} />
-              Keep stock and sales connected
-            </span>
-
-            <span>
-              <Check size={15} />
-              Confirm before recording a sale
-            </span>
-          </div>
-        </div>
+        ) : null}
 
         <footer className="svx-footer-main">
           <div className="svx-commerce-footer-grid">

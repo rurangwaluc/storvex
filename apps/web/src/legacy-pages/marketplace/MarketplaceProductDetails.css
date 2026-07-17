@@ -1240,3 +1240,419 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* Marketplace dense professional product details */
+
+.svx-product-detail-main {
+  width: min(100% - 48px, 1320px);
+  padding-top: 94px;
+  padding-bottom: 50px;
+}
+
+.svx-product-detail-hero {
+  grid-template-columns:
+    minmax(0, 1.06fr)
+    minmax(380px, 0.94fr);
+  gap: 24px;
+  margin-top: 18px;
+}
+
+.svx-product-main-image {
+  min-height: 470px;
+}
+
+.svx-product-main-image img {
+  max-height: 520px;
+}
+
+.svx-product-thumbnails {
+  grid-template-columns: repeat(4, 78px);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.svx-product-thumbnails button {
+  width: 78px;
+  height: 64px;
+}
+
+.svx-product-summary {
+  top: 80px;
+  padding: 24px;
+}
+
+.svx-product-summary h1 {
+  margin-top: 19px;
+  font-size: clamp(35px, 3.6vw, 48px);
+}
+
+.svx-product-description {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.58;
+}
+
+.svx-product-price,
+.svx-product-price.is-sale {
+  margin-top: 20px;
+}
+
+.svx-product-price {
+  padding: 17px 0;
+}
+
+.svx-product-price.is-sale {
+  padding: 15px;
+}
+
+.svx-product-price strong {
+  font-size: 27px;
+}
+
+.svx-product-availability {
+  margin-top: 17px;
+}
+
+.svx-product-buy-row {
+  margin-top: 18px;
+}
+
+.svx-product-secondary-actions {
+  margin-top: 8px;
+}
+
+.svx-product-fulfilment {
+  margin-top: 18px;
+  padding-top: 17px;
+}
+
+.svx-product-store-compact {
+  display: grid;
+  gap: 13px;
+  margin-top: 19px;
+  border-top: 1px solid var(--landing-border);
+  padding-top: 18px;
+}
+
+.svx-product-store-compact-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 11px;
+}
+
+.svx-product-store-compact-head > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.svx-product-store-compact-head small {
+  color: var(--landing-muted);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.svx-product-store-compact-head strong {
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.svx-product-store-compact-head em {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+  color: var(--landing-muted);
+  font-size: 8px;
+  font-style: normal;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-product-store-compact > p {
+  margin: 0;
+  color: var(--landing-muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.svx-product-store-compact-row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
+  border-top: 1px solid var(--landing-border);
+  padding-top: 11px;
+}
+
+.svx-product-store-compact-row strong {
+  font-size: 9px;
+}
+
+.svx-product-store-compact-row span {
+  color: var(--landing-muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.svx-product-store-compact-actions {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.svx-product-store-compact-actions a {
+  display: inline-flex;
+  min-height: 41px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--landing-border);
+  color: var(--landing-text);
+  font-size: 9px;
+  font-weight: 800;
+  text-align: center;
+  box-shadow: none !important;
+}
+
+.svx-product-store-compact-actions a:first-child {
+  border-color: var(--landing-primary);
+  background: var(--landing-primary);
+  color: #ffffff;
+}
+
+/* Specifications appear only when actual information exists. */
+
+.svx-product-information {
+  display: block;
+  margin-top: 28px;
+}
+
+.svx-product-info-section {
+  padding: 24px;
+}
+
+.svx-product-specifications {
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  margin-top: 20px;
+}
+
+.svx-product-specifications > div {
+  min-height: 74px;
+  padding: 14px;
+}
+
+/* Related products become useful retail cards. */
+
+.svx-product-related {
+  margin-top: 34px;
+}
+
+.svx-product-related > header {
+  align-items: center;
+}
+
+.svx-product-related-grid {
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 17px;
+}
+
+.svx-product-related-card {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--landing-border);
+  background: var(--landing-card);
+  padding: 0;
+  color: var(--landing-text);
+  box-shadow: none !important;
+}
+
+.svx-product-related-image {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 0.72;
+  border-bottom: 1px solid var(--landing-border);
+  background: #ffffff;
+}
+
+.svx-product-related-card > div:nth-child(2) {
+  display: grid;
+  gap: 6px;
+  padding: 13px;
+}
+
+.svx-product-related-card small {
+  font-size: 7px;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+}
+
+.svx-product-related-card h3 {
+  min-height: 34px;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.svx-product-related-card strong {
+  font-size: 13px;
+}
+
+.svx-product-related-card del {
+  margin-left: 6px;
+  font-size: 8px;
+}
+
+.svx-product-related-card > svg {
+  position: absolute;
+  right: 11px;
+  bottom: 13px;
+  color: var(--landing-muted);
+}
+
+/* Product pages use the compact footer, not the homepage CTA. */
+
+.svx-product-detail-page .svx-footer-shell {
+  padding-top: 0;
+}
+
+.svx-product-detail-page .svx-footer-main {
+  margin-top: 40px;
+}
+
+/* Keep every interaction flat. */
+
+.svx-product-detail-page button,
+.svx-product-detail-page a {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .svx-product-detail-page button:hover,
+  .svx-product-detail-page a:hover,
+  .svx-product-related-card:hover {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  .svx-product-related-card:hover {
+    border-color:
+      color-mix(
+        in srgb,
+        var(--landing-primary) 38%,
+        var(--landing-border)
+      );
+  }
+}
+
+@media (max-width: 1100px) {
+  .svx-product-detail-hero {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(350px, 0.92fr);
+    gap: 18px;
+  }
+
+  .svx-product-main-image {
+    min-height: 420px;
+  }
+
+  .svx-product-related-grid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .svx-product-specifications {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .svx-product-detail-main {
+    width: min(100% - 28px, 1320px);
+    padding-top: 82px;
+    padding-bottom: 38px;
+  }
+
+  .svx-product-detail-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .svx-product-main-image {
+    min-height: 380px;
+  }
+
+  .svx-product-summary {
+    padding: 20px;
+  }
+
+  .svx-product-related-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-product-detail-page .svx-footer-main {
+    margin-top: 28px;
+  }
+}
+
+@media (max-width: 560px) {
+  .svx-product-detail-main {
+    width: min(100% - 20px, 1320px);
+  }
+
+  .svx-product-main-image {
+    min-height: 300px;
+  }
+
+  .svx-product-summary h1 {
+    font-size: 31px;
+  }
+
+  .svx-product-store-compact-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-product-specifications {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-product-related-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .svx-product-related-card > div:nth-child(2) {
+    padding: 10px;
+  }
+
+  .svx-product-related-card h3 {
+    min-height: 31px;
+    font-size: 10px;
+  }
+
+  .svx-product-related-card strong {
+    font-size: 10px;
+  }
+
+  .svx-product-related-card > svg {
+    display: none;
+  }
+}
+
+@media (max-width: 359px) {
+  .svx-product-related-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

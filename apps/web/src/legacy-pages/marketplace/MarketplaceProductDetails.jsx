@@ -199,6 +199,20 @@ function ProductDetailsSkeleton() {
   );
 }
 
+function humanizeMarketplaceValues(values) {
+  return (Array.isArray(values) ? values : [])
+    .map((value) =>
+      cleanString(value)
+        .toLowerCase()
+        .replace(/[_-]+/g, " ")
+        .replace(/\b\w/g, (letter) =>
+          letter.toUpperCase(),
+        ),
+    )
+    .filter(Boolean)
+    .join(", ");
+}
+
 function DetailState({
   icon: Icon,
   title,
@@ -433,6 +447,10 @@ export default function MarketplaceProductDetails() {
       store?.customerPhone,
   );
 
+  const storeSearchUrl = `/marketplace?search=${encodeURIComponent(
+    store?.name || "",
+  )}`;
+
   function decreaseQuantity() {
     setQuantity((current) =>
       Math.max(1, current - 1),
@@ -631,9 +649,7 @@ export default function MarketplaceProductDetails() {
 
               <div className="svx-product-summary">
                 <Link
-                  to={`/marketplace/${encodeURIComponent(
-                    store.slug,
-                  )}`}
+                  to={storeSearchUrl}
                   className="svx-product-store-line"
                 >
                   <Store size={16} />
@@ -822,20 +838,87 @@ export default function MarketplaceProductDetails() {
                     </div>
                   ) : null}
                 </div>
+
+                <div className="svx-product-store-compact">
+                  <div className="svx-product-store-compact-head">
+                    <div className="svx-product-store-logo">
+                      {store.logoUrl ? (
+                        <img
+                          src={store.logoUrl}
+                          alt=""
+                        />
+                      ) : (
+                        <Store size={21} />
+                      )}
+                    </div>
+
+                    <span>
+                      <small>Available from</small>
+                      <strong>{store.name}</strong>
+
+                      {location ? (
+                        <em>
+                          <MapPin size={12} />
+                          {location}
+                        </em>
+                      ) : null}
+                    </span>
+                  </div>
+
+                  {store.description ? (
+                    <p>{store.description}</p>
+                  ) : null}
+
+                  {store.paymentMethods?.length ? (
+                    <div className="svx-product-store-compact-row">
+                      <strong>Payment</strong>
+                      <span>
+                        {humanizeMarketplaceValues(
+                          store.paymentMethods,
+                        )}
+                      </span>
+                    </div>
+                  ) : null}
+
+                  {store.deliveryAreas?.length ? (
+                    <div className="svx-product-store-compact-row">
+                      <strong>Delivery areas</strong>
+                      <span>
+                        {store.deliveryAreas.join(", ")}
+                      </span>
+                    </div>
+                  ) : null}
+
+                  <div className="svx-product-store-compact-actions">
+                    {whatsapp ? (
+                      <a
+                        href={whatsapp}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Contact store
+                      </a>
+                    ) : null}
+
+                    <Link to={storeSearchUrl}>
+                      More from this store
+                    </Link>
+                  </div>
+                </div>
               </div>
             </section>
 
-            <section className="svx-product-information">
-              <article className="svx-product-info-section">
-                <header>
-                  <h2>Product details</h2>
-                  <p>
-                    Important information provided by the
-                    seller.
-                  </p>
-                </header>
+            {specificationFields.length ? (
+              <section className="svx-product-information">
+                <article className="svx-product-info-section">
+                  <header>
+                    <h2>Product specifications</h2>
+                    <p>
+                      Important product information provided
+                      by the seller.
+                    </p>
+                  </header>
 
-                {specificationFields.length ? (
                   <dl className="svx-product-specifications">
                     {specificationFields.map((field) => (
                       <div key={field.key}>
@@ -849,90 +932,9 @@ export default function MarketplaceProductDetails() {
                       </div>
                     ))}
                   </dl>
-                ) : (
-                  <p className="svx-product-empty-copy">
-                    No additional specifications were
-                    provided for this product.
-                  </p>
-                )}
-              </article>
-
-              <article className="svx-product-info-section svx-product-store-info">
-                <header>
-                  <h2>Store information</h2>
-                  <p>
-                    Contact and fulfilment details for this
-                    seller.
-                  </p>
-                </header>
-
-                <div className="svx-product-store-heading">
-                  <div className="svx-product-store-logo">
-                    {store.logoUrl ? (
-                      <img
-                        src={store.logoUrl}
-                        alt=""
-                      />
-                    ) : (
-                      <Store size={24} />
-                    )}
-                  </div>
-
-                  <span>
-                    <strong>{store.name}</strong>
-
-                    {location ? (
-                      <small>
-                        <MapPin size={13} />
-                        {location}
-                      </small>
-                    ) : null}
-                  </span>
-                </div>
-
-                {store.description ? (
-                  <p>{store.description}</p>
-                ) : null}
-
-                {store.deliveryAreas?.length ? (
-                  <div className="svx-product-store-row">
-                    <strong>Delivery areas</strong>
-                    <span>
-                      {store.deliveryAreas.join(", ")}
-                    </span>
-                  </div>
-                ) : null}
-
-                {store.paymentMethods?.length ? (
-                  <div className="svx-product-store-row">
-                    <strong>Payment</strong>
-                    <span>
-                      {store.paymentMethods.join(", ")}
-                    </span>
-                  </div>
-                ) : null}
-
-                <div className="svx-product-store-actions">
-                  {whatsapp ? (
-                    <a
-                      href={whatsapp}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Contact store
-                    </a>
-                  ) : null}
-
-                  <Link
-                    to={`/marketplace/${encodeURIComponent(
-                      store.slug,
-                    )}`}
-                  >
-                    View store
-                  </Link>
-                </div>
-              </article>
-            </section>
+                </article>
+              </section>
+            ) : null}
 
             {relatedProducts.length ? (
               <section className="svx-product-related">
@@ -967,7 +969,7 @@ export default function MarketplaceProductDetails() {
             ) : null}
           </main>
 
-          <MarketplaceFooter />
+          <MarketplaceFooter showCta={false} />
         </>
       )}
     </div>
