@@ -583,7 +583,7 @@ function ProductCard({ product }) {
           <div className="svx-commerce-product-badges">
             {product.onSale ? (
               <span className="is-sale">
-                Sale {discountPercent}% off
+                {discountPercent}% off
               </span>
             ) : null}
 
@@ -715,19 +715,15 @@ function ProductCard({ product }) {
           ) : null}
         </div>
 
-        <div
+        <Link
+          to={productUrl}
           className={cx(
             "svx-commerce-product-price",
             product.onSale && "is-sale",
           )}
+          aria-label={`View ${product.title}`}
         >
           <div className="svx-commerce-product-price-copy">
-            {product.onSale ? (
-              <span className="svx-commerce-product-sale-label">
-                Sale price
-              </span>
-            ) : null}
-
             <div className="svx-commerce-product-price-values">
               <strong>
                 {formatMoney(
@@ -748,23 +744,24 @@ function ProductCard({ product }) {
 
             {product.onSale && saleSaving > 0 ? (
               <small className="svx-commerce-product-saving">
-                Save{" "}
+                You save{" "}
                 {formatMoney(
                   saleSaving,
                   product.currency,
                 )}
               </small>
-            ) : null}
+            ) : (
+              <small className="svx-commerce-product-price-note">
+                View product details
+              </small>
+            )}
           </div>
 
-          <Link
-            to={productUrl}
-            className="svx-commerce-product-view-button"
-            aria-label={`View ${product.title}`}
-          >
-            <ArrowRight size={15} />
-          </Link>
-        </div>
+          <ArrowRight
+            className="svx-commerce-product-price-arrow"
+            size={16}
+          />
+        </Link>
 
         <button
           type="button"
