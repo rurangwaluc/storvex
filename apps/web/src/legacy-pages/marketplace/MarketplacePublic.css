@@ -7091,3 +7091,161 @@ body.svx-marketplace-customer-open:has(.storvex-marketplace) {
     color: #ffffff !important;
   }
 }
+
+
+/* Marketplace integrated CTA and dark footer */
+
+/*
+ * The CTA belongs to the Marketplace page surface.
+ * Only the footer remains the permanent dark closing section.
+ */
+.svx-footer-section {
+  border-top: 0;
+  background: var(--landing-bg);
+  color: var(--landing-text);
+}
+
+.svx-footer-shell {
+  padding-top: 72px;
+}
+
+/* Theme-aware CTA surface */
+
+.svx-footer-cta {
+  border-color: var(--landing-border);
+  background: var(--landing-card) !important;
+  color: var(--landing-text);
+}
+
+.svx-footer-cta h2 {
+  color: var(--landing-text) !important;
+}
+
+.svx-footer-cta-copy > p {
+  color: var(--landing-muted) !important;
+}
+
+.svx-footer-cta-points {
+  border-top-color: var(--landing-border);
+}
+
+.svx-footer-cta-points span {
+  color: var(--landing-muted) !important;
+}
+
+.svx-footer-cta-points span + span {
+  border-left-color: var(--landing-border);
+}
+
+.svx-footer-cta-points svg {
+  color: var(--landing-primary);
+}
+
+/* Flat theme-aware secondary action */
+
+.svx-footer-secondary {
+  border-color: var(--landing-border) !important;
+  background: transparent !important;
+  color: var(--landing-text) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.svx-footer-primary {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/*
+ * Footer becomes the only full-width dark closing surface.
+ */
+.svx-footer-main {
+  position: relative;
+  margin-top: 72px;
+  background: #050d18;
+  color: #ffffff;
+  padding-top: 58px;
+  padding-bottom: 24px;
+  box-shadow:
+    0 0 0 100vmax #050d18;
+  clip-path: inset(0 -100vmax);
+}
+
+.svx-footer-brand p,
+.svx-footer-location,
+.svx-commerce-footer-links a,
+.svx-footer-bottom {
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.svx-commerce-footer-links h3 {
+  color: #ffffff;
+}
+
+.svx-footer-bottom {
+  border-top-color: rgba(255, 255, 255, 0.09);
+}
+
+/* Hover states remain flat */
+
+@media (hover: hover) and (pointer: fine) {
+  .svx-footer-primary:hover,
+  .svx-footer-secondary:hover {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  .svx-footer-secondary:hover {
+    border-color:
+      color-mix(
+        in srgb,
+        var(--landing-primary) 36%,
+        var(--landing-border)
+      ) !important;
+    background: var(--landing-primary-soft) !important;
+    color: var(--landing-primary) !important;
+  }
+}
+
+/* Dark mode */
+
+:root[data-theme="dark"] .svx-footer-cta {
+  border-color: var(--landing-border);
+  background: var(--landing-card) !important;
+}
+
+:root[data-theme="dark"] .svx-footer-cta h2 {
+  color: var(--landing-text) !important;
+}
+
+:root[data-theme="dark"] .svx-footer-cta-copy > p,
+:root[data-theme="dark"] .svx-footer-cta-points span {
+  color: var(--landing-muted) !important;
+}
+
+/* Tablet and mobile */
+
+@media (max-width: 980px) {
+  .svx-footer-shell {
+    padding-top: 48px;
+  }
+
+  .svx-footer-main {
+    margin-top: 48px;
+  }
+}
+
+@media (max-width: 700px) {
+  .svx-footer-shell {
+    padding-top: 30px;
+  }
+
+  .svx-footer-main {
+    margin-top: 30px;
+    padding-top: 44px;
+  }
+
+  .svx-footer-cta-points span + span {
+    border-left: 0;
+  }
+}
