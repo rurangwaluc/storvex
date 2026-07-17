@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import MarketplaceRequestPanel from "./MarketplaceRequestPanel";
+
 import {
   marketplaceComparisonCategory,
   marketplaceComparisonFields,
@@ -99,7 +101,35 @@ function CartPanel({
   store,
   onClose,
   onOpenMode,
+  notify,
 }) {
+  const [requestOpen, setRequestOpen] =
+    useState(false);
+
+  const validSellerGroups = new Set(
+    store.cart
+      .filter(
+        (item) =>
+          item?.seller?.slug &&
+          item?.slug &&
+          !item?.seller?.temporarilyClosed &&
+          Number(item?.availableQuantity || 0) > 0 &&
+          Number(item?.quantity || 0) > 0,
+      )
+      .map((item) => item.seller.slug),
+  );
+
+  if (requestOpen) {
+    return (
+      <MarketplaceRequestPanel
+        cart={store.cart}
+        onBack={() => setRequestOpen(false)}
+        onClose={onClose}
+        notify={notify}
+      />
+    );
+  }
+
   return (
     <>
       <header className="svx-marketplace-customer-panel-head">
@@ -235,15 +265,15 @@ function CartPanel({
           <button
             type="button"
             className="svx-marketplace-request-button"
-            disabled
+            disabled={validSellerGroups.size === 0}
+            onClick={() => setRequestOpen(true)}
           >
             <ShoppingCart size={16} />
             Continue to request
           </button>
 
           <small>
-            Order requests are the next backend step. No
-            internal sale is created from this cart.
+            Stock and price are confirmed before the store accepts the request.
           </small>
 
           <div className="svx-marketplace-panel-secondary-actions">
@@ -954,6 +984,7 @@ export default function MarketplaceCustomerPanel({
             store={store}
             onClose={onClose}
             onOpenMode={onModeChange}
+            notify={notify}
           />
         )}
       </aside>

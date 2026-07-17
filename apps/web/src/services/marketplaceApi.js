@@ -31,3 +31,10 @@ export function getMarketplaceProduct(storeSlug, productSlug) {
     `/marketplace/stores/${encodeURIComponent(storeSlug)}/products/${encodeURIComponent(productSlug)}`,
   );
 }
+
+export function submitMarketplaceRequest(payload = {}) {
+  return apiFetch("/marketplace/requests", {
+    method: "POST",
+    body: payload,
+  });
+}

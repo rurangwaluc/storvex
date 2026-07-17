@@ -171,6 +171,26 @@ export function readMarketplaceCustomerState() {
   }
 }
 
+export function removeMarketplaceCartKeys(keys = []) {
+  const keySet = new Set(
+    Array.isArray(keys)
+      ? keys.map(cleanString).filter(Boolean)
+      : [],
+  );
+
+  if (!keySet.size) return;
+
+  const current =
+    readMarketplaceCustomerState();
+
+  writeMarketplaceCustomerState({
+    ...current,
+    cart: current.cart.filter(
+      (item) => !keySet.has(item.key),
+    ),
+  });
+}
+
 export function writeMarketplaceCustomerState(nextState) {
   if (typeof window === "undefined") return;
 
