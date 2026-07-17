@@ -227,11 +227,7 @@ function serializePublicSeller(profile, tenant, counts = {}) {
     description: profile.description || null,
     logoUrl: tenant.logoUrl || null,
     customerPhone: profile.customerPhone || tenant.phone || null,
-    whatsappPhone:
-      profile.whatsappPhone ||
-      profile.customerPhone ||
-      tenant.phone ||
-      null,
+    whatsappPhone: profile.whatsappPhone || null,
     temporarilyClosed: Boolean(profile.temporarilyClosed),
     pickupEnabled: Boolean(profile.pickupEnabled),
     deliveryEnabled: Boolean(profile.deliveryEnabled),
