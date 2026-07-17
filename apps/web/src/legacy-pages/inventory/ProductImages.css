@@ -2392,3 +2392,155 @@
 
   color: var(--pi-danger) !important;
 }
+
+
+/* Final product image action colors and labels */
+
+/*
+ * Action labels remain complete words.
+ * No ellipsis and no forced word splitting.
+ */
+.svx-product-images-card-action,
+.svx-product-images-card-action span,
+.svx-product-images-studio-action,
+.svx-product-images-studio-action span {
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  text-overflow: clip !important;
+}
+
+.svx-product-images-card-action span {
+  overflow: visible !important;
+  white-space: nowrap !important;
+}
+
+/*
+ * Product library delete action.
+ * Use the actual Product Images red variables.
+ */
+.svx-product-images-card-action.is-danger {
+  border-color: var(--pi-red) !important;
+  background: var(--pi-red) !important;
+  color: #ffffff !important;
+}
+
+.svx-product-images-card-action.is-danger svg,
+.svx-product-images-card-action.is-danger span {
+  color: #ffffff !important;
+  stroke: currentColor;
+}
+
+.svx-product-images-card-action.is-danger:hover:not(:disabled) {
+  border-color: #dc2626 !important;
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+.svx-product-images-card-action.is-danger:focus-visible {
+  outline: 3px solid
+    color-mix(
+      in srgb,
+      var(--pi-red) 30%,
+      transparent
+    );
+  outline-offset: 2px;
+}
+
+/*
+ * Cleaned-result delete action.
+ */
+.svx-product-images-studio-action.is-danger {
+  border-color: var(--pi-red) !important;
+  background: var(--pi-red) !important;
+  color: #ffffff !important;
+}
+
+.svx-product-images-studio-action.is-danger svg {
+  color: #ffffff !important;
+  stroke: currentColor;
+}
+
+.svx-product-images-studio-action.is-danger:hover:not(:disabled) {
+  border-color: #dc2626 !important;
+  background: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+/*
+ * Keep three clear actions where the card has enough width.
+ */
+.svx-product-images-card-actions {
+  grid-template-columns:
+    minmax(44px, 0.8fr)
+    minmax(74px, 1.35fr)
+    minmax(64px, 1fr) !important;
+}
+
+.svx-product-images-card-action {
+  width: 100% !important;
+  min-width: 0;
+  padding-inline: 6px !important;
+}
+
+.svx-product-images-card-action span {
+  font-size: 8px;
+  line-height: 1;
+}
+
+/*
+ * Practical mobile/PWA screens keep two product-image cards.
+ * Actions use two columns so labels remain readable.
+ */
+@media (max-width: 620px) {
+  .svx-product-images-card-actions {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-product-images-card-action:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .svx-product-images-card-action {
+    min-height: 38px;
+    padding-inline: 5px !important;
+  }
+
+  .svx-product-images-card-action span {
+    font-size: 8.5px;
+  }
+}
+
+/*
+ * On very narrow screens, cards remain two-column where
+ * readable. Labels stay as whole words.
+ */
+@media (max-width: 390px) {
+  .svx-product-images-card-action {
+    gap: 3px;
+    padding-inline: 3px !important;
+  }
+
+  .svx-product-images-card-action span {
+    font-size: 7.5px;
+  }
+}
+
+@media (max-width: 339px) {
+  .svx-product-images-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-product-images-card-actions {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .svx-product-images-card-action:nth-child(3) {
+    grid-column: auto;
+  }
+
+  .svx-product-images-card-action span {
+    font-size: 9px;
+  }
+}
