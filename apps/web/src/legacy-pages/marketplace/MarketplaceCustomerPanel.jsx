@@ -526,7 +526,7 @@ export default function MarketplaceCustomerPanel({
     closeTimerRef.current = window.setTimeout(() => {
       setRendered(false);
       closeTimerRef.current = null;
-    }, 260);
+    }, 520);
 
     return () => {
       if (closeTimerRef.current) {
@@ -541,19 +541,22 @@ export default function MarketplaceCustomerPanel({
 
     const body = document.body;
     const previousOverflow = body.style.overflow;
-    const previousOverscroll = body.style.overscrollBehavior;
-    const previousTouchAction = body.style.touchAction;
+    const previousOverscroll =
+      body.style.overscrollBehavior;
 
-    body.classList.add("svx-marketplace-customer-open");
+    body.classList.add(
+      "svx-marketplace-customer-open",
+    );
     body.style.overflow = "hidden";
     body.style.overscrollBehavior = "none";
-    body.style.touchAction = "none";
 
     return () => {
-      body.classList.remove("svx-marketplace-customer-open");
+      body.classList.remove(
+        "svx-marketplace-customer-open",
+      );
       body.style.overflow = previousOverflow;
-      body.style.overscrollBehavior = previousOverscroll;
-      body.style.touchAction = previousTouchAction;
+      body.style.overscrollBehavior =
+        previousOverscroll;
     };
   }, [rendered]);
 
