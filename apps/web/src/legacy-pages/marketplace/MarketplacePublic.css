@@ -6400,3 +6400,68 @@ body.svx-marketplace-customer-open:has(.storvex-marketplace) {
     font-size: 10px;
   }
 }
+
+
+/* Marketplace full-width product images */
+
+/*
+ * The image canvas spans the complete card width.
+ * Keep contain sizing so products are never cropped.
+ */
+.svx-commerce-product-media {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.svx-commerce-product-image {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.svx-commerce-product-image img,
+.svx-commerce-product-image-primary,
+.svx-commerce-product-image-secondary {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  object-fit: contain !important;
+  object-position: center;
+  padding: 0 !important;
+}
+
+/*
+ * Keep the media flush with the rounded top corners.
+ */
+.svx-commerce-product-card
+  .svx-commerce-product-media {
+  border-radius: inherit;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.svx-commerce-product-card
+  .svx-commerce-product-image {
+  border-radius: inherit;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+/*
+ * Mobile and installed PWA use the same edge-to-edge image.
+ */
+@media (max-width: 820px) {
+  .svx-commerce-product-image img,
+  .svx-commerce-product-image-primary,
+  .svx-commerce-product-image-secondary {
+    padding: 0 !important;
+  }
+}
