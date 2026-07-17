@@ -454,6 +454,14 @@ function ProductCard({ product }) {
   const discountPercent =
     marketplaceDiscountPercent(product);
 
+  const saleSaving = product.onSale
+    ? Math.max(
+        0,
+        Number(product.regularPrice || 0) -
+          Number(product.price || 0),
+      )
+    : 0;
+
   useEffect(() => {
     if (activeImageIndex >= images.length) {
       setActiveImageIndex(0);
@@ -575,7 +583,7 @@ function ProductCard({ product }) {
           <div className="svx-commerce-product-badges">
             {product.onSale ? (
               <span className="is-sale">
-                Save {discountPercent}%
+                Sale {discountPercent}% off
               </span>
             ) : null}
 
@@ -713,26 +721,45 @@ function ProductCard({ product }) {
             product.onSale && "is-sale",
           )}
         >
-          <div>
-            <strong>
-              {formatMoney(
-                product.price,
-                product.currency,
-              )}
-            </strong>
-
+          <div className="svx-commerce-product-price-copy">
             {product.onSale ? (
-              <del>
+              <span className="svx-commerce-product-sale-label">
+                Sale price
+              </span>
+            ) : null}
+
+            <div className="svx-commerce-product-price-values">
+              <strong>
                 {formatMoney(
-                  product.regularPrice,
+                  product.price,
                   product.currency,
                 )}
-              </del>
+              </strong>
+
+              {product.onSale ? (
+                <del>
+                  {formatMoney(
+                    product.regularPrice,
+                    product.currency,
+                  )}
+                </del>
+              ) : null}
+            </div>
+
+            {product.onSale && saleSaving > 0 ? (
+              <small className="svx-commerce-product-saving">
+                Save{" "}
+                {formatMoney(
+                  saleSaving,
+                  product.currency,
+                )}
+              </small>
             ) : null}
           </div>
 
           <Link
             to={productUrl}
+            className="svx-commerce-product-view-button"
             aria-label={`View ${product.title}`}
           >
             <ArrowRight size={15} />

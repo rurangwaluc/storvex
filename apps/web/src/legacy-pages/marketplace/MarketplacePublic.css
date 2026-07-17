@@ -5718,3 +5718,341 @@ body.svx-marketplace-customer-open:has(.storvex-marketplace) {
     font-size: 10px;
   }
 }
+
+
+/* Marketplace premium sale product cards */
+
+.svx-commerce-product-card {
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(15, 45, 90, 0.055);
+}
+
+.svx-commerce-product-card.is-on-sale {
+  border-color:
+    color-mix(
+      in srgb,
+      #d92d67 35%,
+      var(--landing-border)
+    );
+
+  box-shadow:
+    0 12px 30px rgba(15, 45, 90, 0.055),
+    0 0 0 1px
+      color-mix(
+        in srgb,
+        #d92d67 8%,
+        transparent
+      );
+}
+
+.svx-commerce-product-media {
+  border-bottom: 1px solid var(--landing-border);
+}
+
+.svx-commerce-product-image {
+  aspect-ratio: 1 / 0.88;
+}
+
+.svx-commerce-product-content {
+  gap: 0;
+  padding: 15px;
+}
+
+.svx-commerce-product-main-link h3 {
+  min-height: 42px;
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.38;
+}
+
+.svx-commerce-product-badges > span.is-sale {
+  min-height: 25px;
+  border-color:
+    color-mix(
+      in srgb,
+      #d92d67 70%,
+      transparent
+    );
+
+  background: #d92d67;
+  padding-inline: 10px;
+  color: #ffffff;
+  font-size: 7.5px;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+}
+
+.svx-commerce-product-price {
+  min-height: 58px;
+  align-items: center;
+  margin-top: auto;
+  border-top: 1px solid var(--landing-border);
+  padding-top: 13px;
+}
+
+.svx-commerce-product-price.is-sale {
+  min-height: 82px;
+  align-items: center;
+  margin-top: 13px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      #d92d67 22%,
+      var(--landing-border)
+    );
+
+  border-radius: 13px;
+  background:
+    color-mix(
+      in srgb,
+      #d92d67 5%,
+      var(--landing-card)
+    );
+
+  padding: 11px;
+}
+
+.svx-commerce-product-price-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.svx-commerce-product-price-values {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.svx-commerce-product-price strong {
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.svx-commerce-product-price.is-sale strong {
+  color: #d92d67;
+  font-size: 17px;
+}
+
+.svx-commerce-product-price del {
+  color: var(--landing-muted);
+  font-size: 10px;
+  font-weight: 750;
+  text-decoration-thickness: 1.5px;
+}
+
+.svx-commerce-product-sale-label {
+  color: #d92d67;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: 0.09em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.svx-commerce-product-saving {
+  color: #047857;
+  font-size: 8.5px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.svx-commerce-product-view-button {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--landing-primary) 22%,
+      var(--landing-border)
+    );
+
+  border-radius: 10px;
+  background: var(--landing-primary-soft);
+  color: var(--landing-primary);
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.svx-commerce-product-view-button:hover {
+  border-color: var(--landing-primary);
+  background: var(--landing-primary);
+  color: #ffffff;
+}
+
+.svx-commerce-product-cart-button {
+  min-height: 44px;
+  margin-top: 10px;
+  border-radius: 11px;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.svx-commerce-product-card.is-on-sale
+  .svx-commerce-product-cart-button {
+  margin-top: 9px;
+}
+
+:root[data-theme="dark"]
+  .svx-commerce-product-card.is-on-sale {
+  border-color:
+    color-mix(
+      in srgb,
+      #fb5a92 42%,
+      var(--landing-border)
+    );
+
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.2),
+    0 0 0 1px
+      color-mix(
+        in srgb,
+        #fb5a92 10%,
+        transparent
+      );
+}
+
+:root[data-theme="dark"]
+  .svx-commerce-product-price.is-sale {
+  border-color:
+    color-mix(
+      in srgb,
+      #fb5a92 28%,
+      var(--landing-border)
+    );
+
+  background:
+    color-mix(
+      in srgb,
+      #fb5a92 7%,
+      var(--landing-card)
+    );
+}
+
+:root[data-theme="dark"]
+  .svx-commerce-product-price.is-sale strong,
+:root[data-theme="dark"]
+  .svx-commerce-product-sale-label {
+  color: #fb75a4;
+}
+
+:root[data-theme="dark"]
+  .svx-commerce-product-saving {
+  color: #6ee7b7;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .svx-commerce-product-card.is-on-sale:hover {
+    border-color:
+      color-mix(
+        in srgb,
+        #d92d67 55%,
+        var(--landing-border)
+      );
+  }
+}
+
+@media (max-width: 820px) {
+  .svx-commerce-product-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+    gap: 9px;
+  }
+
+  .svx-commerce-product-card {
+    border-radius: 14px;
+  }
+
+  .svx-commerce-product-content {
+    padding: 10px;
+  }
+
+  .svx-commerce-product-main-link h3 {
+    min-height: 35px;
+    margin-top: 6px;
+    font-size: 11px;
+  }
+
+  .svx-commerce-product-price {
+    min-height: 48px;
+    padding-top: 9px;
+  }
+
+  .svx-commerce-product-price.is-sale {
+    min-height: 70px;
+    margin-top: 9px;
+    border-radius: 10px;
+    padding: 8px;
+  }
+
+  .svx-commerce-product-price strong {
+    font-size: 11px;
+  }
+
+  .svx-commerce-product-price.is-sale strong {
+    font-size: 12px;
+  }
+
+  .svx-commerce-product-price del {
+    font-size: 7.5px;
+  }
+
+  .svx-commerce-product-sale-label {
+    font-size: 6px;
+  }
+
+  .svx-commerce-product-saving {
+    font-size: 7px;
+  }
+
+  .svx-commerce-product-view-button {
+    width: 29px;
+    height: 29px;
+    flex-basis: 29px;
+    border-radius: 8px;
+  }
+
+  .svx-commerce-product-cart-button {
+    min-height: 38px;
+    margin-top: 8px;
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 359px) {
+  .svx-commerce-product-grid {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .svx-commerce-product-main-link h3 {
+    font-size: 13px;
+  }
+
+  .svx-commerce-product-price strong {
+    font-size: 14px;
+  }
+
+  .svx-commerce-product-price.is-sale strong {
+    font-size: 15px;
+  }
+
+  .svx-commerce-product-sale-label {
+    font-size: 7px;
+  }
+
+  .svx-commerce-product-saving {
+    font-size: 8px;
+  }
+}
