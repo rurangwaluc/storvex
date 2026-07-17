@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -497,18 +498,141 @@ export default function MarketplaceCustomerPanel({
   onModeChange,
   notify,
 }) {
-  if (!open) return null;
+  const [rendered, setRendered] = useState(open);
+  const [visible, setVisible] = useState(false);
+  const closeTimerRef = useRef(null);
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+
+    if (open) {
+      setRendered(true);
+
+      const frame = window.requestAnimationFrame(() => {
+        setVisible(true);
+      });
+
+      return () => {
+        window.cancelAnimationFrame(frame);
+      };
+    }
+
+    setVisible(false);
+
+    closeTimerRef.current = window.setTimeout(() => {
+      setRendered(false);
+      closeTimerRef.current = null;
+    }, 260);
+
+    return () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!rendered) return undefined;
+
+    const body = document.body;
+    const previousOverflow = body.style.overflow;
+    const previousOverscroll = body.style.overscrollBehavior;
+    const previousTouchAction = body.style.touchAction;
+
+    body.classList.add("svx-marketplace-customer-open");
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    body.style.touchAction = "none";
+
+    return () => {
+      body.classList.remove("svx-marketplace-customer-open");
+      body.style.overflow = previousOverflow;
+      body.style.overscrollBehavior = previousOverscroll;
+      body.style.touchAction = previousTouchAction;
+    };
+  }, [rendered]);
+
+  useEffect(() => {
+    if (!visible) return undefined;
+
+    const panel = panelRef.current;
+    const firstFocusable = panel?.querySelector(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+    );
+
+    firstFocusable?.focus?.({
+      preventScroll: true,
+    });
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      if (event.key !== "Tab" || !panel) return;
+
+      const focusable = Array.from(
+        panel.querySelectorAll(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+        ),
+      );
+
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (
+        event.shiftKey &&
+        document.activeElement === first
+      ) {
+        event.preventDefault();
+        last.focus();
+      } else if (
+        !event.shiftKey &&
+        document.activeElement === last
+      ) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      );
+    };
+  }, [visible, onClose]);
+
+  if (!rendered) return null;
 
   return (
-    <div className="svx-marketplace-customer-layer">
+    <div
+      className={[
+        "svx-marketplace-customer-layer",
+        visible ? "is-visible" : "is-closing",
+      ].join(" ")}
+      aria-hidden={!visible}
+    >
       <button
         type="button"
         className="svx-marketplace-customer-backdrop"
         onClick={onClose}
         aria-label="Close customer panel"
+        tabIndex={visible ? 0 : -1}
       />
 
       <aside
+        ref={panelRef}
         className="svx-marketplace-customer-panel"
         role="dialog"
         aria-modal="true"
@@ -520,6 +644,13 @@ export default function MarketplaceCustomerPanel({
               : "Shopping cart"
         }
       >
+        <div
+          className="svx-marketplace-customer-drag-handle"
+          aria-hidden="true"
+        >
+          <span />
+        </div>
+
         <nav className="svx-marketplace-customer-tabs">
           <button
             type="button"
