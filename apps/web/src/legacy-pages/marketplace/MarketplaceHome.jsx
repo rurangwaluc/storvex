@@ -917,53 +917,98 @@ function MarketplaceFooter() {
     <section className="svx-footer-section">
       <div className="svx-footer-shell">
         <div className="svx-footer-cta">
-          <div>
+          <div className="svx-footer-cta-copy">
             <span className="svx-footer-kicker">
-              Built for real stores
+              Built for independent stores
             </span>
 
-            <h2>Want customers to discover your products?</h2>
+            <h2>
+              Put your products where customers are already looking.
+            </h2>
 
             <p>
-              Run your store with Storvex and publish selected products
-              when you are ready.
+              Manage your store with Storvex, publish selected products,
+              and confirm every customer request before it becomes a
+              sale.
             </p>
           </div>
 
           <div className="svx-footer-cta-actions">
             <Link to="/signup" className="svx-footer-primary">
-              Sell on Storvex
+              <span>Start selling on Storvex</span>
+              <ArrowRight size={17} />
             </Link>
+
+            <Link to="/login" className="svx-footer-secondary">
+              Owner access
+            </Link>
+          </div>
+
+          <div className="svx-footer-cta-points">
+            <span>
+              <Check size={15} />
+              Publish only what is available
+            </span>
+
+            <span>
+              <Check size={15} />
+              Keep stock and sales connected
+            </span>
+
+            <span>
+              <Check size={15} />
+              Confirm before recording a sale
+            </span>
           </div>
         </div>
 
         <footer className="svx-footer-main">
           <div className="svx-commerce-footer-grid">
             <div className="svx-footer-brand">
-              <img
-                src={whiteLogoSrc}
-                alt="Storvex"
-                draggable="false"
-              />
+              <Link
+                to="/marketplace"
+                className="svx-footer-brand-mark"
+                aria-label="Storvex Marketplace home"
+              >
+                <img
+                  src={whiteLogoSrc}
+                  alt="Storvex"
+                  draggable="false"
+                />
+              </Link>
 
               <p>
-                Discover products from businesses managing their sales,
-                stock and customer fulfilment with Storvex.
+                Discover products from local businesses using Storvex
+                to manage stock, sales, and customer fulfilment.
               </p>
+
+              <span className="svx-footer-location">
+                Built in Rwanda for real stores
+              </span>
             </div>
 
             <div className="svx-commerce-footer-links">
               <div>
                 <h3>Marketplace</h3>
-                <Link to="/marketplace">Browse products</Link>
-                <Link to="/marketplace">Explore stores</Link>
+                <Link to="/marketplace">
+                  Browse products
+                </Link>
+                <Link to="/marketplace">
+                  Explore stores
+                </Link>
               </div>
 
               <div>
                 <h3>For businesses</h3>
-                <Link to="/">Storvex system</Link>
-                <Link to="/signup">Create owner account</Link>
-                <Link to="/login">Owner access</Link>
+                <Link to="/">
+                  Storvex for business
+                </Link>
+                <Link to="/signup">
+                  Create owner account
+                </Link>
+                <Link to="/login">
+                  Owner access
+                </Link>
               </div>
 
               <div>
@@ -973,30 +1018,31 @@ function MarketplaceFooter() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  WhatsApp
+                  Contact on WhatsApp
                 </a>
+
                 <a
                   href="https://webimpactlab.com"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  WebImpact Lab
+                  Built by WebImpact Lab
                 </a>
               </div>
             </div>
           </div>
 
           <div className="svx-footer-bottom">
-            <p>© {year} Storvex. All rights reserved.</p>
+            <p>
+              © {year} Storvex. All rights reserved.
+            </p>
 
             <div>
               <Link to="/">About Storvex</Link>
-              <Link to="/signup">Sell on Marketplace</Link>
+              <Link to="/signup">Sell on Storvex</Link>
             </div>
 
-            <div>
-              <span>Rwanda</span>
-            </div>
+            <span>Rwanda</span>
           </div>
         </footer>
       </div>
