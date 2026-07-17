@@ -199,6 +199,29 @@ function ProductDetailsSkeleton() {
   );
 }
 
+function productDescriptionPreview(
+  value,
+  maximumWords = 18,
+) {
+  const words = cleanString(value)
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .filter(Boolean);
+
+  if (!words.length) {
+    return "";
+  }
+
+  const preview = words
+    .slice(0, maximumWords)
+    .join(" ")
+    .replace(/[.,;:!?]+$/, "");
+
+  return words.length > maximumWords
+    ? `${preview}...`
+    : preview;
+}
+
 function humanizeMarketplaceValues(values) {
   return (Array.isArray(values) ? values : [])
     .map((value) =>
@@ -646,6 +669,14 @@ export default function MarketplaceProductDetails() {
                   </div>
                 ) : null}
 
+              {product.description ? (
+                <section className="svx-product-full-description">
+                  <h2>Product description</h2>
+
+                  <p>{product.description}</p>
+                </section>
+              ) : null}
+
               {relatedProducts.length ? (
                 <section className="svx-product-related is-gallery-related">
                   <header>
@@ -698,7 +729,9 @@ export default function MarketplaceProductDetails() {
 
                 {product.description ? (
                   <p className="svx-product-description">
-                    {product.description}
+                    {productDescriptionPreview(
+                      product.description,
+                    )}
                   </p>
                 ) : null}
 
