@@ -359,20 +359,24 @@ function ComparePanel({
   onClose,
   notify,
 }) {
-  const comparisonFields =
-    marketplaceComparisonFields(store.compare);
+  const products = store.compare;
 
-  const lowestPrice = store.compare.length
+  const comparisonFields =
+    marketplaceComparisonFields(products);
+
+  const canRank = products.length > 1;
+
+  const lowestPrice = canRank
     ? Math.min(
-        ...store.compare.map((item) =>
+        ...products.map((item) =>
           Math.max(0, Number(item.price || 0)),
         ),
       )
     : null;
 
-  const highestStock = store.compare.length
+  const highestStock = canRank
     ? Math.max(
-        ...store.compare.map((item) =>
+        ...products.map((item) =>
           Math.max(
             0,
             Number(item.availableQuantity || 0),
@@ -382,28 +386,96 @@ function ComparePanel({
     : null;
 
   const comparisonCategory =
-    store.compare.length
-      ? marketplaceComparisonCategory(
-          store.compare[0],
-        )
+    products.length
+      ? marketplaceComparisonCategory(products[0])
       : "";
+
+  function productUrl(item) {
+    return `/marketplace/${encodeURIComponent(
+      item.seller.slug,
+    )}/${encodeURIComponent(item.slug)}`;
+  }
+
+  function addToCart(item) {
+    const result = store.addToCart(item);
+
+    if (!result.ok) {
+      notify(
+        result.reason === "STORE_CLOSED"
+          ? "This store is temporarily closed."
+          : "This product is not available.",
+        "error",
+      );
+      return;
+    }
+
+    notify(`${item.title} added to cart`);
+  }
+
+  function renderValueRow({
+    key,
+    label,
+    value,
+    best,
+    bestLabel,
+  }) {
+    return (
+      <div
+        key={key}
+        className="svx-marketplace-compare-table-row"
+      >
+        <div className="svx-marketplace-compare-table-label">
+          {label}
+        </div>
+
+        {products.map((item) => {
+          const finalValue =
+            typeof value === "function"
+              ? value(item)
+              : value;
+
+          const isBest =
+            canRank &&
+            typeof best === "function" &&
+            best(item);
+
+          return (
+            <div
+              key={`${key}-${item.key}`}
+              className={[
+                "svx-marketplace-compare-table-value",
+                isBest ? "is-best" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              <span>{finalValue}</span>
+
+              {isBest && bestLabel ? (
+                <small>{bestLabel}</small>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <>
       <header className="svx-marketplace-customer-panel-head">
         <div>
           <span>Product comparison</span>
+
           <h2>
-            {store.compare.length
-              ? `${store.compare.length} product${
-                  store.compare.length === 1 ? "" : "s"
-                }`
+            {products.length
+              ? `${products.length} of 4 selected`
               : "Nothing selected"}
           </h2>
 
           {comparisonCategory ? (
             <p className="svx-marketplace-compare-category">
-              Comparing products in the same category
+              Compare products from the same category
             </p>
           ) : null}
         </div>
@@ -418,170 +490,215 @@ function ComparePanel({
       </header>
 
       <div className="svx-marketplace-customer-panel-body">
-        {!store.compare.length ? (
+        {!products.length ? (
           <EmptyPanel
             icon={GitCompareArrows}
             title="Compare similar products"
-            text="Choose products from the same category to see their differences here."
+            text="Choose products from the same category to compare price, stock, delivery, and specifications."
           />
         ) : (
-          <div className="svx-marketplace-compare-scroll">
-            <div
-              className="svx-marketplace-compare-grid"
-              style={{
-                "--compare-columns":
-                  store.compare.length,
-              }}
-            >
-              {store.compare.map((item) => (
-                <article
-                  key={item.key}
-                  className="svx-marketplace-compare-card"
-                >
-                  <button
-                    type="button"
-                    className="svx-marketplace-compare-remove"
-                    onClick={() =>
-                      store.removeFromCompare(item.key)
-                    }
-                    aria-label={`Remove ${item.title} from comparison`}
-                  >
-                    <X size={14} />
-                  </button>
+          <div className="svx-marketplace-compare-workspace">
+            {products.length === 1 ? (
+              <div className="svx-marketplace-compare-guidance">
+                <GitCompareArrows size={20} />
 
-                  <ProductIdentity item={item} />
+                <div>
+                  <strong>
+                    Add another product to compare
+                  </strong>
 
-                  <div className="svx-marketplace-compare-section">
-                    <h4>Buying decision</h4>
+                  <p>
+                    Choose another product from the same
+                    category to compare price, stock,
+                    delivery, and important details.
+                  </p>
+                </div>
+              </div>
+            ) : null}
 
-                    <dl>
-                      <div
-                        className={
-                          Number(item.price) ===
-                          lowestPrice
-                            ? "is-best"
-                            : ""
+            <div className="svx-marketplace-compare-table-scroll">
+              <div
+                className="svx-marketplace-compare-table"
+                style={{
+                  "--compare-columns": products.length,
+                }}
+              >
+                <div className="svx-marketplace-compare-products-row">
+                  <div className="svx-marketplace-compare-table-label is-product-label">
+                    Product
+                  </div>
+
+                  {products.map((item) => (
+                    <article
+                      key={item.key}
+                      className="svx-marketplace-compare-product"
+                    >
+                      <button
+                        type="button"
+                        className="svx-marketplace-compare-remove"
+                        onClick={() =>
+                          store.removeFromCompare(item.key)
                         }
+                        aria-label={`Remove ${item.title} from comparison`}
                       >
-                        <dt>Current price</dt>
-                        <dd>
+                        <X size={15} />
+                      </button>
+
+                      <Link
+                        to={productUrl(item)}
+                        className="svx-marketplace-compare-product-image"
+                        aria-label={`View ${item.title}`}
+                      >
+                        {item.image?.url ? (
+                          <img
+                            src={item.image.url}
+                            alt={
+                              item.image.altText ||
+                              item.title
+                            }
+                          />
+                        ) : null}
+                      </Link>
+
+                      <div className="svx-marketplace-compare-product-copy">
+                        <p>
+                          <Store size={13} />
+                          <span>{item.seller.name}</span>
+                        </p>
+
+                        <Link to={productUrl(item)}>
+                          {item.title}
+                        </Link>
+
+                        <strong>
                           {formatMoney(
                             item.price,
                             item.currency,
                           )}
+                        </strong>
 
-                          {Number(item.price) ===
-                          lowestPrice ? (
-                            <small>Lowest</small>
-                          ) : null}
-                        </dd>
-                      </div>
-
-                      {item.onSale ? (
-                        <div>
-                          <dt>Normal price</dt>
-                          <dd>
+                        {item.onSale ? (
+                          <del>
                             {formatMoney(
                               item.regularPrice,
                               item.currency,
                             )}
-                          </dd>
-                        </div>
-                      ) : null}
+                          </del>
+                        ) : null}
+                      </div>
 
-                      <div
-                        className={
-                          Number(
-                            item.availableQuantity,
-                          ) === highestStock
-                            ? "is-best"
-                            : ""
+                      <button
+                        type="button"
+                        className="svx-marketplace-compare-cart-button"
+                        disabled={
+                          item.seller.temporarilyClosed ||
+                          item.availableQuantity <= 0
                         }
+                        onClick={() => addToCart(item)}
                       >
-                        <dt>Available stock</dt>
-                        <dd>
-                          {item.availableQuantity}
+                        <ShoppingCart size={16} />
+                        Add to cart
+                      </button>
+                    </article>
+                  ))}
+                </div>
 
-                          {Number(
-                            item.availableQuantity,
-                          ) === highestStock ? (
-                            <small>Highest</small>
-                          ) : null}
-                        </dd>
-                      </div>
+                <div className="svx-marketplace-compare-section-heading">
+                  <span>Buying decision</span>
+                </div>
 
-                      <div>
-                        <dt>Pickup</dt>
-                        <dd>
-                          {item.pickupEnabled ? (
-                            <Check size={14} />
-                          ) : (
-                            "No"
-                          )}
-                        </dd>
-                      </div>
+                {renderValueRow({
+                  key: "current-price",
+                  label: "Current price",
+                  value: (item) =>
+                    formatMoney(
+                      item.price,
+                      item.currency,
+                    ),
+                  best: (item) =>
+                    Number(item.price) === lowestPrice,
+                  bestLabel: "Lowest",
+                })}
 
-                      <div>
-                        <dt>Delivery</dt>
-                        <dd>
-                          {item.deliveryEnabled ? (
-                            <Check size={14} />
-                          ) : (
-                            "No"
-                          )}
-                        </dd>
-                      </div>
+                {products.some((item) => item.onSale)
+                  ? renderValueRow({
+                      key: "normal-price",
+                      label: "Normal price",
+                      value: (item) =>
+                        item.onSale
+                          ? formatMoney(
+                              item.regularPrice,
+                              item.currency,
+                            )
+                          : "—",
+                    })
+                  : null}
 
-                      <div>
-                        <dt>Store</dt>
-                        <dd>{item.seller.name}</dd>
-                      </div>
-                    </dl>
-                  </div>
+                {renderValueRow({
+                  key: "stock",
+                  label: "Available stock",
+                  value: (item) =>
+                    `${item.availableQuantity} available`,
+                  best: (item) =>
+                    Number(item.availableQuantity) ===
+                    highestStock,
+                  bestLabel: "Highest",
+                })}
 
-                  {comparisonFields.length ? (
-                    <div className="svx-marketplace-compare-section">
-                      <h4>Product details</h4>
+                {renderValueRow({
+                  key: "pickup",
+                  label: "Pickup",
+                  value: (item) =>
+                    item.pickupEnabled ? (
+                      <span className="svx-marketplace-compare-yes">
+                        <Check size={15} />
+                        Available
+                      </span>
+                    ) : (
+                      "Not available"
+                    ),
+                })}
 
-                      <dl>
-                        {comparisonFields.map((field) => (
-                          <div key={field.key}>
-                            <dt>{field.label}</dt>
-                            <dd>
-                              {marketplaceFieldValue(
-                                item,
-                                field,
-                              )}
-                            </dd>
-                          </div>
-                        ))}
-                      </dl>
+                {renderValueRow({
+                  key: "delivery",
+                  label: "Delivery",
+                  value: (item) =>
+                    item.deliveryEnabled ? (
+                      <span className="svx-marketplace-compare-yes">
+                        <Check size={15} />
+                        Available
+                      </span>
+                    ) : (
+                      "Not available"
+                    ),
+                })}
+
+                {renderValueRow({
+                  key: "store",
+                  label: "Store",
+                  value: (item) => item.seller.name,
+                })}
+
+                {comparisonFields.length ? (
+                  <>
+                    <div className="svx-marketplace-compare-section-heading">
+                      <span>Product details</span>
                     </div>
-                  ) : null}
 
-                  <button
-                    type="button"
-                    className="svx-marketplace-wishlist-cart"
-                    disabled={
-                      item.seller.temporarilyClosed ||
-                      item.availableQuantity <= 0
-                    }
-                    onClick={() => {
-                      const result =
-                        store.addToCart(item);
-
-                      if (result.ok) {
-                        notify(
-                          `${item.title} added to cart`,
-                        );
-                      }
-                    }}
-                  >
-                    <ShoppingCart size={15} />
-                    Add to cart
-                  </button>
-                </article>
-              ))}
+                    {comparisonFields.map((field) =>
+                      renderValueRow({
+                        key: field.key,
+                        label: field.label,
+                        value: (item) =>
+                          marketplaceFieldValue(
+                            item,
+                            field,
+                          ),
+                      }),
+                    )}
+                  </>
+                ) : null}
+              </div>
             </div>
           </div>
         )}
