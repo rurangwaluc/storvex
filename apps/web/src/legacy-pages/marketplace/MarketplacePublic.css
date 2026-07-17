@@ -7249,3 +7249,103 @@ body.svx-marketplace-customer-open:has(.storvex-marketplace) {
     border-left: 0;
   }
 }
+
+
+/* Marketplace CTA page continuity fix */
+
+/*
+ * CTA stays inside the normal Marketplace page surface.
+ * The dark footer begins only after the CTA.
+ */
+.svx-footer-section {
+  overflow: visible;
+  background: var(--landing-bg) !important;
+}
+
+.svx-footer-shell {
+  width: 100%;
+  max-width: none;
+  padding-top: 72px;
+}
+
+.svx-footer-cta {
+  width: min(100% - 48px, 1440px);
+  margin: 0 auto;
+  border-color: var(--landing-border);
+  background: var(--landing-card) !important;
+  color: var(--landing-text);
+  box-shadow: none !important;
+}
+
+.svx-footer-main {
+  width: 100%;
+  margin-top: 72px;
+  background: #050d18;
+  padding:
+    58px
+    max(24px, calc((100% - 1440px) / 2))
+    24px;
+  box-shadow: none !important;
+  clip-path: none;
+}
+
+.svx-commerce-footer-grid,
+.svx-footer-bottom {
+  width: 100%;
+  max-width: 1440px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.svx-footer-primary,
+.svx-footer-secondary {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .svx-footer-primary:hover,
+  .svx-footer-secondary:hover {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+}
+
+@media (max-width: 980px) {
+  .svx-footer-shell {
+    padding-top: 48px;
+  }
+
+  .svx-footer-cta {
+    width: min(100% - 32px, 1440px);
+  }
+
+  .svx-footer-main {
+    margin-top: 48px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  .svx-footer-shell {
+    padding-top: 30px;
+  }
+
+  .svx-footer-cta {
+    width: min(100% - 28px, 1440px);
+  }
+
+  .svx-footer-main {
+    margin-top: 30px;
+    padding-top: 44px;
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-footer-cta {
+    width: min(100% - 22px, 1440px);
+  }
+}
