@@ -645,6 +645,38 @@ export default function MarketplaceProductDetails() {
                     ))}
                   </div>
                 ) : null}
+
+              {relatedProducts.length ? (
+                <section className="svx-product-related is-gallery-related">
+                  <header>
+                    <div>
+                      <h2>Similar products</h2>
+                      <p>
+                        More available products in this
+                        category.
+                      </p>
+                    </div>
+
+                    <Link
+                      to={`/marketplace?category=${encodeURIComponent(
+                        product.category || "",
+                      )}`}
+                    >
+                      View all
+                      <ChevronRight size={15} />
+                    </Link>
+                  </header>
+
+                  <div className="svx-product-related-grid">
+                    {relatedProducts.map((item) => (
+                      <RelatedProduct
+                        key={`${item.seller.slug}-${item.slug}`}
+                        product={item}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ) : null}
               </div>
 
               <div className="svx-product-summary">
@@ -936,37 +968,7 @@ export default function MarketplaceProductDetails() {
               </section>
             ) : null}
 
-            {relatedProducts.length ? (
-              <section className="svx-product-related">
-                <header>
-                  <div>
-                    <h2>Similar products</h2>
-                    <p>
-                      More available products in this
-                      category.
-                    </p>
-                  </div>
 
-                  <Link
-                    to={`/marketplace?category=${encodeURIComponent(
-                      product.category || "",
-                    )}`}
-                  >
-                    View all
-                    <ChevronRight size={15} />
-                  </Link>
-                </header>
-
-                <div className="svx-product-related-grid">
-                  {relatedProducts.map((item) => (
-                    <RelatedProduct
-                      key={`${item.seller.slug}-${item.slug}`}
-                      product={item}
-                    />
-                  ))}
-                </div>
-              </section>
-            ) : null}
           </main>
 
           <MarketplaceFooter showCta={false} />

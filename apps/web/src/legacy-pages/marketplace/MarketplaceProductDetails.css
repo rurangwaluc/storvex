@@ -1656,3 +1656,214 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* Product details eliminate empty space */
+
+/*
+ * Gallery and related products form one useful left column.
+ * The purchase panel remains in the right column.
+ */
+.svx-product-gallery {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.svx-product-detail-hero {
+  align-items: start;
+}
+
+.svx-product-summary {
+  position: sticky;
+  top: 80px;
+}
+
+/*
+ * Similar products now begin immediately below the thumbnails,
+ * rather than waiting for the taller purchase panel.
+ */
+.svx-product-related.is-gallery-related {
+  width: 100%;
+  margin-top: 28px;
+}
+
+.svx-product-related.is-gallery-related > header {
+  align-items: center;
+}
+
+.svx-product-related.is-gallery-related
+  .svx-product-related-grid {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 15px;
+}
+
+/*
+ * Related cards stay compact and information-dense.
+ */
+.svx-product-related.is-gallery-related
+  .svx-product-related-card {
+  display: grid;
+  min-height: 118px;
+  grid-template-columns: 122px minmax(0, 1fr);
+  align-items: stretch;
+  padding: 0;
+}
+
+.svx-product-related.is-gallery-related
+  .svx-product-related-image {
+  width: 122px;
+  height: 100%;
+  min-height: 118px;
+  aspect-ratio: auto;
+  border-right: 1px solid var(--landing-border);
+  border-bottom: 0;
+}
+
+.svx-product-related.is-gallery-related
+  .svx-product-related-card
+  > div:nth-child(2) {
+  align-content: center;
+  padding: 13px;
+}
+
+.svx-product-related.is-gallery-related
+  .svx-product-related-card h3 {
+  min-height: auto;
+  font-size: 11px;
+}
+
+.svx-product-related.is-gallery-related
+  .svx-product-related-card > svg {
+  right: 10px;
+  bottom: 10px;
+}
+
+/*
+ * A single related product uses the available width instead
+ * of leaving most of the row empty.
+ */
+.svx-product-related.is-gallery-related
+  .svx-product-related-grid:has(
+    > .svx-product-related-card:only-child
+  ) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.svx-product-related.is-gallery-related
+  .svx-product-related-grid:has(
+    > .svx-product-related-card:only-child
+  )
+  .svx-product-related-card {
+  grid-template-columns: 180px minmax(0, 1fr);
+}
+
+.svx-product-related.is-gallery-related
+  .svx-product-related-grid:has(
+    > .svx-product-related-card:only-child
+  )
+  .svx-product-related-image {
+  width: 180px;
+}
+
+/*
+ * Remove unnecessary page-bottom breathing room.
+ */
+.svx-product-detail-main {
+  padding-bottom: 24px;
+}
+
+.svx-product-detail-page .svx-footer-main {
+  margin-top: 20px;
+}
+
+/*
+ * All controls remain flat.
+ */
+.svx-product-detail-page button,
+.svx-product-detail-page a {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .svx-product-detail-page button:hover,
+  .svx-product-detail-page a:hover {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+}
+
+@media (max-width: 1100px) {
+  .svx-product-related.is-gallery-related
+    .svx-product-related-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-product-related.is-gallery-related
+    .svx-product-related-grid:has(
+      > .svx-product-related-card:only-child
+    )
+    .svx-product-related-card {
+    grid-template-columns: 140px minmax(0, 1fr);
+  }
+
+  .svx-product-related.is-gallery-related
+    .svx-product-related-grid:has(
+      > .svx-product-related-card:only-child
+    )
+    .svx-product-related-image {
+    width: 140px;
+  }
+}
+
+@media (max-width: 820px) {
+  .svx-product-summary {
+    position: static;
+  }
+
+  .svx-product-related.is-gallery-related {
+    order: 3;
+    margin-top: 22px;
+  }
+
+  .svx-product-detail-main {
+    padding-bottom: 18px;
+  }
+
+  .svx-product-detail-page .svx-footer-main {
+    margin-top: 16px;
+  }
+}
+
+@media (max-width: 560px) {
+  .svx-product-related.is-gallery-related
+    .svx-product-related-card,
+  .svx-product-related.is-gallery-related
+    .svx-product-related-grid:has(
+      > .svx-product-related-card:only-child
+    )
+    .svx-product-related-card {
+    grid-template-columns: 102px minmax(0, 1fr);
+    min-height: 102px;
+  }
+
+  .svx-product-related.is-gallery-related
+    .svx-product-related-image,
+  .svx-product-related.is-gallery-related
+    .svx-product-related-grid:has(
+      > .svx-product-related-card:only-child
+    )
+    .svx-product-related-image {
+    width: 102px;
+    min-height: 102px;
+  }
+
+  .svx-product-related.is-gallery-related
+    .svx-product-related-card
+    > div:nth-child(2) {
+    padding: 10px;
+  }
+}
