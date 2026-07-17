@@ -7015,3 +7015,26 @@ body.svx-marketplace-customer-open:has(.storvex-marketplace) {
 .svx-footer-kicker {
   display: none !important;
 }
+
+
+/* Storvex flat button rule */
+
+.svx-footer-primary,
+.svx-footer-secondary,
+.svx-header-cta,
+.svx-commerce-product-cart-button,
+.svx-commerce-view-all-products {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .svx-footer-primary:hover,
+  .svx-footer-secondary:hover,
+  .svx-header-cta:hover,
+  .svx-commerce-product-cart-button:hover,
+  .svx-commerce-view-all-products:hover {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+}
