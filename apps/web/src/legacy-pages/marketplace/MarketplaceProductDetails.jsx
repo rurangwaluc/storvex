@@ -83,6 +83,122 @@ function whatsappUrl(phone) {
   return `https://wa.me/${digits}`;
 }
 
+function ProductDetailsSkeleton() {
+  return (
+    <main
+      className="svx-product-skeleton"
+      aria-label="Loading product details"
+      aria-busy="true"
+    >
+      <div className="svx-product-skeleton-breadcrumb">
+        <span />
+        <span />
+        <span />
+      </div>
+
+      <section className="svx-product-skeleton-hero">
+        <div className="svx-product-skeleton-gallery">
+          <div className="svx-product-skeleton-image svx-skeleton-shape" />
+
+          <div className="svx-product-skeleton-thumbnails">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <span
+                key={index}
+                className="svx-skeleton-shape"
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="svx-product-skeleton-summary">
+          <div className="svx-product-skeleton-store">
+            <span className="svx-skeleton-shape" />
+
+            <div>
+              <i className="svx-skeleton-shape" />
+              <i className="svx-skeleton-shape" />
+            </div>
+          </div>
+
+          <div className="svx-product-skeleton-title">
+            <span className="svx-skeleton-shape" />
+            <span className="svx-skeleton-shape" />
+          </div>
+
+          <div className="svx-product-skeleton-copy">
+            <span className="svx-skeleton-shape" />
+            <span className="svx-skeleton-shape" />
+          </div>
+
+          <div className="svx-product-skeleton-price svx-skeleton-shape" />
+
+          <div className="svx-product-skeleton-availability">
+            <span className="svx-skeleton-shape" />
+
+            <div>
+              <i className="svx-skeleton-shape" />
+              <i className="svx-skeleton-shape" />
+            </div>
+          </div>
+
+          <div className="svx-product-skeleton-buy">
+            <span className="svx-skeleton-shape" />
+            <span className="svx-skeleton-shape" />
+          </div>
+
+          <div className="svx-product-skeleton-actions">
+            <span className="svx-skeleton-shape" />
+            <span className="svx-skeleton-shape" />
+          </div>
+
+          <div className="svx-product-skeleton-fulfilment">
+            <span className="svx-skeleton-shape" />
+
+            <div>
+              <i className="svx-skeleton-shape" />
+              <i className="svx-skeleton-shape" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="svx-product-skeleton-information">
+        {Array.from({ length: 2 }).map((_, index) => (
+          <article key={index}>
+            <span className="svx-skeleton-shape" />
+            <span className="svx-skeleton-shape" />
+
+            <div>
+              {Array.from({ length: 4 }).map(
+                (_, rowIndex) => (
+                  <i
+                    key={rowIndex}
+                    className="svx-skeleton-shape"
+                  />
+                ),
+              )}
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section className="svx-product-skeleton-related">
+        <span className="svx-skeleton-shape" />
+
+        <div>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <article key={index}>
+              <i className="svx-skeleton-shape" />
+              <i className="svx-skeleton-shape" />
+              <i className="svx-skeleton-shape" />
+            </article>
+          ))}
+        </div>
+      </section>
+    </main>
+  );
+}
+
 function DetailState({
   icon: Icon,
   title,
@@ -399,11 +515,7 @@ export default function MarketplaceProductDetails() {
       <MarketplaceHeader />
 
       {loading ? (
-        <DetailState
-          icon={RefreshCw}
-          title="Loading product"
-          text="Checking the latest price and availability."
-        />
+        <ProductDetailsSkeleton />
       ) : error || !product || !store ? (
         <DetailState
           icon={AlertCircle}
