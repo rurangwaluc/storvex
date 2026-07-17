@@ -2309,3 +2309,86 @@
       );
   }
 }
+
+
+/* Product image delete button correction */
+
+/*
+ * Delete is the final action in each image-card action group.
+ */
+.svx-product-images-card-actions
+  > .svx-product-images-card-action:last-child {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--pi-danger) 68%,
+      var(--pi-line)
+    ) !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--pi-danger) 15%,
+      var(--pi-card)
+    ) !important;
+
+  color: var(--pi-danger) !important;
+}
+
+.svx-product-images-card-actions
+  > .svx-product-images-card-action:last-child:hover {
+  border-color: var(--pi-danger) !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--pi-danger) 24%,
+      var(--pi-card)
+    ) !important;
+
+  color: var(--pi-danger) !important;
+}
+
+/*
+ * Cleaned-result delete is the final button in its action grid.
+ */
+.svx-product-images-result-actions
+  > button:last-child,
+.svx-product-images-studio-actions
+  > button:last-child.is-danger,
+.svx-product-images-studio-result
+  button.is-danger {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--pi-danger) 68%,
+      var(--pi-line)
+    ) !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--pi-danger) 15%,
+      var(--pi-card)
+    ) !important;
+
+  color: var(--pi-danger) !important;
+}
+
+.svx-product-images-result-actions
+  > button:last-child:hover,
+.svx-product-images-studio-actions
+  > button:last-child.is-danger:hover,
+.svx-product-images-studio-result
+  button.is-danger:hover {
+  border-color: var(--pi-danger) !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--pi-danger) 24%,
+      var(--pi-card)
+    ) !important;
+
+  color: var(--pi-danger) !important;
+}
