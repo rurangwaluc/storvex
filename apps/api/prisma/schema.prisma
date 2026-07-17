@@ -180,6 +180,7 @@ model Tenant {
   documentCounter  TenantDocumentCounter?
   subscription       Subscription?
   marketplaceProfile MarketplaceSellerProfile?
+  marketplaceRequests MarketplaceRequest[]
 
   proformas            Proforma[]
   sessions             UserSession[]
@@ -256,6 +257,111 @@ model MarketplaceSellerProfile {
   @@index([marketplaceEnabled])
   @@index([temporarilyClosed])
   @@map("MarketplaceSellerProfile")
+}
+
+enum MarketplaceRequestStatus {
+  REQUESTED
+  CONFIRMED
+  REJECTED
+  CANCELLED
+  PREPARING
+  READY_FOR_PICKUP
+  OUT_FOR_DELIVERY
+  COMPLETED
+}
+
+enum MarketplaceContactChannel {
+  WHATSAPP
+  EMAIL
+}
+
+enum MarketplaceFulfilmentMethod {
+  PICKUP
+  DELIVERY
+}
+
+enum MarketplaceRequestPaymentMethod {
+  CASH_ON_DELIVERY
+  MOMO_ON_DELIVERY
+  PAY_ON_PICKUP
+  SELLER_APPROVED_OTHER
+}
+
+model MarketplaceRequest {
+  id String @id @default(uuid())
+
+  tenantId String
+  requestNumber String @unique @db.Text
+  trackingToken String @unique @db.Text
+  clientRequestId String @unique @db.Text
+
+  status MarketplaceRequestStatus @default(REQUESTED)
+  preferredContact MarketplaceContactChannel
+  fulfilmentMethod MarketplaceFulfilmentMethod
+  paymentMethod MarketplaceRequestPaymentMethod
+
+  customerName String @db.Text
+  customerPhone String? @db.Text
+  customerEmail String? @db.Text
+
+  deliveryAddress String? @db.Text
+  deliveryDistrict String? @db.Text
+  deliverySector String? @db.Text
+  customerNote String? @db.Text
+
+  currency String @default("RWF") @db.Text
+  subtotal Float @default(0)
+  deliveryFee Float @default(0)
+  total Float @default(0)
+
+  sellerNameSnapshot String @db.Text
+  sellerPhoneSnapshot String? @db.Text
+  sellerEmailSnapshot String? @db.Text
+
+  submittedAt DateTime @default(now())
+  confirmedAt DateTime?
+  rejectedAt DateTime?
+  cancelledAt DateTime?
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items MarketplaceRequestItem[]
+
+  @@index([tenantId])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt])
+  @@index([customerPhone])
+  @@index([customerEmail])
+  @@map("MarketplaceRequest")
+}
+
+model MarketplaceRequestItem {
+  id String @id @default(uuid())
+
+  requestId String
+  productId String
+
+  productSlugSnapshot String @db.Text
+  productTitleSnapshot String @db.Text
+  productCategorySnapshot String? @db.Text
+  productImageSnapshot String? @db.Text
+
+  quantity Int
+  unitPrice Float
+  lineTotal Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  request MarketplaceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([requestId])
+  @@index([productId])
+  @@index([requestId, productId])
+  @@map("MarketplaceRequestItem")
 }
 
 model Branch {
@@ -554,6 +660,7 @@ model Product {
   SupplierSupplyItem        SupplierSupplyItem[]
   proformaItems             ProformaItem[]
   branchInventory           BranchInventory[]
+  marketplaceRequestItems   MarketplaceRequestItem[]
 
   @@unique([tenantId, marketplaceSlug])
   @@index([tenantId, supplierId])
