@@ -2799,3 +2799,87 @@
       );
   }
 }
+
+
+/* Calm manage images action */
+
+/*
+ * Manage images is a secondary navigation action.
+ * Remove the bright glow and heavy shadow.
+ */
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:first-child
+  .svx-detail-setup-actions
+  > *:last-child {
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--detail-primary) 38%,
+      var(--detail-border)
+    ) !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--detail-primary) 10%,
+      var(--detail-card)
+    ) !important;
+
+  color: var(--detail-primary) !important;
+
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:first-child
+  .svx-detail-setup-actions
+  > *:last-child:hover {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--detail-primary) 58%,
+      var(--detail-border)
+    ) !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--detail-primary) 15%,
+      var(--detail-card)
+    ) !important;
+
+  color: var(--detail-primary) !important;
+
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:first-child
+  .svx-detail-setup-actions
+  > *:last-child:active {
+  background:
+    color-mix(
+      in srgb,
+      var(--detail-primary) 20%,
+      var(--detail-card)
+    ) !important;
+
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.svx-detail-setup-simple-grid
+  > .svx-detail-setup-panel:first-child
+  .svx-detail-setup-actions
+  > *:last-child:focus-visible {
+  outline: 2px solid
+    color-mix(
+      in srgb,
+      var(--detail-primary) 45%,
+      transparent
+    );
+  outline-offset: 2px;
+  box-shadow: none !important;
+}
