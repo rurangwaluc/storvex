@@ -918,10 +918,6 @@ function MarketplaceFooter() {
       <div className="svx-footer-shell">
         <div className="svx-footer-cta">
           <div className="svx-footer-cta-copy">
-            <span className="svx-footer-kicker">
-              Built for independent stores
-            </span>
-
             <h2>
               Put your products where customers are already looking.
             </h2>

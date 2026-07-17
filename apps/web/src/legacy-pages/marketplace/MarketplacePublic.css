@@ -6606,7 +6606,7 @@ body.svx-marketplace-customer-open:has(.storvex-marketplace) {
   align-items: center;
   gap: 38px 64px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #0a1726;
+  background: var(--landing-card);
   padding: 50px;
 }
 
@@ -6994,4 +6994,24 @@ body.svx-marketplace-customer-open:has(.storvex-marketplace) {
   .svx-commerce-footer-links > div:last-child {
     grid-column: auto;
   }
+}
+
+
+/* Marketplace CTA without decorative badge */
+
+.svx-footer-cta-copy {
+  padding-top: 0;
+}
+
+.svx-footer-cta h2 {
+  margin-top: 0;
+}
+
+/*
+ * The old decorative kicker is intentionally removed.
+ * Major Storvex sections use typography, spacing, and structure
+ * instead of badge-style labels.
+ */
+.svx-footer-kicker {
+  display: none !important;
 }
