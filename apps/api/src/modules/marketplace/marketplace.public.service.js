@@ -100,69 +100,114 @@ function chooseApprovedImages(images) {
   }));
 }
 
-function activeMarketplacePricing(product, now = new Date()) {
+function activeMarketplacePricing(
+  product,
+  now = new Date(),
+) {
   const regularPrice = Math.max(
     0,
     Number(
-      product.marketplacePrice ??
-      product.sellPrice ??
-      0
-    ),
+      product?.marketplacePrice ??
+        product?.sellPrice ??
+        0,
+    ) || 0,
   );
 
-  const saleValue = product.marketplaceSalePrice;
+  const rawSaleValue =
+    product?.marketplaceSalePrice;
 
-  const hasSaleValue =
-    saleValue !== null &&
-    saleValue !== undefined &&
-    saleValue !== "";
+  const hasSalePrice =
+    rawSaleValue !== null &&
+    rawSaleValue !== undefined &&
+    String(rawSaleValue).trim() !== "";
 
-  const rawSalePrice = hasSaleValue
-    ? Number(saleValue)
-    : Number.NaN;
+  const salePrice = hasSalePrice
+    ? Number(rawSaleValue)
+    : null;
 
   const validSalePrice =
-    hasSaleValue &&
-    Number.isFinite(rawSalePrice) &&
-    rawSalePrice >= 0 &&
-    rawSalePrice < regularPrice;
+    salePrice !== null &&
+    Number.isFinite(salePrice) &&
+    salePrice >= 0 &&
+    salePrice < regularPrice;
 
-  const startsAt = product.marketplaceSaleStartsAt
-    ? new Date(product.marketplaceSaleStartsAt)
-    : null;
+  function parsedDate(value) {
+    if (!value) {
+      return {
+        supplied: false,
+        valid: true,
+        date: null,
+      };
+    }
 
-  const endsAt = product.marketplaceSaleEndsAt
-    ? new Date(product.marketplaceSaleEndsAt)
-    : null;
+    const date = new Date(value);
+
+    return {
+      supplied: true,
+      valid: !Number.isNaN(date.getTime()),
+      date: Number.isNaN(date.getTime())
+        ? null
+        : date,
+    };
+  }
+
+  const start = parsedDate(
+    product?.marketplaceSaleStartsAt,
+  );
+
+  const end = parsedDate(
+    product?.marketplaceSaleEndsAt,
+  );
+
+  const currentTime =
+    now instanceof Date
+      ? now
+      : new Date(now);
+
+  const validCurrentTime =
+    !Number.isNaN(currentTime.getTime());
+
+  const validSchedule =
+    start.valid &&
+    end.valid &&
+    (
+      !start.date ||
+      !end.date ||
+      end.date > start.date
+    );
 
   const hasStarted =
-    !startsAt ||
-    Number.isNaN(startsAt.getTime()) ||
-    now >= startsAt;
+    !start.date ||
+    (
+      validCurrentTime &&
+      currentTime >= start.date
+    );
 
   const hasNotEnded =
-    !endsAt ||
-    Number.isNaN(endsAt.getTime()) ||
-    now <= endsAt;
+    !end.date ||
+    (
+      validCurrentTime &&
+      currentTime <= end.date
+    );
 
   const onSale =
     validSalePrice &&
+    validSchedule &&
+    validCurrentTime &&
     hasStarted &&
     hasNotEnded;
 
   return {
     regularPrice,
-    salePrice: onSale ? rawSalePrice : null,
-    price: onSale ? rawSalePrice : regularPrice,
+    salePrice: onSale ? salePrice : null,
+    price: onSale ? salePrice : regularPrice,
     onSale,
-    saleStartsAt:
-      startsAt && !Number.isNaN(startsAt.getTime())
-        ? startsAt.toISOString()
-        : null,
-    saleEndsAt:
-      endsAt && !Number.isNaN(endsAt.getTime())
-        ? endsAt.toISOString()
-        : null,
+    saleStartsAt: start.date
+      ? start.date.toISOString()
+      : null,
+    saleEndsAt: end.date
+      ? end.date.toISOString()
+      : null,
   };
 }
 
@@ -955,4 +1000,9 @@ module.exports = {
   getPublicStore,
   getPublicProduct,
   listPublicProducts,
+};
+
+module.exports.__private = {
+  ...(module.exports.__private || {}),
+  activeMarketplacePricing,
 };
