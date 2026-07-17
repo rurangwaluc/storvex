@@ -40,6 +40,7 @@ import {
 import { useTheme } from "../../hooks/useTheme";
 import MarketplaceCustomerPanel from "./MarketplaceCustomerPanel";
 import {
+  MARKETPLACE_CUSTOMER_PANEL_EVENT,
   marketplaceProductKey,
   syncMarketplaceProductSnapshots,
   useMarketplaceCustomerStore,
@@ -141,6 +142,27 @@ export function MarketplaceHeader() {
     setCustomerPanelMode(mode);
     setCustomerPanelOpen(true);
   }
+
+  useEffect(() => {
+    function handlePanelRequest(event) {
+      const mode =
+        event?.detail?.mode || "cart";
+
+      openCustomerPanel(mode);
+    }
+
+    window.addEventListener(
+      MARKETPLACE_CUSTOMER_PANEL_EVENT,
+      handlePanelRequest,
+    );
+
+    return () => {
+      window.removeEventListener(
+        MARKETPLACE_CUSTOMER_PANEL_EVENT,
+        handlePanelRequest,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     if (!menuOpen) return undefined;

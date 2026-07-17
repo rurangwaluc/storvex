@@ -39,6 +39,7 @@ import {
 } from "./MarketplaceHome";
 import {
   marketplaceProductKey,
+  openMarketplaceCustomerPanel,
   syncMarketplaceProductSnapshots,
   useMarketplaceCustomerStore,
 } from "./marketplaceCustomerStore";
@@ -497,17 +498,42 @@ export default function MarketplaceProductDetails() {
     );
 
     if (!result.ok) {
+      if (result.reason === "STORE_CLOSED") {
+        toast.error(
+          "This store is temporarily closed.",
+        );
+        return;
+      }
+
+      if (result.reason === "STOCK_LIMIT") {
+        toast.error(
+          `All ${result.availableQuantity} available items are already in your cart.`,
+        );
+
+        openMarketplaceCustomerPanel("cart");
+        return;
+      }
+
       toast.error(
-        result.reason === "STORE_CLOSED"
-          ? "This store is temporarily closed."
-          : "This product is not available.",
+        "This product is not available.",
       );
       return;
     }
 
+    const added = result.addedQuantity;
+
     toast.success(
-      `${quantity} ${quantity === 1 ? "item" : "items"} added to cart`,
+      result.limited
+        ? `${added} ${
+            added === 1 ? "item was" : "items were"
+          } added. Available stock limit reached.`
+        : `${added} ${
+            added === 1 ? "item" : "items"
+          } added to cart.`,
     );
+
+    setQuantity(1);
+    openMarketplaceCustomerPanel("cart");
   }
 
   function toggleWishlist() {
@@ -837,7 +863,7 @@ export default function MarketplaceProductDetails() {
                       {storeClosed
                         ? "Store closed"
                         : inCart
-                          ? "Add another"
+                          ? "Add more to cart"
                           : "Add to cart"}
                     </span>
                   </button>

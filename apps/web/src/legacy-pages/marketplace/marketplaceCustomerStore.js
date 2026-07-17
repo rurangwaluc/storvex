@@ -3,6 +3,26 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 export const MARKETPLACE_CUSTOMER_EVENT =
   "storvex:marketplace-customer-state";
 
+export const MARKETPLACE_CUSTOMER_PANEL_EVENT =
+  "storvex:marketplace-open-customer-panel";
+
+export function openMarketplaceCustomerPanel(
+  mode = "cart",
+) {
+  if (typeof window === "undefined") return;
+
+  window.dispatchEvent(
+    new CustomEvent(
+      MARKETPLACE_CUSTOMER_PANEL_EVENT,
+      {
+        detail: {
+          mode,
+        },
+      },
+    ),
+  );
+}
+
 export const MARKETPLACE_CUSTOMER_STORAGE =
   "storvex-marketplace-customer-v1";
 
@@ -289,32 +309,66 @@ export function useMarketplaceCustomerStore() {
           reason: snapshot.seller.temporarilyClosed
             ? "STORE_CLOSED"
             : "UNAVAILABLE",
+          quantity: 0,
+          addedQuantity: 0,
         };
       }
 
-      commit((current) => {
-        const existing = current.cart.find(
-          (item) => item.key === snapshot.key,
-        );
+      const current =
+        readMarketplaceCustomerState();
 
-        const nextQuantity = Math.min(
-          snapshot.availableQuantity,
-          positiveInteger(
-            (existing?.quantity || 0) + quantity,
-            1,
-          ),
-        );
+      const existing = current.cart.find(
+        (item) => item.key === snapshot.key,
+      );
 
+      const currentQuantity = Math.max(
+        0,
+        Number(existing?.quantity || 0),
+      );
+
+      if (
+        currentQuantity >=
+        snapshot.availableQuantity
+      ) {
         return {
-          ...current,
-          cart: replaceByKey(current.cart, {
-            ...snapshot,
-            quantity: nextQuantity,
-          }),
+          ok: false,
+          reason: "STOCK_LIMIT",
+          quantity: currentQuantity,
+          addedQuantity: 0,
+          availableQuantity:
+            snapshot.availableQuantity,
         };
-      });
+      }
 
-      return { ok: true };
+      const requestedQuantity =
+        positiveInteger(quantity, 1);
+
+      const nextQuantity = Math.min(
+        snapshot.availableQuantity,
+        currentQuantity + requestedQuantity,
+      );
+
+      const addedQuantity =
+        nextQuantity - currentQuantity;
+
+      commit((latest) => ({
+        ...latest,
+        cart: replaceByKey(latest.cart, {
+          ...snapshot,
+          quantity: nextQuantity,
+        }),
+      }));
+
+      return {
+        ok: true,
+        reason: null,
+        quantity: nextQuantity,
+        addedQuantity,
+        availableQuantity:
+          snapshot.availableQuantity,
+        limited:
+          addedQuantity < requestedQuantity,
+      };
     },
     [commit],
   );
