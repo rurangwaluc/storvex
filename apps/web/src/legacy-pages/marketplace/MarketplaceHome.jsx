@@ -420,26 +420,24 @@ function MarketplaceHeader() {
 
 function marketplaceCardDescription(
   value,
-  maximumLength = 92,
+  maximumWords = 9,
 ) {
-  const description = String(value || "")
+  const words = String(value || "")
     .replace(/\s+/g, " ")
-    .trim();
+    .trim()
+    .split(" ")
+    .filter(Boolean);
 
-  if (!description) {
+  if (!words.length) {
     return "";
   }
 
-  if (description.length <= maximumLength) {
-    return `${description.replace(/[.]+$/, "")}...`;
-  }
+  const preview = words
+    .slice(0, maximumWords)
+    .join(" ")
+    .replace(/[.,;:!?]+$/, "");
 
-  const shortened = description
-    .slice(0, maximumLength + 1)
-    .replace(/\s+\S*$/, "")
-    .trim();
-
-  return `${shortened.replace(/[.]+$/, "")}...`;
+  return `${preview}...`;
 }
 
 function ProductCard({ product }) {
@@ -1068,7 +1066,7 @@ export default function MarketplaceHome() {
         listMarketplaceProducts({
           search,
           category,
-          limit: 36,
+          limit: 8,
         }),
         listMarketplaceStores({
           search,
@@ -1129,7 +1127,6 @@ export default function MarketplaceHome() {
   }, [apiCategories]);
 
   const featuredProducts = products.slice(0, 8);
-  const remainingProducts = products.slice(8);
 
   const resultsLabel =
     products.length === 1
@@ -1486,7 +1483,21 @@ export default function MarketplaceHome() {
                 </h2>
               </div>
 
-              <strong>{loading ? "Loading" : resultsLabel}</strong>
+              {category || search ? (
+                <strong>
+                  {loading ? "Loading" : resultsLabel}
+                </strong>
+              ) : (
+                <button
+                  type="button"
+                  className="svx-commerce-view-all-products"
+                  aria-disabled="true"
+                  title="The complete product shop is coming next"
+                >
+                  <span>View all products</span>
+                  <ArrowRight size={15} />
+                </button>
+              )}
             </div>
 
             {loading ? <LoadingProducts /> : null}
@@ -1532,28 +1543,6 @@ export default function MarketplaceHome() {
               </div>
             ) : null}
           </div>
-
-          {!loading &&
-          !error &&
-          remainingProducts.length > 0 ? (
-            <div className="svx-commerce-section">
-              <div className="svx-commerce-section-heading">
-                <div>
-                  <span>More to explore</span>
-                  <h2>More available products</h2>
-                </div>
-              </div>
-
-              <div className="svx-commerce-product-grid">
-                {remainingProducts.map((product) => (
-                  <ProductCard
-                    key={`${product.seller.slug}-${product.slug}`}
-                    product={product}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
 
           <section className="svx-commerce-trust">
             <div>
