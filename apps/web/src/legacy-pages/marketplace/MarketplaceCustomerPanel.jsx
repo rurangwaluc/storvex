@@ -14,6 +14,12 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
+import {
+  marketplaceComparisonCategory,
+  marketplaceComparisonFields,
+  marketplaceFieldValue,
+} from "./marketplaceCategoryDefinitions";
+
 function cleanString(value) {
   return String(value || "").trim();
 }
@@ -353,13 +359,34 @@ function ComparePanel({
   onClose,
   notify,
 }) {
-  const attributeKeys = Array.from(
-    new Set(
-      store.compare.flatMap((item) =>
-        Object.keys(item.attributes || {}),
-      ),
-    ),
-  ).slice(0, 8);
+  const comparisonFields =
+    marketplaceComparisonFields(store.compare);
+
+  const lowestPrice = store.compare.length
+    ? Math.min(
+        ...store.compare.map((item) =>
+          Math.max(0, Number(item.price || 0)),
+        ),
+      )
+    : null;
+
+  const highestStock = store.compare.length
+    ? Math.max(
+        ...store.compare.map((item) =>
+          Math.max(
+            0,
+            Number(item.availableQuantity || 0),
+          ),
+        ),
+      )
+    : null;
+
+  const comparisonCategory =
+    store.compare.length
+      ? marketplaceComparisonCategory(
+          store.compare[0],
+        )
+      : "";
 
   return (
     <>
@@ -373,6 +400,12 @@ function ComparePanel({
                 }`
               : "Nothing selected"}
           </h2>
+
+          {comparisonCategory ? (
+            <p className="svx-marketplace-compare-category">
+              Comparing products in the same category
+            </p>
+          ) : null}
         </div>
 
         <button
@@ -418,46 +451,113 @@ function ComparePanel({
 
                   <ProductIdentity item={item} />
 
-                  <dl>
-                    <div>
-                      <dt>Available stock</dt>
-                      <dd>{item.availableQuantity}</dd>
-                    </div>
+                  <div className="svx-marketplace-compare-section">
+                    <h4>Buying decision</h4>
 
-                    <div>
-                      <dt>Pickup</dt>
-                      <dd>
-                        {item.pickupEnabled ? (
-                          <Check size={14} />
-                        ) : (
-                          "No"
-                        )}
-                      </dd>
-                    </div>
-
-                    <div>
-                      <dt>Delivery</dt>
-                      <dd>
-                        {item.deliveryEnabled ? (
-                          <Check size={14} />
-                        ) : (
-                          "No"
-                        )}
-                      </dd>
-                    </div>
-
-                    {attributeKeys.map((key) => (
-                      <div key={key}>
-                        <dt>{key}</dt>
+                    <dl>
+                      <div
+                        className={
+                          Number(item.price) ===
+                          lowestPrice
+                            ? "is-best"
+                            : ""
+                        }
+                      >
+                        <dt>Current price</dt>
                         <dd>
-                          {String(
-                            item.attributes?.[key] ??
-                              "—",
+                          {formatMoney(
+                            item.price,
+                            item.currency,
+                          )}
+
+                          {Number(item.price) ===
+                          lowestPrice ? (
+                            <small>Lowest</small>
+                          ) : null}
+                        </dd>
+                      </div>
+
+                      {item.onSale ? (
+                        <div>
+                          <dt>Normal price</dt>
+                          <dd>
+                            {formatMoney(
+                              item.regularPrice,
+                              item.currency,
+                            )}
+                          </dd>
+                        </div>
+                      ) : null}
+
+                      <div
+                        className={
+                          Number(
+                            item.availableQuantity,
+                          ) === highestStock
+                            ? "is-best"
+                            : ""
+                        }
+                      >
+                        <dt>Available stock</dt>
+                        <dd>
+                          {item.availableQuantity}
+
+                          {Number(
+                            item.availableQuantity,
+                          ) === highestStock ? (
+                            <small>Highest</small>
+                          ) : null}
+                        </dd>
+                      </div>
+
+                      <div>
+                        <dt>Pickup</dt>
+                        <dd>
+                          {item.pickupEnabled ? (
+                            <Check size={14} />
+                          ) : (
+                            "No"
                           )}
                         </dd>
                       </div>
-                    ))}
-                  </dl>
+
+                      <div>
+                        <dt>Delivery</dt>
+                        <dd>
+                          {item.deliveryEnabled ? (
+                            <Check size={14} />
+                          ) : (
+                            "No"
+                          )}
+                        </dd>
+                      </div>
+
+                      <div>
+                        <dt>Store</dt>
+                        <dd>{item.seller.name}</dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  {comparisonFields.length ? (
+                    <div className="svx-marketplace-compare-section">
+                      <h4>Product details</h4>
+
+                      <dl>
+                        {comparisonFields.map((field) => (
+                          <div key={field.key}>
+                            <dt>{field.label}</dt>
+                            <dd>
+                              {marketplaceFieldValue(
+                                item,
+                                field,
+                              )}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  ) : null}
 
                   <button
                     type="button"

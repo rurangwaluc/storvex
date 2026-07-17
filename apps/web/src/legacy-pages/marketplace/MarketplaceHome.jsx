@@ -40,6 +40,10 @@ import {
   syncMarketplaceProductSnapshots,
   useMarketplaceCustomerStore,
 } from "./marketplaceCustomerStore";
+import {
+  marketplaceCardAttributes,
+  marketplaceDiscountPercent,
+} from "./marketplaceCategoryDefinitions";
 
 import "../public/LandingPage.css";
 import "./MarketplacePublic.css";
@@ -414,12 +418,6 @@ function ProductCard({ product }) {
   const customerStore =
     useMarketplaceCustomerStore();
 
-  product.attributes =
-    product.attributes &&
-    typeof product.attributes === "object"
-      ? product.attributes
-      : {};
-
   const key = marketplaceProductKey(product);
 
   const images =
@@ -449,6 +447,12 @@ function ProductCard({ product }) {
   const secondaryImage = images[1] || null;
   const activeImage =
     images[activeImageIndex] || primaryImage;
+
+  const cardAttributes =
+    marketplaceCardAttributes(product);
+
+  const discountPercent =
+    marketplaceDiscountPercent(product);
 
   useEffect(() => {
     if (activeImageIndex >= images.length) {
@@ -570,7 +574,9 @@ function ProductCard({ product }) {
 
           <div className="svx-commerce-product-badges">
             {product.onSale ? (
-              <span className="is-sale">Sale</span>
+              <span className="is-sale">
+                Save {discountPercent}%
+              </span>
             ) : null}
 
             {product.seller?.temporarilyClosed ? (
@@ -679,6 +685,17 @@ function ProductCard({ product }) {
 
           <h3>{product.title}</h3>
         </Link>
+
+        {cardAttributes.length ? (
+          <dl className="svx-commerce-product-specs">
+            {cardAttributes.map((attribute) => (
+              <div key={attribute.key}>
+                <dt>{attribute.label}</dt>
+                <dd>{attribute.value}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
 
         <div className="svx-commerce-product-meta">
           {product.pickupEnabled ? (

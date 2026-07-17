@@ -47,6 +47,18 @@ export function marketplaceProductSnapshot(product) {
     title: cleanString(product?.title),
     description: cleanString(product?.description),
     category: cleanString(product?.category),
+    comparisonCategory: cleanString(
+      product?.comparisonCategory ||
+      product?.attributes?.businessCategory ||
+      product?.businessCategory ||
+      product?.category,
+    ),
+    attributes:
+      product?.attributes &&
+      typeof product.attributes === "object" &&
+      !Array.isArray(product.attributes)
+        ? { ...product.attributes }
+        : {},
     currency: cleanString(product?.currency) || "RWF",
     price: Math.max(0, Number(product?.price || 0)),
     regularPrice: Math.max(
@@ -418,12 +430,18 @@ export function useMarketplaceCustomerStore() {
       }
 
       const activeCategory = cleanString(
+        state.compare[0]?.comparisonCategory ||
         state.compare[0]?.category,
-      ).toLowerCase();
+      )
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, "_");
 
       const nextCategory = cleanString(
+        snapshot.comparisonCategory ||
         snapshot.category,
-      ).toLowerCase();
+      )
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, "_");
 
       if (
         activeCategory &&
