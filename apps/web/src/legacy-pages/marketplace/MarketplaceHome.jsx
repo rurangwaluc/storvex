@@ -26,7 +26,11 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { Link, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useSearchParams,
+  useNavigate,
+} from "react-router-dom";
 import toast from "react-hot-toast";
 
 import {
@@ -414,7 +418,33 @@ function MarketplaceHeader() {
   );
 }
 
+function marketplaceCardDescription(
+  value,
+  maximumLength = 92,
+) {
+  const description = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!description) {
+    return "";
+  }
+
+  if (description.length <= maximumLength) {
+    return `${description.replace(/[.]+$/, "")}...`;
+  }
+
+  const shortened = description
+    .slice(0, maximumLength + 1)
+    .replace(/\s+\S*$/, "")
+    .trim();
+
+  return `${shortened.replace(/[.]+$/, "")}...`;
+}
+
 function ProductCard({ product }) {
+  const navigate = useNavigate();
+
   const customerStore =
     useMarketplaceCustomerStore();
 
@@ -448,11 +478,13 @@ function ProductCard({ product }) {
   const activeImage =
     images[activeImageIndex] || primaryImage;
 
-  const cardAttributes =
-    marketplaceCardAttributes(product);
-
   const discountPercent =
     marketplaceDiscountPercent(product);
+
+  const descriptionPreview =
+    marketplaceCardDescription(
+      product.description,
+    );
 
   const saleSaving = product.onSale
     ? Math.max(
@@ -467,6 +499,30 @@ function ProductCard({ product }) {
       setActiveImageIndex(0);
     }
   }, [activeImageIndex, images.length]);
+
+  function openProductCard(event) {
+    if (
+      event.target.closest(
+        "button, a, input, select, textarea",
+      )
+    ) {
+      return;
+    }
+
+    navigate(productUrl);
+  }
+
+  function handleProductCardKeyDown(event) {
+    if (
+      event.target !== event.currentTarget ||
+      !["Enter", " "].includes(event.key)
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    navigate(productUrl);
+  }
 
   function toggleCart() {
     if (inCart) {
@@ -545,6 +601,11 @@ function ProductCard({ product }) {
         "svx-commerce-product-card",
         product.onSale && "is-on-sale",
       )}
+      role="link"
+      tabIndex={0}
+      aria-label={`View ${product.title}`}
+      onClick={openProductCard}
+      onKeyDown={handleProductCardKeyDown}
     >
       <div className="svx-commerce-product-media">
         <Link
@@ -682,38 +743,20 @@ function ProductCard({ product }) {
       </div>
 
       <div className="svx-commerce-product-content">
-        <Link
-          to={productUrl}
-          className="svx-commerce-product-main-link"
-        >
+        <div className="svx-commerce-product-main-link">
           <p>
             <Store size={13} />
             <span>{product.seller?.name}</span>
           </p>
 
           <h3>{product.title}</h3>
-        </Link>
-
-        {cardAttributes.length ? (
-          <dl className="svx-commerce-product-specs">
-            {cardAttributes.map((attribute) => (
-              <div key={attribute.key}>
-                <dt>{attribute.label}</dt>
-                <dd>{attribute.value}</dd>
-              </div>
-            ))}
-          </dl>
-        ) : null}
-
-        <div className="svx-commerce-product-meta">
-          {product.pickupEnabled ? (
-            <span>Pickup</span>
-          ) : null}
-
-          {product.deliveryEnabled ? (
-            <span>Delivery</span>
-          ) : null}
         </div>
+
+        {descriptionPreview ? (
+          <p className="svx-commerce-product-description">
+            {descriptionPreview}
+          </p>
+        ) : null}
 
         <div
           className={cx(
@@ -757,13 +800,7 @@ function ProductCard({ product }) {
             ) : null}
           </div>
 
-          <Link
-            to={productUrl}
-            className="svx-commerce-product-view-button"
-            aria-label={`View ${product.title}`}
-          >
-            <ArrowRight size={15} />
-          </Link>
+
         </div>
 
         <button
