@@ -618,11 +618,21 @@ export default function MarketplaceCustomerPanel({
 
   if (!rendered) return null;
 
+  const activeItems =
+    mode === "wishlist"
+      ? store.wishlist
+      : mode === "compare"
+        ? store.compare
+        : store.cart;
+
+  const empty = activeItems.length === 0;
+
   return (
     <div
       className={[
         "svx-marketplace-customer-layer",
         visible ? "is-visible" : "is-closing",
+        empty ? "is-empty" : "has-items",
       ].join(" ")}
       aria-hidden={!visible}
     >

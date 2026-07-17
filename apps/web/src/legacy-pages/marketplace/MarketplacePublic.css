@@ -4760,3 +4760,128 @@ body.svx-marketplace-customer-open:has(.storvex-marketplace) {
       );
   }
 }
+
+
+/* Marketplace adaptive empty customer sheet */
+
+@media (max-width: 820px) {
+  /*
+   * Empty states should feel like a compact bottom sheet,
+   * not a second full-screen page.
+   */
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-panel {
+    height: auto;
+    min-height: 410px;
+    max-height:
+      calc(
+        100dvh -
+        env(safe-area-inset-top, 0px) -
+        env(safe-area-inset-bottom, 0px) -
+        40px
+      );
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-panel-body {
+    min-height: 0;
+    flex: 0 1 auto;
+    overflow: visible;
+
+    padding:
+      4px 18px
+      calc(
+        30px +
+        env(safe-area-inset-bottom, 0px)
+      );
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-empty {
+    min-height: 210px;
+    align-content: center;
+
+    padding:
+      28px 20px 34px;
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-empty h3 {
+    margin-top: 15px;
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-empty p {
+    max-width: 290px;
+  }
+
+  /*
+   * Product-filled drawers retain useful height and scrolling.
+   */
+  .svx-marketplace-customer-layer.has-items
+    .svx-marketplace-customer-panel {
+    height: min(82dvh, 720px);
+  }
+
+  .svx-marketplace-customer-layer.has-items
+    .svx-marketplace-customer-panel-body {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-panel {
+    min-height: 390px;
+    max-height: 68dvh;
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-empty {
+    min-height: 190px;
+
+    padding:
+      24px 16px 30px;
+  }
+
+  .svx-marketplace-customer-layer.has-items
+    .svx-marketplace-customer-panel {
+    height: min(84dvh, 690px);
+  }
+}
+
+@media (max-width: 359px) {
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-panel {
+    min-height: 370px;
+    max-height: 66dvh;
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-empty {
+    min-height: 180px;
+
+    padding:
+      20px 12px 26px;
+  }
+}
+
+@media (display-mode: standalone) and (max-width: 820px) {
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-panel {
+    height: auto;
+    min-height: 410px;
+    max-height:
+      calc(
+        72dvh -
+        env(safe-area-inset-bottom, 0px)
+      );
+  }
+
+  .svx-marketplace-customer-layer.has-items
+    .svx-marketplace-customer-panel {
+    height: min(86dvh, 740px);
+  }
+}
