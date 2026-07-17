@@ -511,13 +511,27 @@ export default function MarketplaceCustomerPanel({
 
     if (open) {
       setRendered(true);
+      setVisible(false);
 
-      const frame = window.requestAnimationFrame(() => {
-        setVisible(true);
+      /*
+       * Allow the closed position to be painted before
+       * applying the visible state. Two animation frames
+       * prevent mobile browsers from skipping the entrance.
+       */
+      let secondFrame = null;
+
+      const firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => {
+          setVisible(true);
+        });
       });
 
       return () => {
-        window.cancelAnimationFrame(frame);
+        window.cancelAnimationFrame(firstFrame);
+
+        if (secondFrame !== null) {
+          window.cancelAnimationFrame(secondFrame);
+        }
       };
     }
 

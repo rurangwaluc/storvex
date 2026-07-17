@@ -4936,3 +4936,36 @@ body.svx-marketplace-customer-open:has(.storvex-marketplace) {
     transition-duration: 1ms !important;
   }
 }
+
+
+/* Marketplace customer drawer opening correction */
+
+/*
+ * Opening is deliberately slower than closing.
+ * Closing rules remain untouched.
+ */
+.svx-marketplace-customer-layer.is-visible
+  .svx-marketplace-customer-panel {
+  transition:
+    transform 900ms
+      cubic-bezier(0.16, 0.82, 0.24, 1),
+    opacity 680ms ease-out,
+    box-shadow 760ms ease !important;
+}
+
+.svx-marketplace-customer-layer.is-visible
+  .svx-marketplace-customer-backdrop {
+  transition:
+    opacity 720ms ease-out,
+    backdrop-filter 820ms ease-out,
+    -webkit-backdrop-filter 820ms ease-out !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-marketplace-customer-layer.is-visible
+    .svx-marketplace-customer-panel,
+  .svx-marketplace-customer-layer.is-visible
+    .svx-marketplace-customer-backdrop {
+    transition-duration: 1ms !important;
+  }
+}
