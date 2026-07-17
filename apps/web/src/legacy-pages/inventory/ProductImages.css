@@ -1998,3 +1998,314 @@
     font-size: 9px;
   }
 }
+
+
+/* Product images mobile overflow and action correction */
+
+/*
+ * Prevent page-level overflow. Internal cards and grids must
+ * shrink inside the available application content width.
+ */
+.svx-product-images-shell,
+.svx-product-images-hero,
+.svx-product-images-summary,
+.svx-product-images-card,
+.svx-product-images-grid,
+.svx-product-images-image-card,
+.svx-product-images-studio-group,
+.svx-product-images-studio-original,
+.svx-product-images-studio-content,
+.svx-product-images-studio-result {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.svx-product-images-shell {
+  overflow-x: clip;
+}
+
+.svx-product-images-card {
+  overflow: hidden;
+}
+
+.svx-product-images-grid {
+  width: 100%;
+}
+
+/*
+ * Action text must remain readable. Never hide or truncate
+ * labels with an ellipsis.
+ */
+.svx-product-images-card-action {
+  min-width: 0;
+  height: auto !important;
+  min-height: 40px;
+  white-space: normal;
+}
+
+.svx-product-images-card-action span {
+  display: block !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+  line-height: 1.15;
+}
+
+/*
+ * Clear destructive treatment for every image delete action.
+ */
+.svx-product-images-card-action.is-danger,
+.svx-product-images-image-card
+  button[aria-label*="Delete"],
+.svx-product-images-image-card
+  button[title*="Delete"],
+.svx-product-images-studio-group
+  button[aria-label*="Delete"],
+.svx-product-images-studio-group
+  button[title*="Delete"] {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--pi-danger) 48%,
+      var(--pi-line)
+    ) !important;
+
+  background:
+    color-mix(
+      in srgb,
+      var(--pi-danger) 10%,
+      var(--pi-card)
+    ) !important;
+
+  color: var(--pi-danger) !important;
+}
+
+.svx-product-images-card-action.is-danger:hover,
+.svx-product-images-image-card
+  button[aria-label*="Delete"]:hover,
+.svx-product-images-image-card
+  button[title*="Delete"]:hover,
+.svx-product-images-studio-group
+  button[aria-label*="Delete"]:hover,
+.svx-product-images-studio-group
+  button[title*="Delete"]:hover {
+  border-color: var(--pi-danger) !important;
+  background:
+    color-mix(
+      in srgb,
+      var(--pi-danger) 18%,
+      var(--pi-card)
+    ) !important;
+}
+
+/*
+ * Desktop and tablet grids use as many useful columns as fit,
+ * without forcing horizontal scrolling.
+ */
+.svx-product-images-grid {
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(min(100%, 220px), 1fr)
+    );
+  justify-content: stretch;
+  gap: 14px;
+}
+
+.svx-product-images-image-card {
+  width: 100%;
+  max-width: none;
+}
+
+.svx-product-images-card-actions {
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr)) !important;
+  width: 100%;
+}
+
+/*
+ * Image preview overlays also wrap safely.
+ */
+.svx-product-images-image-preview > span,
+.svx-product-images-image-card
+  > button:first-child
+  > span {
+  max-width: calc(100% - 16px);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+/*
+ * Studio buttons must not create overflow in approved-result
+ * and preparation sections.
+ */
+.svx-product-images-studio-actions,
+.svx-product-images-result-actions {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.svx-product-images-studio-actions button,
+.svx-product-images-result-actions button {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * Practical mobile screens keep two image cards per row.
+ */
+@media (max-width: 820px) {
+  .svx-product-images-shell {
+    width: 100%;
+    max-width: 100%;
+
+    padding-right:
+      max(
+        12px,
+        env(safe-area-inset-right, 0px)
+      );
+
+    padding-left:
+      max(
+        12px,
+        env(safe-area-inset-left, 0px)
+      );
+
+    padding-bottom:
+      max(
+        24px,
+        env(safe-area-inset-bottom, 0px)
+      );
+  }
+
+  .svx-product-images-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .svx-product-images-image-card footer {
+    gap: 7px;
+    padding: 8px;
+  }
+
+  .svx-product-images-card-actions {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr)) !important;
+    gap: 4px !important;
+  }
+
+  .svx-product-images-card-action {
+    min-height: 38px;
+    padding: 5px 3px;
+  }
+
+  .svx-product-images-card-action span {
+    font-size: 7.5px;
+  }
+
+  .svx-product-images-card-action svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+/*
+ * Phones around 360–520px still retain two columns because
+ * the image-card actions are designed to wrap.
+ */
+@media (max-width: 520px) {
+  .svx-product-images-card {
+    padding: 12px;
+  }
+
+  .svx-product-images-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .svx-product-images-image-preview {
+    height: 138px !important;
+  }
+
+  .svx-product-images-card-actions {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-product-images-card-action:last-child:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .svx-product-images-card-action {
+    min-height: 38px;
+    padding: 6px 5px;
+  }
+
+  .svx-product-images-card-action span {
+    font-size: 8px;
+  }
+
+  .svx-product-images-image-card footer
+    > :first-child {
+    width: 100%;
+  }
+}
+
+/*
+ * Only extremely narrow screens drop to one card per row.
+ */
+@media (max-width: 339px) {
+  .svx-product-images-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-product-images-image-preview {
+    height: 205px !important;
+  }
+
+  .svx-product-images-card-actions {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  .svx-product-images-card-action:last-child:nth-child(3) {
+    grid-column: auto;
+  }
+
+  .svx-product-images-card-action span {
+    font-size: 9px;
+  }
+}
+
+/*
+ * Installed PWA layout must respect device safe areas while
+ * preserving the same useful multi-column behavior.
+ */
+@media (display-mode: standalone) and (max-width: 820px) {
+  .svx-product-images-shell {
+    padding-right:
+      max(
+        12px,
+        env(safe-area-inset-right, 0px)
+      );
+
+    padding-left:
+      max(
+        12px,
+        env(safe-area-inset-left, 0px)
+      );
+
+    padding-bottom:
+      max(
+        26px,
+        env(safe-area-inset-bottom, 0px)
+      );
+  }
+}
