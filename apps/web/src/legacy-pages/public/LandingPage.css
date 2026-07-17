@@ -4600,3 +4600,105 @@ body,
     height: 52px !important;
   }
 }
+
+
+/* Landing footer owns the document ending */
+
+/*
+ * The business landing page ends on the footer surface.
+ * This prevents the browser or root background from appearing
+ * as a white strip below the copyright row.
+ *
+ * Marketplace is excluded because it has its own footer system.
+ */
+html:has(
+  body
+  .storvex-landing:not(.storvex-marketplace)
+),
+body:has(
+  .storvex-landing:not(.storvex-marketplace)
+) {
+  min-height: 100%;
+  margin: 0;
+  background: #020b18;
+}
+
+#root:has(
+  > .storvex-landing:not(.storvex-marketplace)
+) {
+  min-height: 100%;
+  margin: 0;
+  background: #020b18;
+}
+
+.storvex-landing:not(.storvex-marketplace) {
+  min-height: 100%;
+  margin: 0;
+  background: var(--landing-bg);
+}
+
+.storvex-landing:not(.storvex-marketplace)
+  .svx-footer-section {
+  display: block;
+  width: 100%;
+  margin: 0;
+  background: #020b18 !important;
+}
+
+.storvex-landing:not(.storvex-marketplace)
+  .svx-footer-shell {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  background: #020b18;
+}
+
+.storvex-landing:not(.storvex-marketplace)
+  .svx-footer-main {
+  margin-bottom: 0;
+  padding-bottom:
+    max(24px, env(safe-area-inset-bottom));
+  background: #020b18;
+}
+
+.storvex-landing:not(.storvex-marketplace)
+  .svx-footer-bottom {
+  margin-bottom: 0;
+}
+
+.storvex-landing:not(.storvex-marketplace)
+  .svx-footer-bottom > :last-child,
+.storvex-landing:not(.storvex-marketplace)
+  .svx-footer-main > :last-child,
+.storvex-landing:not(.storvex-marketplace)
+  .svx-footer-section > :last-child {
+  margin-bottom: 0;
+}
+
+/*
+ * Buttons remain flat throughout Storvex.
+ */
+.storvex-landing:not(.storvex-marketplace)
+  button,
+.storvex-landing:not(.storvex-marketplace)
+  .svx-btn,
+.storvex-landing:not(.storvex-marketplace)
+  .svx-header-cta,
+.storvex-landing:not(.storvex-marketplace)
+  .svx-footer-primary {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .storvex-landing:not(.storvex-marketplace)
+    button:hover,
+  .storvex-landing:not(.storvex-marketplace)
+    .svx-btn:hover,
+  .storvex-landing:not(.storvex-marketplace)
+    .svx-header-cta:hover,
+  .storvex-landing:not(.storvex-marketplace)
+    .svx-footer-primary:hover {
+    box-shadow: none !important;
+    filter: none !important;
+  }
+}
