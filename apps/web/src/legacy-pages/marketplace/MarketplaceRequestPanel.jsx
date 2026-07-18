@@ -356,12 +356,6 @@ export default function MarketplaceRequestPanel({
         const fulfilment =
           defaultFulfilment(nextStore);
 
-        const payments =
-          normalizedPaymentMethods(
-            nextStore,
-            fulfilment,
-          );
-
         setForm((current) => ({
           ...current,
           preferredContact:
@@ -372,8 +366,6 @@ export default function MarketplaceRequestPanel({
               : current.preferredContact,
           fulfilmentMethod:
             fulfilment,
-          paymentMethod:
-            payments[0] || "",
         }));
       })
       .catch((error) => {
@@ -396,35 +388,6 @@ export default function MarketplaceRequestPanel({
       active = false;
     };
   }, [selectedGroup?.sellerSlug]);
-
-  const paymentMethods = useMemo(
-    () =>
-      normalizedPaymentMethods(
-        store,
-        form.fulfilmentMethod,
-      ),
-    [
-      form.fulfilmentMethod,
-      store,
-    ],
-  );
-
-  useEffect(() => {
-    if (
-      !paymentMethods.includes(
-        form.paymentMethod,
-      )
-    ) {
-      setForm((current) => ({
-        ...current,
-        paymentMethod:
-          paymentMethods[0] || "",
-      }));
-    }
-  }, [
-    form.paymentMethod,
-    paymentMethods,
-  ]);
 
   function updateField(name, value) {
     setForm((current) => ({
@@ -470,10 +433,6 @@ export default function MarketplaceRequestPanel({
       !cleanString(form.deliveryAddress)
     ) {
       return "Enter the delivery address.";
-    }
-
-    if (!form.paymentMethod) {
-      return "Choose how payment will be completed.";
     }
 
     return "";
