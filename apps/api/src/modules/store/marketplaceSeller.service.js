@@ -96,7 +96,6 @@ function buildMarketplaceReadiness({
   availablePublishedProductCount = 0,
   approvedImageProductCount = 0,
 }) {
-  const paymentMethods = normalizePaymentMethods(profile?.paymentMethods);
   const deliveryAreas = normalizeDeliveryAreas(profile?.deliveryAreas);
 
   const fulfilmentReady =
@@ -127,12 +126,6 @@ function buildMarketplaceReadiness({
       "Pickup or delivery",
       fulfilmentReady,
       "Enable pickup or configure at least one delivery area.",
-    ),
-    readinessCheck(
-      "payment_methods",
-      "Payment methods",
-      paymentMethods.length > 0,
-      "Choose how customers can pay at delivery or pickup.",
     ),
     readinessCheck(
       "published_products",
@@ -336,7 +329,7 @@ async function updateMarketplaceSellerProfile(tenantId, payload = {}) {
   }
 
   if ("pickupEnabled" in body) {
-    data.pickupEnabled = toBoolean(body.pickupEnabled, true);
+    data.pickupEnabled = toBoolean(body.pickupEnabled, false);
   }
 
   if ("deliveryEnabled" in body) {

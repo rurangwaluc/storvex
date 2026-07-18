@@ -3,10 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   AlertCircle,
-  Check,
   ChevronDown,
   ChevronRight,
-  CircleDollarSign,
   ExternalLink,
   MapPin,
   PackageCheck,
@@ -24,29 +22,6 @@ import {
 } from "../../services/storeApi";
 import "./SettingsMarketplace.css";
 import "./Settings.css";
-
-const PAYMENT_OPTIONS = [
-  {
-    value: "CASH_ON_DELIVERY",
-    label: "Cash on delivery",
-    detail: "Customer pays cash when receiving the product.",
-  },
-  {
-    value: "MOMO_ON_DELIVERY",
-    label: "MoMo on delivery",
-    detail: "Customer pays by Mobile Money when receiving the product.",
-  },
-  {
-    value: "PAY_ON_PICKUP",
-    label: "Pay on pickup",
-    detail: "Customer pays when collecting from the store.",
-  },
-  {
-    value: "SELLER_APPROVED_OTHER",
-    label: "Another agreed method",
-    detail: "Agree on another payment method with the customer.",
-  },
-];
 
 const CHECK_DETAILS = {
   public_identity: {
@@ -68,11 +43,6 @@ const CHECK_DETAILS = {
     title: "Choose pickup or delivery",
     action: "Choose options",
     section: "delivery",
-  },
-  payment_methods: {
-    title: "Choose payment methods",
-    action: "Choose payments",
-    section: "payments",
   },
   published_products: {
     title: "Publish one product",
@@ -109,12 +79,11 @@ function profileSnapshot(profile) {
     displayName: profile?.displayName || "",
     description: profile?.description || "",
     publicSlug: profile?.publicSlug || "",
-    pickupEnabled: profile?.pickupEnabled !== false,
+    pickupEnabled: Boolean(profile?.pickupEnabled),
     deliveryEnabled: Boolean(profile?.deliveryEnabled),
     temporarilyClosed: Boolean(profile?.temporarilyClosed),
     defaultDeliveryFee: Number(profile?.defaultDeliveryFee || 0),
     deliveryAreas: normalizeStringList(profile?.deliveryAreas),
-    paymentMethods: normalizeStringList(profile?.paymentMethods),
   };
 }
 
@@ -327,12 +296,7 @@ export default function SettingsMarketplace() {
     form.deliveryEnabled ? "Delivery" : "",
   ]
     .filter(Boolean)
-    .join(" and ") || "No receiving option selected";
-
-  const paymentSummary = PAYMENT_OPTIONS
-    .filter((option) => form.paymentMethods.includes(option.value))
-    .map((option) => option.label)
-    .join(", ") || "No payment method selected";
+    .join(" and ") || "Choose pickup, delivery, or both";
 
   function updateField(key, value) {
     setForm((current) => ({
@@ -369,19 +333,6 @@ export default function SettingsMarketplace() {
 
     const details = CHECK_DETAILS[firstMissing.key];
     openSection(details?.section || "profile");
-  }
-
-  function togglePaymentMethod(method) {
-    setForm((current) => {
-      const methods = normalizeStringList(current.paymentMethods);
-
-      return {
-        ...current,
-        paymentMethods: methods.includes(method)
-          ? methods.filter((item) => item !== method)
-          : [...methods, method],
-      };
-    });
   }
 
   function addDeliveryArea() {
@@ -422,7 +373,6 @@ export default function SettingsMarketplace() {
         Math.round(Number(form.defaultDeliveryFee || 0)),
       ),
       deliveryAreas: normalizeStringList(form.deliveryAreas),
-      paymentMethods: normalizeStringList(form.paymentMethods),
     };
   }
 
@@ -438,7 +388,7 @@ export default function SettingsMarketplace() {
       setForm(profileSnapshot(nextProfile));
       setActiveSection("");
 
-      toast.success("Marketplace settings saved");
+      toast.success("Marketplace store settings saved");
     } catch (error) {
       toast.error(
         getErrorMessage(
@@ -654,8 +604,8 @@ export default function SettingsMarketplace() {
         section="profile"
         activeSection={activeSection}
         onOpen={setActiveSection}
-        eyebrow="Store profile"
-        title="How customers see your store"
+        eyebrow="Store details"
+        title="Your Marketplace store"
         summary={profileSummary}
         icon={Store}
       >
@@ -721,8 +671,8 @@ export default function SettingsMarketplace() {
         section="delivery"
         activeSection={activeSection}
         onOpen={setActiveSection}
-        eyebrow="Pickup and delivery"
-        title="How customers receive products"
+        eyebrow="Customer collection"
+        title="How customers get their products"
         summary={deliverySummary}
         icon={Truck}
       >
@@ -738,8 +688,8 @@ export default function SettingsMarketplace() {
           />
 
           <ToggleRow
-            title="Store delivery"
-            detail="Your store confirms the address, fee and delivery time."
+            title="Delivery from store"
+            detail="You arrange delivery and confirm the address, fee and delivery time."
             checked={form.deliveryEnabled}
             onChange={(value) =>
               updateField("deliveryEnabled", value)
@@ -747,15 +697,6 @@ export default function SettingsMarketplace() {
             icon={Truck}
           />
 
-          <ToggleRow
-            title="Temporarily closed"
-            detail="Keep the store visible but stop new requests."
-            checked={form.temporarilyClosed}
-            onChange={(value) =>
-              updateField("temporarilyClosed", value)
-            }
-            icon={AlertCircle}
-          />
         </div>
 
         {form.deliveryEnabled ? (
@@ -814,38 +755,29 @@ export default function SettingsMarketplace() {
       </SectionCard>
 
       <SectionCard
-        id="marketplace-payments"
-        section="payments"
+        id="marketplace-availability"
+        section="availability"
         activeSection={activeSection}
         onOpen={setActiveSection}
-        eyebrow="Payments"
-        title="How customers can pay"
-        summary={paymentSummary}
-        icon={CircleDollarSign}
+        eyebrow="Store availability"
+        title="Accepting customer requests"
+        summary={
+          form.temporarilyClosed
+            ? "New requests are paused"
+            : "Customers can send new requests"
+        }
+        icon={AlertCircle}
       >
-        <div className="svx-marketplace-payment-grid">
-          {PAYMENT_OPTIONS.map((option) => {
-            const selected = form.paymentMethods.includes(option.value);
-
-            return (
-              <button
-                type="button"
-                key={option.value}
-                className={cx(
-                  "svx-marketplace-payment-option",
-                  selected && "is-selected",
-                )}
-                onClick={() => togglePaymentMethod(option.value)}
-              >
-                <span className="svx-marketplace-payment-check">
-                  {selected ? <Check size={15} /> : null}
-                </span>
-
-                <strong>{option.label}</strong>
-                <small>{option.detail}</small>
-              </button>
-            );
-          })}
+        <div className="svx-marketplace-toggle-stack">
+          <ToggleRow
+            title="Pause new requests"
+            detail="Keep products visible while temporarily stopping new customer requests."
+            checked={form.temporarilyClosed}
+            onChange={(value) =>
+              updateField("temporarilyClosed", value)
+            }
+            icon={AlertCircle}
+          />
         </div>
       </SectionCard>
 

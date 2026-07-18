@@ -176,10 +176,10 @@ model Tenant {
   userBranchAssignments UserBranchAssignment[]
   branchInventory       BranchInventory[]
 
-  documentSettings TenantDocumentSettings?
-  documentCounter  TenantDocumentCounter?
-  subscription       Subscription?
-  marketplaceProfile MarketplaceSellerProfile?
+  documentSettings    TenantDocumentSettings?
+  documentCounter     TenantDocumentCounter?
+  subscription        Subscription?
+  marketplaceProfile  MarketplaceSellerProfile?
   marketplaceRequests MarketplaceRequest[]
 
   proformas            Proforma[]
@@ -242,7 +242,7 @@ model MarketplaceSellerProfile {
   marketplaceEnabled Boolean @default(false)
   temporarilyClosed  Boolean @default(false)
 
-  pickupEnabled   Boolean @default(true)
+  pickupEnabled   Boolean @default(false)
   deliveryEnabled Boolean @default(false)
 
   defaultDeliveryFee Float @default(0)
@@ -290,44 +290,44 @@ enum MarketplaceRequestPaymentMethod {
 model MarketplaceRequest {
   id String @id @default(uuid())
 
-  tenantId String
-  requestNumber String @unique @db.Text
-  trackingToken String @unique @db.Text
+  tenantId        String
+  requestNumber   String @unique @db.Text
+  trackingToken   String @unique @db.Text
   clientRequestId String @unique @db.Text
 
-  status MarketplaceRequestStatus @default(REQUESTED)
+  status           MarketplaceRequestStatus        @default(REQUESTED)
   preferredContact MarketplaceContactChannel
   fulfilmentMethod MarketplaceFulfilmentMethod
-  paymentMethod MarketplaceRequestPaymentMethod
+  paymentMethod    MarketplaceRequestPaymentMethod
 
-  customerName String @db.Text
+  customerName  String  @db.Text
   customerPhone String? @db.Text
   customerEmail String? @db.Text
 
-  deliveryAddress String? @db.Text
+  deliveryAddress  String? @db.Text
   deliveryDistrict String? @db.Text
-  deliverySector String? @db.Text
-  customerNote String? @db.Text
+  deliverySector   String? @db.Text
+  customerNote     String? @db.Text
 
-  currency String @default("RWF") @db.Text
-  subtotal Float @default(0)
-  deliveryFee Float @default(0)
-  total Float @default(0)
+  currency    String @default("RWF") @db.Text
+  subtotal    Float  @default(0)
+  deliveryFee Float  @default(0)
+  total       Float  @default(0)
 
-  sellerNameSnapshot String @db.Text
+  sellerNameSnapshot  String  @db.Text
   sellerPhoneSnapshot String? @db.Text
   sellerEmailSnapshot String? @db.Text
 
-  submittedAt DateTime @default(now())
+  submittedAt DateTime  @default(now())
   confirmedAt DateTime?
-  rejectedAt DateTime?
+  rejectedAt  DateTime?
   cancelledAt DateTime?
   completedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @default(now()) @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @default(now()) @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  items MarketplaceRequestItem[]
+  tenant Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items  MarketplaceRequestItem[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -343,13 +343,13 @@ model MarketplaceRequestItem {
   requestId String
   productId String
 
-  productSlugSnapshot String @db.Text
-  productTitleSnapshot String @db.Text
+  productSlugSnapshot     String  @db.Text
+  productTitleSnapshot    String  @db.Text
   productCategorySnapshot String? @db.Text
-  productImageSnapshot String? @db.Text
-  productUrlSnapshot String? @db.Text
+  productImageSnapshot    String? @db.Text
+  productUrlSnapshot      String? @db.Text
 
-  quantity Int
+  quantity  Int
   unitPrice Float
   lineTotal Float
 
@@ -357,7 +357,7 @@ model MarketplaceRequestItem {
   updatedAt DateTime @default(now()) @updatedAt
 
   request MarketplaceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  product Product            @relation(fields: [productId], references: [id])
 
   @@index([requestId])
   @@index([productId])
