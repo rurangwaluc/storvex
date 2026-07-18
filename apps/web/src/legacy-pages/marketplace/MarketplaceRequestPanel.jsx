@@ -232,8 +232,8 @@ function normalizedPaymentMethods(
       ].includes(value),
   );
 
-  if (valid.length) {
-    return valid.filter((value) => {
+  const matchingConfigured = valid.filter(
+    (value) => {
       if (
         fulfilmentMethod === "PICKUP"
       ) {
@@ -250,19 +250,33 @@ function normalizedPaymentMethods(
       }
 
       return true;
-    });
+    },
+  );
+
+  if (matchingConfigured.length) {
+    return matchingConfigured;
   }
 
-  return fulfilmentMethod === "DELIVERY"
-    ? [
-        "CASH_ON_DELIVERY",
-        "MOMO_ON_DELIVERY",
-        "SELLER_APPROVED_OTHER",
-      ]
-    : [
-        "PAY_ON_PICKUP",
-        "SELLER_APPROVED_OTHER",
-      ];
+  if (
+    fulfilmentMethod === "DELIVERY"
+  ) {
+    return [
+      "CASH_ON_DELIVERY",
+      "MOMO_ON_DELIVERY",
+      "SELLER_APPROVED_OTHER",
+    ];
+  }
+
+  if (
+    fulfilmentMethod === "PICKUP"
+  ) {
+    return [
+      "PAY_ON_PICKUP",
+      "SELLER_APPROVED_OTHER",
+    ];
+  }
+
+  return [];
 }
 
 function paymentLabel(value) {
