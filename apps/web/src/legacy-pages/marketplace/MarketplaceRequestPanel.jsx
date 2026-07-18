@@ -1023,7 +1023,9 @@ export default function MarketplaceRequestPanel({
               </section>
 
               <section className="svx-marketplace-request-section">
-                <h3>How you will receive it</h3>
+                <h3>
+                  How would you like to receive it?
+                </h3>
 
                 {store?.pickupEnabled &&
                 store?.deliveryEnabled ? (
