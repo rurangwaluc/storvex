@@ -51,6 +51,14 @@
   font-weight: 650;
 }
 
+.svx-marketplace-status-next {
+  display: block;
+  margin-top: 14px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 850;
+}
+
 .svx-marketplace-status-actions {
   display: grid;
   min-width: 180px;

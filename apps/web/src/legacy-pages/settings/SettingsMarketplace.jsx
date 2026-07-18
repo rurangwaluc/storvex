@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -223,6 +229,7 @@ export default function SettingsMarketplace() {
   const [readiness, setReadiness] = useState(null);
   const [form, setForm] = useState(profileSnapshot(null));
   const [activeSection, setActiveSection] = useState("");
+  const autoOpenedSection = useRef(false);
 
   const [deliveryAreaInput, setDeliveryAreaInput] = useState("");
   const [loading, setLoading] = useState(true);
@@ -272,7 +279,6 @@ export default function SettingsMarketplace() {
     : [];
 
   const missingChecks = checks.filter((check) => !check?.done);
-  const completedChecks = checks.filter((check) => check?.done);
 
   const marketplaceEnabled = Boolean(profile?.marketplaceEnabled);
   const marketplaceReady = Boolean(readiness?.ready);
@@ -286,6 +292,43 @@ export default function SettingsMarketplace() {
   );
 
   const firstMissing = missingChecks[0] || null;
+  const firstMissingDetails = firstMissing
+    ? CHECK_DETAILS[firstMissing.key] || null
+    : null;
+
+  const storeNeedsAttention =
+    marketplaceEnabled && !marketplaceReady;
+
+  const statusTitle = storeNeedsAttention
+    ? "Your store needs attention"
+    : marketplaceEnabled
+      ? "Your store is visible"
+      : marketplaceReady
+        ? "Your store is ready to open"
+        : "Finish setting up your store";
+
+  const statusMessage = storeNeedsAttention
+    ? "Complete the missing setup before accepting new customer requests."
+    : marketplaceEnabled
+      ? "Customers can discover the products you publish."
+      : marketplaceReady
+        ? "Everything is ready. Open the store when you are ready for customers."
+        : "Complete the missing setting below before opening your store.";
+
+  useEffect(() => {
+    if (
+      autoOpenedSection.current ||
+      !firstMissingDetails?.section
+    ) {
+      return;
+    }
+
+    autoOpenedSection.current = true;
+
+    if (firstMissingDetails.section !== "products") {
+      setActiveSection(firstMissingDetails.section);
+    }
+  }, [firstMissingDetails?.section]);
 
   const profileSummary = form.description
     ? `${form.displayName || store?.name || "Store"} · Contact details saved`
@@ -471,34 +514,21 @@ export default function SettingsMarketplace() {
     <div className="svx-marketplace-page">
       <section className="svx-marketplace-status-card">
         <div>
-          <p>Marketplace</p>
+          <p>Marketplace store</p>
+          <h1>{statusTitle}</h1>
+          <span>{statusMessage}</span>
 
-          <h1>
-            {marketplaceEnabled
-              ? profile?.temporarilyClosed
-                ? "Your store is temporarily closed"
-                : "Your store is visible"
-              : "Your store is private"}
-          </h1>
-
-          <span>
-            {marketplaceEnabled
-              ? "Customers can discover the products you publish."
-              : marketplaceReady
-                ? "Setup is complete. Your store can now be made visible."
-                : `${missingChecks.length} ${
-                    missingChecks.length === 1 ? "step" : "steps"
-                  } remaining.`}
-          </span>
+          {!marketplaceReady && firstMissingDetails ? (
+            <strong className="svx-marketplace-status-next">
+              Next: {firstMissingDetails.title}
+            </strong>
+          ) : null}
         </div>
 
         <div className="svx-marketplace-status-actions">
-          <span>
-            {readiness?.summary?.done || 0} of{" "}
-            {readiness?.summary?.total || checks.length} complete
-          </span>
-
-          {marketplaceEnabled && publicUrl ? (
+          {marketplaceEnabled &&
+          marketplaceReady &&
+          publicUrl ? (
             <Link to={publicUrl}>
               View store
               <ExternalLink size={15} />
@@ -511,7 +541,8 @@ export default function SettingsMarketplace() {
               className="svx-marketplace-primary-button"
               onClick={continueSetup}
             >
-              Continue setup
+              {firstMissingDetails?.action ||
+                "Continue setup"}
               <ChevronRight size={17} />
             </button>
           ) : (
@@ -521,82 +552,17 @@ export default function SettingsMarketplace() {
               disabled={activationBusy || dirty}
               className="svx-marketplace-primary-button"
               onClick={() =>
-                changeMarketplaceVisibility(!marketplaceEnabled)
+                changeMarketplaceVisibility(
+                  !marketplaceEnabled,
+                )
               }
             >
               {marketplaceEnabled
                 ? "Make store private"
-                : "Make store visible"}
+                : "Open Marketplace store"}
             </AsyncButton>
           )}
         </div>
-      </section>
-
-      {!marketplaceReady ? (
-        <section className="svx-marketplace-steps-card">
-          <div className="svx-marketplace-card-heading">
-            <div>
-              <p>Next steps</p>
-              <h2>Finish Marketplace setup</h2>
-            </div>
-
-            <span>{completedChecks.length} completed</span>
-          </div>
-
-          <div className="svx-marketplace-steps-list">
-            {missingChecks.map((check, index) => {
-              const details = CHECK_DETAILS[check.key] || {
-                title: check.label,
-                action: "Complete",
-                section: "profile",
-              };
-
-              return (
-                <button
-                  type="button"
-                  key={check.key}
-                  onClick={() => openSection(details.section)}
-                >
-                  <span className="svx-marketplace-step-number">
-                    {index + 1}
-                  </span>
-
-                  <strong>{details.title}</strong>
-
-                  <span className="svx-marketplace-step-action">
-                    {details.action}
-                    <ChevronRight size={16} />
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
-
-      <section className="svx-marketplace-products-card">
-        <span className="svx-marketplace-products-icon">
-          <PackageCheck size={22} />
-        </span>
-
-        <div>
-          <p>Products</p>
-          <h2>
-            {publishedProducts
-              ? `${publishedProducts} ${
-                  publishedProducts === 1 ? "product" : "products"
-                } visible`
-              : "No products visible yet"}
-          </h2>
-          <span>
-            Choose which products customers can see from Stock.
-          </span>
-        </div>
-
-        <Link to="/app/inventory">
-          Choose products
-          <ChevronRight size={17} />
-        </Link>
       </section>
 
       <SectionCard
@@ -671,8 +637,8 @@ export default function SettingsMarketplace() {
         section="delivery"
         activeSection={activeSection}
         onOpen={setActiveSection}
-        eyebrow="Customer collection"
-        title="How customers get their products"
+        eyebrow="Pickup and delivery"
+        title="Pickup and delivery"
         summary={deliverySummary}
         icon={Truck}
       >
@@ -754,32 +720,59 @@ export default function SettingsMarketplace() {
         ) : null}
       </SectionCard>
 
-      <SectionCard
-        id="marketplace-availability"
-        section="availability"
-        activeSection={activeSection}
-        onOpen={setActiveSection}
-        eyebrow="Store availability"
-        title="Accepting customer requests"
-        summary={
-          form.temporarilyClosed
-            ? "New requests are paused"
-            : "Customers can send new requests"
-        }
-        icon={AlertCircle}
-      >
-        <div className="svx-marketplace-toggle-stack">
-          <ToggleRow
-            title="Pause new requests"
-            detail="Keep products visible while temporarily stopping new customer requests."
-            checked={form.temporarilyClosed}
-            onChange={(value) =>
-              updateField("temporarilyClosed", value)
-            }
-            icon={AlertCircle}
-          />
+      <section className="svx-marketplace-products-card">
+        <span className="svx-marketplace-products-icon">
+          <PackageCheck size={22} />
+        </span>
+
+        <div>
+          <p>Products</p>
+          <h2>
+            {publishedProducts
+              ? `${publishedProducts} ${
+                  publishedProducts === 1 ? "product" : "products"
+                } visible`
+              : "No products visible yet"}
+          </h2>
+          <span>
+            Choose which products customers can see from Stock.
+          </span>
         </div>
-      </SectionCard>
+
+        <Link to="/app/inventory">
+          Choose products
+          <ChevronRight size={17} />
+        </Link>
+      </section>
+
+      {marketplaceEnabled ? (
+      <SectionCard
+          id="marketplace-availability"
+          section="availability"
+          activeSection={activeSection}
+          onOpen={setActiveSection}
+          eyebrow="Store availability"
+          title="Accepting customer requests"
+          summary={
+            form.temporarilyClosed
+              ? "New requests are paused"
+              : "Customers can send new requests"
+          }
+          icon={AlertCircle}
+        >
+          <div className="svx-marketplace-toggle-stack">
+            <ToggleRow
+              title="Pause new requests"
+              detail="Keep products visible while temporarily stopping new customer requests."
+              checked={form.temporarilyClosed}
+              onChange={(value) =>
+                updateField("temporarilyClosed", value)
+              }
+              icon={AlertCircle}
+            />
+          </div>
+        </SectionCard>
+      ) : null}
 
       {dirty ? (
         <div className="svx-marketplace-save-bar">
