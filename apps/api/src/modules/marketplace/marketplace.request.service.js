@@ -145,6 +145,49 @@ function trackingToken() {
     .toString("hex");
 }
 
+function marketplacePublicBaseUrl() {
+  const configured =
+    cleanString(
+      process.env.MARKETPLACE_PUBLIC_URL,
+      500,
+    ) ||
+    cleanString(
+      process.env.PUBLIC_WEB_URL,
+      500,
+    ) ||
+    cleanString(
+      process.env.WEB_APP_URL,
+      500,
+    ) ||
+    "https://www.storvex.rw";
+
+  return configured.replace(/\/+$/, "");
+}
+
+function marketplaceProductUrl(
+  storeSlug,
+  productSlug,
+) {
+  const safeStoreSlug =
+    encodeURIComponent(
+      cleanString(storeSlug, 72) || "",
+    );
+
+  const safeProductSlug =
+    encodeURIComponent(
+      cleanString(productSlug, 120) || "",
+    );
+
+  if (
+    !safeStoreSlug ||
+    !safeProductSlug
+  ) {
+    return null;
+  }
+
+  return `${marketplacePublicBaseUrl()}/marketplace/${safeStoreSlug}/${safeProductSlug}`;
+}
+
 function money(value) {
   return Math.max(
     0,
@@ -421,10 +464,19 @@ function buildWhatsappMessage({
     lines.push(
       `${item.productTitleSnapshot}`,
       `Quantity: ${item.quantity}`,
-      `Amount: ${formatMoney(
+      `Unit price: ${formatMoney(
+        item.unitPrice,
+        request.currency,
+      )}`,
+      `Item total: ${formatMoney(
         item.lineTotal,
         request.currency,
       )}`,
+      ...(item.productUrlSnapshot
+        ? [
+            `Product: ${item.productUrlSnapshot}`,
+          ]
+        : []),
       "",
     );
   }
@@ -498,10 +550,23 @@ function buildRequestEmail({
   const itemText = items
     .map(
       (item) =>
-        `${item.productTitleSnapshot}\nQuantity: ${item.quantity}\nAmount: ${formatMoney(
-          item.lineTotal,
-          request.currency,
-        )}`,
+        [
+          item.productTitleSnapshot,
+          `Quantity: ${item.quantity}`,
+          `Unit price: ${formatMoney(
+            item.unitPrice,
+            request.currency,
+          )}`,
+          `Item total: ${formatMoney(
+            item.lineTotal,
+            request.currency,
+          )}`,
+          item.productUrlSnapshot
+            ? `Product: ${item.productUrlSnapshot}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n"),
     )
     .join("\n\n");
 
@@ -556,7 +621,35 @@ function buildRequestEmail({
             <div style="margin-top:4px;color:#64748b;">
               Quantity: ${item.quantity}
             </div>
+
+            <div style="margin-top:4px;color:#64748b;">
+              Unit price:
+              ${escapeHtml(
+                formatMoney(
+                  item.unitPrice,
+                  request.currency,
+                ),
+              )}
+            </div>
+
+            ${
+              item.productUrlSnapshot
+                ? `
+                  <div style="margin-top:8px;">
+                    <a
+                      href="${escapeHtml(
+                        item.productUrlSnapshot,
+                      )}"
+                      style="color:#2563eb;text-decoration:none;font-weight:700;"
+                    >
+                      View product
+                    </a>
+                  </div>
+                `
+                : ""
+            }
           </td>
+
           <td align="right" style="padding:12px 0;border-bottom:1px solid #e5e7eb;">
             ${escapeHtml(
               formatMoney(
@@ -1021,6 +1114,11 @@ async function submitMarketplaceRequest(
       productImageSnapshot:
         product.images?.[0]?.url ||
         null,
+      productUrlSnapshot:
+        marketplaceProductUrl(
+          seller.publicSlug,
+          product.marketplaceSlug,
+        ),
       quantity:
         requestedItem.quantity,
       unitPrice,
@@ -1187,6 +1285,8 @@ module.exports.__private = {
   normalizeList,
   validateRequestInput,
   marketplaceRequestNumber,
+  marketplacePublicBaseUrl,
+  marketplaceProductUrl,
   buildWhatsappMessage,
   buildWhatsappUrl,
   buildRequestEmail,

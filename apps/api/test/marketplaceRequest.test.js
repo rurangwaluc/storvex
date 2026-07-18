@@ -240,3 +240,96 @@ test(
     );
   },
 );
+
+test(
+  "builds the product URL from validated store and product slugs",
+  () => {
+    const {
+      marketplaceProductUrl,
+    } = require(
+      "../src/modules/marketplace/marketplace.request.service",
+    ).__private;
+
+    const previous =
+      process.env.MARKETPLACE_PUBLIC_URL;
+
+    process.env.MARKETPLACE_PUBLIC_URL =
+      "https://www.storvex.rw/";
+
+    try {
+      assert.equal(
+        marketplaceProductUrl(
+          "ruraxis-ltd",
+          "hp-pavilion-15-6ee692",
+        ),
+        "https://www.storvex.rw/marketplace/ruraxis-ltd/hp-pavilion-15-6ee692",
+      );
+    } finally {
+      if (previous === undefined) {
+        delete process.env
+          .MARKETPLACE_PUBLIC_URL;
+      } else {
+        process.env
+          .MARKETPLACE_PUBLIC_URL =
+          previous;
+      }
+    }
+  },
+);
+
+test(
+  "includes product URL in the WhatsApp request message",
+  () => {
+    const {
+      buildWhatsappMessage,
+    } = require(
+      "../src/modules/marketplace/marketplace.request.service",
+    ).__private;
+
+    const message =
+      buildWhatsappMessage({
+        request: {
+          requestNumber:
+            "SVX-20260718-12345678",
+          sellerNameSnapshot:
+            "RURAXIS LTD",
+          customerName:
+            "Luc Rurangwa",
+          customerPhone:
+            "250785587833",
+          fulfilmentMethod:
+            "PICKUP",
+          paymentMethod:
+            "PAY_ON_PICKUP",
+          currency: "RWF",
+          total: 650000,
+        },
+        items: [
+          {
+            productTitleSnapshot:
+              "HP Pavilion 15",
+            productUrlSnapshot:
+              "https://www.storvex.rw/marketplace/ruraxis-ltd/hp-pavilion-15-6ee692",
+            quantity: 1,
+            unitPrice: 650000,
+            lineTotal: 650000,
+          },
+        ],
+      });
+
+    assert.match(
+      message,
+      /https:\/\/www\.storvex\.rw\/marketplace\/ruraxis-ltd\/hp-pavilion-15-6ee692/,
+    );
+
+    assert.match(
+      message,
+      /Unit price: Rwf 650,000/,
+    );
+
+    assert.match(
+      message,
+      /Item total: Rwf 650,000/,
+    );
+  },
+);

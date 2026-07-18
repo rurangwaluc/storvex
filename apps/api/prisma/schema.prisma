@@ -347,6 +347,7 @@ model MarketplaceRequestItem {
   productTitleSnapshot String @db.Text
   productCategorySnapshot String? @db.Text
   productImageSnapshot String? @db.Text
+  productUrlSnapshot String? @db.Text
 
   quantity Int
   unitPrice Float
