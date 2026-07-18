@@ -63,15 +63,6 @@ function formatMoney(value, currency = "RWF") {
   }
 }
 
-function humanize(value) {
-  return cleanString(value)
-    .toLowerCase()
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (letter) =>
-      letter.toUpperCase(),
-    );
-}
-
 function marketplaceProductPath(item) {
   const storeSlug = cleanString(item?.seller?.slug);
   const productSlug = cleanString(item?.slug);
@@ -207,93 +198,6 @@ function defaultFulfilment(store) {
   return "";
 }
 
-function normalizedPaymentMethods(
-  store,
-  fulfilmentMethod,
-) {
-  const configured =
-    Array.isArray(store?.paymentMethods)
-      ? store.paymentMethods
-          .map((value) =>
-            cleanString(value)
-              .toUpperCase()
-              .replace(/[^A-Z0-9]+/g, "_"),
-          )
-          .filter(Boolean)
-      : [];
-
-  const valid = configured.filter(
-    (value) =>
-      [
-        "CASH_ON_DELIVERY",
-        "MOMO_ON_DELIVERY",
-        "PAY_ON_PICKUP",
-        "SELLER_APPROVED_OTHER",
-      ].includes(value),
-  );
-
-  const matchingConfigured = valid.filter(
-    (value) => {
-      if (
-        fulfilmentMethod === "PICKUP"
-      ) {
-        return ![
-          "CASH_ON_DELIVERY",
-          "MOMO_ON_DELIVERY",
-        ].includes(value);
-      }
-
-      if (
-        fulfilmentMethod === "DELIVERY"
-      ) {
-        return value !== "PAY_ON_PICKUP";
-      }
-
-      return true;
-    },
-  );
-
-  if (matchingConfigured.length) {
-    return matchingConfigured;
-  }
-
-  if (
-    fulfilmentMethod === "DELIVERY"
-  ) {
-    return [
-      "CASH_ON_DELIVERY",
-      "MOMO_ON_DELIVERY",
-      "SELLER_APPROVED_OTHER",
-    ];
-  }
-
-  if (
-    fulfilmentMethod === "PICKUP"
-  ) {
-    return [
-      "PAY_ON_PICKUP",
-      "SELLER_APPROVED_OTHER",
-    ];
-  }
-
-  return [];
-}
-
-function paymentLabel(value) {
-  const labels = {
-    CASH_ON_DELIVERY:
-      "Cash when delivered",
-    MOMO_ON_DELIVERY:
-      "MoMo when delivered",
-    PAY_ON_PICKUP:
-      "Pay when collecting",
-    SELLER_APPROVED_OTHER:
-      "Another method agreed with store",
-  };
-
-  return labels[value] || humanize(value);
-}
-
 function emailDeliverySucceeded(
   communication,
 ) {
@@ -369,7 +273,6 @@ export default function MarketplaceRequestPanel({
         .customerEmail || "",
     preferredContact: "WHATSAPP",
     fulfilmentMethod: "",
-    paymentMethod: "",
     deliveryAddress: "",
     deliveryDistrict:
       savedCustomerRef.current
@@ -605,7 +508,7 @@ export default function MarketplaceRequestPanel({
           fulfilmentMethod:
             form.fulfilmentMethod,
           paymentMethod:
-            form.paymentMethod,
+            "SELLER_APPROVED_OTHER",
           customerName:
             cleanString(
               form.customerName,
@@ -1161,12 +1064,11 @@ export default function MarketplaceRequestPanel({
               </section>
 
               <section className="svx-marketplace-request-section">
-                <h3>
-                  Pickup or delivery
-                </h3>
+                <h3>How you will receive it</h3>
 
-                <div className="svx-marketplace-request-options">
-                  {store?.pickupEnabled ? (
+                {store?.pickupEnabled &&
+                store?.deliveryEnabled ? (
+                  <div className="svx-marketplace-request-options">
                     <label>
                       <input
                         type="radio"
@@ -1186,21 +1088,19 @@ export default function MarketplaceRequestPanel({
                       />
 
                       <span>
-                        <PackageCheck
-                          size={17}
-                        />
+                        <PackageCheck size={17} />
+
                         <strong>
                           Store pickup
                         </strong>
+
                         <small>
                           The store confirms when
                           your products are ready.
                         </small>
                       </span>
                     </label>
-                  ) : null}
 
-                  {store?.deliveryEnabled ? (
                     <label>
                       <input
                         type="radio"
@@ -1221,17 +1121,41 @@ export default function MarketplaceRequestPanel({
 
                       <span>
                         <Truck size={17} />
+
                         <strong>
                           Seller delivery
                         </strong>
+
                         <small>
                           The store arranges and
                           confirms delivery.
                         </small>
                       </span>
                     </label>
-                  ) : null}
-                </div>
+                  </div>
+                ) : (
+                  <div className="svx-marketplace-request-fixed-option">
+                    {store?.deliveryEnabled ? (
+                      <Truck size={17} />
+                    ) : (
+                      <PackageCheck size={17} />
+                    )}
+
+                    <span>
+                      <strong>
+                        {store?.deliveryEnabled
+                          ? "Seller delivery"
+                          : "Store pickup"}
+                      </strong>
+
+                      <small>
+                        {store?.deliveryEnabled
+                          ? "The store will confirm the delivery arrangements."
+                          : "The store will confirm when your products are ready."}
+                      </small>
+                    </span>
+                  </div>
+                )}
 
                 {form.fulfilmentMethod ===
                 "DELIVERY" ? (
@@ -1240,6 +1164,7 @@ export default function MarketplaceRequestPanel({
                       <span>
                         Delivery address
                       </span>
+
                       <textarea
                         value={
                           form.deliveryAddress
@@ -1259,6 +1184,7 @@ export default function MarketplaceRequestPanel({
                     <div>
                       <label>
                         <span>District</span>
+
                         <input
                           type="text"
                           value={
@@ -1276,6 +1202,7 @@ export default function MarketplaceRequestPanel({
 
                       <label>
                         <span>Sector</span>
+
                         <input
                           type="text"
                           value={
@@ -1307,45 +1234,6 @@ export default function MarketplaceRequestPanel({
                     ) : null}
                   </div>
                 ) : null}
-              </section>
-
-              <section className="svx-marketplace-request-section">
-                <label htmlFor="marketplace-payment-method">
-                  Payment
-                </label>
-
-                <select
-                  id="marketplace-payment-method"
-                  value={
-                    form.paymentMethod
-                  }
-                  onChange={(event) =>
-                    updateField(
-                      "paymentMethod",
-                      event.target.value,
-                    )
-                  }
-                  disabled={submitting}
-                >
-                  {paymentMethods.map(
-                    (method) => (
-                      <option
-                        key={method}
-                        value={method}
-                      >
-                        {paymentLabel(
-                          method,
-                        )}
-                      </option>
-                    ),
-                  )}
-                </select>
-
-                <small>
-                  Payment is completed at pickup
-                  or delivery after the store
-                  confirms the request.
-                </small>
               </section>
 
               <section className="svx-marketplace-request-section">

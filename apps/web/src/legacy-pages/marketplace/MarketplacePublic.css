@@ -7919,6 +7919,41 @@ body:has(.storvex-marketplace) #root {
 }
 
 
+
+/* Marketplace fixed fulfilment option */
+.svx-marketplace-request-fixed-option {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--landing-border);
+  border-radius: 10px;
+  background: var(--landing-card);
+  padding: 12px;
+}
+
+.svx-marketplace-request-fixed-option > svg {
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-request-fixed-option > span {
+  display: grid;
+  gap: 3px;
+}
+
+.svx-marketplace-request-fixed-option strong {
+  color: var(--landing-text);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.svx-marketplace-request-fixed-option small {
+  color: var(--landing-muted);
+  font-size: 9px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 /* Marketplace customer request polish */
 @media (min-width: 560px) {
   .svx-marketplace-request-fields {
