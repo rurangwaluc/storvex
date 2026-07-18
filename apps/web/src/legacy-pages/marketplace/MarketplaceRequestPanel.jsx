@@ -72,6 +72,19 @@ function humanize(value) {
     );
 }
 
+function marketplaceProductPath(item) {
+  const storeSlug = cleanString(item?.seller?.slug);
+  const productSlug = cleanString(item?.slug);
+
+  if (!storeSlug || !productSlug) {
+    return "/marketplace";
+  }
+
+  return `/marketplace/${encodeURIComponent(
+    storeSlug,
+  )}/${encodeURIComponent(productSlug)}`;
+}
+
 function requestId() {
   if (
     typeof crypto !== "undefined" &&
@@ -900,6 +913,86 @@ export default function MarketplaceRequestPanel({
                 ? "product"
                 : "products"}
             </b>
+          </section>
+
+          <section className="svx-marketplace-request-section svx-marketplace-request-products-section">
+            <h3>Products in this request</h3>
+
+            <div className="svx-marketplace-request-products">
+              {selectedGroup?.items.map((item) => {
+                const quantity = Math.max(
+                  1,
+                  Number(item.quantity || 1),
+                );
+
+                const unitPrice = Math.max(
+                  0,
+                  Number(item.price || 0),
+                );
+
+                const path =
+                  marketplaceProductPath(item);
+
+                return (
+                  <article
+                    key={item.key}
+                    className="svx-marketplace-request-product"
+                  >
+                    <a
+                      href={path}
+                      className="svx-marketplace-request-product-image"
+                      aria-label={`View ${item.title}`}
+                    >
+                      {item.image?.url ? (
+                        <img
+                          src={item.image.url}
+                          alt={
+                            item.image.altText ||
+                            item.title
+                          }
+                        />
+                      ) : (
+                        <PackageCheck
+                          size={20}
+                          aria-hidden="true"
+                        />
+                      )}
+                    </a>
+
+                    <div className="svx-marketplace-request-product-copy">
+                      <a
+                        href={path}
+                        className="svx-marketplace-request-product-title"
+                      >
+                        {item.title}
+                      </a>
+
+                      <span>
+                        {quantity} ×{" "}
+                        {formatMoney(
+                          unitPrice,
+                          item.currency,
+                        )}
+                      </span>
+
+                      <a
+                        href={path}
+                        className="svx-marketplace-request-product-link"
+                      >
+                        View product
+                      </a>
+                    </div>
+
+                    <strong>
+                      {formatMoney(
+                        unitPrice * quantity,
+                        item.currency,
+                      )}
+                    </strong>
+                  </article>
+                );
+              })}
+            </div>
           </section>
 
           {storeLoading ? (

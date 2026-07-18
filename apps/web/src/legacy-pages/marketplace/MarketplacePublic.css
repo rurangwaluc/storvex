@@ -7918,6 +7918,124 @@ body:has(.storvex-marketplace) #root {
   margin-top: 18px;
 }
 
+
+/* Marketplace customer request polish */
+@media (min-width: 560px) {
+  .svx-marketplace-request-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-marketplace-request-fields > label:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .svx-marketplace-request-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.svx-marketplace-request-products-section {
+  gap: 12px;
+}
+
+.svx-marketplace-request-products {
+  display: grid;
+  gap: 9px;
+}
+
+.svx-marketplace-request-product {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid var(--landing-border);
+  border-radius: 10px;
+  background: var(--landing-card);
+  padding: 10px;
+}
+
+.svx-marketplace-request-product-image {
+  display: flex;
+  width: 68px;
+  height: 68px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--landing-border);
+  border-radius: 8px;
+  background: var(--landing-surface);
+  color: var(--landing-muted);
+}
+
+.svx-marketplace-request-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.svx-marketplace-request-product-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.svx-marketplace-request-product-title {
+  overflow: hidden;
+  color: var(--landing-text);
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-marketplace-request-product-copy > span {
+  color: var(--landing-muted);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.svx-marketplace-request-product-link {
+  width: fit-content;
+  color: var(--landing-primary);
+  font-size: 9px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.svx-marketplace-request-product-link:hover,
+.svx-marketplace-request-product-title:hover {
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-request-product > strong {
+  color: var(--landing-text);
+  font-size: 10px;
+  font-weight: 850;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.svx-marketplace-request-delivery > label:first-child {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 480px) {
+  .svx-marketplace-request-product {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+
+  .svx-marketplace-request-product-image {
+    width: 58px;
+    height: 58px;
+  }
+
+  .svx-marketplace-request-product > strong {
+    grid-column: 2;
+    text-align: left;
+  }
+}
+
 @keyframes svx-marketplace-request-spin {
   to {
     transform: rotate(360deg);
