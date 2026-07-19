@@ -867,15 +867,16 @@
   min-height: 42px;
   gap: 8px;
   padding: 0 14px;
-  border: 1px solid var(--border, rgba(15, 23, 42, 0.14));
+  border: 1px solid var(--settings-border);
   border-radius: 8px;
-  background: var(--surface, #ffffff);
-  color: var(--text-primary, #172033);
-  font-family: "Source Sans 3", sans-serif;
+  background: var(--settings-card);
+  color: var(--settings-text);
+  font-family: var(--settings-body-font);
   font-size: 14px;
   font-weight: 700;
   line-height: 1;
   text-decoration: none;
+  box-shadow: none;
   transition:
     border-color 160ms ease,
     background-color 160ms ease,
@@ -883,22 +884,38 @@
 }
 
 .svx-marketplace-back-link:hover {
-  border-color: var(--primary, #2563eb);
-  background: var(--surface-subtle, #f6f8fb);
-  color: var(--primary, #2563eb);
+  border-color: color-mix(
+    in srgb,
+    var(--settings-primary) 42%,
+    var(--settings-border)
+  );
+  background: var(--settings-panel);
+  color: var(--settings-primary);
 }
 
 .svx-marketplace-back-link:focus-visible {
-  outline: 3px solid color-mix(
-    in srgb,
-    var(--primary, #2563eb) 24%,
-    transparent
-  );
+  outline: 3px solid var(--settings-ring);
   outline-offset: 2px;
 }
 
 .svx-marketplace-back-link svg {
   flex: 0 0 auto;
+}
+
+:root[data-theme="dark"] .svx-marketplace-back-link {
+  border-color: var(--settings-input-border);
+  background: var(--settings-input);
+  color: var(--settings-text);
+}
+
+:root[data-theme="dark"] .svx-marketplace-back-link:hover {
+  border-color: color-mix(
+    in srgb,
+    var(--settings-primary) 42%,
+    var(--settings-border)
+  );
+  background: var(--settings-panel-strong);
+  color: var(--settings-primary);
 }
 
 @media (max-width: 640px) {
@@ -910,18 +927,4 @@
     min-height: 44px;
     padding-inline: 13px;
   }
-}
-
-[data-theme="dark"] .svx-marketplace-back-link,
-.dark .svx-marketplace-back-link {
-  border-color: var(--border, rgba(255, 255, 255, 0.14));
-  background: var(--surface, #111827);
-  color: var(--text-primary, #f8fafc);
-}
-
-[data-theme="dark"] .svx-marketplace-back-link:hover,
-.dark .svx-marketplace-back-link:hover {
-  border-color: var(--primary, #60a5fa);
-  background: var(--surface-subtle, #182132);
-  color: var(--primary, #60a5fa);
 }
