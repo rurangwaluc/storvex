@@ -8,6 +8,7 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
+  ArrowLeft,
   AlertCircle,
   ChevronDown,
   ChevronRight,
@@ -478,6 +479,17 @@ export default function SettingsMarketplace() {
 
   return (
     <div className="svx-marketplace-page">
+      <div className="svx-marketplace-back-row">
+        <Link
+          to="/app/settings"
+          className="svx-marketplace-back-link"
+          aria-label="Back to settings"
+        >
+          <ArrowLeft size={17} aria-hidden="true" />
+          <span>Back to settings</span>
+        </Link>
+      </div>
+
       <section className="svx-marketplace-status-card">
         <div>
           <p>Marketplace store</p>
