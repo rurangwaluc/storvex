@@ -111,24 +111,77 @@ function fulfilmentLabel(request) {
   return "Store pickup";
 }
 
+function requestProductWording(request) {
+  const productCount = Array.isArray(request?.items)
+    ? request.items.length
+    : 0;
+
+  const isMultiple = productCount > 1;
+
+  return {
+    isMultiple,
+    product:
+      isMultiple
+        ? "products"
+        : "product",
+    productIs:
+      isMultiple
+        ? "products are"
+        : "product is",
+    productHas:
+      isMultiple
+        ? "products have"
+        : "product has",
+    requestedProducts:
+      isMultiple
+        ? "Requested products"
+        : "Requested product",
+    yourProducts:
+      isMultiple
+        ? "your products"
+        : "your product",
+  };
+}
+
 function ownerReplyStatusMessage(request) {
-  const status = cleanString(request?.status).toUpperCase();
+  const status = cleanString(
+    request?.status,
+  ).toUpperCase();
+
+  const {
+    product,
+    productIs,
+    productHas,
+    yourProducts,
+  } = requestProductWording(request);
 
   const messages = {
     REQUESTED:
-      "We received your request and are checking product availability.",
+      `We received your request and are checking whether the ${productIs} available.`,
     CONFIRMED:
-      "Your request has been confirmed and the requested products are available.",
+      `Your request has been confirmed. The ${productIs} available and ${productHas} been reserved for you.`,
     PREPARING:
-      "We are preparing the requested products.",
+      `We are preparing ${yourProducts}.`,
     READY_FOR_PICKUP:
-      "Your request is ready for pickup.",
+      `${yourProducts.charAt(0).toUpperCase()}${yourProducts.slice(
+        1,
+      )} ${
+        product === "products"
+          ? "are"
+          : "is"
+      } ready for pickup.`,
     OUT_FOR_DELIVERY:
-      "Your request is now out for delivery.",
+      `${yourProducts.charAt(0).toUpperCase()}${yourProducts.slice(
+        1,
+      )} ${
+        product === "products"
+          ? "are"
+          : "is"
+      } now out for delivery.`,
     COMPLETED:
       "Your request has been completed. Thank you for choosing us.",
     REJECTED:
-      "We are sorry, but we are unable to fulfil this request.",
+      `We are sorry, but we are unable to fulfil the requested ${product}.`,
     CANCELLED:
       "This request has been cancelled.",
   };
@@ -152,6 +205,10 @@ function buildOwnerReplyMessage(request) {
     ? request.items
     : [];
 
+  const {
+    requestedProducts,
+  } = requestProductWording(request);
+
   const lines = [
     `Hello ${customerName},`,
     "",
@@ -161,7 +218,7 @@ function buildOwnerReplyMessage(request) {
     "",
     ownerReplyStatusMessage(request),
     "",
-    "Requested products",
+    requestedProducts,
   ];
 
   items.forEach((item, index) => {
