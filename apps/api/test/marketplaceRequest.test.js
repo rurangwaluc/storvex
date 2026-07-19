@@ -328,6 +328,80 @@ test(
 );
 
 test(
+  "formats WhatsApp request labels for easy scanning",
+  () => {
+    const message = buildWhatsappMessage({
+      request: {
+        requestNumber:
+          "SVX-RUR-20260719-003",
+        sellerNameSnapshot:
+          "RURAXIS LTD",
+        fulfilmentMethod:
+          "DELIVERY",
+        deliveryCoverage:
+          "OUTSIDE_KIGALI",
+        deliveryAddress:
+          "Near Huye main market",
+        deliveryDistrict:
+          "Huye",
+        deliverySector:
+          "Ngoma",
+        customerName:
+          "Delivery Customer",
+        customerPhone:
+          "250788000000",
+        customerNote: null,
+        currency: "RWF",
+        total: 650000,
+      },
+      items: [
+        {
+          productTitleSnapshot:
+            "HP Pavilion 15",
+          productUrlSnapshot:
+            "https://www.storvex.rw/marketplace/ruraxis-ltd/hp-pavilion-15",
+          quantity: 1,
+          lineTotal: 650000,
+        },
+      ],
+    });
+
+    assert.match(
+      message,
+      /\*Request number\*/,
+    );
+    assert.match(
+      message,
+      /\*Product\*/,
+    );
+    assert.match(
+      message,
+      /\*Quantity\*/,
+    );
+    assert.match(
+      message,
+      /\*Item total\*/,
+    );
+    assert.match(
+      message,
+      /\*View product\*/,
+    );
+    assert.match(
+      message,
+      /\*How I will receive it\*/,
+    );
+    assert.match(
+      message,
+      /\*Delivery area\*/,
+    );
+    assert.match(
+      message,
+      /\*Delivery address\*/,
+    );
+  },
+);
+
+test(
   "builds the product URL from validated store and product slugs",
   () => {
     const {
@@ -410,32 +484,32 @@ test(
 
     assert.match(
       message,
-      /Request number\nSVX-20260718-12345678/,
+      /\*Request number\*\nSVX-20260718-12345678/,
     );
 
     assert.match(
       message,
-      /Product\nHP Pavilion 15/,
+      /\*Product\*\nHP Pavilion 15/,
     );
 
     assert.match(
       message,
-      /Quantity\n1/,
+      /\*Quantity\*\n1/,
     );
 
     assert.match(
       message,
-      /Item total\nRwf 650,000/,
+      /\*Item total\*\nRwf 650,000/,
     );
 
     assert.match(
       message,
-      /How I will receive it\nStore pickup/,
+      /\*How I will receive it\*\nStore pickup/,
     );
 
     assert.match(
       message,
-      /Phone\n\+250 785 587 833/,
+      /\*Phone\*\n\+250 785 587 833/,
     );
 
     assert.doesNotMatch(
@@ -655,6 +729,26 @@ test(
     assert.match(
       email.text,
       /Rwf 650,000/,
+    );
+    assert.match(
+      email.html,
+      /<strong>Request number:<\/strong>/,
+    );
+    assert.match(
+      email.html,
+      /<strong>Product<\/strong>/,
+    );
+    assert.match(
+      email.html,
+      /<strong>Quantity:<\/strong>/,
+    );
+    assert.match(
+      email.html,
+      /<strong>Item total<\/strong>/,
+    );
+    assert.match(
+      email.html,
+      /<strong>View product<\/strong>/,
     );
   },
 );

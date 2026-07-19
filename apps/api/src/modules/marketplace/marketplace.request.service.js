@@ -618,7 +618,7 @@ function buildWhatsappMessage({
     "",
     "I have submitted a product request through Storvex.",
     "",
-    "Request number",
+    "*Request number*",
     request.requestNumber,
     "",
   ];
@@ -626,19 +626,19 @@ function buildWhatsappMessage({
   items.forEach((item, index) => {
     if (items.length > 1) {
       lines.push(
-        `Product ${index + 1}`,
+        `*Product ${index + 1}*`,
       );
     } else {
-      lines.push("Product");
+      lines.push("*Product*");
     }
 
     lines.push(
       item.productTitleSnapshot,
       "",
-      "Quantity",
+      "*Quantity*",
       String(item.quantity),
       "",
-      "Item total",
+      "*Item total*",
       formatMoney(
         item.lineTotal,
         request.currency,
@@ -648,7 +648,7 @@ function buildWhatsappMessage({
 
     if (item.productUrlSnapshot) {
       lines.push(
-        "View product",
+        "*View product*",
         item.productUrlSnapshot,
         "",
       );
@@ -656,13 +656,13 @@ function buildWhatsappMessage({
   });
 
   lines.push(
-    "Total",
+    "*Total*",
     formatMoney(
       request.total,
       request.currency,
     ),
     "",
-    "How I will receive it",
+    "*How I will receive it*",
     request.fulfilmentMethod === "DELIVERY"
       ? `Delivery by ${request.sellerNameSnapshot}`
       : "Store pickup",
@@ -673,7 +673,7 @@ function buildWhatsappMessage({
     request.fulfilmentMethod === "DELIVERY"
   ) {
     lines.push(
-      "Delivery area",
+      "*Delivery area*",
       request.deliveryCoverage ===
         "OUTSIDE_KIGALI"
         ? "Outside Kigali"
@@ -683,7 +683,7 @@ function buildWhatsappMessage({
 
     if (request.deliveryAddress) {
       lines.push(
-        "Delivery address",
+        "*Delivery address*",
         request.deliveryAddress,
         "",
       );
@@ -698,7 +698,7 @@ function buildWhatsappMessage({
 
     if (location) {
       lines.push(
-        "Location",
+        "*Location*",
         location,
         "",
       );
@@ -706,7 +706,7 @@ function buildWhatsappMessage({
   }
 
   lines.push(
-    "Customer",
+    "*Customer*",
     request.customerName,
     "",
   );
@@ -718,7 +718,7 @@ function buildWhatsappMessage({
 
   if (customerPhone) {
     lines.push(
-      "Phone",
+      "*Phone*",
       customerPhone,
       "",
     );
@@ -726,7 +726,7 @@ function buildWhatsappMessage({
 
   if (request.customerNote) {
     lines.push(
-      "Note",
+      "*Note*",
       request.customerNote,
       "",
     );
@@ -852,15 +852,21 @@ function buildRequestEmail({
       (item) => `
         <tr>
           <td style="padding:12px 0;border-bottom:1px solid #e5e7eb;">
+            <div style="margin-bottom:4px;font-size:12px;color:#64748b;">
+              <strong>Product</strong>
+            </div>
+
             <strong>${escapeHtml(
               item.productTitleSnapshot,
             )}</strong>
-            <div style="margin-top:4px;color:#64748b;">
-              Quantity: ${item.quantity}
+
+            <div style="margin-top:6px;color:#64748b;">
+              <strong>Quantity:</strong>
+              ${item.quantity}
             </div>
 
             <div style="margin-top:4px;color:#64748b;">
-              Unit price:
+              <strong>Unit price:</strong>
               ${escapeHtml(
                 formatMoney(
                   item.unitPrice,
@@ -879,7 +885,7 @@ function buildRequestEmail({
                       )}"
                       style="color:#2563eb;text-decoration:none;font-weight:700;"
                     >
-                      View product
+                      <strong>View product</strong>
                     </a>
                   </div>
                 `
@@ -888,12 +894,18 @@ function buildRequestEmail({
           </td>
 
           <td align="right" style="padding:12px 0;border-bottom:1px solid #e5e7eb;">
-            ${escapeHtml(
-              formatMoney(
-                item.lineTotal,
-                request.currency,
-              ),
-            )}
+            <div style="margin-bottom:4px;font-size:12px;color:#64748b;">
+              <strong>Item total</strong>
+            </div>
+
+            <strong>
+              ${escapeHtml(
+                formatMoney(
+                  item.lineTotal,
+                  request.currency,
+                ),
+              )}
+            </strong>
           </td>
         </tr>
       `,
@@ -910,6 +922,11 @@ function buildRequestEmail({
         <h1 style="margin:0;font-size:24px;line-height:1.25;">
           ${escapeHtml(heading)}
         </h1>
+
+        <p style="margin:12px 0 0;line-height:1.5;color:#475569;">
+          <strong>Request number:</strong>
+          ${escapeHtml(request.requestNumber)}
+        </p>
 
         <p style="margin:16px 0 22px;line-height:1.6;color:#475569;">
           ${escapeHtml(intro)}
