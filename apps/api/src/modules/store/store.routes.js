@@ -5,6 +5,7 @@ const router = express.Router();
 
 const controller = require("./store.controller");
 const marketplaceController = require("./marketplaceSeller.controller");
+const marketplaceRequestsController = require("./marketplaceRequests.controller");
 const requireDbPermission = require("../../middlewares/requireDbPermission");
 const {
   requireMarketplaceEntitlement,
@@ -50,6 +51,20 @@ router.get(
   requireMarketplaceEntitlement,
   requireDbPermission(PERMISSIONS.MARKETPLACE_VIEW),
   marketplaceController.getMarketplaceProfileReadiness
+);
+
+router.get(
+  "/marketplace-requests",
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_VIEW),
+  marketplaceRequestsController.listMarketplaceRequests
+);
+
+router.get(
+  "/marketplace-requests/:requestId",
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_VIEW),
+  marketplaceRequestsController.getMarketplaceRequest
 );
 
 // Write endpoints

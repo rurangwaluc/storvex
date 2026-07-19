@@ -188,6 +188,16 @@ function Icon({ type }) {
         </svg>
       );
 
+    case "marketplace":
+      return (
+        <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.9">
+          <path d="M4 9h16l-1.5-5h-13L4 9Z" strokeLinejoin="round" />
+          <path d="M5 9v11h14V9" />
+          <path d="M9 20v-6h6v6" />
+          <path d="M4 9c0 2 3 2 4 0 1 2 3 2 4 0 1 2 3 2 4 0 1 2 4 2 4 0" strokeLinecap="round" />
+        </svg>
+      );
+
     case "reports":
       return (
         <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.9">
@@ -362,6 +372,12 @@ const NAV_ITEMS = [
         label: "WhatsApp sales",
         icon: "whatsapp",
         roles: WHATSAPP_ROLES,
+      },
+      {
+        to: "/app/marketplace",
+        label: "Marketplace",
+        icon: "marketplace",
+        roles: ["OWNER"],
       },
     ],
   },

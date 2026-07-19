@@ -8,6 +8,8 @@ import ResetPassword from "./legacy-pages/auth/ResetPassword";
 import LandingPage from "./legacy-pages/public/LandingPage";
 import MarketplaceHome from "./legacy-pages/marketplace/MarketplaceHome";
 import MarketplaceProductDetails from "./legacy-pages/marketplace/MarketplaceProductDetails";
+import MarketplaceRequests from "./legacy-pages/marketplace-owner/MarketplaceRequests";
+import MarketplaceRequestDetail from "./legacy-pages/marketplace-owner/MarketplaceRequestDetail";
 
 import Dashboard from "./legacy-pages/dashboard/Dashboard";
 import Employees from "./legacy-pages/employees/EmployeesList";
@@ -193,6 +195,12 @@ export default function App() {
             </Route>
 
             <Route element={<RequireRole roles={["OWNER"]} />}>
+              <Route path="marketplace" element={<MarketplaceRequests />} />
+              <Route
+                path="marketplace/requests/:requestId"
+                element={<MarketplaceRequestDetail />}
+              />
+
               <Route path="audit" element={<AuditLogs />} />
               <Route
                 path="billing"
