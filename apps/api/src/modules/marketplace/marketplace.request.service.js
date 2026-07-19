@@ -1022,6 +1022,7 @@ async function submitMarketplaceRequest(
   );
 
   if (
+    input.paymentMethod !== "SELLER_APPROVED_OTHER" &&
     allowedPayments.length &&
     !allowedPayments.includes(
       input.paymentMethod,
