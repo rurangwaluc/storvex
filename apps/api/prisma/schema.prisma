@@ -372,6 +372,30 @@ model MarketplaceRequestItem {
   @@map("MarketplaceRequestItem")
 }
 
+model MarketplaceRequestReservation {
+  id String @id @default(uuid())
+
+  tenantId      String
+  requestId     String
+  requestItemId String
+  productId     String
+  branchId      String @db.Text
+
+  quantity Int
+
+  createdAt   DateTime  @default(now())
+  releasedAt  DateTime?
+  completedAt DateTime?
+
+  @@unique([requestItemId, branchId])
+  @@index([tenantId, requestId])
+  @@index([tenantId, productId])
+  @@index([tenantId, branchId])
+  @@index([requestId])
+  @@index([requestItemId])
+  @@map("MarketplaceRequestReservation")
+}
+
 model Branch {
   id       String       @id @default(dbgenerated("(gen_random_uuid())::text")) @db.Text
   tenantId String       @db.Text
@@ -2542,7 +2566,6 @@ enum ProductImageStudioStatus {
   READY
   FAILED
 }
-
 
 model MarketplaceRequestDailySequence {
   tenantId   String   @db.Text

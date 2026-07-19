@@ -2601,3 +2601,136 @@
     font-size: 13px;
   }
 }
+
+/* Marketplace request confirmation */
+.svx-market-owner-delivery-fee {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.svx-market-owner-delivery-fee > span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.svx-market-owner-delivery-fee > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  min-height: 46px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.svx-market-owner-delivery-fee strong {
+  padding: 0 13px;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.svx-market-owner-delivery-fee input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  border-left: 1px solid var(--border);
+  outline: 0;
+  padding: 0 13px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+}
+
+.svx-market-owner-delivery-fee input:focus {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.svx-market-owner-delivery-fee small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.svx-market-owner-request-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.svx-market-owner-request-actions button,
+.svx-market-owner-action-confirmation button {
+  min-height: 44px;
+  border: 1px solid var(--border);
+  padding: 0 16px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.svx-market-owner-request-actions button:disabled,
+.svx-market-owner-action-confirmation button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.svx-market-owner-request-actions .is-confirm,
+.svx-market-owner-action-confirmation .is-confirm {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.svx-market-owner-request-actions .is-reject,
+.svx-market-owner-action-confirmation .is-reject {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.svx-market-owner-action-confirmation {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.svx-market-owner-action-confirmation > strong {
+  color: var(--text);
+  font-size: 0.94rem;
+}
+
+.svx-market-owner-action-confirmation > p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.svx-market-owner-action-confirmation > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 560px) {
+  .svx-market-owner-request-actions,
+  .svx-market-owner-action-confirmation > div {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-market-owner-request-actions .is-confirm {
+    grid-row: 1;
+  }
+
+  .svx-market-owner-request-actions .is-reject {
+    grid-row: 2;
+  }
+}

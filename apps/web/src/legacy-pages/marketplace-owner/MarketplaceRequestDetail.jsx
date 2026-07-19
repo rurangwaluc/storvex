@@ -10,7 +10,9 @@ import {
 import toast from "react-hot-toast";
 
 import {
+  confirmOwnerMarketplaceRequest,
   getOwnerMarketplaceRequest,
+  rejectOwnerMarketplaceRequest,
 } from "../../services/marketplaceOwnerApi";
 import MarketplaceOwnerHeader from "./MarketplaceOwnerHeader";
 import "./MarketplaceOwner.css";
@@ -259,6 +261,15 @@ export default function MarketplaceRequestDetail() {
   const [loading, setLoading] =
     useState(true);
 
+  const [actionBusy, setActionBusy] =
+    useState(false);
+
+  const [pendingAction, setPendingAction] =
+    useState("");
+
+  const [deliveryFee, setDeliveryFee] =
+    useState("");
+
   useEffect(() => {
     let alive = true;
 
@@ -311,6 +322,103 @@ export default function MarketplaceRequestDetail() {
         : 0,
     [request],
   );
+
+  const isNewRequest =
+    cleanString(request?.status).toUpperCase() ===
+    "REQUESTED";
+
+  const requiresDeliveryFee =
+    request?.fulfilmentMethod === "DELIVERY" &&
+    request?.deliveryCoverage ===
+      "OUTSIDE_KIGALI";
+
+  async function handleConfirmRequest() {
+    if (!request || actionBusy) {
+      return;
+    }
+
+    const payload = {};
+
+    if (requiresDeliveryFee) {
+      const amount = Number(deliveryFee);
+
+      if (
+        deliveryFee === "" ||
+        !Number.isFinite(amount) ||
+        amount < 0
+      ) {
+        toast.error(
+          "Enter a valid delivery cost before confirming.",
+        );
+        return;
+      }
+
+      payload.deliveryFee = amount;
+    }
+
+    try {
+      setActionBusy(true);
+
+      const result =
+        await confirmOwnerMarketplaceRequest(
+          request.id,
+          payload,
+        );
+
+      setRequest(
+        result?.request || request,
+      );
+
+      setPendingAction("");
+
+      toast.success(
+        "Request confirmed and stock reserved.",
+      );
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        error?.message ||
+          "Failed to confirm request",
+      );
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function handleRejectRequest() {
+    if (!request || actionBusy) {
+      return;
+    }
+
+    try {
+      setActionBusy(true);
+
+      const result =
+        await rejectOwnerMarketplaceRequest(
+          request.id,
+        );
+
+      setRequest(
+        result?.request || request,
+      );
+
+      setPendingAction("");
+
+      toast.success(
+        "Request rejected.",
+      );
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        error?.message ||
+          "Failed to reject request",
+      );
+    } finally {
+      setActionBusy(false);
+    }
+  }
 
   return (
     <div className="svx-market-owner-page svx-market-owner-detail-page">
@@ -655,17 +763,163 @@ export default function MarketplaceRequestDetail() {
                 </section>
 
                 <section className="svx-market-owner-next-step">
-                  <span>Next step</span>
+                  {isNewRequest ? (
+                    <>
+                      <span>Next step</span>
 
-                  <h3>
-                    Review stock before confirming
-                  </h3>
+                      <h3>
+                        Review stock and confirm
+                      </h3>
 
-                  <p>
-                    Confirmation, stock reservation
-                    and sale creation will be added
-                    in the next workflow stage.
-                  </p>
+                      <p>
+                        Confirm only when all requested
+                        products are available. Storvex
+                        will reserve the stock without
+                        creating a sale.
+                      </p>
+
+                      {requiresDeliveryFee ? (
+                        <label className="svx-market-owner-delivery-fee">
+                          <span>
+                            Delivery cost
+                          </span>
+
+                          <div>
+                            <strong>
+                              {request.currency ||
+                                "RWF"}
+                            </strong>
+
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              inputMode="decimal"
+                              value={deliveryFee}
+                              onChange={(event) =>
+                                setDeliveryFee(
+                                  event.target.value,
+                                )
+                              }
+                              placeholder="0"
+                              disabled={actionBusy}
+                            />
+                          </div>
+
+                          <small>
+                            The customer will see this
+                            amount when the request is
+                            confirmed.
+                          </small>
+                        </label>
+                      ) : null}
+
+                      <div className="svx-market-owner-request-actions">
+                        <button
+                          type="button"
+                          className="is-reject"
+                          onClick={() =>
+                            setPendingAction(
+                              "REJECT",
+                            )
+                          }
+                          disabled={actionBusy}
+                        >
+                          Reject request
+                        </button>
+
+                        <button
+                          type="button"
+                          className="is-confirm"
+                          onClick={() =>
+                            setPendingAction(
+                              "CONFIRM",
+                            )
+                          }
+                          disabled={actionBusy}
+                        >
+                          Confirm request
+                        </button>
+                      </div>
+
+                      {pendingAction ? (
+                        <div className="svx-market-owner-action-confirmation">
+                          <strong>
+                            {pendingAction ===
+                            "CONFIRM"
+                              ? "Confirm this request?"
+                              : "Reject this request?"}
+                          </strong>
+
+                          <p>
+                            {pendingAction ===
+                            "CONFIRM"
+                              ? "Available stock will be reserved. No sale or payment will be created."
+                              : "The request will be closed without reserving stock."}
+                          </p>
+
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setPendingAction(
+                                  "",
+                                )
+                              }
+                              disabled={actionBusy}
+                            >
+                              Go back
+                            </button>
+
+                            <button
+                              type="button"
+                              className={
+                                pendingAction ===
+                                "CONFIRM"
+                                  ? "is-confirm"
+                                  : "is-reject"
+                              }
+                              onClick={
+                                pendingAction ===
+                                "CONFIRM"
+                                  ? handleConfirmRequest
+                                  : handleRejectRequest
+                              }
+                              disabled={actionBusy}
+                            >
+                              {actionBusy
+                                ? "Saving..."
+                                : pendingAction ===
+                                    "CONFIRM"
+                                  ? "Yes, confirm"
+                                  : "Yes, reject"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <span>
+                        Request status
+                      </span>
+
+                      <h3>
+                        {statusLabel(
+                          request.status,
+                        )}
+                      </h3>
+
+                      <p>
+                        {request.status ===
+                        "CONFIRMED"
+                          ? "Stock is reserved for this request. No sale has been created yet."
+                          : ownerReplyStatusMessage(
+                              request,
+                            )}
+                      </p>
+                    </>
+                  )}
                 </section>
               </aside>
             </div>

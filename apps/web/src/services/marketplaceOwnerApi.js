@@ -41,3 +41,32 @@ export function getOwnerMarketplaceRequest(
     )}`,
   );
 }
+
+export function confirmOwnerMarketplaceRequest(
+  requestId,
+  payload = {},
+) {
+  return apiFetch(
+    `/store/marketplace-requests/${encodeURIComponent(
+      requestId,
+    )}/confirm`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function rejectOwnerMarketplaceRequest(
+  requestId,
+) {
+  return apiFetch(
+    `/store/marketplace-requests/${encodeURIComponent(
+      requestId,
+    )}/reject`,
+    {
+      method: "POST",
+      body: JSON.stringify({}),
+    },
+  );
+}

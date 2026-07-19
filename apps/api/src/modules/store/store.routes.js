@@ -68,6 +68,24 @@ router.get(
 );
 
 // Write endpoints
+router.post(
+  "/marketplace-requests/:requestId/confirm",
+  express.json(),
+  requireWritableSubscription,
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_EDIT),
+  marketplaceRequestsController.confirmMarketplaceRequest
+);
+
+router.post(
+  "/marketplace-requests/:requestId/reject",
+  express.json(),
+  requireWritableSubscription,
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_EDIT),
+  marketplaceRequestsController.rejectMarketplaceRequest
+);
+
 router.patch(
   "/profile",
   express.json(),

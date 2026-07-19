@@ -1,6 +1,7 @@
 const prisma = require("../../config/database");
 const {
   MarketplaceRequestStatus,
+  Prisma,
 } = require("@prisma/client");
 
 function cleanString(value) {
@@ -16,7 +17,24 @@ function tenantIdFromRequest(req) {
   );
 }
 
-function safeTake(value, fallback = 30, max = 100) {
+function createBusinessError(
+  message,
+  status,
+  code,
+  details = null,
+) {
+  const error = new Error(message);
+  error.status = status;
+  error.code = code;
+  error.details = details;
+  return error;
+}
+
+function safeTake(
+  value,
+  fallback = 30,
+  max = 100,
+) {
   const number = Number(value);
 
   if (!Number.isFinite(number)) {
@@ -55,6 +73,21 @@ function normalizeStatus(value) {
     : null;
 }
 
+function normalizeMoney(value) {
+  const number = Number(value);
+
+  if (
+    !Number.isFinite(number) ||
+    number < 0
+  ) {
+    return null;
+  }
+
+  return Math.round(
+    (number + Number.EPSILON) * 100,
+  ) / 100;
+}
+
 function requestItemSelect() {
   return {
     id: true,
@@ -72,7 +105,9 @@ function requestItemSelect() {
   };
 }
 
-function requestSelect({ includeItems = false } = {}) {
+function requestSelect({
+  includeItems = false,
+} = {}) {
   return {
     id: true,
     tenantId: true,
@@ -135,35 +170,266 @@ function requestSelect({ includeItems = false } = {}) {
   };
 }
 
-function sendError(res, error, fallback) {
-  return res.status(error.status || 500).json({
-    message: error.message || fallback,
-    code: error.code || null,
-    details: error.details || null,
+function sendError(
+  res,
+  error,
+  fallback,
+) {
+  return res
+    .status(error.status || 500)
+    .json({
+      message:
+        error.message || fallback,
+      code: error.code || null,
+      details:
+        error.details || null,
+    });
+}
+
+function assertRequestedStatus(request) {
+  if (!request) {
+    throw createBusinessError(
+      "Marketplace request not found",
+      404,
+      "MARKETPLACE_REQUEST_NOT_FOUND",
+    );
+  }
+
+  if (
+    request.status !==
+    MarketplaceRequestStatus.REQUESTED
+  ) {
+    throw createBusinessError(
+      "This request has already been processed.",
+      409,
+      "MARKETPLACE_REQUEST_ALREADY_PROCESSED",
+      {
+        currentStatus: request.status,
+      },
+    );
+  }
+}
+
+function resolveDeliveryFee(
+  request,
+  body = {},
+) {
+  if (
+    request.fulfilmentMethod !==
+    "DELIVERY"
+  ) {
+    return 0;
+  }
+
+  const supplied =
+    Object.prototype.hasOwnProperty.call(
+      body,
+      "deliveryFee",
+    );
+
+  if (
+    request.deliveryCoverage ===
+      "OUTSIDE_KIGALI" &&
+    !supplied
+  ) {
+    throw createBusinessError(
+      "Enter the delivery cost before confirming this request.",
+      400,
+      "MARKETPLACE_DELIVERY_FEE_REQUIRED",
+    );
+  }
+
+  const source = supplied
+    ? body.deliveryFee
+    : request.deliveryFee;
+
+  const deliveryFee =
+    normalizeMoney(source);
+
+  if (deliveryFee === null) {
+    throw createBusinessError(
+      "Delivery cost must be zero or more.",
+      400,
+      "MARKETPLACE_DELIVERY_FEE_INVALID",
+    );
+  }
+
+  return deliveryFee;
+}
+
+function buildInventoryAllocations({
+  inventories,
+  requestedQuantity,
+}) {
+  const required =
+    Number(requestedQuantity);
+
+  if (
+    !Number.isInteger(required) ||
+    required <= 0
+  ) {
+    throw createBusinessError(
+      "Requested quantity is invalid.",
+      400,
+      "MARKETPLACE_REQUEST_QUANTITY_INVALID",
+    );
+  }
+
+  let remaining = required;
+  const allocations = [];
+
+  for (
+    const inventory of inventories || []
+  ) {
+    if (remaining <= 0) {
+      break;
+    }
+
+    const onHand = Number(
+      inventory.qtyOnHand || 0,
+    );
+
+    const reserved = Number(
+      inventory.qtyReserved || 0,
+    );
+
+    const available = Math.max(
+      onHand - reserved,
+      0,
+    );
+
+    if (available <= 0) {
+      continue;
+    }
+
+    const quantity = Math.min(
+      available,
+      remaining,
+    );
+
+    allocations.push({
+      inventoryId: inventory.id,
+      branchId: inventory.branchId,
+      productId: inventory.productId,
+      quantity,
+    });
+
+    remaining -= quantity;
+  }
+
+  return {
+    allocations,
+    available:
+      required - remaining,
+    missing: remaining,
+    complete: remaining === 0,
+  };
+}
+
+async function lockRequest(
+  tx,
+  tenantId,
+  requestId,
+) {
+  const rows = await tx.$queryRaw(
+    Prisma.sql`
+      SELECT
+        "id",
+        "status"
+      FROM "MarketplaceRequest"
+      WHERE
+        "id" = ${requestId}
+        AND "tenantId" = ${tenantId}
+      FOR UPDATE
+    `,
+  );
+
+  return rows[0] || null;
+}
+
+async function lockProductInventory(
+  tx,
+  tenantId,
+  productId,
+) {
+  return tx.$queryRaw(
+    Prisma.sql`
+      SELECT
+        inventory."id",
+        inventory."branchId",
+        inventory."productId",
+        inventory."qtyOnHand",
+        inventory."qtyReserved",
+        branch."isMain"
+      FROM "BranchInventory" AS inventory
+      INNER JOIN "Branch" AS branch
+        ON branch."id" = inventory."branchId"
+      WHERE
+        inventory."tenantId" = ${tenantId}
+        AND inventory."productId" = ${productId}
+        AND branch."tenantId" = ${tenantId}
+        AND branch."status" = 'ACTIVE'
+      ORDER BY
+        branch."isMain" DESC,
+        inventory."updatedAt" ASC,
+        inventory."id" ASC
+      FOR UPDATE OF inventory
+    `,
+  );
+}
+
+async function loadFullRequest(
+  client,
+  tenantId,
+  requestId,
+) {
+  return client.marketplaceRequest.findFirst({
+    where: {
+      id: requestId,
+      tenantId,
+    },
+    select: requestSelect({
+      includeItems: true,
+    }),
   });
 }
 
-async function listMarketplaceRequests(req, res) {
-  const tenantId = tenantIdFromRequest(req);
+async function listMarketplaceRequests(
+  req,
+  res,
+) {
+  const tenantId =
+    tenantIdFromRequest(req);
 
   if (!tenantId) {
     return res.status(400).json({
-      message: "Business context is required",
-      code: "TENANT_CONTEXT_REQUIRED",
+      message:
+        "Business context is required",
+      code:
+        "TENANT_CONTEXT_REQUIRED",
     });
   }
 
   try {
-    const query = cleanString(req.query?.q);
-    const status = normalizeStatus(
-      req.query?.status,
-    );
-    const take = safeTake(req.query?.take);
-    const skip = safeSkip(req.query?.skip);
+    const query =
+      cleanString(req.query?.q);
+
+    const status =
+      normalizeStatus(
+        req.query?.status,
+      );
+
+    const take =
+      safeTake(req.query?.take);
+
+    const skip =
+      safeSkip(req.query?.skip);
 
     const where = {
       tenantId,
-      ...(status ? { status } : {}),
+      ...(status
+        ? { status }
+        : {}),
       ...(query
         ? {
             OR: [
@@ -266,19 +532,26 @@ async function listMarketplaceRequests(req, res) {
     return res.json({
       requests,
       summary: {
-        newRequests: requestedCount,
-        activeRequests: activeCount,
-        completedRequests: completedCount,
+        newRequests:
+          requestedCount,
+        activeRequests:
+          activeCount,
+        completedRequests:
+          completedCount,
         totalRequests: total,
       },
       page: {
         total,
         take,
         skip,
-        hasMore: skip + requests.length < total,
+        hasMore:
+          skip + requests.length <
+          total,
         nextSkip:
-          skip + requests.length < total
-            ? skip + requests.length
+          skip + requests.length <
+          total
+            ? skip +
+              requests.length
             : null,
       },
     });
@@ -296,37 +569,43 @@ async function listMarketplaceRequests(req, res) {
   }
 }
 
-async function getMarketplaceRequest(req, res) {
-  const tenantId = tenantIdFromRequest(req);
-  const requestId = cleanString(
-    req.params?.requestId,
-  );
+async function getMarketplaceRequest(
+  req,
+  res,
+) {
+  const tenantId =
+    tenantIdFromRequest(req);
+
+  const requestId =
+    cleanString(
+      req.params?.requestId,
+    );
 
   if (!tenantId) {
     return res.status(400).json({
-      message: "Business context is required",
-      code: "TENANT_CONTEXT_REQUIRED",
+      message:
+        "Business context is required",
+      code:
+        "TENANT_CONTEXT_REQUIRED",
     });
   }
 
   if (!requestId) {
     return res.status(400).json({
-      message: "Request ID is required",
-      code: "MARKETPLACE_REQUEST_ID_REQUIRED",
+      message:
+        "Request ID is required",
+      code:
+        "MARKETPLACE_REQUEST_ID_REQUIRED",
     });
   }
 
   try {
     const request =
-      await prisma.marketplaceRequest.findFirst({
-        where: {
-          id: requestId,
-          tenantId,
-        },
-        select: requestSelect({
-          includeItems: true,
-        }),
-      });
+      await loadFullRequest(
+        prisma,
+        tenantId,
+        requestId,
+      );
 
     if (!request) {
       return res.status(404).json({
@@ -354,7 +633,372 @@ async function getMarketplaceRequest(req, res) {
   }
 }
 
+async function confirmMarketplaceRequest(
+  req,
+  res,
+) {
+  const tenantId =
+    tenantIdFromRequest(req);
+
+  const requestId =
+    cleanString(
+      req.params?.requestId,
+    );
+
+  if (!tenantId) {
+    return res.status(400).json({
+      message:
+        "Business context is required",
+      code:
+        "TENANT_CONTEXT_REQUIRED",
+    });
+  }
+
+  if (!requestId) {
+    return res.status(400).json({
+      message:
+        "Request ID is required",
+      code:
+        "MARKETPLACE_REQUEST_ID_REQUIRED",
+    });
+  }
+
+  try {
+    const request =
+      await prisma.$transaction(
+        async (tx) => {
+          const locked =
+            await lockRequest(
+              tx,
+              tenantId,
+              requestId,
+            );
+
+          assertRequestedStatus(
+            locked,
+          );
+
+          const current =
+            await loadFullRequest(
+              tx,
+              tenantId,
+              requestId,
+            );
+
+          assertRequestedStatus(
+            current,
+          );
+
+          if (
+            !Array.isArray(
+              current.items,
+            ) ||
+            current.items.length ===
+              0
+          ) {
+            throw createBusinessError(
+              "This request has no products to confirm.",
+              409,
+              "MARKETPLACE_REQUEST_HAS_NO_ITEMS",
+            );
+          }
+
+          const existingReservations =
+            await tx
+              .marketplaceRequestReservation
+              .count({
+                where: {
+                  tenantId,
+                  requestId,
+                  releasedAt: null,
+                  completedAt: null,
+                },
+              });
+
+          if (
+            existingReservations > 0
+          ) {
+            throw createBusinessError(
+              "Stock has already been reserved for this request.",
+              409,
+              "MARKETPLACE_REQUEST_ALREADY_RESERVED",
+            );
+          }
+
+          const allAllocations = [];
+
+          for (
+            const item of current.items
+          ) {
+            const inventories =
+              await lockProductInventory(
+                tx,
+                tenantId,
+                item.productId,
+              );
+
+            const allocation =
+              buildInventoryAllocations(
+                {
+                  inventories,
+                  requestedQuantity:
+                    item.quantity,
+                },
+              );
+
+            if (!allocation.complete) {
+              throw createBusinessError(
+                `${item.productTitleSnapshot} does not have enough available stock.`,
+                409,
+                "MARKETPLACE_REQUEST_INSUFFICIENT_STOCK",
+                {
+                  productId:
+                    item.productId,
+                  productName:
+                    item.productTitleSnapshot,
+                  requested:
+                    item.quantity,
+                  available:
+                    allocation.available,
+                  missing:
+                    allocation.missing,
+                },
+              );
+            }
+
+            allocation.allocations.forEach(
+              (entry) => {
+                allAllocations.push({
+                  ...entry,
+                  requestItemId:
+                    item.id,
+                });
+              },
+            );
+          }
+
+          for (
+            const allocation of
+            allAllocations
+          ) {
+            await tx.branchInventory.update({
+              where: {
+                id:
+                  allocation.inventoryId,
+              },
+              data: {
+                qtyReserved: {
+                  increment:
+                    allocation.quantity,
+                },
+              },
+            });
+          }
+
+          await tx
+            .marketplaceRequestReservation
+            .createMany({
+              data:
+                allAllocations.map(
+                  (allocation) => ({
+                    tenantId,
+                    requestId,
+                    requestItemId:
+                      allocation.requestItemId,
+                    productId:
+                      allocation.productId,
+                    branchId:
+                      allocation.branchId,
+                    quantity:
+                      allocation.quantity,
+                  }),
+                ),
+            });
+
+          const deliveryFee =
+            resolveDeliveryFee(
+              current,
+              req.body || {},
+            );
+
+          await tx
+            .marketplaceRequest
+            .update({
+              where: {
+                id: requestId,
+              },
+              data: {
+                status:
+                  MarketplaceRequestStatus.CONFIRMED,
+                confirmedAt:
+                  new Date(),
+                rejectedAt: null,
+                deliveryFee,
+                total:
+                  Number(
+                    current.subtotal ||
+                      0,
+                  ) +
+                  deliveryFee,
+              },
+            });
+
+          return loadFullRequest(
+            tx,
+            tenantId,
+            requestId,
+          );
+        },
+        {
+          isolationLevel:
+            Prisma.TransactionIsolationLevel
+              .Serializable,
+        },
+      );
+
+    return res.json({
+      message:
+        "Request confirmed and stock reserved.",
+      request,
+    });
+  } catch (error) {
+    console.error(
+      "confirmMarketplaceRequest error:",
+      error,
+    );
+
+    return sendError(
+      res,
+      error,
+      "Failed to confirm Marketplace request",
+    );
+  }
+}
+
+async function rejectMarketplaceRequest(
+  req,
+  res,
+) {
+  const tenantId =
+    tenantIdFromRequest(req);
+
+  const requestId =
+    cleanString(
+      req.params?.requestId,
+    );
+
+  if (!tenantId) {
+    return res.status(400).json({
+      message:
+        "Business context is required",
+      code:
+        "TENANT_CONTEXT_REQUIRED",
+    });
+  }
+
+  if (!requestId) {
+    return res.status(400).json({
+      message:
+        "Request ID is required",
+      code:
+        "MARKETPLACE_REQUEST_ID_REQUIRED",
+    });
+  }
+
+  try {
+    const request =
+      await prisma.$transaction(
+        async (tx) => {
+          const locked =
+            await lockRequest(
+              tx,
+              tenantId,
+              requestId,
+            );
+
+          assertRequestedStatus(
+            locked,
+          );
+
+          const reservationCount =
+            await tx
+              .marketplaceRequestReservation
+              .count({
+                where: {
+                  tenantId,
+                  requestId,
+                  releasedAt: null,
+                  completedAt: null,
+                },
+              });
+
+          if (
+            reservationCount > 0
+          ) {
+            throw createBusinessError(
+              "This request already has reserved stock and cannot be rejected from the new-request stage.",
+              409,
+              "MARKETPLACE_REQUEST_HAS_RESERVATIONS",
+            );
+          }
+
+          await tx
+            .marketplaceRequest
+            .update({
+              where: {
+                id: requestId,
+              },
+              data: {
+                status:
+                  MarketplaceRequestStatus.REJECTED,
+                rejectedAt:
+                  new Date(),
+                confirmedAt: null,
+              },
+            });
+
+          return loadFullRequest(
+            tx,
+            tenantId,
+            requestId,
+          );
+        },
+        {
+          isolationLevel:
+            Prisma.TransactionIsolationLevel
+              .Serializable,
+        },
+      );
+
+    return res.json({
+      message:
+        "Request rejected.",
+      request,
+    });
+  } catch (error) {
+    console.error(
+      "rejectMarketplaceRequest error:",
+      error,
+    );
+
+    return sendError(
+      res,
+      error,
+      "Failed to reject Marketplace request",
+    );
+  }
+}
+
 module.exports = {
   listMarketplaceRequests,
   getMarketplaceRequest,
+  confirmMarketplaceRequest,
+  rejectMarketplaceRequest,
+
+  __private: {
+    assertRequestedStatus,
+    buildInventoryAllocations,
+    normalizeMoney,
+    resolveDeliveryFee,
+  },
 };
