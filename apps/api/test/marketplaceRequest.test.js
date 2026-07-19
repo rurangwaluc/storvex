@@ -646,7 +646,7 @@ test(
     );
     assert.match(
       email.text,
-      /Seller delivery/,
+      /Delivery by RURAXIS LTD/,
     );
     assert.match(
       email.text,

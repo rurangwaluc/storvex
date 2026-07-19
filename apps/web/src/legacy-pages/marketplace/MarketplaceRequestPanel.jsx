@@ -655,10 +655,12 @@ export default function MarketplaceRequestPanel({
             </h3>
 
             <p>
-              The store must confirm stock,
-              collection or delivery details,
-              and payment before this becomes
-              a sale.
+              {success.seller?.name ||
+                selectedGroup?.sellerName ||
+                "The store"}{" "}
+              must confirm stock, collection or
+              delivery details, and payment before
+              this becomes a sale.
             </p>
 
             <dl>
@@ -1123,12 +1125,16 @@ export default function MarketplaceRequestPanel({
                         <Truck size={17} />
 
                         <strong>
-                          Seller delivery
+                          Delivery by{" "}
+                          {selectedGroup?.sellerName ||
+                            "this store"}
                         </strong>
 
                         <small>
-                          The store arranges and
-                          confirms delivery.
+                          {selectedGroup?.sellerName ||
+                            "The store"}{" "}
+                          arranges and confirms
+                          delivery.
                         </small>
                       </span>
                     </label>
@@ -1144,14 +1150,23 @@ export default function MarketplaceRequestPanel({
                     <span>
                       <strong>
                         {store?.deliveryEnabled
-                          ? "Seller delivery"
+                          ? `Delivery by ${
+                              selectedGroup?.sellerName ||
+                              "this store"
+                            }`
                           : "Store pickup"}
                       </strong>
 
                       <small>
                         {store?.deliveryEnabled
-                          ? "The store will confirm the delivery arrangements."
-                          : "The store will confirm when your products are ready."}
+                          ? `${
+                              selectedGroup?.sellerName ||
+                              "The store"
+                            } will confirm the delivery arrangements.`
+                          : `${
+                              selectedGroup?.sellerName ||
+                              "The store"
+                            } will confirm when your products are ready.`}
                       </small>
                     </span>
                   </div>
@@ -1300,7 +1315,10 @@ export default function MarketplaceRequestPanel({
 
                       {form.deliveryCoverage ===
                       "OUTSIDE_KIGALI"
-                        ? "Delivery cost will be confirmed by the store before accepting your request."
+                        ? `Delivery cost will be confirmed by ${
+                            selectedGroup?.sellerName ||
+                            "the store"
+                          } before accepting your request.`
                         : "Free delivery within Kigali City."}
                     </p>
                   </div>
@@ -1347,7 +1365,10 @@ export default function MarketplaceRequestPanel({
                   {form.fulfilmentMethod === "DELIVERY" &&
                   form.deliveryCoverage ===
                     "OUTSIDE_KIGALI"
-                    ? "Delivery cost is not included. The store will confirm it with you."
+                    ? `Delivery cost is not included. ${
+                        selectedGroup?.sellerName ||
+                        "The store"
+                      } will confirm it with you.`
                     : "The server checks current stock and price again before saving."}
                 </p>
               </section>

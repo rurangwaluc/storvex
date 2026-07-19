@@ -664,7 +664,7 @@ function buildWhatsappMessage({
     "",
     "How I will receive it",
     request.fulfilmentMethod === "DELIVERY"
-      ? "Seller delivery"
+      ? `Delivery by ${request.sellerNameSnapshot}`
       : "Store pickup",
     "",
   );
@@ -782,7 +782,7 @@ function buildRequestEmail({
 
   const intro = isSeller
     ? `${request.customerName} sent a new request through the Storvex Marketplace.`
-    : `Your request has been sent to ${request.sellerNameSnapshot}. The store will confirm availability and the next steps.`;
+    : `Your request has been sent to ${request.sellerNameSnapshot}. ${request.sellerNameSnapshot} will confirm availability and the next steps.`;
 
   const itemText = items
     .map(
@@ -817,7 +817,7 @@ function buildRequestEmail({
     `Fulfilment: ${
       request.fulfilmentMethod ===
       "DELIVERY"
-        ? "Seller delivery"
+        ? `Delivery by ${request.sellerNameSnapshot}`
         : "Store pickup"
     }`,
     `Payment: ${String(
@@ -935,7 +935,9 @@ function buildRequestEmail({
             ${
               request.fulfilmentMethod ===
               "DELIVERY"
-                ? "Seller delivery"
+                ? `Delivery by ${escapeHtml(
+                    request.sellerNameSnapshot,
+                  )}`
                 : "Store pickup"
             }
           </p>
