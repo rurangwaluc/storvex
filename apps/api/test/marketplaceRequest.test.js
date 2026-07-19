@@ -402,6 +402,182 @@ test(
 );
 
 test(
+  "uses singular wording for one pickup product",
+  () => {
+    const message =
+      buildWhatsappMessage({
+        request: {
+          requestNumber:
+            "SVX-RUR-20260719-010",
+          sellerNameSnapshot:
+            "RURAXIS LTD",
+          fulfilmentMethod:
+            "PICKUP",
+          deliveryCoverage: null,
+          customerName:
+            "Test Customer",
+          customerPhone:
+            "250788000000",
+          customerNote: null,
+          currency: "RWF",
+          total: 100000,
+        },
+        items: [
+          {
+            productTitleSnapshot:
+              "HP Laptop",
+            productUrlSnapshot:
+              "https://www.storvex.rw/product",
+            quantity: 1,
+            lineTotal: 100000,
+          },
+        ],
+      });
+
+    assert.match(
+      message,
+      /when the product is ready for collection/,
+    );
+
+    assert.doesNotMatch(
+      message,
+      /when the products are ready/,
+    );
+  },
+);
+
+test(
+  "uses plural wording for several pickup products",
+  () => {
+    const message =
+      buildWhatsappMessage({
+        request: {
+          requestNumber:
+            "SVX-RUR-20260719-011",
+          sellerNameSnapshot:
+            "RURAXIS LTD",
+          fulfilmentMethod:
+            "PICKUP",
+          deliveryCoverage: null,
+          customerName:
+            "Test Customer",
+          customerPhone:
+            "250788000000",
+          customerNote: null,
+          currency: "RWF",
+          total: 150000,
+        },
+        items: [
+          {
+            productTitleSnapshot:
+              "HP Laptop",
+            productUrlSnapshot:
+              "https://www.storvex.rw/product-1",
+            quantity: 1,
+            lineTotal: 100000,
+          },
+          {
+            productTitleSnapshot:
+              "Laptop Bag",
+            productUrlSnapshot:
+              "https://www.storvex.rw/product-2",
+            quantity: 1,
+            lineTotal: 50000,
+          },
+        ],
+      });
+
+    assert.match(
+      message,
+      /when the products are ready for collection/,
+    );
+
+    assert.doesNotMatch(
+      message,
+      /when the product is ready/,
+    );
+  },
+);
+
+test(
+  "uses singular wording for one Kigali delivery product",
+  () => {
+    const {
+      buildSellerRequestNextStep,
+      buildCustomerRequestNextStep,
+    } = require(
+      "../src/modules/marketplace/marketplace.request.service",
+    ).__private;
+
+    const request = {
+      sellerNameSnapshot:
+        "RURAXIS LTD",
+      fulfilmentMethod:
+        "DELIVERY",
+      deliveryCoverage:
+        "KIGALI",
+    };
+
+    const items = [{}];
+
+    assert.equal(
+      buildSellerRequestNextStep({
+        request,
+        items,
+      }),
+      "Please confirm availability and the delivery arrangements for this product.",
+    );
+
+    assert.equal(
+      buildCustomerRequestNextStep({
+        request,
+        items,
+      }),
+      "RURAXIS LTD will confirm availability and the delivery arrangements for this product.",
+    );
+  },
+);
+
+test(
+  "uses plural wording for several outside Kigali products",
+  () => {
+    const {
+      buildSellerRequestNextStep,
+      buildCustomerRequestNextStep,
+    } = require(
+      "../src/modules/marketplace/marketplace.request.service",
+    ).__private;
+
+    const request = {
+      sellerNameSnapshot:
+        "RURAXIS LTD",
+      fulfilmentMethod:
+        "DELIVERY",
+      deliveryCoverage:
+        "OUTSIDE_KIGALI",
+    };
+
+    const items = [{}, {}];
+
+    assert.equal(
+      buildSellerRequestNextStep({
+        request,
+        items,
+      }),
+      "Please confirm availability for these products and the delivery cost before processing the request.",
+    );
+
+    assert.equal(
+      buildCustomerRequestNextStep({
+        request,
+        items,
+      }),
+      "RURAXIS LTD will confirm availability and the delivery cost for these products.",
+    );
+  },
+);
+
+test(
   "builds the product URL from validated store and product slugs",
   () => {
     const {

@@ -609,6 +609,86 @@ function formatCustomerPhone(value) {
   return value;
 }
 
+function requestProductWording(items) {
+  const itemCount = Array.isArray(items)
+    ? items.length
+    : 0;
+
+  return {
+    isMultiple: itemCount > 1,
+    product:
+      itemCount > 1
+        ? "products"
+        : "product",
+    thisProduct:
+      itemCount > 1
+        ? "these products"
+        : "this product",
+  };
+}
+
+function buildSellerRequestNextStep({
+  request,
+  items,
+}) {
+  const {
+    product,
+    thisProduct,
+  } = requestProductWording(items);
+
+  if (
+    request.fulfilmentMethod === "PICKUP"
+  ) {
+    return `Please confirm availability and let me know when the ${product} ${
+      product === "products"
+        ? "are"
+        : "is"
+    } ready for collection.`;
+  }
+
+  if (
+    request.deliveryCoverage ===
+    "OUTSIDE_KIGALI"
+  ) {
+    return `Please confirm availability for ${thisProduct} and the delivery cost before processing the request.`;
+  }
+
+  return `Please confirm availability and the delivery arrangements for ${thisProduct}.`;
+}
+
+function buildCustomerRequestNextStep({
+  request,
+  items,
+}) {
+  const {
+    product,
+    thisProduct,
+  } = requestProductWording(items);
+
+  const businessName =
+    request.sellerNameSnapshot ||
+    "The store";
+
+  if (
+    request.fulfilmentMethod === "PICKUP"
+  ) {
+    return `${businessName} will confirm when your ${product} ${
+      product === "products"
+        ? "are"
+        : "is"
+    } ready for collection.`;
+  }
+
+  if (
+    request.deliveryCoverage ===
+    "OUTSIDE_KIGALI"
+  ) {
+    return `${businessName} will confirm availability and the delivery cost for ${thisProduct}.`;
+  }
+
+  return `${businessName} will confirm availability and the delivery arrangements for ${thisProduct}.`;
+}
+
 function buildWhatsappMessage({
   request,
   items,
@@ -732,24 +812,12 @@ function buildWhatsappMessage({
     );
   }
 
-  if (
-    request.fulfilmentMethod === "PICKUP"
-  ) {
-    lines.push(
-      "Please confirm availability and let me know when the product is ready for collection.",
-    );
-  } else if (
-    request.deliveryCoverage ===
-    "OUTSIDE_KIGALI"
-  ) {
-    lines.push(
-      "Please confirm availability and the delivery cost before processing my request.",
-    );
-  } else {
-    lines.push(
-      "Please confirm availability and the delivery arrangements.",
-    );
-  }
+  lines.push(
+    buildSellerRequestNextStep({
+      request,
+      items,
+    }),
+  );
 
   lines.push(
     "",
@@ -775,6 +843,16 @@ function buildRequestEmail({
   audience,
 }) {
   const isSeller = audience === "SELLER";
+
+  const nextStep = isSeller
+    ? buildSellerRequestNextStep({
+        request,
+        items,
+      })
+    : buildCustomerRequestNextStep({
+        request,
+        items,
+      });
 
   const heading = isSeller
     ? `New Marketplace request ${request.requestNumber}`
@@ -843,8 +921,13 @@ function buildRequestEmail({
     request.customerNote
       ? `Note: ${request.customerNote}`
       : null,
+    "",
+    nextStep,
   ]
-    .filter(Boolean)
+    .filter((value) =>
+      value !== null &&
+      value !== undefined
+    )
     .join("\n");
 
   const rows = items
@@ -928,8 +1011,12 @@ function buildRequestEmail({
           ${escapeHtml(request.requestNumber)}
         </p>
 
-        <p style="margin:16px 0 22px;line-height:1.6;color:#475569;">
+        <p style="margin:16px 0 10px;line-height:1.6;color:#475569;">
           ${escapeHtml(intro)}
+        </p>
+
+        <p style="margin:0 0 22px;line-height:1.6;color:#475569;">
+          ${escapeHtml(nextStep)}
         </p>
 
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
@@ -1549,5 +1636,8 @@ module.exports.__private = {
   buildWhatsappMessage,
   buildWhatsappUrl,
   buildRequestEmail,
+  buildSellerRequestNextStep,
+  buildCustomerRequestNextStep,
+  requestProductWording,
   formatMoney,
 };
