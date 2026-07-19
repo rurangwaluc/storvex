@@ -153,18 +153,44 @@ function marketplaceRequestNumber(
 }
 
 async function nextMarketplaceRequestNumber(
+  tenantId,
   now = new Date(),
   database = prisma,
 ) {
+  const businessId = cleanString(
+    tenantId,
+    200,
+  );
+
+  if (!businessId) {
+    throw appError(
+      500,
+      "REQUEST_BUSINESS_REQUIRED",
+      "The business could not be identified for this request.",
+    );
+  }
+
   const dateKey =
     marketplaceRequestDateKey(now);
 
   const rows = await database.$queryRaw`
     INSERT INTO "MarketplaceRequestDailySequence"
-      ("dateKey", "lastNumber", "createdAt", "updatedAt")
+      (
+        "tenantId",
+        "dateKey",
+        "lastNumber",
+        "createdAt",
+        "updatedAt"
+      )
     VALUES
-      (${dateKey}, 1, NOW(), NOW())
-    ON CONFLICT ("dateKey")
+      (
+        ${businessId},
+        ${dateKey},
+        1,
+        NOW(),
+        NOW()
+      )
+    ON CONFLICT ("tenantId", "dateKey")
     DO UPDATE SET
       "lastNumber" =
         "MarketplaceRequestDailySequence"."lastNumber" + 1,
@@ -1312,7 +1338,9 @@ async function submitMarketplaceRequest(
         data: {
           tenantId: seller.tenantId,
           requestNumber:
-            await nextMarketplaceRequestNumber(),
+            await nextMarketplaceRequestNumber(
+              seller.tenantId,
+            ),
           trackingToken:
             trackingToken(),
           clientRequestId:

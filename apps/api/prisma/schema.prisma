@@ -2544,10 +2544,13 @@ enum ProductImageStudioStatus {
 
 
 model MarketplaceRequestDailySequence {
-  dateKey    String   @id @db.Text
+  tenantId   String   @db.Text
+  dateKey    String   @db.Text
   lastNumber Int      @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
 
+  @@id([tenantId, dateKey])
+  @@index([dateKey])
   @@map("MarketplaceRequestDailySequence")
 }
