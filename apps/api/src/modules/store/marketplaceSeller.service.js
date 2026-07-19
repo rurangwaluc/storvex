@@ -96,11 +96,9 @@ function buildMarketplaceReadiness({
   availablePublishedProductCount = 0,
   approvedImageProductCount = 0,
 }) {
-  const deliveryAreas = normalizeDeliveryAreas(profile?.deliveryAreas);
-
   const fulfilmentReady =
     Boolean(profile?.pickupEnabled) ||
-    (Boolean(profile?.deliveryEnabled) && deliveryAreas.length > 0);
+    Boolean(profile?.deliveryEnabled);
 
   const checks = [
     readinessCheck(
@@ -125,7 +123,7 @@ function buildMarketplaceReadiness({
       "fulfilment",
       "Pickup or delivery",
       fulfilmentReady,
-      "Enable pickup or configure at least one delivery area.",
+      "Enable store pickup, seller delivery, or both.",
     ),
     readinessCheck(
       "published_products",
@@ -366,20 +364,6 @@ async function updateMarketplaceSellerProfile(tenantId, payload = {}) {
       body.publicSlug,
       current.tenant.name,
     );
-  }
-
-  if (
-    data.deliveryEnabled === true &&
-    normalizeDeliveryAreas(
-      data.deliveryAreas ?? current.profile.deliveryAreas,
-    ).length === 0
-  ) {
-    const error = new Error(
-      "Add at least one delivery area before enabling delivery",
-    );
-    error.status = 400;
-    error.code = "MARKETPLACE_DELIVERY_AREA_REQUIRED";
-    throw error;
   }
 
   const updated = await prisma.marketplaceSellerProfile.update({

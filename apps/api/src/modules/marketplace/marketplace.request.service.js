@@ -237,6 +237,10 @@ function validateRequestInput(body = {}) {
     body.fulfilmentMethod,
   );
 
+  const deliveryCoverage = normalizeToken(
+    body.deliveryCoverage,
+  );
+
   const paymentMethod = normalizeToken(
     body.paymentMethod,
   );
@@ -362,6 +366,19 @@ function validateRequestInput(body = {}) {
 
   if (
     fulfilmentMethod === "DELIVERY" &&
+    !["KIGALI", "OUTSIDE_KIGALI"].includes(
+      deliveryCoverage,
+    )
+  ) {
+    throw appError(
+      400,
+      "DELIVERY_COVERAGE_REQUIRED",
+      "Choose Kigali City or outside Kigali.",
+    );
+  }
+
+  if (
+    fulfilmentMethod === "DELIVERY" &&
     !deliveryAddress
   ) {
     throw appError(
@@ -437,6 +454,10 @@ function validateRequestInput(body = {}) {
     clientRequestId,
     preferredContact,
     fulfilmentMethod,
+    deliveryCoverage:
+      fulfilmentMethod === "DELIVERY"
+        ? deliveryCoverage
+        : null,
     paymentMethod,
     customerName,
     customerPhone,
@@ -782,6 +803,8 @@ function serializeCreatedRequest(
       request.preferredContact,
     fulfilmentMethod:
       request.fulfilmentMethod,
+    deliveryCoverage:
+      request.deliveryCoverage,
     paymentMethod:
       request.paymentMethod,
     currency: request.currency,
@@ -1126,15 +1149,8 @@ async function submitMarketplaceRequest(
     });
   }
 
-  const deliveryFee =
-    input.fulfilmentMethod === "DELIVERY"
-      ? money(
-          seller.defaultDeliveryFee,
-        )
-      : 0;
-
-  const total =
-    subtotal + deliveryFee;
+  const deliveryFee = 0;
+  const total = subtotal;
 
   let created;
 
@@ -1153,6 +1169,8 @@ async function submitMarketplaceRequest(
             input.preferredContact,
           fulfilmentMethod:
             input.fulfilmentMethod,
+          deliveryCoverage:
+            input.deliveryCoverage,
           paymentMethod:
             input.paymentMethod,
           customerName:

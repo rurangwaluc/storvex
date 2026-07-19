@@ -273,6 +273,7 @@ export default function MarketplaceRequestPanel({
         .customerEmail || "",
     preferredContact: "WHATSAPP",
     fulfilmentMethod: "",
+    deliveryCoverage: "KIGALI",
     deliveryAddress: "",
     deliveryDistrict:
       savedCustomerRef.current
@@ -366,6 +367,8 @@ export default function MarketplaceRequestPanel({
               : current.preferredContact,
           fulfilmentMethod:
             fulfilment,
+          deliveryCoverage:
+            current.deliveryCoverage || "KIGALI",
         }));
       })
       .catch((error) => {
@@ -428,6 +431,15 @@ export default function MarketplaceRequestPanel({
     }
 
     if (
+      form.fulfilmentMethod === "DELIVERY" &&
+      !["KIGALI", "OUTSIDE_KIGALI"].includes(
+        form.deliveryCoverage,
+      )
+    ) {
+      return "Choose Kigali City or outside Kigali.";
+    }
+
+    if (
       form.fulfilmentMethod ===
         "DELIVERY" &&
       !cleanString(form.deliveryAddress)
@@ -466,6 +478,10 @@ export default function MarketplaceRequestPanel({
             form.preferredContact,
           fulfilmentMethod:
             form.fulfilmentMethod,
+          deliveryCoverage:
+            form.fulfilmentMethod === "DELIVERY"
+              ? form.deliveryCoverage
+              : null,
           paymentMethod:
             "SELLER_APPROVED_OTHER",
           customerName:
@@ -1121,6 +1137,70 @@ export default function MarketplaceRequestPanel({
                 {form.fulfilmentMethod ===
                 "DELIVERY" ? (
                   <div className="svx-marketplace-request-delivery">
+                    <div className="svx-marketplace-request-options">
+                      <label>
+                        <input
+                          type="radio"
+                          name="deliveryCoverage"
+                          value="KIGALI"
+                          checked={
+                            form.deliveryCoverage ===
+                            "KIGALI"
+                          }
+                          onChange={() =>
+                            updateField(
+                              "deliveryCoverage",
+                              "KIGALI",
+                            )
+                          }
+                          disabled={submitting}
+                        />
+
+                        <span>
+                          <MapPin size={17} />
+
+                          <strong>
+                            Kigali City
+                          </strong>
+
+                          <small>
+                            Free delivery
+                          </small>
+                        </span>
+                      </label>
+
+                      <label>
+                        <input
+                          type="radio"
+                          name="deliveryCoverage"
+                          value="OUTSIDE_KIGALI"
+                          checked={
+                            form.deliveryCoverage ===
+                            "OUTSIDE_KIGALI"
+                          }
+                          onChange={() =>
+                            updateField(
+                              "deliveryCoverage",
+                              "OUTSIDE_KIGALI",
+                            )
+                          }
+                          disabled={submitting}
+                        />
+
+                        <span>
+                          <Truck size={17} />
+
+                          <strong>
+                            Outside Kigali
+                          </strong>
+
+                          <small>
+                            Cost confirmed by the store
+                          </small>
+                        </span>
+                      </label>
+                    </div>
+
                     <label>
                       <span>
                         Delivery address
@@ -1180,19 +1260,14 @@ export default function MarketplaceRequestPanel({
                       </label>
                     </div>
 
-                    {Number(
-                      store.defaultDeliveryFee ||
-                        0,
-                    ) > 0 ? (
-                      <p>
-                        <MapPin size={14} />
-                        Delivery fee:{" "}
-                        {formatMoney(
-                          store.defaultDeliveryFee,
-                          selectedGroup?.currency,
-                        )}
-                      </p>
-                    ) : null}
+                    <p>
+                      <MapPin size={14} />
+
+                      {form.deliveryCoverage ===
+                      "OUTSIDE_KIGALI"
+                        ? "Delivery cost will be confirmed by the store before accepting your request."
+                        : "Free delivery within Kigali City."}
+                    </p>
                   </div>
                 ) : null}
               </section>
@@ -1223,27 +1298,22 @@ export default function MarketplaceRequestPanel({
               <section className="svx-marketplace-request-total">
                 <span>
                   <small>
-                    Estimated total
+                    Product total
                   </small>
                   <strong>
                     {formatMoney(
-                      selectedGroup?.subtotal +
-                        (form.fulfilmentMethod ===
-                        "DELIVERY"
-                          ? Number(
-                              store?.defaultDeliveryFee ||
-                                0,
-                            )
-                          : 0),
+                      selectedGroup?.subtotal,
                       selectedGroup?.currency,
                     )}
                   </strong>
                 </span>
 
                 <p>
-                  The server checks current
-                  stock and price again before
-                  saving.
+                  {form.fulfilmentMethod === "DELIVERY" &&
+                  form.deliveryCoverage ===
+                    "OUTSIDE_KIGALI"
+                    ? "Delivery cost is not included. The store will confirm it with you."
+                    : "The server checks current stock and price again before saving."}
                 </p>
               </section>
 

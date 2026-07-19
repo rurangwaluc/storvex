@@ -233,11 +233,12 @@ function serializePublicSeller(profile, tenant, counts = {}) {
     temporarilyClosed: Boolean(profile.temporarilyClosed),
     pickupEnabled: Boolean(profile.pickupEnabled),
     deliveryEnabled: Boolean(profile.deliveryEnabled),
-    defaultDeliveryFee: Math.max(
-      0,
-      Number(profile.defaultDeliveryFee || 0),
-    ),
-    deliveryAreas: normalizeList(profile.deliveryAreas),
+    deliveryPolicy: profile.deliveryEnabled
+      ? {
+          kigali: "FREE",
+          outsideKigali: "CONFIRM_WITH_STORE",
+        }
+      : null,
     paymentMethods: normalizeList(profile.paymentMethods),
     location: publicStoreLocation(tenant),
     productCount: Math.max(0, Number(counts.productCount || 0)),

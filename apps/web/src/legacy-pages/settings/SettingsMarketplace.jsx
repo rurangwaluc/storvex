@@ -12,7 +12,6 @@ import {
   ChevronDown,
   ChevronRight,
   ExternalLink,
-  MapPin,
   PackageCheck,
   RefreshCw,
   Save,
@@ -88,8 +87,6 @@ function profileSnapshot(profile) {
     pickupEnabled: Boolean(profile?.pickupEnabled),
     deliveryEnabled: Boolean(profile?.deliveryEnabled),
     temporarilyClosed: Boolean(profile?.temporarilyClosed),
-    defaultDeliveryFee: Number(profile?.defaultDeliveryFee || 0),
-    deliveryAreas: normalizeStringList(profile?.deliveryAreas),
   };
 }
 
@@ -231,7 +228,6 @@ export default function SettingsMarketplace() {
   const [activeSection, setActiveSection] = useState("");
   const autoOpenedSection = useRef(false);
 
-  const [deliveryAreaInput, setDeliveryAreaInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activationBusy, setActivationBusy] = useState(false);
@@ -378,31 +374,6 @@ export default function SettingsMarketplace() {
     openSection(details?.section || "profile");
   }
 
-  function addDeliveryArea() {
-    const area = cleanString(deliveryAreaInput);
-
-    if (!area) return;
-
-    setForm((current) => ({
-      ...current,
-      deliveryAreas: normalizeStringList([
-        ...current.deliveryAreas,
-        area,
-      ]),
-    }));
-
-    setDeliveryAreaInput("");
-  }
-
-  function removeDeliveryArea(area) {
-    setForm((current) => ({
-      ...current,
-      deliveryAreas: current.deliveryAreas.filter(
-        (item) => item !== area,
-      ),
-    }));
-  }
-
   function buildPayload() {
     return {
       displayName: cleanString(form.displayName),
@@ -411,11 +382,6 @@ export default function SettingsMarketplace() {
       pickupEnabled: Boolean(form.pickupEnabled),
       deliveryEnabled: Boolean(form.deliveryEnabled),
       temporarilyClosed: Boolean(form.temporarilyClosed),
-      defaultDeliveryFee: Math.max(
-        0,
-        Math.round(Number(form.defaultDeliveryFee || 0)),
-      ),
-      deliveryAreas: normalizeStringList(form.deliveryAreas),
     };
   }
 
@@ -655,7 +621,7 @@ export default function SettingsMarketplace() {
 
           <ToggleRow
             title="Delivery from store"
-            detail="You arrange delivery and confirm the address, fee and delivery time."
+            detail="Free within Kigali. Outside Kigali, agree the delivery cost with the customer."
             checked={form.deliveryEnabled}
             onChange={(value) =>
               updateField("deliveryEnabled", value)
@@ -667,54 +633,22 @@ export default function SettingsMarketplace() {
 
         {form.deliveryEnabled ? (
           <div className="svx-marketplace-delivery-panel">
-            <label className="svx-marketplace-field">
-              <span>Usual delivery fee</span>
-              <div className="svx-marketplace-money-input">
-                <input
-                  type="number"
-                  min="0"
-                  value={form.defaultDeliveryFee}
-                  onChange={(event) =>
-                    updateField(
-                      "defaultDeliveryFee",
-                      event.target.value,
-                    )
-                  }
-                />
-                <small>RWF</small>
-              </div>
-            </label>
+            <div className="svx-marketplace-field">
+              <span>Delivery within Kigali</span>
+              <strong>Free delivery</strong>
+              <small>
+                The delivery cost should already be included
+                in the product price.
+              </small>
+            </div>
 
             <div className="svx-marketplace-field">
-              <span>Delivery areas</span>
-
-              <div className="svx-marketplace-add-area">
-                <input
-                  value={deliveryAreaInput}
-                  onChange={(event) =>
-                    setDeliveryAreaInput(event.target.value)
-                  }
-                  placeholder="Example: Kicukiro"
-                />
-
-                <button type="button" onClick={addDeliveryArea}>
-                  Add
-                </button>
-              </div>
-
-              <div className="svx-marketplace-area-list">
-                {form.deliveryAreas.map((area) => (
-                  <button
-                    type="button"
-                    key={area}
-                    onClick={() => removeDeliveryArea(area)}
-                  >
-                    <MapPin size={14} />
-                    {area}
-                    <span>×</span>
-                  </button>
-                ))}
-              </div>
+              <span>Delivery outside Kigali</span>
+              <strong>Cost agreed with the customer</strong>
+              <small>
+                Confirm the delivery cost before accepting
+                the customer request.
+              </small>
             </div>
           </div>
         ) : null}

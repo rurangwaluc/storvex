@@ -280,6 +280,11 @@ enum MarketplaceFulfilmentMethod {
   DELIVERY
 }
 
+enum MarketplaceDeliveryCoverage {
+  KIGALI
+  OUTSIDE_KIGALI
+}
+
 enum MarketplaceRequestPaymentMethod {
   CASH_ON_DELIVERY
   MOMO_ON_DELIVERY
@@ -298,6 +303,7 @@ model MarketplaceRequest {
   status           MarketplaceRequestStatus        @default(REQUESTED)
   preferredContact MarketplaceContactChannel
   fulfilmentMethod MarketplaceFulfilmentMethod
+  deliveryCoverage MarketplaceDeliveryCoverage?
   paymentMethod    MarketplaceRequestPaymentMethod
 
   customerName  String  @db.Text

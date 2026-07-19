@@ -102,6 +102,61 @@ test(
 );
 
 test(
+  "requires delivery coverage for delivery",
+  () => {
+    assert.throws(
+      () =>
+        validateRequestInput(
+          validInput({
+            fulfilmentMethod: "DELIVERY",
+            deliveryCoverage: null,
+            deliveryAddress: "Kigali",
+          }),
+        ),
+      (error) =>
+        error.code ===
+        "DELIVERY_COVERAGE_REQUIRED",
+    );
+  },
+);
+
+test(
+  "normalizes Kigali delivery coverage",
+  () => {
+    const input = validateRequestInput(
+      validInput({
+        fulfilmentMethod: "DELIVERY",
+        deliveryCoverage: "KIGALI",
+        deliveryAddress: "Kiyovu, Kigali",
+      }),
+    );
+
+    assert.equal(
+      input.deliveryCoverage,
+      "KIGALI",
+    );
+  },
+);
+
+test(
+  "normalizes outside Kigali delivery coverage",
+  () => {
+    const input = validateRequestInput(
+      validInput({
+        fulfilmentMethod: "DELIVERY",
+        deliveryCoverage: "OUTSIDE_KIGALI",
+        deliveryAddress: "Huye District",
+      }),
+    );
+
+    assert.equal(
+      input.deliveryCoverage,
+      "OUTSIDE_KIGALI",
+    );
+  },
+);
+
+test(
   "requires a delivery address for delivery",
   () => {
     assert.throws(
@@ -110,6 +165,8 @@ test(
           validInput({
             fulfilmentMethod:
               "DELIVERY",
+            deliveryCoverage:
+              "KIGALI",
             deliveryAddress: null,
           }),
         ),

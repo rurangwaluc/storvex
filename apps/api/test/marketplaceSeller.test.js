@@ -64,7 +64,7 @@ test("requires a public store identity", () => {
   );
 });
 
-test("requires pickup or configured delivery", () => {
+test("accepts enabled delivery without configured areas", () => {
   const readiness = buildMarketplaceReadiness(
     completeInput({
       profile: {
@@ -76,12 +76,12 @@ test("requires pickup or configured delivery", () => {
     }),
   );
 
-  assert.equal(readiness.ready, false);
+  assert.equal(readiness.ready, true);
   assert.equal(
     readiness.summary.missingRequiredKeys.includes(
       "fulfilment",
     ),
-    true,
+    false,
   );
 });
 
