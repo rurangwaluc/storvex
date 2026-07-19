@@ -273,26 +273,9 @@ function CartPanel({
           </button>
 
           <small>
-            Stock and price are confirmed before the store accepts the request.
+            The store confirms current stock and price before
+            accepting your request.
           </small>
-
-          <div className="svx-marketplace-panel-secondary-actions">
-            <button
-              type="button"
-              onClick={() => onOpenMode("wishlist")}
-            >
-              <Heart size={15} />
-              Wishlist
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onOpenMode("compare")}
-            >
-              <GitCompareArrows size={15} />
-              Compare
-            </button>
-          </div>
         </footer>
       ) : null}
     </>
