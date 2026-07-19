@@ -157,8 +157,8 @@ function CartPanel({
         {!store.cart.length ? (
           <EmptyPanel
             icon={ShoppingCart}
-            title="Your cart is ready"
-            text="Add available products, then review quantities before sending a request."
+            title="Your cart is empty"
+            text="Add products to your cart to send a request."
           />
         ) : (
           <div className="svx-marketplace-cart-list">
@@ -877,6 +877,7 @@ export default function MarketplaceCustomerPanel({
         "svx-marketplace-customer-layer",
         visible ? "is-visible" : "is-closing",
         empty ? "is-empty" : "has-items",
+        `mode-${mode}`,
       ].join(" ")}
       aria-hidden={!visible}
     >

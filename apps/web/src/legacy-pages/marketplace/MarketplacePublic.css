@@ -8359,3 +8359,201 @@ body:has(.storvex-marketplace) #root {
     min-height: 56px;
   }
 }
+
+
+/* Marketplace mode-aware mobile sheet heights */
+
+@media (max-width: 820px) {
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-panel {
+    top: auto;
+    height: auto;
+    min-height: 0;
+    max-height:
+      min(
+        54dvh,
+        520px
+      );
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-panel-body {
+    flex: 0 1 auto;
+    min-height: 170px;
+    overflow-y: auto;
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-empty {
+    min-height: 170px;
+    padding: 22px 16px 26px;
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-panel-head {
+    min-height: 54px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-panel-head
+    > button {
+    width: 38px;
+    height: 38px;
+  }
+
+  .svx-marketplace-customer-layer.has-items.mode-cart
+    .svx-marketplace-customer-panel,
+  .svx-marketplace-customer-layer.has-items.mode-wishlist
+    .svx-marketplace-customer-panel {
+    top: auto;
+    height:
+      min(
+        82dvh,
+        760px
+      );
+    max-height:
+      calc(
+        100dvh -
+        max(
+          12px,
+          env(safe-area-inset-top, 0px)
+        ) -
+        max(
+          6px,
+          env(safe-area-inset-bottom, 0px)
+        )
+      );
+  }
+
+  .svx-marketplace-customer-layer.has-items.mode-compare
+    .svx-marketplace-customer-panel {
+    top: auto;
+    height:
+      min(
+        88dvh,
+        820px
+      );
+    max-height:
+      calc(
+        100dvh -
+        max(
+          8px,
+          env(safe-area-inset-top, 0px)
+        ) -
+        max(
+          6px,
+          env(safe-area-inset-bottom, 0px)
+        )
+      );
+  }
+
+  .svx-marketplace-customer-panel:has(
+    .svx-marketplace-request-form
+  ) {
+    top:
+      max(
+        4px,
+        env(safe-area-inset-top, 0px)
+      );
+    height: auto;
+    max-height: none;
+  }
+
+  .svx-marketplace-customer-panel:has(
+    .svx-marketplace-request-form
+  )
+    .svx-marketplace-customer-drag-handle,
+  .svx-marketplace-customer-panel:has(
+    .svx-marketplace-request-form
+  )
+    .svx-marketplace-customer-tabs {
+    display: none;
+  }
+
+  .svx-marketplace-customer-panel:has(
+    .svx-marketplace-request-form
+  )
+    .svx-marketplace-customer-panel-head {
+    min-height: 54px;
+  }
+
+  .svx-marketplace-customer-empty {
+    align-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-panel {
+    max-height:
+      min(
+        50dvh,
+        460px
+      );
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-panel-body,
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-empty {
+    min-height: 150px;
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-empty {
+    padding: 18px 14px 22px;
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-empty h3 {
+    margin-top: 10px;
+    font-size: 17px;
+  }
+
+  .svx-marketplace-customer-layer.is-empty
+    .svx-marketplace-customer-empty p {
+    margin-top: 6px;
+    font-size: 10.5px;
+    line-height: 1.5;
+  }
+
+  .svx-marketplace-customer-layer.has-items.mode-cart
+    .svx-marketplace-customer-panel,
+  .svx-marketplace-customer-layer.has-items.mode-wishlist
+    .svx-marketplace-customer-panel {
+    height:
+      min(
+        80dvh,
+        700px
+      );
+  }
+
+  .svx-marketplace-customer-layer.has-items.mode-compare
+    .svx-marketplace-customer-panel {
+    height:
+      min(
+        86dvh,
+        760px
+      );
+  }
+
+  .svx-marketplace-customer-panel:has(
+    .svx-marketplace-request-form
+  ) {
+    top:
+      max(
+        3px,
+        env(safe-area-inset-top, 0px)
+      );
+    right: 3px;
+    bottom:
+      max(
+        3px,
+        env(safe-area-inset-bottom, 0px)
+      );
+    left: 3px;
+    height: auto;
+  }
+}
