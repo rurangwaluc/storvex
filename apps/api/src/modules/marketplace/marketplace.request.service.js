@@ -116,27 +116,81 @@ function normalizeList(value) {
     );
 }
 
-function marketplaceRequestNumber(now = new Date()) {
-  const date = new Date(now);
+function marketplaceRequestDateKey(
+  now = new Date(),
+) {
+  const parts = new Intl.DateTimeFormat(
+    "en-CA",
+    {
+      timeZone: "Africa/Kigali",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    },
+  ).formatToParts(new Date(now));
 
-  const datePart = [
-    date.getUTCFullYear(),
-    String(date.getUTCMonth() + 1).padStart(
-      2,
-      "0",
-    ),
-    String(date.getUTCDate()).padStart(
-      2,
-      "0",
-    ),
+  const values = Object.fromEntries(
+    parts.map((part) => [
+      part.type,
+      part.value,
+    ]),
+  );
+
+  return [
+    values.year,
+    values.month,
+    values.day,
   ].join("");
+}
 
-  const random = crypto
-    .randomBytes(4)
-    .toString("hex")
-    .toUpperCase();
+function marketplaceRequestNumber(
+  dateKey,
+  sequence,
+) {
+  return `SVX-${dateKey}-${String(
+    sequence,
+  ).padStart(3, "0")}`;
+}
 
-  return `SVX-${datePart}-${random}`;
+async function nextMarketplaceRequestNumber(
+  now = new Date(),
+  database = prisma,
+) {
+  const dateKey =
+    marketplaceRequestDateKey(now);
+
+  const rows = await database.$queryRaw`
+    INSERT INTO "MarketplaceRequestDailySequence"
+      ("dateKey", "lastNumber", "createdAt", "updatedAt")
+    VALUES
+      (${dateKey}, 1, NOW(), NOW())
+    ON CONFLICT ("dateKey")
+    DO UPDATE SET
+      "lastNumber" =
+        "MarketplaceRequestDailySequence"."lastNumber" + 1,
+      "updatedAt" = NOW()
+    RETURNING "lastNumber"
+  `;
+
+  const sequence = Number(
+    rows?.[0]?.lastNumber,
+  );
+
+  if (
+    !Number.isInteger(sequence) ||
+    sequence < 1
+  ) {
+    throw appError(
+      500,
+      "REQUEST_NUMBER_FAILED",
+      "The request number could not be created.",
+    );
+  }
+
+  return marketplaceRequestNumber(
+    dateKey,
+    sequence,
+  );
 }
 
 function trackingToken() {
@@ -470,6 +524,26 @@ function validateRequestInput(body = {}) {
   };
 }
 
+function formatCustomerPhone(value) {
+  const digits = normalizePhone(value);
+
+  if (!digits) return null;
+
+  if (
+    digits.startsWith("250") &&
+    digits.length === 12
+  ) {
+    return [
+      `+${digits.slice(0, 3)}`,
+      digits.slice(3, 6),
+      digits.slice(6, 9),
+      digits.slice(9),
+    ].join(" ");
+  }
+
+  return value;
+}
+
 function buildWhatsappMessage({
   request,
   items,
@@ -477,68 +551,145 @@ function buildWhatsappMessage({
   const lines = [
     `Hello ${request.sellerNameSnapshot},`,
     "",
-    `I submitted Marketplace request ${request.requestNumber}.`,
+    "I have submitted a product request through Storvex.",
+    "",
+    "Request number",
+    request.requestNumber,
     "",
   ];
 
-  for (const item of items) {
+  items.forEach((item, index) => {
+    if (items.length > 1) {
+      lines.push(
+        `Product ${index + 1}`,
+      );
+    } else {
+      lines.push("Product");
+    }
+
     lines.push(
-      `${item.productTitleSnapshot}`,
-      `Quantity: ${item.quantity}`,
-      `Unit price: ${formatMoney(
-        item.unitPrice,
-        request.currency,
-      )}`,
-      `Item total: ${formatMoney(
+      item.productTitleSnapshot,
+      "",
+      "Quantity",
+      String(item.quantity),
+      "",
+      "Item total",
+      formatMoney(
         item.lineTotal,
         request.currency,
-      )}`,
-      ...(item.productUrlSnapshot
-        ? [
-            `Product: ${item.productUrlSnapshot}`,
-          ]
-        : []),
+      ),
       "",
     );
+
+    if (item.productUrlSnapshot) {
+      lines.push(
+        "View product",
+        item.productUrlSnapshot,
+        "",
+      );
+    }
+  });
+
+  lines.push(
+    "Total",
+    formatMoney(
+      request.total,
+      request.currency,
+    ),
+    "",
+    "How I will receive it",
+    request.fulfilmentMethod === "DELIVERY"
+      ? "Seller delivery"
+      : "Store pickup",
+    "",
+  );
+
+  if (
+    request.fulfilmentMethod === "DELIVERY"
+  ) {
+    lines.push(
+      "Delivery area",
+      request.deliveryCoverage ===
+        "OUTSIDE_KIGALI"
+        ? "Outside Kigali"
+        : "Kigali City",
+      "",
+    );
+
+    if (request.deliveryAddress) {
+      lines.push(
+        "Delivery address",
+        request.deliveryAddress,
+        "",
+      );
+    }
+
+    const location = [
+      request.deliverySector,
+      request.deliveryDistrict,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    if (location) {
+      lines.push(
+        "Location",
+        location,
+        "",
+      );
+    }
   }
 
   lines.push(
-    `Fulfilment: ${
-      request.fulfilmentMethod ===
-      "DELIVERY"
-        ? "Seller delivery"
-        : "Store pickup"
-    }`,
-    `Payment: ${String(
-      request.paymentMethod,
-    )
-      .toLowerCase()
-      .replace(/_/g, " ")}`,
-    `Total: ${formatMoney(
-      request.total,
-      request.currency,
-    )}`,
+    "Customer",
+    request.customerName,
     "",
-    `Customer: ${request.customerName}`,
   );
 
-  if (request.customerPhone) {
-    lines.push(
-      `Phone: ${request.customerPhone}`,
+  const customerPhone =
+    formatCustomerPhone(
+      request.customerPhone,
     );
-  }
 
-  if (request.deliveryAddress) {
+  if (customerPhone) {
     lines.push(
-      `Delivery address: ${request.deliveryAddress}`,
+      "Phone",
+      customerPhone,
+      "",
     );
   }
 
   if (request.customerNote) {
     lines.push(
-      `Note: ${request.customerNote}`,
+      "Note",
+      request.customerNote,
+      "",
     );
   }
+
+  if (
+    request.fulfilmentMethod === "PICKUP"
+  ) {
+    lines.push(
+      "Please confirm availability and let me know when the product is ready for collection.",
+    );
+  } else if (
+    request.deliveryCoverage ===
+    "OUTSIDE_KIGALI"
+  ) {
+    lines.push(
+      "Please confirm availability and the delivery cost before processing my request.",
+    );
+  } else {
+    lines.push(
+      "Please confirm availability and the delivery arrangements.",
+    );
+  }
+
+  lines.push(
+    "",
+    "Thank you.",
+  );
 
   return lines.join("\n");
 }
@@ -1161,7 +1312,7 @@ async function submitMarketplaceRequest(
         data: {
           tenantId: seller.tenantId,
           requestNumber:
-            marketplaceRequestNumber(),
+            await nextMarketplaceRequestNumber(),
           trackingToken:
             trackingToken(),
           clientRequestId:
@@ -1303,7 +1454,9 @@ module.exports.__private = {
   normalizePhone,
   normalizeList,
   validateRequestInput,
+  marketplaceRequestDateKey,
   marketplaceRequestNumber,
+  nextMarketplaceRequestNumber,
   marketplacePublicBaseUrl,
   marketplaceProductUrl,
   buildWhatsappMessage,

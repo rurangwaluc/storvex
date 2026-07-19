@@ -207,18 +207,25 @@ test(
 );
 
 test(
-  "generates customer-safe request numbers",
+  "generates customer-friendly daily request numbers",
   () => {
     const number =
       marketplaceRequestNumber(
-        new Date(
-          "2026-07-17T10:00:00.000Z",
-        ),
+        "20260717",
+        1,
       );
 
-    assert.match(
+    assert.equal(
       number,
-      /^SVX-20260717-[A-F0-9]{8}$/,
+      "SVX-20260717-001",
+    );
+
+    assert.equal(
+      marketplaceRequestNumber(
+        "20260717",
+        42,
+      ),
+      "SVX-20260717-042",
     );
   },
 );
@@ -381,12 +388,42 @@ test(
 
     assert.match(
       message,
-      /Unit price: Rwf 650,000/,
+      /Request number\nSVX-20260718-12345678/,
     );
 
     assert.match(
       message,
-      /Item total: Rwf 650,000/,
+      /Product\nHP Pavilion 15/,
+    );
+
+    assert.match(
+      message,
+      /Quantity\n1/,
+    );
+
+    assert.match(
+      message,
+      /Item total\nRwf 650,000/,
+    );
+
+    assert.match(
+      message,
+      /How I will receive it\nStore pickup/,
+    );
+
+    assert.match(
+      message,
+      /Phone\n\+250 785 587 833/,
+    );
+
+    assert.doesNotMatch(
+      message,
+      /seller approved other/i,
+    );
+
+    assert.doesNotMatch(
+      message,
+      /Payment:/i,
     );
   },
 );

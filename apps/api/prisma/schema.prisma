@@ -2541,3 +2541,13 @@ enum ProductImageStudioStatus {
   READY
   FAILED
 }
+
+
+model MarketplaceRequestDailySequence {
+  dateKey    String   @id @db.Text
+  lastNumber Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("MarketplaceRequestDailySequence")
+}
