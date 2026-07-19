@@ -935,3 +935,1454 @@
     border-bottom: 1px solid var(--color-border);
   }
 }
+
+/* Marketplace Inventory-aligned visual system */
+.svx-market-owner-page {
+  --market-surface: #ffffff;
+  --market-soft: #f8fbff;
+  --market-text: #06122e;
+  --market-muted: #5d6b85;
+  --market-line: #dfe7f3;
+  --market-line-soft: #edf2fa;
+  --market-blue: #075cff;
+  --market-blue-soft: #eef5ff;
+  --market-green: #0cab66;
+  --market-green-soft: #eafaf3;
+  --market-orange: #f59e0b;
+  --market-orange-soft: #fff4df;
+  --market-red: #ef4444;
+  --market-red-soft: #fff0f0;
+  --market-shadow: 0 20px 60px rgba(15, 46, 92, 0.08);
+
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  overflow-x: hidden;
+  background: transparent;
+  color: var(--market-text);
+}
+
+:root[data-theme="dark"] .svx-market-owner-page {
+  --market-surface: #1f1f20;
+  --market-soft: #1c1c1d;
+  --market-text: #ffffff;
+  --market-muted: rgba(255, 255, 255, 0.72);
+  --market-line: rgba(255, 255, 255, 0.12);
+  --market-line-soft: rgba(255, 255, 255, 0.08);
+  --market-blue: #159cff;
+  --market-blue-soft: rgba(21, 156, 255, 0.14);
+  --market-green: #23c783;
+  --market-green-soft: rgba(35, 199, 131, 0.13);
+  --market-orange: #f7ad35;
+  --market-orange-soft: rgba(247, 173, 53, 0.13);
+  --market-red: #ff6262;
+  --market-red-soft: rgba(255, 98, 98, 0.14);
+  --market-shadow: none;
+}
+
+.svx-market-owner-shell {
+  width: min(100%, 1540px);
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 36px;
+}
+
+/* Header */
+.svx-market-owner-header {
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+.svx-market-owner-header h1 {
+  color: var(--market-text);
+  font-size: clamp(34px, 4vw, 48px);
+}
+
+.svx-market-owner-header p {
+  color: var(--market-muted);
+}
+
+.svx-market-owner-eyebrow,
+.svx-market-owner-register header > div > span,
+.svx-market-owner-detail-card header > span,
+.svx-market-owner-detail-hero > div > span,
+.svx-market-owner-next-step > span {
+  color: var(--market-blue);
+}
+
+/* Quiet Marketplace navigation */
+.svx-market-owner-tabs {
+  gap: 6px;
+  padding: 5px;
+  border-color: var(--market-line);
+  border-radius: 18px;
+  background: var(--market-surface);
+  box-shadow: var(--market-shadow);
+}
+
+.svx-market-owner-tab {
+  min-height: 42px;
+  padding-inline: 17px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  color: var(--market-muted);
+}
+
+.svx-market-owner-tab:hover {
+  border-color: var(--market-line);
+  background: var(--market-soft);
+  color: var(--market-text);
+}
+
+.svx-market-owner-tab.is-active {
+  border-color: color-mix(
+    in srgb,
+    var(--market-blue) 28%,
+    var(--market-line)
+  );
+  background: var(--market-blue-soft);
+  color: var(--market-blue);
+}
+
+/* Inventory-style metric cards */
+.svx-market-owner-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  border: 0;
+  background: transparent;
+}
+
+.svx-market-owner-summary article {
+  min-height: 132px;
+  padding: 22px;
+  border: 1px solid var(--market-line);
+  border-radius: 28px;
+  background: var(--market-surface);
+  box-shadow: var(--market-shadow);
+}
+
+.svx-market-owner-summary article:last-child {
+  border-right: 1px solid var(--market-line);
+}
+
+.svx-market-owner-summary span,
+.svx-market-owner-summary p {
+  color: var(--market-muted);
+}
+
+.svx-market-owner-summary strong {
+  color: var(--market-text);
+}
+
+.svx-market-owner-summary article:first-child strong {
+  color: var(--market-blue);
+}
+
+.svx-market-owner-summary article:nth-child(2) strong {
+  color: var(--market-orange);
+}
+
+.svx-market-owner-summary article:nth-child(3) strong {
+  color: var(--market-green);
+}
+
+/* Filters belong to the register card */
+.svx-market-owner-toolbar {
+  margin-top: 26px;
+  padding: 18px;
+  border-color: var(--market-line);
+  border-radius: 28px 28px 0 0;
+  background: var(--market-surface);
+  box-shadow: var(--market-shadow);
+}
+
+.svx-market-owner-search input,
+.svx-market-owner-mobile-filter select {
+  min-height: 50px;
+  border-color: var(--market-line);
+  border-radius: 16px;
+  background: var(--market-soft);
+  color: var(--market-text);
+}
+
+.svx-market-owner-search svg {
+  stroke: var(--market-muted);
+}
+
+.svx-market-owner-search input::placeholder {
+  color: var(--market-muted);
+}
+
+.svx-market-owner-search input:focus,
+.svx-market-owner-mobile-filter select:focus {
+  border-color: var(--market-blue);
+  box-shadow: 0 0 0 4px var(--market-blue-soft);
+}
+
+.svx-market-owner-filters {
+  gap: 8px;
+}
+
+.svx-market-owner-filters button {
+  min-height: 38px;
+  border-color: var(--market-line);
+  border-radius: 12px;
+  background: var(--market-soft);
+  color: var(--market-muted);
+}
+
+.svx-market-owner-filters button:hover {
+  border-color: var(--market-blue);
+  color: var(--market-text);
+}
+
+.svx-market-owner-filters button.is-active {
+  border-color: var(--market-blue);
+  background: var(--market-blue);
+  color: #ffffff;
+}
+
+/* Compact register matching Inventory table */
+.svx-market-owner-register {
+  margin-top: 0;
+  overflow: hidden;
+  border-color: var(--market-line);
+  border-top: 0;
+  border-radius: 0 0 28px 28px;
+  background: var(--market-surface);
+  box-shadow: var(--market-shadow);
+}
+
+.svx-market-owner-register > header {
+  padding: 21px 22px;
+  border-color: var(--market-line-soft);
+}
+
+.svx-market-owner-register h2 {
+  color: var(--market-text);
+}
+
+.svx-market-owner-register > header p {
+  color: var(--market-muted);
+}
+
+.svx-market-owner-table-head {
+  min-height: 45px;
+  border-color: var(--market-line-soft);
+  background: var(--market-soft);
+  color: var(--market-muted);
+}
+
+.svx-market-owner-row {
+  min-height: 78px;
+  padding-block: 12px;
+  border-color: var(--market-line-soft);
+  background: transparent;
+  color: var(--market-text);
+}
+
+.svx-market-owner-row:hover {
+  background: var(--market-soft);
+}
+
+.svx-market-owner-row strong {
+  color: var(--market-text);
+}
+
+.svx-market-owner-row span {
+  color: var(--market-muted);
+}
+
+.svx-market-owner-request-cell strong,
+.svx-market-owner-open span {
+  color: var(--market-blue);
+}
+
+/* Status colours */
+.svx-market-owner-status {
+  border-color: var(--market-line);
+  background: var(--market-soft);
+  color: var(--market-text) !important;
+}
+
+.svx-market-owner-status.is-requested {
+  border-color: color-mix(
+    in srgb,
+    var(--market-blue) 34%,
+    var(--market-line)
+  );
+  background: var(--market-blue-soft);
+  color: var(--market-blue) !important;
+}
+
+.svx-market-owner-status.is-confirmed,
+.svx-market-owner-status.is-preparing,
+.svx-market-owner-status.is-ready_for_pickup,
+.svx-market-owner-status.is-out_for_delivery {
+  border-color: color-mix(
+    in srgb,
+    var(--market-orange) 32%,
+    var(--market-line)
+  );
+  background: var(--market-orange-soft);
+  color: var(--market-orange) !important;
+}
+
+.svx-market-owner-status.is-completed {
+  border-color: color-mix(
+    in srgb,
+    var(--market-green) 34%,
+    var(--market-line)
+  );
+  background: var(--market-green-soft);
+  color: var(--market-green) !important;
+}
+
+.svx-market-owner-status.is-rejected,
+.svx-market-owner-status.is-cancelled {
+  border-color: color-mix(
+    in srgb,
+    var(--market-red) 32%,
+    var(--market-line)
+  );
+  background: var(--market-red-soft);
+  color: var(--market-red) !important;
+}
+
+/* Load more behaves like Inventory footer */
+.svx-market-owner-load-more {
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-top: 1px solid var(--market-line-soft);
+}
+
+.svx-market-owner-load-more::before {
+  content: "More matching requests are available";
+  align-self: center;
+  color: var(--market-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.svx-market-owner-load-more button,
+.svx-market-owner-empty a {
+  border-color: var(--market-line);
+  border-radius: 14px;
+  background: var(--market-surface);
+  color: var(--market-text);
+  box-shadow: none;
+}
+
+.svx-market-owner-load-more button:hover,
+.svx-market-owner-empty a:hover {
+  border-color: var(--market-blue);
+  color: var(--market-blue);
+}
+
+/* Detail page */
+.svx-market-owner-detail-back a,
+.svx-market-owner-contact-actions a {
+  border-color: var(--market-line);
+  border-radius: 14px;
+  background: var(--market-surface);
+  color: var(--market-text);
+  box-shadow: none;
+}
+
+.svx-market-owner-detail-back a:hover,
+.svx-market-owner-contact-actions a:hover {
+  border-color: var(--market-blue);
+  background: var(--market-blue-soft);
+  color: var(--market-blue);
+}
+
+.svx-market-owner-detail-hero,
+.svx-market-owner-detail-card,
+.svx-market-owner-next-step {
+  border-color: var(--market-line);
+  border-radius: 28px;
+  background: var(--market-surface);
+  box-shadow: var(--market-shadow);
+}
+
+.svx-market-owner-detail-hero h2,
+.svx-market-owner-detail-card h3,
+.svx-market-owner-next-step h3 {
+  color: var(--market-text);
+}
+
+.svx-market-owner-detail-hero p,
+.svx-market-owner-next-step p {
+  color: var(--market-muted);
+}
+
+.svx-market-owner-detail-grid {
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.svx-market-owner-detail-main,
+.svx-market-owner-detail-side {
+  gap: 20px;
+}
+
+.svx-market-owner-items,
+.svx-market-owner-money-list,
+.svx-market-owner-side-list {
+  border-color: var(--market-line-soft);
+}
+
+.svx-market-owner-items article,
+.svx-market-owner-money-list > div,
+.svx-market-owner-side-list > div {
+  border-color: var(--market-line-soft);
+}
+
+.svx-market-owner-product-image {
+  border-color: var(--market-line);
+  border-radius: 16px;
+  background: var(--market-soft);
+}
+
+.svx-market-owner-product-image span,
+.svx-market-owner-money-list > div.is-total strong {
+  color: var(--market-blue);
+}
+
+.svx-market-owner-items article > div:nth-child(2) span,
+.svx-market-owner-items article > div:nth-child(2) p,
+.svx-market-owner-info-grid span,
+.svx-market-owner-money-list span,
+.svx-market-owner-side-list span {
+  color: var(--market-muted);
+}
+
+.svx-market-owner-info-grid {
+  overflow: hidden;
+  border-color: var(--market-line-soft);
+  border-radius: 18px;
+}
+
+.svx-market-owner-info-grid > div {
+  border-color: var(--market-line-soft);
+  background: var(--market-soft);
+}
+
+.svx-market-owner-next-step {
+  background: var(--market-soft);
+}
+
+.svx-market-owner-empty {
+  color: var(--market-text);
+}
+
+.svx-market-owner-empty > div {
+  border-color: var(--market-line);
+  border-radius: 18px;
+  background: var(--market-soft);
+  color: var(--market-blue);
+}
+
+.svx-market-owner-empty p {
+  color: var(--market-muted);
+}
+
+.svx-market-owner-skeleton {
+  background: var(--market-line);
+}
+
+@media (max-width: 1100px) {
+  .svx-market-owner-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 899px) {
+  .svx-market-owner-shell {
+    padding: 22px;
+  }
+
+  .svx-market-owner-header {
+    flex-direction: column;
+  }
+
+  .svx-market-owner-tabs {
+    width: 100%;
+  }
+
+  .svx-market-owner-tab {
+    flex: 1;
+  }
+
+  .svx-market-owner-row {
+    border: 1px solid var(--market-line-soft);
+    border-radius: 22px;
+    background: var(--market-surface);
+  }
+
+  :root[data-theme="dark"] .svx-market-owner-row {
+    background: var(--market-soft);
+  }
+
+  .svx-market-owner-list {
+    display: grid;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .svx-market-owner-register {
+    overflow: visible;
+  }
+}
+
+@media (max-width: 720px) {
+  .svx-market-owner-shell {
+    padding: 16px;
+  }
+
+  .svx-market-owner-header h1 {
+    font-size: 31px;
+  }
+
+  .svx-market-owner-summary {
+    gap: 12px;
+  }
+
+  .svx-market-owner-summary article {
+    min-height: 112px;
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .svx-market-owner-toolbar {
+    border-radius: 22px 22px 0 0;
+  }
+
+  .svx-market-owner-register {
+    border-radius: 0 0 22px 22px;
+  }
+
+  .svx-market-owner-detail-hero,
+  .svx-market-owner-detail-card,
+  .svx-market-owner-next-step {
+    border-radius: 22px;
+  }
+
+  .svx-market-owner-load-more {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-market-owner-shell {
+    padding: 12px;
+  }
+
+  .svx-market-owner-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-market-owner-tabs {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .svx-market-owner-tab {
+    width: 100%;
+  }
+}
+
+/* Marketplace request register — authoritative layout */
+
+.svx-market-owner-page,
+.svx-market-owner-shell,
+.svx-market-owner-toolbar,
+.svx-market-owner-register,
+.svx-market-owner-list,
+.svx-market-owner-table-head,
+.svx-market-owner-row,
+.svx-market-owner-row > div {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.svx-market-owner-page,
+.svx-market-owner-shell {
+  overflow-x: clip;
+}
+
+.svx-market-owner-register,
+.svx-market-owner-list {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.svx-market-owner-row-action {
+  min-width: 0;
+}
+
+.svx-market-owner-open {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  width: max-content;
+  margin-left: auto;
+  color: var(--market-blue);
+}
+
+.svx-market-owner-open > span {
+  margin: 0;
+  color: var(--market-blue);
+  font-weight: 800;
+}
+
+.svx-market-owner-open svg {
+  flex: 0 0 auto;
+}
+
+/* Complete premium table when enough content width exists */
+@media (min-width: 1100px) {
+  .svx-market-owner-shell {
+    width: min(100%, 1360px);
+    padding-inline: clamp(22px, 2.3vw, 36px);
+  }
+
+  .svx-market-owner-table-head,
+  .svx-market-owner-row {
+    width: 100%;
+    grid-template-columns:
+      minmax(0, 1.28fr)
+      minmax(0, 1.02fr)
+      minmax(0, 1.14fr)
+      minmax(0, 0.8fr)
+      minmax(0, 0.82fr)
+      minmax(116px, 0.94fr);
+    gap: clamp(10px, 1.15vw, 18px);
+    padding-inline: clamp(18px, 1.8vw, 26px);
+  }
+
+  /* Old seventh heading belonged to the separate Open column. */
+  .svx-market-owner-table-head > span:last-child {
+    display: none;
+  }
+
+  .svx-market-owner-row {
+    min-height: 82px;
+    padding-block: 14px;
+  }
+
+  .svx-market-owner-row > div {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .svx-market-owner-row strong,
+  .svx-market-owner-row
+    > div
+    > span:not(.svx-market-owner-status) {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .svx-market-owner-row-action {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 9px;
+    overflow: visible !important;
+  }
+
+  .svx-market-owner-row-action
+    .svx-market-owner-status {
+    flex: 0 1 auto;
+    max-width: 110px;
+    overflow: hidden !important;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .svx-market-owner-row-action
+    .svx-market-owner-open {
+    flex: 0 0 auto;
+  }
+
+  .svx-market-owner-load-more {
+    padding:
+      17px
+      clamp(18px, 1.8vw, 26px);
+  }
+}
+
+/* Compact expanded-sidebar laptop layout */
+@media (min-width: 1100px) and (max-width: 1299px) {
+  .svx-market-owner-table-head,
+  .svx-market-owner-row {
+    grid-template-columns:
+      minmax(0, 1.22fr)
+      minmax(0, 0.98fr)
+      minmax(0, 1.08fr)
+      minmax(0, 0.72fr)
+      minmax(0, 0.76fr)
+      minmax(106px, 0.86fr);
+    gap: 9px;
+    padding-inline: 15px;
+  }
+
+  .svx-market-owner-row strong {
+    font-size: 13px;
+  }
+
+  .svx-market-owner-row span {
+    font-size: 11.5px;
+  }
+
+  .svx-market-owner-status {
+    min-height: 26px;
+    padding-inline: 7px;
+    font-size: 10px !important;
+  }
+
+  .svx-market-owner-open > span {
+    display: none;
+  }
+}
+
+/*
+ * Tablet and smaller laptop:
+ * use a deliberate card instead of squeezing a desktop table.
+ */
+@media (min-width: 768px) and (max-width: 1099px) {
+  .svx-market-owner-shell {
+    width: min(100%, 920px);
+    padding: 24px;
+  }
+
+  .svx-market-owner-table-head {
+    display: none;
+  }
+
+  .svx-market-owner-register {
+    overflow: hidden;
+  }
+
+  .svx-market-owner-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .svx-market-owner-row {
+    position: relative;
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(180px, 0.72fr);
+    gap: 0 22px;
+    min-height: 0;
+    padding: 18px;
+    overflow: hidden;
+    border: 1px solid var(--market-line-soft);
+    border-radius: 20px;
+    background: var(--market-surface);
+  }
+
+  :root[data-theme="dark"]
+    .svx-market-owner-row {
+    background: var(--market-soft);
+  }
+
+  .svx-market-owner-row > div {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .svx-market-owner-row > div:nth-child(1) {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    padding-bottom: 15px;
+  }
+
+  .svx-market-owner-row > div:nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+    padding-block: 13px;
+    border-top:
+      1px solid
+      var(--market-line-soft);
+  }
+
+  .svx-market-owner-row > div:nth-child(3) {
+    grid-column: 1;
+    grid-row: 3;
+    padding-block: 13px;
+    border-top:
+      1px solid
+      var(--market-line-soft);
+  }
+
+  .svx-market-owner-row > div:nth-child(4) {
+    grid-column: 2;
+    grid-row: 2;
+    padding-block: 13px;
+    border-top:
+      1px solid
+      var(--market-line-soft);
+  }
+
+  .svx-market-owner-row > div:nth-child(5) {
+    grid-column: 2;
+    grid-row: 3;
+    padding-block: 13px;
+    border-top:
+      1px solid
+      var(--market-line-soft);
+  }
+
+  .svx-market-owner-row > div:nth-child(6) {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    padding-top: 14px;
+    border-top:
+      1px solid
+      var(--market-line-soft);
+  }
+
+  .svx-market-owner-row strong,
+  .svx-market-owner-row span {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .svx-market-owner-row-action {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    overflow: visible !important;
+  }
+
+  .svx-market-owner-row-action
+    .svx-market-owner-status {
+    flex: 0 1 auto;
+    max-width: 160px;
+  }
+
+  .svx-market-owner-row-action
+    .svx-market-owner-open {
+    flex: 0 0 auto;
+  }
+
+  .svx-market-owner-load-more {
+    padding: 16px 20px;
+  }
+}
+
+/* PWA and phone correction after combining action cells */
+@media (max-width: 767px) {
+  .svx-market-owner-page,
+  .svx-market-owner-shell,
+  .svx-market-owner-register {
+    overflow-x: hidden;
+  }
+
+  .svx-market-owner-list {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .svx-market-owner-row {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .svx-market-owner-row > div:nth-child(6) {
+    position: static;
+    display: flex !important;
+    grid-column: 1 / -1;
+    grid-row: auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    padding-top: 12px;
+    border-top:
+      1px solid
+      var(--market-line-soft);
+  }
+
+  .svx-market-owner-row strong,
+  .svx-market-owner-row span {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .svx-market-owner-status {
+    max-width: min(160px, 58%);
+  }
+
+  .svx-market-owner-open {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .svx-market-owner-load-more button {
+    width: 100%;
+  }
+}
+
+/* Marketplace request detail — authoritative responsive layout */
+
+.svx-market-owner-detail-page {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-shell {
+  width: min(100%, 1360px);
+  max-width: 100%;
+  container-type: inline-size;
+  container-name: marketplace-detail;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-back,
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-hero,
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-grid,
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-main,
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-side,
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-card,
+.svx-market-owner-detail-page
+  .svx-market-owner-next-step {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Request identity */
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-back {
+  margin-bottom: 18px;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-hero {
+  min-height: 150px;
+  padding: clamp(20px, 2.2vw, 30px);
+  overflow: hidden;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-hero > div {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-hero h2 {
+  max-width: 100%;
+  margin-top: 8px;
+  font-size: clamp(27px, 3.3cqi, 42px);
+  line-height: 1.04;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-hero p {
+  line-height: 1.45;
+}
+
+/* Base structure follows real content width */
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-main,
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-side {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 18px;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-card,
+.svx-market-owner-detail-page
+  .svx-market-owner-next-step {
+  width: 100%;
+  padding: clamp(18px, 2cqi, 24px);
+  overflow: hidden;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-card > header {
+  min-width: 0;
+  margin-bottom: 18px;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-card h3,
+.svx-market-owner-detail-page
+  .svx-market-owner-next-step h3 {
+  max-width: 100%;
+  overflow-wrap: break-word;
+}
+
+/* Products */
+
+.svx-market-owner-detail-page
+  .svx-market-owner-items {
+  min-width: 0;
+  width: 100%;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-items article {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns:
+    58px
+    minmax(0, 1fr)
+    max-content;
+  gap: 14px;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-items article
+  > div:nth-child(2) {
+  min-width: 0;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-items article
+  > div:nth-child(2) strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-items article
+  > div:nth-child(2) span,
+.svx-market-owner-detail-page
+  .svx-market-owner-items article
+  > div:nth-child(2) p {
+  max-width: 100%;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-items article
+  > strong {
+  min-width: max-content;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* Customer and fulfilment facts */
+
+.svx-market-owner-detail-page
+  .svx-market-owner-info-grid {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-info-grid > div {
+  min-width: 0;
+  min-height: 82px;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-info-grid strong {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: normal;
+  line-height: 1.4;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-main
+  > section:nth-child(2)
+  .svx-market-owner-info-grid
+  > div:first-child strong {
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-detail-main
+  > section:nth-child(2)
+  .svx-market-owner-info-grid
+  > div:nth-child(2) strong {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Contact actions */
+
+.svx-market-owner-detail-page
+  .svx-market-owner-contact-actions {
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(min(100%, 145px), 1fr)
+    );
+  gap: 9px;
+  width: 100%;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-contact-actions a {
+  width: 100%;
+  min-height: 44px;
+  padding-inline: 12px;
+  white-space: nowrap;
+}
+
+/* Money and tracking */
+
+.svx-market-owner-detail-page
+  .svx-market-owner-money-list,
+.svx-market-owner-detail-page
+  .svx-market-owner-side-list {
+  min-width: 0;
+  width: 100%;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-money-list > div,
+.svx-market-owner-detail-page
+  .svx-market-owner-side-list > div {
+  min-width: 0;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-money-list strong,
+.svx-market-owner-detail-page
+  .svx-market-owner-side-list strong {
+  min-width: 0;
+  max-width: 64%;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-money-list strong {
+  white-space: nowrap;
+}
+
+.svx-market-owner-detail-page
+  .svx-market-owner-money-list
+  > div.is-total strong {
+  font-size: clamp(18px, 2.2cqi, 22px);
+}
+
+/*
+ * True wide content area.
+ * The right summary column appears only when the page itself,
+ * after the Storvex sidebar, has enough usable width.
+ */
+@container marketplace-detail (min-width: 980px) {
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-grid {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(310px, 0.46fr);
+    gap: 20px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-main,
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-side {
+    gap: 20px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+ * Tablet and compact desktop.
+ * Main information uses the full width.
+ * The three supporting cards form a balanced summary row.
+ */
+@container marketplace-detail (min-width: 680px) and (max-width: 979px) {
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-side {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-next-step {
+    grid-column: 1 / -1;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-items article {
+    grid-template-columns:
+      64px
+      minmax(0, 1fr)
+      max-content;
+  }
+}
+
+/* Compact tablet / PWA */
+
+@container marketplace-detail (max-width: 679px) {
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-hero {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-hero
+    > .svx-market-owner-status {
+    align-self: flex-start;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-items article {
+    grid-template-columns:
+      54px
+      minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-product-image {
+    width: 54px;
+    height: 54px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-items article
+    > strong {
+    grid-column: 2;
+    min-width: 0;
+    margin-top: 3px;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-info-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-info-grid > div {
+    min-height: 78px;
+    padding: 13px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-money-list strong,
+  .svx-market-owner-detail-page
+    .svx-market-owner-side-list strong {
+    max-width: 58%;
+  }
+}
+
+/* Phone and narrow installed PWA */
+
+@container marketplace-detail (max-width: 459px) {
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-back {
+    margin-bottom: 14px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-back a {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-hero,
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-card,
+  .svx-market-owner-detail-page
+    .svx-market-owner-next-step {
+    border-radius: 20px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-hero {
+    padding: 17px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-hero h2 {
+    font-size: clamp(24px, 8.5cqi, 31px);
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-detail-card,
+  .svx-market-owner-detail-page
+    .svx-market-owner-next-step {
+    padding: 16px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-items article {
+    grid-template-columns:
+      50px
+      minmax(0, 1fr);
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-product-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 13px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-items article
+    > div:nth-child(2) strong {
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-items article
+    > strong {
+    white-space: normal;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-info-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-info-grid
+    > div.is-wide {
+    grid-column: auto;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-info-grid > div {
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-contact-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-contact-actions a {
+    min-height: 46px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-money-list > div,
+  .svx-market-owner-detail-page
+    .svx-market-owner-side-list > div {
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-money-list strong,
+  .svx-market-owner-detail-page
+    .svx-market-owner-side-list strong {
+    max-width: 62%;
+    font-size: 13px;
+  }
+}
+
+/*
+ * Prevent the Marketplace navigation from creating horizontal
+ * scrolling on the detail page.
+ */
+@media (max-width: 767px) {
+  .svx-market-owner-detail-page
+    .svx-market-owner-shell {
+    padding-inline: 14px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-tabs {
+    display: grid;
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-tab {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 7px;
+    white-space: normal;
+    text-align: center;
+    line-height: 1.2;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-market-owner-detail-page
+    .svx-market-owner-shell {
+    padding-inline: 10px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-tabs {
+    gap: 3px;
+    padding: 3px;
+    border-radius: 15px;
+  }
+
+  .svx-market-owner-detail-page
+    .svx-market-owner-tab {
+    min-height: 42px;
+    border-radius: 11px;
+    font-size: 12px;
+  }
+}

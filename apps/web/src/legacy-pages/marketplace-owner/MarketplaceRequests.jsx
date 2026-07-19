@@ -51,7 +51,19 @@ const STATUS_FILTERS = [
   },
 ];
 
-const PAGE_SIZE = 30;
+const DESKTOP_PAGE_SIZE = 4;
+const MOBILE_PAGE_SIZE = 3;
+
+function requestPageSize() {
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(max-width: 720px)")?.matches
+  ) {
+    return MOBILE_PAGE_SIZE;
+  }
+
+  return DESKTOP_PAGE_SIZE;
+}
 
 function cleanString(value) {
   return String(value || "").trim();
@@ -114,7 +126,13 @@ function fulfilmentLabel(value) {
 function RequestSkeleton() {
   return (
     <div className="svx-market-owner-list">
-      {Array.from({ length: 6 }).map(
+      {Array.from({
+        length:
+          typeof window !== "undefined" &&
+          window.matchMedia?.("(max-width: 720px)")?.matches
+            ? MOBILE_PAGE_SIZE
+            : DESKTOP_PAGE_SIZE,
+      }).map(
         (_, index) => (
           <div
             key={index}
@@ -193,7 +211,7 @@ export default function MarketplaceRequests() {
             status === "ALL"
               ? undefined
               : status,
-          take: PAGE_SIZE,
+          take: requestPageSize(),
           skip: nextSkip,
         });
 
@@ -487,7 +505,7 @@ export default function MarketplaceRequests() {
                       </span>
                     </div>
 
-                    <div>
+                    <div className="svx-market-owner-row-action">
                       <span
                         className={`svx-market-owner-status is-${cleanString(
                           request.status,
@@ -497,16 +515,16 @@ export default function MarketplaceRequests() {
                           request.status,
                         )}
                       </span>
-                    </div>
 
-                    <div className="svx-market-owner-open">
-                      <span>Open</span>
-                      <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
-                      >
-                        <path d="m9 18 6-6-6-6" />
-                      </svg>
+                      <span className="svx-market-owner-open">
+                        <span>Open</span>
+                        <svg
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path d="m9 18 6-6-6-6" />
+                        </svg>
+                      </span>
                     </div>
                   </button>
                 );

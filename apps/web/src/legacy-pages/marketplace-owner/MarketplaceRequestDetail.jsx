@@ -170,7 +170,7 @@ export default function MarketplaceRequestDetail() {
   );
 
   return (
-    <div className="svx-market-owner-page">
+    <div className="svx-market-owner-page svx-market-owner-detail-page">
       <div className="svx-market-owner-shell">
         <MarketplaceOwnerHeader />
 
