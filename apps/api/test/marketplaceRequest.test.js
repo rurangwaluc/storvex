@@ -207,25 +207,39 @@ test(
 );
 
 test(
-  "generates customer-friendly daily request numbers",
+  "generates business-specific daily request numbers",
   () => {
     const number =
       marketplaceRequestNumber(
+        "RUR",
         "20260717",
         1,
       );
 
     assert.equal(
       number,
-      "SVX-20260717-001",
+      "SVX-RUR-20260717-001",
     );
 
     assert.equal(
       marketplaceRequestNumber(
+        "RUR",
         "20260717",
         42,
       ),
-      "SVX-20260717-042",
+      "SVX-RUR-20260717-042",
+    );
+
+    assert.throws(
+      () =>
+        marketplaceRequestNumber(
+          "R1",
+          "20260717",
+          1,
+        ),
+      (error) =>
+        error.code ===
+        "REQUEST_BUSINESS_CODE_INVALID",
     );
   },
 );

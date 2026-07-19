@@ -202,6 +202,101 @@ async function uniquePublicSlug(tenantId, requested, fallbackName) {
   throw error;
 }
 
+function marketplaceCodeBase(value) {
+  const words = String(value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toUpperCase()
+    .replace(/[^A-Z]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter(
+      (word) =>
+        ![
+          "LTD",
+          "LIMITED",
+          "LLC",
+          "INC",
+          "COMPANY",
+          "CO",
+          "SHOP",
+          "STORE",
+          "BUSINESS",
+          "ENTERPRISE",
+          "ENTERPRISES",
+        ].includes(word),
+    );
+
+  const letters = words.join("");
+
+  if (letters.length >= 3) {
+    return letters.slice(0, 3);
+  }
+
+  return `${letters}XXX`.slice(0, 3);
+}
+
+function marketplaceCodeCandidate(base, attempt) {
+  if (attempt === 0) return base;
+
+  const number = attempt - 1;
+  const first = Math.floor(number / (26 * 26)) % 26;
+  const second = Math.floor(number / 26) % 26;
+  const third = number % 26;
+
+  return String.fromCharCode(
+    65 + first,
+    65 + second,
+    65 + third,
+  );
+}
+
+async function uniqueMarketplaceCode(
+  tenantId,
+  businessName,
+  database = prisma,
+) {
+  const base = marketplaceCodeBase(
+    businessName,
+  );
+
+  for (
+    let attempt = 0;
+    attempt <= 26 * 26 * 26;
+    attempt += 1
+  ) {
+    const candidate =
+      marketplaceCodeCandidate(
+        base,
+        attempt,
+      );
+
+    const existing =
+      await database.marketplaceSellerProfile.findFirst({
+        where: {
+          marketplaceCode: candidate,
+          tenantId: {
+            not: tenantId,
+          },
+        },
+        select: {
+          tenantId: true,
+        },
+      });
+
+    if (!existing) return candidate;
+  }
+
+  const error = new Error(
+    "Could not create a unique Marketplace business code",
+  );
+  error.status = 409;
+  error.code =
+    "MARKETPLACE_CODE_UNAVAILABLE";
+  throw error;
+}
+
 async function getMarketplaceSellerProfile(tenantId) {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
@@ -237,6 +332,11 @@ async function getMarketplaceSellerProfile(tenantId) {
           null,
           tenant.name,
         ),
+        marketplaceCode:
+          await uniqueMarketplaceCode(
+            tenantId,
+            tenant.name,
+          ),
         displayName: tenant.name,
         paymentMethods: [...DEFAULT_PAYMENT_METHODS],
       },
@@ -401,6 +501,9 @@ async function updateMarketplaceSellerProfile(tenantId, payload = {}) {
 
 module.exports = {
   DEFAULT_PAYMENT_METHODS,
+  marketplaceCodeBase,
+  marketplaceCodeCandidate,
+  uniqueMarketplaceCode,
   buildMarketplaceReadiness,
   getMarketplaceSellerProfile,
   getMarketplaceReadiness,

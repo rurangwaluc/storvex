@@ -144,16 +144,32 @@ function marketplaceRequestDateKey(
 }
 
 function marketplaceRequestNumber(
+  marketplaceCode,
   dateKey,
   sequence,
 ) {
-  return `SVX-${dateKey}-${String(
+  const businessCode = String(
+    marketplaceCode || "",
+  )
+    .trim()
+    .toUpperCase();
+
+  if (!/^[A-Z]{3}$/.test(businessCode)) {
+    throw appError(
+      500,
+      "REQUEST_BUSINESS_CODE_INVALID",
+      "The business request code is invalid.",
+    );
+  }
+
+  return `SVX-${businessCode}-${dateKey}-${String(
     sequence,
   ).padStart(3, "0")}`;
 }
 
 async function nextMarketplaceRequestNumber(
   tenantId,
+  marketplaceCode,
   now = new Date(),
   database = prisma,
 ) {
@@ -214,6 +230,7 @@ async function nextMarketplaceRequestNumber(
   }
 
   return marketplaceRequestNumber(
+    marketplaceCode,
     dateKey,
     sequence,
   );
@@ -1340,6 +1357,7 @@ async function submitMarketplaceRequest(
           requestNumber:
             await nextMarketplaceRequestNumber(
               seller.tenantId,
+              seller.marketplaceCode,
             ),
           trackingToken:
             trackingToken(),

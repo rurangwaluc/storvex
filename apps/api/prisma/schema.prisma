@@ -232,9 +232,10 @@ model Tenant {
 model MarketplaceSellerProfile {
   tenantId String @id @db.Text
 
-  publicSlug  String? @unique @db.Text
-  displayName String? @db.Text
-  description String? @db.Text
+  publicSlug      String? @unique @db.Text
+  marketplaceCode String  @unique @db.Char(3)
+  displayName     String? @db.Text
+  description     String? @db.Text
 
   customerPhone String? @db.Text
   whatsappPhone String? @db.Text

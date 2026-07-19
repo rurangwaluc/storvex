@@ -3,7 +3,64 @@ const assert = require("node:assert/strict");
 
 const {
   buildMarketplaceReadiness,
+  marketplaceCodeBase,
+  marketplaceCodeCandidate,
 } = require("../src/modules/store/marketplaceSeller.service");
+
+test(
+  "creates a readable three-letter Marketplace business code",
+  () => {
+    assert.equal(
+      marketplaceCodeBase(
+        "RURAXIS LTD",
+      ),
+      "RUR",
+    );
+
+    assert.equal(
+      marketplaceCodeBase(
+        "Smart Electronics",
+      ),
+      "SMA",
+    );
+
+    assert.equal(
+      marketplaceCodeBase(
+        "AB",
+      ),
+      "ABX",
+    );
+  },
+);
+
+test(
+  "creates deterministic collision fallback codes",
+  () => {
+    assert.equal(
+      marketplaceCodeCandidate(
+        "RUR",
+        0,
+      ),
+      "RUR",
+    );
+
+    assert.equal(
+      marketplaceCodeCandidate(
+        "RUR",
+        1,
+      ),
+      "AAA",
+    );
+
+    assert.equal(
+      marketplaceCodeCandidate(
+        "RUR",
+        2,
+      ),
+      "AAB",
+    );
+  },
+);
 
 function completeInput(overrides = {}) {
   return {
