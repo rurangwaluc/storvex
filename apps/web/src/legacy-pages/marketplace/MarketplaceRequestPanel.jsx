@@ -559,21 +559,6 @@ export default function MarketplaceRequestPanel({
         `Request ${request.requestNumber} sent`,
       );
 
-      const whatsappUrl =
-        request?.communication
-          ?.whatsappUrl;
-
-      if (
-        form.preferredContact ===
-          "WHATSAPP" &&
-        whatsappUrl
-      ) {
-        window.open(
-          whatsappUrl,
-          "_blank",
-          "noopener,noreferrer",
-        );
-      }
     } catch (error) {
       const details =
         error?.data?.details;
@@ -620,6 +605,15 @@ export default function MarketplaceRequestPanel({
       emailDeliverySucceeded(
         success.communication,
       );
+
+    const whatsappUrl =
+      cleanString(
+        success.communication?.whatsappUrl,
+      );
+
+    const canContinueInWhatsapp =
+      success.preferredContact === "WHATSAPP" &&
+      Boolean(whatsappUrl);
 
     return (
       <>
@@ -683,34 +677,53 @@ export default function MarketplaceRequestPanel({
                     ? emailSent
                       ? "Email sent"
                       : "Request saved. Email delivery needs attention."
-                    : "Continue in WhatsApp"}
+                    : canContinueInWhatsapp
+                      ? "WhatsApp message ready"
+                      : "Request saved"}
                 </dd>
               </div>
             </dl>
 
-            {remainingGroups.length ? (
-              <button
-                type="button"
-                className="svx-marketplace-request-button"
-                onClick={() => {
-                  setSuccess(null);
-                  setSelectedSellerSlug(
-                    remainingGroups[0]
-                      .sellerSlug,
-                  );
-                }}
-              >
-                Request products from next store
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="svx-marketplace-request-button"
-                onClick={onClose}
-              >
-                Done
-              </button>
-            )}
+            <div className="svx-marketplace-request-success-actions">
+              {canContinueInWhatsapp ? (
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="svx-marketplace-request-button"
+                >
+                  <MessageCircle
+                    size={17}
+                    aria-hidden="true"
+                  />
+                  Continue in WhatsApp
+                </a>
+              ) : null}
+
+              {remainingGroups.length ? (
+                <button
+                  type="button"
+                  className="svx-marketplace-request-secondary-button"
+                  onClick={() => {
+                    setSuccess(null);
+                    setSelectedSellerSlug(
+                      remainingGroups[0]
+                        .sellerSlug,
+                    );
+                  }}
+                >
+                  Request products from next store
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="svx-marketplace-request-secondary-button"
+                  onClick={onClose}
+                >
+                  Done
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </>

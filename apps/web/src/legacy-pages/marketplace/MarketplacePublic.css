@@ -8909,3 +8909,64 @@ body:has(.storvex-marketplace) #root {
     max-height: none;
   }
 }
+
+
+/* Marketplace request success actions */
+
+.svx-marketplace-request-success-actions {
+  display: grid;
+  width: 100%;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.svx-marketplace-request-success-actions
+  .svx-marketplace-request-button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 0;
+  text-decoration: none;
+}
+
+.svx-marketplace-request-secondary-button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--landing-border);
+  border-radius: 9px;
+  background: transparent;
+  padding: 10px 14px;
+  color: var(--landing-text);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.svx-marketplace-request-secondary-button:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 480px) {
+  .svx-marketplace-request-success-actions {
+    gap: 8px;
+    margin-top: 15px;
+  }
+
+  .svx-marketplace-request-success-actions
+    .svx-marketplace-request-button {
+    min-height: 48px;
+  }
+
+  .svx-marketplace-request-secondary-button {
+    min-height: 44px;
+  }
+}
