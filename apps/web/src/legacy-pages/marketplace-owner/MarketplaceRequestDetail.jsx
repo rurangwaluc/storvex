@@ -120,26 +120,24 @@ function requestProductWording(request) {
 
   return {
     isMultiple,
-    product:
-      isMultiple
-        ? "products"
-        : "product",
-    productIs:
-      isMultiple
-        ? "products are"
-        : "product is",
-    productHas:
-      isMultiple
-        ? "products have"
-        : "product has",
-    requestedProducts:
-      isMultiple
-        ? "Requested products"
-        : "Requested product",
-    yourProducts:
-      isMultiple
-        ? "your products"
-        : "your product",
+    product: isMultiple
+      ? "products"
+      : "product",
+    productIs: isMultiple
+      ? "products are"
+      : "product is",
+    productHas: isMultiple
+      ? "products have"
+      : "product has",
+    requestedProducts: isMultiple
+      ? "Requested products"
+      : "Requested product",
+    yourProducts: isMultiple
+      ? "your products"
+      : "your product",
+    yourProductsSentence: isMultiple
+      ? "Your products"
+      : "Your product",
   };
 }
 
@@ -153,35 +151,39 @@ function ownerReplyStatusMessage(request) {
     productIs,
     productHas,
     yourProducts,
+    yourProductsSentence,
   } = requestProductWording(request);
 
   const messages = {
     REQUESTED:
       `We received your request and are checking whether the ${productIs} available.`,
+
     CONFIRMED:
       `Your request has been confirmed. The ${productIs} available and ${productHas} been reserved for you.`,
+
     PREPARING:
       `We are preparing ${yourProducts}.`,
+
     READY_FOR_PICKUP:
-      `${yourProducts.charAt(0).toUpperCase()}${yourProducts.slice(
-        1,
-      )} ${
+      `${yourProductsSentence} ${
         product === "products"
           ? "are"
           : "is"
       } ready for pickup.`,
+
     OUT_FOR_DELIVERY:
-      `${yourProducts.charAt(0).toUpperCase()}${yourProducts.slice(
-        1,
-      )} ${
+      `${yourProductsSentence} ${
         product === "products"
           ? "are"
           : "is"
       } now out for delivery.`,
+
     COMPLETED:
       "Your request has been completed. Thank you for choosing us.",
+
     REJECTED:
       `We are sorry, but we are unable to fulfil the requested ${product}.`,
+
     CANCELLED:
       "This request has been cancelled.",
   };
@@ -192,14 +194,23 @@ function ownerReplyStatusMessage(request) {
   );
 }
 
-function buildOwnerReplyMessage(request) {
+function buildOwnerMessage(
+  request,
+  {
+    whatsapp = false,
+  } = {},
+) {
   const businessName =
     cleanString(request?.sellerNameSnapshot) ||
     cleanString(request?.seller?.name) ||
     "The store";
 
   const customerName =
-    cleanString(request?.customerName) || "Customer";
+    cleanString(request?.customerName) ||
+    "Customer";
+
+  const requestNumber =
+    cleanString(request?.requestNumber);
 
   const items = Array.isArray(request?.items)
     ? request.items
@@ -209,65 +220,160 @@ function buildOwnerReplyMessage(request) {
     requestedProducts,
   } = requestProductWording(request);
 
+  const title = (value) =>
+    whatsapp
+      ? `*${value}*`
+      : value;
+
   const lines = [
     `Hello ${customerName},`,
     "",
-    `This is ${businessName} regarding your Marketplace request ${cleanString(
-      request?.requestNumber,
-    )}.`,
+    `This is ${businessName} regarding your Marketplace request.`,
+    "",
+    title("Request number"),
+    requestNumber,
+    "",
+    title("Status"),
+    statusLabel(request?.status),
     "",
     ownerReplyStatusMessage(request),
     "",
-    requestedProducts,
+    title(requestedProducts),
+    "",
   ];
 
   items.forEach((item, index) => {
-    const quantity = Number(item?.quantity || 0);
+    const quantity = Number(
+      item?.quantity || 0,
+    );
+
     const productName =
-      cleanString(item?.productTitleSnapshot) ||
+      cleanString(
+        item?.productTitleSnapshot,
+      ) ||
       `Product ${index + 1}`;
 
     lines.push(
-      `${index + 1}. ${productName}`,
-      `Quantity: ${quantity}`,
-      `Amount: ${formatMoney(
+      whatsapp
+        ? `*${index + 1}. ${productName}*`
+        : `${index + 1}. ${productName}`,
+      "",
+      title("Quantity"),
+      String(quantity),
+      "",
+      title("Amount"),
+      formatMoney(
         item?.lineTotal,
         request?.currency,
-      )}`,
-      "",
+      ),
     );
+
+    if (
+      cleanString(
+        item?.productUrlSnapshot,
+      )
+    ) {
+      lines.push(
+        "",
+        title("View product"),
+        cleanString(
+          item.productUrlSnapshot,
+        ),
+      );
+    }
+
+    lines.push("");
   });
 
   lines.push(
-    `Total: ${formatMoney(
+    title("Total"),
+    formatMoney(
       request?.total,
       request?.currency,
-    )}`,
-    `Fulfilment: ${fulfilmentLabel(request)}`,
+    ),
+    "",
+    title("Fulfilment"),
+    fulfilmentLabel(request),
   );
 
   if (
-    request?.fulfilmentMethod === "DELIVERY" &&
-    cleanString(request?.deliveryAddress)
+    request?.fulfilmentMethod ===
+      "DELIVERY" &&
+    cleanString(
+      request?.deliveryAddress,
+    )
   ) {
     lines.push(
-      `Delivery address: ${cleanString(
+      "",
+      title("Delivery address"),
+      cleanString(
         request.deliveryAddress,
-      )}`,
+      ),
+    );
+  }
+
+  if (
+    request?.fulfilmentMethod ===
+      "DELIVERY" &&
+    cleanString(
+      request?.deliveryDistrict,
+    )
+  ) {
+    lines.push(
+      "",
+      title("District"),
+      cleanString(
+        request.deliveryDistrict,
+      ),
+    );
+  }
+
+  if (
+    request?.fulfilmentMethod ===
+      "DELIVERY" &&
+    cleanString(
+      request?.deliverySector,
+    )
+  ) {
+    lines.push(
+      "",
+      title("Sector"),
+      cleanString(
+        request.deliverySector,
+      ),
     );
   }
 
   lines.push(
     "",
-    statusLabel(request?.status) === "New request"
+    statusLabel(request?.status) ===
+      "New request"
       ? "Please reply to confirm that you would like us to continue with this request."
       : "Please reply here if you need any help.",
     "",
-    `Thank you,`,
+    "Thank you,",
     businessName,
   );
 
   return lines.join("\n");
+}
+
+function buildOwnerWhatsAppMessage(request) {
+  return buildOwnerMessage(
+    request,
+    {
+      whatsapp: true,
+    },
+  );
+}
+
+function buildOwnerEmailMessage(request) {
+  return buildOwnerMessage(
+    request,
+    {
+      whatsapp: false,
+    },
+  );
 }
 
 function buildOwnerEmailSubject(request) {
@@ -657,7 +763,9 @@ export default function MarketplaceRequestDetail() {
                         href={`https://wa.me/${normalizeWhatsAppPhone(
                           request.customerPhone,
                         )}?text=${encodeURIComponent(
-                          buildOwnerReplyMessage(request),
+                          buildOwnerWhatsAppMessage(
+                            request,
+                          ),
                         )}`}
                         target="_blank"
                         rel="noreferrer"
@@ -673,7 +781,9 @@ export default function MarketplaceRequestDetail() {
                         )}?subject=${encodeURIComponent(
                           buildOwnerEmailSubject(request),
                         )}&body=${encodeURIComponent(
-                          buildOwnerReplyMessage(request),
+                          buildOwnerEmailMessage(
+                            request,
+                          ),
                         )}`}
                       >
                         Send email
