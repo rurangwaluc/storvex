@@ -205,14 +205,8 @@ function emailDeliverySucceeded(
     return null;
   }
 
-  const sellerSent =
-    communication.email?.seller?.sent;
-
-  const customerSent =
-    communication.email?.customer?.sent;
-
   return Boolean(
-    sellerSent || customerSent,
+    communication.email?.customer?.sent,
   );
 }
 
@@ -437,6 +431,22 @@ export default function MarketplaceRequestPanel({
       )
     ) {
       return "Choose Kigali City or outside Kigali.";
+    }
+
+    if (
+      form.fulfilmentMethod ===
+        "DELIVERY" &&
+      !cleanString(form.deliveryDistrict)
+    ) {
+      return "Enter the delivery district.";
+    }
+
+    if (
+      form.fulfilmentMethod ===
+        "DELIVERY" &&
+      !cleanString(form.deliverySector)
+    ) {
+      return "Enter the delivery sector.";
     }
 
     if (
@@ -1230,6 +1240,8 @@ export default function MarketplaceRequestPanel({
                           )
                         }
                         placeholder="Area, road, building or nearby landmark"
+                        required
+                        autoComplete="street-address"
                         rows={3}
                         disabled={submitting}
                       />
@@ -1244,6 +1256,11 @@ export default function MarketplaceRequestPanel({
                           value={
                             form.deliveryDistrict
                           }
+                          required={
+                            form.fulfilmentMethod ===
+                            "DELIVERY"
+                          }
+                          autoComplete="address-level2"
                           onChange={(event) =>
                             updateField(
                               "deliveryDistrict",
@@ -1262,6 +1279,11 @@ export default function MarketplaceRequestPanel({
                           value={
                             form.deliverySector
                           }
+                          required={
+                            form.fulfilmentMethod ===
+                            "DELIVERY"
+                          }
+                          autoComplete="address-level3"
                           onChange={(event) =>
                             updateField(
                               "deliverySector",

@@ -476,6 +476,28 @@ function validateRequestInput(body = {}) {
 
   if (
     fulfilmentMethod === "DELIVERY" &&
+    !deliveryDistrict
+  ) {
+    throw appError(
+      400,
+      "DELIVERY_DISTRICT_REQUIRED",
+      "Enter the delivery district.",
+    );
+  }
+
+  if (
+    fulfilmentMethod === "DELIVERY" &&
+    !deliverySector
+  ) {
+    throw appError(
+      400,
+      "DELIVERY_SECTOR_REQUIRED",
+      "Enter the delivery sector.",
+    );
+  }
+
+  if (
+    fulfilmentMethod === "DELIVERY" &&
     !deliveryAddress
   ) {
     throw appError(

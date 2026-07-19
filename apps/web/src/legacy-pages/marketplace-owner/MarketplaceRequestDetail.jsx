@@ -79,6 +79,149 @@ function readableEnum(value) {
     .join(" ");
 }
 
+function normalizeWhatsAppPhone(value) {
+  let digits = cleanString(value).replace(/\D/g, "");
+
+  if (!digits) {
+    return "";
+  }
+
+  if (digits.startsWith("0") && digits.length === 10) {
+    digits = `250${digits.slice(1)}`;
+  }
+
+  if (digits.length === 9 && digits.startsWith("7")) {
+    digits = `250${digits}`;
+  }
+
+  return digits;
+}
+
+function fulfilmentLabel(request) {
+  if (request?.fulfilmentMethod === "DELIVERY") {
+    if (request?.deliveryCoverage === "OUTSIDE_KIGALI") {
+      return "Delivery outside Kigali";
+    }
+
+    return "Delivery in Kigali";
+  }
+
+  return "Store pickup";
+}
+
+function ownerReplyStatusMessage(request) {
+  const status = cleanString(request?.status).toUpperCase();
+
+  const messages = {
+    REQUESTED:
+      "We received your request and are checking product availability.",
+    CONFIRMED:
+      "Your request has been confirmed and the requested products are available.",
+    PREPARING:
+      "We are preparing the requested products.",
+    READY_FOR_PICKUP:
+      "Your request is ready for pickup.",
+    OUT_FOR_DELIVERY:
+      "Your request is now out for delivery.",
+    COMPLETED:
+      "Your request has been completed. Thank you for choosing us.",
+    REJECTED:
+      "We are sorry, but we are unable to fulfil this request.",
+    CANCELLED:
+      "This request has been cancelled.",
+  };
+
+  return (
+    messages[status] ||
+    "We are contacting you with an update about your request."
+  );
+}
+
+function buildOwnerReplyMessage(request) {
+  const businessName =
+    cleanString(request?.sellerNameSnapshot) ||
+    cleanString(request?.seller?.name) ||
+    "The store";
+
+  const customerName =
+    cleanString(request?.customerName) || "Customer";
+
+  const items = Array.isArray(request?.items)
+    ? request.items
+    : [];
+
+  const lines = [
+    `Hello ${customerName},`,
+    "",
+    `This is ${businessName} regarding your Marketplace request ${cleanString(
+      request?.requestNumber,
+    )}.`,
+    "",
+    ownerReplyStatusMessage(request),
+    "",
+    "Requested products",
+  ];
+
+  items.forEach((item, index) => {
+    const quantity = Number(item?.quantity || 0);
+    const productName =
+      cleanString(item?.productTitleSnapshot) ||
+      `Product ${index + 1}`;
+
+    lines.push(
+      `${index + 1}. ${productName}`,
+      `Quantity: ${quantity}`,
+      `Amount: ${formatMoney(
+        item?.lineTotal,
+        request?.currency,
+      )}`,
+      "",
+    );
+  });
+
+  lines.push(
+    `Total: ${formatMoney(
+      request?.total,
+      request?.currency,
+    )}`,
+    `Fulfilment: ${fulfilmentLabel(request)}`,
+  );
+
+  if (
+    request?.fulfilmentMethod === "DELIVERY" &&
+    cleanString(request?.deliveryAddress)
+  ) {
+    lines.push(
+      `Delivery address: ${cleanString(
+        request.deliveryAddress,
+      )}`,
+    );
+  }
+
+  lines.push(
+    "",
+    statusLabel(request?.status) === "New request"
+      ? "Please reply to confirm that you would like us to continue with this request."
+      : "Please reply here if you need any help.",
+    "",
+    `Thank you,`,
+    businessName,
+  );
+
+  return lines.join("\n");
+}
+
+function buildOwnerEmailSubject(request) {
+  const businessName =
+    cleanString(request?.sellerNameSnapshot) ||
+    cleanString(request?.seller?.name) ||
+    "Store";
+
+  return `${businessName} — Request ${cleanString(
+    request?.requestNumber,
+  )}`;
+}
+
 function DetailSkeleton() {
   return (
     <div className="svx-market-owner-detail-grid">
@@ -346,9 +489,11 @@ export default function MarketplaceRequestDetail() {
 
                     {request.customerPhone ? (
                       <a
-                        href={`https://wa.me/${String(
+                        href={`https://wa.me/${normalizeWhatsAppPhone(
                           request.customerPhone,
-                        ).replace(/\D/g, "")}`}
+                        )}?text=${encodeURIComponent(
+                          buildOwnerReplyMessage(request),
+                        )}`}
                         target="_blank"
                         rel="noreferrer"
                       >
@@ -358,7 +503,13 @@ export default function MarketplaceRequestDetail() {
 
                     {request.customerEmail ? (
                       <a
-                        href={`mailto:${request.customerEmail}`}
+                        href={`mailto:${encodeURIComponent(
+                          request.customerEmail,
+                        )}?subject=${encodeURIComponent(
+                          buildOwnerEmailSubject(request),
+                        )}&body=${encodeURIComponent(
+                          buildOwnerReplyMessage(request),
+                        )}`}
                       >
                         Send email
                       </a>

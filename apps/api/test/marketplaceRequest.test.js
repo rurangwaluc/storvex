@@ -111,6 +111,8 @@ test(
             fulfilmentMethod: "DELIVERY",
             deliveryCoverage: null,
             deliveryAddress: "Kigali",
+    deliveryDistrict: "Nyarugenge",
+    deliverySector: "Kiyovu",
           }),
         ),
       (error) =>
@@ -127,6 +129,8 @@ test(
       validInput({
         fulfilmentMethod: "DELIVERY",
         deliveryCoverage: "KIGALI",
+        deliveryDistrict: "Nyarugenge",
+        deliverySector: "Kiyovu",
         deliveryAddress: "Kiyovu, Kigali",
       }),
     );
@@ -145,6 +149,8 @@ test(
       validInput({
         fulfilmentMethod: "DELIVERY",
         deliveryCoverage: "OUTSIDE_KIGALI",
+        deliveryDistrict: "Huye",
+        deliverySector: "Ngoma",
         deliveryAddress: "Huye District",
       }),
     );
@@ -167,6 +173,8 @@ test(
               "DELIVERY",
             deliveryCoverage:
               "KIGALI",
+        deliveryDistrict: "Gasabo",
+        deliverySector: "Kimironko",
             deliveryAddress: null,
           }),
         ),
@@ -438,6 +446,215 @@ test(
     assert.doesNotMatch(
       message,
       /Payment:/i,
+    );
+  },
+);
+
+
+test(
+  "supports email delivery requests in Kigali",
+  () => {
+    const input = validateRequestInput(
+      validInput({
+        preferredContact: "EMAIL",
+        customerPhone: null,
+        customerEmail: "customer@example.com",
+        fulfilmentMethod: "DELIVERY",
+        deliveryCoverage: "KIGALI",
+        deliveryDistrict: "Gasabo",
+        deliverySector: "Kimironko",
+        deliveryAddress:
+          "KG 11 Avenue, near Kimironko Market",
+      }),
+    );
+
+    assert.equal(
+      input.preferredContact,
+      "EMAIL",
+    );
+    assert.equal(
+      input.customerEmail,
+      "customer@example.com",
+    );
+    assert.equal(
+      input.customerPhone,
+      null,
+    );
+    assert.equal(
+      input.fulfilmentMethod,
+      "DELIVERY",
+    );
+    assert.equal(
+      input.deliveryCoverage,
+      "KIGALI",
+    );
+    assert.equal(
+      input.deliveryDistrict,
+      "Gasabo",
+    );
+    assert.equal(
+      input.deliverySector,
+      "Kimironko",
+    );
+    assert.equal(
+      input.deliveryAddress,
+      "KG 11 Avenue, near Kimironko Market",
+    );
+  },
+);
+
+test(
+  "supports email delivery requests outside Kigali",
+  () => {
+    const input = validateRequestInput(
+      validInput({
+        preferredContact: "EMAIL",
+        customerPhone: null,
+        customerEmail: "customer@example.com",
+        fulfilmentMethod: "DELIVERY",
+        deliveryCoverage:
+          "OUTSIDE_KIGALI",
+        deliveryDistrict: "Huye",
+        deliverySector: "Ngoma",
+        deliveryAddress:
+          "Near Huye main market",
+      }),
+    );
+
+    assert.equal(
+      input.preferredContact,
+      "EMAIL",
+    );
+    assert.equal(
+      input.fulfilmentMethod,
+      "DELIVERY",
+    );
+    assert.equal(
+      input.deliveryCoverage,
+      "OUTSIDE_KIGALI",
+    );
+    assert.equal(
+      input.deliveryDistrict,
+      "Huye",
+    );
+    assert.equal(
+      input.deliverySector,
+      "Ngoma",
+    );
+  },
+);
+
+test(
+  "requires district for delivery requests",
+  () => {
+    assert.throws(
+      () =>
+        validateRequestInput(
+          validInput({
+            fulfilmentMethod: "DELIVERY",
+            deliveryCoverage: "KIGALI",
+            deliveryDistrict: null,
+            deliverySector: "Kiyovu",
+            deliveryAddress: "KN 4 Avenue",
+          }),
+        ),
+      (error) =>
+        error.code ===
+        "DELIVERY_DISTRICT_REQUIRED",
+    );
+  },
+);
+
+test(
+  "requires sector for delivery requests",
+  () => {
+    assert.throws(
+      () =>
+        validateRequestInput(
+          validInput({
+            fulfilmentMethod: "DELIVERY",
+            deliveryCoverage: "KIGALI",
+            deliveryDistrict:
+              "Nyarugenge",
+            deliverySector: null,
+            deliveryAddress: "KN 4 Avenue",
+          }),
+        ),
+      (error) =>
+        error.code ===
+        "DELIVERY_SECTOR_REQUIRED",
+    );
+  },
+);
+
+test(
+  "builds the customer email for a Kigali delivery",
+  () => {
+    const {
+      buildRequestEmail,
+    } = require(
+      "../src/modules/marketplace/marketplace.request.service",
+    ).__private;
+
+    const email = buildRequestEmail({
+      audience: "CUSTOMER",
+      request: {
+        requestNumber:
+          "SVX-RUR-20260719-003",
+        sellerNameSnapshot:
+          "RURAXIS LTD",
+        customerName:
+          "Test Customer",
+        customerPhone: null,
+        customerEmail:
+          "customer@example.com",
+        fulfilmentMethod:
+          "DELIVERY",
+        deliveryCoverage:
+          "KIGALI",
+        deliveryDistrict:
+          "Gasabo",
+        deliverySector:
+          "Kimironko",
+        deliveryAddress:
+          "KG 11 Avenue",
+        paymentMethod:
+          "SELLER_APPROVED_OTHER",
+        currency: "RWF",
+        total: 650000,
+      },
+      items: [
+        {
+          productTitleSnapshot:
+            "HP Pavilion 15",
+          productUrlSnapshot:
+            "https://www.storvex.rw/marketplace/ruraxis-ltd/hp-pavilion-15",
+          quantity: 1,
+          unitPrice: 650000,
+          lineTotal: 650000,
+        },
+      ],
+    });
+
+    assert.match(
+      email.subject,
+      /SVX-RUR-20260719-003/,
+    );
+    assert.match(
+      email.text,
+      /RURAXIS LTD/,
+    );
+    assert.match(
+      email.text,
+      /Seller delivery/,
+    );
+    assert.match(
+      email.text,
+      /HP Pavilion 15/,
+    );
+    assert.match(
+      email.text,
+      /Rwf 650,000/,
     );
   },
 );
