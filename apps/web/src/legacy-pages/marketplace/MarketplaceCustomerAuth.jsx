@@ -30,6 +30,7 @@ import {
 import {
   MarketplaceHeader,
 } from "./MarketplaceHome";
+import MarketplaceCustomerOrders from "./MarketplaceCustomerOrders";
 import {
   useMarketplaceCustomerSession,
 } from "./MarketplaceCustomerSession";
@@ -182,6 +183,8 @@ function SignedInAccount({
           </button>
         </div>
       </OnboardingCard>
+
+      <MarketplaceCustomerOrders />
     </div>
   );
 }

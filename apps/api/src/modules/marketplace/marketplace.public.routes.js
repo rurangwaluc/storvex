@@ -30,6 +30,12 @@ router.get(
   customerAuth.getCurrentCustomer,
 );
 
+router.get(
+  "/customer/orders",
+  authenticateMarketplaceCustomer,
+  customerAuth.listCustomerOrders,
+);
+
 router.post(
   "/requests",
   optionallyAuthenticateMarketplaceCustomer,

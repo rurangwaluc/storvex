@@ -466,10 +466,138 @@ async function getCurrentCustomer(
   });
 }
 
+const CUSTOMER_ORDER_STATUS_LABELS =
+  Object.freeze({
+    REQUESTED: "Waiting for store",
+    CONFIRMED: "Confirmed",
+    PREPARING: "Preparing",
+    READY_FOR_PICKUP:
+      "Ready for pickup",
+    OUT_FOR_DELIVERY:
+      "Out for delivery",
+    COMPLETED: "Completed",
+    REJECTED:
+      "Not accepted by store",
+    CANCELLED: "Cancelled",
+    DELIVERY_FAILED:
+      "Delivery needs attention",
+  });
+
+function publicCustomerOrder(order) {
+  return {
+    id: order.id,
+    orderNumber: order.requestNumber,
+    trackingToken: order.trackingToken,
+    status: order.status,
+    statusLabel:
+      CUSTOMER_ORDER_STATUS_LABELS[
+        order.status
+      ] || "Order update",
+    storeName:
+      order.sellerNameSnapshot,
+    fulfilmentMethod:
+      order.fulfilmentMethod,
+    currency: order.currency,
+    total: Math.max(
+      0,
+      Number(order.total || 0),
+    ),
+    placedAt:
+      order.submittedAt ||
+      order.createdAt,
+    updatedAt: order.updatedAt,
+    itemCount:
+      order.items.reduce(
+        (total, item) =>
+          total +
+          Math.max(
+            0,
+            Number(item.quantity || 0),
+          ),
+        0,
+      ),
+    items: order.items.map(
+      (item) => ({
+        id: item.id,
+        name:
+          item.productTitleSnapshot,
+        category:
+          item.productCategorySnapshot,
+        image:
+          item.productImageSnapshot,
+        quantity:
+          Math.max(
+            0,
+            Number(item.quantity || 0),
+          ),
+        unitPrice:
+          Math.max(
+            0,
+            Number(item.unitPrice || 0),
+          ),
+        lineTotal:
+          Math.max(
+            0,
+            Number(item.lineTotal || 0),
+          ),
+      }),
+    ),
+  };
+}
+
+async function listCustomerOrders(
+  req,
+  res,
+) {
+  try {
+    const orders =
+      await prisma.marketplaceRequest.findMany({
+        where: {
+          marketplaceCustomerId:
+            req.marketplaceCustomer.id,
+        },
+        orderBy: [
+          {
+            createdAt: "desc",
+          },
+        ],
+        take: 50,
+        include: {
+          items: {
+            orderBy: {
+              createdAt: "asc",
+            },
+          },
+        },
+      });
+
+    return res.json({
+      orders:
+        orders.map(
+          publicCustomerOrder,
+        ),
+    });
+  } catch (error) {
+    console.error(
+      "Marketplace customer orders error:",
+      error,
+    );
+
+    return res.status(500).json({
+      message:
+        "We could not load your orders.",
+      code:
+        "MARKETPLACE_CUSTOMER_ORDERS_FAILED",
+    });
+  }
+}
+
 module.exports = {
   registerCustomer,
   loginCustomer,
   logoutCustomer,
   getCurrentCustomer,
+  listCustomerOrders,
   publicCustomer,
+  publicCustomerOrder,
 };

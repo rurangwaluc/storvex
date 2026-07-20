@@ -305,3 +305,9 @@ export async function logoutMarketplaceCustomer() {
     clearMarketplaceCustomerSession();
   }
 }
+
+export function loadMarketplaceCustomerOrders() {
+  return marketplaceCustomerRequest(
+    "/marketplace/customer/orders",
+  );
+}
