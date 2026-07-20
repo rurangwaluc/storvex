@@ -182,6 +182,11 @@ function normalizeReceiptResponse(data) {
       data.subtotal ??
       null,
 
+    deliveryFee:
+      sale.deliveryFee ??
+      data.deliveryFee ??
+      0,
+
     taxableAmount:
       sale.taxableAmount ??
       data.taxableAmount ??
@@ -353,6 +358,13 @@ function taxSnapshotFromReceipt(receipt, items = []) {
   const taxMode = String(receipt?.taxMode || "NONE").trim().toUpperCase();
   const taxDisplayMode = String(receipt?.taxDisplayMode || "HIDDEN").trim().toUpperCase();
   const taxAmount = toMoneyNumber(receipt?.taxAmount, 0);
+  const deliveryFee = Math.max(
+    0,
+    toMoneyNumber(
+      receipt?.deliveryFee,
+      0,
+    ),
+  );
   const pricesIncludeTax = Boolean(receipt?.pricesIncludeTax);
   const showTaxOnCustomerDocuments = Boolean(receipt?.showTaxOnCustomerDocuments);
 
@@ -372,7 +384,11 @@ function taxSnapshotFromReceipt(receipt, items = []) {
 
   const total = toMoneyNumber(
     receipt?.total,
-    pricesIncludeTax ? subtotalAmount : subtotalAmount + taxAmount,
+    (
+      pricesIncludeTax
+        ? subtotalAmount
+        : subtotalAmount + taxAmount
+    ) + deliveryFee,
   );
 
   const paid = toMoneyNumber(receipt?.amountPaid, 0);
@@ -398,6 +414,7 @@ function taxSnapshotFromReceipt(receipt, items = []) {
 
   return {
     subtotalAmount,
+    deliveryFee,
     taxableAmount,
     taxName,
     taxAmount,
@@ -739,6 +756,13 @@ function MoneyBreakdown({ receipt, items }) {
             ) : null}
           </>
         )}
+
+        {tax.deliveryFee > 0 ? (
+          <div className="svx-receipt-total-line">
+            <span>Delivery</span>
+            <b>{formatMoney(tax.deliveryFee)}</b>
+          </div>
+        ) : null}
 
         <div className="svx-receipt-total-grid">
           <div>

@@ -4,8 +4,12 @@ const {
   Prisma,
 } = require("@prisma/client");
 const {
+  completeMarketplaceDelivery,
   completeMarketplacePickup,
 } = require("./marketplaceOrderCompletion.service");
+const {
+  failMarketplaceDelivery,
+} = require("./marketplaceDeliveryFailure.service");
 
 function cleanString(value) {
   const text = String(value || "").trim();
@@ -170,6 +174,9 @@ function requestSelect({
     confirmedAt: true,
     rejectedAt: true,
     cancelledAt: true,
+    deliveryFailedAt: true,
+    deliveryFailureReason: true,
+    deliveryFailureNote: true,
     completedAt: true,
     createdAt: true,
     updatedAt: true,
@@ -1588,6 +1595,116 @@ async function completeMarketplacePickupRequest(
   }
 }
 
+async function completeMarketplaceDeliveryRequest(
+  req,
+  res,
+) {
+  const tenantId =
+    tenantIdFromRequest(req);
+
+  const requestId =
+    cleanString(
+      req.params?.requestId,
+    );
+
+  if (!tenantId || !requestId) {
+    return res.status(400).json({
+      message:
+        "Business context and order ID are required.",
+      code:
+        "MARKETPLACE_ORDER_CONTEXT_REQUIRED",
+    });
+  }
+
+  try {
+    const result =
+      await completeMarketplaceDelivery({
+        req,
+        tenantId,
+        requestId,
+        paymentMethod:
+          req.body?.paymentMethod,
+        paymentReference:
+          req.body?.paymentReference,
+      });
+
+    return res.json({
+      message:
+        result.alreadyCompleted
+          ? "This delivery was already completed."
+          : "Delivery completed and sale recorded.",
+      ...result,
+    });
+  } catch (error) {
+    console.error(
+      "completeMarketplaceDeliveryRequest error:",
+      error,
+    );
+
+    return sendError(
+      res,
+      error,
+      "Failed to complete delivery",
+    );
+  }
+}
+
+async function failMarketplaceDeliveryRequest(
+  req,
+  res,
+) {
+  const tenantId =
+    tenantIdFromRequest(req);
+
+  const requestId =
+    cleanString(
+      req.params?.requestId,
+    );
+
+  if (!tenantId || !requestId) {
+    return res.status(400).json({
+      message:
+        "Business context and order ID are required.",
+      code:
+        "MARKETPLACE_ORDER_CONTEXT_REQUIRED",
+    });
+  }
+
+  try {
+    const result =
+      await failMarketplaceDelivery({
+        req,
+        tenantId,
+        requestId,
+        reason:
+          req.body
+            ?.deliveryFailureReason,
+        note:
+          req.body
+            ?.deliveryFailureNote,
+      });
+
+    return res.json({
+      message:
+        result.alreadyFailed
+          ? "This delivery was already marked as failed."
+          : "Delivery closed and reserved stock released.",
+      ...result,
+    });
+  } catch (error) {
+    console.error(
+      "failMarketplaceDeliveryRequest error:",
+      error,
+    );
+
+    return sendError(
+      res,
+      error,
+      "Failed to close delivery",
+    );
+  }
+}
+
 async function rejectMarketplaceRequest(
   req,
   res,
@@ -1711,7 +1828,9 @@ module.exports = {
   markMarketplaceRequestReady,
   markMarketplaceRequestOutForDelivery,
   cancelMarketplaceRequest,
+  completeMarketplaceDeliveryRequest,
   completeMarketplacePickupRequest,
+  failMarketplaceDeliveryRequest,
 
   __private: {
     assertRequestedStatus,

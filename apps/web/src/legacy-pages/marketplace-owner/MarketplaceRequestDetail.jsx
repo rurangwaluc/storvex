@@ -11,8 +11,10 @@ import toast from "react-hot-toast";
 
 import {
   cancelOwnerMarketplaceRequest,
+  completeDeliveryOwnerMarketplaceRequest,
   completePickupOwnerMarketplaceRequest,
   confirmOwnerMarketplaceRequest,
+  failDeliveryOwnerMarketplaceRequest,
   getOwnerMarketplaceRequest,
   markOutForDeliveryOwnerMarketplaceRequest,
   markReadyOwnerMarketplaceRequest,
@@ -67,6 +69,7 @@ function statusLabel(value) {
     PREPARING: "Preparing",
     READY_FOR_PICKUP: "Ready for pickup",
     OUT_FOR_DELIVERY: "Out for delivery",
+    DELIVERY_FAILED: "Delivery not completed",
     COMPLETED: "Completed",
   };
 
@@ -250,6 +253,9 @@ function ownerReplyStatusMessage(request) {
           ? "are"
           : "is"
       } now out for delivery.`,
+
+    DELIVERY_FAILED:
+      "The delivery was not completed. Please contact us if you need more information.",
 
     COMPLETED:
       "Your order has been completed. Thank you for choosing us.",
@@ -539,6 +545,18 @@ export default function MarketplaceRequestDetail() {
     useState("OTHER");
   const [completionPaymentReference, setCompletionPaymentReference] =
     useState("");
+
+  const [
+    deliveryFailureReason,
+    setDeliveryFailureReason,
+  ] = useState(
+    "CUSTOMER_UNREACHABLE",
+  );
+
+  const [
+    deliveryFailureNote,
+    setDeliveryFailureNote,
+  ] = useState("");
 
   const [deliveryFee, setDeliveryFee] =
     useState("");
@@ -847,6 +865,142 @@ export default function MarketplaceRequestDetail() {
     }
   }
 
+  async function handleCompleteDelivery() {
+    if (
+      !request ||
+      actionBusy ||
+      request.status !==
+        "OUT_FOR_DELIVERY"
+    ) {
+      return;
+    }
+
+    const paymentMethod = String(
+      completionPaymentMethod || "",
+    )
+      .trim()
+      .toUpperCase();
+
+    if (
+      ![
+        "CASH",
+        "MOMO",
+        "BANK",
+        "OTHER",
+      ].includes(paymentMethod)
+    ) {
+      toast.error(
+        "Choose how the payment was received.",
+      );
+      return;
+    }
+
+    try {
+      setActionBusy(true);
+
+      const result =
+        await completeDeliveryOwnerMarketplaceRequest(
+          request.id,
+          {
+            paymentMethod,
+            paymentReference:
+              completionPaymentReference.trim() ||
+              undefined,
+          },
+        );
+
+      setRequest(
+        result?.request || request,
+      );
+
+      setPendingAction("");
+      setCompletionPaymentReference("");
+
+      toast.success(
+        result?.alreadyCompleted
+          ? "This delivery was already completed."
+          : "Delivery completed and sale recorded.",
+      );
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        error?.message ||
+          "Failed to complete delivery",
+      );
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function handleFailedDelivery() {
+    if (
+      !request ||
+      actionBusy ||
+      request.status !==
+        "OUT_FOR_DELIVERY"
+    ) {
+      return;
+    }
+
+    const reason = cleanString(
+      deliveryFailureReason,
+    ).toUpperCase();
+
+    if (
+      ![
+        "CUSTOMER_REFUSED",
+        "CUSTOMER_UNREACHABLE",
+        "WRONG_ADDRESS",
+        "DELIVERY_ATTEMPT_FAILED",
+        "OTHER",
+      ].includes(reason)
+    ) {
+      toast.error(
+        "Choose why the delivery was not completed.",
+      );
+      return;
+    }
+
+    try {
+      setActionBusy(true);
+
+      const result =
+        await failDeliveryOwnerMarketplaceRequest(
+          request.id,
+          {
+            deliveryFailureReason:
+              reason,
+            deliveryFailureNote:
+              deliveryFailureNote.trim() ||
+              undefined,
+          },
+        );
+
+      setRequest(
+        result?.request || request,
+      );
+
+      setPendingAction("");
+      setDeliveryFailureNote("");
+
+      toast.success(
+        result?.alreadyFailed
+          ? "This delivery was already closed."
+          : "Delivery closed and reserved stock released.",
+      );
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        error?.message ||
+          "Failed to close delivery",
+      );
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
   async function handleRejectRequest() {
     if (!request || actionBusy) {
       return;
@@ -867,14 +1021,14 @@ export default function MarketplaceRequestDetail() {
       setPendingAction("");
 
       toast.success(
-        "Order request rejected.",
+        "Order rejected.",
       );
     } catch (error) {
       console.error(error);
 
       toast.error(
         error?.message ||
-          "Failed to reject order request",
+          "Failed to reject order",
       );
     } finally {
       setActionBusy(false);
@@ -905,7 +1059,7 @@ export default function MarketplaceRequestDetail() {
           <section className="svx-market-owner-empty">
             <div aria-hidden="true">?</div>
 
-            <h2>Request not found</h2>
+            <h2>Order not found</h2>
 
             <p>
               This order may have been removed
@@ -913,7 +1067,7 @@ export default function MarketplaceRequestDetail() {
             </p>
 
             <Link to="/app/marketplace">
-              Return to requests
+              Return to orders
             </Link>
           </section>
         ) : (
@@ -1768,6 +1922,320 @@ export default function MarketplaceRequestDetail() {
                               </button>
                             </div>
                           </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {request.status ===
+                    "OUT_FOR_DELIVERY" ? (
+                      <div className="svx-market-owner-pickup-completion">
+                        <div className="svx-market-owner-pickup-completion-head">
+                          <span>Finish delivery</span>
+
+                          <h3>
+                            Record the delivery outcome
+                          </h3>
+
+                          <p>
+                            Complete the order only after the customer has received the products and payment has been received.
+                          </p>
+                        </div>
+
+                        <div className="svx-market-owner-request-actions">
+                          <button
+                            type="button"
+                            className="svx-market-owner-action-button is-confirm"
+                            onClick={() =>
+                              setPendingAction(
+                                "COMPLETE_DELIVERY",
+                              )
+                            }
+                            disabled={actionBusy}
+                          >
+                            Complete delivery
+                          </button>
+
+                          <button
+                            type="button"
+                            className="svx-market-owner-action-button is-reject"
+                            onClick={() =>
+                              setPendingAction(
+                                "DELIVERY_FAILED",
+                              )
+                            }
+                            disabled={actionBusy}
+                          >
+                            Delivery not completed
+                          </button>
+                        </div>
+
+                        {pendingAction ===
+                        "COMPLETE_DELIVERY" ? (
+                          <>
+                            <label>
+                              <span>
+                                Payment received through
+                              </span>
+
+                              <div className="svx-market-owner-order-select is-payment">
+                                <select
+                                  value={
+                                    completionPaymentMethod
+                                  }
+                                  onChange={(event) =>
+                                    setCompletionPaymentMethod(
+                                      event.target.value,
+                                    )
+                                  }
+                                  disabled={actionBusy}
+                                  aria-label="Payment received through"
+                                >
+                                  <option value="CASH">
+                                    Cash
+                                  </option>
+
+                                  <option value="MOMO">
+                                    MoMo
+                                  </option>
+
+                                  <option value="BANK">
+                                    Bank
+                                  </option>
+
+                                  <option value="OTHER">
+                                    Other money
+                                  </option>
+                                </select>
+
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  aria-hidden="true"
+                                  focusable="false"
+                                >
+                                  <path
+                                    d="m7 10 5 5 5-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </div>
+                            </label>
+
+                            <label>
+                              <span>
+                                Payment reference
+                              </span>
+
+                              <input
+                                type="text"
+                                value={
+                                  completionPaymentReference
+                                }
+                                onChange={(event) =>
+                                  setCompletionPaymentReference(
+                                    event.target.value,
+                                  )
+                                }
+                                placeholder="Optional transaction or payment reference"
+                                disabled={actionBusy}
+                              />
+                            </label>
+
+                            <div className="svx-market-owner-pickup-total">
+                              <span>
+                                Amount received
+                              </span>
+
+                              <strong>
+                                {formatMoney(
+                                  request.total,
+                                  request.currency,
+                                )}
+                              </strong>
+                            </div>
+
+                            <div className="svx-market-owner-action-confirmation">
+                              <strong>
+                                Complete this delivery?
+                              </strong>
+
+                              <p>
+                                This creates the sale and receipt, records payment, reduces sold stock, and completes the order.
+                              </p>
+
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPendingAction(
+                                      "",
+                                    )
+                                  }
+                                  disabled={actionBusy}
+                                >
+                                  Go back
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="svx-market-owner-action-button is-confirm"
+                                  onClick={
+                                    handleCompleteDelivery
+                                  }
+                                  disabled={actionBusy}
+                                >
+                                  {actionBusy
+                                    ? "Completing..."
+                                    : "Yes, complete delivery"}
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        ) : null}
+
+                        {pendingAction ===
+                        "DELIVERY_FAILED" ? (
+                          <>
+                            <label>
+                              <span>
+                                Why was delivery not completed?
+                              </span>
+
+                              <div className="svx-market-owner-order-select is-payment">
+                                <select
+                                  value={
+                                    deliveryFailureReason
+                                  }
+                                  onChange={(event) =>
+                                    setDeliveryFailureReason(
+                                      event.target.value,
+                                    )
+                                  }
+                                  disabled={actionBusy}
+                                  aria-label="Delivery failure reason"
+                                >
+                                  <option value="CUSTOMER_UNREACHABLE">
+                                    Customer unreachable
+                                  </option>
+
+                                  <option value="CUSTOMER_REFUSED">
+                                    Customer refused
+                                  </option>
+
+                                  <option value="WRONG_ADDRESS">
+                                    Wrong address
+                                  </option>
+
+                                  <option value="DELIVERY_ATTEMPT_FAILED">
+                                    Delivery attempt failed
+                                  </option>
+
+                                  <option value="OTHER">
+                                    Other reason
+                                  </option>
+                                </select>
+
+                                <svg
+                                  viewBox="0 0 24 24"
+                                  aria-hidden="true"
+                                  focusable="false"
+                                >
+                                  <path
+                                    d="m7 10 5 5 5-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </div>
+                            </label>
+
+                            <label>
+                              <span>
+                                Internal note
+                              </span>
+
+                              <textarea
+                                value={
+                                  deliveryFailureNote
+                                }
+                                onChange={(event) =>
+                                  setDeliveryFailureNote(
+                                    event.target.value,
+                                  )
+                                }
+                                placeholder="Optional details for the business"
+                                rows={3}
+                                maxLength={1000}
+                                disabled={actionBusy}
+                              />
+                            </label>
+
+                            <div className="svx-market-owner-action-confirmation">
+                              <strong>
+                                Close this delivery?
+                              </strong>
+
+                              <p>
+                                No sale or payment will be created. Reserved stock will return to available stock.
+                              </p>
+
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPendingAction(
+                                      "",
+                                    )
+                                  }
+                                  disabled={actionBusy}
+                                >
+                                  Go back
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="svx-market-owner-action-button is-reject"
+                                  onClick={
+                                    handleFailedDelivery
+                                  }
+                                  disabled={actionBusy}
+                                >
+                                  {actionBusy
+                                    ? "Closing..."
+                                    : "Release stock and close"}
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {request.status ===
+                    "DELIVERY_FAILED" ? (
+                      <div className="svx-market-owner-completed-sale">
+                        <span>
+                          Delivery not completed
+                        </span>
+
+                        <strong>
+                          {readableEnum(
+                            request.deliveryFailureReason,
+                          )}
+                        </strong>
+
+                        {request.deliveryFailureNote ? (
+                          <p>
+                            {
+                              request.deliveryFailureNote
+                            }
+                          </p>
                         ) : null}
                       </div>
                     ) : null}

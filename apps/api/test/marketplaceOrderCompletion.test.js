@@ -47,3 +47,64 @@ test("rejects unsupported Marketplace completion payment methods", () => {
     null,
   );
 });
+
+test("normalizes supported Marketplace delivery failure reasons", () => {
+  const {
+    normalizeDeliveryFailureReason,
+  } = require("../src/modules/store/marketplaceDeliveryFailure.service");
+
+  assert.equal(
+    normalizeDeliveryFailureReason(
+      "customer_refused",
+    ),
+    "CUSTOMER_REFUSED",
+  );
+
+  assert.equal(
+    normalizeDeliveryFailureReason(
+      " customer_unreachable ",
+    ),
+    "CUSTOMER_UNREACHABLE",
+  );
+
+  assert.equal(
+    normalizeDeliveryFailureReason(
+      "wrong_address",
+    ),
+    "WRONG_ADDRESS",
+  );
+
+  assert.equal(
+    normalizeDeliveryFailureReason(
+      "delivery_attempt_failed",
+    ),
+    "DELIVERY_ATTEMPT_FAILED",
+  );
+
+  assert.equal(
+    normalizeDeliveryFailureReason(
+      "other",
+    ),
+    "OTHER",
+  );
+});
+
+test("rejects unsupported Marketplace delivery failure reasons", () => {
+  const {
+    normalizeDeliveryFailureReason,
+  } = require("../src/modules/store/marketplaceDeliveryFailure.service");
+
+  assert.equal(
+    normalizeDeliveryFailureReason(
+      "changed_mind",
+    ),
+    null,
+  );
+
+  assert.equal(
+    normalizeDeliveryFailureReason(
+      "",
+    ),
+    null,
+  );
+});

@@ -128,6 +128,36 @@ export function completePickupOwnerMarketplaceRequest(
   );
 }
 
+export function completeDeliveryOwnerMarketplaceRequest(
+  requestId,
+  payload = {},
+) {
+  return apiFetch(
+    `/store/marketplace-requests/${encodeURIComponent(
+      requestId,
+    )}/complete-delivery`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function failDeliveryOwnerMarketplaceRequest(
+  requestId,
+  payload = {},
+) {
+  return apiFetch(
+    `/store/marketplace-requests/${encodeURIComponent(
+      requestId,
+    )}/delivery-failed`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
 export function cancelOwnerMarketplaceRequest(
   requestId,
 ) {

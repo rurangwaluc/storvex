@@ -123,6 +123,24 @@ router.post(
 );
 
 router.post(
+  "/marketplace-requests/:requestId/complete-delivery",
+  express.json(),
+  requireWritableSubscription,
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_EDIT),
+  marketplaceRequestsController.completeMarketplaceDeliveryRequest
+);
+
+router.post(
+  "/marketplace-requests/:requestId/delivery-failed",
+  express.json(),
+  requireWritableSubscription,
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_EDIT),
+  marketplaceRequestsController.failMarketplaceDeliveryRequest
+);
+
+router.post(
   "/marketplace-requests/:requestId/cancel",
   express.json(),
   requireWritableSubscription,

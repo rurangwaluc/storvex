@@ -382,6 +382,7 @@ function calculateSaleTaxSnapshot(subtotal, settings = {}) {
 function saleTaxSnapshotSelect(db) {
   return {
     ...(hasModelField(db.sale, "subtotalAmount") ? { subtotalAmount: true } : {}),
+    ...(hasModelField(db.sale, "deliveryFee") ? { deliveryFee: true } : {}),
     ...(hasModelField(db.sale, "taxableAmount") ? { taxableAmount: true } : {}),
     ...(hasModelField(db.sale, "taxName") ? { taxName: true } : {}),
     ...(hasModelField(db.sale, "taxMode") ? { taxMode: true } : {}),

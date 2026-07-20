@@ -268,6 +268,7 @@ enum MarketplaceRequestStatus {
   PREPARING
   READY_FOR_PICKUP
   OUT_FOR_DELIVERY
+  DELIVERY_FAILED
   COMPLETED
 }
 
@@ -327,13 +328,16 @@ model MarketplaceRequest {
   sellerPhoneSnapshot String? @db.Text
   sellerEmailSnapshot String? @db.Text
 
-  submittedAt DateTime  @default(now())
-  confirmedAt DateTime?
-  rejectedAt  DateTime?
-  cancelledAt DateTime?
-  completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @default(now()) @updatedAt
+  submittedAt           DateTime  @default(now())
+  confirmedAt           DateTime?
+  rejectedAt            DateTime?
+  cancelledAt           DateTime?
+  deliveryFailedAt      DateTime?
+  deliveryFailureReason String?   @db.Text
+  deliveryFailureNote   String?   @db.Text
+  completedAt           DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @default(now()) @updatedAt
 
   tenant           Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   fulfilmentBranch Branch?                  @relation("MarketplaceRequestFulfilmentBranch", fields: [fulfilmentBranchId], references: [id])
@@ -827,6 +831,7 @@ model Sale {
   customerId                 String?
   total                      Float
   subtotalAmount             Float             @default(0)
+  deliveryFee                Float             @default(0)
   taxableAmount              Float             @default(0)
   taxName                    String?
   taxMode                    String            @default("NONE")
@@ -2338,6 +2343,7 @@ enum AuditAction {
   BRANCH_REACTIVATED
   BRANCH_STAFF_ASSIGNED
   BRANCH_STAFF_REMOVED
+  MARKETPLACE_DELIVERY_FAILED
 }
 
 enum AuditEntity {
@@ -2357,6 +2363,7 @@ enum AuditEntity {
   WHATSAPP_BROADCAST
 
   BRANCH
+  MARKETPLACE_ORDER
 }
 
 enum SaleType {

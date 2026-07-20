@@ -181,6 +181,13 @@ function receiptMoney(receipt) {
   const taxMode = String(receipt?.taxMode || "NONE").trim().toUpperCase();
   const taxDisplayMode = String(receipt?.taxDisplayMode || "HIDDEN").trim().toUpperCase();
   const taxAmount = moneyNumber(receipt?.taxAmount, 0);
+  const deliveryFee = Math.max(
+    0,
+    moneyNumber(
+      receipt?.deliveryFee,
+      0,
+    ),
+  );
   const taxRateBps = moneyNumber(receipt?.taxRateBps, 0);
   const pricesIncludeTax = Boolean(receipt?.pricesIncludeTax);
   const showTaxOnCustomerDocuments = Boolean(receipt?.showTaxOnCustomerDocuments);
@@ -201,7 +208,11 @@ function receiptMoney(receipt) {
 
   const total = moneyNumber(
     receipt?.total,
-    pricesIncludeTax ? subtotal : subtotal + taxAmount,
+    (
+      pricesIncludeTax
+        ? subtotal
+        : subtotal + taxAmount
+    ) + deliveryFee,
   );
 
   const paid = moneyNumber(receipt?.amountPaid, 0);
@@ -218,6 +229,7 @@ function receiptMoney(receipt) {
     items,
     itemSubtotal,
     subtotal,
+    deliveryFee,
     taxableAmount,
     taxAmount,
     taxRateBps,
@@ -407,6 +419,14 @@ function ReceiptMoneyPanel({ receipt }) {
             ) : null}
           </>
         )}
+
+        {money.deliveryFee > 0 ? (
+          <MoneyLine
+            label="Delivery"
+            note="Delivery cost"
+            value={money.deliveryFee}
+          />
+        ) : null}
 
         {!money.showTaxLine ? (
           <div className="border-b border-[var(--color-border)] py-3">
@@ -767,6 +787,17 @@ function ReceiptCard({ row, onView }) {
                 {formatMoney(money.subtotal)}
               </div>
             </div>
+
+            {money.deliveryFee > 0 ? (
+              <div className={cx(panel(), "px-3 py-2")}>
+                <div className={cx("text-[10px] font-black uppercase tracking-[0.14em]", softText())}>
+                  Delivery
+                </div>
+                <div className={cx("mt-1 text-sm font-black", strongText())}>
+                  {formatMoney(money.deliveryFee)}
+                </div>
+              </div>
+            ) : null}
 
             {money.showTaxLine ? (
               <div className={cx(panel(), "px-3 py-2")}>

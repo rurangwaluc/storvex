@@ -158,6 +158,7 @@ async function insertMarketplaceCashMovement(
     amount,
     receiptNumber,
     requestNumber,
+    fulfilmentLabel = "order",
   },
 ) {
   const roundedAmount = Math.round(
@@ -189,7 +190,7 @@ async function insertMarketplaceCashMovement(
       'IN',
       'OTHER',
       ${BigInt(roundedAmount)},
-      ${`Marketplace pickup ${requestNumber} — ${receiptNumber}`},
+      ${`Marketplace ${fulfilmentLabel} ${requestNumber} — ${receiptNumber}`},
       ${String(userId)},
       NOW()
     )
@@ -414,12 +415,14 @@ function assertReservationMatchesOrder(
   }
 }
 
-async function completeMarketplacePickup({
+async function completeMarketplaceOrder({
   req,
   tenantId,
   requestId,
   paymentMethod,
   paymentReference,
+  expectedFulfilmentMethod,
+  expectedStatus,
 }) {
   const userId =
     cleanString(req.user?.userId) ||
@@ -494,25 +497,31 @@ async function completeMarketplacePickup({
       }
 
       if (
-        locked.status !==
-        MarketplaceRequestStatus
-          .READY_FOR_PICKUP
+        locked.status !== expectedStatus
       ) {
         throw businessError(
-          "Only an order that is ready for pickup can be completed here.",
+          expectedFulfilmentMethod === "DELIVERY"
+            ? "Only an order that is out for delivery can be completed here."
+            : "Only an order that is ready for pickup can be completed here.",
           409,
-          "MARKETPLACE_ORDER_NOT_READY_FOR_PICKUP",
+          expectedFulfilmentMethod === "DELIVERY"
+            ? "MARKETPLACE_ORDER_NOT_OUT_FOR_DELIVERY"
+            : "MARKETPLACE_ORDER_NOT_READY_FOR_PICKUP",
         );
       }
 
       if (
         locked.fulfilmentMethod !==
-        "PICKUP"
+        expectedFulfilmentMethod
       ) {
         throw businessError(
-          "This action is only for pickup orders.",
+          expectedFulfilmentMethod === "DELIVERY"
+            ? "This action is only for delivery orders."
+            : "This action is only for pickup orders.",
           409,
-          "MARKETPLACE_ORDER_NOT_PICKUP",
+          expectedFulfilmentMethod === "DELIVERY"
+            ? "MARKETPLACE_ORDER_NOT_DELIVERY"
+            : "MARKETPLACE_ORDER_NOT_PICKUP",
         );
       }
 
@@ -618,9 +627,14 @@ async function completeMarketplacePickup({
         );
       }
 
+      const deliveryFee =
+        roundMoney(
+          order.deliveryFee || 0,
+        );
+
       if (
-        Number(order.deliveryFee || 0) !==
-        0
+        expectedFulfilmentMethod === "PICKUP" &&
+        deliveryFee !== 0
       ) {
         throw businessError(
           "Pickup orders cannot include a delivery charge.",
@@ -630,13 +644,28 @@ async function completeMarketplacePickup({
       }
 
       if (
+        deliveryFee < 0
+      ) {
+        throw businessError(
+          "Delivery cost cannot be negative.",
+          409,
+          "MARKETPLACE_DELIVERY_FEE_INVALID",
+        );
+      }
+
+      const expectedTotal =
+        roundMoney(
+          itemSubtotal + deliveryFee,
+        );
+
+      if (
         Math.abs(
-          itemSubtotal -
+          expectedTotal -
             Number(order.total || 0),
         ) > 0.01
       ) {
         throw businessError(
-          "The order total does not match the reserved products.",
+          "The order total does not match the products and delivery cost.",
           409,
           "MARKETPLACE_ORDER_TOTAL_MISMATCH",
         );
@@ -663,7 +692,7 @@ async function completeMarketplacePickup({
           !openSessionId
         ) {
           throw businessError(
-            "The cash drawer is closed for this location. Open it before completing this cash pickup.",
+            "The cash drawer is closed for this location. Open it before completing this cash order.",
             409,
             "CASH_DRAWER_CLOSED",
           );
@@ -694,15 +723,22 @@ async function completeMarketplacePickup({
           itemSubtotal,
         );
 
+      const saleTotal =
+        roundMoney(
+          taxSnapshot.total +
+            deliveryFee,
+        );
+
       const sale = await tx.sale.create({
         data: {
           tenantId,
           branchId: branch.id,
           cashierId: userId,
           customerId,
-          total: taxSnapshot.total,
+          total: saleTotal,
           subtotalAmount:
             taxSnapshot.subtotalAmount,
+          deliveryFee,
           taxableAmount:
             taxSnapshot.taxableAmount,
           taxName: taxSnapshot.taxName,
@@ -718,7 +754,7 @@ async function completeMarketplacePickup({
           showTaxOnCustomerDocuments:
             taxSnapshot
               .showTaxOnCustomerDocuments,
-          amountPaid: taxSnapshot.total,
+          amountPaid: saleTotal,
           balanceDue: 0,
           saleType: "CASH",
           status: "PAID",
@@ -768,7 +804,7 @@ async function completeMarketplacePickup({
             tenantId,
             branchId: branch.id,
             receivedById: userId,
-            amount: taxSnapshot.total,
+            amount: saleTotal,
             method: normalizedMethod,
             note: paymentNote,
           },
@@ -794,12 +830,17 @@ async function completeMarketplacePickup({
                 branchId: branch.id,
                 userId,
                 sessionId: openSessionId,
-                amount: taxSnapshot.total,
+                amount: saleTotal,
                 receiptNumber:
                   sale.receiptNumber ||
                   sale.id,
                 requestNumber:
                   order.requestNumber,
+                fulfilmentLabel:
+                  expectedFulfilmentMethod ===
+                  "DELIVERY"
+                    ? "delivery"
+                    : "pickup",
               },
             );
         }
@@ -813,7 +854,7 @@ async function completeMarketplacePickup({
               method: normalizedMethod,
               direction: "IN",
               reason: "OTHER",
-              amount: taxSnapshot.total,
+              amount: saleTotal,
               sourceType: "SalePayment",
               sourceId: payment.id,
               note:
@@ -954,7 +995,10 @@ async function completeMarketplacePickup({
           entityId: sale.id,
           metadata: {
             event:
-              "MARKETPLACE_PICKUP_COMPLETED",
+              expectedFulfilmentMethod ===
+              "DELIVERY"
+                ? "MARKETPLACE_DELIVERY_COMPLETED"
+                : "MARKETPLACE_PICKUP_COMPLETED",
             requestId: order.id,
             requestNumber:
               order.requestNumber,
@@ -989,7 +1033,34 @@ async function completeMarketplacePickup({
   );
 }
 
+async function completeMarketplacePickup(
+  options,
+) {
+  return completeMarketplaceOrder({
+    ...options,
+    expectedFulfilmentMethod:
+      "PICKUP",
+    expectedStatus:
+      MarketplaceRequestStatus
+        .READY_FOR_PICKUP,
+  });
+}
+
+async function completeMarketplaceDelivery(
+  options,
+) {
+  return completeMarketplaceOrder({
+    ...options,
+    expectedFulfilmentMethod:
+      "DELIVERY",
+    expectedStatus:
+      MarketplaceRequestStatus
+        .OUT_FOR_DELIVERY,
+  });
+}
+
 module.exports = {
+  completeMarketplaceDelivery,
   completeMarketplacePickup,
   normalizePaymentMethod,
 };
