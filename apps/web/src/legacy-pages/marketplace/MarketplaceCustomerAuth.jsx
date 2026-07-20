@@ -437,11 +437,38 @@ export default function MarketplaceCustomerAuth({
           !session.signedIn &&
           accountPage
         ) ? (
-          <div className="svx-marketplace-auth-content">
-            <OnboardingCard className="svx-marketplace-auth-checking">
-              <span className="svx-marketplace-auth-spinner" />
-              <strong>Checking your account</strong>
-            </OnboardingCard>
+          <div
+            className="svx-marketplace-auth-content"
+            aria-busy="true"
+            aria-label="Loading customer account"
+          >
+            <div className="svx-marketplace-auth-skeleton">
+              <div className="svx-marketplace-auth-skeleton-heading">
+                <span className="svx-marketplace-skeleton-line is-title" />
+                <span className="svx-marketplace-skeleton-line is-subtitle" />
+              </div>
+
+              <OnboardingCard className="svx-marketplace-auth-skeleton-card">
+                <div className="svx-marketplace-auth-skeleton-profile">
+                  <span className="svx-marketplace-skeleton-icon" />
+
+                  <div>
+                    <span className="svx-marketplace-skeleton-line is-name" />
+                    <span className="svx-marketplace-skeleton-line is-email" />
+                  </div>
+                </div>
+
+                <div className="svx-marketplace-auth-skeleton-detail">
+                  <span className="svx-marketplace-skeleton-line is-label" />
+                  <span className="svx-marketplace-skeleton-line is-value" />
+                </div>
+
+                <div className="svx-marketplace-auth-skeleton-actions">
+                  <span className="svx-marketplace-skeleton-button is-primary" />
+                  <span className="svx-marketplace-skeleton-button is-secondary" />
+                </div>
+              </OnboardingCard>
+            </div>
           </div>
         ) : session.signedIn ? (
           <SignedInAccount
