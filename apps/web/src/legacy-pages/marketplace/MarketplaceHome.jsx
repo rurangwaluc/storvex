@@ -22,6 +22,7 @@ import {
   ShoppingCart,
   Store,
   Sun,
+  UserRound,
   Truck,
   Wrench,
   X,
@@ -39,6 +40,9 @@ import {
 } from "../../services/marketplaceApi";
 import { useTheme } from "../../hooks/useTheme";
 import MarketplaceCustomerPanel from "./MarketplaceCustomerPanel";
+import {
+  useMarketplaceCustomerSession,
+} from "./MarketplaceCustomerSession";
 import {
   MARKETPLACE_CUSTOMER_PANEL_EVENT,
   marketplaceProductKey,
@@ -130,6 +134,8 @@ export function marketplaceErrorMessage(error) {
 export function MarketplaceHeader() {
   const { isDark, toggleTheme } = useTheme();
   const customerStore = useMarketplaceCustomerStore();
+  const customerSession =
+    useMarketplaceCustomerSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [customerPanelOpen, setCustomerPanelOpen] =
     useState(false);
@@ -167,11 +173,11 @@ export function MarketplaceHeader() {
   useEffect(() => {
     if (!menuOpen) return undefined;
 
-    function handleOutside(event) {
-      if (!headerRef.current?.contains(event.target)) {
-        setMenuOpen(false);
-      }
-    }
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow =
+      "hidden";
 
     function handleEscape(event) {
       if (event.key === "Escape") {
@@ -179,16 +185,19 @@ export function MarketplaceHeader() {
       }
     }
 
-    document.addEventListener("mousedown", handleOutside);
-    document.addEventListener("touchstart", handleOutside, {
-      passive: true,
-    });
-    document.addEventListener("keydown", handleEscape);
+    document.addEventListener(
+      "keydown",
+      handleEscape,
+    );
 
     return () => {
-      document.removeEventListener("mousedown", handleOutside);
-      document.removeEventListener("touchstart", handleOutside);
-      document.removeEventListener("keydown", handleEscape);
+      document.body.style.overflow =
+        previousOverflow;
+
+      document.removeEventListener(
+        "keydown",
+        handleEscape,
+      );
     };
   }, [menuOpen]);
 
@@ -324,6 +333,16 @@ export function MarketplaceHeader() {
             </button>
 
             <Link
+              to="/marketplace/account/sign-in"
+              className="svx-login-link"
+            >
+              <UserRound size={16} />
+              {customerSession.signedIn
+                ? "Account"
+                : "Sign in"}
+            </Link>
+
+            <Link
               to="/login"
               className="svx-login-link"
             >
@@ -361,7 +380,18 @@ export function MarketplaceHeader() {
           className="svx-mobile-menu"
           aria-hidden={!menuOpen}
         >
-          <nav className="svx-mobile-menu-panel">
+          <button
+            type="button"
+            className="svx-mobile-menu-backdrop"
+            aria-label="Close menu"
+            tabIndex={menuOpen ? 0 : -1}
+            onClick={() => setMenuOpen(false)}
+          />
+
+          <nav
+            className="svx-mobile-menu-panel"
+            aria-label="Mobile Marketplace navigation"
+          >
             <Link
               to="/"
               className="svx-mobile-menu-link"
@@ -412,6 +442,16 @@ export function MarketplaceHeader() {
             </button>
 
             <div className="svx-mobile-menu-actions">
+              <Link
+                to="/marketplace/account/sign-in"
+                className="svx-mobile-menu-secondary"
+                onClick={() => setMenuOpen(false)}
+              >
+                {customerSession.signedIn
+                  ? "Customer account"
+                  : "Customer sign in"}
+              </Link>
+
               <Link
                 to="/login"
                 className="svx-mobile-menu-secondary"

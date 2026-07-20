@@ -25,6 +25,9 @@ import {
 import {
   removeMarketplaceCartKeys,
 } from "./marketplaceCustomerStore";
+import {
+  useMarketplaceCustomerSession,
+} from "./MarketplaceCustomerSession";
 
 const CUSTOMER_DETAILS_STORAGE =
   "storvex-marketplace-customer-details-v1";
@@ -224,6 +227,9 @@ export default function MarketplaceRequestPanel({
   onClose,
   notify,
 }) {
+  const customerSession =
+    useMarketplaceCustomerSession();
+
   const groups = useMemo(
     () => groupCartBySeller(cart),
     [cart],
@@ -289,6 +295,33 @@ export default function MarketplaceRequestPanel({
 
   const [success, setSuccess] =
     useState(null);
+
+  useEffect(() => {
+    const customer =
+      customerSession.customer;
+
+    if (!customer?.id) {
+      return;
+    }
+
+    setForm((current) => ({
+      ...current,
+      customerName:
+        cleanString(customer.name) ||
+        current.customerName,
+      customerPhone:
+        cleanString(customer.phone) ||
+        current.customerPhone,
+      customerEmail:
+        cleanString(customer.email) ||
+        current.customerEmail,
+    }));
+  }, [
+    customerSession.customer?.id,
+    customerSession.customer?.name,
+    customerSession.customer?.phone,
+    customerSession.customer?.email,
+  ]);
 
   useEffect(() => {
     if (!groups.length) {

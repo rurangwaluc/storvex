@@ -260,6 +260,16 @@ model MarketplaceSellerProfile {
   @@map("MarketplaceSellerProfile")
 }
 
+enum MarketplaceCustomerStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum MarketplaceCustomerVerificationChannel {
+  EMAIL
+  PHONE
+}
+
 enum MarketplaceRequestStatus {
   REQUESTED
   CONFIRMED
@@ -294,13 +304,76 @@ enum MarketplaceRequestPaymentMethod {
   SELLER_APPROVED_OTHER
 }
 
+model MarketplaceCustomer {
+  id           String                    @id @default(uuid())
+  name         String                    @db.Text
+  email        String                    @unique @db.Text
+  phone        String?                   @unique @db.Text
+  passwordHash String                    @db.Text
+  status       MarketplaceCustomerStatus @default(ACTIVE)
+
+  emailVerifiedAt DateTime?
+  phoneVerifiedAt DateTime?
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  sessions      MarketplaceCustomerSession[]
+  verifications MarketplaceCustomerVerification[]
+  requests      MarketplaceRequest[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("MarketplaceCustomer")
+}
+
+model MarketplaceCustomerSession {
+  id         String    @id @default(uuid())
+  customerId String    @db.Text
+  tokenId    String    @unique @db.Text
+  ipAddress  String?   @db.Text
+  userAgent  String?   @db.Text
+  expiresAt  DateTime
+  isRevoked  Boolean   @default(false)
+  revokedAt  DateTime?
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  customer MarketplaceCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([customerId, isRevoked])
+  @@index([expiresAt])
+  @@map("MarketplaceCustomerSession")
+}
+
+model MarketplaceCustomerVerification {
+  id         String                                 @id @default(uuid())
+  customerId String                                 @db.Text
+  channel    MarketplaceCustomerVerificationChannel
+  target     String                                 @db.Text
+  codeHash   String                                 @db.Text
+  expiresAt  DateTime
+  attempts   Int                                    @default(0)
+  verifiedAt DateTime?
+  createdAt  DateTime                               @default(now())
+
+  customer MarketplaceCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, channel])
+  @@index([target])
+  @@index([expiresAt])
+  @@map("MarketplaceCustomerVerification")
+}
+
 model MarketplaceRequest {
   id String @id @default(uuid())
 
-  tenantId        String
-  requestNumber   String @unique @db.Text
-  trackingToken   String @unique @db.Text
-  clientRequestId String @unique @db.Text
+  tenantId              String
+  marketplaceCustomerId String? @db.Text
+  requestNumber         String  @unique @db.Text
+  trackingToken         String  @unique @db.Text
+  clientRequestId       String  @unique @db.Text
 
   status             MarketplaceRequestStatus        @default(REQUESTED)
   preferredContact   MarketplaceContactChannel
@@ -339,12 +412,15 @@ model MarketplaceRequest {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @default(now()) @updatedAt
 
-  tenant           Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  fulfilmentBranch Branch?                  @relation("MarketplaceRequestFulfilmentBranch", fields: [fulfilmentBranchId], references: [id])
-  sale             Sale?                    @relation("MarketplaceRequestSale", fields: [saleId], references: [id], onDelete: SetNull)
-  items            MarketplaceRequestItem[]
+  tenant              Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  marketplaceCustomer MarketplaceCustomer?     @relation(fields: [marketplaceCustomerId], references: [id], onDelete: SetNull)
+  fulfilmentBranch    Branch?                  @relation("MarketplaceRequestFulfilmentBranch", fields: [fulfilmentBranchId], references: [id])
+  sale                Sale?                    @relation("MarketplaceRequestSale", fields: [saleId], references: [id], onDelete: SetNull)
+  items               MarketplaceRequestItem[]
 
   @@index([tenantId])
+  @@index([marketplaceCustomerId])
+  @@index([marketplaceCustomerId, createdAt])
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
   @@index([tenantId, fulfilmentBranchId])

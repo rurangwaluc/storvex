@@ -131,6 +131,11 @@ async function createRequest(req, res) {
     const result =
       await submitMarketplaceRequest(
         req.body || {},
+        {
+          marketplaceCustomerId:
+            req.marketplaceCustomer?.id ||
+            null,
+        },
       );
 
     return res

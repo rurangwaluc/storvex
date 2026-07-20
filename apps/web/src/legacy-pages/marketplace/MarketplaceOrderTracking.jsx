@@ -8,7 +8,6 @@ import {
   PackageCheck,
   Phone,
   RefreshCw,
-  Store,
   Truck,
 } from "lucide-react";
 import {
@@ -35,10 +34,6 @@ import {
 import "../public/LandingPage.css";
 import "./MarketplacePublic.css";
 import "./MarketplaceOrderTracking.css";
-
-function cleanString(value) {
-  return String(value || "").trim();
-}
 
 function formatDateTime(value) {
   if (!value) return "";
@@ -84,6 +79,36 @@ function paymentLabel(value) {
   return (
     labels[value] ||
     "Pay at handover"
+  );
+}
+
+function statusMessage(order) {
+  const messages = {
+    REQUESTED:
+      "The store will review the order and confirm whether the products are available.",
+    CONFIRMED:
+      "Your products are reserved. The store will now prepare the order.",
+    PREPARING:
+      order?.fulfilmentMethod === "PICKUP"
+        ? "The store is preparing your products and will mark the order ready for pickup."
+        : "The store is preparing your products before sending them for delivery.",
+    READY_FOR_PICKUP:
+      "You can collect the order from the pickup location shown below and pay at handover.",
+    OUT_FOR_DELIVERY:
+      "Keep your phone available so the store or delivery person can reach you.",
+    DELIVERY_FAILED:
+      "Contact the store to agree on another delivery attempt or another way to receive the order.",
+    COMPLETED:
+      "Your order has been handed over and payment has been recorded.",
+    REJECTED:
+      "The store could not accept this order. Contact the store if you need more information.",
+    CANCELLED:
+      "This order will not continue. You can return to Marketplace and place another order.",
+  };
+
+  return (
+    messages[order?.status] ||
+    "Contact the store if you need help with this order."
   );
 }
 
@@ -193,9 +218,24 @@ export default function MarketplaceOrderTracking() {
     setError,
   ] = useState("");
 
+  const [
+    refreshing,
+    setRefreshing,
+  ] = useState(false);
+
   const loadOrder =
-    useCallback(async () => {
-      setLoading(true);
+    useCallback(async (
+      mode = "initial",
+    ) => {
+      const isRefresh =
+        mode === "refresh";
+
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
       setError("");
 
       try {
@@ -212,55 +252,63 @@ export default function MarketplaceOrderTracking() {
 
         setOrder(result.order);
       } catch (loadError) {
-        setOrder(null);
-        setError(
+        const message =
           marketplaceErrorMessage(
             loadError,
             "This tracking link could not be loaded.",
-          ),
-        );
+          );
+
+        setError(message);
+
+        if (!isRefresh) {
+          setOrder(null);
+        }
       } finally {
-        setLoading(false);
+        if (isRefresh) {
+          setRefreshing(false);
+        } else {
+          setLoading(false);
+        }
       }
     }, [trackingToken]);
 
   useEffect(() => {
-    void loadOrder();
+    void loadOrder("initial");
   }, [loadOrder]);
 
   if (loading) {
     return (
-      <>
+      <div className="storvex-landing storvex-marketplace svx-tracking-page">
         <MarketplaceHeader />
         <TrackingSkeleton />
-        <MarketplaceFooter />
-      </>
+        <MarketplaceFooter showCta={false} />
+      </div>
     );
   }
 
   if (!order) {
     return (
-      <>
+      <div className="storvex-landing storvex-marketplace svx-tracking-page">
         <MarketplaceHeader />
         <TrackingError
           message={error}
-          onRetry={loadOrder}
+          onRetry={() =>
+            void loadOrder("initial")
+          }
         />
-        <MarketplaceFooter />
-      </>
+        <MarketplaceFooter showCta={false} />
+      </div>
     );
   }
 
-  const sellerPhone =
-    cleanString(
-      order.seller?.phone,
-    );
-
   return (
-    <>
+    <div className="storvex-landing storvex-marketplace svx-tracking-page">
       <MarketplaceHeader />
 
-      <main className="svx-tracking-main">
+      <main
+        className="svx-tracking-main"
+        aria-busy={refreshing}
+      >
         <div className="svx-tracking-shell">
           <Link
             to="/marketplace"
@@ -275,25 +323,23 @@ export default function MarketplaceOrderTracking() {
 
           <header className="svx-tracking-heading">
             <div>
-              <p>Order tracking</p>
+              <p>Your order</p>
               <h1>
-                {order.orderNumber}
+                Track your order
               </h1>
+
+              <span className="svx-tracking-order-number">
+                Order {order.orderNumber}
+              </span>
             </div>
 
-            <span
-              className={`svx-tracking-status is-${String(
-                order.status,
-              ).toLowerCase()}`}
-            >
-              {order.statusLabel}
-            </span>
+
           </header>
 
           <section className="svx-tracking-summary">
             <div className="svx-tracking-summary-main">
               <span>
-                Current update
+                Latest update
               </span>
 
               <h2>
@@ -312,13 +358,13 @@ export default function MarketplaceOrderTracking() {
                       ? "The store is preparing your products."
                       : order.status ===
                           "READY_FOR_PICKUP"
-                        ? "Your order is ready. Contact the store before travelling if needed."
+                        ? "Your order is ready for collection."
                         : order.status ===
                             "OUT_FOR_DELIVERY"
                           ? "Your order has left the store for delivery."
                           : order.status ===
                               "COMPLETED"
-                            ? "The order was handed over and payment was recorded."
+                            ? "The order was handed over successfully."
                             : order.status ===
                                 "DELIVERY_FAILED"
                               ? order
@@ -329,12 +375,22 @@ export default function MarketplaceOrderTracking() {
                                 ? "The store could not accept this order."
                                 : "This order was cancelled."}
               </p>
+
+              <div className="svx-tracking-next-step">
+                <strong>
+                  What happens next
+                </strong>
+
+                <span>
+                  {statusMessage(order)}
+                </span>
+              </div>
             </div>
 
             <dl className="svx-tracking-summary-details">
               <div>
                 <dt>
-                  Fulfilment
+                  Receive by
                 </dt>
                 <dd>
                   {fulfilmentLabel(
@@ -372,24 +428,47 @@ export default function MarketplaceOrderTracking() {
             <section className="svx-tracking-panel">
               <div className="svx-tracking-panel-head">
                 <div>
-                  <p>Progress</p>
+                  <p>Order progress</p>
                   <h2>
-                    Order timeline
+                    Where your order is
                   </h2>
                 </div>
 
                 <button
                   type="button"
-                  onClick={loadOrder}
-                  aria-label="Refresh order"
+                  onClick={() =>
+                    void loadOrder("refresh")
+                  }
+                  disabled={refreshing}
+                  aria-label={
+                    refreshing
+                      ? "Refreshing order"
+                      : "Refresh order"
+                  }
                 >
                   <RefreshCw
                     size={17}
                     aria-hidden="true"
+                    className={
+                      refreshing
+                        ? "is-spinning"
+                        : undefined
+                    }
                   />
-                  Refresh
+                  {refreshing
+                    ? "Refreshing"
+                    : "Refresh"}
                 </button>
               </div>
+
+              {error ? (
+                <p
+                  className="svx-tracking-refresh-error"
+                  role="alert"
+                >
+                  {error}
+                </p>
+              ) : null}
 
               <ol className="svx-tracking-timeline">
                 {order.timeline.map(
@@ -428,7 +507,7 @@ export default function MarketplaceOrderTracking() {
                             </small>
                           ) : (
                             <small>
-                              Waiting
+                              Not started
                             </small>
                           )}
                         </div>
@@ -442,16 +521,11 @@ export default function MarketplaceOrderTracking() {
             <aside className="svx-tracking-panel">
               <div className="svx-tracking-panel-head">
                 <div>
-                  <p>Store</p>
+                  <p>Ordered from</p>
                   <h2>
                     {order.seller.name}
                   </h2>
                 </div>
-
-                <Store
-                  size={22}
-                  aria-hidden="true"
-                />
               </div>
 
               {order.pickupLocation ? (
@@ -548,8 +622,7 @@ export default function MarketplaceOrderTracking() {
                       size={17}
                       aria-hidden="true"
                     />
-                    {sellerPhone ||
-                      "Call store"}
+                    Call store
                   </a>
                 ) : null}
               </div>
@@ -559,9 +632,9 @@ export default function MarketplaceOrderTracking() {
           <section className="svx-tracking-panel">
             <div className="svx-tracking-panel-head">
               <div>
-                <p>Products</p>
+                <p>Your items</p>
                 <h2>
-                  Order summary
+                  What you ordered
                 </h2>
               </div>
 
@@ -623,7 +696,7 @@ export default function MarketplaceOrderTracking() {
 
             <dl className="svx-tracking-money">
               <div>
-                <dt>Products</dt>
+                <dt>Items</dt>
                 <dd>
                   {formatMoney(
                     order.subtotal,
@@ -635,7 +708,7 @@ export default function MarketplaceOrderTracking() {
               {order.deliveryFee >
               0 ? (
                 <div>
-                  <dt>Delivery</dt>
+                  <dt>Delivery fee</dt>
                   <dd>
                     {formatMoney(
                       order.deliveryFee,
@@ -659,7 +732,7 @@ export default function MarketplaceOrderTracking() {
         </div>
       </main>
 
-      <MarketplaceFooter />
-    </>
+      <MarketplaceFooter showCta={false} />
+    </div>
   );
 }

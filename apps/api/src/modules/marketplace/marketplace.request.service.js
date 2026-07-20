@@ -1225,7 +1225,14 @@ async function sendMarketplaceRequestEmails(
 
 async function submitMarketplaceRequest(
   rawBody = {},
+  context = {},
 ) {
+  const marketplaceCustomerId =
+    cleanString(
+      context.marketplaceCustomerId,
+      100,
+    ) || null;
+
   const input =
     validateRequestInput(rawBody);
 
@@ -1482,6 +1489,7 @@ async function submitMarketplaceRequest(
       await prisma.marketplaceRequest.create({
         data: {
           tenantId: seller.tenantId,
+          marketplaceCustomerId,
           requestNumber:
             await nextMarketplaceRequestNumber(
               seller.tenantId,

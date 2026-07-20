@@ -1,4 +1,7 @@
 import { apiFetch } from "./apiClient";
+import {
+  marketplaceCustomerRequest,
+} from "./marketplaceCustomerAuth";
 
 function buildQuery(params = {}) {
   const query = new URLSearchParams();
@@ -33,10 +36,13 @@ export function getMarketplaceProduct(storeSlug, productSlug) {
 }
 
 export function submitMarketplaceRequest(payload = {}) {
-  return apiFetch("/marketplace/requests", {
-    method: "POST",
-    body: payload,
-  });
+  return marketplaceCustomerRequest(
+    "/marketplace/requests",
+    {
+      method: "POST",
+      body: payload,
+    },
+  );
 }
 
 export function trackMarketplaceOrder(
