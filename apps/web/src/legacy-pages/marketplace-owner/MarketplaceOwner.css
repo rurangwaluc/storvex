@@ -2734,3 +2734,55 @@
     grid-row: 2;
   }
 }
+
+.svx-market-owner-delivery-fee
+  > div.is-select {
+  display: block;
+}
+
+.svx-market-owner-delivery-fee
+  > div.is-select
+  select {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  outline: 0;
+  padding: 0 13px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+}
+
+.svx-market-owner-delivery-fee
+  > div.is-select
+  select:focus {
+  box-shadow:
+    inset 3px 0 0 var(--primary);
+}
+
+.svx-market-owner-delivery-fee
+  > div.is-select {
+  display: block;
+}
+
+.svx-market-owner-delivery-fee
+  > div.is-select
+  select {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  outline: 0;
+  padding: 0 13px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+}
+
+.svx-market-owner-delivery-fee
+  > div.is-select
+  select:focus {
+  box-shadow:
+    inset 3px 0 0 var(--primary);
+}

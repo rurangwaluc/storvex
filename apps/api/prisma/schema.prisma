@@ -301,11 +301,12 @@ model MarketplaceRequest {
   trackingToken   String @unique @db.Text
   clientRequestId String @unique @db.Text
 
-  status           MarketplaceRequestStatus        @default(REQUESTED)
-  preferredContact MarketplaceContactChannel
-  fulfilmentMethod MarketplaceFulfilmentMethod
-  deliveryCoverage MarketplaceDeliveryCoverage?
-  paymentMethod    MarketplaceRequestPaymentMethod
+  status             MarketplaceRequestStatus        @default(REQUESTED)
+  preferredContact   MarketplaceContactChannel
+  fulfilmentMethod   MarketplaceFulfilmentMethod
+  deliveryCoverage   MarketplaceDeliveryCoverage?
+  paymentMethod      MarketplaceRequestPaymentMethod
+  fulfilmentBranchId String?                         @db.Text
 
   customerName  String  @db.Text
   customerPhone String? @db.Text
@@ -333,12 +334,14 @@ model MarketplaceRequest {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @default(now()) @updatedAt
 
-  tenant Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  items  MarketplaceRequestItem[]
+  tenant           Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fulfilmentBranch Branch?                  @relation("MarketplaceRequestFulfilmentBranch", fields: [fulfilmentBranchId], references: [id])
+  items            MarketplaceRequestItem[]
 
   @@index([tenantId])
   @@index([tenantId, status])
   @@index([tenantId, createdAt])
+  @@index([tenantId, fulfilmentBranchId])
   @@index([customerPhone])
   @@index([customerEmail])
   @@map("MarketplaceRequest")
@@ -419,8 +422,9 @@ model Branch {
   tenant        Tenant  @relation("TenantBranches", fields: [tenantId], references: [id], onDelete: Cascade)
   mainForTenant Tenant? @relation("TenantMainBranch")
 
-  userAssignments UserBranchAssignment[]
-  inventory       BranchInventory[]
+  userAssignments     UserBranchAssignment[]
+  inventory           BranchInventory[]
+  marketplaceRequests MarketplaceRequest[]   @relation("MarketplaceRequestFulfilmentBranch")
 
   borrowerInterStoreDeals InterStoreDeal[]    @relation("BorrowerInterStoreDeals")
   interStorePayments      InterStorePayment[] @relation("BranchInterStorePayments")

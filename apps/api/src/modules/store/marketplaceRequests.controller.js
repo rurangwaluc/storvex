@@ -117,6 +117,17 @@ function requestSelect({
     fulfilmentMethod: true,
     deliveryCoverage: true,
     paymentMethod: true,
+    fulfilmentBranchId: true,
+
+    fulfilmentBranch: {
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        isMain: true,
+        status: true,
+      },
+    },
 
     customerName: true,
     customerPhone: true,
@@ -351,6 +362,7 @@ async function lockProductInventory(
   tx,
   tenantId,
   productId,
+  branchId,
 ) {
   return tx.$queryRaw(
     Prisma.sql`
@@ -367,15 +379,111 @@ async function lockProductInventory(
       WHERE
         inventory."tenantId" = ${tenantId}
         AND inventory."productId" = ${productId}
+        AND inventory."branchId" = ${branchId}
         AND branch."tenantId" = ${tenantId}
         AND branch."status" = 'ACTIVE'
-      ORDER BY
-        branch."isMain" DESC,
-        inventory."updatedAt" ASC,
-        inventory."id" ASC
       FOR UPDATE OF inventory
     `,
   );
+}
+
+async function resolveFulfilmentBranch(
+  tx,
+  req,
+  tenantId,
+  branchId,
+) {
+  const safeBranchId =
+    cleanString(branchId);
+
+  if (!safeBranchId) {
+    throw createBusinessError(
+      "Choose the location that will fulfil this request.",
+      400,
+      "MARKETPLACE_FULFILMENT_BRANCH_REQUIRED",
+    );
+  }
+
+  const branch =
+    await tx.branch.findFirst({
+      where: {
+        id: safeBranchId,
+        tenantId,
+        status: "ACTIVE",
+      },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        isMain: true,
+      },
+    });
+
+  if (!branch) {
+    throw createBusinessError(
+      "The selected fulfilment location is not active.",
+      404,
+      "MARKETPLACE_FULFILMENT_BRANCH_NOT_FOUND",
+    );
+  }
+
+  const role = cleanString(
+    req.user?.role,
+  )?.toUpperCase();
+
+  const ownerRoles = new Set([
+    "OWNER",
+    "PRIMARY_OWNER",
+    "PARTNER",
+  ]);
+
+  if (!ownerRoles.has(role)) {
+    const allowedBranchIds =
+      Array.isArray(
+        req.user?.allowedBranchIds,
+      )
+        ? req.user.allowedBranchIds.map(
+            String,
+          )
+        : [];
+
+    if (
+      !allowedBranchIds.includes(
+        safeBranchId,
+      )
+    ) {
+      throw createBusinessError(
+        "You cannot operate from the selected fulfilment location.",
+        403,
+        "MARKETPLACE_FULFILMENT_BRANCH_ACCESS_DENIED",
+      );
+    }
+
+    const assignment =
+      await tx.userBranchAssignment.findFirst({
+        where: {
+          tenantId,
+          userId:
+            req.user?.userId ||
+            req.user?.id,
+          branchId: safeBranchId,
+          canOperate: true,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+    if (!assignment) {
+      throw createBusinessError(
+        "You cannot operate from the selected fulfilment location.",
+        403,
+        "MARKETPLACE_FULFILMENT_BRANCH_OPERATION_DENIED",
+      );
+    }
+  }
+
+  return branch;
 }
 
 async function loadFullRequest(
@@ -689,6 +797,14 @@ async function confirmMarketplaceRequest(
             current,
           );
 
+          const fulfilmentBranch =
+            await resolveFulfilmentBranch(
+              tx,
+              req,
+              tenantId,
+              req.body?.fulfilmentBranchId,
+            );
+
           if (
             !Array.isArray(
               current.items,
@@ -735,6 +851,7 @@ async function confirmMarketplaceRequest(
                 tx,
                 tenantId,
                 item.productId,
+                fulfilmentBranch.id,
               );
 
             const allocation =
@@ -748,7 +865,7 @@ async function confirmMarketplaceRequest(
 
             if (!allocation.complete) {
               throw createBusinessError(
-                `${item.productTitleSnapshot} does not have enough available stock.`,
+                `${item.productTitleSnapshot} does not have enough available stock at ${fulfilmentBranch.name}.`,
                 409,
                 "MARKETPLACE_REQUEST_INSUFFICIENT_STOCK",
                 {
@@ -833,6 +950,8 @@ async function confirmMarketplaceRequest(
                 confirmedAt:
                   new Date(),
                 rejectedAt: null,
+                fulfilmentBranchId:
+                  fulfilmentBranch.id,
                 deliveryFee,
                 total:
                   Number(
@@ -1000,5 +1119,7 @@ module.exports = {
     buildInventoryAllocations,
     normalizeMoney,
     resolveDeliveryFee,
+    resolveFulfilmentBranch,
+    resolveFulfilmentBranch,
   },
 };

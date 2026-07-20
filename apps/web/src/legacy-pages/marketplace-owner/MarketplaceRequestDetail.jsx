@@ -14,6 +14,9 @@ import {
   getOwnerMarketplaceRequest,
   rejectOwnerMarketplaceRequest,
 } from "../../services/marketplaceOwnerApi";
+import {
+  listBranches,
+} from "../../services/branchApi";
 import MarketplaceOwnerHeader from "./MarketplaceOwnerHeader";
 import "./MarketplaceOwner.css";
 
@@ -432,6 +435,12 @@ export default function MarketplaceRequestDetail() {
 
   const [deliveryFee, setDeliveryFee] =
     useState("");
+  const [branches, setBranches] =
+    useState([]);
+  const [
+    fulfilmentBranchId,
+    setFulfilmentBranchId,
+  ] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -440,13 +449,44 @@ export default function MarketplaceRequestDetail() {
       try {
         setLoading(true);
 
-        const result =
-          await getOwnerMarketplaceRequest(
+        const [
+          result,
+          branchResult,
+        ] = await Promise.all([
+          getOwnerMarketplaceRequest(
             requestId,
-          );
+          ),
+          listBranches(),
+        ]);
 
         if (alive) {
-          setRequest(result?.request || null);
+          const nextRequest =
+            result?.request || null;
+
+          const activeBranches =
+            Array.isArray(
+              branchResult?.branches,
+            )
+              ? branchResult.branches.filter(
+                  (branch) =>
+                    branch?.status ===
+                    "ACTIVE",
+                )
+              : [];
+
+          setRequest(nextRequest);
+          setBranches(activeBranches);
+
+          setFulfilmentBranchId(
+            nextRequest
+              ?.fulfilmentBranchId ||
+              activeBranches.find(
+                (branch) =>
+                  branch?.isMain,
+              )?.id ||
+              activeBranches[0]?.id ||
+              "",
+          );
         }
       } catch (error) {
         console.error(error);
@@ -500,7 +540,16 @@ export default function MarketplaceRequestDetail() {
       return;
     }
 
-    const payload = {};
+    const payload = {
+      fulfilmentBranchId,
+    };
+
+    if (!fulfilmentBranchId) {
+      toast.error(
+        "Choose the location fulfilling this request.",
+      );
+      return;
+    }
 
     if (requiresDeliveryFee) {
       const amount = Number(deliveryFee);
@@ -910,6 +959,30 @@ export default function MarketplaceRequestDetail() {
                     </div>
 
                     <div>
+                      <span>
+                        Fulfilment location
+                      </span>
+                      <strong>
+                        {request
+                          .fulfilmentBranch
+                          ?.name ||
+                          "Not chosen yet"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>
+                        Fulfilment location
+                      </span>
+                      <strong>
+                        {request
+                          .fulfilmentBranch
+                          ?.name ||
+                          "Not chosen yet"}
+                      </strong>
+                    </div>
+
+                    <div>
                       <span>Submitted</span>
                       <strong>
                         {formatDateTime(
@@ -944,6 +1017,106 @@ export default function MarketplaceRequestDetail() {
                         will reserve the stock without
                         creating a sale.
                       </p>
+
+                      <label className="svx-market-owner-delivery-fee">
+                        <span>
+                          Fulfilment location
+                        </span>
+
+                        <div className="is-select">
+                          <select
+                            value={
+                              fulfilmentBranchId
+                            }
+                            onChange={(event) =>
+                              setFulfilmentBranchId(
+                                event.target.value,
+                              )
+                            }
+                            disabled={
+                              actionBusy
+                            }
+                          >
+                            <option value="">
+                              Choose location
+                            </option>
+
+                            {branches.map(
+                              (branch) => (
+                                <option
+                                  key={
+                                    branch.id
+                                  }
+                                  value={
+                                    branch.id
+                                  }
+                                >
+                                  {branch.name}
+                                  {branch.isMain
+                                    ? " — Main"
+                                    : ""}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        </div>
+
+                        <small>
+                          Every requested product
+                          must be available at this
+                          location.
+                        </small>
+                      </label>
+
+                      <label className="svx-market-owner-delivery-fee">
+                        <span>
+                          Fulfilment location
+                        </span>
+
+                        <div className="is-select">
+                          <select
+                            value={
+                              fulfilmentBranchId
+                            }
+                            onChange={(event) =>
+                              setFulfilmentBranchId(
+                                event.target.value,
+                              )
+                            }
+                            disabled={
+                              actionBusy
+                            }
+                          >
+                            <option value="">
+                              Choose location
+                            </option>
+
+                            {branches.map(
+                              (branch) => (
+                                <option
+                                  key={
+                                    branch.id
+                                  }
+                                  value={
+                                    branch.id
+                                  }
+                                >
+                                  {branch.name}
+                                  {branch.isMain
+                                    ? " — Main"
+                                    : ""}
+                                </option>
+                              ),
+                            )}
+                          </select>
+                        </div>
+
+                        <small>
+                          Every requested product
+                          must be available at this
+                          location.
+                        </small>
+                      </label>
 
                       {requiresDeliveryFee ? (
                         <label className="svx-market-owner-delivery-fee">
