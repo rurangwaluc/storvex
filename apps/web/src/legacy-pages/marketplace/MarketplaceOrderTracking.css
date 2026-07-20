@@ -1,0 +1,517 @@
+.svx-tracking-main {
+  min-height: 70vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  padding: 28px 16px 72px;
+}
+
+.svx-tracking-shell {
+  width: min(1080px, 100%);
+  margin: 0 auto;
+}
+
+.svx-tracking-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.svx-tracking-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.svx-tracking-heading p,
+.svx-tracking-panel-head p {
+  margin: 0 0 5px;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.svx-tracking-heading h1 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: clamp(27px, 5vw, 48px);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.svx-tracking-status {
+  border: 1px solid var(--color-border);
+  padding: 9px 12px;
+  background: var(--color-card);
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.svx-tracking-status.is-completed,
+.svx-tracking-status.is-ready_for_pickup {
+  color: var(--color-success);
+}
+
+.svx-tracking-status.is-delivery_failed,
+.svx-tracking-status.is-rejected,
+.svx-tracking-status.is-cancelled {
+  color: var(--color-danger);
+}
+
+.svx-tracking-summary {
+  display: grid;
+  gap: 24px;
+  margin-top: 24px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  padding: 22px;
+}
+
+.svx-tracking-summary-main > span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.svx-tracking-summary-main h2 {
+  margin: 8px 0 0;
+  font-size: clamp(23px, 5vw, 38px);
+  letter-spacing: -0.04em;
+}
+
+.svx-tracking-summary-main p {
+  max-width: 680px;
+  margin: 12px 0 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.7;
+}
+
+.svx-tracking-summary-details {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  margin: 0;
+  background: var(--color-border);
+}
+
+.svx-tracking-summary-details > div {
+  min-width: 0;
+  background: var(--color-surface);
+  padding: 13px;
+}
+
+.svx-tracking-summary-details dt,
+.svx-tracking-money dt {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.svx-tracking-summary-details dd,
+.svx-tracking-money dd {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.svx-tracking-layout {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.svx-tracking-panel {
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  padding: 20px;
+}
+
+.svx-tracking-panel + .svx-tracking-panel {
+  margin-top: 16px;
+}
+
+.svx-tracking-layout .svx-tracking-panel + .svx-tracking-panel {
+  margin-top: 0;
+}
+
+.svx-tracking-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.svx-tracking-panel-head h2 {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.025em;
+}
+
+.svx-tracking-panel-head > strong {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.svx-tracking-panel-head button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.svx-tracking-timeline {
+  display: grid;
+  gap: 0;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.svx-tracking-timeline li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 68px;
+  color: var(--color-text-muted);
+}
+
+.svx-tracking-timeline li:not(:last-child)::after {
+  position: absolute;
+  top: 34px;
+  bottom: 0;
+  left: 17px;
+  width: 1px;
+  background: var(--color-border);
+  content: "";
+}
+
+.svx-tracking-timeline li.is-reached {
+  color: var(--color-text);
+}
+
+.svx-tracking-timeline-icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 35px;
+  height: 35px;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.svx-tracking-timeline li.is-reached .svx-tracking-timeline-icon {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.svx-tracking-timeline strong,
+.svx-tracking-timeline small {
+  display: block;
+}
+
+.svx-tracking-timeline strong {
+  padding-top: 2px;
+  font-size: 14px;
+}
+
+.svx-tracking-timeline small {
+  margin-top: 5px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.svx-tracking-location {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-top: 20px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 18px;
+}
+
+.svx-tracking-location strong,
+.svx-tracking-location span {
+  display: block;
+}
+
+.svx-tracking-location strong {
+  font-size: 14px;
+}
+
+.svx-tracking-location span {
+  margin-top: 5px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.svx-tracking-contact-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.svx-tracking-contact-actions a,
+.svx-tracking-state-actions button,
+.svx-tracking-state-actions a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.svx-tracking-contact-actions a.is-secondary,
+.svx-tracking-state-actions a {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.svx-tracking-items {
+  display: grid;
+  margin-top: 18px;
+}
+
+.svx-tracking-item {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 12px;
+  border-top: 1px solid var(--color-border);
+  padding: 14px 0;
+}
+
+.svx-tracking-item > b {
+  grid-column: 2;
+  font-size: 13px;
+}
+
+.svx-tracking-item-image {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.svx-tracking-item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.svx-tracking-item-copy strong,
+.svx-tracking-item-copy span {
+  display: block;
+}
+
+.svx-tracking-item-copy strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.svx-tracking-item-copy span {
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.svx-tracking-money {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0 0 auto;
+  border-top: 1px solid var(--color-border);
+  padding-top: 16px;
+}
+
+.svx-tracking-money > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.svx-tracking-money dd {
+  margin-top: 0;
+  text-align: right;
+}
+
+.svx-tracking-money .is-total {
+  border-top: 1px solid var(--color-border);
+  padding-top: 12px;
+}
+
+.svx-tracking-money .is-total dt,
+.svx-tracking-money .is-total dd {
+  color: var(--color-text);
+  font-size: 16px;
+}
+
+.svx-tracking-state {
+  width: min(620px, 100%);
+  margin: 48px auto;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  padding: 28px 20px;
+  text-align: center;
+}
+
+.svx-tracking-state > p {
+  margin: 16px 0 0;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.svx-tracking-state h1 {
+  margin: 9px 0 0;
+  font-size: 27px;
+  letter-spacing: -0.035em;
+}
+
+.svx-tracking-state > span {
+  display: block;
+  margin-top: 12px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.svx-tracking-state-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.svx-tracking-state-actions button {
+  cursor: pointer;
+}
+
+.svx-tracking-skeleton {
+  background: var(--color-surface);
+  animation: svx-tracking-pulse 1.4s ease-in-out infinite;
+}
+
+.svx-tracking-skeleton.is-title {
+  width: 54%;
+  height: 42px;
+  margin-top: 34px;
+}
+
+.svx-tracking-skeleton.is-hero {
+  height: 210px;
+  margin-top: 24px;
+}
+
+.svx-tracking-skeleton.is-panel {
+  height: 260px;
+  margin-top: 16px;
+}
+
+@keyframes svx-tracking-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 0.85;
+  }
+}
+
+@media (min-width: 640px) {
+  .svx-tracking-main {
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+
+  .svx-tracking-summary-details {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+  }
+
+  .svx-tracking-item {
+    grid-template-columns:
+      54px minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .svx-tracking-item > b {
+    grid-column: auto;
+    text-align: right;
+  }
+
+  .svx-tracking-money {
+    width: min(380px, 100%);
+  }
+
+  .svx-tracking-state-actions {
+    grid-template-columns:
+      1fr 1fr;
+  }
+}
+
+@media (min-width: 900px) {
+  .svx-tracking-main {
+    padding-top: 42px;
+  }
+
+  .svx-tracking-summary {
+    grid-template-columns:
+      minmax(0, 1.5fr)
+      minmax(300px, 0.8fr);
+    align-items: end;
+    padding: 28px;
+  }
+
+  .svx-tracking-layout {
+    grid-template-columns:
+      minmax(0, 1.4fr)
+      minmax(300px, 0.75fr);
+  }
+
+  .svx-tracking-panel {
+    padding: 24px;
+  }
+}
+
+@media (max-width: 520px) {
+  .svx-tracking-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .svx-tracking-status {
+    white-space: normal;
+  }
+}

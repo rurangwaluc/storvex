@@ -38,3 +38,13 @@ export function submitMarketplaceRequest(payload = {}) {
     body: payload,
   });
 }
+
+export function trackMarketplaceOrder(
+  trackingToken,
+) {
+  return apiFetch(
+    `/marketplace/requests/${encodeURIComponent(
+      trackingToken,
+    )}`,
+  );
+}

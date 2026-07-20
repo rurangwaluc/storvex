@@ -3,6 +3,10 @@ const {
 } = require("./marketplace.request.service");
 
 const {
+  getTrackedMarketplaceOrder,
+} = require("./marketplace.tracking.service");
+
+const {
   listPublicStores,
   getPublicStore,
   getPublicProduct,
@@ -94,6 +98,34 @@ async function listProducts(req, res) {
 }
 
 
+async function trackRequest(req, res) {
+  try {
+    const order =
+      await getTrackedMarketplaceOrder(
+        req.params.trackingToken,
+      );
+
+    if (!order) {
+      return res.status(404).json({
+        message:
+          "This order tracking link was not found.",
+        code:
+          "MARKETPLACE_ORDER_TRACKING_NOT_FOUND",
+      });
+    }
+
+    return res.json({
+      order,
+    });
+  } catch (error) {
+    return sendError(
+      res,
+      error,
+      "Failed to load order tracking",
+    );
+  }
+}
+
 async function createRequest(req, res) {
   try {
     const result =
@@ -115,6 +147,7 @@ async function createRequest(req, res) {
 
 module.exports = {
   createRequest,
+  trackRequest,
   listStores,
   getStore,
   getProduct,

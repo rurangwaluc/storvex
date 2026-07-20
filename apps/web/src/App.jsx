@@ -8,6 +8,7 @@ import ResetPassword from "./legacy-pages/auth/ResetPassword";
 import LandingPage from "./legacy-pages/public/LandingPage";
 import MarketplaceHome from "./legacy-pages/marketplace/MarketplaceHome";
 import MarketplaceProductDetails from "./legacy-pages/marketplace/MarketplaceProductDetails";
+import MarketplaceOrderTracking from "./legacy-pages/marketplace/MarketplaceOrderTracking";
 import MarketplaceRequests from "./legacy-pages/marketplace-owner/MarketplaceRequests";
 import MarketplaceRequestDetail from "./legacy-pages/marketplace-owner/MarketplaceRequestDetail";
 
@@ -124,6 +125,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/marketplace" element={<MarketplaceHome />} />
+        <Route
+          path="/marketplace/orders/:trackingToken"
+          element={<MarketplaceOrderTracking />}
+        />
         <Route
           path="/marketplace/:storeSlug/:productSlug"
           element={<MarketplaceProductDetails />}

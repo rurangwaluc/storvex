@@ -697,6 +697,21 @@ export default function MarketplaceRequestPanel({
             </dl>
 
             <div className="svx-marketplace-request-success-actions">
+              {success.trackingToken ? (
+                <a
+                  href={`/marketplace/orders/${encodeURIComponent(
+                    success.trackingToken,
+                  )}`}
+                  className="svx-marketplace-request-button"
+                >
+                  <PackageCheck
+                    size={17}
+                    aria-hidden="true"
+                  />
+                  Track this order
+                </a>
+              ) : null}
+
               {canContinueInWhatsapp ? (
                 <a
                   href={whatsappUrl}

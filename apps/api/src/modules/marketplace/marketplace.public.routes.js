@@ -5,6 +5,10 @@ const controller = require("./marketplace.public.controller");
 const router = express.Router();
 
 router.post("/requests", controller.createRequest);
+router.get(
+  "/requests/:trackingToken",
+  controller.trackRequest,
+);
 router.get("/stores", controller.listStores);
 router.get("/stores/:storeSlug", controller.getStore);
 router.get(
