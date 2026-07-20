@@ -307,6 +307,7 @@ model MarketplaceRequest {
   deliveryCoverage   MarketplaceDeliveryCoverage?
   paymentMethod      MarketplaceRequestPaymentMethod
   fulfilmentBranchId String?                         @db.Text
+  saleId             String?                         @unique
 
   customerName  String  @db.Text
   customerPhone String? @db.Text
@@ -336,6 +337,7 @@ model MarketplaceRequest {
 
   tenant           Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   fulfilmentBranch Branch?                  @relation("MarketplaceRequestFulfilmentBranch", fields: [fulfilmentBranchId], references: [id])
+  sale             Sale?                    @relation("MarketplaceRequestSale", fields: [saleId], references: [id], onDelete: SetNull)
   items            MarketplaceRequestItem[]
 
   @@index([tenantId])
@@ -859,15 +861,16 @@ model Sale {
 
   sourceProformas Proforma[] @relation("ProformaDraftSale")
 
-  deliveryNotes DeliveryNote[]
-  cashier       User           @relation("CashierSales", fields: [cashierId], references: [id])
-  customer      Customer?      @relation(fields: [customerId], references: [id])
-  tenant        Tenant         @relation(fields: [tenantId], references: [id])
-  branch        Branch?        @relation(fields: [branchId], references: [id])
-  items         SaleItem[]
-  payments      SalePayment[]  @relation("SalePayments")
-  refunds       SaleRefund[]   @relation("SaleToRefunds")
-  warranties    SaleWarranty[]
+  deliveryNotes      DeliveryNote[]
+  cashier            User                @relation("CashierSales", fields: [cashierId], references: [id])
+  customer           Customer?           @relation(fields: [customerId], references: [id])
+  tenant             Tenant              @relation(fields: [tenantId], references: [id])
+  branch             Branch?             @relation(fields: [branchId], references: [id])
+  items              SaleItem[]
+  payments           SalePayment[]       @relation("SalePayments")
+  refunds            SaleRefund[]        @relation("SaleToRefunds")
+  warranties         SaleWarranty[]
+  marketplaceRequest MarketplaceRequest? @relation("MarketplaceRequestSale")
 
   @@index([conversationId])
   @@index([tenantId])

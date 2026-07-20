@@ -182,7 +182,7 @@ async function nextMarketplaceRequestNumber(
     throw appError(
       500,
       "REQUEST_BUSINESS_REQUIRED",
-      "The business could not be identified for this request.",
+      "The business could not be identified for this order.",
     );
   }
 
@@ -225,7 +225,7 @@ async function nextMarketplaceRequestNumber(
     throw appError(
       500,
       "REQUEST_NUMBER_FAILED",
-      "The request number could not be created.",
+      "The order number could not be created.",
     );
   }
 
@@ -379,7 +379,7 @@ function validateRequestInput(body = {}) {
     throw appError(
       400,
       "MARKETPLACE_STORE_REQUIRED",
-      "Choose the store receiving this request.",
+      "Choose the store receiving this order.",
     );
   }
 
@@ -545,7 +545,7 @@ function validateRequestInput(body = {}) {
       throw appError(
         400,
         "PRODUCT_SLUG_REQUIRED",
-        "Every requested product must have a valid product reference.",
+        "Every order item must have a valid product reference.",
       );
     }
 
@@ -650,7 +650,7 @@ function buildSellerRequestNextStep({
     request.deliveryCoverage ===
     "OUTSIDE_KIGALI"
   ) {
-    return `Please confirm availability for ${thisProduct} and the delivery cost before processing the request.`;
+    return `Please confirm availability for ${thisProduct} and the delivery cost before processing the order.`;
   }
 
   return `Please confirm availability and the delivery arrangements for ${thisProduct}.`;
@@ -698,7 +698,7 @@ function buildWhatsappMessage({
     "",
     "I have submitted a product request through Storvex.",
     "",
-    "*Request number*",
+    "*Order number*",
     request.requestNumber,
     "",
   ];
@@ -855,11 +855,11 @@ function buildRequestEmail({
       });
 
   const heading = isSeller
-    ? `New Marketplace request ${request.requestNumber}`
-    : `Your Marketplace request ${request.requestNumber}`;
+    ? `New order request ${request.requestNumber}`
+    : `Your order request ${request.requestNumber}`;
 
   const intro = isSeller
-    ? `${request.customerName} sent a new request through the Storvex Marketplace.`
+    ? `${request.customerName} sent a new order request through Storvex.`
     : `Your request has been sent to ${request.sellerNameSnapshot}. ${request.sellerNameSnapshot} will confirm availability and the next steps.`;
 
   const itemText = items
@@ -1007,7 +1007,7 @@ function buildRequestEmail({
         </h1>
 
         <p style="margin:12px 0 0;line-height:1.5;color:#475569;">
-          <strong>Request number:</strong>
+          <strong>Order number:</strong>
           ${escapeHtml(request.requestNumber)}
         </p>
 
@@ -1153,7 +1153,7 @@ async function notifyMarketplaceOwner(
       data: {
         tenantId: request.tenantId,
         type: "ACTION_REQUIRED",
-        title: `New Marketplace request ${request.requestNumber}`,
+        title: `New order request ${request.requestNumber}`,
         message: `${request.customerName} requested ${request.items.length} ${
           request.items.length === 1
             ? "product"

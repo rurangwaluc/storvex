@@ -108,7 +108,7 @@ async function createRequest(req, res) {
     return sendError(
       res,
       error,
-      "Failed to submit Marketplace request",
+      "Failed to submit order request",
     );
   }
 }

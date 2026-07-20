@@ -32,7 +32,7 @@ function validInput(overrides = {}) {
 }
 
 test(
-  "normalizes a valid Marketplace request",
+  "normalizes a valid Marketplace order request",
   () => {
     const input = validateRequestInput(
       validInput(),
@@ -215,7 +215,7 @@ test(
 );
 
 test(
-  "generates business-specific daily request numbers",
+  "generates business-specific daily order numbers",
   () => {
     const number =
       marketplaceRequestNumber(
@@ -253,7 +253,7 @@ test(
 );
 
 test(
-  "builds a WhatsApp destination with encoded request details",
+  "builds a WhatsApp destination with encoded order details",
   () => {
     const request = {
       requestNumber:
@@ -314,7 +314,7 @@ test(
 );
 
 test(
-  "exports generic email delivery for Marketplace requests",
+  "exports generic email delivery for Marketplace order requests",
   () => {
     const notifications = require(
       "../src/modules/notifications",
@@ -368,7 +368,7 @@ test(
 
     assert.match(
       message,
-      /\*Request number\*/,
+      /\*Order number\*/,
     );
     assert.match(
       message,
@@ -564,7 +564,7 @@ test(
         request,
         items,
       }),
-      "Please confirm availability for these products and the delivery cost before processing the request.",
+      "Please confirm availability for these products and the delivery cost before processing the order.",
     );
 
     assert.equal(
@@ -660,7 +660,7 @@ test(
 
     assert.match(
       message,
-      /\*Request number\*\nSVX-20260718-12345678/,
+      /\*Order number\*\nSVX-20260718-12345678/,
     );
 
     assert.match(
@@ -908,7 +908,7 @@ test(
     );
     assert.match(
       email.html,
-      /<strong>Request number:<\/strong>/,
+      /<strong>Order number:<\/strong>/,
     );
     assert.match(
       email.html,

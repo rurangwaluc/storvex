@@ -86,6 +86,51 @@ router.post(
   marketplaceRequestsController.rejectMarketplaceRequest
 );
 
+router.post(
+  "/marketplace-requests/:requestId/start-preparing",
+  express.json(),
+  requireWritableSubscription,
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_EDIT),
+  marketplaceRequestsController.startPreparingMarketplaceRequest
+);
+
+router.post(
+  "/marketplace-requests/:requestId/ready-for-pickup",
+  express.json(),
+  requireWritableSubscription,
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_EDIT),
+  marketplaceRequestsController.markMarketplaceRequestReady
+);
+
+router.post(
+  "/marketplace-requests/:requestId/out-for-delivery",
+  express.json(),
+  requireWritableSubscription,
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_EDIT),
+  marketplaceRequestsController.markMarketplaceRequestOutForDelivery
+);
+
+router.post(
+  "/marketplace-requests/:requestId/complete-pickup",
+  express.json(),
+  requireWritableSubscription,
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_EDIT),
+  marketplaceRequestsController.completeMarketplacePickupRequest
+);
+
+router.post(
+  "/marketplace-requests/:requestId/cancel",
+  express.json(),
+  requireWritableSubscription,
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_EDIT),
+  marketplaceRequestsController.cancelMarketplaceRequest
+);
+
 router.patch(
   "/profile",
   express.json(),

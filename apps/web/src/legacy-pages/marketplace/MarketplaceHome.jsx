@@ -949,7 +949,7 @@ export function MarketplaceFooter({
 
               <p>
                 Manage your store with Storvex, publish selected products,
-                and confirm every customer request before it becomes a
+                and confirm every order request before it becomes a
                 sale.
               </p>
             </div>

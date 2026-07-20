@@ -17,7 +17,7 @@ export default function MarketplaceOwnerHeader() {
           Marketplace
         </span>
 
-        <h1>Customer requests</h1>
+        <h1>Customer orders</h1>
 
         <p>
           Review what customers want before

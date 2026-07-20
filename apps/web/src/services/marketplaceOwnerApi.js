@@ -70,3 +70,74 @@ export function rejectOwnerMarketplaceRequest(
     },
   );
 }
+
+export function startPreparingOwnerMarketplaceRequest(
+  requestId,
+) {
+  return apiFetch(
+    `/store/marketplace-requests/${encodeURIComponent(
+      requestId,
+    )}/start-preparing`,
+    {
+      method: "POST",
+      body: JSON.stringify({}),
+    },
+  );
+}
+
+export function markReadyOwnerMarketplaceRequest(
+  requestId,
+) {
+  return apiFetch(
+    `/store/marketplace-requests/${encodeURIComponent(
+      requestId,
+    )}/ready-for-pickup`,
+    {
+      method: "POST",
+      body: JSON.stringify({}),
+    },
+  );
+}
+
+export function markOutForDeliveryOwnerMarketplaceRequest(
+  requestId,
+) {
+  return apiFetch(
+    `/store/marketplace-requests/${encodeURIComponent(
+      requestId,
+    )}/out-for-delivery`,
+    {
+      method: "POST",
+      body: JSON.stringify({}),
+    },
+  );
+}
+
+export function completePickupOwnerMarketplaceRequest(
+  requestId,
+  payload = {},
+) {
+  return apiFetch(
+    `/store/marketplace-requests/${encodeURIComponent(
+      requestId,
+    )}/complete-pickup`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+}
+
+export function cancelOwnerMarketplaceRequest(
+  requestId,
+) {
+  return apiFetch(
+    `/store/marketplace-requests/${encodeURIComponent(
+      requestId,
+    )}/cancel`,
+    {
+      method: "POST",
+      body: JSON.stringify({}),
+    },
+  );
+}

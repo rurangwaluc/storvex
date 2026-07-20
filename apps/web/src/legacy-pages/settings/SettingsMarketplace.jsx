@@ -305,7 +305,7 @@ export default function SettingsMarketplace() {
         : "Finish setting up your store";
 
   const statusMessage = storeNeedsAttention
-    ? "Complete the missing setup before accepting new customer requests."
+    ? "Complete the missing setup before accepting new order requests."
     : marketplaceEnabled
       ? "Customers can discover the products you publish."
       : marketplaceReady
@@ -659,7 +659,7 @@ export default function SettingsMarketplace() {
               <strong>Cost agreed with the customer</strong>
               <small>
                 Confirm the delivery cost before accepting
-                the customer request.
+                the customer order.
               </small>
             </div>
           </div>
@@ -698,18 +698,18 @@ export default function SettingsMarketplace() {
           activeSection={activeSection}
           onOpen={setActiveSection}
           eyebrow="Store availability"
-          title="Accepting customer requests"
+          title="Accepting order requests"
           summary={
             form.temporarilyClosed
-              ? "New requests are paused"
-              : "Customers can send new requests"
+              ? "New order requests are paused"
+              : "Customers can send new order requests"
           }
           icon={AlertCircle}
         >
           <div className="svx-marketplace-toggle-stack">
             <ToggleRow
-              title="Pause new requests"
-              detail="Keep products visible while temporarily stopping new customer requests."
+              title="Pause new order requests"
+              detail="Keep products visible while temporarily stopping new order requests."
               checked={form.temporarilyClosed}
               onChange={(value) =>
                 updateField("temporarilyClosed", value)

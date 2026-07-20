@@ -3,6 +3,9 @@ const {
   MarketplaceRequestStatus,
   Prisma,
 } = require("@prisma/client");
+const {
+  completeMarketplacePickup,
+} = require("./marketplaceOrderCompletion.service");
 
 function cleanString(value) {
   const text = String(value || "").trim();
@@ -118,11 +121,27 @@ function requestSelect({
     deliveryCoverage: true,
     paymentMethod: true,
     fulfilmentBranchId: true,
+    saleId: true,
+
+    sale: {
+      select: {
+        id: true,
+        receiptNumber: true,
+        invoiceNumber: true,
+        total: true,
+        amountPaid: true,
+        status: true,
+      },
+    },
 
     fulfilmentBranch: {
       select: {
         id: true,
         name: true,
+        phone: true,
+        district: true,
+        sector: true,
+        address: true,
         code: true,
         isMain: true,
         status: true,
@@ -200,7 +219,7 @@ function sendError(
 function assertRequestedStatus(request) {
   if (!request) {
     throw createBusinessError(
-      "Marketplace request not found",
+      "Order request not found",
       404,
       "MARKETPLACE_REQUEST_NOT_FOUND",
     );
@@ -211,7 +230,7 @@ function assertRequestedStatus(request) {
     MarketplaceRequestStatus.REQUESTED
   ) {
     throw createBusinessError(
-      "This request has already been processed.",
+      "This order has already been processed.",
       409,
       "MARKETPLACE_REQUEST_ALREADY_PROCESSED",
       {
@@ -244,7 +263,7 @@ function resolveDeliveryFee(
     !supplied
   ) {
     throw createBusinessError(
-      "Enter the delivery cost before confirming this request.",
+      "Enter the delivery cost before confirming this order.",
       400,
       "MARKETPLACE_DELIVERY_FEE_REQUIRED",
     );
@@ -398,7 +417,7 @@ async function resolveFulfilmentBranch(
 
   if (!safeBranchId) {
     throw createBusinessError(
-      "Choose the location that will fulfil this request.",
+      "Choose the location that will fulfil this order.",
       400,
       "MARKETPLACE_FULFILMENT_BRANCH_REQUIRED",
     );
@@ -484,6 +503,229 @@ async function resolveFulfilmentBranch(
   }
 
   return branch;
+}
+
+function assertRequestStatus(
+  request,
+  allowedStatuses,
+  actionLabel,
+) {
+  if (!request) {
+    throw createBusinessError(
+      "Order request not found",
+      404,
+      "MARKETPLACE_REQUEST_NOT_FOUND",
+    );
+  }
+
+  if (
+    !allowedStatuses.includes(
+      request.status,
+    )
+  ) {
+    throw createBusinessError(
+      `This order cannot be ${actionLabel} from its current status.`,
+      409,
+      "MARKETPLACE_REQUEST_STATUS_TRANSITION_INVALID",
+      {
+        currentStatus: request.status,
+        allowedStatuses,
+      },
+    );
+  }
+}
+
+function assertActiveReservations(
+  reservations,
+) {
+  if (
+    !Array.isArray(reservations) ||
+    reservations.length === 0
+  ) {
+    throw createBusinessError(
+      "Reserved stock was not found for this order.",
+      409,
+      "MARKETPLACE_REQUEST_RESERVATIONS_NOT_FOUND",
+    );
+  }
+}
+
+async function changeMarketplaceRequestStatus({
+  req,
+  tenantId,
+  requestId,
+  allowedStatuses,
+  nextStatus,
+  actionLabel,
+  validateRequest = null,
+}) {
+  return prisma.$transaction(
+    async (tx) => {
+      const locked =
+        await lockRequest(
+          tx,
+          tenantId,
+          requestId,
+        );
+
+      assertRequestStatus(
+        locked,
+        allowedStatuses,
+        actionLabel,
+      );
+
+      const current =
+        await loadFullRequest(
+          tx,
+          tenantId,
+          requestId,
+        );
+
+      assertRequestStatus(
+        current,
+        allowedStatuses,
+        actionLabel,
+      );
+
+      if (
+        typeof validateRequest ===
+        "function"
+      ) {
+        validateRequest(current);
+      }
+
+      const reservations =
+        await tx
+          .marketplaceRequestReservation
+          .findMany({
+            where: {
+              tenantId,
+              requestId,
+              releasedAt: null,
+              completedAt: null,
+            },
+            select: {
+              id: true,
+              branchId: true,
+              productId: true,
+              quantity: true,
+            },
+          });
+
+      assertActiveReservations(
+        reservations,
+      );
+
+      await tx.marketplaceRequest.update({
+        where: {
+          id: requestId,
+        },
+        data: {
+          status: nextStatus,
+        },
+      });
+
+      return loadFullRequest(
+        tx,
+        tenantId,
+        requestId,
+      );
+    },
+    {
+      isolationLevel:
+        Prisma.TransactionIsolationLevel
+          .Serializable,
+    },
+  );
+}
+
+async function releaseMarketplaceReservations({
+  tx,
+  tenantId,
+  requestId,
+}) {
+  const reservations =
+    await tx
+      .marketplaceRequestReservation
+      .findMany({
+        where: {
+          tenantId,
+          requestId,
+          releasedAt: null,
+          completedAt: null,
+        },
+        select: {
+          id: true,
+          branchId: true,
+          productId: true,
+          quantity: true,
+        },
+      });
+
+  assertActiveReservations(
+    reservations,
+  );
+
+  const releasedAt = new Date();
+
+  for (
+    const reservation of reservations
+  ) {
+    const updated =
+      await tx.branchInventory.updateMany({
+        where: {
+          tenantId,
+          branchId:
+            reservation.branchId,
+          productId:
+            reservation.productId,
+          qtyReserved: {
+            gte: reservation.quantity,
+          },
+        },
+        data: {
+          qtyReserved: {
+            decrement:
+              reservation.quantity,
+          },
+        },
+      });
+
+    if (
+      !updated ||
+      updated.count !== 1
+    ) {
+      throw createBusinessError(
+        "Reserved stock could not be released safely.",
+        409,
+        "MARKETPLACE_REQUEST_RESERVATION_RELEASE_FAILED",
+        {
+          reservationId:
+            reservation.id,
+          branchId:
+            reservation.branchId,
+          productId:
+            reservation.productId,
+        },
+      );
+    }
+  }
+
+  await tx
+    .marketplaceRequestReservation
+    .updateMany({
+      where: {
+        tenantId,
+        requestId,
+        releasedAt: null,
+        completedAt: null,
+      },
+      data: {
+        releasedAt,
+      },
+    });
+
+  return reservations;
 }
 
 async function loadFullRequest(
@@ -672,7 +914,7 @@ async function listMarketplaceRequests(
     return sendError(
       res,
       error,
-      "Failed to load Marketplace requests",
+      "Failed to load order requests",
     );
   }
 }
@@ -718,7 +960,7 @@ async function getMarketplaceRequest(
     if (!request) {
       return res.status(404).json({
         message:
-          "Marketplace request not found",
+          "Order request not found",
         code:
           "MARKETPLACE_REQUEST_NOT_FOUND",
       });
@@ -736,7 +978,7 @@ async function getMarketplaceRequest(
     return sendError(
       res,
       error,
-      "Failed to load Marketplace request",
+      "Failed to load order request",
     );
   }
 }
@@ -813,7 +1055,7 @@ async function confirmMarketplaceRequest(
               0
           ) {
             throw createBusinessError(
-              "This request has no products to confirm.",
+              "This order has no products to confirm.",
               409,
               "MARKETPLACE_REQUEST_HAS_NO_ITEMS",
             );
@@ -835,7 +1077,7 @@ async function confirmMarketplaceRequest(
             existingReservations > 0
           ) {
             throw createBusinessError(
-              "Stock has already been reserved for this request.",
+              "Stock has already been reserved for this order.",
               409,
               "MARKETPLACE_REQUEST_ALREADY_RESERVED",
             );
@@ -977,7 +1219,7 @@ async function confirmMarketplaceRequest(
 
     return res.json({
       message:
-        "Request confirmed and stock reserved.",
+        "Order confirmed and stock reserved.",
       request,
     });
   } catch (error) {
@@ -989,7 +1231,359 @@ async function confirmMarketplaceRequest(
     return sendError(
       res,
       error,
-      "Failed to confirm Marketplace request",
+      "Failed to confirm order",
+    );
+  }
+}
+
+async function startPreparingMarketplaceRequest(
+  req,
+  res,
+) {
+  const tenantId =
+    tenantIdFromRequest(req);
+
+  const requestId =
+    cleanString(
+      req.params?.requestId,
+    );
+
+  if (!tenantId || !requestId) {
+    return res.status(400).json({
+      message:
+        "Business context and request ID are required",
+      code:
+        "MARKETPLACE_REQUEST_CONTEXT_REQUIRED",
+    });
+  }
+
+  try {
+    const request =
+      await changeMarketplaceRequestStatus({
+        req,
+        tenantId,
+        requestId,
+        allowedStatuses: [
+          MarketplaceRequestStatus.CONFIRMED,
+        ],
+        nextStatus:
+          MarketplaceRequestStatus.PREPARING,
+        actionLabel:
+          "moved to preparing",
+      });
+
+    return res.json({
+      message:
+        "Order marked as preparing.",
+      request,
+    });
+  } catch (error) {
+    console.error(
+      "startPreparingMarketplaceRequest error:",
+      error,
+    );
+
+    return sendError(
+      res,
+      error,
+      "Failed to start preparing request",
+    );
+  }
+}
+
+async function markMarketplaceRequestReady(
+  req,
+  res,
+) {
+  const tenantId =
+    tenantIdFromRequest(req);
+
+  const requestId =
+    cleanString(
+      req.params?.requestId,
+    );
+
+  if (!tenantId || !requestId) {
+    return res.status(400).json({
+      message:
+        "Business context and request ID are required",
+      code:
+        "MARKETPLACE_REQUEST_CONTEXT_REQUIRED",
+    });
+  }
+
+  try {
+    const request =
+      await changeMarketplaceRequestStatus({
+        req,
+        tenantId,
+        requestId,
+        allowedStatuses: [
+          MarketplaceRequestStatus.PREPARING,
+        ],
+        nextStatus:
+          MarketplaceRequestStatus.READY_FOR_PICKUP,
+        actionLabel:
+          "marked ready for pickup",
+        validateRequest(current) {
+          if (
+            current.fulfilmentMethod !==
+            "PICKUP"
+          ) {
+            throw createBusinessError(
+              "Only pickup requests can be marked ready for pickup.",
+              409,
+              "MARKETPLACE_REQUEST_NOT_PICKUP",
+            );
+          }
+        },
+      });
+
+    return res.json({
+      message:
+        "Order is ready for pickup.",
+      request,
+    });
+  } catch (error) {
+    console.error(
+      "markMarketplaceRequestReady error:",
+      error,
+    );
+
+    return sendError(
+      res,
+      error,
+      "Failed to mark order ready",
+    );
+  }
+}
+
+async function markMarketplaceRequestOutForDelivery(
+  req,
+  res,
+) {
+  const tenantId =
+    tenantIdFromRequest(req);
+
+  const requestId =
+    cleanString(
+      req.params?.requestId,
+    );
+
+  if (!tenantId || !requestId) {
+    return res.status(400).json({
+      message:
+        "Business context and request ID are required",
+      code:
+        "MARKETPLACE_REQUEST_CONTEXT_REQUIRED",
+    });
+  }
+
+  try {
+    const request =
+      await changeMarketplaceRequestStatus({
+        req,
+        tenantId,
+        requestId,
+        allowedStatuses: [
+          MarketplaceRequestStatus.PREPARING,
+        ],
+        nextStatus:
+          MarketplaceRequestStatus.OUT_FOR_DELIVERY,
+        actionLabel:
+          "marked out for delivery",
+        validateRequest(current) {
+          if (
+            current.fulfilmentMethod !==
+            "DELIVERY"
+          ) {
+            throw createBusinessError(
+              "Only delivery requests can be marked out for delivery.",
+              409,
+              "MARKETPLACE_REQUEST_NOT_DELIVERY",
+            );
+          }
+        },
+      });
+
+    return res.json({
+      message:
+        "Order is out for delivery.",
+      request,
+    });
+  } catch (error) {
+    console.error(
+      "markMarketplaceRequestOutForDelivery error:",
+      error,
+    );
+
+    return sendError(
+      res,
+      error,
+      "Failed to mark order out for delivery",
+    );
+  }
+}
+
+async function cancelMarketplaceRequest(
+  req,
+  res,
+) {
+  const tenantId =
+    tenantIdFromRequest(req);
+
+  const requestId =
+    cleanString(
+      req.params?.requestId,
+    );
+
+  if (!tenantId || !requestId) {
+    return res.status(400).json({
+      message:
+        "Business context and request ID are required",
+      code:
+        "MARKETPLACE_REQUEST_CONTEXT_REQUIRED",
+    });
+  }
+
+  try {
+    const request =
+      await prisma.$transaction(
+        async (tx) => {
+          const locked =
+            await lockRequest(
+              tx,
+              tenantId,
+              requestId,
+            );
+
+          const cancellableStatuses = [
+            MarketplaceRequestStatus.CONFIRMED,
+            MarketplaceRequestStatus.PREPARING,
+            MarketplaceRequestStatus.READY_FOR_PICKUP,
+            MarketplaceRequestStatus.OUT_FOR_DELIVERY,
+          ];
+
+          assertRequestStatus(
+            locked,
+            cancellableStatuses,
+            "cancelled",
+          );
+
+          const current =
+            await loadFullRequest(
+              tx,
+              tenantId,
+              requestId,
+            );
+
+          assertRequestStatus(
+            current,
+            cancellableStatuses,
+            "cancelled",
+          );
+
+          await releaseMarketplaceReservations({
+            tx,
+            tenantId,
+            requestId,
+          });
+
+          await tx
+            .marketplaceRequest
+            .update({
+              where: {
+                id: requestId,
+              },
+              data: {
+                status:
+                  MarketplaceRequestStatus.CANCELLED,
+                cancelledAt:
+                  new Date(),
+              },
+            });
+
+          return loadFullRequest(
+            tx,
+            tenantId,
+            requestId,
+          );
+        },
+        {
+          isolationLevel:
+            Prisma.TransactionIsolationLevel
+              .Serializable,
+        },
+      );
+
+    return res.json({
+      message:
+        "Order cancelled and reserved stock released.",
+      request,
+    });
+  } catch (error) {
+    console.error(
+      "cancelMarketplaceRequest error:",
+      error,
+    );
+
+    return sendError(
+      res,
+      error,
+      "Failed to cancel order",
+    );
+  }
+}
+
+async function completeMarketplacePickupRequest(
+  req,
+  res,
+) {
+  const tenantId =
+    tenantIdFromRequest(req);
+
+  const requestId =
+    cleanString(
+      req.params?.requestId,
+    );
+
+  if (!tenantId || !requestId) {
+    return res.status(400).json({
+      message:
+        "Business context and order ID are required.",
+      code:
+        "MARKETPLACE_ORDER_CONTEXT_REQUIRED",
+    });
+  }
+
+  try {
+    const result =
+      await completeMarketplacePickup({
+        req,
+        tenantId,
+        requestId,
+        paymentMethod:
+          req.body?.paymentMethod,
+        paymentReference:
+          req.body?.paymentReference,
+      });
+
+    return res.json({
+      message: result.alreadyCompleted
+        ? "This pickup was already completed."
+        : "Pickup completed and sale recorded.",
+      ...result,
+    });
+  } catch (error) {
+    console.error(
+      "completeMarketplacePickupRequest error:",
+      error,
+    );
+
+    return sendError(
+      res,
+      error,
+      "Failed to complete pickup",
     );
   }
 }
@@ -1055,7 +1649,7 @@ async function rejectMarketplaceRequest(
             reservationCount > 0
           ) {
             throw createBusinessError(
-              "This request already has reserved stock and cannot be rejected from the new-request stage.",
+              "This order already has reserved stock and cannot be rejected from the new-order stage.",
               409,
               "MARKETPLACE_REQUEST_HAS_RESERVATIONS",
             );
@@ -1103,7 +1697,7 @@ async function rejectMarketplaceRequest(
     return sendError(
       res,
       error,
-      "Failed to reject Marketplace request",
+      "Failed to reject order request",
     );
   }
 }
@@ -1113,6 +1707,11 @@ module.exports = {
   getMarketplaceRequest,
   confirmMarketplaceRequest,
   rejectMarketplaceRequest,
+  startPreparingMarketplaceRequest,
+  markMarketplaceRequestReady,
+  markMarketplaceRequestOutForDelivery,
+  cancelMarketplaceRequest,
+  completeMarketplacePickupRequest,
 
   __private: {
     assertRequestedStatus,
@@ -1120,6 +1719,7 @@ module.exports = {
     normalizeMoney,
     resolveDeliveryFee,
     resolveFulfilmentBranch,
-    resolveFulfilmentBranch,
+    assertRequestStatus,
+    assertActiveReservations,
   },
 };

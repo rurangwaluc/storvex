@@ -12,7 +12,7 @@ const {
 );
 
 test(
-  "allocates a Marketplace request from available branch stock",
+  "allocates a Marketplace order request from available branch stock",
   () => {
     const result =
       __private.buildInventoryAllocations({
@@ -168,13 +168,68 @@ test(
 );
 
 test(
-  "accepts a new request for processing",
+  "accepts a new order request for processing",
   () => {
     assert.doesNotThrow(() =>
       __private.assertRequestedStatus({
         status:
           MarketplaceRequestStatus.REQUESTED,
       }),
+    );
+  },
+);
+
+test(
+  "allows a confirmed request to start preparing",
+  () => {
+    assert.doesNotThrow(() =>
+      __private.assertRequestStatus(
+        {
+          status:
+            MarketplaceRequestStatus.CONFIRMED,
+        },
+        [
+          MarketplaceRequestStatus.CONFIRMED,
+        ],
+        "moved to preparing",
+      ),
+    );
+  },
+);
+
+test(
+  "blocks preparing from an invalid request status",
+  () => {
+    assert.throws(
+      () =>
+        __private.assertRequestStatus(
+          {
+            status:
+              MarketplaceRequestStatus.REQUESTED,
+          },
+          [
+            MarketplaceRequestStatus.CONFIRMED,
+          ],
+          "moved to preparing",
+        ),
+      (error) =>
+        error.code ===
+        "MARKETPLACE_REQUEST_STATUS_TRANSITION_INVALID",
+    );
+  },
+);
+
+test(
+  "requires active reservations for fulfilment workflow",
+  () => {
+    assert.throws(
+      () =>
+        __private.assertActiveReservations(
+          [],
+        ),
+      (error) =>
+        error.code ===
+        "MARKETPLACE_REQUEST_RESERVATIONS_NOT_FOUND",
     );
   },
 );

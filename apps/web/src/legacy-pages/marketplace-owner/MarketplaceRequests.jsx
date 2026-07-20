@@ -100,7 +100,7 @@ function formatDateTime(value) {
 
 function statusLabel(value) {
   const labels = {
-    REQUESTED: "New request",
+    REQUESTED: "New order request",
     CONFIRMED: "Confirmed",
     REJECTED: "Rejected",
     CANCELLED: "Cancelled",
@@ -161,13 +161,13 @@ function EmptyState({ query, status }) {
       <h2>
         {filtering
           ? "No matching requests"
-          : "No customer requests yet"}
+          : "No customer orders yet"}
       </h2>
 
       <p>
         {filtering
           ? "Change the search or status filter to see other requests."
-          : "New Marketplace requests will appear here as soon as customers submit them."}
+          : "New order requests will appear here as soon as customers submit them."}
       </p>
     </section>
   );
@@ -242,7 +242,7 @@ export default function MarketplaceRequests() {
 
       toast.error(
         error?.message ||
-          "Failed to load Marketplace requests",
+          "Failed to load customer orders",
       );
 
       if (!append) {
@@ -278,10 +278,10 @@ export default function MarketplaceRequests() {
 
         <section
           className="svx-market-owner-summary"
-          aria-label="Marketplace request summary"
+          aria-label="Customer order summary"
         >
           <article>
-            <span>New requests</span>
+            <span>New order requests</span>
             <strong>
               {summary.newRequests || 0}
             </strong>
@@ -301,7 +301,7 @@ export default function MarketplaceRequests() {
             <strong>
               {summary.completedRequests || 0}
             </strong>
-            <p>Finished customer requests</p>
+            <p>Finished customer orders</p>
           </article>
 
           <article>
@@ -333,7 +333,7 @@ export default function MarketplaceRequests() {
                 setQuery(event.target.value)
               }
               placeholder="Search request, customer or product"
-              aria-label="Search Marketplace requests"
+              aria-label="Search customer orders"
             />
           </div>
 
@@ -361,7 +361,7 @@ export default function MarketplaceRequests() {
 
           <div
             className="svx-market-owner-filters"
-            aria-label="Request status filters"
+            aria-label="Order status filters"
           >
             {STATUS_FILTERS.map(
               (filter) => (
@@ -387,7 +387,7 @@ export default function MarketplaceRequests() {
         <section className="svx-market-owner-register">
           <header>
             <div>
-              <span>Customer requests</span>
+              <span>Customer orders</span>
               <h2>Request register</h2>
             </div>
 

@@ -10,9 +10,14 @@ import {
 import toast from "react-hot-toast";
 
 import {
+  cancelOwnerMarketplaceRequest,
+  completePickupOwnerMarketplaceRequest,
   confirmOwnerMarketplaceRequest,
   getOwnerMarketplaceRequest,
+  markOutForDeliveryOwnerMarketplaceRequest,
+  markReadyOwnerMarketplaceRequest,
   rejectOwnerMarketplaceRequest,
+  startPreparingOwnerMarketplaceRequest,
 } from "../../services/marketplaceOwnerApi";
 import {
   listBranches,
@@ -55,7 +60,7 @@ function formatDateTime(value) {
 
 function statusLabel(value) {
   const labels = {
-    REQUESTED: "New request",
+    REQUESTED: "New order request",
     CONFIRMED: "Confirmed",
     REJECTED: "Rejected",
     CANCELLED: "Cancelled",
@@ -114,6 +119,71 @@ function fulfilmentLabel(request) {
   return "Store pickup";
 }
 
+function pickupLocationDetails(request) {
+  const status = cleanString(
+    request?.status,
+  ).toUpperCase();
+
+  if (
+    request?.fulfilmentMethod !==
+      "PICKUP" ||
+    status === "REQUESTED"
+  ) {
+    return null;
+  }
+
+  const branch =
+    request?.fulfilmentBranch;
+
+  if (!branch) {
+    return null;
+  }
+
+  const name = cleanString(
+    branch.name,
+  );
+
+  const addressParts = [];
+
+  [
+    branch.address,
+    branch.sector,
+    branch.district,
+  ].forEach((value) => {
+    const cleaned = cleanString(value);
+
+    if (
+      cleaned &&
+      !addressParts.some(
+        (existing) =>
+          existing.toLowerCase() ===
+          cleaned.toLowerCase(),
+      )
+    ) {
+      addressParts.push(cleaned);
+    }
+  });
+
+  const phone = cleanString(
+    branch.phone,
+  );
+
+  if (
+    !name &&
+    !addressParts.length &&
+    !phone
+  ) {
+    return null;
+  }
+
+  return {
+    name,
+    address:
+      addressParts.join(", "),
+    phone,
+  };
+}
+
 function requestProductWording(request) {
   const productCount = Array.isArray(request?.items)
     ? request.items.length
@@ -133,8 +203,8 @@ function requestProductWording(request) {
       ? "products have"
       : "product has",
     requestedProducts: isMultiple
-      ? "Requested products"
-      : "Requested product",
+      ? "Order items"
+      : "Order item",
     yourProducts: isMultiple
       ? "your products"
       : "your product",
@@ -159,10 +229,10 @@ function ownerReplyStatusMessage(request) {
 
   const messages = {
     REQUESTED:
-      `We received your request and are checking whether the ${productIs} available.`,
+      `We received your order request and are checking whether the ${productIs} available.`,
 
     CONFIRMED:
-      `Your request has been confirmed. The ${productIs} available and ${productHas} been reserved for you.`,
+      `Your order has been confirmed. The ${productIs} available and ${productHas} been reserved for you.`,
 
     PREPARING:
       `We are preparing ${yourProducts}.`,
@@ -182,18 +252,18 @@ function ownerReplyStatusMessage(request) {
       } now out for delivery.`,
 
     COMPLETED:
-      "Your request has been completed. Thank you for choosing us.",
+      "Your order has been completed. Thank you for choosing us.",
 
     REJECTED:
-      `We are sorry, but we are unable to fulfil the requested ${product}.`,
+      `We are sorry, but we are unable to fulfil your order for the requested ${product}.`,
 
     CANCELLED:
-      "This request has been cancelled.",
+      "This order has been cancelled.",
   };
 
   return (
     messages[status] ||
-    "We are contacting you with an update about your request."
+    "We are contacting you with an update about your order."
   );
 }
 
@@ -231,9 +301,9 @@ function buildOwnerMessage(
   const lines = [
     `Hello ${customerName},`,
     "",
-    `This is ${businessName} regarding your Marketplace request.`,
+    `This is ${businessName} with an update about your order.`,
     "",
-    title("Request number"),
+    title("Order number"),
     requestNumber,
     "",
     title("Status"),
@@ -299,6 +369,38 @@ function buildOwnerMessage(
     fulfilmentLabel(request),
   );
 
+  const pickupLocation =
+    pickupLocationDetails(request);
+
+  if (pickupLocation) {
+    lines.push(
+      "",
+      title("Pickup location"),
+    );
+
+    if (pickupLocation.name) {
+      lines.push(
+        pickupLocation.name,
+      );
+    }
+
+    if (pickupLocation.address) {
+      lines.push(
+        "",
+        title("Address"),
+        pickupLocation.address,
+      );
+    }
+
+    if (pickupLocation.phone) {
+      lines.push(
+        "",
+        title("Phone"),
+        pickupLocation.phone,
+      );
+    }
+  }
+
   if (
     request?.fulfilmentMethod ===
       "DELIVERY" &&
@@ -350,8 +452,8 @@ function buildOwnerMessage(
   lines.push(
     "",
     statusLabel(request?.status) ===
-      "New request"
-      ? "Please reply to confirm that you would like us to continue with this request."
+      "New order"
+      ? "Please reply to confirm that you would like us to continue with this order request."
       : "Please reply here if you need any help.",
     "",
     "Thank you,",
@@ -385,7 +487,7 @@ function buildOwnerEmailSubject(request) {
     cleanString(request?.seller?.name) ||
     "Store";
 
-  return `${businessName} — Request ${cleanString(
+  return `${businessName} — Order ${cleanString(
     request?.requestNumber,
   )}`;
 }
@@ -431,6 +533,11 @@ export default function MarketplaceRequestDetail() {
     useState(false);
 
   const [pendingAction, setPendingAction] =
+    useState("");
+
+  const [completionPaymentMethod, setCompletionPaymentMethod] =
+    useState("OTHER");
+  const [completionPaymentReference, setCompletionPaymentReference] =
     useState("");
 
   const [deliveryFee, setDeliveryFee] =
@@ -493,7 +600,7 @@ export default function MarketplaceRequestDetail() {
 
         toast.error(
           error?.message ||
-            "Failed to load Marketplace request",
+            "Failed to load customer order",
         );
 
         if (alive) {
@@ -546,7 +653,7 @@ export default function MarketplaceRequestDetail() {
 
     if (!fulfilmentBranchId) {
       toast.error(
-        "Choose the location fulfilling this request.",
+        "Choose the location fulfilling this order.",
       );
       return;
     }
@@ -584,14 +691,156 @@ export default function MarketplaceRequestDetail() {
       setPendingAction("");
 
       toast.success(
-        "Request confirmed and stock reserved.",
+        "Order confirmed and stock reserved.",
       );
     } catch (error) {
       console.error(error);
 
       toast.error(
         error?.message ||
-          "Failed to confirm request",
+          "Failed to confirm order",
+      );
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function handleStatusAction(
+    action,
+  ) {
+    if (!request || actionBusy) {
+      return;
+    }
+
+    const actions = {
+      START_PREPARING: {
+        run:
+          startPreparingOwnerMarketplaceRequest,
+        success:
+          "Order marked as preparing.",
+        fallback:
+          "Failed to start preparing order",
+      },
+      READY_FOR_PICKUP: {
+        run:
+          markReadyOwnerMarketplaceRequest,
+        success:
+          "Order is ready for pickup.",
+        fallback:
+          "Failed to mark order ready",
+      },
+      OUT_FOR_DELIVERY: {
+        run:
+          markOutForDeliveryOwnerMarketplaceRequest,
+        success:
+          "Order is out for delivery.",
+        fallback:
+          "Failed to mark order out for delivery",
+      },
+      CANCEL: {
+        run:
+          cancelOwnerMarketplaceRequest,
+        success:
+          "Order cancelled and reserved stock released.",
+        fallback:
+          "Failed to cancel order",
+      },
+    };
+
+    const config = actions[action];
+
+    if (!config) {
+      return;
+    }
+
+    try {
+      setActionBusy(true);
+
+      const result =
+        await config.run(
+          request.id,
+        );
+
+      setRequest(
+        result?.request || request,
+      );
+
+      setPendingAction("");
+
+      toast.success(config.success);
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        error?.message ||
+          config.fallback,
+      );
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function handleCompletePickup() {
+    if (
+      !request ||
+      actionBusy ||
+      request.status !== "READY_FOR_PICKUP"
+    ) {
+      return;
+    }
+
+    const paymentMethod = String(
+      completionPaymentMethod || "",
+    )
+      .trim()
+      .toUpperCase();
+
+    if (
+      ![
+        "CASH",
+        "MOMO",
+        "BANK",
+        "OTHER",
+      ].includes(paymentMethod)
+    ) {
+      toast.error(
+        "Choose how the payment was received.",
+      );
+      return;
+    }
+
+    try {
+      setActionBusy(true);
+
+      const result =
+        await completePickupOwnerMarketplaceRequest(
+          request.id,
+          {
+            paymentMethod,
+            paymentReference:
+              completionPaymentReference.trim() ||
+              undefined,
+          },
+        );
+
+      setRequest(
+        result?.request || request,
+      );
+
+      setPendingAction("");
+      setCompletionPaymentReference("");
+
+      toast.success(
+        result?.alreadyCompleted
+          ? "This pickup was already completed."
+          : "Pickup completed and sale recorded.",
+      );
+    } catch (error) {
+      console.error(error);
+
+      toast.error(
+        error?.message ||
+          "Failed to complete pickup",
       );
     } finally {
       setActionBusy(false);
@@ -618,14 +867,14 @@ export default function MarketplaceRequestDetail() {
       setPendingAction("");
 
       toast.success(
-        "Request rejected.",
+        "Order request rejected.",
       );
     } catch (error) {
       console.error(error);
 
       toast.error(
         error?.message ||
-          "Failed to reject request",
+          "Failed to reject order request",
       );
     } finally {
       setActionBusy(false);
@@ -646,7 +895,7 @@ export default function MarketplaceRequestDetail() {
               <path d="m15 18-6-6 6-6" />
             </svg>
 
-            <span>Back to requests</span>
+            <span>Back to orders</span>
           </Link>
         </div>
 
@@ -659,7 +908,7 @@ export default function MarketplaceRequestDetail() {
             <h2>Request not found</h2>
 
             <p>
-              This request may have been removed
+              This order may have been removed
               or belongs to another business.
             </p>
 
@@ -671,7 +920,7 @@ export default function MarketplaceRequestDetail() {
           <>
             <section className="svx-market-owner-detail-hero">
               <div>
-                <span>Customer request</span>
+                <span>Customer order</span>
 
                 <h2>{request.requestNumber}</h2>
 
@@ -696,7 +945,7 @@ export default function MarketplaceRequestDetail() {
               <main className="svx-market-owner-detail-main">
                 <section className="svx-market-owner-detail-card">
                   <header>
-                    <span>Requested products</span>
+                    <span>Order items</span>
                     <h3>
                       {itemCount} item
                       {itemCount === 1 ? "" : "s"}
@@ -902,7 +1151,7 @@ export default function MarketplaceRequestDetail() {
               <aside className="svx-market-owner-detail-side">
                 <section className="svx-market-owner-detail-card">
                   <header>
-                    <span>Request total</span>
+                    <span>Order total</span>
                     <h3>
                       {formatMoney(
                         request.total,
@@ -946,7 +1195,7 @@ export default function MarketplaceRequestDetail() {
 
                 <section className="svx-market-owner-detail-card">
                   <header>
-                    <span>Request details</span>
+                    <span>Order details</span>
                     <h3>Tracking</h3>
                   </header>
 
@@ -1012,8 +1261,8 @@ export default function MarketplaceRequestDetail() {
                       </h3>
 
                       <p>
-                        Confirm only when all requested
-                        products are available. Storvex
+                        Confirm only when all order
+                        items are available. Storvex
                         will reserve the stock without
                         creating a sale.
                       </p>
@@ -1023,11 +1272,12 @@ export default function MarketplaceRequestDetail() {
                           Fulfilment location
                         </span>
 
-                        <div className="is-select">
+                        <div className="svx-market-owner-order-select">
                           <select
                             value={
                               fulfilmentBranchId
                             }
+                            aria-label="Fulfilment location"
                             onChange={(event) =>
                               setFulfilmentBranchId(
                                 event.target.value,
@@ -1059,64 +1309,31 @@ export default function MarketplaceRequestDetail() {
                               ),
                             )}
                           </select>
-                        </div>
 
-                        <small>
-                          Every requested product
-                          must be available at this
-                          location.
-                        </small>
-                      </label>
-
-                      <label className="svx-market-owner-delivery-fee">
-                        <span>
-                          Fulfilment location
-                        </span>
-
-                        <div className="is-select">
-                          <select
-                            value={
-                              fulfilmentBranchId
-                            }
-                            onChange={(event) =>
-                              setFulfilmentBranchId(
-                                event.target.value,
-                              )
-                            }
-                            disabled={
-                              actionBusy
-                            }
+                          <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                            focusable="false"
                           >
-                            <option value="">
-                              Choose location
-                            </option>
-
-                            {branches.map(
-                              (branch) => (
-                                <option
-                                  key={
-                                    branch.id
-                                  }
-                                  value={
-                                    branch.id
-                                  }
-                                >
-                                  {branch.name}
-                                  {branch.isMain
-                                    ? " — Main"
-                                    : ""}
-                                </option>
-                              ),
-                            )}
-                          </select>
+                            <path
+                              d="m7 10 5 5 5-5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
                         </div>
 
                         <small>
-                          Every requested product
+                          Every order item
                           must be available at this
                           location.
                         </small>
                       </label>
+
+
 
                       {requiresDeliveryFee ? (
                         <label className="svx-market-owner-delivery-fee">
@@ -1148,7 +1365,7 @@ export default function MarketplaceRequestDetail() {
 
                           <small>
                             The customer will see this
-                            amount when the request is
+                            amount when the order is
                             confirmed.
                           </small>
                         </label>
@@ -1157,7 +1374,7 @@ export default function MarketplaceRequestDetail() {
                       <div className="svx-market-owner-request-actions">
                         <button
                           type="button"
-                          className="is-reject"
+                          className="svx-market-owner-action-button is-reject"
                           onClick={() =>
                             setPendingAction(
                               "REJECT",
@@ -1165,12 +1382,12 @@ export default function MarketplaceRequestDetail() {
                           }
                           disabled={actionBusy}
                         >
-                          Reject request
+                          Reject order
                         </button>
 
                         <button
                           type="button"
-                          className="is-confirm"
+                          className="svx-market-owner-action-button is-confirm"
                           onClick={() =>
                             setPendingAction(
                               "CONFIRM",
@@ -1178,7 +1395,7 @@ export default function MarketplaceRequestDetail() {
                           }
                           disabled={actionBusy}
                         >
-                          Confirm request
+                          Confirm order
                         </button>
                       </div>
 
@@ -1187,15 +1404,15 @@ export default function MarketplaceRequestDetail() {
                           <strong>
                             {pendingAction ===
                             "CONFIRM"
-                              ? "Confirm this request?"
-                              : "Reject this request?"}
+                              ? "Confirm this order?"
+                              : "Reject this order request?"}
                           </strong>
 
                           <p>
                             {pendingAction ===
                             "CONFIRM"
                               ? "Available stock will be reserved. No sale or payment will be created."
-                              : "The request will be closed without reserving stock."}
+                              : "The order will be closed without reserving stock."}
                           </p>
 
                           <div>
@@ -1241,7 +1458,7 @@ export default function MarketplaceRequestDetail() {
                   ) : (
                     <>
                       <span>
-                        Request status
+                        Order status
                       </span>
 
                       <h3>
@@ -1253,13 +1470,332 @@ export default function MarketplaceRequestDetail() {
                       <p>
                         {request.status ===
                         "CONFIRMED"
-                          ? "Stock is reserved for this request. No sale has been created yet."
+                          ? "Stock is reserved for this order. No sale has been created yet."
                           : ownerReplyStatusMessage(
                               request,
                             )}
                       </p>
+
+                      {[
+                        "CONFIRMED",
+                        "PREPARING",
+                      ].includes(
+                        request.status,
+                      ) ? (
+                        <>
+                          <div className="svx-market-owner-request-actions">
+                            <button
+                              type="button"
+                              className="svx-market-owner-action-button is-reject"
+                              onClick={() =>
+                                setPendingAction(
+                                  "CANCEL",
+                                )
+                              }
+                              disabled={
+                                actionBusy
+                              }
+                            >
+                              Cancel order
+                            </button>
+
+                            {request.status ===
+                            "CONFIRMED" ? (
+                              <button
+                                type="button"
+                                className="svx-market-owner-action-button is-confirm"
+                                onClick={() =>
+                                  setPendingAction(
+                                    "START_PREPARING",
+                                  )
+                                }
+                                disabled={
+                                  actionBusy
+                                }
+                              >
+                                Start preparing
+                              </button>
+                            ) : request.fulfilmentMethod ===
+                              "PICKUP" ? (
+                              <button
+                                type="button"
+                                className="svx-market-owner-action-button is-confirm"
+                                onClick={() =>
+                                  setPendingAction(
+                                    "READY_FOR_PICKUP",
+                                  )
+                                }
+                                disabled={
+                                  actionBusy
+                                }
+                              >
+                                Mark ready for pickup
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="svx-market-owner-action-button is-confirm"
+                                onClick={() =>
+                                  setPendingAction(
+                                    "OUT_FOR_DELIVERY",
+                                  )
+                                }
+                                disabled={
+                                  actionBusy
+                                }
+                              >
+                                Mark out for delivery
+                              </button>
+                            )}
+                          </div>
+
+                          {pendingAction ? (
+                            <div className="svx-market-owner-action-confirmation">
+                              <strong>
+                                {pendingAction ===
+                                "CANCEL"
+                                  ? "Cancel this order?"
+                                  : pendingAction ===
+                                      "START_PREPARING"
+                                    ? "Start preparing this order?"
+                                    : pendingAction ===
+                                        "READY_FOR_PICKUP"
+                                      ? "Mark this order ready for pickup?"
+                                      : "Mark this order out for delivery?"}
+                              </strong>
+
+                              <p>
+                                {pendingAction ===
+                                "CANCEL"
+                                  ? "Reserved stock will be released. No sale or payment will be created."
+                                  : "The customer order status will be updated. Reserved stock will remain protected."}
+                              </p>
+
+                              <div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setPendingAction(
+                                      "",
+                                    )
+                                  }
+                                  disabled={
+                                    actionBusy
+                                  }
+                                >
+                                  Go back
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className={
+                                    pendingAction ===
+                                    "CANCEL"
+                                      ? "is-reject"
+                                      : "is-confirm"
+                                  }
+                                  onClick={() =>
+                                    handleStatusAction(
+                                      pendingAction,
+                                    )
+                                  }
+                                  disabled={
+                                    actionBusy
+                                  }
+                                >
+                                  {actionBusy
+                                    ? "Saving..."
+                                    : pendingAction ===
+                                        "CANCEL"
+                                      ? "Yes, cancel"
+                                      : "Yes, update"}
+                                </button>
+                              </div>
+                            </div>
+                          ) : null}
+                        </>
+                      ) : null}
                     </>
                   )}
+                    {request.status ===
+                    "READY_FOR_PICKUP" ? (
+                      <div className="svx-market-owner-pickup-completion">
+                        <div className="svx-market-owner-pickup-completion-head">
+                          <span>Finish pickup</span>
+
+                          <h3>
+                            Confirm handover and payment
+                          </h3>
+
+                          <p>
+                            Complete this order only after the customer has received the products and payment has been received.
+                          </p>
+                        </div>
+
+                        <label>
+                          <span>
+                            Payment received through
+                          </span>
+
+                          <div className="svx-market-owner-order-select is-payment">
+                            <select
+                              value={
+                                completionPaymentMethod
+                              }
+                              onChange={(event) =>
+                                setCompletionPaymentMethod(
+                                  event.target.value,
+                                )
+                              }
+                              disabled={actionBusy}
+                              aria-label="Payment received through"
+                            >
+                              <option value="CASH">
+                                Cash
+                              </option>
+
+                              <option value="MOMO">
+                                MoMo
+                              </option>
+
+                              <option value="BANK">
+                                Bank
+                              </option>
+
+                              <option value="OTHER">
+                                Other money
+                              </option>
+                            </select>
+
+                            <svg
+                              viewBox="0 0 24 24"
+                              aria-hidden="true"
+                              focusable="false"
+                            >
+                              <path
+                                d="m7 10 5 5 5-5"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </div>
+                        </label>
+
+                        <label>
+                          <span>
+                            Payment reference
+                          </span>
+
+                          <input
+                            type="text"
+                            value={
+                              completionPaymentReference
+                            }
+                            onChange={(event) =>
+                              setCompletionPaymentReference(
+                                event.target.value,
+                              )
+                            }
+                            placeholder="Optional transaction or payment reference"
+                            disabled={actionBusy}
+                          />
+                        </label>
+
+                        <div className="svx-market-owner-pickup-total">
+                          <span>
+                            Amount received
+                          </span>
+
+                          <strong>
+                            {formatMoney(
+                              request.total,
+                              request.currency,
+                            )}
+                          </strong>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="svx-market-owner-action-button is-confirm"
+                          onClick={() =>
+                            setPendingAction(
+                              "COMPLETE_PICKUP",
+                            )
+                          }
+                          disabled={actionBusy}
+                        >
+                          Complete pickup
+                        </button>
+
+                        {pendingAction ===
+                        "COMPLETE_PICKUP" ? (
+                          <div className="svx-market-owner-action-confirmation">
+                            <strong>
+                              Complete this pickup?
+                            </strong>
+
+                            <p>
+                              This creates the sale and receipt, records the payment, reduces sold stock, and completes the order. This action must only be used after handover and payment.
+                            </p>
+
+                            <div>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setPendingAction(
+                                    "",
+                                  )
+                                }
+                                disabled={actionBusy}
+                              >
+                                Go back
+                              </button>
+
+                              <button
+                                type="button"
+                                className="svx-market-owner-action-button is-confirm"
+                                onClick={
+                                  handleCompletePickup
+                                }
+                                disabled={actionBusy}
+                              >
+                                {actionBusy
+                                  ? "Completing..."
+                                  : "Yes, complete pickup"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {request.status ===
+                      "COMPLETED" &&
+                    request.sale?.id ? (
+                      <div className="svx-market-owner-completed-sale">
+                        <span>
+                          Sale recorded
+                        </span>
+
+                        <strong>
+                          {request.sale
+                            .receiptNumber ||
+                            request.sale
+                              .invoiceNumber ||
+                            "Receipt ready"}
+                        </strong>
+
+                        <Link
+                          to={`/app/pos/sales/${request.sale.id}`}
+                        >
+                          View receipt
+                        </Link>
+                      </div>
+                    ) : null}
+
                 </section>
               </aside>
             </div>

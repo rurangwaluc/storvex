@@ -552,7 +552,7 @@ export default function MarketplaceRequestPanel({
 
       if (!request?.requestNumber) {
         throw new Error(
-          "The request was saved, but its confirmation could not be loaded.",
+          "The order was saved, but its confirmation could not be loaded.",
         );
       }
 
@@ -566,7 +566,7 @@ export default function MarketplaceRequestPanel({
       setClientRequestId(requestId());
 
       notify?.(
-        `Request ${request.requestNumber} sent`,
+        `Order request ${request.requestNumber} sent`,
       );
 
     } catch (error) {
@@ -589,7 +589,7 @@ export default function MarketplaceRequestPanel({
         setSubmitError(
           fieldError(
             error,
-            "The request could not be sent.",
+            "The order could not be sent.",
           ),
         );
       }
@@ -665,7 +665,7 @@ export default function MarketplaceRequestPanel({
 
             <dl>
               <div>
-                <dt>Request number</dt>
+                <dt>Order number</dt>
                 <dd>
                   {success.requestNumber}
                 </dd>
@@ -833,7 +833,7 @@ export default function MarketplaceRequestPanel({
           </section>
 
           <section className="svx-marketplace-request-section svx-marketplace-request-products-section">
-            <h3>Products in this request</h3>
+            <h3>Products in this order</h3>
 
             <div className="svx-marketplace-request-products">
               {selectedGroup?.items.map((item) => {
@@ -1025,7 +1025,7 @@ export default function MarketplaceRequestPanel({
                         </strong>
                         <small>
                           Open a prepared message
-                          after saving the request.
+                          after saving the order.
                         </small>
                       </span>
                     </label>
@@ -1054,7 +1054,7 @@ export default function MarketplaceRequestPanel({
                         <Mail size={17} />
                         <strong>Email</strong>
                         <small>
-                          Send the request to the
+                          Send the order to the
                           store and receive a copy.
                         </small>
                       </span>

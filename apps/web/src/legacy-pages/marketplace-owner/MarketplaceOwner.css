@@ -2663,61 +2663,274 @@
   margin-top: 20px;
 }
 
+/* MARKETPLACE ORDER ACTION CONTROLS START */
+
+.svx-market-owner-request-actions {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.svx-market-owner-action-button,
 .svx-market-owner-request-actions button,
-.svx-market-owner-action-confirmation button {
-  min-height: 44px;
+.svx-market-owner-action-confirmation button,
+.svx-market-owner-pickup-completion > button {
+  min-height: 48px;
   border: 1px solid var(--border);
-  padding: 0 16px;
-  background: var(--surface);
+  border-radius: 10px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: var(--surface);
   color: var(--text);
+  -webkit-text-fill-color: currentColor;
   font: inherit;
+  font-size: 0.87rem;
   font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-align: center;
   cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease;
 }
 
+.svx-market-owner-action-button:hover,
+.svx-market-owner-request-actions button:hover,
+.svx-market-owner-action-confirmation button:hover,
+.svx-market-owner-pickup-completion > button:hover {
+  border-color: var(--color-primary);
+}
+
+.svx-market-owner-action-button:focus-visible,
+.svx-market-owner-request-actions button:focus-visible,
+.svx-market-owner-action-confirmation button:focus-visible,
+.svx-market-owner-pickup-completion > button:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow:
+    0 0 0 3px var(--color-primary-ring);
+}
+
+.svx-market-owner-action-button:disabled,
 .svx-market-owner-request-actions button:disabled,
-.svx-market-owner-action-confirmation button:disabled {
+.svx-market-owner-action-confirmation button:disabled,
+.svx-market-owner-pickup-completion > button:disabled {
   cursor: not-allowed;
-  opacity: 0.58;
+  opacity: 0.52;
 }
 
+.svx-market-owner-action-button.is-confirm,
 .svx-market-owner-request-actions .is-confirm,
-.svx-market-owner-action-confirmation .is-confirm {
-  border-color: var(--primary);
-  background: var(--primary);
-  color: #fff;
+.svx-market-owner-action-confirmation .is-confirm,
+.svx-market-owner-pickup-completion > button.is-confirm {
+  border-color: var(--color-primary);
+  background-color: var(--color-primary);
+  color: #ffffff;
+  -webkit-text-fill-color: #ffffff;
 }
 
+.svx-market-owner-action-button.is-confirm:hover,
+.svx-market-owner-request-actions .is-confirm:hover,
+.svx-market-owner-action-confirmation .is-confirm:hover,
+.svx-market-owner-pickup-completion > button.is-confirm:hover {
+  border-color: var(--color-primary-hover);
+  background-color: var(
+    --color-primary-hover,
+    var(--color-primary)
+  );
+}
+
+.svx-market-owner-action-button.is-reject,
 .svx-market-owner-request-actions .is-reject,
 .svx-market-owner-action-confirmation .is-reject {
   border-color: var(--danger);
+  background-color: transparent;
   color: var(--danger);
+  -webkit-text-fill-color: var(--danger);
+}
+
+.svx-market-owner-action-button.is-reject:hover,
+.svx-market-owner-request-actions .is-reject:hover,
+.svx-market-owner-action-confirmation .is-reject:hover {
+  background-color: var(
+    --danger-soft,
+    transparent
+  );
 }
 
 .svx-market-owner-action-confirmation {
   display: grid;
-  gap: 9px;
-  margin-top: 14px;
+  gap: 11px;
+  margin-top: 15px;
   border-top: 1px solid var(--border);
-  padding-top: 16px;
+  padding-top: 17px;
 }
 
 .svx-market-owner-action-confirmation > strong {
   color: var(--text);
   font-size: 0.94rem;
+  line-height: 1.35;
 }
 
 .svx-market-owner-action-confirmation > p {
   margin: 0;
   color: var(--text-muted);
   font-size: 0.84rem;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .svx-market-owner-action-confirmation > div {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+.svx-market-owner-pickup-completion {
+  display: grid;
+  gap: 17px;
+  margin-top: 21px;
+  border-top: 1px solid var(--border);
+  padding-top: 21px;
+}
+
+.svx-market-owner-pickup-completion-head {
+  display: grid;
+  gap: 6px;
+}
+
+.svx-market-owner-pickup-completion-head > span,
+.svx-market-owner-pickup-completion > label > span,
+.svx-market-owner-pickup-total > span,
+.svx-market-owner-completed-sale > span {
+  color: var(--text-muted);
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.svx-market-owner-pickup-completion-head h3,
+.svx-market-owner-pickup-completion-head p {
+  margin: 0;
+}
+
+.svx-market-owner-pickup-completion-head h3 {
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.svx-market-owner-pickup-completion-head p {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.svx-market-owner-pickup-completion > label {
+  display: grid;
+  gap: 8px;
+}
+
+
+
+.svx-market-owner-pickup-completion input {
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background-color: var(--surface);
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+
+
+.svx-market-owner-pickup-completion input {
+  padding: 0 14px;
+}
+
+.svx-market-owner-pickup-completion input:hover {
+  border-color: var(--text-muted);
+}
+
+.svx-market-owner-pickup-completion input:focus {
+  border-color: var(--color-primary);
+  box-shadow:
+    0 0 0 3px var(--color-primary-ring);
+}
+
+.svx-market-owner-pickup-completion input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+
+
+
+
+.svx-market-owner-pickup-total {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.svx-market-owner-pickup-total strong {
+  color: var(--text);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.svx-market-owner-completed-sale {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+
+.svx-market-owner-completed-sale strong {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.svx-market-owner-completed-sale a {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-primary);
+  border-radius: 10px;
+  background-color: transparent;
+  color: var(--color-primary);
+  font-size: 0.87rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.svx-market-owner-completed-sale a:hover {
+  background-color: var(
+    --color-primary-soft,
+    transparent
+  );
 }
 
 @media (max-width: 560px) {
@@ -2733,7 +2946,19 @@
   .svx-market-owner-request-actions .is-reject {
     grid-row: 2;
   }
+
+  .svx-market-owner-pickup-total {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .svx-market-owner-pickup-total strong {
+    font-size: 1.08rem;
+  }
 }
+
+/* MARKETPLACE ORDER ACTION CONTROLS END */
 
 .svx-market-owner-delivery-fee
   > div.is-select {
@@ -2761,28 +2986,323 @@
     inset 3px 0 0 var(--primary);
 }
 
-.svx-market-owner-delivery-fee
-  > div.is-select {
-  display: block;
+.svx-market-owner-pickup-completion {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
 }
 
-.svx-market-owner-delivery-fee
-  > div.is-select
-  select {
-  width: 100%;
-  min-height: 44px;
-  border: 0;
-  outline: 0;
-  padding: 0 13px;
-  background: var(--surface);
+.svx-market-owner-pickup-completion-head {
+  display: grid;
+  gap: 5px;
+}
+
+.svx-market-owner-pickup-completion-head > span,
+.svx-market-owner-pickup-completion > label > span,
+.svx-market-owner-pickup-total > span,
+.svx-market-owner-completed-sale > span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.svx-market-owner-pickup-completion-head h3,
+.svx-market-owner-pickup-completion-head p {
+  margin: 0;
+}
+
+.svx-market-owner-pickup-completion-head h3 {
   color: var(--text);
-  font: inherit;
-  font-weight: 700;
+  font-size: 1rem;
 }
 
-.svx-market-owner-delivery-fee
-  > div.is-select
-  select:focus {
-  box-shadow:
-    inset 3px 0 0 var(--primary);
+.svx-market-owner-pickup-completion-head p {
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  line-height: 1.55;
 }
+
+.svx-market-owner-pickup-completion > label {
+  display: grid;
+  gap: 7px;
+}
+
+.svx-market-owner-pickup-completion select,
+.svx-market-owner-pickup-completion input {
+  min-height: 46px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  padding: 0 13px;
+  background-color: var(--surface);
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+  color-scheme: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  outline: none;
+}
+
+.svx-market-owner-pickup-completion select {
+  cursor: pointer;
+}
+
+.svx-market-owner-pickup-completion select option {
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+.svx-market-owner-pickup-completion select:focus,
+.svx-market-owner-pickup-completion input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-ring);
+}
+
+.svx-market-owner-pickup-total {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 15px;
+}
+
+.svx-market-owner-pickup-total strong {
+  color: var(--text);
+  font-size: 1.15rem;
+}
+
+.svx-market-owner-pickup-completion > button {
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid var(--color-primary);
+  border-radius: 0;
+  padding: 0 16px;
+  background-color: var(--color-primary);
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.svx-market-owner-pickup-completion > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.svx-market-owner-completed-sale {
+  display: grid;
+  gap: 7px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 18px;
+}
+
+.svx-market-owner-completed-sale strong {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.svx-market-owner-completed-sale a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-primary);
+  background-color: var(--surface);
+  color: var(--color-primary);
+  -webkit-text-fill-color: var(--color-primary);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+@media (max-width: 560px) {
+  .svx-market-owner-pickup-total {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .svx-market-owner-pickup-total strong {
+    font-size: 1.1rem;
+  }
+}
+
+/* ORDER DETAIL DROPDOWNS START */
+
+.svx-market-owner-order-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  color-scheme: light dark;
+}
+
+.svx-market-owner-order-select select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 50px;
+  border: 1px solid var(--market-line);
+  border-radius: 12px;
+  padding: 0 48px 0 15px;
+  background-color: var(--market-soft);
+  color: var(--market-text);
+  -webkit-text-fill-color: var(--market-text);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 750;
+  line-height: 1.2;
+  cursor: pointer;
+  outline: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.svx-market-owner-order-select select:hover:not(:disabled) {
+  border-color: color-mix(
+    in srgb,
+    var(--market-blue) 45%,
+    var(--market-line)
+  );
+  background-color: var(--market-surface);
+}
+
+.svx-market-owner-order-select select:focus,
+.svx-market-owner-order-select select:focus-visible {
+  border-color: var(--market-blue);
+  background-color: var(--market-surface);
+  box-shadow:
+    0 0 0 4px var(--market-blue-soft);
+}
+
+.svx-market-owner-order-select select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.svx-market-owner-order-select select option {
+  background-color: var(--market-surface);
+  color: var(--market-text);
+  -webkit-text-fill-color: var(--market-text);
+  font-weight: 650;
+}
+
+.svx-market-owner-order-select svg {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: 15px;
+  width: 18px;
+  height: 18px;
+  color: var(--market-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.svx-market-owner-order-select:focus-within svg {
+  color: var(--market-blue);
+}
+
+.svx-market-owner-order-select select:disabled + svg {
+  opacity: 0.5;
+}
+
+@media (max-width: 560px) {
+  .svx-market-owner-order-select select {
+    min-height: 52px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+  }
+}
+
+/* ORDER DETAIL DROPDOWNS END */
+
+/* ORDER ACTION BUTTON POLISH START */
+
+.svx-market-owner-next-step
+  .svx-market-owner-request-actions,
+.svx-market-owner-pickup-completion
+  .svx-market-owner-request-actions {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.svx-market-owner-action-button,
+.svx-market-owner-request-actions button,
+.svx-market-owner-action-confirmation button,
+.svx-market-owner-pickup-completion > button,
+.svx-market-owner-completed-sale a {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding-inline: clamp(14px, 2vw, 20px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: clamp(0.78rem, 1vw, 0.88rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  text-align: center;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: keep-all;
+  hyphens: none;
+}
+
+.svx-market-owner-request-actions {
+  align-items: stretch;
+}
+
+.svx-market-owner-request-actions button {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.svx-market-owner-action-confirmation > div {
+  align-items: stretch;
+}
+
+.svx-market-owner-action-confirmation button {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.svx-market-owner-pickup-completion > button {
+  min-height: 50px;
+}
+
+.svx-market-owner-completed-sale a {
+  min-height: 46px;
+}
+
+@media (max-width: 900px) {
+  .svx-market-owner-request-actions,
+  .svx-market-owner-action-confirmation > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-market-owner-action-button,
+  .svx-market-owner-request-actions button,
+  .svx-market-owner-action-confirmation button,
+  .svx-market-owner-pickup-completion > button,
+  .svx-market-owner-completed-sale a {
+    min-height: 46px;
+    padding-inline: 12px;
+    font-size: 0.76rem;
+  }
+}
+
+/* ORDER ACTION BUTTON POLISH END */
