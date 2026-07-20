@@ -285,20 +285,12 @@ async function registerCustomer(req, res) {
           phone,
           passwordHash,
           status: "ACTIVE",
-          lastLoginAt: new Date(),
         },
       });
 
-    const session =
-      await createCustomerSession(
-        req,
-        customer,
-      );
-
     return res.status(201).json({
-      message: "Account created.",
-      token: session.token,
-      expiresAt: session.expiresAt,
+      message:
+        "Account created. Sign in to continue.",
       customer:
         publicCustomer(customer),
     });

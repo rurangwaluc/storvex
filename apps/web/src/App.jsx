@@ -127,6 +127,10 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/marketplace" element={<MarketplaceHome />} />
         <Route
+          path="/marketplace/account"
+          element={<MarketplaceCustomerAuth mode="account" />}
+        />
+        <Route
           path="/marketplace/account/sign-in"
           element={<MarketplaceCustomerAuth mode="login" />}
         />

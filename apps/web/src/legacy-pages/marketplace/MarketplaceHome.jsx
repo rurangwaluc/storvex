@@ -333,7 +333,11 @@ export function MarketplaceHeader() {
             </button>
 
             <Link
-              to="/marketplace/account/sign-in"
+              to={
+                customerSession.signedIn
+                  ? "/marketplace/account"
+                  : "/marketplace/account/sign-in"
+              }
               className="svx-login-link"
             >
               <UserRound size={16} />
@@ -443,7 +447,11 @@ export function MarketplaceHeader() {
 
             <div className="svx-mobile-menu-actions">
               <Link
-                to="/marketplace/account/sign-in"
+                to={
+                  customerSession.signedIn
+                    ? "/marketplace/account"
+                    : "/marketplace/account/sign-in"
+                }
                 className="svx-mobile-menu-secondary"
                 onClick={() => setMenuOpen(false)}
               >

@@ -12,6 +12,7 @@ import {
 } from "react";
 import {
   Link,
+  useLocation,
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
@@ -191,7 +192,11 @@ export default function MarketplaceCustomerAuth({
   const creating =
     mode === "register";
 
+  const accountPage =
+    mode === "account";
+
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [searchParams] =
     useSearchParams();
@@ -229,14 +234,57 @@ export default function MarketplaceCustomerAuth({
   useEffect(() => {
     setForm({
       name: "",
-      email: "",
+      email:
+        cleanString(
+          location.state?.email,
+        ),
       phone: "",
       password: "",
     });
 
     setError("");
     setSubmitting(false);
-  }, [creating]);
+  }, [
+    creating,
+    location.state?.email,
+  ]);
+
+  useEffect(() => {
+    if (session.checking) {
+      return;
+    }
+
+    if (
+      session.signedIn &&
+      !accountPage
+    ) {
+      navigate(
+        "/marketplace/account",
+        {
+          replace: true,
+        },
+      );
+
+      return;
+    }
+
+    if (
+      !session.signedIn &&
+      accountPage
+    ) {
+      navigate(
+        "/marketplace/account/sign-in",
+        {
+          replace: true,
+        },
+      );
+    }
+  }, [
+    accountPage,
+    navigate,
+    session.checking,
+    session.signedIn,
+  ]);
 
   function updateField(
     name,
@@ -299,17 +347,33 @@ export default function MarketplaceCustomerAuth({
           password:
             String(form.password || ""),
         });
-      } else {
-        await loginMarketplaceCustomer({
-          email,
-          password:
-            String(form.password || ""),
-        });
+
+        navigate(
+          "/marketplace/account/sign-in",
+          {
+            replace: true,
+            state: {
+              accountCreated: true,
+              email,
+            },
+          },
+        );
+
+        return;
       }
 
-      navigate(returnPath, {
-        replace: true,
+      await loginMarketplaceCustomer({
+        email,
+        password:
+          String(form.password || ""),
       });
+
+      navigate(
+        "/marketplace/account",
+        {
+          replace: true,
+        },
+      );
     } catch (requestError) {
       const problems =
         requestError?.data?.details
@@ -333,6 +397,13 @@ export default function MarketplaceCustomerAuth({
 
     try {
       await logoutMarketplaceCustomer();
+
+      navigate(
+        "/marketplace/account/sign-in",
+        {
+          replace: true,
+        },
+      );
     } catch (requestError) {
       setError(
         requestError?.message ||
@@ -357,7 +428,15 @@ export default function MarketplaceCustomerAuth({
       <MarketplaceHeader />
 
       <main className="storvex-onboarding svx-marketplace-auth-main">
-        {session.checking ? (
+        {session.checking ||
+        (
+          session.signedIn &&
+          !accountPage
+        ) ||
+        (
+          !session.signedIn &&
+          accountPage
+        ) ? (
           <div className="svx-marketplace-auth-content">
             <OnboardingCard className="svx-marketplace-auth-checking">
               <span className="svx-marketplace-auth-spinner" />
@@ -387,6 +466,16 @@ export default function MarketplaceCustomerAuth({
                   : "Use the email and password connected to your account."}
               </p>
             </header>
+
+            {!creating &&
+            location.state?.accountCreated ? (
+              <p
+                className="svx-marketplace-auth-success"
+                role="status"
+              >
+                Account created. Sign in to continue.
+              </p>
+            ) : null}
 
             <form
               onSubmit={submit}

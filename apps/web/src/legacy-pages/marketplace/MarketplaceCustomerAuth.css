@@ -503,3 +503,31 @@
     font-size: 30px;
   }
 }
+
+.svx-marketplace-auth-success {
+  margin: -10px 0 22px;
+  border-left: 3px solid #16845b;
+  background:
+    color-mix(
+      in srgb,
+      #16845b 10%,
+      var(--onboard-card)
+    );
+  color: #116b49;
+  padding: 13px 15px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-auth-success {
+  border-left-color: #55d6a0;
+  background:
+    color-mix(
+      in srgb,
+      #55d6a0 12%,
+      var(--onboard-card)
+    );
+  color: #8ce8bd;
+}

@@ -226,21 +226,14 @@ export async function marketplaceCustomerRequest(
 export async function registerMarketplaceCustomer(
   payload,
 ) {
-  const result =
-    await marketplaceCustomerRequest(
-      "/marketplace/customer/register",
-      {
-        method: "POST",
-        body: payload,
-        token: "",
-      },
-    );
-
-  saveMarketplaceCustomerSession(
-    result,
+  return marketplaceCustomerRequest(
+    "/marketplace/customer/register",
+    {
+      method: "POST",
+      body: payload,
+      token: "",
+    },
   );
-
-  return result;
 }
 
 export async function loginMarketplaceCustomer(
