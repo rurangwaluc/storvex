@@ -220,6 +220,80 @@ function publicStoreLocation(tenant) {
   };
 }
 
+function marketplaceSubscriptionDate(value) {
+  if (!value) return null;
+
+  const date =
+    value instanceof Date
+      ? value
+      : new Date(value);
+
+  return Number.isNaN(date.getTime())
+    ? null
+    : date;
+}
+
+function isPublicMarketplaceSubscriptionVisible(
+  subscription,
+  now = new Date(),
+) {
+  if (!subscription) return false;
+
+  const status = String(
+    subscription.status || "",
+  )
+    .trim()
+    .toUpperCase();
+
+  const accessMode = String(
+    subscription.accessMode || "",
+  )
+    .trim()
+    .toUpperCase();
+
+  if (
+    status === "SUSPENDED" ||
+    accessMode === "SUSPENDED"
+  ) {
+    return false;
+  }
+
+  const currentTime =
+    now instanceof Date
+      ? now
+      : new Date(now);
+
+  if (Number.isNaN(currentTime.getTime())) {
+    return false;
+  }
+
+  const endDate =
+    marketplaceSubscriptionDate(
+      subscription.endDate,
+    );
+
+  const graceEndDate =
+    marketplaceSubscriptionDate(
+      subscription.graceEndDate,
+    );
+
+  if (
+    status === "ACTIVE" &&
+    ["TRIAL", "ACTIVE"].includes(
+      accessMode,
+    ) &&
+    endDate &&
+    endDate >= currentTime
+  ) {
+    return true;
+  }
+
+  return Boolean(
+    graceEndDate &&
+    graceEndDate >= currentTime,
+  );
+}
+
 function serializePublicSeller(profile, tenant, counts = {}) {
   return {
     slug: profile.publicSlug,
@@ -545,6 +619,14 @@ const publicSellerInclude = {
       sector: true,
       address: true,
       status: true,
+      subscription: {
+        select: {
+          status: true,
+          accessMode: true,
+          endDate: true,
+          graceEndDate: true,
+        },
+      },
     },
   },
 };
@@ -554,16 +636,29 @@ async function findVisibleSeller(publicSlug) {
 
   if (!slug) return null;
 
-  return prisma.marketplaceSellerProfile.findFirst({
-    where: {
-      publicSlug: slug,
-      marketplaceEnabled: true,
-      tenant: {
-        status: "ACTIVE",
+  const seller =
+    await prisma.marketplaceSellerProfile.findFirst({
+      where: {
+        publicSlug: slug,
+        marketplaceEnabled: true,
+        tenant: {
+          status: "ACTIVE",
+        },
       },
-    },
-    include: publicSellerInclude,
-  });
+      include: publicSellerInclude,
+    });
+
+  if (!seller) return null;
+
+  if (
+    !isPublicMarketplaceSubscriptionVisible(
+      seller.tenant?.subscription,
+    )
+  ) {
+    return null;
+  }
+
+  return seller;
 }
 
 async function listPublicStores(query = {}) {
@@ -618,7 +713,17 @@ async function listPublicStores(query = {}) {
     ],
   });
 
-  const sellerIds = profiles.map((profile) => profile.tenantId);
+  const subscriptionVisibleProfiles =
+    profiles.filter((profile) =>
+      isPublicMarketplaceSubscriptionVisible(
+        profile.tenant?.subscription,
+      ),
+    );
+
+  const sellerIds =
+    subscriptionVisibleProfiles.map(
+      (profile) => profile.tenantId,
+    );
 
   const products = sellerIds.length
     ? await prisma.product.findMany({
@@ -657,8 +762,9 @@ async function listPublicStores(query = {}) {
     countsByTenant.set(product.tenantId, counts);
   }
 
-  const visible = profiles
-    .map((profile) =>
+  const visible =
+    subscriptionVisibleProfiles
+      .map((profile) =>
       serializePublicSeller(
         profile,
         profile.tenant,
@@ -912,7 +1018,14 @@ async function listPublicProducts(query = {}) {
       include: publicSellerInclude,
     });
 
-  if (!sellers.length) {
+  const subscriptionVisibleSellers =
+    sellers.filter((seller) =>
+      isPublicMarketplaceSubscriptionVisible(
+        seller.tenant?.subscription,
+      ),
+    );
+
+  if (!subscriptionVisibleSellers.length) {
     return {
       products: [],
       categories: [],
@@ -938,7 +1051,7 @@ async function listPublicProducts(query = {}) {
   }
 
   const sellerByTenant = new Map(
-    sellers.map((seller) => [
+    subscriptionVisibleSellers.map((seller) => [
       seller.tenantId,
       seller,
     ]),
@@ -947,7 +1060,7 @@ async function listPublicProducts(query = {}) {
   const products = await prisma.product.findMany({
     where: publishedProductWhere({
       tenantId: {
-        in: sellers.map(
+        in: subscriptionVisibleSellers.map(
           (seller) => seller.tenantId,
         ),
       },
@@ -1228,6 +1341,7 @@ module.exports = {
   activeMarketplacePricing,
   serializePublicProduct,
   serializePublicSeller,
+  isPublicMarketplaceSubscriptionVisible,
   listPublicStores,
   getPublicStore,
   getPublicProduct,
