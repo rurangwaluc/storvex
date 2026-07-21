@@ -300,10 +300,14 @@ export default function MarketplaceCustomerOrders() {
               key={order.id}
               className="svx-customer-order-card"
             >
-              <div className="svx-customer-order-top">
+              <header className="svx-customer-order-top">
                 <div>
-                  <span>Store</span>
+                  <span>Ordered from</span>
                   <h3>{order.storeName}</h3>
+
+                  <p>
+                    Order {order.orderNumber}
+                  </p>
                 </div>
 
                 <div
@@ -314,88 +318,87 @@ export default function MarketplaceCustomerOrders() {
                   <StatusIcon size={16} />
                   {order.statusLabel}
                 </div>
-              </div>
+              </header>
 
-              <div className="svx-customer-order-product">
-                {firstItem?.image ? (
-                  <img
-                    src={firstItem.image}
-                    alt=""
-                    loading="lazy"
-                  />
-                ) : (
-                  <span className="svx-customer-order-product-image">
-                    <ShoppingBag size={21} />
-                  </span>
-                )}
-
-                <div>
-                  <strong>
-                    {firstItem?.name ||
-                      "Marketplace order"}
-                  </strong>
-
-                  {categoryLabel(
-                    firstItem?.category,
-                  ) ? (
-                    <span>
-                      {categoryLabel(
-                        firstItem?.category,
-                      )}
+              <div className="svx-customer-order-body">
+                <div className="svx-customer-order-product">
+                  {firstItem?.image ? (
+                    <img
+                      src={firstItem.image}
+                      alt=""
+                      loading="lazy"
+                    />
+                  ) : (
+                    <span className="svx-customer-order-product-image">
+                      <ShoppingBag size={24} />
                     </span>
-                  ) : null}
+                  )}
 
-                  {remainingItems > 0 ? (
-                    <small>
-                      and {remainingItems} more{" "}
-                      {remainingItems === 1
-                        ? "product"
-                        : "products"}
-                    </small>
-                  ) : null}
+                  <div>
+                    <strong>
+                      {firstItem?.name ||
+                        "Marketplace order"}
+                    </strong>
+
+                    {categoryLabel(
+                      firstItem?.category,
+                    ) ? (
+                      <span>
+                        {categoryLabel(
+                          firstItem?.category,
+                        )}
+                      </span>
+                    ) : null}
+
+                    {remainingItems > 0 ? (
+                      <small>
+                        Plus {remainingItems} more{" "}
+                        {remainingItems === 1
+                          ? "product"
+                          : "products"}
+                      </small>
+                    ) : null}
+                  </div>
                 </div>
+
+                <dl className="svx-customer-order-details">
+                  <div>
+                    <dt>Placed</dt>
+                    <dd>{formatDate(order.placedAt)}</dd>
+                  </div>
+
+                  <div>
+                    <dt>Receive by</dt>
+                    <dd>
+                      {receiveByLabel(
+                        order.fulfilmentMethod,
+                      )}
+                    </dd>
+                  </div>
+                </dl>
               </div>
 
-              <dl className="svx-customer-order-details">
+              <footer className="svx-customer-order-footer">
                 <div>
-                  <dt>Order</dt>
-                  <dd>{order.orderNumber}</dd>
-                </div>
-
-                <div>
-                  <dt>Placed</dt>
-                  <dd>{formatDate(order.placedAt)}</dd>
-                </div>
-
-                <div>
-                  <dt>Receive by</dt>
-                  <dd>
-                    {receiveByLabel(
-                      order.fulfilmentMethod,
-                    )}
-                  </dd>
-                </div>
-
-                <div>
-                  <dt>Total</dt>
-                  <dd>
+                  <span>Order total</span>
+                  <strong>
                     {formatMoney(
                       order.total,
                       order.currency,
                     )}
-                  </dd>
+                  </strong>
                 </div>
-              </dl>
 
-              <Link
-                to={`/marketplace/orders/${encodeURIComponent(
-                  order.trackingToken,
-                )}`}
-                className="svx-customer-order-link"
-              >
-                View order
-                <ArrowRight size={17} />
-              </Link>
+                <Link
+                  to={`/marketplace/orders/${encodeURIComponent(
+                    order.trackingToken,
+                  )}`}
+                  className="svx-customer-order-link"
+                >
+                  View order
+                  <ArrowRight size={17} />
+                </Link>
+              </footer>
             </article>
           );
         })}

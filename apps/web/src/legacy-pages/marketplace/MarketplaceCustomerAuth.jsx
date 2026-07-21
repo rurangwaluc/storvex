@@ -2,8 +2,12 @@ import {
   BadgeCheck,
   Eye,
   EyeOff,
+  Heart,
   LogOut,
+  PackageCheck,
+  Pencil,
   ShoppingBag,
+  UserRound,
 } from "lucide-react";
 import {
   useEffect,
@@ -34,6 +38,9 @@ import MarketplaceCustomerOrders from "./MarketplaceCustomerOrders";
 import {
   useMarketplaceCustomerSession,
 } from "./MarketplaceCustomerSession";
+import {
+  MARKETPLACE_CUSTOMER_PANEL_EVENT,
+} from "./marketplaceCustomerStore";
 
 import "../../components/onboarding/Onboarding.css";
 import "./MarketplacePublic.css";
@@ -49,6 +56,50 @@ function safeReturnPath(value) {
   return path.startsWith("/marketplace")
     ? path
     : "/marketplace";
+}
+
+function formatCustomerPhone(value) {
+  const digits = String(value || "")
+    .replace(/\D/g, "");
+
+  let local = digits;
+
+  if (
+    digits.startsWith("2507") &&
+    digits.length === 12
+  ) {
+    local = `0${digits.slice(3)}`;
+  }
+
+  if (
+    local.startsWith("07") &&
+    local.length === 10
+  ) {
+    return [
+      local.slice(0, 4),
+      local.slice(4, 7),
+      local.slice(7),
+    ].join(" ");
+  }
+
+  return value || "";
+}
+
+function openSavedProducts() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent(
+      MARKETPLACE_CUSTOMER_PANEL_EVENT,
+      {
+        detail: {
+          mode: "wishlist",
+        },
+      },
+    ),
+  );
 }
 
 function CustomerPasswordField({
@@ -120,71 +171,160 @@ function SignedInAccount({
   onSignOut,
   error,
 }) {
-  return (
-    <div className="svx-marketplace-auth-content">
-      <header className="svx-marketplace-auth-heading">
-        <h1>
-          Your Marketplace account
-        </h1>
+  const [section, setSection] =
+    useState("orders");
 
-        <p>
-          Your saved details are ready when you order.
-        </p>
+  return (
+    <div className="svx-marketplace-auth-content svx-customer-account">
+      <header className="svx-customer-account-hero">
+        <div>
+          <h1>Your Marketplace account</h1>
+
+          <p>
+            Follow your orders, saved products and account details.
+          </p>
+        </div>
+
+        <Link
+          to={returnPath}
+          className="svx-customer-account-shop-link"
+        >
+          <ShoppingBag size={17} />
+          Continue shopping
+        </Link>
       </header>
 
-      <OnboardingCard className="svx-marketplace-auth-card">
-        <div className="svx-onboard-card-title-row">
-          <OnboardingIconBadge>
-            <BadgeCheck
-              size={23}
-              strokeWidth={2.2}
-            />
-          </OnboardingIconBadge>
+      <nav
+        className="svx-customer-account-nav"
+        aria-label="Customer account"
+      >
+        <button
+          type="button"
+          className={
+            section === "orders"
+              ? "is-active"
+              : ""
+          }
+          onClick={() =>
+            setSection("orders")
+          }
+        >
+          <PackageCheck size={17} />
+          Orders
+        </button>
 
-          <div>
-            <h3>{customer?.name}</h3>
-            <p>{customer?.email}</p>
+        <button
+          type="button"
+          onClick={openSavedProducts}
+        >
+          <Heart size={17} />
+          Saved products
+        </button>
+
+        <button
+          type="button"
+          className={
+            section === "details"
+              ? "is-active"
+              : ""
+          }
+          onClick={() =>
+            setSection("details")
+          }
+        >
+          <UserRound size={17} />
+          Account details
+        </button>
+      </nav>
+
+      {section === "orders" ? (
+        <MarketplaceCustomerOrders />
+      ) : (
+        <section className="svx-customer-account-details">
+          <div className="svx-customer-account-section-heading">
+            <div>
+              <h2>Account details</h2>
+              <p>
+                The details used when you place an order.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="svx-customer-account-edit"
+              disabled
+              title="Editing will be added next"
+            >
+              <Pencil size={16} />
+              Edit details
+            </button>
           </div>
-        </div>
 
-        {customer?.phone ? (
-          <div className="svx-marketplace-auth-detail">
-            <span>Phone</span>
-            <strong>{customer.phone}</strong>
+          <div className="svx-customer-profile-card">
+            <div className="svx-customer-profile-main">
+              <span className="svx-customer-profile-icon">
+                <BadgeCheck
+                  size={22}
+                  strokeWidth={2.2}
+                />
+              </span>
+
+              <div>
+                <h3>{customer?.name}</h3>
+                <p>{customer?.email}</p>
+              </div>
+            </div>
+
+            <dl className="svx-customer-profile-details">
+              <div>
+                <dt>Full name</dt>
+                <dd>{customer?.name}</dd>
+              </div>
+
+              <div>
+                <dt>Email</dt>
+                <dd>{customer?.email}</dd>
+              </div>
+
+              <div>
+                <dt>Phone</dt>
+                <dd>
+                  {customer?.phone
+                    ? formatCustomerPhone(
+                        customer.phone,
+                      )
+                    : "Not added"}
+                </dd>
+              </div>
+            </dl>
+
+            {error ? (
+              <p className="svx-marketplace-auth-error">
+                {error}
+              </p>
+            ) : null}
+
+            <div className="svx-customer-profile-footer">
+              <p>
+                Sign out only when you have finished using this device.
+              </p>
+
+              <button
+                type="button"
+                className="svx-marketplace-auth-secondary"
+                onClick={onSignOut}
+                disabled={signingOut}
+              >
+                <LogOut size={17} />
+
+                {signingOut
+                  ? "Signing out..."
+                  : "Sign out"}
+              </button>
+            </div>
           </div>
-        ) : null}
-
-        {error ? (
-          <p className="svx-marketplace-auth-error">
-            {error}
-          </p>
-        ) : null}
-
-        <div className="svx-marketplace-auth-actions">
-          <Link
-            to={returnPath}
-            className="svx-marketplace-auth-primary-link"
-          >
-            <ShoppingBag size={17} />
-            Continue shopping
-          </Link>
-
-          <button
-            type="button"
-            className="svx-marketplace-auth-secondary"
-            onClick={onSignOut}
-            disabled={signingOut}
-          >
-            <LogOut size={17} />
-
-            {signingOut
-              ? "Signing out..."
-              : "Sign out"}
-          </button>
-        </div>
-      </OnboardingCard>
-
-      <MarketplaceCustomerOrders />
+        </section>
+      )}
     </div>
   );
 }
