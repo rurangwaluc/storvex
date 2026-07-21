@@ -204,56 +204,174 @@ async function resolveMarketplaceCustomer(
   tx,
   order,
 ) {
+  const tenantId = cleanString(
+    order.tenantId,
+  );
+
+  const marketplaceCustomerId =
+    cleanString(
+      order.marketplaceCustomerId,
+    );
+
   const phone = cleanString(
     order.customerPhone,
   );
 
+  const orderName =
+    cleanString(order.customerName);
+
+  const orderEmail =
+    cleanString(order.customerEmail);
+
+  const orderAddress =
+    cleanString(order.deliveryAddress);
+
+  if (!tenantId) {
+    return null;
+  }
+
+  /*
+   * A permanent Marketplace link is the strongest identity.
+   * It continues working after the buyer changes phone number.
+   */
+  if (marketplaceCustomerId) {
+    const linkedCustomer =
+      await tx.customer.findFirst({
+        where: {
+          tenantId,
+          marketplaceCustomerId,
+        },
+        select: {
+          id: true,
+          isActive: true,
+        },
+      });
+
+    if (linkedCustomer) {
+      if (
+        linkedCustomer.isActive === false
+      ) {
+        await tx.customer.update({
+          where: {
+            id: linkedCustomer.id,
+          },
+          data: {
+            isActive: true,
+          },
+        });
+      }
+
+      return linkedCustomer.id;
+    }
+  }
+
+  /*
+   * Customer.phone is required by the existing internal
+   * customer model. Without a phone and without a permanent
+   * link, no safe internal customer can be created.
+   */
   if (!phone) {
     return null;
   }
 
-  const name =
-    cleanString(order.customerName) ||
-    "Marketplace customer";
-
-  const email = cleanString(
-    order.customerEmail,
-  );
-
-  const address = cleanString(
-    order.deliveryAddress,
-  );
-
-  const customer =
-    await tx.customer.upsert({
+  const phoneCustomer =
+    await tx.customer.findUnique({
       where: {
         tenantId_phone: {
-          tenantId: order.tenantId,
+          tenantId,
           phone,
         },
       },
-      create: {
-        tenantId: order.tenantId,
-        name,
-        phone,
-        email,
-        address,
-        notes:
-          `Created from Marketplace order ${order.requestNumber}`,
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        address: true,
+        marketplaceCustomerId: true,
         isActive: true,
       },
-      update: {
-        name,
-        ...(email
-          ? {
-              email,
-            }
-          : {}),
-        ...(address
-          ? {
-              address,
-            }
-          : {}),
+    });
+
+  if (phoneCustomer) {
+    if (
+      marketplaceCustomerId &&
+      phoneCustomer.marketplaceCustomerId &&
+      phoneCustomer.marketplaceCustomerId !==
+        marketplaceCustomerId
+    ) {
+      throw businessError(
+        "This customer phone is already connected to another Marketplace account. Review the customer before completing the order.",
+        409,
+        "MARKETPLACE_CUSTOMER_LINK_CONFLICT",
+      );
+    }
+
+    const currentName =
+      cleanString(phoneCustomer.name);
+
+    const automaticName =
+      !currentName ||
+      currentName.toLowerCase() ===
+        "marketplace customer";
+
+    const data = {
+      isActive: true,
+
+      ...(marketplaceCustomerId &&
+      !phoneCustomer.marketplaceCustomerId
+        ? {
+            marketplaceCustomerId,
+          }
+        : {}),
+
+      ...(automaticName && orderName
+        ? {
+            name: orderName,
+          }
+        : {}),
+
+      ...(!cleanString(
+        phoneCustomer.email,
+      ) && orderEmail
+        ? {
+            email: orderEmail,
+          }
+        : {}),
+
+      ...(!cleanString(
+        phoneCustomer.address,
+      ) && orderAddress
+        ? {
+            address: orderAddress,
+          }
+        : {}),
+    };
+
+    await tx.customer.update({
+      where: {
+        id: phoneCustomer.id,
+      },
+      data,
+    });
+
+    return phoneCustomer.id;
+  }
+
+  const customer =
+    await tx.customer.create({
+      data: {
+        tenantId,
+        name:
+          orderName ||
+          "Marketplace customer",
+        phone,
+        email: orderEmail || null,
+        address: orderAddress || null,
+        notes:
+          `Created from Marketplace order ${order.requestNumber}`,
+        marketplaceCustomerId:
+          marketplaceCustomerId ||
+          null,
         isActive: true,
       },
       select: {
@@ -1063,4 +1181,7 @@ module.exports = {
   completeMarketplaceDelivery,
   completeMarketplacePickup,
   normalizePaymentMethod,
+  __private: {
+    resolveMarketplaceCustomer,
+  },
 };

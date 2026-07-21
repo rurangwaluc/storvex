@@ -108,6 +108,9 @@ function customerSelectShape() {
       ? { whatsappOptIn: true }
       : {}),
     ...(typeof prisma.customer.fields?.isActive !== "undefined" ? { isActive: true } : {}),
+    ...(typeof prisma.customer.fields?.marketplaceCustomerId !== "undefined"
+      ? { marketplaceCustomerId: true }
+      : {}),
   };
 }
 
@@ -421,6 +424,9 @@ async function getCustomerLedger(req, res) {
         ...(typeof prisma.customer.fields?.tinNumber !== "undefined" ? { tinNumber: true } : {}),
         ...(typeof prisma.customer.fields?.idNumber !== "undefined" ? { idNumber: true } : {}),
         ...(typeof prisma.customer.fields?.isActive !== "undefined" ? { isActive: true } : {}),
+        ...(typeof prisma.customer.fields?.marketplaceCustomerId !== "undefined"
+          ? { marketplaceCustomerId: true }
+          : {}),
       },
     });
 
@@ -450,6 +456,21 @@ async function getCustomerLedger(req, res) {
         dueDate: true,
         receiptNumber: true,
         invoiceNumber: true,
+        draftSource: true,
+        marketplaceRequest: {
+          select: {
+            id: true,
+            requestNumber: true,
+            trackingToken: true,
+            fulfilmentMethod: true,
+            deliveryCoverage: true,
+            deliveryDistrict: true,
+            deliverySector: true,
+            deliveryAddress: true,
+            submittedAt: true,
+            completedAt: true,
+          },
+        },
         branch: {
           select: {
             id: true,
@@ -483,6 +504,9 @@ async function getCustomerLedger(req, res) {
     let totalCredit = 0;
     let totalPaid = 0;
     let totalOutstanding = 0;
+    let marketplaceSales = 0;
+    let marketplaceSpent = 0;
+    let lastMarketplaceOrderAt = null;
 
     for (const sale of sales) {
       totalAll += safeNumber(sale.total, 0);
@@ -493,6 +517,24 @@ async function getCustomerLedger(req, res) {
       }
 
       totalOutstanding += safeNumber(sale.balanceDue, 0);
+
+      if (sale.draftSource === "MARKETPLACE" || sale.marketplaceRequest) {
+        marketplaceSales += 1;
+        marketplaceSpent += safeNumber(sale.total, 0);
+
+        const marketplaceDate =
+          sale.marketplaceRequest?.completedAt ||
+          sale.marketplaceRequest?.submittedAt ||
+          sale.createdAt;
+
+        if (
+          marketplaceDate &&
+          (!lastMarketplaceOrderAt ||
+            new Date(marketplaceDate) > new Date(lastMarketplaceOrderAt))
+        ) {
+          lastMarketplaceOrderAt = marketplaceDate;
+        }
+      }
     }
 
     return res.json({
@@ -504,6 +546,15 @@ async function getCustomerLedger(req, res) {
         totalCredit,
         totalPaid,
         totalOutstanding,
+        marketplaceSales,
+        marketplaceSpent,
+        lastMarketplaceOrderAt,
+      },
+      marketplace: {
+        linked: Boolean(customer.marketplaceCustomerId),
+        totalOrders: marketplaceSales,
+        totalSpent: marketplaceSpent,
+        lastOrderAt: lastMarketplaceOrderAt,
       },
       sales,
     });

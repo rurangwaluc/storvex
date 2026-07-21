@@ -318,9 +318,10 @@ model MarketplaceCustomer {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @default(now()) @updatedAt
 
-  sessions      MarketplaceCustomerSession[]
-  verifications MarketplaceCustomerVerification[]
-  requests      MarketplaceRequest[]
+  sessions          MarketplaceCustomerSession[]
+  verifications     MarketplaceCustomerVerification[]
+  requests          MarketplaceRequest[]
+  businessCustomers Customer[]
 
   @@index([status])
   @@index([createdAt])
@@ -870,28 +871,32 @@ model BranchInventory {
 }
 
 model Customer {
-  id            String   @id @default(uuid())
-  tenantId      String
-  name          String
-  phone         String
-  email         String?
-  address       String?
-  tinNumber     String?
-  idNumber      String?
-  notes         String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
-  whatsappOptIn Boolean  @default(false)
+  id                    String   @id @default(uuid())
+  tenantId              String
+  name                  String
+  phone                 String
+  email                 String?
+  address               String?
+  tinNumber             String?
+  idNumber              String?
+  notes                 String?
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @default(now()) @updatedAt
+  whatsappOptIn         Boolean  @default(false)
+  marketplaceCustomerId String?  @db.Text
 
   tenant                Tenant                 @relation(fields: [tenantId], references: [id])
+  marketplaceCustomer   MarketplaceCustomer?   @relation(fields: [marketplaceCustomerId], references: [id], onDelete: SetNull)
   repairs               Repair[]
   sales                 Sale[]
   whatsAppConversations WhatsAppConversation[]
   proformas             Proforma[]
 
   @@unique([tenantId, phone])
+  @@unique([tenantId, marketplaceCustomerId])
   @@index([tenantId])
+  @@index([marketplaceCustomerId])
   @@index([tenantId, name])
   @@index([tenantId, phone])
   @@index([tenantId, isActive])

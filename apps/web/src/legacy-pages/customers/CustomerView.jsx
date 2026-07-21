@@ -140,6 +140,31 @@ function LedgerSaleRow({ sale }) {
     Math.max(0, Number(total || 0) - Number(paid || 0));
 
   const status = balance > 0 ? "Open balance" : "Cleared";
+  const marketplaceRequest = sale.marketplaceRequest || null;
+
+  const isMarketplace =
+    sale.draftSource === "MARKETPLACE" ||
+    Boolean(marketplaceRequest);
+
+  const reference =
+    marketplaceRequest?.requestNumber ||
+    sale.receiptNumber ||
+    sale.invoiceNumber ||
+    sale.saleNumber ||
+    null;
+
+  const rawFulfilmentMethod = String(
+    marketplaceRequest?.fulfilmentMethod || ""
+  )
+    .trim()
+    .toUpperCase();
+
+  const fulfilmentMethod =
+    rawFulfilmentMethod === "DELIVERY"
+      ? "Delivery"
+      : rawFulfilmentMethod === "PICKUP"
+        ? "Pickup"
+        : null;
 
   return (
     <div className="rounded-[22px] border border-[var(--color-border)] bg-[var(--customer-neutral-card)] p-4">
@@ -147,7 +172,8 @@ function LedgerSaleRow({ sale }) {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <Pill tone={balance > 0 ? "danger" : "success"}>{status}</Pill>
-            {sale.saleNumber ? <Pill>{sale.saleNumber}</Pill> : null}
+            {isMarketplace ? <Pill tone="info">Marketplace</Pill> : null}
+            {reference ? <Pill>{reference}</Pill> : null}
           </div>
 
           <div className={cx("mt-3 text-sm font-black", strong())}>
@@ -157,11 +183,15 @@ function LedgerSaleRow({ sale }) {
           <div className={cx("mt-1 space-y-0.5 text-xs font-semibold leading-5", muted())}>
             <div>Paid {formatMoney(paid)}</div>
             <div>Balance {formatMoney(balance)}</div>
+            {fulfilmentMethod ? <div>Fulfilment {fulfilmentMethod}</div> : null}
           </div>
         </div>
 
         <div className="shrink-0 text-left sm:text-right">
-          <div className={cx("text-[10px] font-bold uppercase tracking-[0.16em]", soft())}>Sale date</div>
+          <div className={cx("text-[10px] font-bold uppercase tracking-[0.16em]", soft())}>
+            Sale date
+          </div>
+
           <div className={cx("mt-1 text-sm font-black", strong())}>
             {formatDate(sale.createdAt || sale.saleDate)}
           </div>
@@ -228,6 +258,7 @@ export default function CustomerView() {
   }, [id]);
 
   const summary = ledger?.summary || {};
+  const marketplace = ledger?.marketplace || {};
   const sales = Array.isArray(ledger?.sales) ? ledger.sales : [];
 
   const totalSales = Number(summary.totalSales ?? sales.length ?? 0);
@@ -235,11 +266,36 @@ export default function CustomerView() {
   const totalPaid = Number(summary.totalPaid || 0);
   const totalOutstanding = Number(summary.totalOutstanding || customer?.outstanding || 0);
 
+  const marketplaceOrders = Number(
+    marketplace.totalOrders ??
+      summary.marketplaceSales ??
+      0
+  );
+
+  const marketplaceSpent = Number(
+    marketplace.totalSpent ??
+      summary.marketplaceSpent ??
+      0
+  );
+
+  const lastMarketplaceOrderAt =
+    marketplace.lastOrderAt ||
+    summary.lastMarketplaceOrderAt ||
+    null;
+
+  const hasMarketplaceActivity =
+    Boolean(
+      marketplace.linked ||
+        customer?.marketplaceCustomerId
+    ) ||
+    marketplaceOrders > 0;
+
   const followUpNote = useMemo(() => {
     if (totalOutstanding > 0) return "Customer has an open balance. Follow up before giving more credit.";
+    if (marketplaceOrders > 0) return "This customer also buys through your Marketplace store.";
     if (customer?.whatsappOptIn) return "Customer allows WhatsApp follow-up.";
     return "Customer is clear. Keep sales, warranty, and repair history connected here.";
-  }, [customer?.whatsappOptIn, totalOutstanding]);
+  }, [customer?.whatsappOptIn, marketplaceOrders, totalOutstanding]);
 
   if (loading) {
     return <CustomerViewSkeleton />;
@@ -324,17 +380,52 @@ export default function CustomerView() {
           <InfoTile label="Outstanding" value={formatMoney(totalOutstanding)} tone={totalOutstanding > 0 ? "danger" : "success"} />
           <InfoTile label="Total bought" value={formatMoney(totalAll)} />
           <InfoTile label="Total paid" value={formatMoney(totalPaid)} tone="success" />
-          <InfoTile label="Credit sales" value={totalSales} />
+          <InfoTile label="Sales" value={totalSales} />
         </div>
       </section>
+
+      {hasMarketplaceActivity ? (
+        <section className={cx(card(), "svx-customer-shell p-5 sm:p-6")}>
+          <div>
+            <div className={cx("text-[11px] font-bold uppercase tracking-[0.18em]", soft())}>
+              Marketplace activity
+            </div>
+
+            <h2 className={cx("mt-2 text-lg font-black tracking-tight", strong())}>
+              Orders from your Marketplace store
+            </h2>
+
+            <p className={cx("mt-1 max-w-2xl text-sm leading-6", muted())}>
+              Marketplace purchases stay connected to this same customer profile.
+            </p>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <InfoTile
+              label="Marketplace orders"
+              value={marketplaceOrders}
+            />
+
+            <InfoTile
+              label="Marketplace spent"
+              value={formatMoney(marketplaceSpent)}
+            />
+
+            <InfoTile
+              label="Latest order"
+              value={formatDate(lastMarketplaceOrderAt)}
+            />
+          </div>
+        </section>
+      ) : null}
 
       <section className="space-y-5">
         <section className={cx(card(), "svx-customer-shell p-5 sm:p-6")}>
           <div>
             <div className={cx("text-[11px] font-bold uppercase tracking-[0.18em]", soft())}>Customer ledger</div>
-            <h2 className={cx("mt-2 text-lg font-black tracking-tight", strong())}>Credit and payment history</h2>
+            <h2 className={cx("mt-2 text-lg font-black tracking-tight", strong())}>Sales and payment history</h2>
             <p className={cx("mt-1 text-sm leading-6", muted())}>
-              See what this customer bought on credit, how much was paid, and what remains.
+              See what this customer bought, how much was paid, and what remains.
             </p>
           </div>
 
@@ -345,9 +436,9 @@ export default function CustomerView() {
               ))
             ) : (
               <div className={cx(panel(), "p-5 text-center")}>
-                <div className={cx("text-sm font-black", strong())}>No credit history yet</div>
+                <div className={cx("text-sm font-black", strong())}>No sales history yet</div>
                 <p className={cx("mx-auto mt-2 max-w-md text-xs font-semibold leading-5", muted())}>
-                  Credit sales made for this customer will appear here.
+                  Sales made for this customer will appear here.
                 </p>
               </div>
             )}
