@@ -35,12 +35,10 @@ import {
   MarketplaceHeader,
 } from "./MarketplaceHome";
 import MarketplaceCustomerOrders from "./MarketplaceCustomerOrders";
+import MarketplaceCustomerSavedProducts from "./MarketplaceCustomerSavedProducts";
 import {
   useMarketplaceCustomerSession,
 } from "./MarketplaceCustomerSession";
-import {
-  MARKETPLACE_CUSTOMER_PANEL_EVENT,
-} from "./marketplaceCustomerStore";
 
 import "../../components/onboarding/Onboarding.css";
 import "./MarketplacePublic.css";
@@ -83,23 +81,6 @@ function formatCustomerPhone(value) {
   }
 
   return value || "";
-}
-
-function openSavedProducts() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.dispatchEvent(
-    new CustomEvent(
-      MARKETPLACE_CUSTOMER_PANEL_EVENT,
-      {
-        detail: {
-          mode: "wishlist",
-        },
-      },
-    ),
-  );
 }
 
 function CustomerPasswordField({
@@ -215,7 +196,14 @@ function SignedInAccount({
 
         <button
           type="button"
-          onClick={openSavedProducts}
+          className={
+            section === "saved"
+              ? "is-active"
+              : ""
+          }
+          onClick={() =>
+            setSection("saved")
+          }
         >
           <Heart size={17} />
           Saved products
@@ -239,6 +227,8 @@ function SignedInAccount({
 
       {section === "orders" ? (
         <MarketplaceCustomerOrders />
+      ) : section === "saved" ? (
+        <MarketplaceCustomerSavedProducts />
       ) : (
         <section className="svx-customer-account-details">
           <div className="svx-customer-account-section-heading">
