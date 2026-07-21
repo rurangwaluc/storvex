@@ -1202,6 +1202,14 @@ export default function MarketplaceRequestDetail() {
                   </div>
 
                   <div className="svx-market-owner-contact-actions">
+                      {request.sale?.customerId ? (
+                        <Link
+                          to={`/app/customers/${request.sale.customerId}`}
+                        >
+                          Open customer
+                        </Link>
+                      ) : null}
+
                     {request.customerPhone ? (
                       <a
                         href={`tel:${request.customerPhone}`}

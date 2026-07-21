@@ -38,6 +38,10 @@ const STATUS_FILTERS = [
     label: "Delivery",
   },
   {
+    value: "DELIVERY_FAILED",
+    label: "Delivery failed",
+  },
+  {
     value: "COMPLETED",
     label: "Completed",
   },
@@ -107,6 +111,7 @@ function statusLabel(value) {
     PREPARING: "Preparing",
     READY_FOR_PICKUP: "Ready for pickup",
     OUT_FOR_DELIVERY: "Out for delivery",
+    DELIVERY_FAILED: "Delivery not completed",
     COMPLETED: "Completed",
   };
 

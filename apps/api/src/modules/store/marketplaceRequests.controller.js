@@ -130,6 +130,7 @@ function requestSelect({
     sale: {
       select: {
         id: true,
+        customerId: true,
         receiptNumber: true,
         invoiceNumber: true,
         total: true,
