@@ -843,7 +843,10 @@ async function listPublicProducts(query = {}) {
     query.category,
     120,
   );
-
+  const subcategory = cleanString(
+    query.subcategory,
+    120,
+  );
   const category = isMainMarketplaceCategory(requestedCategory)
     ? ""
     : requestedCategory;
@@ -856,17 +859,58 @@ async function listPublicProducts(query = {}) {
     MAX_PAGE_SIZE,
   );
 
-  const sellers = await prisma.marketplaceSellerProfile.findMany({
-    where: {
-      marketplaceEnabled: true,
-      publicSlug: { not: null },
-      ...(storeSlug ? { publicSlug: storeSlug } : {}),
-      tenant: {
-        status: "ACTIVE",
+  const minimumPriceValue = Number(query.minPrice);
+  const maximumPriceValue = Number(query.maxPrice);
+
+  const minimumPrice =
+    Number.isFinite(minimumPriceValue) &&
+    minimumPriceValue >= 0
+      ? minimumPriceValue
+      : null;
+
+  const maximumPrice =
+    Number.isFinite(maximumPriceValue) &&
+    maximumPriceValue >= 0
+      ? maximumPriceValue
+      : null;
+
+  const onSaleOnly =
+    String(query.onSale || "").toLowerCase() === "true";
+
+  const fulfilment = [
+    "pickup",
+    "delivery",
+  ].includes(
+    String(query.fulfilment || "").toLowerCase(),
+  )
+    ? String(query.fulfilment).toLowerCase()
+    : "";
+
+  const sort = [
+    "newest",
+    "price_asc",
+    "price_desc",
+    "name",
+  ].includes(
+    String(query.sort || "").toLowerCase(),
+  )
+    ? String(query.sort).toLowerCase()
+    : "newest";
+
+  const sellers =
+    await prisma.marketplaceSellerProfile.findMany({
+      where: {
+        marketplaceEnabled: true,
+        publicSlug: { not: null },
+        ...(storeSlug
+          ? { publicSlug: storeSlug }
+          : {}),
+        tenant: {
+          status: "ACTIVE",
+        },
       },
-    },
-    include: publicSellerInclude,
-  });
+      include: publicSellerInclude,
+    });
 
   if (!sellers.length) {
     return {
@@ -877,73 +921,36 @@ async function listPublicProducts(query = {}) {
         limit,
         total: 0,
         pages: 1,
+        hasPreviousPage: false,
+        hasNextPage: false,
+      },
+      filters: {
+        search: search || "",
+        category: requestedCategory || "",
+        subcategory: subcategory || "",
+        minPrice: minimumPrice,
+        maxPrice: maximumPrice,
+        onSale: onSaleOnly,
+        fulfilment,
+        sort,
       },
     };
   }
 
   const sellerByTenant = new Map(
-    sellers.map((seller) => [seller.tenantId, seller]),
+    sellers.map((seller) => [
+      seller.tenantId,
+      seller,
+    ]),
   );
 
   const products = await prisma.product.findMany({
     where: publishedProductWhere({
       tenantId: {
-        in: sellers.map((seller) => seller.tenantId),
+        in: sellers.map(
+          (seller) => seller.tenantId,
+        ),
       },
-      ...(category
-        ? {
-            OR: [
-              {
-                marketplaceCategory: {
-                  equals: category,
-                  mode: "insensitive",
-                },
-              },
-              {
-                category: {
-                  equals: category,
-                  mode: "insensitive",
-                },
-              },
-            ],
-          }
-        : {}),
-      ...(search
-        ? {
-            OR: [
-              {
-                marketplaceTitle: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                marketplaceDescription: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                name: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                category: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                marketplaceCategory: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-            ],
-          }
-        : {}),
     }),
     select: publicProductSelect,
     orderBy: [
@@ -952,41 +959,265 @@ async function listPublicProducts(query = {}) {
     ],
   });
 
-  const visibleProducts = products
-    .filter((product) =>
-      productMatchesMarketplaceCategory(
-        product,
-        requestedCategory,
-      ),
-    )
+  const allVisibleProducts = products
     .map((product) => {
-      const seller = sellerByTenant.get(product.tenantId);
+      const seller =
+        sellerByTenant.get(product.tenantId);
 
-      return seller
-        ? serializePublicProduct(product, seller)
-        : null;
+      if (!seller) return null;
+
+      const serialized =
+        serializePublicProduct(product, seller);
+
+      if (!serialized) return null;
+
+      return {
+        ...serialized,
+        marketplacePublishedAt:
+          product.marketplacePublishedAt
+            ? new Date(
+                product.marketplacePublishedAt,
+              ).toISOString()
+            : null,
+      };
     })
     .filter(Boolean);
 
   const categories = Array.from(
     new Set(
-      visibleProducts
+      allVisibleProducts
         .map((product) => product.category)
         .filter(Boolean),
     ),
-  ).sort((a, b) => a.localeCompare(b));
+  ).sort((left, right) =>
+    left.localeCompare(right),
+  );
 
-  const total = visibleProducts.length;
-  const start = (page - 1) * limit;
+  const normalizedSearch =
+    String(search || "").toLowerCase();
+
+  const normalizeCatalogueToken = (value) =>
+    String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const normalizedSubcategory =
+    normalizeCatalogueToken(subcategory);
+
+  const filteredProducts =
+    allVisibleProducts.filter((product) => {
+      if (
+        requestedCategory &&
+        !productMatchesMarketplaceCategory(
+          {
+            category: product.category,
+            marketplaceCategory:
+              product.category,
+            marketplaceAttributes:
+              product.attributes,
+          },
+          requestedCategory,
+        )
+      ) {
+        return false;
+      }
+
+      if (category) {
+        const productCategory =
+          String(
+            product.category || "",
+          ).toLowerCase();
+
+        if (
+          productCategory !==
+          String(category).toLowerCase()
+        ) {
+          return false;
+        }
+      }
+
+      if (normalizedSubcategory) {
+        const attributes =
+          product.attributes &&
+          typeof product.attributes === "object" &&
+          !Array.isArray(product.attributes)
+            ? product.attributes
+            : {};
+
+        const subcategoryValues = [
+          attributes.subcategory,
+          attributes.subSubcategory,
+          attributes.productType,
+          product.category,
+          product.title,
+        ]
+          .filter(Boolean)
+          .map(normalizeCatalogueToken);
+
+        const matchesSubcategory =
+          subcategoryValues.some(
+            (value) =>
+              value === normalizedSubcategory ||
+              value.includes(
+                normalizedSubcategory,
+              ) ||
+              normalizedSubcategory.includes(
+                value,
+              ),
+          );
+
+        if (!matchesSubcategory) {
+          return false;
+        }
+      }
+
+      if (normalizedSearch) {
+        const searchable = [
+          product.title,
+          product.description,
+          product.category,
+          product.seller?.name,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        if (
+          !searchable.includes(
+            normalizedSearch,
+          )
+        ) {
+          return false;
+        }
+      }
+
+      if (
+        minimumPrice !== null &&
+        Number(product.price || 0) <
+          minimumPrice
+      ) {
+        return false;
+      }
+
+      if (
+        maximumPrice !== null &&
+        Number(product.price || 0) >
+          maximumPrice
+      ) {
+        return false;
+      }
+
+      if (onSaleOnly && !product.onSale) {
+        return false;
+      }
+
+      if (
+        fulfilment === "pickup" &&
+        !product.pickupEnabled
+      ) {
+        return false;
+      }
+
+      if (
+        fulfilment === "delivery" &&
+        !product.deliveryEnabled
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+  filteredProducts.sort((left, right) => {
+    if (sort === "price_asc") {
+      return (
+        Number(left.price || 0) -
+          Number(right.price || 0) ||
+        String(left.title || "").localeCompare(
+          String(right.title || ""),
+        )
+      );
+    }
+
+    if (sort === "price_desc") {
+      return (
+        Number(right.price || 0) -
+          Number(left.price || 0) ||
+        String(left.title || "").localeCompare(
+          String(right.title || ""),
+        )
+      );
+    }
+
+    if (sort === "name") {
+      return String(
+        left.title || "",
+      ).localeCompare(
+        String(right.title || ""),
+      );
+    }
+
+    const leftDate = left.marketplacePublishedAt
+      ? new Date(
+          left.marketplacePublishedAt,
+        ).getTime()
+      : 0;
+
+    const rightDate =
+      right.marketplacePublishedAt
+        ? new Date(
+            right.marketplacePublishedAt,
+          ).getTime()
+        : 0;
+
+    return (
+      rightDate -
+        leftDate ||
+      String(left.title || "").localeCompare(
+        String(right.title || ""),
+      )
+    );
+  });
+
+  const total = filteredProducts.length;
+  const pages = Math.max(
+    1,
+    Math.ceil(total / limit),
+  );
+  const safePage = Math.min(page, pages);
+  const start = (safePage - 1) * limit;
 
   return {
-    products: visibleProducts.slice(start, start + limit),
+    products: filteredProducts
+      .slice(start, start + limit)
+      .map(
+        ({
+          marketplacePublishedAt,
+          ...product
+        }) => product,
+      ),
     categories,
     pagination: {
-      page,
+      page: safePage,
       limit,
       total,
-      pages: Math.max(1, Math.ceil(total / limit)),
+      pages,
+      hasPreviousPage: safePage > 1,
+      hasNextPage: safePage < pages,
+    },
+    filters: {
+      search: search || "",
+      category: requestedCategory || "",
+      subcategory: subcategory || "",
+      minPrice: minimumPrice,
+      maxPrice: maximumPrice,
+      onSale: onSaleOnly,
+      fulfilment,
+      sort,
     },
   };
 }

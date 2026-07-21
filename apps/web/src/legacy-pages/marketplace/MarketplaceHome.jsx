@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import {
   Link,
+  useLocation,
   useSearchParams,
   useNavigate,
 } from "react-router-dom";
@@ -133,6 +134,7 @@ export function marketplaceErrorMessage(error) {
 
 export function MarketplaceHeader() {
   const { isDark, toggleTheme } = useTheme();
+  const location = useLocation();
   const customerStore = useMarketplaceCustomerStore();
   const customerSession =
     useMarketplaceCustomerSession();
@@ -242,15 +244,31 @@ export function MarketplaceHeader() {
           </Link>
 
           <nav
-            className="svx-nav"
+            className="svx-nav svx-marketplace-primary-nav"
             aria-label="Marketplace navigation"
           >
             <Link to="/">For businesses</Link>
+
             <Link
               to="/marketplace"
-              className="svx-marketplace-nav-active"
+              className={
+                location.pathname === "/marketplace"
+                  ? "svx-marketplace-nav-active"
+                  : ""
+              }
             >
               Marketplace
+            </Link>
+
+            <Link
+              to="/marketplace/shop"
+              className={
+                location.pathname === "/marketplace/shop"
+                  ? "svx-marketplace-nav-active"
+                  : ""
+              }
+            >
+              Shop
             </Link>
           </nav>
 
@@ -409,7 +427,16 @@ export function MarketplaceHeader() {
               className="svx-mobile-menu-link"
               onClick={() => setMenuOpen(false)}
             >
-              <span>Marketplace</span>
+              <span>Marketplace home</span>
+            </Link>
+
+            <Link
+              to="/marketplace/shop"
+              className="svx-mobile-menu-link"
+              onClick={() => setMenuOpen(false)}
+            >
+              <span>Shop products</span>
+              <ChevronRight size={17} />
             </Link>
 
             <button
@@ -510,7 +537,7 @@ function marketplaceCardDescription(
   return `${preview}...`;
 }
 
-function ProductCard({ product }) {
+export function ProductCard({ product }) {
   const navigate = useNavigate();
 
   const customerStore =
@@ -962,7 +989,7 @@ function StoreCard({ store }) {
   );
 }
 
-function LoadingProducts() {
+export function LoadingProducts() {
   return (
     <div className="svx-commerce-product-grid">
       {Array.from({ length: 8 }).map((_, index) => (
@@ -1060,9 +1087,9 @@ export function MarketplaceFooter({
             <div className="svx-commerce-footer-links">
               <div>
                 <h3>Marketplace</h3>
-                <Link to="/marketplace">
-                  Browse products
-                </Link>
+                <Link to="/marketplace/shop">
+                    Browse products
+                  </Link>
                 <Link to="/marketplace">
                   Explore stores
                 </Link>
@@ -1157,38 +1184,94 @@ export default function MarketplaceHome() {
     );
   }, []);
 
-  const initialSearch = cleanString(searchParams.get("search"));
+  const initialSearch = cleanString(
+    searchParams.get("search"),
+  );
   const initialCategory = cleanString(
     searchParams.get("category"),
   );
+  const initialSort =
+    cleanString(searchParams.get("sort")) || "newest";
+  const initialFulfilment = cleanString(
+    searchParams.get("fulfilment"),
+  );
+  const initialMinimumPrice = cleanString(
+    searchParams.get("minPrice"),
+  );
+  const initialMaximumPrice = cleanString(
+    searchParams.get("maxPrice"),
+  );
+  const initialOnSale =
+    searchParams.get("onSale") === "true";
+  const initialPage = Math.max(
+    1,
+    Number.parseInt(
+      searchParams.get("page") || "1",
+      10,
+    ) || 1,
+  );
 
-  const [searchInput, setSearchInput] = useState(initialSearch);
-  const [search, setSearch] = useState(initialSearch);
-  const [category, setCategory] = useState(initialCategory);
+  const [searchInput, setSearchInput] =
+    useState(initialSearch);
+  const [search, setSearch] =
+    useState(initialSearch);
+  const [category, setCategory] =
+    useState(initialCategory);
+  const [sort, setSort] =
+    useState(initialSort);
+  const [fulfilment, setFulfilment] =
+    useState(initialFulfilment);
+  const [minimumPrice, setMinimumPrice] =
+    useState(initialMinimumPrice);
+  const [maximumPrice, setMaximumPrice] =
+    useState(initialMaximumPrice);
+  const [onSaleOnly, setOnSaleOnly] =
+    useState(initialOnSale);
+  const [page, setPage] =
+    useState(initialPage);
+  const [filtersOpen, setFiltersOpen] =
+    useState(false);
 
-  const [products, setProducts] = useState([]);
-  const [stores, setStores] = useState([]);
-  const [apiCategories, setApiCategories] = useState([]);
+  const [products, setProducts] =
+    useState([]);
+  const [stores, setStores] =
+    useState([]);
+  const [apiCategories, setApiCategories] =
+    useState([]);
+  const [pagination, setPagination] =
+    useState({
+      page: initialPage,
+      limit: 24,
+      total: 0,
+      pages: 1,
+      hasPreviousPage: false,
+      hasNextPage: false,
+    });
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loading, setLoading] =
+    useState(true);
+  const [error, setError] =
+    useState("");
 
   const loadMarketplace = useCallback(async () => {
     setLoading(true);
     setError("");
 
     try {
-      const [productData, storeData] = await Promise.all([
-        listMarketplaceProducts({
-          search,
-          category,
-          limit: 8,
-        }),
-        listMarketplaceStores({
-          search,
-          limit: 4,
-        }),
-      ]);
+      const [productData, storeData] =
+        await Promise.all([
+          listMarketplaceProducts({
+            search,
+            category,
+            sort: "newest",
+            page: 1,
+            limit: 8,
+          }),
+          listMarketplaceStores({
+            search,
+            limit: 4,
+          }),
+        ]);
 
       setProducts(
         Array.isArray(productData?.products)
@@ -1202,6 +1285,30 @@ export default function MarketplaceHome() {
           : [],
       );
 
+      setPagination({
+        page: Number(
+          productData?.pagination?.page || 1,
+        ),
+        limit: Number(
+          productData?.pagination?.limit || 24,
+        ),
+        total: Number(
+          productData?.pagination?.total || 0,
+        ),
+        pages: Math.max(
+          1,
+          Number(
+            productData?.pagination?.pages || 1,
+          ),
+        ),
+        hasPreviousPage: Boolean(
+          productData?.pagination?.hasPreviousPage,
+        ),
+        hasNextPage: Boolean(
+          productData?.pagination?.hasNextPage,
+        ),
+      });
+
       setStores(
         Array.isArray(storeData?.stores)
           ? storeData.stores
@@ -1212,7 +1319,16 @@ export default function MarketplaceHome() {
     } finally {
       setLoading(false);
     }
-  }, [search, category]);
+  }, [
+    search,
+    category,
+    sort,
+    fulfilment,
+    minimumPrice,
+    maximumPrice,
+    onSaleOnly,
+    page,
+  ]);
 
   useEffect(() => {
     loadMarketplace();
@@ -1228,8 +1344,44 @@ export default function MarketplaceHome() {
     if (search) next.search = search;
     if (category) next.category = category;
 
-    setSearchParams(next, { replace: true });
-  }, [search, category, setSearchParams]);
+    if (sort && sort !== "newest") {
+      next.sort = sort;
+    }
+
+    if (fulfilment) {
+      next.fulfilment = fulfilment;
+    }
+
+    if (minimumPrice) {
+      next.minPrice = minimumPrice;
+    }
+
+    if (maximumPrice) {
+      next.maxPrice = maximumPrice;
+    }
+
+    if (onSaleOnly) {
+      next.onSale = "true";
+    }
+
+    if (page > 1) {
+      next.page = String(page);
+    }
+
+    setSearchParams(next, {
+      replace: true,
+    });
+  }, [
+    search,
+    category,
+    sort,
+    fulfilment,
+    minimumPrice,
+    maximumPrice,
+    onSaleOnly,
+    page,
+    setSearchParams,
+  ]);
 
   const visibleCategories = useMemo(() => {
     const known = new Set(apiCategories.map((item) => item.toLowerCase()));
@@ -1242,23 +1394,87 @@ export default function MarketplaceHome() {
     }));
   }, [apiCategories]);
 
-  const featuredProducts = products.slice(0, 8);
-
   const resultsLabel =
-    products.length === 1
+    pagination.total === 1
       ? "1 available product"
-      : `${products.length} available products`;
+      : `${pagination.total.toLocaleString()} available products`;
+
+  const activeFilterCount = [
+    category,
+    fulfilment,
+    minimumPrice,
+    maximumPrice,
+    onSaleOnly,
+  ].filter(Boolean).length;
+
+  const pageNumbers = useMemo(() => {
+    const totalPages = Math.max(
+      1,
+      pagination.pages,
+    );
+
+    const candidates = new Set([
+      1,
+      totalPages,
+      pagination.page - 2,
+      pagination.page - 1,
+      pagination.page,
+      pagination.page + 1,
+      pagination.page + 2,
+    ]);
+
+    return Array.from(candidates)
+      .filter(
+        (value) =>
+          value >= 1 &&
+          value <= totalPages,
+      )
+      .sort((left, right) => left - right);
+  }, [
+    pagination.page,
+    pagination.pages,
+  ]);
 
   function submitSearch(event) {
     event.preventDefault();
+    setPage(1);
     setSearch(cleanString(searchInput));
   }
 
   function chooseCategory(value) {
+    setPage(1);
     setCategory(value);
-    window.scrollTo({
-      top: 520,
-      behavior: "smooth",
+
+    document
+      .getElementById("marketplace-products")
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+  }
+
+  function goToPage(nextPage) {
+    const targetPage = Math.max(
+      1,
+      Math.min(
+        pagination.pages,
+        Number(nextPage || 1),
+      ),
+    );
+
+    if (targetPage === pagination.page) {
+      return;
+    }
+
+    setPage(targetPage);
+
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById("marketplace-products")
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
     });
   }
 
@@ -1266,6 +1482,13 @@ export default function MarketplaceHome() {
     setSearchInput("");
     setSearch("");
     setCategory("");
+    setSort("newest");
+    setFulfilment("");
+    setMinimumPrice("");
+    setMaximumPrice("");
+    setOnSaleOnly(false);
+    setPage(1);
+    setFiltersOpen(false);
   }
 
   return (
@@ -1596,8 +1819,8 @@ export default function MarketplaceHome() {
               <div>
                 <span>
                   {category || search
-                    ? "Search results"
-                    : "Fresh on Marketplace"}
+                    ? "Matching products"
+                    : "Recently added"}
                 </span>
 
                 <h2>
@@ -1605,25 +1828,17 @@ export default function MarketplaceHome() {
                     ? category
                     : search
                       ? `Results for “${search}”`
-                      : "New and available products"}
+                      : "New arrivals"}
                 </h2>
               </div>
 
-              {category || search ? (
-                <strong>
-                  {loading ? "Loading" : resultsLabel}
-                </strong>
-              ) : (
-                <button
-                  type="button"
-                  className="svx-commerce-view-all-products"
-                  aria-disabled="true"
-                  title="The complete product shop is coming next"
-                >
-                  <span>View all products</span>
-                  <ArrowRight size={15} />
-                </button>
-              )}
+              <Link
+                to="/marketplace/shop"
+                className="svx-commerce-view-all-products"
+              >
+                <span>Browse all products</span>
+                <ArrowRight size={15} />
+              </Link>
             </div>
 
             {loading ? <LoadingProducts /> : null}
@@ -1631,41 +1846,50 @@ export default function MarketplaceHome() {
             {!loading && error ? (
               <div className="svx-commerce-state">
                 <AlertCircle size={31} />
-                <h2>Marketplace is temporarily unavailable</h2>
+                <h2>
+                  Marketplace is temporarily unavailable
+                </h2>
                 <p>{error}</p>
 
-                <button type="button" onClick={loadMarketplace}>
+                <button
+                  type="button"
+                  onClick={loadMarketplace}
+                >
                   <RefreshCw size={16} />
                   Try again
                 </button>
               </div>
             ) : null}
 
-            {!loading && !error && products.length === 0 ? (
+            {!loading &&
+            !error &&
+            products.length === 0 ? (
               <div className="svx-commerce-state">
                 <PackageSearch size={34} />
                 <h2>No matching products found</h2>
                 <p>
-                  Change your search or category to see other available
-                  products.
+                  Browse the complete shop to see
+                  other available products.
                 </p>
 
-                <button type="button" onClick={clearFilters}>
-                  Clear filters
-                </button>
+                <Link to="/marketplace/shop">
+                  Browse all products
+                </Link>
               </div>
             ) : null}
 
             {!loading &&
             !error &&
-            featuredProducts.length > 0 ? (
+            products.length > 0 ? (
               <div className="svx-commerce-product-grid">
-                {featuredProducts.map((product) => (
-                  <ProductCard
-                    key={`${product.seller.slug}-${product.slug}`}
-                    product={product}
-                  />
-                ))}
+                {products.slice(0, 8).map(
+                  (product) => (
+                    <ProductCard
+                      key={`${product.seller.slug}-${product.slug}`}
+                      product={product}
+                    />
+                  ),
+                )}
               </div>
             ) : null}
           </div>
