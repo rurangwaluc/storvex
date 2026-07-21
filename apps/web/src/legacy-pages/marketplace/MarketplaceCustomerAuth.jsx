@@ -34,6 +34,7 @@ import {
 import {
   MarketplaceHeader,
 } from "./MarketplaceHome";
+import MarketplaceCustomerAccountDetails from "./MarketplaceCustomerAccountDetails";
 import MarketplaceCustomerOrders from "./MarketplaceCustomerOrders";
 import MarketplaceCustomerSavedProducts from "./MarketplaceCustomerSavedProducts";
 import {
@@ -230,90 +231,12 @@ function SignedInAccount({
       ) : section === "saved" ? (
         <MarketplaceCustomerSavedProducts />
       ) : (
-        <section className="svx-customer-account-details">
-          <div className="svx-customer-account-section-heading">
-            <div>
-              <h2>Account details</h2>
-              <p>
-                The details used when you place an order.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="svx-customer-account-edit"
-              disabled
-              title="Editing will be added next"
-            >
-              <Pencil size={16} />
-              Edit details
-            </button>
-          </div>
-
-          <div className="svx-customer-profile-card">
-            <div className="svx-customer-profile-main">
-              <span className="svx-customer-profile-icon">
-                <BadgeCheck
-                  size={22}
-                  strokeWidth={2.2}
-                />
-              </span>
-
-              <div>
-                <h3>{customer?.name}</h3>
-                <p>{customer?.email}</p>
-              </div>
-            </div>
-
-            <dl className="svx-customer-profile-details">
-              <div>
-                <dt>Full name</dt>
-                <dd>{customer?.name}</dd>
-              </div>
-
-              <div>
-                <dt>Email</dt>
-                <dd>{customer?.email}</dd>
-              </div>
-
-              <div>
-                <dt>Phone</dt>
-                <dd>
-                  {customer?.phone
-                    ? formatCustomerPhone(
-                        customer.phone,
-                      )
-                    : "Not added"}
-                </dd>
-              </div>
-            </dl>
-
-            {error ? (
-              <p className="svx-marketplace-auth-error">
-                {error}
-              </p>
-            ) : null}
-
-            <div className="svx-customer-profile-footer">
-              <p>
-                Sign out only when you have finished using this device.
-              </p>
-
-              <button
-                type="button"
-                className="svx-marketplace-auth-secondary"
-                onClick={onSignOut}
-                disabled={signingOut}
-              >
-                <LogOut size={17} />
-
-                {signingOut
-                  ? "Signing out..."
-                  : "Sign out"}
-              </button>
-            </div>
-          </div>
-        </section>
+        <MarketplaceCustomerAccountDetails
+          customer={customer}
+          signingOut={signingOut}
+          onSignOut={onSignOut}
+          signOutError={error}
+        />
       )}
     </div>
   );

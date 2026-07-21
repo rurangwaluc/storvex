@@ -30,6 +30,18 @@ router.get(
   customerAuth.getCurrentCustomer,
 );
 
+router.patch(
+  "/customer/me",
+  authenticateMarketplaceCustomer,
+  customerAuth.updateCustomerDetails,
+);
+
+router.post(
+  "/customer/change-password",
+  authenticateMarketplaceCustomer,
+  customerAuth.changeCustomerPassword,
+);
+
 router.get(
   "/customer/orders",
   authenticateMarketplaceCustomer,

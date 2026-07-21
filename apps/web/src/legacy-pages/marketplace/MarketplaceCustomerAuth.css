@@ -1868,3 +1868,239 @@
     padding-left: 13px;
   }
 }
+
+/* =========================================================
+   Working customer account details
+   ========================================================= */
+
+.svx-customer-profile-details.is-compact {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.svx-customer-profile-details.is-compact > div {
+  padding-right: 0;
+}
+
+.svx-customer-account-form {
+  display: grid;
+  gap: 17px;
+  padding: 22px 0;
+}
+
+.svx-customer-account-form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.svx-customer-account-form-field > span {
+  color: var(--onboard-text);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.svx-customer-account-form-field input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--onboard-border);
+  border-radius: 11px;
+  outline: 0;
+  background: var(--color-bg);
+  color: var(--onboard-text);
+  padding: 0 13px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.svx-customer-account-form-field input:focus {
+  border-color: var(--onboard-primary);
+}
+
+.svx-customer-account-form-field input:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.svx-customer-account-form-field small {
+  color: var(--onboard-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.svx-customer-account-password-input {
+  position: relative;
+}
+
+.svx-customer-account-password-input input {
+  padding-right: 50px;
+}
+
+.svx-customer-account-password-input button {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--onboard-muted);
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+
+.svx-customer-account-primary-action {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--onboard-primary);
+  border-radius: 11px;
+  background: var(--onboard-primary);
+  color: var(--color-primary-contrast);
+  padding: 0 17px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.svx-customer-account-primary-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.svx-customer-account-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 18px 0 0;
+  border-left: 3px solid;
+  padding: 11px 13px;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.svx-customer-account-message.is-success {
+  border-left-color: #16845b;
+  background:
+    color-mix(
+      in srgb,
+      #16845b 9%,
+      var(--onboard-card)
+    );
+  color: #116b49;
+}
+
+.svx-customer-account-message.is-error {
+  border-left-color: #c23b3b;
+  background:
+    color-mix(
+      in srgb,
+      #c23b3b 9%,
+      var(--onboard-card)
+    );
+  color: #a72d2d;
+}
+
+:root[data-theme="dark"]
+  .svx-customer-account-message.is-success {
+  color: #82ddb7;
+}
+
+:root[data-theme="dark"]
+  .svx-customer-account-message.is-error {
+  color: #ff9696;
+}
+
+.svx-customer-account-security {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 0;
+  border-top: 1px solid var(--onboard-border);
+}
+
+.svx-customer-account-security > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--onboard-muted);
+}
+
+.svx-customer-account-security > div > div {
+  display: grid;
+  gap: 4px;
+}
+
+.svx-customer-account-security strong {
+  color: var(--onboard-text);
+  font-size: 12px;
+}
+
+.svx-customer-account-security span {
+  color: var(--onboard-muted);
+  font-size: 10px;
+}
+
+.svx-customer-account-security > button {
+  min-height: 40px;
+  flex: 0 0 auto;
+  border: 1px solid var(--onboard-border);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--onboard-text);
+  padding: 0 14px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.svx-customer-password-guidance {
+  margin: -2px 0 0;
+  color: var(--onboard-muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.svx-account-saved-pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 22px;
+}
+
+.svx-account-saved-pagination button {
+  min-height: 44px;
+  border: 1px solid var(--onboard-border);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--onboard-text);
+  padding: 0 18px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .svx-customer-account-security > button:hover,
+  .svx-account-saved-pagination button:hover {
+    border-color: var(--onboard-primary);
+    color: var(--onboard-primary);
+  }
+}
+
+@media (max-width: 620px) {
+  .svx-customer-account-security {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .svx-customer-account-security > button,
+  .svx-customer-account-primary-action {
+    width: 100%;
+  }
+}

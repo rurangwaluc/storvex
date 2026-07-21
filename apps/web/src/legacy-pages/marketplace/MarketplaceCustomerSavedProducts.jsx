@@ -290,6 +290,9 @@ export default function MarketplaceCustomerSavedProducts() {
   const [message, setMessage] =
     useState(null);
 
+  const [visibleCount, setVisibleCount] =
+    useState(6);
+
   useEffect(() => {
     if (!message) return undefined;
 
@@ -367,7 +370,9 @@ export default function MarketplaceCustomerSavedProducts() {
         </div>
       ) : (
         <div className="svx-account-saved-grid">
-          {store.wishlist.map((item) => (
+          {store.wishlist
+            .slice(0, visibleCount)
+            .map((item) => (
             <SavedProductCard
               key={item.key}
               item={item}
@@ -377,6 +382,30 @@ export default function MarketplaceCustomerSavedProducts() {
           ))}
         </div>
       )}
+
+      {store.wishlist.length > 6 ? (
+        <div className="svx-account-saved-pagination">
+          <button
+            type="button"
+            onClick={() =>
+              setVisibleCount(
+                visibleCount >=
+                  store.wishlist.length
+                  ? 6
+                  : store.wishlist.length,
+              )
+            }
+          >
+            {visibleCount >=
+            store.wishlist.length
+              ? "Show less"
+              : `Show ${
+                  store.wishlist.length -
+                  visibleCount
+                } more`}
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

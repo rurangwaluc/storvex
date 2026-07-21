@@ -466,6 +466,249 @@ async function getCurrentCustomer(
   });
 }
 
+async function updateCustomerDetails(
+  req,
+  res,
+) {
+  try {
+    const name = cleanString(
+      req.body?.name,
+      160,
+    );
+
+    const phone = normalizePhone(
+      req.body?.phone,
+    );
+
+    if (!name) {
+      return res.status(400).json({
+        message: "Enter your full name.",
+        code:
+          "MARKETPLACE_CUSTOMER_NAME_REQUIRED",
+      });
+    }
+
+    if (
+      phone &&
+      !validRwandaPhone(phone)
+    ) {
+      return res.status(400).json({
+        message:
+          "Enter a valid Rwanda phone number.",
+        code:
+          "MARKETPLACE_CUSTOMER_PHONE_INVALID",
+      });
+    }
+
+    if (phone) {
+      const phoneOwner =
+        await prisma.marketplaceCustomer.findFirst({
+          where: {
+            phone,
+            id: {
+              not:
+                req.marketplaceCustomer.id,
+            },
+          },
+          select: {
+            id: true,
+          },
+        });
+
+      if (phoneOwner) {
+        return res.status(409).json({
+          message:
+            "Another account already uses this phone number.",
+          code:
+            "MARKETPLACE_CUSTOMER_PHONE_EXISTS",
+        });
+      }
+    }
+
+    const customer =
+      await prisma.marketplaceCustomer.update({
+        where: {
+          id:
+            req.marketplaceCustomer.id,
+        },
+        data: {
+          name,
+          phone,
+        },
+      });
+
+    return res.json({
+      message:
+        "Your account details were updated.",
+      customer:
+        publicCustomer(customer),
+    });
+  } catch (error) {
+    if (error?.code === "P2002") {
+      return res.status(409).json({
+        message:
+          "Another account already uses this phone number.",
+        code:
+          "MARKETPLACE_CUSTOMER_PHONE_EXISTS",
+      });
+    }
+
+    console.error(
+      "Marketplace customer details update error:",
+      error,
+    );
+
+    return res.status(500).json({
+      message:
+        "We could not update your account details.",
+      code:
+        "MARKETPLACE_CUSTOMER_UPDATE_FAILED",
+    });
+  }
+}
+
+async function changeCustomerPassword(
+  req,
+  res,
+) {
+  try {
+    const currentPassword =
+      String(
+        req.body?.currentPassword ||
+          "",
+      );
+
+    const newPassword =
+      String(
+        req.body?.newPassword ||
+          "",
+      );
+
+    if (
+      !currentPassword ||
+      !newPassword
+    ) {
+      return res.status(400).json({
+        message:
+          "Enter your current password and new password.",
+        code:
+          "MARKETPLACE_CUSTOMER_PASSWORDS_REQUIRED",
+      });
+    }
+
+    const customer =
+      await prisma.marketplaceCustomer.findUnique({
+        where: {
+          id:
+            req.marketplaceCustomer.id,
+        },
+      });
+
+    if (!customer) {
+      return res.status(404).json({
+        message:
+          "Your account could not be found.",
+        code:
+          "MARKETPLACE_CUSTOMER_NOT_FOUND",
+      });
+    }
+
+    const currentMatches =
+      await bcrypt.compare(
+        currentPassword,
+        customer.passwordHash,
+      );
+
+    if (!currentMatches) {
+      return res.status(400).json({
+        message:
+          "Your current password is incorrect.",
+        code:
+          "MARKETPLACE_CUSTOMER_CURRENT_PASSWORD_INVALID",
+      });
+    }
+
+    if (
+      currentPassword ===
+      newPassword
+    ) {
+      return res.status(400).json({
+        message:
+          "Choose a different new password.",
+        code:
+          "MARKETPLACE_CUSTOMER_PASSWORD_UNCHANGED",
+      });
+    }
+
+    const problems =
+      passwordProblems(
+        newPassword,
+      );
+
+    if (problems.length) {
+      return res.status(400).json({
+        message:
+          "Choose a stronger new password.",
+        code:
+          "MARKETPLACE_CUSTOMER_PASSWORD_WEAK",
+        details: {
+          problems,
+        },
+      });
+    }
+
+    const passwordHash =
+      await bcrypt.hash(
+        newPassword,
+        12,
+      );
+
+    await prisma.$transaction([
+      prisma.marketplaceCustomer.update({
+        where: {
+          id: customer.id,
+        },
+        data: {
+          passwordHash,
+        },
+      }),
+      prisma.marketplaceCustomerSession.updateMany({
+        where: {
+          customerId:
+            customer.id,
+          tokenId: {
+            not:
+              req.marketplaceCustomerSession
+                .tokenId,
+          },
+          isRevoked: false,
+        },
+        data: {
+          isRevoked: true,
+          revokedAt: new Date(),
+        },
+      }),
+    ]);
+
+    return res.json({
+      message:
+        "Your password was changed.",
+    });
+  } catch (error) {
+    console.error(
+      "Marketplace customer password change error:",
+      error,
+    );
+
+    return res.status(500).json({
+      message:
+        "We could not change your password.",
+      code:
+        "MARKETPLACE_CUSTOMER_PASSWORD_CHANGE_FAILED",
+    });
+  }
+}
+
 const CUSTOMER_ORDER_STATUS_LABELS =
   Object.freeze({
     REQUESTED: "Waiting for store",
@@ -597,6 +840,8 @@ module.exports = {
   loginCustomer,
   logoutCustomer,
   getCurrentCustomer,
+  updateCustomerDetails,
+  changeCustomerPassword,
   listCustomerOrders,
   publicCustomer,
   publicCustomerOrder,

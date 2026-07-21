@@ -311,3 +311,41 @@ export function loadMarketplaceCustomerOrders() {
     "/marketplace/customer/orders",
   );
 }
+
+export async function updateMarketplaceCustomerDetails(
+  payload,
+) {
+  const result =
+    await marketplaceCustomerRequest(
+      "/marketplace/customer/me",
+      {
+        method: "PATCH",
+        body: payload,
+      },
+    );
+
+  if (result?.customer?.id) {
+    const current =
+      getMarketplaceCustomerSession();
+
+    saveMarketplaceCustomerSession({
+      token: current.token,
+      expiresAt: current.expiresAt,
+      customer: result.customer,
+    });
+  }
+
+  return result;
+}
+
+export function changeMarketplaceCustomerPassword(
+  payload,
+) {
+  return marketplaceCustomerRequest(
+    "/marketplace/customer/change-password",
+    {
+      method: "POST",
+      body: payload,
+    },
+  );
+}
