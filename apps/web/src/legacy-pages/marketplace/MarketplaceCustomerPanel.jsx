@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
+  ArrowRight,
   Check,
   ChevronDown,
   ChevronUp,
@@ -292,17 +293,28 @@ function WishlistPanel({
       <header className="svx-marketplace-customer-panel-head">
         <div>
           <span>Saved products</span>
+
           <h2>
             {store.wishlist.length
-              ? `${store.wishlist.length} saved`
-              : "Wishlist is empty"}
+              ? `${store.wishlist.length} ${
+                  store.wishlist.length === 1
+                    ? "product"
+                    : "products"
+                } saved`
+              : "No saved products"}
           </h2>
+
+          {store.wishlist.length ? (
+            <p>
+              Products you kept for later.
+            </p>
+          ) : null}
         </div>
 
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close wishlist"
+          aria-label="Close saved products"
         >
           <X size={19} />
         </button>
@@ -317,49 +329,133 @@ function WishlistPanel({
           />
         ) : (
           <div className="svx-marketplace-wishlist-list">
-            {store.wishlist.map((item) => (
-              <article
-                key={item.key}
-                className="svx-marketplace-wishlist-row"
-              >
-                <ProductIdentity item={item} />
+            {store.wishlist.map((item) => {
+              const unavailable =
+                item.seller.temporarilyClosed ||
+                item.availableQuantity <= 0;
 
-                <div>
-                  <button
-                    type="button"
-                    className="svx-marketplace-wishlist-cart"
-                    disabled={
-                      item.seller.temporarilyClosed ||
-                      item.availableQuantity <= 0
-                    }
-                    onClick={() => {
-                      const result =
-                        store.addToCart(item);
+              const category =
+                cleanString(
+                  item.category ||
+                    item.comparisonCategory,
+                );
 
-                      if (result.ok) {
-                        notify(
-                          `${item.title} added to cart`,
-                        );
+              return (
+                <article
+                  key={item.key}
+                  className="svx-marketplace-wishlist-row"
+                >
+                  <Link
+                    to={productUrl(item)}
+                    className="svx-marketplace-wishlist-image"
+                    onClick={onClose}
+                    aria-label={`View ${item.title}`}
+                  >
+                    {item.image?.url ? (
+                      <img
+                        src={item.image.url}
+                        alt={
+                          item.image.altText ||
+                          item.title
+                        }
+                      />
+                    ) : (
+                      <Heart
+                        size={26}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </Link>
+
+                  <div className="svx-marketplace-wishlist-copy">
+                    <div className="svx-marketplace-wishlist-store">
+                      <Store size={13} />
+                      <span>{item.seller.name}</span>
+                    </div>
+
+                    <Link
+                      to={productUrl(item)}
+                      className="svx-marketplace-wishlist-title"
+                      onClick={onClose}
+                    >
+                      {item.title}
+                    </Link>
+
+                    {category ? (
+                      <span className="svx-marketplace-wishlist-category">
+                        {category}
+                      </span>
+                    ) : null}
+
+                    <strong className="svx-marketplace-wishlist-price">
+                      {formatMoney(
+                        item.price,
+                        item.currency,
+                      )}
+                    </strong>
+
+                    <span
+                      className={[
+                        "svx-marketplace-wishlist-availability",
+                        unavailable
+                          ? "is-unavailable"
+                          : "is-available",
+                      ].join(" ")}
+                    >
+                      {item.seller.temporarilyClosed
+                        ? "Store temporarily closed"
+                        : item.availableQuantity <= 0
+                          ? "Currently unavailable"
+                          : "Available"}
+                    </span>
+                  </div>
+
+                  <div className="svx-marketplace-wishlist-actions">
+                    <Link
+                      to={productUrl(item)}
+                      className="svx-marketplace-wishlist-view"
+                      onClick={onClose}
+                    >
+                      View product
+                      <ArrowRight size={16} />
+                    </Link>
+
+                    <button
+                      type="button"
+                      className="svx-marketplace-wishlist-cart"
+                      disabled={unavailable}
+                      onClick={() => {
+                        const result =
+                          store.addToCart(item);
+
+                        if (result.ok) {
+                          notify(
+                            `${item.title} added to cart`,
+                          );
+                        }
+                      }}
+                    >
+                      <ShoppingCart size={16} />
+                      Add to cart
+                    </button>
+
+                    <button
+                      type="button"
+                      className="svx-marketplace-wishlist-remove"
+                      onClick={() =>
+                        store.removeFromWishlist(
+                          item.key,
+                        )
                       }
-                    }}
-                  >
-                    <ShoppingCart size={15} />
-                    Add to cart
-                  </button>
-
-                  <button
-                    type="button"
-                    className="svx-marketplace-remove-button"
-                    onClick={() =>
-                      store.removeFromWishlist(item.key)
-                    }
-                    aria-label={`Remove ${item.title} from wishlist`}
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </article>
-            ))}
+                      aria-label={`Remove ${item.title} from saved products`}
+                    >
+                      <Trash2 size={15} />
+                      Remove
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </div>
@@ -896,7 +992,7 @@ export default function MarketplaceCustomerPanel({
         aria-modal="true"
         aria-label={
           mode === "wishlist"
-            ? "Wishlist"
+            ? "Saved products"
             : mode === "compare"
               ? "Product comparison"
               : "Shopping cart"
