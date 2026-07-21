@@ -557,7 +557,7 @@ export default function MarketplaceCustomerAuth({
     )}`;
 
   return (
-    <div className="svx-marketplace-auth-page">
+    <div className="storvex-landing storvex-marketplace svx-marketplace-auth-page">
       <MarketplaceHeader />
 
       <main className="storvex-onboarding svx-marketplace-auth-main">
