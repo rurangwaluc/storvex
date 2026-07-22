@@ -35,6 +35,18 @@ export function getMarketplaceProduct(storeSlug, productSlug) {
   );
 }
 
+export function recordMarketplaceAnalyticsEvent(
+  payload = {},
+) {
+  return marketplaceCustomerRequest(
+    "/marketplace/analytics/events",
+    {
+      method: "POST",
+      body: payload,
+    },
+  );
+}
+
 export function submitMarketplaceRequest(payload = {}) {
   return marketplaceCustomerRequest(
     "/marketplace/requests",

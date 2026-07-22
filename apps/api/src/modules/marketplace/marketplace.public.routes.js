@@ -49,6 +49,13 @@ router.get(
 );
 
 router.post(
+  "/analytics/events",
+  express.json(),
+  optionallyAuthenticateMarketplaceCustomer,
+  controller.recordAnalyticsEvent,
+);
+
+router.post(
   "/requests",
   optionallyAuthenticateMarketplaceCustomer,
   controller.createRequest,

@@ -7,6 +7,10 @@ const {
 } = require("./marketplace.tracking.service");
 
 const {
+  recordMarketplaceAnalyticsEvent,
+} = require("./marketplace.analytics.service");
+
+const {
   listPublicStores,
   getPublicStore,
   getPublicProduct,
@@ -98,6 +102,30 @@ async function listProducts(req, res) {
 }
 
 
+async function recordAnalyticsEvent(req, res) {
+  try {
+    const result =
+      await recordMarketplaceAnalyticsEvent(
+        req.body || {},
+        {
+          marketplaceCustomerId:
+            req.marketplaceCustomer?.id ||
+            null,
+        },
+      );
+
+    return res.status(
+      result.recorded ? 201 : 200,
+    ).json(result);
+  } catch (error) {
+    return sendError(
+      res,
+      error,
+      "Failed to record Marketplace activity",
+    );
+  }
+}
+
 async function trackRequest(req, res) {
   try {
     const order =
@@ -152,6 +180,7 @@ async function createRequest(req, res) {
 
 module.exports = {
   createRequest,
+  recordAnalyticsEvent,
   trackRequest,
   listStores,
   getStore,

@@ -44,6 +44,9 @@ import {
   useMarketplaceCustomerStore,
 } from "./marketplaceCustomerStore";
 import {
+  trackMarketplaceActivityQuietly,
+} from "./marketplaceAnalytics";
+import {
   marketplaceComparisonFields,
   marketplaceDiscountPercent,
   marketplaceFieldValue,
@@ -340,6 +343,13 @@ export default function MarketplaceProductDetails() {
         data.product,
       ]);
 
+      trackMarketplaceActivityQuietly({
+        eventType: "PRODUCT_VIEW",
+        storeSlug,
+        productSlug,
+        source: "product-details",
+      });
+
       try {
         const relatedData =
           await listMarketplaceProducts({
@@ -532,6 +542,13 @@ export default function MarketplaceProductDetails() {
           } added to cart.`,
     );
 
+    trackMarketplaceActivityQuietly({
+      eventType: "ADD_TO_CART",
+      storeSlug,
+      productSlug,
+      source: "product-details",
+    });
+
     setQuantity(1);
     openMarketplaceCustomerPanel("cart");
   }
@@ -541,6 +558,15 @@ export default function MarketplaceProductDetails() {
 
     const active =
       customerStore.toggleWishlist(product);
+
+    if (active) {
+      trackMarketplaceActivityQuietly({
+        eventType: "SAVE_PRODUCT",
+        storeSlug,
+        productSlug,
+        source: "product-details",
+      });
+    }
 
     toast.success(
       active
@@ -567,6 +593,15 @@ export default function MarketplaceProductDetails() {
         "Choose products from the same category.",
       );
       return;
+    }
+
+    if (result.active) {
+      trackMarketplaceActivityQuietly({
+        eventType: "ADD_TO_COMPARE",
+        storeSlug,
+        productSlug,
+        source: "product-details",
+      });
     }
 
     toast.success(

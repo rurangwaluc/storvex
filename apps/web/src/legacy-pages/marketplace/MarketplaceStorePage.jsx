@@ -39,6 +39,9 @@ import {
 import {
   syncMarketplaceProductSnapshots,
 } from "./marketplaceCustomerStore";
+import {
+  trackMarketplaceActivityQuietly,
+} from "./marketplaceAnalytics";
 
 import "../public/LandingPage.css";
 import "./MarketplacePublic.css";
@@ -229,6 +232,8 @@ export default function MarketplaceStorePage() {
     useState(false);
 
   const sortRef = useRef(null);
+  const trackedStoreSlugRef = useRef("");
+  const trackedSearchKeyRef = useRef("");
 
   const [pagination, setPagination] =
     useState({
@@ -377,6 +382,24 @@ export default function MarketplaceStorePage() {
   }, [loadStore]);
 
   useEffect(() => {
+    if (
+      !storeDetails ||
+      !storeSlug ||
+      trackedStoreSlugRef.current === storeSlug
+    ) {
+      return;
+    }
+
+    trackedStoreSlugRef.current = storeSlug;
+
+    trackMarketplaceActivityQuietly({
+      eventType: "STORE_VIEW",
+      storeSlug,
+      source: "store-page",
+    });
+  }, [storeDetails, storeSlug]);
+
+  useEffect(() => {
     loadProducts();
   }, [loadProducts]);
 
@@ -385,6 +408,61 @@ export default function MarketplaceStorePage() {
       products,
     );
   }, [products]);
+
+  useEffect(() => {
+    const normalizedSearch =
+      cleanString(search);
+
+    if (
+      !normalizedSearch ||
+      loadingProducts ||
+      productsError
+    ) {
+      return;
+    }
+
+    const eventType =
+      pagination.total > 0
+        ? "SEARCH"
+        : "SEARCH_NO_RESULTS";
+
+    const trackingKey = [
+      storeSlug,
+      normalizedSearch.toLowerCase(),
+      eventType,
+      pagination.total,
+    ].join(":");
+
+    if (
+      trackedSearchKeyRef.current ===
+      trackingKey
+    ) {
+      return;
+    }
+
+    trackedSearchKeyRef.current =
+      trackingKey;
+
+    trackMarketplaceActivityQuietly({
+      eventType,
+      storeSlug,
+      searchTerm: normalizedSearch,
+      source: "store-search",
+      metadata: {
+        resultCount: pagination.total,
+        page,
+        category: category || undefined,
+      },
+    });
+  }, [
+    category,
+    loadingProducts,
+    page,
+    pagination.total,
+    productsError,
+    search,
+    storeSlug,
+  ]);
 
   useEffect(() => {
     const next = {};

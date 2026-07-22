@@ -176,11 +176,12 @@ model Tenant {
   userBranchAssignments UserBranchAssignment[]
   branchInventory       BranchInventory[]
 
-  documentSettings    TenantDocumentSettings?
-  documentCounter     TenantDocumentCounter?
-  subscription        Subscription?
-  marketplaceProfile  MarketplaceSellerProfile?
-  marketplaceRequests MarketplaceRequest[]
+  documentSettings           TenantDocumentSettings?
+  documentCounter            TenantDocumentCounter?
+  subscription               Subscription?
+  marketplaceProfile         MarketplaceSellerProfile?
+  marketplaceRequests        MarketplaceRequest[]
+  marketplaceAnalyticsEvents MarketplaceAnalyticsEvent[]
 
   proformas            Proforma[]
   sessions             UserSession[]
@@ -270,6 +271,17 @@ enum MarketplaceCustomerVerificationChannel {
   PHONE
 }
 
+enum MarketplaceAnalyticsEventType {
+  STORE_VIEW
+  PRODUCT_VIEW
+  PRODUCT_CARD_OPEN
+  ADD_TO_CART
+  SAVE_PRODUCT
+  ADD_TO_COMPARE
+  SEARCH
+  SEARCH_NO_RESULTS
+}
+
 enum MarketplaceRequestStatus {
   REQUESTED
   CONFIRMED
@@ -321,6 +333,7 @@ model MarketplaceCustomer {
   sessions          MarketplaceCustomerSession[]
   verifications     MarketplaceCustomerVerification[]
   requests          MarketplaceRequest[]
+  analyticsEvents   MarketplaceAnalyticsEvent[]
   businessCustomers Customer[]
 
   @@index([status])
@@ -365,6 +378,36 @@ model MarketplaceCustomerVerification {
   @@index([target])
   @@index([expiresAt])
   @@map("MarketplaceCustomerVerification")
+}
+
+model MarketplaceAnalyticsEvent {
+  id String @id @default(uuid())
+
+  tenantId              String
+  productId             String?
+  marketplaceCustomerId String?
+  visitorId             String? @db.VarChar(80)
+
+  eventType MarketplaceAnalyticsEventType
+
+  searchTerm String? @db.Text
+  source     String? @db.VarChar(80)
+  metadata   Json?
+
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product             Product?             @relation(fields: [productId], references: [id], onDelete: SetNull)
+  marketplaceCustomer MarketplaceCustomer? @relation(fields: [marketplaceCustomerId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, occurredAt])
+  @@index([tenantId, eventType, occurredAt])
+  @@index([tenantId, productId, occurredAt])
+  @@index([tenantId, searchTerm, occurredAt])
+  @@index([visitorId, eventType, occurredAt])
+  @@index([marketplaceCustomerId, eventType, occurredAt])
+  @@map("MarketplaceAnalyticsEvent")
 }
 
 model MarketplaceRequest {
@@ -763,23 +806,24 @@ model Product {
   marketplacePublishedAt   DateTime?
   marketplaceUnpublishedAt DateTime?
 
-  refundItems               SaleRefundItem[]          @relation("ProductToRefundItems")
-  deliveryNoteItems         DeliveryNoteItem[]
-  deals                     InterStoreDeal[]          @relation("ProductDeals")
-  receivedInInterStoreDeals InterStoreDeal[]          @relation("ReceivedProduct")
-  supplier                  Supplier?                 @relation(fields: [supplierId], references: [id])
-  tenant                    Tenant                    @relation(fields: [tenantId], references: [id])
-  images                    ProductImage[]
-  promotions                Promotion[]
-  purchaseOrderItems        PurchaseOrderItem[]
-  purchaseOrderItemSerials  PurchaseOrderItemSerial[]
-  supplierBillItems         SupplierBillItem[]
-  saleItems                 SaleItem[]
-  stockAdjustments          StockAdjustment[]
-  SupplierSupplyItem        SupplierSupplyItem[]
-  proformaItems             ProformaItem[]
-  branchInventory           BranchInventory[]
-  marketplaceRequestItems   MarketplaceRequestItem[]
+  refundItems                SaleRefundItem[]            @relation("ProductToRefundItems")
+  deliveryNoteItems          DeliveryNoteItem[]
+  deals                      InterStoreDeal[]            @relation("ProductDeals")
+  receivedInInterStoreDeals  InterStoreDeal[]            @relation("ReceivedProduct")
+  supplier                   Supplier?                   @relation(fields: [supplierId], references: [id])
+  tenant                     Tenant                      @relation(fields: [tenantId], references: [id])
+  images                     ProductImage[]
+  promotions                 Promotion[]
+  purchaseOrderItems         PurchaseOrderItem[]
+  purchaseOrderItemSerials   PurchaseOrderItemSerial[]
+  supplierBillItems          SupplierBillItem[]
+  saleItems                  SaleItem[]
+  stockAdjustments           StockAdjustment[]
+  SupplierSupplyItem         SupplierSupplyItem[]
+  proformaItems              ProformaItem[]
+  branchInventory            BranchInventory[]
+  marketplaceRequestItems    MarketplaceRequestItem[]
+  marketplaceAnalyticsEvents MarketplaceAnalyticsEvent[]
 
   @@unique([tenantId, marketplaceSlug])
   @@index([tenantId, supplierId])

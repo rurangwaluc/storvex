@@ -9,7 +9,10 @@ function navClass({ isActive }) {
     .join(" ");
 }
 
-export default function MarketplaceOwnerHeader() {
+export default function MarketplaceOwnerHeader({
+  title = "Customer orders",
+  description = "Review what customers want before confirming stock and fulfilment.",
+}) {
   return (
     <header className="svx-market-owner-header">
       <div>
@@ -17,12 +20,9 @@ export default function MarketplaceOwnerHeader() {
           Marketplace
         </span>
 
-        <h1>Customer orders</h1>
+        <h1>{title}</h1>
 
-        <p>
-          Review what customers want before
-          confirming stock and fulfilment.
-        </p>
+        <p>{description}</p>
       </div>
 
       <nav
@@ -34,7 +34,14 @@ export default function MarketplaceOwnerHeader() {
           end
           className={navClass}
         >
-          Requests
+          Orders
+        </NavLink>
+
+        <NavLink
+          to="/app/marketplace/analytics"
+          className={navClass}
+        >
+          Store performance
         </NavLink>
 
         <NavLink

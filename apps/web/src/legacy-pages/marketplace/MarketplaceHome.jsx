@@ -51,6 +51,9 @@ import {
   useMarketplaceCustomerStore,
 } from "./marketplaceCustomerStore";
 import {
+  trackMarketplaceActivityQuietly,
+} from "./marketplaceAnalytics";
+import {
   marketplaceCardAttributes,
   marketplaceDiscountPercent,
 } from "./marketplaceCategoryDefinitions";
@@ -615,6 +618,15 @@ export function ProductCard({ product }) {
     }
   }, [activeImageIndex, images.length]);
 
+  function trackProductCardOpen() {
+    trackMarketplaceActivityQuietly({
+      eventType: "PRODUCT_CARD_OPEN",
+      storeSlug: product.seller.slug,
+      productSlug: product.slug,
+      source: "product-card",
+    });
+  }
+
   function openProductCard(event) {
     if (
       event.target.closest(
@@ -624,6 +636,7 @@ export function ProductCard({ product }) {
       return;
     }
 
+    trackProductCardOpen();
     navigate(productUrl);
   }
 
@@ -636,6 +649,7 @@ export function ProductCard({ product }) {
     }
 
     event.preventDefault();
+    trackProductCardOpen();
     navigate(productUrl);
   }
 
@@ -660,6 +674,13 @@ export function ProductCard({ product }) {
       return;
     }
 
+    trackMarketplaceActivityQuietly({
+      eventType: "ADD_TO_CART",
+      storeSlug: product.seller.slug,
+      productSlug: product.slug,
+      source: "product-card",
+    });
+
     toast.success(
       `${product.title} added to cart`,
     );
@@ -668,6 +689,15 @@ export function ProductCard({ product }) {
   function toggleWishlist() {
     const active =
       customerStore.toggleWishlist(product);
+
+    if (active) {
+      trackMarketplaceActivityQuietly({
+        eventType: "SAVE_PRODUCT",
+        storeSlug: product.seller.slug,
+        productSlug: product.slug,
+        source: "product-card",
+      });
+    }
 
     toast.success(
       active
@@ -696,6 +726,16 @@ export function ProductCard({ product }) {
       );
     } else {
       setCompareMessage("");
+
+      if (result.active) {
+        trackMarketplaceActivityQuietly({
+          eventType: "ADD_TO_COMPARE",
+          storeSlug: product.seller.slug,
+          productSlug: product.slug,
+          source: "product-card",
+        });
+      }
+
       toast.success(
         result.active
           ? `${product.title} added to comparison`
@@ -727,6 +767,7 @@ export function ProductCard({ product }) {
           to={productUrl}
           className="svx-commerce-product-image"
           aria-label={`View ${product.title}`}
+          onClick={trackProductCardOpen}
         >
           {primaryImage ? (
             <>

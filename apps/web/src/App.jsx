@@ -14,6 +14,7 @@ import MarketplaceProductDetails from "./legacy-pages/marketplace/MarketplacePro
 import MarketplaceOrderTracking from "./legacy-pages/marketplace/MarketplaceOrderTracking";
 import MarketplaceCustomerAuth from "./legacy-pages/marketplace/MarketplaceCustomerAuth";
 import MarketplaceRequests from "./legacy-pages/marketplace-owner/MarketplaceRequests";
+import MarketplaceAnalytics from "./legacy-pages/marketplace-owner/MarketplaceAnalytics";
 import MarketplaceRequestDetail from "./legacy-pages/marketplace-owner/MarketplaceRequestDetail";
 
 import Dashboard from "./legacy-pages/dashboard/Dashboard";
@@ -229,6 +230,10 @@ export default function App() {
 
             <Route element={<RequireRole roles={["OWNER"]} />}>
               <Route path="marketplace" element={<MarketplaceRequests />} />
+              <Route
+                path="marketplace/analytics"
+                element={<MarketplaceAnalytics />}
+              />
               <Route
                 path="marketplace/requests/:requestId"
                 element={<MarketplaceRequestDetail />}

@@ -6,6 +6,7 @@ const router = express.Router();
 const controller = require("./store.controller");
 const marketplaceController = require("./marketplaceSeller.controller");
 const marketplaceRequestsController = require("./marketplaceRequests.controller");
+const marketplaceAnalyticsController = require("./marketplaceAnalytics.controller");
 const requireDbPermission = require("../../middlewares/requireDbPermission");
 const {
   requireMarketplaceEntitlement,
@@ -51,6 +52,13 @@ router.get(
   requireMarketplaceEntitlement,
   requireDbPermission(PERMISSIONS.MARKETPLACE_VIEW),
   marketplaceController.getMarketplaceProfileReadiness
+);
+
+router.get(
+  "/marketplace-analytics",
+  requireMarketplaceEntitlement,
+  requireDbPermission(PERMISSIONS.MARKETPLACE_VIEW),
+  marketplaceAnalyticsController.getMarketplaceAnalytics
 );
 
 router.get(

@@ -22,6 +22,16 @@ function buildQuery(params = {}) {
   return value ? `?${value}` : "";
 }
 
+export function getOwnerMarketplaceAnalytics(
+  params = {},
+) {
+  return apiFetch(
+    `/store/marketplace-analytics${buildQuery(
+      params,
+    )}`,
+  );
+}
+
 export function listOwnerMarketplaceRequests(
   params = {},
 ) {
