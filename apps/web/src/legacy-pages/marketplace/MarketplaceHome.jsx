@@ -270,6 +270,17 @@ export function MarketplaceHeader() {
             >
               Shop
             </Link>
+
+              <Link
+                to="/marketplace/stores"
+                className={
+                  location.pathname === "/marketplace/stores"
+                    ? "svx-marketplace-nav-active"
+                    : ""
+                }
+              >
+                Stores
+              </Link>
           </nav>
 
           <div className="svx-header-actions">
@@ -438,6 +449,15 @@ export function MarketplaceHeader() {
               <span>Shop products</span>
               <ChevronRight size={17} />
             </Link>
+
+              <Link
+                to="/marketplace/stores"
+                className="svx-mobile-menu-link"
+                onClick={() => setMenuOpen(false)}
+              >
+                <span>Explore stores</span>
+                <ChevronRight size={17} />
+              </Link>
 
             <button
               type="button"
@@ -930,7 +950,7 @@ export function ProductCard({ product }) {
   );
 }
 
-function StoreCard({ store }) {
+export function StoreCard({ store }) {
   const place = [
     store.location?.sector,
     store.location?.district,
@@ -940,7 +960,7 @@ function StoreCard({ store }) {
 
   return (
     <Link
-      to={`/marketplace/${encodeURIComponent(store.slug)}`}
+      to={`/marketplace/stores/${encodeURIComponent(store.slug)}`}
       className="svx-commerce-store-card"
     >
       <div className="svx-commerce-store-logo">
@@ -1090,7 +1110,7 @@ export function MarketplaceFooter({
                 <Link to="/marketplace/shop">
                     Browse products
                   </Link>
-                <Link to="/marketplace">
+                <Link to="/marketplace/stores">
                   Explore stores
                 </Link>
               </div>
@@ -1136,7 +1156,7 @@ export function MarketplaceFooter({
 
             <div>
               <Link to="/">About Storvex</Link>
-              <Link to="/signup">Sell on Storvex</Link>
+              <Link to="/marketplace/stores">Sell on Storvex</Link>
             </div>
 
             <span>Rwanda</span>
@@ -1792,15 +1812,13 @@ export default function MarketplaceHome() {
                   <h2>Featured stores</h2>
                 </div>
 
-                <button
-                  type="button"
+                <Link
+                  to="/marketplace/stores"
                   className="svx-commerce-view-all-stores"
-                  aria-disabled="true"
-                  title="The complete stores page is coming later"
                 >
                   <span>View all stores</span>
                   <ArrowRight size={15} />
-                </button>
+                </Link>
               </div>
 
               <div className="svx-commerce-store-grid">

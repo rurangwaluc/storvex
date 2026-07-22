@@ -662,8 +662,55 @@ async function findVisibleSeller(publicSlug) {
 }
 
 async function listPublicStores(query = {}) {
-  const search = cleanString(query.search, 100);
-  const page = safeInteger(query.page, 1, 1, 100000);
+  const search = cleanString(
+    query.search,
+    100,
+  );
+
+  const district = cleanString(
+    query.district,
+    100,
+  );
+
+  const requestedFulfilment = String(
+    query.fulfilment || "",
+  )
+    .trim()
+    .toLowerCase();
+
+  const fulfilment = [
+    "pickup",
+    "delivery",
+  ].includes(requestedFulfilment)
+    ? requestedFulfilment
+    : "";
+
+  const openOnly =
+    String(query.openOnly || "")
+      .trim()
+      .toLowerCase() === "true";
+
+  const requestedSort = String(
+    query.sort || "",
+  )
+    .trim()
+    .toLowerCase();
+
+  const sort = [
+    "name",
+    "newest",
+    "products",
+  ].includes(requestedSort)
+    ? requestedSort
+    : "name";
+
+  const page = safeInteger(
+    query.page,
+    1,
+    1,
+    100000,
+  );
+
   const limit = safeInteger(
     query.limit,
     DEFAULT_PAGE_SIZE,
@@ -671,47 +718,81 @@ async function listPublicStores(query = {}) {
     MAX_PAGE_SIZE,
   );
 
-  const profiles = await prisma.marketplaceSellerProfile.findMany({
-    where: {
-      marketplaceEnabled: true,
-      publicSlug: { not: null },
-      tenant: {
-        status: "ACTIVE",
-      },
-      ...(search
-        ? {
-            OR: [
-              {
-                displayName: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                description: {
-                  contains: search,
-                  mode: "insensitive",
-                },
-              },
-              {
-                tenant: {
-                  name: {
+  const profiles =
+    await prisma.marketplaceSellerProfile.findMany({
+      where: {
+        marketplaceEnabled: true,
+        publicSlug: {
+          not: null,
+        },
+        tenant: {
+          status: "ACTIVE",
+        },
+        ...(openOnly
+          ? {
+              temporarilyClosed: false,
+            }
+          : {}),
+        ...(fulfilment === "pickup"
+          ? {
+              pickupEnabled: true,
+            }
+          : {}),
+        ...(fulfilment === "delivery"
+          ? {
+              deliveryEnabled: true,
+            }
+          : {}),
+        ...(search
+          ? {
+              OR: [
+                {
+                  displayName: {
                     contains: search,
                     mode: "insensitive",
                   },
                 },
+                {
+                  description: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  tenant: {
+                    name: {
+                      contains: search,
+                      mode: "insensitive",
+                    },
+                  },
+                },
+              ],
+            }
+          : {}),
+      },
+      include: publicSellerInclude,
+      orderBy:
+        sort === "newest"
+          ? [
+              {
+                createdAt: "desc",
+              },
+              {
+                displayName: "asc",
+              },
+            ]
+          : [
+              {
+                temporarilyClosed: "asc",
+              },
+              {
+                displayName: "asc",
+              },
+              {
+                createdAt: "desc",
               },
             ],
-          }
-        : {}),
-    },
-    include: publicSellerInclude,
-    orderBy: [
-      { temporarilyClosed: "asc" },
-      { displayName: "asc" },
-      { createdAt: "desc" },
-    ],
-  });
+    });
 
   const subscriptionVisibleProfiles =
     profiles.filter((profile) =>
@@ -728,7 +809,9 @@ async function listPublicStores(query = {}) {
   const products = sellerIds.length
     ? await prisma.product.findMany({
         where: publishedProductWhere({
-          tenantId: { in: sellerIds },
+          tenantId: {
+            in: sellerIds,
+          },
         }),
         select: {
           tenantId: true,
@@ -746,12 +829,17 @@ async function listPublicStores(query = {}) {
 
   for (const product of products) {
     const available =
-      calculateAvailableQuantity(product.branchInventory) > 0;
+      calculateAvailableQuantity(
+        product.branchInventory,
+      ) > 0;
 
-    const counts = countsByTenant.get(product.tenantId) || {
-      productCount: 0,
-      availableProductCount: 0,
-    };
+    const counts =
+      countsByTenant.get(
+        product.tenantId,
+      ) || {
+        productCount: 0,
+        availableProductCount: 0,
+      };
 
     counts.productCount += 1;
 
@@ -759,30 +847,147 @@ async function listPublicStores(query = {}) {
       counts.availableProductCount += 1;
     }
 
-    countsByTenant.set(product.tenantId, counts);
+    countsByTenant.set(
+      product.tenantId,
+      counts,
+    );
   }
 
-  const visible =
+  const allVisibleStores =
     subscriptionVisibleProfiles
       .map((profile) =>
-      serializePublicSeller(
-        profile,
-        profile.tenant,
-        countsByTenant.get(profile.tenantId),
-      ),
-    )
-    .filter((seller) => seller.availableProductCount > 0);
+        serializePublicSeller(
+          profile,
+          profile.tenant,
+          countsByTenant.get(
+            profile.tenantId,
+          ),
+        ),
+      )
+      .filter(
+        (store) =>
+          store.availableProductCount > 0,
+      );
+
+  function normalizeDistrictName(value) {
+    const cleaned = String(value || "")
+      .trim()
+      .replace(
+        /\s+district$/i,
+        "",
+      )
+      .replace(/\s+/g, " ");
+
+    if (!cleaned) return "";
+
+    return cleaned
+      .split(" ")
+      .map(
+        (part) =>
+          part.charAt(0).toUpperCase() +
+          part.slice(1).toLowerCase(),
+      )
+      .join(" ");
+  }
+
+  const districtMap = new Map();
+
+  for (const store of allVisibleStores) {
+    const normalized =
+      normalizeDistrictName(
+        store.location?.district,
+      );
+
+    if (!normalized) continue;
+
+    const key = normalized.toLowerCase();
+
+    if (!districtMap.has(key)) {
+      districtMap.set(
+        key,
+        normalized,
+      );
+    }
+  }
+
+  const districts = Array.from(
+    districtMap.values(),
+  ).sort((left, right) =>
+    left.localeCompare(right),
+  );
+
+  const requestedDistrict =
+    normalizeDistrictName(district)
+      .toLowerCase();
+
+  const visible = requestedDistrict
+    ? allVisibleStores.filter(
+        (store) =>
+          normalizeDistrictName(
+            store.location?.district,
+          ).toLowerCase() ===
+          requestedDistrict,
+      )
+    : [...allVisibleStores];
+
+  if (sort === "products") {
+    visible.sort((left, right) => {
+      const difference =
+        right.availableProductCount -
+        left.availableProductCount;
+
+      if (difference !== 0) {
+        return difference;
+      }
+
+      return String(
+        left.name || "",
+      ).localeCompare(
+        String(right.name || ""),
+      );
+    });
+  }
 
   const total = visible.length;
-  const start = (page - 1) * limit;
+
+  const pages = Math.max(
+    1,
+    Math.ceil(total / limit),
+  );
+
+  const safePage = Math.min(
+    page,
+    pages,
+  );
+
+  const startIndex =
+    (safePage - 1) * limit;
 
   return {
-    stores: visible.slice(start, start + limit),
+    stores: visible.slice(
+      startIndex,
+      startIndex + limit,
+    ),
+    districts,
     pagination: {
-      page,
+      page: safePage,
       limit,
       total,
-      pages: Math.max(1, Math.ceil(total / limit)),
+      pages,
+      hasPreviousPage:
+        safePage > 1,
+      hasNextPage:
+        safePage < pages,
+    },
+    filters: {
+      search: search || "",
+      district:
+        districtMap.get(
+          requestedDistrict,
+        ) || "",
+      fulfilment,
+      openOnly,
+      sort,
     },
   };
 }
