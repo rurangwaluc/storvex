@@ -1369,7 +1369,7 @@ export default function InventoryDetail() {
 
                   <div className="svx-detail-setup-fact">
                     <strong>{images.length ? `${images.length} image${images.length === 1 ? "" : "s"} attached` : "No images yet"}</strong>
-                    <span>Use clear JPG, PNG, or WEBP images up to 5MB each.</span>
+                    <span>Use clear JPG, PNG, or WEBP images up to 10MB each.</span>
                   </div>
 
                   <div className="svx-detail-setup-actions">

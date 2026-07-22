@@ -2,11 +2,22 @@ const crypto = require("crypto");
 
 const prisma = require("../../config/database");
 const {
+  STORAGE_VISIBILITY,
   deleteObject,
   downloadObject,
   isConfigured: isObjectStorageConfigured,
   uploadObject,
 } = require("../../lib/storage/objectStorage");
+const {
+  serializeOwnerProductImage,
+  serializeOwnerProductImages,
+} = require("./inventory.productImageAccess.service");
+const {
+  removeProductBackground,
+} = require("./inventory.productBackgroundRemoval.service");
+const {
+  standardizeRemovedBackground,
+} = require("./inventory.productImageStandard.service");
 
 const MAX_MARKETPLACE_IMAGES = 8;
 const MAX_SOURCE_BYTES = 20 * 1024 * 1024;
@@ -40,7 +51,7 @@ function imageStudioEnabled() {
 function imageStudioProvider() {
   return (
     cleanString(process.env.IMAGE_STUDIO_PROVIDER)?.toLowerCase() ||
-    "mock"
+    "standard"
   );
 }
 
@@ -57,43 +68,62 @@ function requireImageStudioEnabled() {
 }
 
 function requireObjectStorage() {
-  if (!isObjectStorageConfigured()) {
+  if (
+    !isObjectStorageConfigured(
+      STORAGE_VISIBILITY.PRIVATE,
+    )
+  ) {
     throw createServiceError(
-      "Object storage is not configured",
+      "Private object storage is not configured",
       {
         status: 503,
-        code: "OBJECT_STORAGE_NOT_CONFIGURED",
+        code:
+          "PRIVATE_OBJECT_STORAGE_NOT_CONFIGURED",
+      },
+    );
+  }
+
+  if (
+    !isObjectStorageConfigured(
+      STORAGE_VISIBILITY.PUBLIC,
+    )
+  ) {
+    throw createServiceError(
+      "Public product image storage is not configured",
+      {
+        status: 503,
+        code:
+          "PUBLIC_OBJECT_STORAGE_NOT_CONFIGURED",
       },
     );
   }
 }
 
-function extensionForContentType(contentType) {
-  if (contentType === "image/jpeg") return "jpg";
-  if (contentType === "image/webp") return "webp";
-  return "png";
-}
-
-function buildStudioObjectKey({
+function buildStudioObjectKeys({
   tenantId,
   productId,
   runId,
-  contentType,
 }) {
   const now = new Date();
   const year = now.getUTCFullYear();
-  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const extension = extensionForContentType(contentType);
+  const month = String(
+    now.getUTCMonth() + 1,
+  ).padStart(2, "0");
 
-  return [
+  const base = [
     "product-images",
     tenantId,
     productId,
     "studio",
     String(year),
     month,
-    `${runId}-cleaned.${extension}`,
+    runId,
   ].join("/");
+
+  return {
+    masterKey: `${base}-1600.webp`,
+    thumbnailKey: `${base}-480.webp`,
+  };
 }
 
 function validateDownloadedImage({
@@ -223,38 +253,32 @@ async function downloadSourceImage(sourceImage) {
   });
 }
 
-async function processWithMockProvider(source) {
-  return {
-    body: Buffer.from(source.body),
-    contentType: source.contentType,
-    provider: "mock",
-  };
-}
-
 async function processWithProvider(source) {
   const provider = imageStudioProvider();
 
-  if (provider === "mock") {
-    return processWithMockProvider(source);
-  }
-
-  if (provider === "openai") {
+  if (provider !== "standard") {
     throw createServiceError(
-      "OpenAI Image Studio is not available until an API key is configured and provider testing succeeds",
+      "The configured Image Studio provider is not supported",
       {
         status: 503,
-        code: "IMAGE_STUDIO_OPENAI_NOT_READY",
+        code: "IMAGE_STUDIO_PROVIDER_UNSUPPORTED",
       },
     );
   }
 
-  throw createServiceError(
-    "Image Studio provider is not supported",
-    {
-      status: 503,
-      code: "IMAGE_STUDIO_PROVIDER_UNSUPPORTED",
-    },
-  );
+  const removedBackground =
+    await removeProductBackground(source.body);
+
+  const standardized =
+    await standardizeRemovedBackground(
+      removedBackground.body,
+    );
+
+  return {
+    master: standardized.master,
+    thumbnail: standardized.thumbnail,
+    provider: removedBackground.provider,
+  };
 }
 
 async function ensureProduct({
@@ -390,6 +414,18 @@ async function getImageStudioState({
         approvedAt: true,
         approvedById: true,
         studioVersion: true,
+        width: true,
+        height: true,
+        sizeBytes: true,
+        mimeType: true,
+        thumbnailUrl: true,
+        thumbnailKey: true,
+        thumbnailWidth: true,
+        thumbnailHeight: true,
+        thumbnailSizeBytes: true,
+        backgroundColor: true,
+        processingProvider: true,
+        processedAt: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -427,7 +463,10 @@ async function getImageStudioState({
           MAX_MARKETPLACE_IMAGES - approvedCount,
         ),
     },
-    images,
+    images:
+      await serializeOwnerProductImages(
+        images,
+      ),
     runs,
   };
 }
@@ -506,7 +545,7 @@ async function cleanProductImage({
       },
     });
 
-  let uploadedObjectKey = null;
+  let uploadedObjectKeys = [];
   let replacedObjectKeys = [];
 
   try {
@@ -530,20 +569,36 @@ async function cleanProductImage({
       source,
     );
 
-    const objectKey = buildStudioObjectKey({
+    const objectKeys = buildStudioObjectKeys({
       tenantId,
       productId,
       runId: run.id,
-      contentType: processed.contentType,
     });
 
-    const uploaded = await uploadObject({
-      key: objectKey,
-      body: processed.body,
-      contentType: processed.contentType,
-    });
+    const [masterUpload, thumbnailUpload] =
+      await Promise.all([
+        uploadObject({
+          key: objectKeys.masterKey,
+          body: processed.master.body,
+          contentType:
+            processed.master.mimeType,
+          visibility:
+            STORAGE_VISIBILITY.PUBLIC,
+        }),
+        uploadObject({
+          key: objectKeys.thumbnailKey,
+          body: processed.thumbnail.body,
+          contentType:
+            processed.thumbnail.mimeType,
+          visibility:
+            STORAGE_VISIBILITY.PUBLIC,
+        }),
+      ]);
 
-    uploadedObjectKey = uploaded.objectKey;
+    uploadedObjectKeys = [
+      masterUpload.objectKey,
+      thumbnailUpload.objectKey,
+    ];
 
     const result =
       await prisma.$transaction(async (tx) => {
@@ -578,11 +633,15 @@ async function cleanProductImage({
 
         replacedObjectKeys =
           existingCleanedImages
-            .map((image) => cleanString(image.key))
+            .flatMap((image) => [
+              cleanString(image.key),
+              cleanString(image.thumbnailKey),
+            ])
             .filter(
               (key) =>
                 key &&
-                key !== uploaded.objectKey,
+                key !== masterUpload.objectKey &&
+                key !== thumbnailUpload.objectKey,
             );
 
         if (previousWasMain) {
@@ -615,11 +674,11 @@ async function cleanProductImage({
                 id: currentCleanedImage.id,
               },
               data: {
-                url: uploaded.publicUrl,
-                key: uploaded.objectKey,
+                url: masterUpload.publicUrl,
+                key: masterUpload.objectKey,
                 altText:
                   sourceImage.altText ||
-                  `${product.name} cleaned image`,
+                  `${product.name} product image`,
                 isPrimary: false,
                 isMarketplaceApproved: false,
                 approvedAt: null,
@@ -628,6 +687,27 @@ async function cleanProductImage({
                   Number(
                     currentCleanedImage.studioVersion || 0,
                   ) + 1,
+                width: processed.master.width,
+                height: processed.master.height,
+                sizeBytes:
+                  processed.master.sizeBytes,
+                mimeType:
+                  processed.master.mimeType,
+                thumbnailUrl:
+                  thumbnailUpload.publicUrl,
+                thumbnailKey:
+                  thumbnailUpload.objectKey,
+                thumbnailWidth:
+                  processed.thumbnail.width,
+                thumbnailHeight:
+                  processed.thumbnail.height,
+                thumbnailSizeBytes:
+                  processed.thumbnail.sizeBytes,
+                backgroundColor:
+                  processed.master.backgroundColor,
+                processingProvider:
+                  processed.provider,
+                processedAt: new Date(),
               },
             });
 
@@ -662,11 +742,11 @@ async function cleanProductImage({
               data: {
                 tenantId,
                 productId,
-                url: uploaded.publicUrl,
-                key: uploaded.objectKey,
+                url: masterUpload.publicUrl,
+                key: masterUpload.objectKey,
                 altText:
                   sourceImage.altText ||
-                  `${product.name} cleaned image`,
+                  `${product.name} product image`,
                 sortOrder:
                   Number(
                     maximumSortOrder._max.sortOrder || 0,
@@ -678,6 +758,27 @@ async function cleanProductImage({
                 approvedAt: null,
                 approvedById: null,
                 studioVersion: 1,
+                width: processed.master.width,
+                height: processed.master.height,
+                sizeBytes:
+                  processed.master.sizeBytes,
+                mimeType:
+                  processed.master.mimeType,
+                thumbnailUrl:
+                  thumbnailUpload.publicUrl,
+                thumbnailKey:
+                  thumbnailUpload.objectKey,
+                thumbnailWidth:
+                  processed.thumbnail.width,
+                thumbnailHeight:
+                  processed.thumbnail.height,
+                thumbnailSizeBytes:
+                  processed.thumbnail.sizeBytes,
+                backgroundColor:
+                  processed.master.backgroundColor,
+                processingProvider:
+                  processed.provider,
+                processedAt: new Date(),
               },
             });
         }
@@ -721,13 +822,19 @@ async function cleanProductImage({
         };
       });
 
-    uploadedObjectKey = null;
+    uploadedObjectKeys = [];
 
     for (const oldObjectKey of [
       ...new Set(replacedObjectKeys),
     ]) {
       try {
-        await deleteObject(oldObjectKey);
+        await deleteObject(
+          oldObjectKey,
+          {
+            visibility:
+              STORAGE_VISIBILITY.PUBLIC,
+          },
+        );
       } catch (cleanupError) {
         console.error(
           "Image Studio replaced object cleanup failed:",
@@ -737,14 +844,35 @@ async function cleanProductImage({
       }
     }
 
-    return result;
+    return {
+      ...result,
+      sourceImage:
+        await serializeOwnerProductImage(
+          result.sourceImage,
+        ),
+      resultImage:
+        await serializeOwnerProductImage(
+          result.resultImage,
+        ),
+    };
   } catch (error) {
-    if (uploadedObjectKey) {
+    for (const uploadedObjectKey of [
+      ...new Set(uploadedObjectKeys),
+    ]) {
+      if (!uploadedObjectKey) continue;
+
       try {
-        await deleteObject(uploadedObjectKey);
+        await deleteObject(
+          uploadedObjectKey,
+          {
+            visibility:
+              STORAGE_VISIBILITY.PUBLIC,
+          },
+        );
       } catch (cleanupError) {
         console.error(
           "Image Studio failed object cleanup:",
+          uploadedObjectKey,
           cleanupError?.message || cleanupError,
         );
       }

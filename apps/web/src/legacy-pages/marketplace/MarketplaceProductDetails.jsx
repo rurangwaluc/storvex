@@ -64,8 +64,36 @@ function cleanString(value) {
   return String(value || "").trim();
 }
 
-function imageUrl(image) {
-  return cleanString(image?.url || image);
+function imageUrl(
+  image,
+  {
+    thumbnail = false,
+  } = {},
+) {
+  if (typeof image === "string") {
+    return cleanString(image);
+  }
+
+  return cleanString(
+    thumbnail
+      ? image?.thumbnailUrl ||
+          image?.url
+      : image?.url ||
+          image?.thumbnailUrl,
+  );
+}
+
+function imageDimension(
+  image,
+  field,
+  fallback,
+) {
+  const value = Number(image?.[field]);
+
+  return Number.isFinite(value) &&
+    value > 0
+    ? value
+    : fallback;
 }
 
 function storeLocation(store) {
@@ -272,9 +300,28 @@ function RelatedProduct({ product }) {
     >
       <div className="svx-product-related-image">
         <img
-          src={imageUrl(product.image)}
-          alt={product.image?.altText || product.title}
+          src={imageUrl(
+            product.image,
+            {
+              thumbnail: true,
+            },
+          )}
+          alt={
+            product.image?.altText ||
+            product.title
+          }
+          width={imageDimension(
+            product.image,
+            "thumbnailWidth",
+            480,
+          )}
+          height={imageDimension(
+            product.image,
+            "thumbnailHeight",
+            480,
+          )}
           loading="lazy"
+          decoding="async"
         />
       </div>
 
@@ -684,11 +731,26 @@ export default function MarketplaceProductDetails() {
               <div className="svx-product-gallery">
                 <div className="svx-product-main-image">
                   <img
-                    src={imageUrl(activeImage)}
+                    src={imageUrl(
+                      activeImage,
+                    )}
                     alt={
                       activeImage?.altText ||
                       product.title
                     }
+                    width={imageDimension(
+                      activeImage,
+                      "width",
+                      1600,
+                    )}
+                    height={imageDimension(
+                      activeImage,
+                      "height",
+                      1600,
+                    )}
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
                   />
 
                   {product.onSale ? (
@@ -721,8 +783,25 @@ export default function MarketplaceProductDetails() {
                         }
                       >
                         <img
-                          src={imageUrl(image)}
+                          src={imageUrl(
+                            image,
+                            {
+                              thumbnail: true,
+                            },
+                          )}
                           alt=""
+                          width={imageDimension(
+                            image,
+                            "thumbnailWidth",
+                            480,
+                          )}
+                          height={imageDimension(
+                            image,
+                            "thumbnailHeight",
+                            480,
+                          )}
+                          loading="lazy"
+                          decoding="async"
                         />
                       </button>
                     ))}

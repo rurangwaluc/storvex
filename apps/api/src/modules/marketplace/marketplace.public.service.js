@@ -95,8 +95,20 @@ function chooseApprovedImages(images) {
 
   return approved.map((image) => ({
     url: image.url,
+    thumbnailUrl:
+      image.thumbnailUrl || image.url,
     altText: image.altText || null,
     isPrimary: Boolean(image.isPrimary),
+    width:
+      Number(image.width || 0) || null,
+    height:
+      Number(image.height || 0) || null,
+    thumbnailWidth:
+      Number(image.thumbnailWidth || 0) ||
+      null,
+    thumbnailHeight:
+      Number(image.thumbnailHeight || 0) ||
+      null,
   }));
 }
 
@@ -590,11 +602,16 @@ const publicProductSelect = {
     ],
     select: {
       url: true,
+      thumbnailUrl: true,
       altText: true,
       isPrimary: true,
       sortOrder: true,
       imageType: true,
       isMarketplaceApproved: true,
+      width: true,
+      height: true,
+      thumbnailWidth: true,
+      thumbnailHeight: true,
     },
   },
   branchInventory: {

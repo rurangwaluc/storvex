@@ -1,5 +1,12 @@
 const prisma = require("../../config/database");
-const { deleteObject } = require("../../lib/storage/objectStorage");
+const {
+  STORAGE_VISIBILITY,
+  deleteObject,
+} = require("../../lib/storage/objectStorage");
+const {
+  serializeOwnerProductImage,
+  serializeOwnerProductImages,
+} = require("./inventory.productImageAccess.service");
 const PDFDocument = require("pdfkit");
 const ExcelJS = require("exceljs");
 
@@ -559,14 +566,27 @@ function productSelect() {
     marketplaceUnpublishedAt: true,
 
     images: {
-      orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+      where: {
+        imageType: "CLEANED",
+      },
+      orderBy: [
+        { isPrimary: "desc" },
+        { sortOrder: "asc" },
+        { createdAt: "asc" },
+      ],
       select: {
         id: true,
         url: true,
-        key: true,
         altText: true,
         sortOrder: true,
         isPrimary: true,
+        imageType: true,
+        isMarketplaceApproved: true,
+        width: true,
+        height: true,
+        thumbnailUrl: true,
+        thumbnailWidth: true,
+        thumbnailHeight: true,
         createdAt: true,
       },
     },
@@ -1294,15 +1314,28 @@ async function searchProducts(req, res) {
         sellPrice: true,
         stockQty: true,
         images: {
-          orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
+          where: {
+            imageType: "CLEANED",
+          },
+          orderBy: [
+            { isPrimary: "desc" },
+            { sortOrder: "asc" },
+            { createdAt: "asc" },
+          ],
           take: 3,
           select: {
             id: true,
             url: true,
-            key: true,
             altText: true,
             sortOrder: true,
             isPrimary: true,
+            imageType: true,
+            isMarketplaceApproved: true,
+            width: true,
+            height: true,
+            thumbnailUrl: true,
+            thumbnailWidth: true,
+            thumbnailHeight: true,
             createdAt: true,
           },
         },
@@ -2786,82 +2819,44 @@ async function exportStockAdjustmentsExcel(req, res) {
 }
 
 
+
 async function listProductImages(req, res) {
   const tenantId = getTenantId(req);
-  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
 
-  const productId = req.params.id;
-
-  try {
-    await ensureProductForTenant(tenantId, productId, { id: true });
-
-    const images = await prisma.productImage.findMany({
-      where: { tenantId, productId },
-      orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }, { createdAt: "asc" }],
-      select: {
-        id: true,
-        url: true,
-        key: true,
-        altText: true,
-        sortOrder: true,
-        isPrimary: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+  if (!tenantId) {
+    return res.status(401).json({
+      message: "Unauthorized",
     });
-
-    return res.json({ images, count: images.length });
-  } catch (err) {
-    if (err?.code === "PRODUCT_NOT_FOUND") {
-      return res.status(404).json({ message: "Product not found" });
-    }
-
-    console.error("listProductImages error:", err);
-    return res.status(500).json({ message: "Failed to load product images" });
   }
-}
-
-async function addProductImage(req, res) {
-  const tenantId = getTenantId(req);
-  const userId = getUserId(req);
-  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
 
   const productId = req.params.id;
-  const activeBranchId = getActiveBranchId(req);
 
   try {
-    const product = await ensureProductForTenant(tenantId, productId, {
-      id: true,
-      name: true,
-      marketplaceStatus: true,
-    });
+    await ensureProductForTenant(
+      tenantId,
+      productId,
+      {
+        id: true,
+      },
+    );
 
-    const input = normalizeImageInput(req.body || {});
-
-    const created = await prisma.$transaction(async (tx) => {
-      const existingCount = await tx.productImage.count({
-        where: { tenantId, productId },
-      });
-
-      const shouldBePrimary = input.isPrimary || existingCount === 0;
-
-      if (shouldBePrimary) {
-        await tx.productImage.updateMany({
-          where: { tenantId, productId },
-          data: { isPrimary: false },
-        });
-      }
-
-      const image = await tx.productImage.create({
-        data: {
+    const images =
+      await prisma.productImage.findMany({
+        where: {
           tenantId,
           productId,
-          url: input.url,
-          key: input.key,
-          altText: input.altText,
-          sortOrder: input.sortOrder,
-          isPrimary: shouldBePrimary,
         },
+        orderBy: [
+          {
+            isPrimary: "desc",
+          },
+          {
+            sortOrder: "asc",
+          },
+          {
+            createdAt: "asc",
+          },
+        ],
         select: {
           id: true,
           url: true,
@@ -2869,69 +2864,102 @@ async function addProductImage(req, res) {
           altText: true,
           sortOrder: true,
           isPrimary: true,
+          imageType: true,
+          sourceImageId: true,
+          isMarketplaceApproved: true,
+          approvedAt: true,
+          studioVersion: true,
+          width: true,
+          height: true,
+          sizeBytes: true,
+          mimeType: true,
+          thumbnailUrl: true,
+          thumbnailKey: true,
+          thumbnailWidth: true,
+          thumbnailHeight: true,
+          thumbnailSizeBytes: true,
+          backgroundColor: true,
+          processingProvider: true,
+          processedAt: true,
           createdAt: true,
           updatedAt: true,
         },
       });
 
-      await writeAuditLog(tx, {
-        tenantId,
-        userId,
-        branchId: activeBranchId,
-        entity: "PRODUCT",
-        entityId: product.id,
-        action: INVENTORY_AUDIT_ACTIONS.PRODUCT_UPDATED,
-        metadata: {
-          branchId: activeBranchId,
-          name: product.name,
-          imageAdded: true,
-          marketplaceStatus: product.marketplaceStatus,
-        },
-      });
+    const safeImages =
+      await serializeOwnerProductImages(
+        images,
+      );
 
-      return image;
+    return res.json({
+      images: safeImages,
+      count: safeImages.length,
     });
-
-    return res.status(201).json({ image: created });
-  } catch (err) {
-    if (err?.code === "PRODUCT_NOT_FOUND") {
-      return res.status(404).json({ message: "Product not found" });
+  } catch (error) {
+    if (
+      error?.code ===
+      "PRODUCT_NOT_FOUND"
+    ) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
     }
 
-    if (err?.code === "IMAGE_URL_REQUIRED") {
-      return res.status(400).json({ message: "Image URL is required" });
-    }
+    console.error(
+      "listProductImages error:",
+      error,
+    );
 
-    console.error("addProductImage error:", err);
-    return res.status(500).json({ message: "Failed to add product image" });
+    return res.status(500).json({
+      message:
+        "Failed to load product images",
+    });
   }
 }
 
 async function deleteProductImage(req, res) {
   const tenantId = getTenantId(req);
   const userId = getUserId(req);
-  if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+
+  if (!tenantId) {
+    return res.status(401).json({
+      message: "Unauthorized",
+    });
+  }
 
   const productId = req.params.id;
   const imageId = req.params.imageId;
-  const activeBranchId = getActiveBranchId(req);
+
+  const activeBranchId =
+    getActiveBranchId(req);
 
   try {
-    const product = await ensureProductForTenant(tenantId, productId, {
-      id: true,
-      name: true,
-      marketplaceStatus: true,
-    });
+    const product =
+      await ensureProductForTenant(
+        tenantId,
+        productId,
+        {
+          id: true,
+          name: true,
+          marketplaceStatus: true,
+        },
+      );
 
-    const existing = await prisma.productImage.findFirst({
-      where: { id: imageId, tenantId, productId },
-      select: {
-        id: true,
-        key: true,
-        isPrimary: true,
-        imageType: true,
-      },
-    });
+    const existing =
+      await prisma.productImage.findFirst({
+        where: {
+          id: imageId,
+          tenantId,
+          productId,
+        },
+        select: {
+          id: true,
+          key: true,
+          thumbnailKey: true,
+          isPrimary: true,
+          imageType: true,
+        },
+      });
 
     if (!existing) {
       return res.status(404).json({
@@ -2939,7 +2967,9 @@ async function deleteProductImage(req, res) {
       });
     }
 
-    if (existing.imageType === "ORIGINAL") {
+    if (
+      existing.imageType === "ORIGINAL"
+    ) {
       const cleanedDependants =
         await prisma.productImage.count({
           where: {
@@ -2954,65 +2984,127 @@ async function deleteProductImage(req, res) {
         return res.status(409).json({
           message:
             "Remove this image's cleaned versions before deleting the original",
-          code: "ORIGINAL_IMAGE_HAS_CLEANED_VERSIONS",
-          cleanedImageCount: cleanedDependants,
+          code:
+            "ORIGINAL_IMAGE_HAS_CLEANED_VERSIONS",
+          cleanedImageCount:
+            cleanedDependants,
         });
       }
     }
 
-    await prisma.$transaction(async (tx) => {
-      await tx.productImage.delete({ where: { id: imageId } });
-
-      if (existing.isPrimary) {
-        const nextImage = await tx.productImage.findFirst({
-          where: { tenantId, productId },
-          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-          select: { id: true },
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.productImage.delete({
+          where: {
+            id: imageId,
+          },
         });
 
-        if (nextImage) {
-          await tx.productImage.update({
-            where: { id: nextImage.id },
-            data: { isPrimary: true },
-          });
+        if (existing.isPrimary) {
+          const nextImage =
+            await tx.productImage.findFirst({
+              where: {
+                tenantId,
+                productId,
+              },
+              orderBy: [
+                {
+                  sortOrder: "asc",
+                },
+                {
+                  createdAt: "asc",
+                },
+              ],
+              select: {
+                id: true,
+              },
+            });
+
+          if (nextImage) {
+            await tx.productImage.update({
+              where: {
+                id: nextImage.id,
+              },
+              data: {
+                isPrimary: true,
+              },
+            });
+          }
         }
-      }
 
-      await writeAuditLog(tx, {
-        tenantId,
-        userId,
-        branchId: activeBranchId,
-        entity: "PRODUCT",
-        entityId: product.id,
-        action: INVENTORY_AUDIT_ACTIONS.PRODUCT_UPDATED,
-        metadata: {
+        await writeAuditLog(tx, {
+          tenantId,
+          userId,
           branchId: activeBranchId,
-          name: product.name,
-          imageRemoved: true,
-          marketplaceStatus: product.marketplaceStatus,
-        },
-      });
-    });
+          entity: "PRODUCT",
+          entityId: product.id,
+          action:
+            INVENTORY_AUDIT_ACTIONS
+              .PRODUCT_UPDATED,
+          metadata: {
+            branchId: activeBranchId,
+            name: product.name,
+            imageRemoved: true,
+            marketplaceStatus:
+              product.marketplaceStatus,
+          },
+        });
+      },
+    );
 
-    if (existing.key) {
+    const objectKeys = [
+      ...new Set(
+        [
+          existing.key,
+          existing.thumbnailKey,
+        ].filter(Boolean),
+      ),
+    ];
+
+    for (const objectKey of objectKeys) {
       try {
-        await deleteObject(existing.key);
+        await deleteObject(
+          objectKey,
+          {
+            visibility:
+              existing.imageType ===
+              "CLEANED"
+                ? STORAGE_VISIBILITY.PUBLIC
+                : STORAGE_VISIBILITY.PRIVATE,
+          },
+        );
       } catch (storageError) {
         console.error(
           "deleteProductImage object cleanup failed:",
-          storageError?.message || storageError,
+          objectKey,
+          storageError?.message ||
+            storageError,
         );
       }
     }
 
-    return res.json({ message: "Image removed" });
-  } catch (err) {
-    if (err?.code === "PRODUCT_NOT_FOUND") {
-      return res.status(404).json({ message: "Product not found" });
+    return res.json({
+      message: "Image removed",
+    });
+  } catch (error) {
+    if (
+      error?.code ===
+      "PRODUCT_NOT_FOUND"
+    ) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
     }
 
-    console.error("deleteProductImage error:", err);
-    return res.status(500).json({ message: "Failed to remove product image" });
+    console.error(
+      "deleteProductImage error:",
+      error,
+    );
+
+    return res.status(500).json({
+      message:
+        "Failed to remove product image",
+    });
   }
 }
 
@@ -3078,7 +3170,12 @@ async function setPrimaryProductImage(req, res) {
       return image;
     });
 
-    return res.json({ image: updated });
+    return res.json({
+      image:
+        await serializeOwnerProductImage(
+          updated,
+        ),
+    });
   } catch (err) {
     if (err?.code === "PRODUCT_NOT_FOUND") {
       return res.status(404).json({ message: "Product not found" });
@@ -3375,7 +3472,6 @@ module.exports = {
   activateProduct,
 
   listProductImages,
-  addProductImage,
   deleteProductImage,
   setPrimaryProductImage,
   updateProductListingDraft,

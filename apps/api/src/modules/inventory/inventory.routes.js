@@ -2,16 +2,17 @@ const multer = require("multer");
 const express = require("express");
 const router = express.Router();
 
+const inventoryController = require("./inventory.controller");
+const inventoryImagesController = require("./inventory.images.controller");
+
 const productImageUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 5 * 1024 * 1024,
+    fileSize:
+      inventoryImagesController
+        .MAX_IMAGE_SIZE_BYTES,
   },
 });
-
-
-const inventoryController = require("./inventory.controller");
-const inventoryImagesController = require("./inventory.images.controller");
 const inventoryImageStudioController = require("./inventory.imageStudio.controller");
 
 const authenticate = require("../../middlewares/authenticate");
@@ -93,25 +94,11 @@ router.post(
   inventoryImagesController.uploadProductImage
 );
 
-router.post(
-  "/products/:id/images/upload-url",
-  ...writeBase,
-  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
-  inventoryImagesController.createProductImageUploadUrl
-);
-
 router.get(
   "/products/:id/images",
   ...readBase,
   requireDbPermission(PERMISSIONS.INVENTORY_VIEW),
   inventoryController.listProductImages
-);
-
-router.post(
-  "/products/:id/images",
-  ...writeBase,
-  requireDbPermission(PERMISSIONS.INVENTORY_EDIT),
-  inventoryController.addProductImage
 );
 
 router.delete(

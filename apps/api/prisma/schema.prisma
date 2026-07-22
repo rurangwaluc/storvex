@@ -332,6 +332,7 @@ model MarketplaceCustomer {
 
   sessions          MarketplaceCustomerSession[]
   verifications     MarketplaceCustomerVerification[]
+  passwordResets    MarketplaceCustomerPasswordReset[]
   requests          MarketplaceRequest[]
   analyticsEvents   MarketplaceAnalyticsEvent[]
   businessCustomers Customer[]
@@ -359,6 +360,23 @@ model MarketplaceCustomerSession {
   @@index([customerId, isRevoked])
   @@index([expiresAt])
   @@map("MarketplaceCustomerSession")
+}
+
+model MarketplaceCustomerPasswordReset {
+  id          String    @id @default(uuid())
+  customerId  String    @db.Text
+  tokenHash   String    @unique @db.Text
+  expiresAt   DateTime
+  usedAt      DateTime?
+  requestedIp String?   @db.Text
+  createdAt   DateTime  @default(now())
+
+  customer MarketplaceCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, createdAt])
+  @@index([customerId, usedAt])
+  @@index([expiresAt])
+  @@map("MarketplaceCustomerPasswordReset")
 }
 
 model MarketplaceCustomerVerification {
@@ -854,6 +872,19 @@ model ProductImage {
   approvedAt            DateTime?
   approvedById          String?
   studioVersion         Int              @default(1)
+
+  width              Int?
+  height             Int?
+  sizeBytes          Int?
+  mimeType           String?   @db.Text
+  thumbnailUrl       String?   @db.Text
+  thumbnailKey       String?   @db.Text
+  thumbnailWidth     Int?
+  thumbnailHeight    Int?
+  thumbnailSizeBytes Int?
+  backgroundColor    String?   @db.Text
+  processingProvider String?   @db.Text
+  processedAt        DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt

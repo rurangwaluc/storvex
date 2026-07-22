@@ -74,8 +74,28 @@ function ProductIdentity({ item }) {
       >
         {item.image?.url ? (
           <img
-            src={item.image.url}
-            alt={item.image.altText || item.title}
+            src={
+              item.image.thumbnailUrl ||
+              item.image.url
+            }
+            alt={
+              item.image.altText ||
+              item.title
+            }
+            width={
+              Number(
+                item.image
+                  .thumbnailWidth,
+              ) || 480
+            }
+            height={
+              Number(
+                item.image
+                  .thumbnailHeight,
+              ) || 480
+            }
+            loading="lazy"
+            decoding="async"
           />
         ) : null}
       </Link>

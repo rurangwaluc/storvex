@@ -398,78 +398,6 @@ export function uploadProductImage(productId, file, payload = {}, options = {}) 
   });
 }
 
-export function createProductImageUploadUrl(productId, fileOrPayload = {}, options = {}) {
-  const id = cleanString(productId);
-
-  if (!id) {
-    return Promise.reject(new Error("Product id is required"));
-  }
-
-  const isBrowserFile =
-    typeof File !== "undefined" &&
-    fileOrPayload instanceof File;
-
-  const payload = isBrowserFile
-    ? {
-        filename: fileOrPayload.name,
-        contentType: fileOrPayload.type,
-        sizeBytes: fileOrPayload.size,
-      }
-    : {
-        filename: cleanString(
-          fileOrPayload.filename || fileOrPayload.fileName || fileOrPayload.name,
-        ),
-        contentType: cleanString(
-          fileOrPayload.contentType || fileOrPayload.fileType || fileOrPayload.type,
-        ),
-        sizeBytes: fileOrPayload.sizeBytes || fileOrPayload.size,
-      };
-
-  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/images/upload-url`, {
-    method: "POST",
-    body: cleanObject(payload),
-    ...withBranchOptions(options),
-  });
-}
-
-export async function uploadProductImageToSignedUrl(upload, file) {
-  const uploadUrl = cleanString(upload?.uploadUrl);
-
-  if (!uploadUrl) {
-    throw new Error("Missing upload URL");
-  }
-
-  if (!file) {
-    throw new Error("Missing product image file");
-  }
-
-  const headers = {
-    ...(upload?.headers || {}),
-  };
-
-  if (file.type && !headers["Content-Type"]) {
-    headers["Content-Type"] = file.type;
-  }
-
-  const response = await fetch(uploadUrl, {
-    method: "PUT",
-    headers,
-    body: file,
-  });
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => "");
-    throw new Error(text || "Product image upload failed");
-  }
-
-  return {
-    objectKey: cleanString(upload?.objectKey || upload?.key),
-    key: cleanString(upload?.key || upload?.objectKey),
-    publicUrl: cleanString(upload?.publicUrl || upload?.url),
-    url: cleanString(upload?.publicUrl || upload?.url),
-  };
-}
-
 export function getProductImages(productId, options = {}) {
   const id = cleanString(productId);
 
@@ -479,20 +407,6 @@ export function getProductImages(productId, options = {}) {
 
   return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/images`, {
     method: "GET",
-    ...withBranchOptions(options),
-  });
-}
-
-export function addProductImage(productId, payload, options = {}) {
-  const id = cleanString(productId);
-
-  if (!id) {
-    return Promise.reject(new Error("Product id is required"));
-  }
-
-  return apiFetch(`${INVENTORY_BASE}/products/${encodeURIComponent(id)}/images`, {
-    method: "POST",
-    body: normalizeProductImagePayload(payload),
     ...withBranchOptions(options),
   });
 }
@@ -892,10 +806,7 @@ const inventoryApi = {
   activateProduct,
 
   uploadProductImage,
-  createProductImageUploadUrl,
-  uploadProductImageToSignedUrl,
   getProductImages,
-  addProductImage,
   deleteProductImage,
   setPrimaryProductImage,
   getProductImageStudio,

@@ -398,3 +398,136 @@ test("does not treat a missing sale price as zero", () => {
   assert.equal(product.regularPrice, 650000);
   assert.equal(product.salePrice, null);
 });
+
+test(
+  "returns master and thumbnail image metadata",
+  () => {
+    const product = serializePublicProduct(
+      {
+        name: "Camera",
+        sellPrice: 350000,
+        marketplaceSlug: "camera",
+        marketplaceTitle: "Camera",
+        marketplacePrice: 350000,
+        marketplaceCategory:
+          "Electronics",
+        marketplaceAttributes: {},
+        branchInventory: [
+          {
+            qtyOnHand: 2,
+            qtyReserved: 0,
+          },
+        ],
+        images: [
+          {
+            url: "camera-1600.webp",
+            thumbnailUrl:
+              "camera-480.webp",
+            altText: "Camera",
+            imageType: "CLEANED",
+            isMarketplaceApproved:
+              true,
+            isPrimary: true,
+            sortOrder: 0,
+            width: 1600,
+            height: 1600,
+            thumbnailWidth: 480,
+            thumbnailHeight: 480,
+          },
+        ],
+      },
+      {
+        publicSlug: "camera-store",
+        displayName: "Camera Store",
+        pickupEnabled: true,
+        deliveryEnabled: false,
+        temporarilyClosed: false,
+        tenant: {
+          name: "Camera Store",
+          currencyCode: "RWF",
+        },
+      },
+    );
+
+    assert.equal(
+      product.image.url,
+      "camera-1600.webp",
+    );
+
+    assert.equal(
+      product.image.thumbnailUrl,
+      "camera-480.webp",
+    );
+
+    assert.equal(
+      product.image.width,
+      1600,
+    );
+
+    assert.equal(
+      product.image.height,
+      1600,
+    );
+
+    assert.equal(
+      product.image.thumbnailWidth,
+      480,
+    );
+
+    assert.equal(
+      product.image.thumbnailHeight,
+      480,
+    );
+  },
+);
+
+test(
+  "falls back to the master when an older cleaned image has no thumbnail",
+  () => {
+    const product = serializePublicProduct(
+      {
+        name: "Speaker",
+        sellPrice: 80000,
+        marketplaceSlug: "speaker",
+        marketplaceTitle: "Speaker",
+        marketplacePrice: 80000,
+        marketplaceCategory:
+          "Electronics",
+        marketplaceAttributes: {},
+        branchInventory: [
+          {
+            qtyOnHand: 1,
+            qtyReserved: 0,
+          },
+        ],
+        images: [
+          {
+            url: "speaker.webp",
+            thumbnailUrl: null,
+            imageType: "CLEANED",
+            isMarketplaceApproved:
+              true,
+            isPrimary: true,
+            sortOrder: 0,
+          },
+        ],
+      },
+      {
+        publicSlug: "audio-store",
+        displayName: "Audio Store",
+        pickupEnabled: true,
+        deliveryEnabled: false,
+        temporarilyClosed: false,
+        tenant: {
+          name: "Audio Store",
+          currencyCode: "RWF",
+        },
+      },
+    );
+
+    assert.equal(
+      product.image.thumbnailUrl,
+      "speaker.webp",
+    );
+  },
+);

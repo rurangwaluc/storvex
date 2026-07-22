@@ -30,7 +30,7 @@ import {
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./ProductImages.css";
 
-const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -110,7 +110,7 @@ function validateImageFile(file) {
   }
 
   if (file.size > MAX_IMAGE_SIZE_BYTES) {
-    return "Each product image must be 5MB or smaller";
+    return "Each product image must be 10MB or smaller";
   }
 
   return "";
@@ -1370,7 +1370,7 @@ export default function ProductImages() {
               </strong>
 
               <small>
-                JPG, PNG, or WEBP. Maximum 5MB per image.
+                JPG, PNG, or WEBP. Maximum 10MB per image.
               </small>
             </button>
           )}
