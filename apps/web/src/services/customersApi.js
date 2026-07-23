@@ -8,6 +8,13 @@ function buildCustomerQuery(params = {}) {
 
   if (params.includeInactive) search.set("includeInactive", "true");
 
+  const source = String(params.source || "").trim().toUpperCase();
+  if (source && source !== "ALL") search.set("source", source);
+
+  if (params.withOutstanding) {
+    search.set("withOutstanding", "true");
+  }
+
   if (params.allLocations) search.set("allBranches", "true");
 
   if (params.locationId) search.set("branchId", params.locationId);

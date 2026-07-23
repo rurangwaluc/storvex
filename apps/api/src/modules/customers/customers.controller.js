@@ -1,4 +1,11 @@
 const prisma = require("../../config/database");
+const {
+  aggregateCustomerActivity,
+  enrichCustomer,
+  matchesCustomerFilters,
+  normalizeSourceFilter,
+  sortCustomersByActivity,
+} = require("./customerInsights");
 
 function normalizeText(value) {
   const s = String(value || "").trim();
@@ -173,84 +180,272 @@ async function createCustomer(req, res) {
 async function getCustomers(req, res) {
   try {
     const tenantId = req.user?.tenantId;
+
     if (!tenantId) {
-      return res.status(400).json({ message: "Tenant ID is missing" });
+      return res.status(400).json({
+        message: "Tenant ID is missing",
+      });
     }
 
-    const scope = resolveCustomerBranchScope(req);
-    const q = String(req.query.q || "").trim();
-    const includeInactive = String(req.query.includeInactive || "").toLowerCase() === "true";
+    const scope =
+      resolveCustomerBranchScope(req);
+
+    const q =
+      String(req.query.q || "").trim();
+
+    const includeInactive =
+      String(
+        req.query.includeInactive || "",
+      )
+        .trim()
+        .toLowerCase() === "true";
+
+    const withOutstanding =
+      String(
+        req.query.withOutstanding || "",
+      )
+        .trim()
+        .toLowerCase() === "true";
+
+    const source =
+      normalizeSourceFilter(
+        req.query.source,
+      );
 
     const where = {
       tenantId,
-      ...(typeof prisma.customer.fields?.isActive !== "undefined" && !includeInactive
-        ? { isActive: true }
-        : {}),
-      ...(q
-        ? {
-            OR: [
-              { name: { contains: q, mode: "insensitive" } },
-              { phone: { contains: q, mode: "insensitive" } },
-              ...(typeof prisma.customer.fields?.email !== "undefined"
-                ? [{ email: { contains: q, mode: "insensitive" } }]
-                : []),
-              ...(typeof prisma.customer.fields?.tinNumber !== "undefined"
-                ? [{ tinNumber: { contains: q, mode: "insensitive" } }]
-                : []),
-              ...(typeof prisma.customer.fields?.idNumber !== "undefined"
-                ? [{ idNumber: { contains: q, mode: "insensitive" } }]
-                : []),
-            ],
-          }
-        : {}),
+
+      ...(
+        typeof prisma.customer.fields
+          ?.isActive !== "undefined" &&
+        !includeInactive
+          ? {
+              isActive: true,
+            }
+          : {}
+      ),
+
+      ...(
+        q
+          ? {
+              OR: [
+                {
+                  name: {
+                    contains: q,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  phone: {
+                    contains: q,
+                    mode: "insensitive",
+                  },
+                },
+                ...(
+                  typeof prisma.customer
+                    .fields?.email !==
+                  "undefined"
+                    ? [
+                        {
+                          email: {
+                            contains: q,
+                            mode: "insensitive",
+                          },
+                        },
+                      ]
+                    : []
+                ),
+                ...(
+                  typeof prisma.customer
+                    .fields?.tinNumber !==
+                  "undefined"
+                    ? [
+                        {
+                          tinNumber: {
+                            contains: q,
+                            mode: "insensitive",
+                          },
+                        },
+                      ]
+                    : []
+                ),
+                ...(
+                  typeof prisma.customer
+                    .fields?.idNumber !==
+                  "undefined"
+                    ? [
+                        {
+                          idNumber: {
+                            contains: q,
+                            mode: "insensitive",
+                          },
+                        },
+                      ]
+                    : []
+                ),
+              ],
+            }
+          : {}
+      ),
     };
 
-    const [customers, creditAgg] = await Promise.all([
-      prisma.customer.findMany({
+    const customers =
+      await prisma.customer.findMany({
         where,
-        orderBy: { createdAt: "desc" },
-        select: customerSelectShape(),
-      }),
-      prisma.sale.groupBy({
-        by: ["customerId"],
-        where: applySaleBranchScope(
-          {
-            tenantId,
-            saleType: "CREDIT",
-            balanceDue: { gt: 0 },
-            customerId: { not: null },
-            isCancelled: false,
-          },
-          scope
+        orderBy: {
+          createdAt: "desc",
+        },
+        select:
+          customerSelectShape(),
+      });
+
+    const customerIds =
+      customers
+        .map((customer) => customer.id)
+        .filter(Boolean);
+
+    const sales =
+      customerIds.length
+        ? await prisma.sale.findMany({
+            where:
+              applySaleBranchScope(
+                {
+                  tenantId,
+                  customerId: {
+                    in: customerIds,
+                  },
+                  isCancelled: false,
+                  isDraft: false,
+                },
+                scope,
+              ),
+            select: {
+              customerId: true,
+              total: true,
+              amountPaid: true,
+              balanceDue: true,
+              createdAt: true,
+              draftSource: true,
+              marketplaceRequest: {
+                select: {
+                  id: true,
+                },
+              },
+            },
+          })
+        : [];
+
+    const activityByCustomerId =
+      aggregateCustomerActivity(sales);
+
+    const allCustomers =
+      sortCustomersByActivity(
+        customers.map((customer) =>
+          enrichCustomer(
+            customer,
+            activityByCustomerId.get(
+              customer.id,
+            ),
+          ),
         ),
-        _sum: { balanceDue: true },
-      }),
-    ]);
+      );
 
-    const outstandingByCustomerId = new Map();
-    for (const row of creditAgg) {
-      if (row.customerId) {
-        outstandingByCustomerId.set(row.customerId, safeNumber(row._sum?.balanceDue, 0));
-      }
-    }
+    const filteredCustomers =
+      allCustomers.filter((customer) =>
+        matchesCustomerFilters(
+          customer,
+          {
+            source,
+            withOutstanding,
+          },
+        ),
+      );
 
-    const enriched = customers.map((customer) => ({
-      ...customer,
-      outstanding: outstandingByCustomerId.get(customer.id) || 0,
-    }));
+    const summary =
+      allCustomers.reduce(
+        (result, customer) => {
+          result.total += 1;
+          result.totalBusiness +=
+            safeNumber(
+              customer.totalBusiness,
+              0,
+            );
+          result.totalOutstanding +=
+            safeNumber(
+              customer.outstanding,
+              0,
+            );
+
+          if (
+            safeNumber(
+              customer.outstanding,
+              0,
+            ) > 0
+          ) {
+            result.withOutstanding += 1;
+          }
+
+          if (
+            customer.source ===
+            "MARKETPLACE"
+          ) {
+            result.marketplace += 1;
+          } else if (
+            customer.source === "BOTH"
+          ) {
+            result.both += 1;
+          } else {
+            result.store += 1;
+          }
+
+          return result;
+        },
+        {
+          total: 0,
+          store: 0,
+          marketplace: 0,
+          both: 0,
+          withOutstanding: 0,
+          totalBusiness: 0,
+          totalOutstanding: 0,
+        },
+      );
 
     return res.json({
-      customers: enriched,
-      count: enriched.length,
+      customers: filteredCustomers,
+      count: filteredCustomers.length,
+      totalCount: allCustomers.length,
+      filters: {
+        source,
+        withOutstanding,
+        includeInactive,
+        q: q || null,
+      },
+      summary,
       branchScope: scope,
     });
   } catch (err) {
-    if (String(err?.code || err?.message || "") === "BRANCH_ACCESS_DENIED") {
-      return res.status(403).json({ message: "Branch access denied" });
+    if (
+      String(
+        err?.code ||
+        err?.message ||
+        "",
+      ) === "BRANCH_ACCESS_DENIED"
+    ) {
+      return res.status(403).json({
+        message: "Branch access denied",
+      });
     }
 
-    console.error("Failed to fetch customers", err);
-    return res.status(500).json({ message: "Failed to fetch customers" });
+    console.error(
+      "Failed to fetch customers",
+      err,
+    );
+
+    return res.status(500).json({
+      message:
+        "Failed to fetch customers",
+    });
   }
 }
 

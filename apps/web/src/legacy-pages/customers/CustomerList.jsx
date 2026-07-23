@@ -617,8 +617,11 @@ export default function CustomerList() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [customers, setCustomers] = useState([]);
+  const [customerSummary, setCustomerSummary] = useState(null);
   const [q, setQ] = useState("");
   const [showInactive, setShowInactive] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState("ALL");
+  const [withOutstanding, setWithOutstanding] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
@@ -642,7 +645,9 @@ export default function CustomerList() {
   }, []);
 
   async function load(options = {}) {
-    if (abortRef.current) abortRef.current.abort();
+    if (abortRef.current) {
+      abortRef.current.abort();
+    }
 
     const controller = new AbortController();
     abortRef.current = controller;
@@ -658,20 +663,47 @@ export default function CustomerList() {
         {
           q: q.trim() || undefined,
           includeInactive: showInactive,
+          source: sourceFilter,
+          withOutstanding,
         },
-        { signal: controller.signal },
+        {
+          signal: controller.signal,
+        },
       );
 
-      if (!mountedRef.current || controller.signal.aborted) return;
+      if (
+        !mountedRef.current ||
+        controller.signal.aborted
+      ) {
+        return;
+      }
 
-      setCustomers(normalizeCustomerResponse(data));
+      setCustomers(
+        normalizeCustomerResponse(data),
+      );
+
+      setCustomerSummary(
+        data?.summary || null,
+      );
     } catch (error) {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) {
+        return;
+      }
 
-      toast.error(error?.message || "Failed to load customers");
+      toast.error(
+        error?.message ||
+          "Failed to load customers",
+      );
+
       setCustomers([]);
+      setCustomerSummary(null);
     } finally {
-      if (!mountedRef.current || controller.signal.aborted) return;
+      if (
+        !mountedRef.current ||
+        controller.signal.aborted
+      ) {
+        return;
+      }
 
       setLoading(false);
       setRefreshing(false);
@@ -680,51 +712,69 @@ export default function CustomerList() {
 
   useEffect(() => {
     void load();
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showInactive]);
+  }, [
+    showInactive,
+    sourceFilter,
+    withOutstanding,
+  ]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      void load({ silent: true });
+      void load({
+        silent: true,
+      });
     }, 250);
 
     return () => clearTimeout(timeout);
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
-
-    return customers.filter((customer) => {
-      if (!showInactive && customer.isActive === false) return false;
-      if (!query) return true;
-
-      const haystack = [
-        customer.name,
-        customer.phone,
-        customer.email,
-        customer.tinNumber,
-        customer.idNumber,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(query);
-    });
-  }, [customers, q, showInactive]);
+  const filtered = customers;
 
   const stats = useMemo(
     () => ({
-      active: customers.filter((customer) => customer.isActive !== false).length,
-      inactive: customers.filter((customer) => customer.isActive === false).length,
-      withDebt: customers.filter((customer) => Number(customer.outstanding || 0) > 0).length,
-      totalDebt: customers.reduce(
-        (sum, customer) => sum + Number(customer.outstanding || 0),
-        0,
-      ),
+      active: customers.filter(
+        (customer) =>
+          customer.isActive !== false,
+      ).length,
+
+      marketplace:
+        Number(
+          customerSummary?.marketplace || 0,
+        ) +
+        Number(
+          customerSummary?.both || 0,
+        ),
+
+      totalBusiness:
+        customerSummary?.totalBusiness ??
+        customers.reduce(
+          (sum, customer) =>
+            sum +
+            Number(
+              customer.totalBusiness || 0,
+            ),
+          0,
+        ),
+
+      totalDebt:
+        customerSummary?.totalOutstanding ??
+        customers.reduce(
+          (sum, customer) =>
+            sum +
+            Number(
+              customer.outstanding || 0,
+            ),
+          0,
+        ),
     }),
-    [customers],
+    [
+      customers,
+      customerSummary,
+    ],
   );
 
   function openCreate() {
@@ -864,8 +914,8 @@ export default function CustomerList() {
               </h1>
 
               <p className={cn("mt-2 max-w-3xl text-sm leading-6", muted())}>
-                Manage customer profiles, purchase history, WhatsApp communication preference,
-                and outstanding balances in one place.
+                Manage Store and Marketplace customers together, including purchases,
+                latest activity, contact details, and outstanding balances.
               </p>
             </div>
 
@@ -887,47 +937,131 @@ export default function CustomerList() {
         </div>
 
         <div className="grid grid-cols-2 gap-3 px-5 py-5 sm:grid-cols-4 sm:px-6">
-          <InfoStat label="Active" value={stats.active} />
-          <InfoStat label="With balance" value={stats.withDebt} tone={stats.withDebt > 0 ? "danger" : "success"} />
           <InfoStat
-            label="Total balance"
-            value={formatMoney(stats.totalDebt)}
-            tone={stats.totalDebt > 0 ? "danger" : "success"}
+            label="Active"
+            value={stats.active}
           />
-          <InfoStat label="Inactive" value={stats.inactive} />
+
+          <InfoStat
+            label="Marketplace customers"
+            value={stats.marketplace}
+          />
+
+          <InfoStat
+            label="Total business"
+            value={formatMoney(
+              stats.totalBusiness,
+            )}
+          />
+
+          <InfoStat
+            label="Outstanding"
+            value={formatMoney(
+              stats.totalDebt,
+            )}
+            tone={
+              stats.totalDebt > 0
+                ? "danger"
+                : "success"
+            }
+          />
         </div>
       </section>
 
       <section className={cn(card(), "svx-customer-shell overflow-hidden")}>
-        <div className="border-b border-[var(--color-border)] px-5 py-4 sm:px-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <input
-              className="app-input w-full lg:max-w-md"
-              placeholder="Search name, phone, email, TIN, or ID…"
-              value={q}
-              onChange={(event) => setQ(event.target.value)}
-            />
+          <div className="border-b border-[var(--color-border)] px-5 py-4 sm:px-6">
+            <div className="svx-customer-filter-layout">
+              <input
+                className="app-input svx-customer-search"
+                placeholder="Search name, phone, email, TIN, or ID…"
+                value={q}
+                onChange={(event) =>
+                  setQ(event.target.value)
+                }
+              />
 
-            <button
-              type="button"
-              onClick={() => setShowInactive((current) => !current)}
-              className={cn(
-                "inline-flex h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-2xl border px-4 text-sm font-semibold transition",
-                showInactive
-                  ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
-                  : "border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)] hover:opacity-90",
-              )}
-            >
-              {showInactive ? "Showing all customers" : "Active customers only"}
-            </button>
+              <div className="svx-customer-filters">
+                <label className="svx-customer-filter-field">
+                  <span>Customer source</span>
+
+                  <select
+                    className="app-input"
+                    value={sourceFilter}
+                    onChange={(event) =>
+                      setSourceFilter(
+                        event.target.value,
+                      )
+                    }
+                  >
+                    <option value="ALL">
+                      All customers
+                    </option>
+
+                    <option value="STORE">
+                      Store
+                    </option>
+
+                    <option value="MARKETPLACE">
+                      Marketplace
+                    </option>
+
+                    <option value="BOTH">
+                      Store and Marketplace
+                    </option>
+                  </select>
+                </label>
+
+                <button
+                  type="button"
+                  className={cn(
+                    "svx-customer-filter-button",
+                    withOutstanding &&
+                      "is-active",
+                  )}
+                  aria-pressed={withOutstanding}
+                  onClick={() =>
+                    setWithOutstanding(
+                      (current) => !current,
+                    )
+                  }
+                >
+                  With unpaid balance
+                </button>
+
+                <button
+                  type="button"
+                  className={cn(
+                    "svx-customer-filter-button",
+                    showInactive &&
+                      "is-active",
+                  )}
+                  aria-pressed={showInactive}
+                  onClick={() =>
+                    setShowInactive(
+                      (current) => !current,
+                    )
+                  }
+                >
+                  {showInactive
+                    ? "Including inactive"
+                    : "Active only"}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
 
         <div className="hidden overflow-x-auto lg:block">
           <table className="svx-customer-table w-full table-fixed">
             <thead>
               <tr className="border-b border-[var(--color-border)]">
-                {["Name & contact", "TIN / ID", "WhatsApp", "Outstanding", "Status", "Actions"].map(
+                  {[
+                    "Customer",
+                    "Source",
+                    "Latest activity",
+                    "Total business",
+                    "Outstanding",
+                    "Actions",
+                  ].map(
                   (heading) => (
                     <th
                       key={heading}
@@ -973,73 +1107,156 @@ export default function CustomerList() {
                       </div>
                     </td>
 
-                    <td className="px-5 py-3">
-                      <div className={cn("text-xs", muted())}>
-                        {customer.tinNumber ? <div>TIN: {customer.tinNumber}</div> : null}
-                        {customer.idNumber ? <div>ID: {customer.idNumber}</div> : null}
-                        {!customer.tinNumber && !customer.idNumber ? <span>—</span> : null}
-                      </div>
-                    </td>
-
-                    <td className="px-5 py-3">
-                      <Pill tone={customer.whatsappOptIn ? "success" : "neutral"}>
-                        {customer.whatsappOptIn ? "Accepted" : "No WhatsApp"}
-                      </Pill>
-                    </td>
-
-                    <td className="px-5 py-3">
-                      {Number(customer.outstanding || 0) > 0 ? (
-                        <span className={cn("text-sm font-bold", danger())}>
-                          {formatMoney(customer.outstanding)}
+                      <td className="px-5 py-3">
+                        <span className="svx-customer-source">
+                          {customer.source === "BOTH"
+                            ? "Store and Marketplace"
+                            : customer.source === "MARKETPLACE"
+                              ? "Marketplace"
+                              : "Store"}
                         </span>
-                      ) : (
-                        <span className={cn("text-sm", muted())}>—</span>
-                      )}
-                    </td>
+                      </td>
 
-                    <td className="px-5 py-3">
-                      <Pill tone={customer.isActive !== false ? "success" : "neutral"}>
-                        {customer.isActive !== false ? "Active" : "Inactive"}
-                      </Pill>
-                    </td>
-
-                    <td className="px-5 py-3">
-                      <div className="svx-customer-row-actions flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            openEdit(customer);
-                          }}
-                          className="whitespace-nowrap rounded-xl bg-[var(--customer-neutral-panel)] px-3 py-1.5 text-xs font-bold text-[var(--color-text)] transition hover:opacity-90"
+                      <td className="px-5 py-3">
+                        <div
+                          className={cn(
+                            "text-sm font-semibold",
+                            strong(),
+                          )}
                         >
-                          Edit
-                        </button>
+                          {formatDate(
+                            customer.lastActivityAt,
+                          )}
+                        </div>
 
-                        {customer.isActive !== false ? (
-                          <button
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setConfirmTarget({ customer, action: "deactivate" });
-                            }}
-                            className="whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-bold text-[var(--color-danger)] transition hover:opacity-80"
+                        <div
+                          className={cn(
+                            "mt-1 text-xs",
+                            muted(),
+                          )}
+                        >
+                          {Number(
+                            customer.totalSales || 0,
+                          )}{" "}
+                          {Number(
+                            customer.totalSales || 0,
+                          ) === 1
+                            ? "sale"
+                            : "sales"}
+                        </div>
+                      </td>
+
+                      <td className="px-5 py-3">
+                        <div
+                          className={cn(
+                            "text-sm font-bold",
+                            strong(),
+                          )}
+                        >
+                          {formatMoney(
+                            customer.totalBusiness,
+                          )}
+                        </div>
+
+                        {Number(
+                          customer.marketplaceOrders || 0,
+                        ) > 0 ? (
+                          <div
+                            className={cn(
+                              "mt-1 text-xs",
+                              muted(),
+                            )}
                           >
-                            Deactivate
-                          </button>
+                            {customer.marketplaceOrders} Marketplace{" "}
+                            {Number(
+                              customer.marketplaceOrders,
+                            ) === 1
+                              ? "order"
+                              : "orders"}
+                          </div>
+                        ) : null}
+                      </td>
+
+                      <td className="px-5 py-3">
+                        {Number(
+                          customer.outstanding || 0,
+                        ) > 0 ? (
+                          <span
+                            className={cn(
+                              "text-sm font-bold",
+                              danger(),
+                            )}
+                          >
+                            {formatMoney(
+                              customer.outstanding,
+                            )}
+                          </span>
                         ) : (
+                          <span
+                            className={cn(
+                              "text-sm",
+                              muted(),
+                            )}
+                          >
+                            None
+                          </span>
+                        )}
+                      </td>
+
+                    <td className="px-5 py-3">
+                        <div className="svx-customer-row-actions">
                           <button
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
-                              setConfirmTarget({ customer, action: "reactivate" });
+                              setLedgerId(customer.id);
                             }}
-                            className="whitespace-nowrap rounded-xl px-3 py-1.5 text-xs font-bold text-[var(--color-primary)] transition hover:opacity-80"
                           >
-                            Reactivate
+                            History
                           </button>
-                        )}
-                      </div>
+
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openEdit(customer);
+                            }}
+                          >
+                            Edit
+                          </button>
+
+                          {customer.isActive !== false ? (
+                            <button
+                              type="button"
+                              className="is-danger"
+                              onClick={(event) => {
+                                event.stopPropagation();
+
+                                setConfirmTarget({
+                                  customer,
+                                  action: "deactivate",
+                                });
+                              }}
+                            >
+                              Deactivate
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="is-primary"
+                              onClick={(event) => {
+                                event.stopPropagation();
+
+                                setConfirmTarget({
+                                  customer,
+                                  action: "reactivate",
+                                });
+                              }}
+                            >
+                              Reactivate
+                            </button>
+                          )}
+                        </div>
                     </td>
                   </tr>
                 ))
@@ -1092,6 +1309,45 @@ export default function CustomerList() {
                   </div>
                 </div>
 
+                  <div className="svx-customer-mobile-summary">
+                    <div>
+                      <span>Source</span>
+                      <strong>
+                        {customer.source === "BOTH"
+                          ? "Store and Marketplace"
+                          : customer.source === "MARKETPLACE"
+                            ? "Marketplace"
+                            : "Store"}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Total business</span>
+                      <strong>
+                        {formatMoney(
+                          customer.totalBusiness,
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Latest activity</span>
+                      <strong>
+                        {formatDate(
+                          customer.lastActivityAt,
+                        )}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <span>Sales</span>
+                      <strong>
+                        {Number(
+                          customer.totalSales || 0,
+                        )}
+                      </strong>
+                    </div>
+                  </div>
                 <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                   <button
                     type="button"
