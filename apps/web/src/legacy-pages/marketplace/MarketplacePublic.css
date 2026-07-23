@@ -12804,3 +12804,189 @@ body:has(.storvex-marketplace) #root {
 }
 
 /* STORVEX MARKETPLACE PRODUCT IMAGE STANDARD END */
+
+/* Marketplace featured store logo polish */
+
+.svx-commerce-store-grid
+  .svx-commerce-store-card {
+  grid-template-columns:
+    58px minmax(0, 1fr) 18px;
+  gap: 13px;
+  min-height: 88px;
+  padding: 14px;
+}
+
+.svx-commerce-store-grid
+  .svx-commerce-store-logo {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  place-items: center;
+  overflow: hidden;
+  border:
+    1px solid var(--landing-border);
+  border-radius: 10px;
+  background: var(--landing-surface);
+  color: var(--landing-primary);
+}
+
+.svx-commerce-store-grid
+  .svx-commerce-store-logo img {
+  display: block;
+  width: 86%;
+  height: 86%;
+  max-width: 86%;
+  max-height: 86%;
+  border-radius: 0;
+  object-fit: contain;
+  object-position: center;
+}
+
+.svx-commerce-store-grid
+  .svx-commerce-store-details {
+  align-self: center;
+}
+
+.svx-commerce-store-grid
+  .svx-commerce-store-details h3 {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+@media (max-width: 620px) {
+  .svx-commerce-store-grid
+    .svx-commerce-store-card {
+    grid-template-columns:
+      52px minmax(0, 1fr) 18px;
+    gap: 11px;
+    min-height: 82px;
+    padding: 12px;
+  }
+
+  .svx-commerce-store-grid
+    .svx-commerce-store-logo {
+    width: 52px;
+    height: 52px;
+    flex-basis: 52px;
+  }
+
+  .svx-commerce-store-grid
+    .svx-commerce-store-logo img {
+    width: 84%;
+    height: 84%;
+    max-width: 84%;
+    max-height: 84%;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-commerce-store-grid
+    .svx-commerce-store-card {
+    grid-template-columns:
+      48px minmax(0, 1fr) 16px;
+    gap: 10px;
+  }
+
+  .svx-commerce-store-grid
+    .svx-commerce-store-logo {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+  }
+}
+
+/*
+ * STORVEX BUSINESS LOGO DISPLAY STANDARD
+ *
+ * Applies only to normal business-logo frames.
+ * Product-image watermarks are deliberately excluded.
+ */
+
+/* Featured stores on Marketplace home */
+
+.svx-commerce-store-grid
+  .svx-commerce-store-logo {
+  box-sizing: border-box;
+  padding: 7px;
+}
+
+.svx-commerce-store-grid
+  .svx-commerce-store-logo
+  > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Store directory */
+
+.svx-store-directory-grid
+  .svx-commerce-store-logo {
+  box-sizing: border-box;
+  padding: 8px;
+  background: var(--landing-surface);
+}
+
+.svx-store-directory-grid
+  .svx-commerce-store-logo
+  > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Public business page */
+
+.svx-business-logo {
+  box-sizing: border-box;
+  padding: 13px;
+  background: var(--landing-surface);
+}
+
+.svx-business-logo > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  object-fit: contain;
+  object-position: center;
+}
+
+@media (max-width: 700px) {
+  .svx-store-directory-grid
+    .svx-commerce-store-logo {
+    padding: 7px;
+  }
+
+  .svx-business-logo {
+    padding: 11px;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-commerce-store-grid
+    .svx-commerce-store-logo,
+  .svx-store-directory-grid
+    .svx-commerce-store-logo {
+    padding: 6px;
+  }
+
+  .svx-business-logo {
+    padding: 9px;
+  }
+}
+
+/* STORVEX BUSINESS LOGO DISPLAY STANDARD END */

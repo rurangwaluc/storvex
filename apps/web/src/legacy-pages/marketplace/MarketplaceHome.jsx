@@ -1006,9 +1006,18 @@ export function StoreCard({ store }) {
     >
       <div className="svx-commerce-store-logo">
         {store.logoUrl ? (
-          <img src={store.logoUrl} alt="" loading="lazy" />
+          <img
+            src={store.logoUrl}
+            alt={`${store.name} logo`}
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
-          <Store size={25} />
+          <Store
+            size={25}
+            strokeWidth={1.9}
+            aria-hidden="true"
+          />
         )}
       </div>
 

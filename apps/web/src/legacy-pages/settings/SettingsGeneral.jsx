@@ -481,11 +481,26 @@ export default function SettingsGeneral() {
           </p>
         </div>
 
-        {isReadOnly ? (
-          <span className="svx-general-readonly">
-            View only
-          </span>
-        ) : null}
+        <div className="svx-general-page-actions">
+          {isReadOnly ? (
+            <span className="svx-general-readonly">
+              View only
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="svx-general-save-button"
+              disabled={!dirty || saving}
+              onClick={onSave}
+            >
+              {saving
+                ? "Saving..."
+                : dirty
+                  ? "Save changes"
+                  : "Saved"}
+            </button>
+          )}
+        </div>
       </div>
 
       {missingRequired.length ? (

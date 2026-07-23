@@ -637,3 +637,67 @@
     font-size: 13px;
   }
 }
+
+/* Documents page heading save action */
+
+.svx-docs-page-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.svx-docs-readonly {
+  color: var(--settings-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.svx-docs-save-button {
+  min-width: 132px;
+  min-height: 44px;
+  border-radius: 10px;
+  box-shadow: none !important;
+}
+
+.svx-docs-save-button:disabled {
+  border-color: var(--settings-input-border);
+  background: var(--settings-input);
+  color: var(--settings-muted);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+@media (max-width: 700px) {
+  .svx-docs-page-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .svx-docs-page-actions {
+    width: 100%;
+  }
+
+  .svx-docs-save-button {
+    width: 100%;
+  }
+}
+
+/* Business logo display standard */
+
+.svx-docs-preview-logo {
+  box-sizing: border-box;
+  padding: 6px;
+}
+
+.svx-docs-preview-logo > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  object-fit: contain;
+  object-position: center;
+}

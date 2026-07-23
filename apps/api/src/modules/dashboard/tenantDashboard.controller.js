@@ -177,6 +177,12 @@ async function getTenantDashboard(req, res) {
     const tenantId = req.user?.tenantId;
     if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
 
+    const activeBranchId =
+      req.user?.activeBranchId ||
+      req.user?.branchId ||
+      req.branch?.id ||
+      null;
+
     const now = new Date();
     const todayStart = startOfDay(now);
     const todayEnd = endOfDay(now);
@@ -195,9 +201,7 @@ async function getTenantDashboard(req, res) {
       todaySalesAgg,
       monthSalesAgg,
       productCount,
-      lowStockCount,
-      outOfStockCount,
-      lowStockProducts,
+      stockProducts,
       activeRepairs,
       pendingDeals,
       recentAudit,
@@ -265,37 +269,24 @@ async function getTenantDashboard(req, res) {
         where: { tenantId, isActive: true },
       }),
 
-      prisma.product.count({
-        where: {
-          tenantId,
-          isActive: true,
-          stockQty: { gt: 0, lte: threshold },
-        },
-      }),
-
-      prisma.product.count({
-        where: {
-          tenantId,
-          isActive: true,
-          stockQty: 0,
-        },
-      }),
-
       prisma.product.findMany({
         where: {
           tenantId,
           isActive: true,
-          stockQty: { lte: threshold },
         },
-        orderBy: [{ stockQty: "asc" }, { name: "asc" }],
-        take: 10,
+        orderBy: {
+          name: "asc",
+        },
         select: {
           id: true,
           name: true,
-          stockQty: true,
+          sku: true,
+          brand: true,
           category: true,
           subcategory: true,
           subcategoryOther: true,
+          minStockLevel: true,
+          stockQty: true,
           images: {
             orderBy: [
               { isPrimary: "desc" },
@@ -306,8 +297,25 @@ async function getTenantDashboard(req, res) {
             select: {
               id: true,
               url: true,
+              thumbnailUrl: true,
               altText: true,
               isPrimary: true,
+            },
+          },
+          branchInventory: {
+            where: {
+              tenantId,
+              ...(activeBranchId
+                ? {
+                    branchId: activeBranchId,
+                  }
+                : {}),
+            },
+            select: {
+              branchId: true,
+              qtyOnHand: true,
+              qtyReserved: true,
+              minStockLevel: true,
             },
           },
         },
@@ -381,6 +389,114 @@ async function getTenantDashboard(req, res) {
         query: {},
       }),
     ]);
+
+    /*
+     * Dashboard inventory truth:
+     *
+     * - Active branch: use that branch's BranchInventory row.
+     * - No active branch: total every branch for the tenant.
+     * - Missing branch row: this product has zero stock there.
+     * - Available quantity excludes reserved stock.
+     */
+    const normalizedStockProducts = (
+      Array.isArray(stockProducts)
+        ? stockProducts
+        : []
+    ).map((product) => {
+      const branchRows = Array.isArray(
+        product?.branchInventory,
+      )
+        ? product.branchInventory
+        : [];
+
+      const qtyOnHand = activeBranchId
+        ? Number(
+            branchRows[0]?.qtyOnHand || 0,
+          )
+        : branchRows.reduce(
+            (sum, row) =>
+              sum +
+              Number(row?.qtyOnHand || 0),
+            0,
+          );
+
+      const qtyReserved = activeBranchId
+        ? Number(
+            branchRows[0]?.qtyReserved || 0,
+          )
+        : branchRows.reduce(
+            (sum, row) =>
+              sum +
+              Number(row?.qtyReserved || 0),
+            0,
+          );
+
+      const branchMinimum = activeBranchId
+        ? branchRows[0]?.minStockLevel
+        : null;
+
+      const minStockLevel = Number(
+        branchMinimum ??
+          product?.minStockLevel ??
+          threshold,
+      );
+
+      const availableQty = Math.max(
+        0,
+        qtyOnHand - qtyReserved,
+      );
+
+      return {
+        ...product,
+        branchInventory: undefined,
+
+        activeBranchId,
+        qtyOnHand,
+        qtyReserved,
+        availableQty,
+
+        // Keep stockQty for older dashboard consumers,
+        // but make its value canonical for this response.
+        stockQty: availableQty,
+
+        minStockLevel:
+          Number.isFinite(minStockLevel) &&
+          minStockLevel >= 0
+            ? minStockLevel
+            : threshold,
+      };
+    });
+
+    const lowStockCount =
+      normalizedStockProducts.filter(
+        (product) =>
+          product.availableQty > 0 &&
+          product.availableQty <=
+            product.minStockLevel,
+      ).length;
+
+    const outOfStockCount =
+      normalizedStockProducts.filter(
+        (product) =>
+          product.availableQty <= 0,
+      ).length;
+
+    const lowStockProducts =
+      normalizedStockProducts
+        .filter(
+          (product) =>
+            product.availableQty <=
+            product.minStockLevel,
+        )
+        .sort(
+          (left, right) =>
+            left.availableQty -
+              right.availableQty ||
+            String(left.name).localeCompare(
+              String(right.name),
+            ),
+        )
+        .slice(0, 10);
 
     const weeklySalesMap = new Map();
 

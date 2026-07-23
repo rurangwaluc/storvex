@@ -1,6 +1,7 @@
 // src/modules/tenants/tenants.controller.js
 const crypto = require("crypto");
 const prisma = require("../../config/database");
+const sharp = require("sharp");
 const {
   deleteObject,
   signGetUrl,
@@ -112,69 +113,201 @@ async function updateTenantSettings(req, res) {
 
 // POST /api/tenants/logo/upload (multipart form-data: file)
 async function uploadTenantLogo(req, res) {
+  let uploadedKey = null;
+
   try {
     const tenantId = getTenantId(req);
-    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
 
-    const file = req.file;
-    if (!file) return res.status(400).json({ message: "file is required" });
-
-    const allowed = assertAllowedImageContentType(file.mimetype);
-    if (!allowed) {
-      return res.status(400).json({ message: "Only PNG, JPEG, or WEBP allowed" });
+    if (!tenantId) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized" });
     }
 
-    // Load old logoKey (so we can delete it after successful upload)
-    const existing = await prisma.tenant.findUnique({
-      where: { id: tenantId },
-      select: { logoKey: true },
-    });
+    const file = req.file;
 
-    const rand = crypto.randomBytes(8).toString("hex");
-    const key = `tenants/${tenantId}/logo_${Date.now()}_${rand}.${allowed.ext}`;
+    if (!file) {
+      return res
+        .status(400)
+        .json({ message: "file is required" });
+    }
+
+    const allowed =
+      assertAllowedImageContentType(
+        file.mimetype,
+      );
+
+    if (!allowed) {
+      return res.status(400).json({
+        message:
+          "Only PNG, JPEG, or WEBP allowed",
+      });
+    }
+
+    let polishedLogo;
+
+    try {
+      polishedLogo = await sharp(
+        file.buffer,
+        {
+          failOn: "error",
+          limitInputPixels:
+            40_000_000,
+        },
+      )
+        .rotate()
+        .ensureAlpha()
+        .trim({
+          background: {
+            r: 0,
+            g: 0,
+            b: 0,
+            alpha: 0,
+          },
+          threshold: 10,
+        })
+        .resize({
+          width: 1024,
+          height: 1024,
+          fit: "inside",
+          position: "centre",
+          withoutEnlargement: true,
+        })
+        .webp({
+          lossless: true,
+          alphaQuality: 100,
+          effort: 5,
+        })
+        .toBuffer({
+          resolveWithObject: true,
+        });
+    } catch (error) {
+      return res.status(422).json({
+        message:
+          "The logo could not be prepared. Upload a clear PNG, JPEG, or WebP logo.",
+      });
+    }
+
+    const width =
+      Number(
+        polishedLogo.info?.width || 0,
+      );
+
+    const height =
+      Number(
+        polishedLogo.info?.height || 0,
+      );
+
+    if (
+      !width ||
+      !height ||
+      width < 8 ||
+      height < 8
+    ) {
+      return res.status(422).json({
+        message:
+          "The logo has no visible content.",
+      });
+    }
+
+    const existing =
+      await prisma.tenant.findUnique({
+        where: {
+          id: tenantId,
+        },
+        select: {
+          logoKey: true,
+        },
+      });
+
+    const rand =
+      crypto
+        .randomBytes(8)
+        .toString("hex");
+
+    const key =
+      `tenants/${tenantId}/` +
+      `logo_${Date.now()}_${rand}.webp`;
 
     await uploadObject({
       key,
-      body: file.buffer,
-      contentType: allowed.contentType,
+      body: polishedLogo.data,
+      contentType: "image/webp",
     });
 
-    // Save new key
-    const tenant = await prisma.tenant.update({
-      where: { id: tenantId },
-      data: { logoKey: key },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        logoKey: true,
-        logoUrl: true,
-        receiptHeader: true,
-        receiptFooter: true,
-      },
-    });
+    uploadedKey = key;
 
-    // Delete old logo (best-effort)
-    const oldKey = existing?.logoKey;
-    if (oldKey && oldKey !== key) {
+    const tenant =
+      await prisma.tenant.update({
+        where: {
+          id: tenantId,
+        },
+        data: {
+          logoKey: key,
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          logoKey: true,
+          logoUrl: true,
+          receiptHeader: true,
+          receiptFooter: true,
+        },
+      });
+
+    const oldKey =
+      existing?.logoKey;
+
+    if (
+      oldKey &&
+      oldKey !== key
+    ) {
       try {
         await deleteObject(oldKey);
-      } catch (e) {
-        console.error("delete old logo failed:", e?.message || e);
+      } catch (error) {
+        console.error(
+          "delete old logo failed:",
+          error?.message || error,
+        );
       }
     }
 
-    // fresh signed url for UI preview
     let logoSignedUrl = null;
+
     try {
-      logoSignedUrl = await signGetUrl(tenant.logoKey, 300);
+      logoSignedUrl =
+        await signGetUrl(
+          tenant.logoKey,
+          300,
+        );
     } catch {}
 
-    return res.json({ updated: true, tenant: { ...tenant, logoSignedUrl } });
-  } catch (err) {
-    console.error("uploadTenantLogo error:", err);
-    return res.status(500).json({ message: "Logo upload failed" });
+    return res.json({
+      updated: true,
+      tenant: {
+        ...tenant,
+        logoSignedUrl,
+      },
+    });
+  } catch (error) {
+    if (uploadedKey) {
+      try {
+        await deleteObject(
+          uploadedKey,
+        );
+      } catch {}
+    }
+
+    console.error(
+      "uploadTenantLogo error:",
+      error,
+    );
+
+    return res.status(500).json({
+      message: "Logo upload failed",
+    });
   }
 }
 

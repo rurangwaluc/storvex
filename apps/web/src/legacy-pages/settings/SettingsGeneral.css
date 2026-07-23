@@ -457,3 +457,91 @@
     font-size: 13px;
   }
 }
+
+/* General settings save action */
+
+.svx-general-page-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.svx-general-save-button {
+  display: inline-flex;
+  min-width: 132px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--settings-primary);
+  border-radius: 10px;
+  background: var(--settings-primary);
+  color: #ffffff;
+  padding: 0 18px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.svx-general-save-button:not(:disabled):hover {
+  border-color: var(--settings-primary-hover);
+  background: var(--settings-primary-hover);
+}
+
+.svx-general-save-button:focus-visible {
+  outline: 3px solid var(--settings-ring);
+  outline-offset: 2px;
+}
+
+.svx-general-save-button:disabled {
+  border-color: var(--settings-input-border);
+  background: var(--settings-input);
+  color: var(--settings-muted);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+@media (max-width: 700px) {
+  .svx-general-page-heading {
+    align-items: stretch;
+  }
+
+  .svx-general-page-actions {
+    width: 100%;
+  }
+
+  .svx-general-save-button {
+    width: 100%;
+  }
+}
+
+/* Business logo display standard */
+
+.svx-general-logo-preview {
+  box-sizing: border-box;
+  padding: 10px;
+}
+
+.svx-general-logo-preview > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  object-fit: contain;
+  object-position: center;
+}
+
+@media (max-width: 390px) {
+  .svx-general-logo-preview {
+    padding: 8px;
+  }
+}

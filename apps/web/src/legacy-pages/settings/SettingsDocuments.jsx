@@ -687,9 +687,25 @@ export default function SettingsDocuments() {
           </p>
         </div>
 
-        {isReadOnly ? (
-          <span>View only</span>
-        ) : null}
+        <div className="svx-docs-page-actions">
+          {isReadOnly ? (
+            <span className="svx-docs-readonly">
+              View only
+            </span>
+          ) : (
+            <AsyncButton
+              className="svx-docs-save-button"
+              loading={saving}
+              loadingText="Saving..."
+              disabled={!dirty || saving}
+              onClick={onSave}
+            >
+              {dirty
+                ? "Save changes"
+                : "Saved"}
+            </AsyncButton>
+          )}
+        </div>
       </div>
 
       <section className="svx-docs-section">
@@ -1185,7 +1201,9 @@ export default function SettingsDocuments() {
                 {profile?.logoUrl ? (
                   <img
                     src={profile.logoUrl}
-                    alt=""
+                    alt={`${profile?.name || "Business"} logo`}
+                    loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <span>Logo</span>
@@ -1247,26 +1265,7 @@ export default function SettingsDocuments() {
         </div>
       </section>
 
-      {dirty && !isReadOnly ? (
-        <div className="svx-docs-savebar">
-          <div>
-            <strong>Unsaved changes</strong>
-            <p>
-              Save to update your
-              documents.
-            </p>
-          </div>
 
-          <AsyncButton
-            loading={saving}
-            loadingText="Saving..."
-            disabled={saving}
-            onClick={onSave}
-          >
-            Save changes
-          </AsyncButton>
-        </div>
-      ) : null}
     </div>
   );
 }

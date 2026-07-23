@@ -186,40 +186,292 @@ function pickPaymentAmount(source, keys) {
 }
 
 function RevenueChart({ weeklySales = [] }) {
-  const items = Array.isArray(weeklySales) && weeklySales.length > 0
-    ? weeklySales.slice(-7)
-    : ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
-        label: day,
-        amount: 0,
-        salesCount: 0,
-      }));
+  const items =
+    Array.isArray(weeklySales) &&
+    weeklySales.length > 0
+      ? weeklySales.slice(-7)
+      : [
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri",
+          "Sat",
+          "Sun",
+        ].map((day) => ({
+          label: day,
+          amount: 0,
+          salesCount: 0,
+        }));
 
-  const maxAmount = Math.max(
-    1,
-    ...items.map((item) => Number(item?.amount || item?.total || item?.revenue || 0)),
+  const values = items.map((item) =>
+    Math.max(
+      0,
+      Number(
+        item?.amount ||
+          item?.total ||
+          item?.revenue ||
+          0,
+      ),
+    ),
   );
 
-  const bars = items.map((item) => {
-    const amount = Number(item?.amount || item?.total || item?.revenue || 0);
-    const height = amount > 0 ? Math.max(18, Math.min(90, (amount / maxAmount) * 90)) : 8;
+  const maximum = Math.max(
+    1,
+    ...values,
+  );
 
-    return {
-      day: item?.label || item?.day || "—",
-      amount,
-      salesCount: Number(item?.salesCount || 0),
-      height,
-    };
-  });
+  const chartWidth = 720;
+  const chartHeight = 250;
+  const padding = {
+    top: 22,
+    right: 18,
+    bottom: 42,
+    left: 72,
+  };
+
+  const plotWidth =
+    chartWidth -
+    padding.left -
+    padding.right;
+
+  const plotHeight =
+    chartHeight -
+    padding.top -
+    padding.bottom;
+
+  const points = items.map(
+    (item, index) => {
+      const amount = values[index];
+
+      const x =
+        padding.left +
+        (items.length === 1
+          ? plotWidth / 2
+          : (index /
+              (items.length - 1)) *
+            plotWidth);
+
+      const y =
+        padding.top +
+        plotHeight -
+        (amount / maximum) *
+          plotHeight;
+
+      return {
+        day:
+          item?.label ||
+          item?.day ||
+          "—",
+        amount,
+        salesCount: Number(
+          item?.salesCount || 0,
+        ),
+        x,
+        y,
+      };
+    },
+  );
+
+  const linePath = points
+    .map(
+      (point, index) =>
+        `${index === 0 ? "M" : "L"} ${point.x.toFixed(
+          2,
+        )} ${point.y.toFixed(2)}`,
+    )
+    .join(" ");
+
+  const baseline =
+    padding.top + plotHeight;
+
+  const areaPath = points.length
+    ? [
+        `M ${points[0].x.toFixed(
+          2,
+        )} ${baseline.toFixed(2)}`,
+        ...points.map(
+          (point) =>
+            `L ${point.x.toFixed(
+              2,
+            )} ${point.y.toFixed(
+              2,
+            )}`,
+        ),
+        `L ${points[
+          points.length - 1
+        ].x.toFixed(
+          2,
+        )} ${baseline.toFixed(2)}`,
+        "Z",
+      ].join(" ")
+    : "";
+
+  const guideValues = [
+    maximum,
+    maximum * 0.75,
+    maximum * 0.5,
+    maximum * 0.25,
+    0,
+  ];
+
+  const hasSales = values.some(
+    (value) => value > 0,
+  );
+
+  function compactMoney(value) {
+    const amount = Number(value || 0);
+
+    if (amount >= 1_000_000_000) {
+      return `${(
+        amount / 1_000_000_000
+      ).toFixed(1)}B`;
+    }
+
+    if (amount >= 1_000_000) {
+      return `${(
+        amount / 1_000_000
+      ).toFixed(1)}M`;
+    }
+
+    if (amount >= 1_000) {
+      return `${Math.round(
+        amount / 1_000,
+      )}K`;
+    }
+
+    return String(
+      Math.round(amount),
+    );
+  }
 
   return (
-    <div className="svx-sales-chart is-safe-bars" role="img" aria-label="Sales overview for the last seven days">
-      <div className="svx-chart-bars">
-        {bars.map((item) => (
-          <div className="svx-chart-bar-group" key={item.day} title={`${item.day}: ${money(item.amount)} / ${item.salesCount} sale${item.salesCount === 1 ? "" : "s"}`}>
-            <span className="svx-chart-bar" style={{ height: `${item.height}%` }} />
-            <small>{item.day}</small>
+    <div
+      className={cx(
+        "svx-sales-chart",
+        "is-premium-trend",
+        !hasSales && "is-empty",
+      )}
+      role="img"
+      aria-label="Sales trend for the last seven days"
+    >
+      <div className="svx-sales-chart-frame">
+        <svg
+          viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <g className="svx-sales-chart-guides">
+            {guideValues.map(
+              (value, index) => {
+                const y =
+                  padding.top +
+                  (index /
+                    (guideValues.length -
+                      1)) *
+                    plotHeight;
+
+                return (
+                  <g
+                    key={`${value}-${index}`}
+                  >
+                    <line
+                      x1={padding.left}
+                      y1={y}
+                      x2={
+                        chartWidth -
+                        padding.right
+                      }
+                      y2={y}
+                    />
+
+                    <text
+                      x={
+                        padding.left -
+                        14
+                      }
+                      y={y + 4}
+                      textAnchor="end"
+                    >
+                      {compactMoney(
+                        value,
+                      )}
+                    </text>
+                  </g>
+                );
+              },
+            )}
+          </g>
+
+          {areaPath ? (
+            <path
+              className="svx-sales-chart-area"
+              d={areaPath}
+            />
+          ) : null}
+
+          {linePath ? (
+            <path
+              className="svx-sales-chart-line"
+              d={linePath}
+            />
+          ) : null}
+
+          <g className="svx-sales-chart-points">
+            {points.map((point) => (
+              <g
+                key={`${point.day}-${point.x}`}
+                className="svx-sales-chart-point"
+              >
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r="5"
+                >
+                  <title>
+                    {`${point.day}: ${money(
+                      point.amount,
+                    )} · ${
+                      point.salesCount
+                    } sale${
+                      point.salesCount ===
+                      1
+                        ? ""
+                        : "s"
+                    }`}
+                  </title>
+                </circle>
+
+                <line
+                  x1={point.x}
+                  y1={baseline}
+                  x2={point.x}
+                  y2={baseline + 7}
+                />
+
+                <text
+                  x={point.x}
+                  y={chartHeight - 13}
+                  textAnchor="middle"
+                >
+                  {point.day}
+                </text>
+              </g>
+            ))}
+          </g>
+        </svg>
+
+        {!hasSales ? (
+          <div className="svx-sales-chart-empty">
+            <strong>
+              No sales recorded
+            </strong>
+            <span>
+              The trend will appear after
+              the first completed sale.
+            </span>
           </div>
-        ))}
+        ) : null}
       </div>
     </div>
   );
@@ -270,8 +522,13 @@ function productSoldLabel(item, qty) {
 }
 
 function ProductRow({ item }) {
-  const qty = Number(item?.stockQty ?? item?.quantity ?? item?.availableQty ?? 0);
-  const amount = productAmount(item);
+  const qty = Number(
+    item?.availableQty ??
+      item?.qtyOnHand ??
+      item?.stockQty ??
+      item?.quantity ??
+      0,
+  );
   const imageSrc = productImageSrc(item);
 
   return (
@@ -288,7 +545,9 @@ function ProductRow({ item }) {
       </div>
 
       <div className="svx-product-watch-meta">
-        <strong>{amount > 0 ? money(amount) : `${qty} left`}</strong>
+        <strong>
+          {qty} {qty === 1 ? "item" : "items"}
+        </strong>
         <span>{productSoldLabel(item, qty)}</span>
       </div>
     </div>

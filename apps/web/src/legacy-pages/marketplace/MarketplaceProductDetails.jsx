@@ -1049,7 +1049,9 @@ export default function MarketplaceProductDetails() {
                       {store.logoUrl ? (
                         <img
                           src={store.logoUrl}
-                          alt=""
+                          alt={`${store.name} logo`}
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <Store size={21} />

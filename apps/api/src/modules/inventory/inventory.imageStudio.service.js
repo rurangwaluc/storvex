@@ -389,6 +389,15 @@ async function createMarketplaceBrandedImage({
       failOn: "error",
     })
       .ensureAlpha()
+      .trim({
+        background: {
+          r: 0,
+          g: 0,
+          b: 0,
+          alpha: 0,
+        },
+        threshold: 10,
+      })
       .resize({
         width: maximumLogoWidth,
         height: maximumLogoHeight,
