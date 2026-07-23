@@ -13,6 +13,7 @@ import MarketplaceStorePage from "./legacy-pages/marketplace/MarketplaceStorePag
 import MarketplaceProductDetails from "./legacy-pages/marketplace/MarketplaceProductDetails";
 import MarketplaceOrderTracking from "./legacy-pages/marketplace/MarketplaceOrderTracking";
 import MarketplaceCustomerAuth from "./legacy-pages/marketplace/MarketplaceCustomerAuth";
+import MarketplaceCustomerPasswordReset from "./legacy-pages/marketplace/MarketplaceCustomerPasswordReset";
 import MarketplaceRequests from "./legacy-pages/marketplace-owner/MarketplaceRequests";
 import MarketplaceAnalytics from "./legacy-pages/marketplace-owner/MarketplaceAnalytics";
 import MarketplaceRequestDetail from "./legacy-pages/marketplace-owner/MarketplaceRequestDetail";
@@ -154,6 +155,20 @@ export default function App() {
           path="/marketplace/account/create"
           element={<MarketplaceCustomerAuth mode="register" />}
         />
+
+          <Route
+            path="/marketplace/account/forgot-password"
+            element={
+              <MarketplaceCustomerPasswordReset mode="forgot" />
+            }
+          />
+
+          <Route
+            path="/marketplace/account/reset-password"
+            element={
+              <MarketplaceCustomerPasswordReset mode="reset" />
+            }
+          />
         <Route
           path="/marketplace/orders/:trackingToken"
           element={<MarketplaceOrderTracking />}

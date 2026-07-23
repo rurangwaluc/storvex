@@ -3,6 +3,7 @@ const express = require("express");
 const controller = require("./marketplace.public.controller");
 
 const customerAuth = require("./marketplace.customer.auth");
+const customerPasswordReset = require("./marketplace.customer.passwordReset");
 const authenticateMarketplaceCustomer = require("./marketplace.customer.authenticate");
 const optionallyAuthenticateMarketplaceCustomer = require("./marketplace.customer.optional");
 
@@ -16,6 +17,16 @@ router.post(
 router.post(
   "/customer/login",
   customerAuth.loginCustomer,
+);
+
+router.post(
+  "/customer/forgot-password",
+  customerPasswordReset.forgotPassword,
+);
+
+router.post(
+  "/customer/reset-password",
+  customerPasswordReset.resetPassword,
 );
 
 router.post(

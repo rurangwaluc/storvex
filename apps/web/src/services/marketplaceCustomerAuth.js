@@ -349,3 +349,29 @@ export function changeMarketplaceCustomerPassword(
     },
   );
 }
+
+export async function requestMarketplaceCustomerPasswordReset(
+  payload,
+) {
+  return marketplaceCustomerRequest(
+    "/marketplace/customer/forgot-password",
+    {
+      method: "POST",
+      body: payload,
+      token: "",
+    },
+  );
+}
+
+export async function resetMarketplaceCustomerPassword(
+  payload,
+) {
+  return marketplaceCustomerRequest(
+    "/marketplace/customer/reset-password",
+    {
+      method: "POST",
+      body: payload,
+      token: "",
+    },
+  );
+}

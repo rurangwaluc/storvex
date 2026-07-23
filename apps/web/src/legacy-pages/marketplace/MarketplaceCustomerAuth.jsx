@@ -550,15 +550,21 @@ export default function MarketplaceCustomerAuth({
               </p>
             </header>
 
-            {!creating &&
-            location.state?.accountCreated ? (
-              <p
-                className="svx-marketplace-auth-success"
-                role="status"
-              >
-                Account created. Sign in to continue.
-              </p>
-            ) : null}
+              {!creating &&
+              (
+                location.state?.accountCreated ||
+                location.state?.passwordReset
+              ) ? (
+                <p
+                  className="svx-marketplace-auth-success"
+                  role="status"
+                >
+                  {location.state?.passwordReset
+                    ? location.state?.message ||
+                      "Password updated. Sign in with your new password."
+                    : "Account created. Sign in to continue."}
+                </p>
+              ) : null}
 
             <form
               onSubmit={submit}
@@ -686,6 +692,14 @@ export default function MarketplaceCustomerAuth({
                     }
                     disabled={submitting}
                   />
+
+                  {!creating ? (
+                    <div className="svx-marketplace-forgot-link">
+                      <Link to="/marketplace/account/forgot-password">
+                        Forgot password?
+                      </Link>
+                    </div>
+                  ) : null}
 
                   {creating ? (
                     <p className="svx-onboard-help">
