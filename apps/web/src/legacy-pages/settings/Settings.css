@@ -928,3 +928,196 @@
     padding-inline: 13px;
   }
 }
+
+/* STORVEX_SIMPLE_SETTINGS_START */
+
+.svx-settings-shell {
+  display: grid;
+  width: 100%;
+  max-width: 1180px;
+  min-width: 0;
+  gap: 22px;
+  margin: 0 auto;
+  overflow-x: clip;
+  color: var(--settings-text);
+}
+
+.svx-settings-shell *,
+.svx-settings-shell *::before,
+.svx-settings-shell *::after {
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.svx-settings-simple-header {
+  min-width: 0;
+  border-bottom: 1px solid var(--settings-border);
+  padding: 2px 0 0;
+}
+
+.svx-settings-simple-heading {
+  padding: 0 2px 20px;
+}
+
+.svx-settings-simple-heading h1 {
+  margin: 0;
+  color: var(--settings-text);
+  font-family: var(--settings-heading-font);
+  font-size: clamp(1.9rem, 3.2vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 1.03;
+}
+
+.svx-settings-simple-heading p {
+  margin: 8px 0 0;
+  color: var(--settings-muted);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.svx-settings-simple-nav {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  gap: 4px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.svx-settings-simple-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.svx-settings-simple-link {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  color: var(--settings-muted);
+  padding: 0 13px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.svx-settings-simple-link::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  bottom: -1px;
+  left: 12px;
+  height: 2px;
+  background: transparent;
+}
+
+.svx-settings-simple-link:hover {
+  color: var(--settings-text);
+}
+
+.svx-settings-simple-link.is-active {
+  color: var(--settings-primary);
+}
+
+.svx-settings-simple-link.is-active::after {
+  background: var(--settings-primary);
+}
+
+.svx-settings-mobile-section {
+  display: none;
+}
+
+.svx-settings-outlet {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+@media (max-width: 900px) {
+  .svx-settings-simple-nav {
+    display: none;
+  }
+
+  .svx-settings-simple-header {
+    padding-bottom: 14px;
+  }
+
+  .svx-settings-simple-heading {
+    padding-bottom: 16px;
+  }
+
+  .svx-settings-mobile-section {
+    display: grid;
+    width: 100%;
+    gap: 7px;
+  }
+
+  .svx-settings-mobile-section label {
+    color: var(--settings-muted);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .svx-settings-mobile-section select {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-height: 46px;
+    border: 1px solid var(--settings-input-border);
+    border-radius: 10px;
+    background-color: var(--settings-input);
+    color: var(--settings-text);
+    padding: 0 42px 0 13px;
+    font-size: 14px;
+    font-weight: 700;
+    outline: none;
+    box-shadow: none;
+  }
+
+  .svx-settings-mobile-section select:focus {
+    border-color: var(--settings-primary);
+    box-shadow: 0 0 0 3px var(--settings-ring);
+  }
+}
+
+@media (max-width: 600px) {
+  .svx-settings-shell {
+    width: 100%;
+    max-width: 100%;
+    gap: 16px;
+  }
+
+  .svx-settings-simple-heading h1 {
+    font-size: 1.8rem;
+  }
+
+  .svx-settings-simple-heading p {
+    max-width: 32rem;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-settings-simple-heading {
+    padding-bottom: 14px;
+  }
+
+  .svx-settings-simple-heading h1 {
+    font-size: 1.65rem;
+  }
+
+  .svx-settings-mobile-section select {
+    font-size: 13.5px;
+  }
+}
+
+/* STORVEX_SIMPLE_SETTINGS_END */

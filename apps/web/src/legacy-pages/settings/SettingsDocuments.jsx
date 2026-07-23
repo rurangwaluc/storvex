@@ -1,452 +1,487 @@
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
-import { getUserRole } from "../../utils/role";
 import {
   getDocumentSettings,
   getStoreProfile,
   updateDocumentSettings,
   updateStoreProfile,
 } from "../../services/storeApi";
-import "./SettingsGeneral.css";
+import { getUserRole } from "../../utils/role";
+
 import "./Settings.css";
+import "./SettingsGeneral.css";
 import "./SettingsDocuments.css";
-
-function cx(...items) {
-  return items.filter(Boolean).join(" ");
-}
-
-function cleanString(value) {
-  return String(value || "").trim();
-}
-
-function cardClass() {
-  return "svx-settings-card";
-}
-
-function panelClass() {
-  return "svx-settings-panel";
-}
-
-function inputClass() {
-  return "svx-settings-input";
-}
-
-function textareaClass() {
-  return "svx-settings-textarea";
-}
-
-function fieldLabel() {
-  return "svx-settings-field-label";
-}
-
-function fieldHelp() {
-  return "svx-settings-field-help";
-}
-
-function readOnlyInputState(disabled) {
-  return disabled ? "is-readonly" : "";
-}
 
 const HEADER_OPTIONS = [
   {
     value: "LOGO_AND_NAME",
-    title: "Logo and business name",
-    text: "Best default for receipts and formal documents.",
+    label: "Logo and business name",
   },
   {
     value: "LOGO_ONLY",
-    title: "Logo only",
-    text: "Use when the logo already contains the business name.",
+    label: "Logo only",
   },
   {
     value: "NAME_ONLY",
-    title: "Business name only",
-    text: "Use when there is no clean logo yet.",
+    label: "Business name only",
   },
 ];
 
 const SIZE_OPTIONS = [
   {
     value: "AUTO",
-    title: "Auto",
-    text: "Compact for small receipts, standard for longer documents.",
+    label: "Automatic",
   },
   {
     value: "COMPACT",
-    title: "Compact",
-    text: "Tighter spacing for simple one-page receipts.",
+    label: "Compact",
   },
   {
     value: "STANDARD",
-    title: "Standard",
-    text: "Balanced spacing for formal documents and longer item lists.",
+    label: "Standard",
   },
 ];
 
-const TAX_MODE_OPTIONS = [
+const TAX_OPTIONS = [
   {
     value: "NONE",
-    title: "No tax",
-    text: "No tax line is shown on customer documents.",
+    label: "No tax",
     rate: 0,
   },
   {
     value: "VAT_18",
-    title: "VAT 18%",
-    text: "Use only when the business is registered and allowed to show VAT.",
+    label: "VAT 18%",
     rate: 1800,
   },
   {
     value: "TURNOVER_3_INTERNAL",
-    title: "Internal 3% estimate",
-    text: "Owner reporting only. Hidden from customers by default.",
+    label: "Internal 3%",
     rate: 300,
   },
   {
     value: "VAT_18_PLUS_TURNOVER_3",
-    title: "21% combined tax",
-    text: "Use only when legally applicable to the business.",
+    label: "VAT and internal 3%",
     rate: 2100,
   },
   {
     value: "CUSTOM",
-    title: "Custom tax",
-    text: "Use a custom name and rate for special cases.",
+    label: "Custom tax",
     rate: null,
   },
 ];
 
-const TAX_DISPLAY_OPTIONS = [
-  {
-    value: "HIDDEN",
-    title: "Hidden",
-    text: "Tax stays saved but does not appear on customer documents.",
-  },
-  {
-    value: "CUSTOMER_FACING",
-    title: "Show to customer",
-    text: "Tax appears on receipts, invoices, and printable documents.",
-  },
-  {
-    value: "INTERNAL_ONLY",
-    title: "Internal only",
-    text: "Used for owner reporting without printing it for customers.",
-  },
-];
+function cleanString(value) {
+  return String(value || "").trim();
+}
 
 function documentSnapshot(value) {
   return {
-    receiptPrefix: value?.receiptPrefix || "RCT",
-    invoicePrefix: value?.invoicePrefix || "INV",
-    warrantyPrefix: value?.warrantyPrefix || "WAR",
-    proformaPrefix: value?.proformaPrefix || "PRF",
-    deliveryPrefix: value?.deliveryPrefix || "DLV",
-    receiptPadding: value?.receiptPadding || 6,
-    invoicePadding: value?.invoicePadding || 6,
-    warrantyPadding: value?.warrantyPadding || 6,
-    proformaPadding: value?.proformaPadding || 6,
-    deliveryPadding: value?.deliveryPadding || 6,
-    invoiceTerms: value?.invoiceTerms || "",
-    warrantyTerms: value?.warrantyTerms || "",
-    proformaTerms: value?.proformaTerms || "",
-    deliveryNoteTerms: value?.deliveryNoteTerms || "",
-    documentPrimaryColor: value?.documentPrimaryColor || "#0F4C81",
-    documentAccentColor: value?.documentAccentColor || "#E8EEF5",
-    documentHeaderDisplay: value?.documentHeaderDisplay || "LOGO_AND_NAME",
-    documentSizeMode: value?.documentSizeMode || "AUTO",
-    taxMode: value?.taxMode || "NONE",
-    taxDisplayMode: value?.taxDisplayMode || "HIDDEN",
-    taxName: value?.taxName || "",
-    taxRateBps: Number(value?.taxRateBps || 0),
-    pricesIncludeTax: Boolean(value?.pricesIncludeTax),
-    showTaxOnCustomerDocuments: Boolean(value?.showTaxOnCustomerDocuments),
+    receiptPrefix:
+      value?.receiptPrefix || "RCT",
+    invoicePrefix:
+      value?.invoicePrefix || "INV",
+    warrantyPrefix:
+      value?.warrantyPrefix || "WAR",
+    proformaPrefix:
+      value?.proformaPrefix || "PRF",
+    deliveryPrefix:
+      value?.deliveryPrefix || "DLV",
+
+    receiptPadding:
+      Number(value?.receiptPadding || 6),
+    invoicePadding:
+      Number(value?.invoicePadding || 6),
+    warrantyPadding:
+      Number(value?.warrantyPadding || 6),
+    proformaPadding:
+      Number(value?.proformaPadding || 6),
+    deliveryPadding:
+      Number(value?.deliveryPadding || 6),
+
+    invoiceTerms:
+      value?.invoiceTerms || "",
+    warrantyTerms:
+      value?.warrantyTerms || "",
+    proformaTerms:
+      value?.proformaTerms || "",
+    deliveryNoteTerms:
+      value?.deliveryNoteTerms || "",
+
+    documentPrimaryColor:
+      value?.documentPrimaryColor ||
+      "#0F4C81",
+    documentAccentColor:
+      value?.documentAccentColor ||
+      "#E8EEF5",
+
+    documentHeaderDisplay:
+      value?.documentHeaderDisplay ||
+      "LOGO_AND_NAME",
+    documentSizeMode:
+      value?.documentSizeMode || "AUTO",
+
+    taxMode:
+      value?.taxMode || "NONE",
+    taxDisplayMode:
+      value?.taxDisplayMode || "HIDDEN",
+    taxName:
+      value?.taxName || "",
+    taxRateBps:
+      Number(value?.taxRateBps || 0),
+    pricesIncludeTax:
+      Boolean(value?.pricesIncludeTax),
+    showTaxOnCustomerDocuments:
+      Boolean(
+        value?.showTaxOnCustomerDocuments,
+      ),
 
     deliveryRequireReceiverName:
-      value?.deliveryRequireReceiverName === undefined
+      value?.deliveryRequireReceiverName ===
+      undefined
         ? true
-        : Boolean(value?.deliveryRequireReceiverName),
-    deliveryRequireReceiverPhone: Boolean(value?.deliveryRequireReceiverPhone),
+        : Boolean(
+            value.deliveryRequireReceiverName,
+          ),
+
+    deliveryRequireReceiverPhone:
+      Boolean(
+        value?.deliveryRequireReceiverPhone,
+      ),
+
     deliveryRequireSignature:
-      value?.deliveryRequireSignature === undefined
+      value?.deliveryRequireSignature ===
+      undefined
         ? true
-        : Boolean(value?.deliveryRequireSignature),
+        : Boolean(
+            value.deliveryRequireSignature,
+          ),
+
     deliveryRequireDeliveredBy:
-      value?.deliveryRequireDeliveredBy === undefined
+      value?.deliveryRequireDeliveredBy ===
+      undefined
         ? true
-        : Boolean(value?.deliveryRequireDeliveredBy),
+        : Boolean(
+            value.deliveryRequireDeliveredBy,
+          ),
+
     deliveryRequireLocation:
-      value?.deliveryRequireLocation === undefined
+      value?.deliveryRequireLocation ===
+      undefined
         ? true
-        : Boolean(value?.deliveryRequireLocation),
+        : Boolean(
+            value.deliveryRequireLocation,
+          ),
+
     deliveryShowSerialNumbers:
-      value?.deliveryShowSerialNumbers === undefined
+      value?.deliveryShowSerialNumbers ===
+      undefined
         ? true
-        : Boolean(value?.deliveryShowSerialNumbers),
-    deliveryAllowPartialDelivery: Boolean(value?.deliveryAllowPartialDelivery),
+        : Boolean(
+            value.deliveryShowSerialNumbers,
+          ),
+
+    deliveryAllowPartialDelivery:
+      Boolean(
+        value?.deliveryAllowPartialDelivery,
+      ),
 
     showDocumentLogo:
-      value?.showDocumentLogo === undefined ? true : Boolean(value?.showDocumentLogo),
-    showDocumentQr: Boolean(value?.showDocumentQr),
-    showDocumentWatermark: Boolean(value?.showDocumentWatermark),
-    showPrintedDate:
-      value?.showPrintedDate === undefined ? true : Boolean(value?.showPrintedDate),
-    showBusinessContacts:
-      value?.showBusinessContacts === undefined
+      value?.showDocumentLogo === undefined
         ? true
-        : Boolean(value?.showBusinessContacts),
+        : Boolean(value.showDocumentLogo),
+
+    showDocumentQr:
+      Boolean(value?.showDocumentQr),
+
+    showDocumentWatermark:
+      Boolean(value?.showDocumentWatermark),
+
+    showPrintedDate:
+      value?.showPrintedDate === undefined
+        ? true
+        : Boolean(value.showPrintedDate),
+
+    showBusinessContacts:
+      value?.showBusinessContacts ===
+      undefined
+        ? true
+        : Boolean(
+            value.showBusinessContacts,
+          ),
 
     autoReceiptNumbering:
-      value?.autoReceiptNumbering === undefined
+      value?.autoReceiptNumbering ===
+      undefined
         ? true
-        : Boolean(value?.autoReceiptNumbering),
+        : Boolean(
+            value.autoReceiptNumbering,
+          ),
+
     autoInvoiceNumbering:
-      value?.autoInvoiceNumbering === undefined
+      value?.autoInvoiceNumbering ===
+      undefined
         ? true
-        : Boolean(value?.autoInvoiceNumbering),
+        : Boolean(
+            value.autoInvoiceNumbering,
+          ),
+
     autoWarrantyNumbering:
-      value?.autoWarrantyNumbering === undefined
+      value?.autoWarrantyNumbering ===
+      undefined
         ? true
-        : Boolean(value?.autoWarrantyNumbering),
+        : Boolean(
+            value.autoWarrantyNumbering,
+          ),
+
     autoProformaNumbering:
-      value?.autoProformaNumbering === undefined
+      value?.autoProformaNumbering ===
+      undefined
         ? true
-        : Boolean(value?.autoProformaNumbering),
+        : Boolean(
+            value.autoProformaNumbering,
+          ),
+
     autoDeliveryNumbering:
-      value?.autoDeliveryNumbering === undefined
+      value?.autoDeliveryNumbering ===
+      undefined
         ? true
-        : Boolean(value?.autoDeliveryNumbering),
+        : Boolean(
+            value.autoDeliveryNumbering,
+          ),
   };
 }
 
-function profileCopySnapshot(value) {
+function profileSnapshot(value) {
   return {
-    receiptHeader: value?.receiptHeader || "",
-    receiptFooter: value?.receiptFooter || "",
+    receiptHeader:
+      value?.receiptHeader || "",
+    receiptFooter:
+      value?.receiptFooter || "",
   };
 }
 
-function Badge({ children, tone = "neutral" }) {
-  return <span className={cx("svx-settings-badge", `is-${tone}`)}>{children}</span>;
-}
-
-function SectionHeading({ eyebrow, title, subtitle, action = null }) {
+function Field({
+  label,
+  value,
+  disabled,
+  onChange,
+  className = "",
+  maxLength,
+}) {
   return (
-    <div className="svx-settings-section-head">
-      <div>
-        {eyebrow ? <p className="svx-settings-eyebrow">{eyebrow}</p> : null}
-        <h2>{title}</h2>
-        {subtitle ? <p>{subtitle}</p> : null}
-      </div>
-      {action ? <div className="svx-settings-section-action">{action}</div> : null}
+    <div
+      className={[
+        "svx-docs-field",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      <label>{label}</label>
+
+      <input
+        value={value}
+        disabled={disabled}
+        maxLength={maxLength}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+      />
     </div>
   );
 }
 
-function OptionCard({ selected, title, text, disabled, onClick }) {
+function TextareaField({
+  label,
+  value,
+  disabled,
+  placeholder,
+  onChange,
+}) {
   return (
-    <button
-      type="button"
-      className={cx("svx-settings-option-card", selected && "is-selected")}
-      disabled={disabled}
-      onClick={onClick}
-    >
-      <span className="svx-settings-option-dot" />
-      <strong>{title}</strong>
-      <p>{text}</p>
-    </button>
+    <div className="svx-docs-field">
+      <label>{label}</label>
+
+      <textarea
+        rows={4}
+        value={value}
+        disabled={disabled}
+        placeholder={placeholder}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+      />
+    </div>
   );
 }
 
-function SwitchRow({ title, text, checked, disabled, onChange, tone = "neutral" }) {
+function Toggle({
+  label,
+  description,
+  checked,
+  disabled,
+  onChange,
+}) {
   return (
-    <label className={cx("svx-settings-switch-row", `is-${tone}`)}>
+    <label className="svx-docs-toggle">
+      <span className="svx-docs-toggle-copy">
+        <strong>{label}</strong>
+
+        {description ? (
+          <small>{description}</small>
+        ) : null}
+      </span>
+
       <input
         type="checkbox"
         checked={checked}
         disabled={disabled}
-        onChange={(event) => onChange(event.target.checked)}
+        onChange={(event) =>
+          onChange(event.target.checked)
+        }
       />
-      <span className="svx-settings-switch-box" />
-      <span>
-        <strong>{title}</strong>
-        <small>{text}</small>
-      </span>
+
+      <span
+        className="svx-docs-toggle-control"
+        aria-hidden="true"
+      />
     </label>
   );
 }
 
-function SwitchGroup({ title, text, children, tone = "neutral" }) {
-  return (
-    <div className={cx("svx-documents-rule-group", `is-${tone}`)}>
-      <div className="svx-documents-rule-group-head">
-        <strong>{title}</strong>
-        {text ? <p>{text}</p> : null}
-      </div>
-      <div className="svx-documents-rule-group-body">{children}</div>
-    </div>
-  );
-}
-
-function NumberPreviewCard({ label, preview, prefix, autoNumbering }) {
-  return (
-    <article className="svx-documents-number-preview-card">
-      <div>
-        <span>{label}</span>
-        <strong>{preview || "Preview unavailable"}</strong>
-      </div>
-      <div className="svx-documents-number-preview-meta">
-        {prefix ? <Badge tone="strong">{prefix}</Badge> : null}
-        <Badge tone={autoNumbering ? "primary" : "neutral"}>
-          {autoNumbering ? "Auto numbering" : "Manual numbering"}
-        </Badge>
-      </div>
-    </article>
-  );
-}
-
-function NumberField({ label, value, disabled, onChange, help }) {
-  return (
-    <div>
-      <label className={fieldLabel()}>{label}</label>
-      <input
-        type="number"
-        min="4"
-        max="12"
-        className={cx(inputClass(), readOnlyInputState(disabled))}
-        value={value}
-        disabled={disabled}
-        onChange={onChange}
-      />
-      {help ? <p className={fieldHelp()}>{help}</p> : null}
-    </div>
-  );
-}
-
-function TextareaField({ label, value, disabled, onChange, placeholder, help, rows = 4 }) {
-  return (
-    <div>
-      <label className={fieldLabel()}>{label}</label>
-      <textarea
-        rows={rows}
-        className={cx(textareaClass(), readOnlyInputState(disabled))}
-        value={value}
-        disabled={disabled}
-        onChange={onChange}
-        placeholder={placeholder}
-      />
-      {help ? <p className={fieldHelp()}>{help}</p> : null}
-    </div>
-  );
-}
-
-function CompactInfoRow({ label, value, tone = "neutral" }) {
-  return (
-    <div className={cx("svx-settings-compact-row", `is-${tone}`)}>
-      <span>{label}</span>
-      <strong>{value || "—"}</strong>
-    </div>
-  );
-}
-
-function CopyAccordion({ title, note, children, open = false }) {
-  return (
-    <details className="svx-settings-accordion" open={open}>
-      <summary>
-        <span>
-          <strong>{title}</strong>
-          <small>{note}</small>
-        </span>
-        <em>Open</em>
-      </summary>
-      <div className="svx-settings-accordion-body">{children}</div>
-    </details>
-  );
-}
-
-function PreviewDocument({
+function SectionHeading({
   title,
-  prefix,
-  padding,
-  preview,
-  terms,
-  primaryColor,
-  accentColor,
-  headerMode,
-  sizeMode,
-  taxLabel,
-  previewLabel = "Next number",
-  previewFallback = "Preview unavailable",
+  description,
 }) {
-  const showLogo = headerMode !== "NAME_ONLY";
-  const showName = headerMode !== "LOGO_ONLY";
-
   return (
-    <article className="svx-document-preview-card">
-      <div className="svx-document-preview-top" style={{ backgroundColor: primaryColor || "#0F4C81" }}>
-        <div className="svx-document-preview-head">
-          <div className="svx-document-preview-brand">
-            {showLogo ? <span>LOGO</span> : null}
-            <div>
-              {showName ? <strong>Business name</strong> : null}
-              <small>{title}</small>
-            </div>
-          </div>
-          <em>{sizeMode}</em>
-        </div>
-        <div className="svx-document-preview-glow" style={{ backgroundColor: `${accentColor || "#E8EEF5"}AA` }} />
-      </div>
+    <div className="svx-docs-section-heading">
+      <h2>{title}</h2>
 
-      <div className="svx-document-preview-body">
-        <span>{previewLabel}</span>
-        <strong>{preview || previewFallback}</strong>
-        <div>
-          {prefix ? <Badge tone="strong">{prefix}</Badge> : null}
-          {padding ? <Badge tone="strong">{padding} digits</Badge> : null}
-          {taxLabel ? <Badge tone="warning">{taxLabel}</Badge> : null}
-        </div>
-        <p>{cleanString(terms) || "No terms added yet."}</p>
-      </div>
-    </article>
+      {description ? (
+        <p>{description}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  disabled,
+  options,
+  onChange,
+}) {
+  return (
+    <div className="svx-docs-field">
+      <label>{label}</label>
+
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
+      >
+        {options.map((option) => (
+          <option
+            key={option.value}
+            value={option.value}
+          >
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 }
 
 export default function SettingsDocuments() {
-  const role = useMemo(() => getUserRole(), []);
+  const role = useMemo(
+    () => getUserRole(),
+    [],
+  );
+
   const isOwner = role === "OWNER";
   const isReadOnly = !isOwner;
 
-  const [documentSettings, setDocumentSettings] = useState(null);
-  const [profile, setProfile] = useState(null);
-  const [docForm, setDocForm] = useState(documentSnapshot(null));
-  const [copyForm, setCopyForm] = useState(profileCopySnapshot(null));
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [showAllPreviews, setShowAllPreviews] = useState(false);
+  const [documentSettings, setDocumentSettings] =
+    useState(null);
+
+  const [profile, setProfile] =
+    useState(null);
+
+  const [docForm, setDocForm] =
+    useState(documentSnapshot(null));
+
+  const [copyForm, setCopyForm] =
+    useState(profileSnapshot(null));
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [saving, setSaving] =
+    useState(false);
 
   useEffect(() => {
     let alive = true;
 
-    Promise.allSettled([getDocumentSettings(), getStoreProfile()])
-      .then(([docsRes, profileRes]) => {
-        if (!alive) return;
+    Promise.allSettled([
+      getDocumentSettings(),
+      getStoreProfile(),
+    ])
+      .then(
+        ([
+          documentResult,
+          profileResult,
+        ]) => {
+          if (!alive) return;
 
-        if (docsRes.status === "fulfilled") {
-          const next = docsRes.value?.documentSettings || null;
-          setDocumentSettings(next);
-          setDocForm(documentSnapshot(next));
-        }
+          if (
+            documentResult.status ===
+            "fulfilled"
+          ) {
+            const nextSettings =
+              documentResult.value
+                ?.documentSettings || null;
 
-        if (profileRes.status === "fulfilled") {
-          const nextProfile = profileRes.value?.profile || null;
-          setProfile(nextProfile);
-          setCopyForm(profileCopySnapshot(nextProfile));
-        }
-      })
+            setDocumentSettings(
+              nextSettings,
+            );
+
+            setDocForm(
+              documentSnapshot(
+                nextSettings,
+              ),
+            );
+          }
+
+          if (
+            profileResult.status ===
+            "fulfilled"
+          ) {
+            const nextProfile =
+              profileResult.value?.profile ||
+              null;
+
+            setProfile(nextProfile);
+
+            setCopyForm(
+              profileSnapshot(nextProfile),
+            );
+          }
+        },
+      )
       .finally(() => {
-        if (alive) setLoading(false);
+        if (alive) {
+          setLoading(false);
+        }
       });
 
     return () => {
@@ -455,597 +490,783 @@ export default function SettingsDocuments() {
   }, []);
 
   const docDirty = useMemo(() => {
-    if (!documentSettings) return false;
-    return JSON.stringify(docForm) !== JSON.stringify(documentSnapshot(documentSettings));
+    if (!documentSettings) {
+      return false;
+    }
+
+    return (
+      JSON.stringify(docForm) !==
+      JSON.stringify(
+        documentSnapshot(
+          documentSettings,
+        ),
+      )
+    );
   }, [docForm, documentSettings]);
 
   const copyDirty = useMemo(() => {
-    if (!profile) return false;
-    return JSON.stringify(copyForm) !== JSON.stringify(profileCopySnapshot(profile));
+    if (!profile) {
+      return false;
+    }
+
+    return (
+      JSON.stringify(copyForm) !==
+      JSON.stringify(
+        profileSnapshot(profile),
+      )
+    );
   }, [copyForm, profile]);
 
   const dirty = docDirty || copyDirty;
-  const taxSummary = documentSettings?.taxSummary || null;
-  const taxIsCustomerFacing =
-    docForm.taxMode !== "NONE" &&
-    docForm.taxDisplayMode === "CUSTOMER_FACING" &&
-    docForm.showTaxOnCustomerDocuments;
 
-  const taxModeLabel = TAX_MODE_OPTIONS.find((option) => option.value === docForm.taxMode)?.title || docForm.taxMode;
-  const taxDisplayLabel = TAX_DISPLAY_OPTIONS.find((option) => option.value === docForm.taxDisplayMode)?.title || docForm.taxDisplayMode;
-  const headerLabel = HEADER_OPTIONS.find((option) => option.value === docForm.documentHeaderDisplay)?.title || "Header style";
-  const sizeLabel = SIZE_OPTIONS.find((option) => option.value === docForm.documentSizeMode)?.title || "Print size";
+  const taxEnabled =
+    docForm.taxMode !== "NONE";
 
-  const previewItems = [
-    {
-      title: "Receipt",
-      prefix: docForm.receiptPrefix,
-      padding: docForm.receiptPadding,
-      preview: documentSettings?.receiptNumberPreview,
-      terms: copyForm.receiptFooter,
-      taxLabel: taxIsCustomerFacing ? docForm.taxName || "Tax shown" : "",
-      autoNumbering: docForm.autoReceiptNumbering,
-      priority: true,
-    },
-    {
-      title: "Invoice",
-      prefix: docForm.invoicePrefix,
-      padding: docForm.invoicePadding,
-      preview: documentSettings?.invoiceNumberPreview,
-      terms: docForm.invoiceTerms,
-      taxLabel: taxIsCustomerFacing ? docForm.taxName || "Tax shown" : "",
-      autoNumbering: docForm.autoInvoiceNumbering,
-      priority: true,
-    },
-    {
-      title: "Delivery Note",
-      prefix: docForm.deliveryPrefix,
-      padding: docForm.deliveryPadding,
-      preview: documentSettings?.deliveryNoteNumberPreview,
-      terms: docForm.deliveryNoteTerms,
-      previewLabel: "Next number",
-      previewFallback: "Delivery note theme preview",
-      autoNumbering: docForm.autoDeliveryNumbering,
-      priority: true,
-    },
-    {
-      title: "Warranty",
-      prefix: docForm.warrantyPrefix,
-      padding: docForm.warrantyPadding,
-      preview: documentSettings?.warrantyNumberPreview,
-      terms: docForm.warrantyTerms,
-      autoNumbering: docForm.autoWarrantyNumbering,
-      priority: false,
-    },
-    {
-      title: "Proforma",
-      prefix: docForm.proformaPrefix,
-      padding: docForm.proformaPadding,
-      preview: documentSettings?.proformaNumberPreview,
-      terms: docForm.proformaTerms,
-      taxLabel: taxIsCustomerFacing ? docForm.taxName || "Tax shown" : "",
-      autoNumbering: docForm.autoProformaNumbering,
-      priority: false,
-    },
-  ];
+  const showCustomTax =
+    docForm.taxMode === "CUSTOM";
 
-  const visiblePreviews = showAllPreviews ? previewItems : previewItems.filter((item) => item.priority);
+  const receiptPreview =
+    documentSettings
+      ?.receiptNumberPreview ||
+    `${docForm.receiptPrefix}-000001`;
 
   function updateDocField(key, value) {
-    setDocForm((current) => ({ ...current, [key]: value }));
+    setDocForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
   }
 
   function updateCopyField(key, value) {
-    setCopyForm((current) => ({ ...current, [key]: value }));
+    setCopyForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
+  function updateTaxMode(value) {
+    const option = TAX_OPTIONS.find(
+      (item) => item.value === value,
+    );
+
+    setDocForm((current) => {
+      const next = {
+        ...current,
+        taxMode: value,
+      };
+
+      if (option?.rate !== null) {
+        next.taxRateBps =
+          Number(option?.rate || 0);
+      }
+
+      if (value === "NONE") {
+        next.taxDisplayMode =
+          "HIDDEN";
+
+        next.showTaxOnCustomerDocuments =
+          false;
+      }
+
+      return next;
+    });
   }
 
   async function onSave() {
     if (isReadOnly) {
-      toast.error("Only the owner can update document settings");
+      toast.error(
+        "Only the owner can update document settings",
+      );
       return;
     }
 
-    if (!dirty || saving) return;
+    if (!dirty || saving) {
+      return;
+    }
+
     setSaving(true);
 
     try {
       if (docDirty) {
-        const data = await updateDocumentSettings({
-          ...docForm,
-          receiptPadding: Number(docForm.receiptPadding),
-          invoicePadding: Number(docForm.invoicePadding),
-          warrantyPadding: Number(docForm.warrantyPadding),
-          proformaPadding: Number(docForm.proformaPadding),
-          deliveryPadding: Number(docForm.deliveryPadding),
-          taxRateBps: Number(docForm.taxRateBps),
-          taxName: cleanString(docForm.taxName) || null,
-        });
+        const data =
+          await updateDocumentSettings({
+            ...docForm,
+            receiptPadding: Number(
+              docForm.receiptPadding,
+            ),
+            invoicePadding: Number(
+              docForm.invoicePadding,
+            ),
+            warrantyPadding: Number(
+              docForm.warrantyPadding,
+            ),
+            proformaPadding: Number(
+              docForm.proformaPadding,
+            ),
+            deliveryPadding: Number(
+              docForm.deliveryPadding,
+            ),
+            taxRateBps: Number(
+              docForm.taxRateBps,
+            ),
+            taxName:
+              cleanString(
+                docForm.taxName,
+              ) || null,
+          });
 
-        const next = data?.documentSettings || null;
-        setDocumentSettings(next);
-        setDocForm(documentSnapshot(next));
+        const nextSettings =
+          data?.documentSettings || null;
+
+        setDocumentSettings(
+          nextSettings,
+        );
+
+        setDocForm(
+          documentSnapshot(
+            nextSettings,
+          ),
+        );
       }
 
       if (copyDirty) {
-        const data = await updateStoreProfile({
-          receiptHeader: cleanString(copyForm.receiptHeader) || null,
-          receiptFooter: cleanString(copyForm.receiptFooter) || null,
-        });
+        const data =
+          await updateStoreProfile({
+            receiptHeader:
+              cleanString(
+                copyForm.receiptHeader,
+              ) || null,
 
-        const nextProfile = data?.profile || null;
+            receiptFooter:
+              cleanString(
+                copyForm.receiptFooter,
+              ) || null,
+          });
+
+        const nextProfile =
+          data?.profile || null;
+
         setProfile(nextProfile);
-        setCopyForm(profileCopySnapshot(nextProfile));
+
+        setCopyForm(
+          profileSnapshot(nextProfile),
+        );
       }
 
-      toast.success("Document settings updated");
+      toast.success(
+        "Document settings saved",
+      );
     } catch (error) {
-      toast.error(error?.message || "Failed to save document settings");
+      toast.error(
+        error?.message ||
+          "Could not save document settings",
+      );
     } finally {
       setSaving(false);
     }
   }
 
   if (loading) {
-    return <PageSkeleton titleWidth="w-56" lines={3} showTable={false} />;
+    return (
+      <PageSkeleton
+        titleWidth="w-56"
+        lines={4}
+        showTable={false}
+      />
+    );
   }
 
   return (
-    <div className="svx-settings-page svx-settings-documents-page">
-      <section className={cx(cardClass(), "svx-documents-hero")}> 
-        <SectionHeading
-          eyebrow="Documents"
-          title="Documents and receipts"
-          subtitle="Control document numbers, receipt style, tax display, customer-facing copy, and previews from one focused workspace."
-          action={dirty ? <Badge tone="warning">Unsaved changes</Badge> : <Badge tone="neutral">Current</Badge>}
-        />
-
-        <div className="svx-settings-summary-grid svx-documents-summary-grid">
-          <div className="svx-settings-summary-card is-primary">
-            <span>Receipt prefix</span>
-            <strong>{docForm.receiptPrefix || "RCT"}</strong>
-            <p>{documentSettings?.receiptNumberPreview || "Next receipt preview"}</p>
-          </div>
-          <div className="svx-settings-summary-card is-neutral">
-            <span>Invoice prefix</span>
-            <strong>{docForm.invoicePrefix || "INV"}</strong>
-            <p>{documentSettings?.invoiceNumberPreview || "Next invoice preview"}</p>
-          </div>
-          <div className="svx-settings-summary-card is-warning">
-            <span>Tax mode</span>
-            <strong>{taxModeLabel}</strong>
-            <p>{taxSummary?.label || "No tax shown on customer documents"}</p>
-          </div>
-        </div>
-      </section>
-
-      <section className={cardClass()}>
-        <SectionHeading
-          eyebrow="Identity"
-          title="Document identity"
-          subtitle="Keep document prefixes and numbering easy to recognize on receipts, invoices, delivery notes, warranties, and proformas."
-        />
-
-        <div className="svx-documents-identity-shell">
-          <div className="svx-documents-identity-panel">
-            <div className="svx-documents-mini-head">
-              <strong>Document prefixes</strong>
-              <p>Short codes printed before each document number.</p>
-            </div>
-
-            <div className="svx-settings-form-grid is-two">
-              <div>
-                <label className={fieldLabel()}>Receipt prefix</label>
-                <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.receiptPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("receiptPrefix", event.target.value)} />
-              </div>
-              <div>
-                <label className={fieldLabel()}>Invoice prefix</label>
-                <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.invoicePrefix} disabled={isReadOnly} onChange={(event) => updateDocField("invoicePrefix", event.target.value)} />
-              </div>
-              <div>
-                <label className={fieldLabel()}>Delivery note prefix</label>
-                <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.deliveryPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("deliveryPrefix", event.target.value)} />
-              </div>
-              <div>
-                <label className={fieldLabel()}>Warranty prefix</label>
-                <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.warrantyPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("warrantyPrefix", event.target.value)} />
-              </div>
-              <div>
-                <label className={fieldLabel()}>Proforma prefix</label>
-                <input className={cx(inputClass(), readOnlyInputState(isReadOnly))} value={docForm.proformaPrefix} disabled={isReadOnly} onChange={(event) => updateDocField("proformaPrefix", event.target.value)} />
-              </div>
-            </div>
-          </div>
-
-          <div className="svx-documents-identity-panel">
-            <div className="svx-documents-mini-head">
-              <strong>Document numbering</strong>
-              <p>Digit length for clean, predictable document numbers.</p>
-            </div>
-
-            <div className="svx-settings-form-grid is-two">
-              <NumberField label="Receipt digits" value={docForm.receiptPadding} disabled={isReadOnly} onChange={(event) => updateDocField("receiptPadding", event.target.value)} />
-              <NumberField label="Invoice digits" value={docForm.invoicePadding} disabled={isReadOnly} onChange={(event) => updateDocField("invoicePadding", event.target.value)} />
-              <NumberField label="Delivery note digits" value={docForm.deliveryPadding} disabled={isReadOnly} onChange={(event) => updateDocField("deliveryPadding", event.target.value)} />
-              <NumberField label="Warranty digits" value={docForm.warrantyPadding} disabled={isReadOnly} onChange={(event) => updateDocField("warrantyPadding", event.target.value)} />
-              <NumberField label="Proforma digits" value={docForm.proformaPadding} disabled={isReadOnly} onChange={(event) => updateDocField("proformaPadding", event.target.value)} />
-            </div>
-          </div>
-        </div>
-
-        <div className="svx-settings-form-grid mt-5 svx-documents-color-grid">
-          <div>
-            <label className={fieldLabel()}>Primary document color</label>
-            <input
-              className={cx(inputClass(), readOnlyInputState(isReadOnly))}
-              value={docForm.documentPrimaryColor}
-              disabled={isReadOnly}
-              onChange={(event) => updateDocField("documentPrimaryColor", event.target.value)}
-            />
-          </div>
-          <div>
-            <label className={fieldLabel()}>Accent document color</label>
-            <input
-              className={cx(inputClass(), readOnlyInputState(isReadOnly))}
-              value={docForm.documentAccentColor}
-              disabled={isReadOnly}
-              onChange={(event) => updateDocField("documentAccentColor", event.target.value)}
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className={cardClass()}>
-        <SectionHeading
-          eyebrow="Style"
-          title="Header and print style"
-          subtitle="Choose the document look customers see. Keep it simple, clean, and easy to read when printed."
-          action={<Badge tone="primary">{headerLabel}</Badge>}
-        />
-
-        <div className="svx-settings-option-grid svx-documents-option-grid">
-          {HEADER_OPTIONS.map((option) => (
-            <OptionCard
-              key={option.value}
-              selected={docForm.documentHeaderDisplay === option.value}
-              title={option.title}
-              text={option.text}
-              disabled={isReadOnly}
-              onClick={() => updateDocField("documentHeaderDisplay", option.value)}
-            />
-          ))}
-        </div>
-
-        <div className="svx-settings-option-grid is-compact svx-documents-option-grid is-print">
-          {SIZE_OPTIONS.map((option) => (
-            <OptionCard
-              key={option.value}
-              selected={docForm.documentSizeMode === option.value}
-              title={option.title}
-              text={option.text}
-              disabled={isReadOnly}
-              onClick={() => updateDocField("documentSizeMode", option.value)}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className={cardClass()}>
-        <SectionHeading
-          eyebrow="Governance"
-          title="Document rules"
-          subtitle="Set owner-level rules once so every document stays consistent across the business."
-        />
-
-        <div className="svx-documents-rule-shell">
-          <SwitchGroup title="Document visibility" text="What customers should see on printed documents.">
-            <SwitchRow
-              title="Show logo"
-              text="Print the business logo when available."
-              checked={docForm.showDocumentLogo}
-              disabled={isReadOnly}
-              onChange={(value) => updateDocField("showDocumentLogo", value)}
-            />
-            <SwitchRow
-              title="Show business contacts"
-              text="Print phone, address, and business contact details."
-              checked={docForm.showBusinessContacts}
-              disabled={isReadOnly}
-              onChange={(value) => updateDocField("showBusinessContacts", value)}
-            />
-            <SwitchRow
-              title="Show printed date"
-              text="Show when the document was generated."
-              checked={docForm.showPrintedDate}
-              disabled={isReadOnly}
-              onChange={(value) => updateDocField("showPrintedDate", value)}
-            />
-          </SwitchGroup>
-
-          <SwitchGroup title="Verification" text="Controls for future document verification and formal layouts.">
-            <SwitchRow
-              title="Show QR code"
-              text="Reserve space for future document verification."
-              checked={docForm.showDocumentQr}
-              disabled={isReadOnly}
-              onChange={(value) => updateDocField("showDocumentQr", value)}
-            />
-            <SwitchRow
-              title="Show watermark"
-              text="Use a light watermark on formal document layouts."
-              checked={docForm.showDocumentWatermark}
-              disabled={isReadOnly}
-              onChange={(value) => updateDocField("showDocumentWatermark", value)}
-            />
-          </SwitchGroup>
-
-          <SwitchGroup title="Automatic numbering" text="Let Storvex assign clean document numbers automatically." tone="primary">
-            <SwitchRow
-              title="Receipts"
-              text="Auto-generate receipt numbers."
-              checked={docForm.autoReceiptNumbering}
-              disabled={isReadOnly}
-              onChange={(value) => updateDocField("autoReceiptNumbering", value)}
-            />
-            <SwitchRow
-              title="Invoices"
-              text="Auto-generate invoice numbers."
-              checked={docForm.autoInvoiceNumbering}
-              disabled={isReadOnly}
-              onChange={(value) => updateDocField("autoInvoiceNumbering", value)}
-            />
-            <SwitchRow
-              title="Warranties"
-              text="Auto-generate warranty numbers."
-              checked={docForm.autoWarrantyNumbering}
-              disabled={isReadOnly}
-              onChange={(value) => updateDocField("autoWarrantyNumbering", value)}
-            />
-            <SwitchRow
-              title="Proformas"
-              text="Auto-generate proforma numbers."
-              checked={docForm.autoProformaNumbering}
-              disabled={isReadOnly}
-              onChange={(value) => updateDocField("autoProformaNumbering", value)}
-            />
-            <SwitchRow
-              title="Delivery notes"
-              text="Auto-generate delivery note numbers."
-              checked={docForm.autoDeliveryNumbering}
-              disabled={isReadOnly}
-              onChange={(value) => updateDocField("autoDeliveryNumbering", value)}
-            />
-          </SwitchGroup>
-        </div>
-      </section>
-
-      <section className={cx(cardClass(), "svx-documents-delivery-zone")}>
-        <SectionHeading
-          eyebrow="Delivery notes"
-          title="Goods movement protection"
-          subtitle="Delivery notes prove what left the store, who delivered it, and who received it. They must stay separate from money, prices, totals, tax, or payment language."
-          action={<Badge tone="warning">No money allowed</Badge>}
-        />
-
-        <div className="svx-documents-delivery-grid">
-          <SwitchRow
-            title="Require receiver name"
-            text="Staff must record who received the goods."
-            checked={docForm.deliveryRequireReceiverName}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("deliveryRequireReceiverName", value)}
-          />
-          <SwitchRow
-            title="Require receiver phone"
-            text="Ask for receiver phone when the business needs stronger proof."
-            checked={docForm.deliveryRequireReceiverPhone}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("deliveryRequireReceiverPhone", value)}
-          />
-          <SwitchRow
-            title="Require signature"
-            text="Receiver signature is required before the handover is complete."
-            checked={docForm.deliveryRequireSignature}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("deliveryRequireSignature", value)}
-          />
-          <SwitchRow
-            title="Require delivered by"
-            text="Staff must record who delivered or handed over the goods."
-            checked={docForm.deliveryRequireDeliveredBy}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("deliveryRequireDeliveredBy", value)}
-          />
-          <SwitchRow
-            title="Require delivery location"
-            text="Delivery location or customer address should be recorded."
-            checked={docForm.deliveryRequireLocation}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("deliveryRequireLocation", value)}
-          />
-          <SwitchRow
-            title="Show serial numbers"
-            text="Display serial numbers on delivery notes when products have them."
-            checked={docForm.deliveryShowSerialNumbers}
-            disabled={isReadOnly}
-            onChange={(value) => updateDocField("deliveryShowSerialNumbers", value)}
-          />
-          <div className="svx-documents-partial-delivery">
-            <SwitchRow
-              title="Allow partial delivery"
-              text="Use only when the business intentionally delivers part of an order."
-              checked={docForm.deliveryAllowPartialDelivery}
-              disabled={isReadOnly}
-              onChange={(value) => updateDocField("deliveryAllowPartialDelivery", value)}
-              tone="warning"
-            />
-          </div>
-        </div>
-      </section>
-
-      <section className={cx(cardClass(), "svx-documents-tax-section")}>
-        <SectionHeading
-          eyebrow="Tax"
-          title="Tax display"
-          subtitle="Use this carefully. Tax should only appear on customer documents when the business is legally allowed or required to show it."
-          action={<Badge tone={taxIsCustomerFacing ? "warning" : "neutral"}>{taxDisplayLabel}</Badge>}
-        />
-
-        <div className="svx-documents-tax-shell">
-          <div className="svx-documents-tax-main">
-            <div className="svx-settings-option-grid is-tax svx-documents-option-grid is-tax-guided">
-              {TAX_MODE_OPTIONS.map((option) => (
-                <OptionCard
-                  key={option.value}
-                  selected={docForm.taxMode === option.value}
-                  title={option.title}
-                  text={option.text}
-                  disabled={isReadOnly}
-                  onClick={() => {
-                    updateDocField("taxMode", option.value);
-                    if (option.rate !== null) updateDocField("taxRateBps", option.rate);
-                    if (option.value === "NONE") {
-                      updateDocField("showTaxOnCustomerDocuments", false);
-                      updateDocField("taxDisplayMode", "HIDDEN");
-                    }
-                  }}
-                />
-              ))}
-            </div>
-
-            <div className="svx-settings-option-grid is-compact svx-documents-option-grid is-tax-display">
-              {TAX_DISPLAY_OPTIONS.map((option) => (
-                <OptionCard
-                  key={option.value}
-                  selected={docForm.taxDisplayMode === option.value}
-                  title={option.title}
-                  text={option.text}
-                  disabled={isReadOnly || docForm.taxMode === "NONE"}
-                  onClick={() => updateDocField("taxDisplayMode", option.value)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <aside className="svx-documents-tax-side">
-            <CompactInfoRow label="Selected tax" value={taxModeLabel} tone="primary" />
-            <CompactInfoRow label="Customer display" value={taxDisplayLabel} tone={taxIsCustomerFacing ? "warning" : "neutral"} />
-
-            <div>
-              <label className={fieldLabel()}>Tax name</label>
-              <input
-                className={cx(inputClass(), readOnlyInputState(isReadOnly || docForm.taxMode === "NONE"))}
-                value={docForm.taxName}
-                disabled={isReadOnly || docForm.taxMode === "NONE"}
-                onChange={(event) => updateDocField("taxName", event.target.value)}
-                placeholder="Example: VAT"
-              />
-            </div>
-
-            <div>
-              <label className={fieldLabel()}>Tax rate basis points</label>
-              <input
-                type="number"
-                className={cx(inputClass(), readOnlyInputState(isReadOnly || docForm.taxMode === "NONE"))}
-                value={docForm.taxRateBps}
-                disabled={isReadOnly || docForm.taxMode === "NONE"}
-                onChange={(event) => updateDocField("taxRateBps", event.target.value)}
-              />
-              <p className={fieldHelp()}>1800 means 18%. 300 means 3%.</p>
-            </div>
-
-            <div className="svx-settings-switch-grid is-stacked">
-              <SwitchRow
-                title="Prices include tax"
-                text="Use when shelf prices already include tax."
-                checked={docForm.pricesIncludeTax}
-                disabled={isReadOnly || docForm.taxMode === "NONE"}
-                onChange={(value) => updateDocField("pricesIncludeTax", value)}
-              />
-              <SwitchRow
-                title="Show tax on customer documents"
-                text="Only enable when tax should legally appear to the customer."
-                checked={docForm.showTaxOnCustomerDocuments}
-                disabled={isReadOnly || docForm.taxMode === "NONE" || docForm.taxDisplayMode !== "CUSTOMER_FACING"}
-                onChange={(value) => updateDocField("showTaxOnCustomerDocuments", value)}
-                tone="warning"
-              />
-            </div>
-
-            <div className={cx(panelClass(), taxIsCustomerFacing && "is-warning") }>
-              <strong>{taxSummary?.label || "Tax behavior preview"}</strong>
-              <p>{taxSummary?.warning || "Tax is currently not shown on customer documents."}</p>
-            </div>
-          </aside>
-        </div>
-      </section>
-
-      <section className={cardClass()}>
-        <SectionHeading
-          eyebrow="Preview"
-          title="Next document numbers"
-          subtitle="Show the numbers the owner cares about first. Full visual previews remain available from the document print pages."
-          action={
-            <button type="button" className="svx-settings-secondary-button" onClick={() => setShowAllPreviews((current) => !current)}>
-              {showAllPreviews ? "Show fewer" : "View all numbers"}
-            </button>
-          }
-        />
-
-        <div className="svx-documents-number-preview-grid">
-          {visiblePreviews.map((item) => (
-            <NumberPreviewCard
-              key={item.title}
-              label={item.title}
-              preview={item.preview}
-              prefix={item.prefix}
-              autoNumbering={item.autoNumbering}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className={cardClass()}>
-        <SectionHeading
-          eyebrow="Copy"
-          title="Terms, header, and footer"
-          subtitle="Keep customer copy short and practical. Open only the document text you need to edit."
-        />
-
-        <div className="svx-settings-accordion-list">
-          <CopyAccordion title="Receipt header and footer" note="Text printed at the top and bottom of receipts" open>
-            <div className="svx-settings-form-grid is-two">
-              <TextareaField label="Receipt header" value={copyForm.receiptHeader} disabled={isReadOnly} onChange={(event) => updateCopyField("receiptHeader", event.target.value)} placeholder="Example: Thank you for shopping with us." help="Shown near the top of printed receipts." />
-              <TextareaField label="Receipt footer" value={copyForm.receiptFooter} disabled={isReadOnly} onChange={(event) => updateCopyField("receiptFooter", event.target.value)} placeholder="Example: Keep this receipt for support and warranty." help="Shown near the bottom of printed receipts." />
-            </div>
-          </CopyAccordion>
-
-          <CopyAccordion title="Invoice terms" note="Payment and invoice conditions">
-            <TextareaField label="Invoice terms" value={docForm.invoiceTerms} disabled={isReadOnly} onChange={(event) => updateDocField("invoiceTerms", event.target.value)} placeholder="Example: Payment due within 7 days from invoice date." help="Printed on invoice documents." />
-          </CopyAccordion>
-
-          <CopyAccordion title="Warranty terms" note="Warranty rules customers should understand">
-            <TextareaField label="Warranty terms" value={docForm.warrantyTerms} disabled={isReadOnly} onChange={(event) => updateDocField("warrantyTerms", event.target.value)} placeholder="Example: Warranty void if the item is physically damaged." help="Printed on warranty documents." />
-          </CopyAccordion>
-
-          <CopyAccordion title="Proforma and delivery note terms" note="Quote validity and delivery acceptance text">
-            <div className="svx-settings-form-grid is-two">
-              <TextareaField label="Proforma terms" value={docForm.proformaTerms} disabled={isReadOnly} onChange={(event) => updateDocField("proformaTerms", event.target.value)} placeholder="Example: Prices are valid for 3 days from issue date." help="Printed on proforma documents." />
-              <TextareaField label="Delivery note terms" value={docForm.deliveryNoteTerms} disabled={isReadOnly} onChange={(event) => updateDocField("deliveryNoteTerms", event.target.value)} placeholder="Example: Please verify all items before signing." help="Printed on delivery note documents." />
-            </div>
-          </CopyAccordion>
-        </div>
-      </section>
-
-      <div className="svx-settings-savebar">
+    <div className="svx-settings-page svx-docs-page">
+      <div className="svx-docs-page-heading">
         <div>
-          <strong>{dirty ? "You have unsaved document changes" : "Document settings are saved"}</strong>
-          <p>{isReadOnly ? "Managers can review document settings, but only the owner can save changes." : "Save after editing receipt, invoice, tax, terms, or preview settings."}</p>
+          <h1>Documents</h1>
+          <p>
+            Control how receipts and
+            business documents look.
+          </p>
         </div>
 
-        <AsyncButton loading={saving} loadingText="Saving..." disabled={!dirty || isReadOnly} onClick={onSave}>
-          Save document settings
-        </AsyncButton>
+        {isReadOnly ? (
+          <span>View only</span>
+        ) : null}
       </div>
+
+      <section className="svx-docs-section">
+        <SectionHeading
+          title="Appearance"
+          description="Choose what customers see at the top of a document."
+        />
+
+        <div className="svx-docs-grid is-two">
+          <SelectField
+            label="Document header"
+            value={
+              docForm.documentHeaderDisplay
+            }
+            disabled={isReadOnly}
+            options={HEADER_OPTIONS}
+            onChange={(value) =>
+              updateDocField(
+                "documentHeaderDisplay",
+                value,
+              )
+            }
+          />
+
+          <SelectField
+            label="Document spacing"
+            value={
+              docForm.documentSizeMode
+            }
+            disabled={isReadOnly}
+            options={SIZE_OPTIONS}
+            onChange={(value) =>
+              updateDocField(
+                "documentSizeMode",
+                value,
+              )
+            }
+          />
+        </div>
+
+        <div className="svx-docs-toggle-list">
+          <Toggle
+            label="Show logo"
+            checked={
+              docForm.showDocumentLogo
+            }
+            disabled={isReadOnly}
+            onChange={(value) =>
+              updateDocField(
+                "showDocumentLogo",
+                value,
+              )
+            }
+          />
+
+          <Toggle
+            label="Show business contact details"
+            checked={
+              docForm.showBusinessContacts
+            }
+            disabled={isReadOnly}
+            onChange={(value) =>
+              updateDocField(
+                "showBusinessContacts",
+                value,
+              )
+            }
+          />
+
+          <Toggle
+            label="Show printed date"
+            checked={
+              docForm.showPrintedDate
+            }
+            disabled={isReadOnly}
+            onChange={(value) =>
+              updateDocField(
+                "showPrintedDate",
+                value,
+              )
+            }
+          />
+        </div>
+      </section>
+
+      <section className="svx-docs-section">
+        <SectionHeading
+          title="Document numbers"
+          description="Short codes used before each document number."
+        />
+
+        <div className="svx-docs-grid is-three">
+          <Field
+            label="Receipt"
+            value={docForm.receiptPrefix}
+            disabled={isReadOnly}
+            maxLength={10}
+            onChange={(value) =>
+              updateDocField(
+                "receiptPrefix",
+                value.toUpperCase(),
+              )
+            }
+          />
+
+          <Field
+            label="Invoice"
+            value={docForm.invoicePrefix}
+            disabled={isReadOnly}
+            maxLength={10}
+            onChange={(value) =>
+              updateDocField(
+                "invoicePrefix",
+                value.toUpperCase(),
+              )
+            }
+          />
+
+          <Field
+            label="Delivery note"
+            value={docForm.deliveryPrefix}
+            disabled={isReadOnly}
+            maxLength={10}
+            onChange={(value) =>
+              updateDocField(
+                "deliveryPrefix",
+                value.toUpperCase(),
+              )
+            }
+          />
+
+          <Field
+            label="Warranty"
+            value={docForm.warrantyPrefix}
+            disabled={isReadOnly}
+            maxLength={10}
+            onChange={(value) =>
+              updateDocField(
+                "warrantyPrefix",
+                value.toUpperCase(),
+              )
+            }
+          />
+
+          <Field
+            label="Proforma"
+            value={docForm.proformaPrefix}
+            disabled={isReadOnly}
+            maxLength={10}
+            onChange={(value) =>
+              updateDocField(
+                "proformaPrefix",
+                value.toUpperCase(),
+              )
+            }
+          />
+        </div>
+      </section>
+
+      <section className="svx-docs-section">
+        <SectionHeading
+          title="Receipt message"
+          description="Short text printed on receipts."
+        />
+
+        <div className="svx-docs-grid is-two">
+          <TextareaField
+            label="Receipt header"
+            value={copyForm.receiptHeader}
+            disabled={isReadOnly}
+            placeholder="Example: Thank you for shopping with us."
+            onChange={(value) =>
+              updateCopyField(
+                "receiptHeader",
+                value,
+              )
+            }
+          />
+
+          <TextareaField
+            label="Receipt footer"
+            value={copyForm.receiptFooter}
+            disabled={isReadOnly}
+            placeholder="Example: Keep this receipt for support."
+            onChange={(value) =>
+              updateCopyField(
+                "receiptFooter",
+                value,
+              )
+            }
+          />
+        </div>
+      </section>
+
+      <section className="svx-docs-section">
+        <SectionHeading
+          title="Tax"
+          description="Only show tax when the business is allowed to charge it."
+        />
+
+        <div className="svx-docs-grid is-two">
+          <SelectField
+            label="Tax type"
+            value={docForm.taxMode}
+            disabled={isReadOnly}
+            options={TAX_OPTIONS}
+            onChange={updateTaxMode}
+          />
+
+          {showCustomTax ? (
+            <Field
+              label="Tax name"
+              value={docForm.taxName}
+              disabled={isReadOnly}
+              maxLength={40}
+              onChange={(value) =>
+                updateDocField(
+                  "taxName",
+                  value,
+                )
+              }
+            />
+          ) : null}
+
+          {showCustomTax ? (
+            <div className="svx-docs-field">
+              <label>Tax rate</label>
+
+              <div className="svx-docs-rate-input">
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={
+                    Number(
+                      docForm.taxRateBps,
+                    ) / 100
+                  }
+                  disabled={isReadOnly}
+                  onChange={(event) =>
+                    updateDocField(
+                      "taxRateBps",
+                      Math.round(
+                        Number(
+                          event.target.value ||
+                            0,
+                        ) * 100,
+                      ),
+                    )
+                  }
+                />
+
+                <span>%</span>
+              </div>
+            </div>
+          ) : null}
+        </div>
+
+        {taxEnabled ? (
+          <div className="svx-docs-toggle-list">
+            <Toggle
+              label="Prices already include tax"
+              checked={
+                docForm.pricesIncludeTax
+              }
+              disabled={isReadOnly}
+              onChange={(value) =>
+                updateDocField(
+                  "pricesIncludeTax",
+                  value,
+                )
+              }
+            />
+
+            <Toggle
+              label="Show tax to customers"
+              description="Print tax details on customer documents."
+              checked={
+                docForm
+                  .showTaxOnCustomerDocuments
+              }
+              disabled={isReadOnly}
+              onChange={(value) => {
+                updateDocField(
+                  "showTaxOnCustomerDocuments",
+                  value,
+                );
+
+                updateDocField(
+                  "taxDisplayMode",
+                  value
+                    ? "CUSTOMER_FACING"
+                    : "HIDDEN",
+                );
+              }}
+            />
+          </div>
+        ) : null}
+      </section>
+
+      <section className="svx-docs-section">
+        <SectionHeading
+          title="Delivery proof"
+          description="Choose what staff must record when goods are handed over."
+        />
+
+        <div className="svx-docs-toggle-list is-two">
+          <Toggle
+            label="Receiver name"
+            checked={
+              docForm
+                .deliveryRequireReceiverName
+            }
+            disabled={isReadOnly}
+            onChange={(value) =>
+              updateDocField(
+                "deliveryRequireReceiverName",
+                value,
+              )
+            }
+          />
+
+          <Toggle
+            label="Receiver phone"
+            checked={
+              docForm
+                .deliveryRequireReceiverPhone
+            }
+            disabled={isReadOnly}
+            onChange={(value) =>
+              updateDocField(
+                "deliveryRequireReceiverPhone",
+                value,
+              )
+            }
+          />
+
+          <Toggle
+            label="Receiver signature"
+            checked={
+              docForm
+                .deliveryRequireSignature
+            }
+            disabled={isReadOnly}
+            onChange={(value) =>
+              updateDocField(
+                "deliveryRequireSignature",
+                value,
+              )
+            }
+          />
+
+          <Toggle
+            label="Delivered by"
+            checked={
+              docForm
+                .deliveryRequireDeliveredBy
+            }
+            disabled={isReadOnly}
+            onChange={(value) =>
+              updateDocField(
+                "deliveryRequireDeliveredBy",
+                value,
+              )
+            }
+          />
+
+          <Toggle
+            label="Delivery location"
+            checked={
+              docForm
+                .deliveryRequireLocation
+            }
+            disabled={isReadOnly}
+            onChange={(value) =>
+              updateDocField(
+                "deliveryRequireLocation",
+                value,
+              )
+            }
+          />
+
+          <Toggle
+            label="Product serial numbers"
+            checked={
+              docForm
+                .deliveryShowSerialNumbers
+            }
+            disabled={isReadOnly}
+            onChange={(value) =>
+              updateDocField(
+                "deliveryShowSerialNumbers",
+                value,
+              )
+            }
+          />
+
+          <Toggle
+            label="Allow partial delivery"
+            description="Use when part of an order can be delivered separately."
+            checked={
+              docForm
+                .deliveryAllowPartialDelivery
+            }
+            disabled={isReadOnly}
+            onChange={(value) =>
+              updateDocField(
+                "deliveryAllowPartialDelivery",
+                value,
+              )
+            }
+          />
+        </div>
+      </section>
+
+      <section className="svx-docs-section">
+        <details className="svx-docs-more">
+          <summary>
+            Additional document notes
+          </summary>
+
+          <div className="svx-docs-more-body">
+            <TextareaField
+              label="Invoice terms"
+              value={docForm.invoiceTerms}
+              disabled={isReadOnly}
+              placeholder="Example: Payment is due within 7 days."
+              onChange={(value) =>
+                updateDocField(
+                  "invoiceTerms",
+                  value,
+                )
+              }
+            />
+
+            <TextareaField
+              label="Warranty terms"
+              value={docForm.warrantyTerms}
+              disabled={isReadOnly}
+              placeholder="Example: Warranty excludes physical damage."
+              onChange={(value) =>
+                updateDocField(
+                  "warrantyTerms",
+                  value,
+                )
+              }
+            />
+
+            <TextareaField
+              label="Proforma terms"
+              value={docForm.proformaTerms}
+              disabled={isReadOnly}
+              placeholder="Example: Prices remain valid for 3 days."
+              onChange={(value) =>
+                updateDocField(
+                  "proformaTerms",
+                  value,
+                )
+              }
+            />
+
+            <TextareaField
+              label="Delivery note terms"
+              value={
+                docForm.deliveryNoteTerms
+              }
+              disabled={isReadOnly}
+              placeholder="Example: Check all items before signing."
+              onChange={(value) =>
+                updateDocField(
+                  "deliveryNoteTerms",
+                  value,
+                )
+              }
+            />
+          </div>
+        </details>
+      </section>
+
+      <section className="svx-docs-section">
+        <SectionHeading
+          title="Receipt preview"
+          description="A simple preview of the current setup."
+        />
+
+        <div className="svx-docs-preview">
+          <div className="svx-docs-preview-brand">
+            {docForm.showDocumentLogo &&
+            docForm.documentHeaderDisplay !==
+              "NAME_ONLY" ? (
+              <div className="svx-docs-preview-logo">
+                {profile?.logoUrl ? (
+                  <img
+                    src={profile.logoUrl}
+                    alt=""
+                  />
+                ) : (
+                  <span>Logo</span>
+                )}
+              </div>
+            ) : null}
+
+            {docForm.documentHeaderDisplay !==
+            "LOGO_ONLY" ? (
+              <strong>
+                {profile?.name ||
+                  "Business name"}
+              </strong>
+            ) : null}
+          </div>
+
+          <div className="svx-docs-preview-number">
+            <span>Receipt</span>
+            <strong>
+              {receiptPreview}
+            </strong>
+          </div>
+
+          {copyForm.receiptHeader ? (
+            <p>{copyForm.receiptHeader}</p>
+          ) : null}
+
+          <div className="svx-docs-preview-lines">
+            <span />
+            <span />
+            <span />
+          </div>
+
+          {taxEnabled &&
+          docForm
+            .showTaxOnCustomerDocuments ? (
+            <div className="svx-docs-preview-tax">
+              <span>
+                {docForm.taxName ||
+                  "Tax"}
+              </span>
+
+              <strong>
+                {(
+                  Number(
+                    docForm.taxRateBps,
+                  ) / 100
+                ).toFixed(2)}
+                %
+              </strong>
+            </div>
+          ) : null}
+
+          {copyForm.receiptFooter ? (
+            <footer>
+              {copyForm.receiptFooter}
+            </footer>
+          ) : null}
+        </div>
+      </section>
+
+      {dirty && !isReadOnly ? (
+        <div className="svx-docs-savebar">
+          <div>
+            <strong>Unsaved changes</strong>
+            <p>
+              Save to update your
+              documents.
+            </p>
+          </div>
+
+          <AsyncButton
+            loading={saving}
+            loadingText="Saving..."
+            disabled={saving}
+            onClick={onSave}
+          >
+            Save changes
+          </AsyncButton>
+        </div>
+      ) : null}
     </div>
   );
 }
