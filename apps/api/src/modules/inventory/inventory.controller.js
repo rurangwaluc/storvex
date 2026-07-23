@@ -2956,7 +2956,9 @@ async function deleteProductImage(req, res) {
           id: true,
           key: true,
           thumbnailKey: true,
-          isPrimary: true,
+          reviewKey: true,
+            reviewThumbnailKey: true,
+            isPrimary: true,
           imageType: true,
         },
       });
@@ -3052,31 +3054,98 @@ async function deleteProductImage(req, res) {
       },
     );
 
-    const objectKeys = [
-      ...new Set(
-        [
-          existing.key,
-          existing.thumbnailKey,
-        ].filter(Boolean),
-      ),
-    ];
+    const storageObjects =
+      existing.imageType === "CLEANED"
+        ? [
+            {
+              key: existing.key,
+              visibility:
+                STORAGE_VISIBILITY.PUBLIC,
+            },
+            {
+              key:
+                existing.thumbnailKey,
+              visibility:
+                STORAGE_VISIBILITY.PUBLIC,
+            },
+            {
+              key:
+                existing.reviewKey,
+              visibility:
+                STORAGE_VISIBILITY.PRIVATE,
+            },
+            {
+              key:
+                existing.reviewThumbnailKey,
+              visibility:
+                STORAGE_VISIBILITY.PRIVATE,
+            },
+          ]
+        : [
+            {
+              key: existing.key,
+              visibility:
+                STORAGE_VISIBILITY.PRIVATE,
+            },
+            {
+              key:
+                existing.thumbnailKey,
+              visibility:
+                STORAGE_VISIBILITY.PRIVATE,
+            },
+          ];
 
-    for (const objectKey of objectKeys) {
+    const uniqueStorageObjects = [];
+    const storageFingerprints =
+      new Set();
+
+    for (const storageObject of storageObjects) {
+      const objectKey =
+        String(
+          storageObject.key || "",
+        ).trim();
+
+      if (!objectKey) continue;
+
+      const fingerprint =
+        `${storageObject.visibility}:${objectKey}`;
+
+      if (
+        storageFingerprints.has(
+          fingerprint,
+        )
+      ) {
+        continue;
+      }
+
+      storageFingerprints.add(
+        fingerprint,
+      );
+
+      uniqueStorageObjects.push({
+        key: objectKey,
+        visibility:
+          storageObject.visibility,
+      });
+    }
+
+    for (
+      const storageObject
+      of uniqueStorageObjects
+    ) {
       try {
         await deleteObject(
-          objectKey,
+          storageObject.key,
           {
             visibility:
-              existing.imageType ===
-              "CLEANED"
-                ? STORAGE_VISIBILITY.PUBLIC
-                : STORAGE_VISIBILITY.PRIVATE,
+              storageObject.visibility,
           },
         );
       } catch (storageError) {
         console.error(
           "deleteProductImage object cleanup failed:",
-          objectKey,
+          storageObject.key,
+          storageObject.visibility,
           storageError?.message ||
             storageError,
         );

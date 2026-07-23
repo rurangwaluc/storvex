@@ -34,10 +34,31 @@ function withoutStorageKeys(image) {
   const {
     key,
     thumbnailKey,
+    reviewKey,
+    reviewThumbnailKey,
     ...safeImage
   } = image;
 
   return safeImage;
+}
+
+async function signPrivateImage(
+  objectKey,
+) {
+  const key = cleanString(objectKey);
+
+  if (!key) {
+    return null;
+  }
+
+  return signGetUrl(
+    key,
+    OWNER_IMAGE_URL_TTL_SECONDS,
+    {
+      visibility:
+        STORAGE_VISIBILITY.PRIVATE,
+    },
+  );
 }
 
 async function serializeOwnerProductImage(
@@ -54,11 +75,71 @@ async function serializeOwnerProductImage(
     withoutStorageKeys(image);
 
   if (
-    imageType(image) !== "ORIGINAL"
+    imageType(image) === "CLEANED"
   ) {
-    return safeImage;
+    /*
+     * Approved prepared photos already point to their
+     * public Marketplace copies.
+     */
+    if (image.isMarketplaceApproved) {
+      return {
+        ...safeImage,
+        reviewFileAvailable:
+          Boolean(
+            cleanString(image.reviewKey),
+          ),
+      };
+    }
+
+    /*
+     * Unapproved prepared photos remain private.
+     * Only temporary signed URLs are returned to
+     * the authenticated owner.
+     */
+    const reviewKey =
+      cleanString(image.reviewKey);
+
+    const reviewThumbnailKey =
+      cleanString(
+        image.reviewThumbnailKey,
+      );
+
+    if (!reviewKey) {
+      return {
+        ...safeImage,
+        url: null,
+        thumbnailUrl: null,
+        reviewFileAvailable: false,
+      };
+    }
+
+    const [
+      signedUrl,
+      signedThumbnailUrl,
+    ] = await Promise.all([
+      signPrivateImage(reviewKey),
+      reviewThumbnailKey
+        ? signPrivateImage(
+            reviewThumbnailKey,
+          )
+        : Promise.resolve(null),
+    ]);
+
+    return {
+      ...safeImage,
+      url: signedUrl,
+      thumbnailUrl:
+        signedThumbnailUrl ||
+        signedUrl,
+      reviewFileAvailable: true,
+      signedUrlExpiresInSeconds:
+        OWNER_IMAGE_URL_TTL_SECONDS,
+    };
   }
 
+  /*
+   * Original owner uploads are always private.
+   */
   const objectKey =
     cleanString(image.key);
 
@@ -67,23 +148,20 @@ async function serializeOwnerProductImage(
       ...safeImage,
       url: null,
       thumbnailUrl: null,
+      originalFileAvailable: false,
     };
   }
 
   const signedUrl =
-    await signGetUrl(
+    await signPrivateImage(
       objectKey,
-      OWNER_IMAGE_URL_TTL_SECONDS,
-      {
-        visibility:
-          STORAGE_VISIBILITY.PRIVATE,
-      },
     );
 
   return {
     ...safeImage,
     url: signedUrl,
     thumbnailUrl: null,
+    originalFileAvailable: true,
     signedUrlExpiresInSeconds:
       OWNER_IMAGE_URL_TTL_SECONDS,
   };

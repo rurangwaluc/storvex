@@ -1,0 +1,3 @@
+ALTER TABLE "ProductImage"
+ADD COLUMN IF NOT EXISTS "reviewKey" TEXT,
+ADD COLUMN IF NOT EXISTS "reviewThumbnailKey" TEXT;

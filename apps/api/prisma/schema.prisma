@@ -873,12 +873,18 @@ model ProductImage {
   approvedById          String?
   studioVersion         Int              @default(1)
 
-  width              Int?
-  height             Int?
-  sizeBytes          Int?
-  mimeType           String?   @db.Text
-  thumbnailUrl       String?   @db.Text
-  thumbnailKey       String?   @db.Text
+  width        Int?
+  height       Int?
+  sizeBytes    Int?
+  mimeType     String? @db.Text
+  thumbnailUrl String? @db.Text
+  thumbnailKey String? @db.Text
+
+  // Private prepared files retained while the owner reviews
+  // the photo and after a public copy has been approved.
+  reviewKey          String? @db.Text
+  reviewThumbnailKey String? @db.Text
+
   thumbnailWidth     Int?
   thumbnailHeight    Int?
   thumbnailSizeBytes Int?

@@ -157,3 +157,111 @@ test(
     );
   },
 );
+
+test(
+  "standardizes a real product photo without background removal",
+  async () => {
+    const source = await sharp({
+      create: {
+        width: 1400,
+        height: 900,
+        channels: 3,
+        background: "#7a6248",
+      },
+    })
+      .composite([
+        {
+          input: await sharp({
+            create: {
+              width: 700,
+              height: 500,
+              channels: 3,
+              background: "#1f4f91",
+            },
+          })
+            .png()
+            .toBuffer(),
+          left: 350,
+          top: 200,
+        },
+      ])
+      .jpeg({
+        quality: 90,
+      })
+      .toBuffer();
+
+    const {
+      standardizeSourceImage,
+    } = require(
+      "../src/modules/inventory/inventory.productImageStandard.service",
+    );
+
+    const result =
+      await standardizeSourceImage(source);
+
+    assert.equal(
+      result.master.width,
+      1600,
+    );
+
+    assert.equal(
+      result.master.height,
+      1600,
+    );
+
+    assert.equal(
+      result.master.mimeType,
+      "image/webp",
+    );
+
+    assert.equal(
+      result.thumbnail.width,
+      480,
+    );
+
+    assert.equal(
+      result.thumbnail.height,
+      480,
+    );
+
+    const masterMetadata =
+      await sharp(
+        result.master.body,
+      ).metadata();
+
+    const thumbnailMetadata =
+      await sharp(
+        result.thumbnail.body,
+      ).metadata();
+
+    assert.equal(
+      masterMetadata.width,
+      1600,
+    );
+
+    assert.equal(
+      masterMetadata.height,
+      1600,
+    );
+
+    assert.equal(
+      masterMetadata.format,
+      "webp",
+    );
+
+    assert.equal(
+      thumbnailMetadata.width,
+      480,
+    );
+
+    assert.equal(
+      thumbnailMetadata.height,
+      480,
+    );
+
+    assert.equal(
+      thumbnailMetadata.format,
+      "webp",
+    );
+  },
+);
