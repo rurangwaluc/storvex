@@ -7,7 +7,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "worker:whatsapp": "node src/modules/whatsapp/whatsapp.broadcasts.worker.js",
-    "storage:local": "s3rver --address 127.0.0.1 --port 4569 --directory .local/s3 --configure-bucket storvex-private --silent",
+    "storage:local": "node scripts/start-local-storage.js",
     "test": "node --test test/*.test.js"
   },
   "keywords": [],
