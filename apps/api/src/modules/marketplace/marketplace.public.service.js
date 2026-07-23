@@ -1,4 +1,7 @@
 const prisma = require("../../config/database");
+const {
+  signGetUrl,
+} = require("../../lib/storage/objectStorage");
 
 const DEFAULT_PAGE_SIZE = 24;
 const MAX_PAGE_SIZE = 60;
@@ -6,6 +9,63 @@ const MAX_PAGE_SIZE = 60;
 function cleanString(value, maxLength = 200) {
   const result = String(value || "").trim();
   return result ? result.slice(0, maxLength) : null;
+}
+
+async function resolveMarketplaceLogoUrl(tenant) {
+  const existingUrl = cleanString(
+    tenant?.logoUrl,
+    2000,
+  );
+
+  if (existingUrl) {
+    return existingUrl;
+  }
+
+  const logoKey = cleanString(
+    tenant?.logoKey,
+    2000,
+  );
+
+  if (!logoKey) {
+    return null;
+  }
+
+  try {
+    return await signGetUrl(
+      logoKey,
+      3600,
+    );
+  } catch (error) {
+    console.error(
+      "Failed to sign Marketplace business logo:",
+      error?.message || error,
+    );
+
+    return null;
+  }
+}
+
+async function attachMarketplaceLogoUrls(
+  sellers,
+) {
+  const rows = Array.isArray(sellers)
+    ? sellers
+    : [];
+
+  await Promise.all(
+    rows.map(async (seller) => {
+      if (!seller?.tenant) {
+        return;
+      }
+
+      seller.tenant.logoUrl =
+        await resolveMarketplaceLogoUrl(
+          seller.tenant,
+        );
+    }),
+  );
+
+  return rows;
 }
 
 function safeInteger(value, fallback, min, max) {
@@ -630,6 +690,7 @@ const publicSellerInclude = {
       phone: true,
       email: true,
       logoUrl: true,
+      logoKey: true,
       countryCode: true,
       currencyCode: true,
       district: true,
@@ -674,6 +735,10 @@ async function findVisibleSeller(publicSlug) {
   ) {
     return null;
   }
+
+  await attachMarketplaceLogoUrls([
+    seller,
+  ]);
 
   return seller;
 }
@@ -817,6 +882,10 @@ async function listPublicStores(query = {}) {
         profile.tenant?.subscription,
       ),
     );
+
+  await attachMarketplaceLogoUrls(
+    subscriptionVisibleProfiles,
+  );
 
   const sellerIds =
     subscriptionVisibleProfiles.map(
@@ -1271,6 +1340,10 @@ async function listPublicProducts(query = {}) {
       },
     };
   }
+
+  await attachMarketplaceLogoUrls(
+    subscriptionVisibleSellers,
+  );
 
   const sellerByTenant = new Map(
     subscriptionVisibleSellers.map((seller) => [

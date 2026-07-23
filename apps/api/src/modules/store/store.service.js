@@ -1,6 +1,9 @@
 const path = require("path");
 const prisma = require("../../config/database");
 const {
+  signGetUrl,
+} = require("../../lib/storage/objectStorage");
+const {
   createPresignedImageUpload,
   isConfigured: isStorageConfigured,
 } = require("../../lib/storage/objectStorage");
@@ -683,7 +686,30 @@ async function getStoreProfile(tenantId) {
     },
   });
 
-  return serializeStoreProfileRow(tenant);
+  const profile =
+    serializeStoreProfileRow(tenant);
+
+  if (profile?.logoKey) {
+    try {
+      profile.logoSignedUrl =
+        await signGetUrl(
+          profile.logoKey,
+          3600,
+        );
+    } catch (error) {
+      console.error(
+        "Failed to sign store logo:",
+        error?.message || error,
+      );
+
+      profile.logoSignedUrl = null;
+    }
+  } else {
+    profile.logoSignedUrl =
+      profile?.logoUrl || null;
+  }
+
+  return profile;
 }
 
 async function getSetupChecklist(tenantId, subscription = null) {

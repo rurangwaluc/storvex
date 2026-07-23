@@ -1,14 +1,24 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import toast from "react-hot-toast";
 import {
   ArrowLeft,
-  CheckCircle2,
+  Check,
+  ChevronDown,
   Eye,
   ImagePlus,
   Loader2,
-  PackageCheck,
-  Sparkles,
+  MoreHorizontal,
+  RefreshCw,
   Star,
   Trash2,
   UploadCloud,
@@ -27,10 +37,15 @@ import {
   uploadProductImage,
   useProductImageAsMain,
 } from "../../services/inventoryApi";
+import {
+  getStoreProfile,
+} from "../../services/storeApi";
+import ConfirmDialog from "../../components/feedback/ConfirmDialog";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./ProductImages.css";
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+
 const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -42,8 +57,7 @@ function cx(...items) {
 }
 
 function cleanString(value) {
-  const result = String(value || "").trim();
-  return result || "";
+  return String(value || "").trim();
 }
 
 function formatRwf(value) {
@@ -63,7 +77,11 @@ function formatNumber(value) {
 }
 
 function productPrice(product) {
-  return Number(product?.sellPrice ?? product?.price ?? 0);
+  return Number(
+    product?.sellPrice ??
+      product?.price ??
+      0,
+  );
 }
 
 function productStock(product) {
@@ -75,15 +93,15 @@ function productStock(product) {
   );
 }
 
-function categoryLabel(product) {
-  const brand = cleanString(product?.brand);
-  const category = cleanString(product?.category);
+function productDescription(product) {
+  const values = [
+    cleanString(product?.brand),
+    cleanString(product?.category),
+  ].filter(Boolean);
 
-  if (brand && category) {
-    return `${brand} — ${category}`;
-  }
-
-  return brand || category || "Stock item";
+  return values.length
+    ? values.join(" / ")
+    : "Stock item";
 }
 
 function imageUrl(image) {
@@ -95,67 +113,111 @@ function imageUrl(image) {
 }
 
 function imageType(image) {
-  return cleanString(image?.imageType).toUpperCase() || "ORIGINAL";
+  return (
+    cleanString(
+      image?.imageType,
+    ).toUpperCase() ||
+    "ORIGINAL"
+  );
 }
 
-function isCleanedImage(image) {
+function isPreparedImage(image) {
   return imageType(image) === "CLEANED";
 }
 
 function validateImageFile(file) {
-  if (!file) return "Image file is required";
+  if (!file) {
+    return "Choose a photo first";
+  }
 
   if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-    return "Only JPG, PNG, and WEBP images are allowed";
+    return "Use a JPG, PNG, or WEBP photo";
   }
 
   if (file.size > MAX_IMAGE_SIZE_BYTES) {
-    return "Each product image must be 10MB or smaller";
+    return "Each photo must be 10MB or smaller";
   }
 
   return "";
 }
 
-function StatusBadge({ tone = "neutral", children }) {
-  return (
-    <span
-      className={cx(
-        "svx-product-images-badge",
-        `is-${tone}`,
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
-function InfoRow({ label, value, tone = "neutral" }) {
+function ImageFallback({
+  compact = false,
+}) {
   return (
     <div
       className={cx(
-        "svx-product-images-info-row",
-        `is-${tone}`,
+        "svx-product-images-fallback",
+        compact && "is-compact",
       )}
     >
-      <span>{label}</span>
-      <strong>{value}</strong>
+      <ImagePlus
+        size={compact ? 20 : 30}
+        strokeWidth={1.8}
+      />
+      <span>Photo unavailable</span>
     </div>
   );
 }
 
-function ActionButton({
+function ProductPhoto({
+  image,
+  alt,
+  compact = false,
+  onAvailabilityChange,
+}) {
+  const [failed, setFailed] =
+    useState(false);
+
+  const url = imageUrl(image);
+
+  useEffect(() => {
+    setFailed(false);
+
+    if (!url) {
+      onAvailabilityChange?.(false);
+    }
+  }, [
+    onAvailabilityChange,
+    url,
+  ]);
+
+  if (!url || failed) {
+    return (
+      <ImageFallback
+        compact={compact}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={url}
+      alt={alt}
+      onLoad={() =>
+        onAvailabilityChange?.(true)
+      }
+      onError={() => {
+        setFailed(true);
+        onAvailabilityChange?.(false);
+      }}
+    />
+  );
+}
+
+function LoadingButton({
   children,
   icon: Icon,
-  tone = "soft",
   loading = false,
   disabled = false,
+  tone = "secondary",
   onClick,
 }) {
   return (
     <button
       type="button"
       className={cx(
-        "svx-product-images-studio-action",
+        "svx-product-images-button",
         `is-${tone}`,
       )}
       disabled={disabled || loading}
@@ -163,91 +225,125 @@ function ActionButton({
     >
       {loading ? (
         <Loader2
-          size={15}
+          size={16}
           className="svx-product-images-spin"
         />
       ) : Icon ? (
-        <Icon size={15} strokeWidth={2.35} />
+        <Icon
+          size={16}
+          strokeWidth={2.2}
+        />
       ) : null}
+
       <span>{children}</span>
     </button>
+  );
+}
+
+function PhotoStatus({
+  image,
+  compact = false,
+}) {
+  let label = "Not prepared";
+  let state = "muted";
+
+  if (image?.isPrimary) {
+    label = compact
+      ? "Main Marketplace photo"
+      : "This is the main Marketplace photo";
+    state = "main";
+  } else if (image?.isMarketplaceApproved) {
+    label = compact
+      ? "Approved for Marketplace"
+      : "Approved and visible on Marketplace";
+    state = "approved";
+  } else if (image) {
+    label = compact
+      ? "Private preview ready"
+      : "Private preview ready for review";
+    state = "review";
+  }
+
+  return (
+    <span
+      className={cx(
+        "svx-product-images-status",
+        `is-${state}`,
+        compact && "is-compact",
+      )}
+    >
+      {label}
+    </span>
   );
 }
 
 function FullImageViewer({
   image,
   productName,
+  busy,
   onClose,
   onSetPrimary,
   onDelete,
-  busy,
 }) {
   useEffect(() => {
     if (!image) return undefined;
 
-    function onKeyDown(event) {
-      if (event.key === "Escape") onClose();
+    function closeOnEscape(event) {
+      if (event.key === "Escape") {
+        onClose();
+      }
     }
 
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKeyDown);
+    document.body.style.overflow =
+      "hidden";
+
+    window.addEventListener(
+      "keydown",
+      closeOnEscape,
+    );
 
     return () => {
       document.body.style.overflow = "";
-      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener(
+        "keydown",
+        closeOnEscape,
+      );
     };
   }, [image, onClose]);
 
   if (!image) return null;
 
-  const url = imageUrl(image);
-  const cleaned = isCleanedImage(image);
-  const approved = Boolean(image?.isMarketplaceApproved);
+  const prepared =
+    isPreparedImage(image);
+
+  const approved =
+    Boolean(
+      image.isMarketplaceApproved,
+    );
 
   return (
     <div
       className="svx-product-images-viewer-layer"
       role="dialog"
       aria-modal="true"
-      aria-label="Full product image"
+      aria-label="Product photo preview"
     >
       <button
         type="button"
         className="svx-product-images-viewer-backdrop"
         onClick={onClose}
-        aria-label="Close image preview"
+        aria-label="Close preview"
       />
 
       <section className="svx-product-images-viewer">
         <header>
           <div>
-            <div className="svx-product-images-viewer-badges">
-              <StatusBadge
-                tone={cleaned ? "blue" : "neutral"}
-              >
-                {cleaned ? "Cleaned image" : "Original image"}
-              </StatusBadge>
-
-              {approved ? (
-                <StatusBadge tone="success">
-                  Approved for listing
-                </StatusBadge>
-              ) : null}
-
-              {image.isPrimary ? (
-                <StatusBadge tone="success">
-                  Main image
-                </StatusBadge>
-              ) : null}
-            </div>
-
+            <span>
+              {prepared
+                ? "Marketplace preview"
+                : "Original photo"}
+            </span>
             <h2>{productName}</h2>
-            <p>
-              {image.altText ||
-                (cleaned
-                  ? "Cleaned product image preview"
-                  : "Original product image preview")}
-            </p>
           </div>
 
           <button
@@ -256,274 +352,55 @@ function FullImageViewer({
             onClick={onClose}
             aria-label="Close preview"
           >
-            <X size={18} strokeWidth={2.5} />
+            <X
+              size={19}
+              strokeWidth={2.3}
+            />
           </button>
         </header>
 
         <div className="svx-product-images-viewer-image">
-          <img
-            src={url}
-            alt={image.altText || productName}
+          <ProductPhoto
+            image={image}
+            alt={
+              image.altText ||
+              productName
+            }
           />
         </div>
 
         <footer>
-          <button
-            type="button"
-            className="svx-product-images-soft-button"
-            onClick={() => onSetPrimary(image)}
+          <LoadingButton
+            icon={Star}
+            onClick={() =>
+              onSetPrimary(image)
+            }
             disabled={
               busy ||
               image.isPrimary ||
-              (cleaned && !approved)
+              (prepared && !approved)
             }
           >
-            <Star size={16} strokeWidth={2.35} />
-            <span>
-              {image.isPrimary
-                ? "Already main"
-                : cleaned && !approved
-                  ? "Approve before using as main"
-                  : "Use as main image"}
-            </span>
-          </button>
+            {image.isPrimary
+              ? "Main photo"
+              : prepared && !approved
+                ? "Approve before using as main"
+                : "Use as main photo"}
+          </LoadingButton>
 
-          <button
-            type="button"
-            className="svx-product-images-danger-button"
-            onClick={() => onDelete(image)}
+          <LoadingButton
+            icon={Trash2}
+            tone="danger"
+            onClick={() =>
+              onDelete(image)
+            }
             disabled={busy}
           >
-            <Trash2 size={16} strokeWidth={2.35} />
-            <span>Delete image</span>
-          </button>
+            Delete photo
+          </LoadingButton>
         </footer>
       </section>
     </div>
-  );
-}
-
-function StudioImage({
-  image,
-  productName,
-  actionBusy,
-  onPreview,
-  onApprove,
-  onRemoveApproval,
-  onUseAsMain,
-  onDelete,
-}) {
-  const approved = Boolean(image?.isMarketplaceApproved);
-  const main = Boolean(image?.isPrimary);
-  const busy = Boolean(actionBusy);
-
-  return (
-    <article
-      className={cx(
-        "svx-product-images-studio-result",
-        approved && "is-approved",
-        main && "is-main",
-      )}
-    >
-      <button
-        type="button"
-        className="svx-product-images-studio-image"
-        onClick={() => onPreview(image)}
-      >
-        <img
-          src={imageUrl(image)}
-          alt={image.altText || productName}
-        />
-
-        <span>
-          <Eye size={14} strokeWidth={2.35} />
-          Review
-        </span>
-      </button>
-
-      <div className="svx-product-images-studio-result-body">
-        <div className="svx-product-images-studio-result-head">
-          <div>
-            <p>Cleaned result</p>
-            <strong>
-              {approved
-                ? "Ready for product listing"
-                : "Review before approving"}
-            </strong>
-          </div>
-
-          <div className="svx-product-images-studio-badges">
-            {approved ? (
-              <StatusBadge tone="success">
-                Approved
-              </StatusBadge>
-            ) : (
-              <StatusBadge tone="warning">
-                Needs review
-              </StatusBadge>
-            )}
-
-            {main ? (
-              <StatusBadge tone="success">
-                Main image
-              </StatusBadge>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="svx-product-images-studio-actions">
-          <ActionButton
-            icon={Eye}
-            onClick={() => onPreview(image)}
-            disabled={busy}
-          >
-            Review
-          </ActionButton>
-
-          {approved ? (
-            <ActionButton
-              icon={X}
-              tone="warning"
-              onClick={() => onRemoveApproval(image)}
-              loading={actionBusy === `approval-${image.id}`}
-              disabled={busy}
-            >
-              Remove approval
-            </ActionButton>
-          ) : (
-            <ActionButton
-              icon={CheckCircle2}
-              tone="success"
-              onClick={() => onApprove(image)}
-              loading={actionBusy === `approval-${image.id}`}
-              disabled={busy}
-            >
-              Approve for listing
-            </ActionButton>
-          )}
-
-          <ActionButton
-            icon={Star}
-            tone="primary"
-            onClick={() => onUseAsMain(image)}
-            loading={actionBusy === `main-${image.id}`}
-            disabled={busy || !approved || main}
-          >
-            {main ? "Main image" : "Use as main"}
-          </ActionButton>
-
-          <ActionButton
-            icon={Trash2}
-            tone="danger"
-            onClick={() => onDelete(image)}
-            loading={actionBusy === `delete-${image.id}`}
-            disabled={busy}
-          >
-            Delete
-          </ActionButton>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-function OriginalStudioGroup({
-  original,
-  cleanedImage,
-  productName,
-  actionBusy,
-  onPreview,
-  onClean,
-  onApprove,
-  onRemoveApproval,
-  onUseAsMain,
-  onDelete,
-}) {
-  const cleaning =
-    actionBusy === `clean-${original.id}`;
-
-  return (
-    <article
-      className={cx(
-        "svx-product-images-studio-group",
-        cleanedImage ? "has-result" : "is-awaiting",
-      )}
-    >
-      <div className="svx-product-images-studio-original">
-        <button
-          type="button"
-          className="svx-product-images-studio-image"
-          onClick={() => onPreview(original)}
-        >
-          <img
-            src={imageUrl(original)}
-            alt={original.altText || productName}
-          />
-
-          <span>
-            <Eye size={14} strokeWidth={2.35} />
-            View original
-          </span>
-        </button>
-
-        <div className="svx-product-images-studio-original-body">
-          <div>
-            <StatusBadge tone="neutral">
-              Original photo
-            </StatusBadge>
-
-            {original.isPrimary ? (
-              <StatusBadge tone="success">
-                Main image
-              </StatusBadge>
-            ) : null}
-
-            {cleanedImage ? (
-              <StatusBadge tone="neutral">
-                Result available
-              </StatusBadge>
-            ) : null}
-          </div>
-
-          <strong>
-            {cleanedImage
-              ? "Prepare a new cleaned version"
-              : "Prepare this photo for the product listing"}
-          </strong>
-
-          <p>
-            {cleanedImage
-              ? "Cleaning again safely replaces the current result. The original photo remains unchanged."
-              : "Create one cleaned result, review it, and approve it before customers can see it."}
-          </p>
-
-          <ActionButton
-            icon={Sparkles}
-            tone="primary"
-            onClick={() => onClean(original)}
-            loading={cleaning}
-            disabled={Boolean(actionBusy)}
-          >
-            {cleanedImage ? "Clean again" : "Clean image"}
-          </ActionButton>
-        </div>
-      </div>
-
-      {cleanedImage ? (
-        <div className="svx-product-images-studio-results">
-          <StudioImage
-            image={cleanedImage}
-            productName={productName}
-            actionBusy={actionBusy}
-            onPreview={onPreview}
-            onApprove={onApprove}
-            onRemoveApproval={onRemoveApproval}
-            onUseAsMain={onUseAsMain}
-            onDelete={onDelete}
-          />
-        </div>
-      ) : null}
-    </article>
   );
 }
 
@@ -531,87 +408,233 @@ export default function ProductImages() {
   const { id } = useParams();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
+  const menuRef = useRef(null);
 
-  const [product, setProduct] = useState(null);
-  const [images, setImages] = useState([]);
-  const [studio, setStudio] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [studioLoading, setStudioLoading] = useState(true);
-  const [studioError, setStudioError] = useState("");
-  const [uploading, setUploading] = useState(false);
-  const [imageActionBusy, setImageActionBusy] = useState("");
-  const [previewImage, setPreviewImage] = useState(null);
-  const [dragging, setDragging] = useState(false);
+  const [product, setProduct] =
+    useState(null);
 
-  const loadImages = useCallback(async () => {
-    const imageData = await getProductImages(id);
-    const nextImages = Array.isArray(imageData?.images)
-      ? imageData.images
-      : [];
+  const [
+    businessProfile,
+    setBusinessProfile,
+  ] = useState(null);
 
-    setImages(nextImages);
-    return nextImages;
-  }, [id]);
+  const [images, setImages] =
+    useState([]);
 
-  const loadStudio = useCallback(async () => {
-    setStudioLoading(true);
+  const [studio, setStudio] =
+    useState(null);
 
-    try {
-      const result = await getProductImageStudio(id);
-      const nextStudio = result?.studio || null;
+  const [loading, setLoading] =
+    useState(true);
 
-      setStudio(nextStudio);
-      setStudioError("");
+  const [
+    studioLoading,
+    setStudioLoading,
+  ] = useState(true);
 
-      return nextStudio;
-    } catch (error) {
-      setStudioError(
-        error?.message ||
-          "Image preparation is temporarily unavailable",
-      );
+  const [
+    studioError,
+    setStudioError,
+  ] = useState("");
 
-      return null;
-    } finally {
-      setStudioLoading(false);
-    }
-  }, [id]);
+  const [uploading, setUploading] =
+    useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const [
+    imageActionBusy,
+    setImageActionBusy,
+  ] = useState("");
 
-    try {
-      const [productData] = await Promise.all([
-        getProductById(id),
-        loadImages(),
-      ]);
+  const [
+    previewImage,
+    setPreviewImage,
+  ] = useState(null);
 
-      setProduct(productData?.product || productData);
-    } catch (error) {
-      if (
-        handleSubscriptionBlockedError(error, {
-          toastId: "product-images-load-blocked",
-        })
-      ) {
-        return;
+  const [dragging, setDragging] =
+    useState(false);
+
+  const [
+    selectedOriginalId,
+    setSelectedOriginalId,
+  ] = useState("");
+
+  const [
+    actionsOpen,
+    setActionsOpen,
+  ] = useState(false);
+
+  const [
+    confirmation,
+    setConfirmation,
+  ] = useState(null);
+
+  const confirmationResolverRef =
+    useRef(null);
+
+  const [
+    preparedPreviewAvailable,
+    setPreparedPreviewAvailable,
+  ] = useState(false);
+
+  const loadImages = useCallback(
+    async () => {
+      const imageData =
+        await getProductImages(id);
+
+      const nextImages =
+        Array.isArray(
+          imageData?.images,
+        )
+          ? imageData.images
+          : [];
+
+      setImages(nextImages);
+
+      return nextImages;
+    },
+    [id],
+  );
+
+  const loadStudio = useCallback(
+    async () => {
+      setStudioLoading(true);
+
+      try {
+        const result =
+          await getProductImageStudio(
+            id,
+          );
+
+        const nextStudio =
+          result?.studio || null;
+
+        setStudio(nextStudio);
+        setStudioError("");
+
+        return nextStudio;
+      } catch (error) {
+        setStudioError(
+          error?.message ||
+            "Photo preparation is temporarily unavailable",
+        );
+
+        return null;
+      } finally {
+        setStudioLoading(false);
+      }
+    },
+    [id],
+  );
+
+  const load = useCallback(
+    async () => {
+      setLoading(true);
+
+      try {
+        const [
+          productData,
+          profileData,
+        ] = await Promise.all([
+          getProductById(id),
+          getStoreProfile(),
+          loadImages(),
+        ]);
+
+        setProduct(
+          productData?.product ||
+            productData,
+        );
+
+        setBusinessProfile(
+          profileData?.profile ||
+            profileData?.tenant ||
+            profileData ||
+            null,
+        );
+      } catch (error) {
+        if (
+          handleSubscriptionBlockedError(
+            error,
+            {
+              toastId:
+                "product-images-load-blocked",
+            },
+          )
+        ) {
+          return;
+        }
+
+        toast.error(
+          error?.message ||
+            "Failed to load product photos",
+        );
+      } finally {
+        setLoading(false);
       }
 
-      toast.error(
-        error?.message ||
-          "Failed to load product images",
-      );
-    } finally {
-      setLoading(false);
-    }
-
-    await loadStudio();
-  }, [id, loadImages, loadStudio]);
+      await loadStudio();
+    },
+    [
+      id,
+      loadImages,
+      loadStudio,
+    ],
+  );
 
   useEffect(() => {
     load();
   }, [load]);
 
+  useEffect(() => {
+    function closeMenu(event) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(
+          event.target,
+        )
+      ) {
+        setActionsOpen(false);
+      }
+    }
+
+    document.addEventListener(
+      "mousedown",
+      closeMenu,
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        closeMenu,
+      );
+    };
+  }, []);
+
+  function requestConfirmation(options) {
+    return new Promise((resolve) => {
+      confirmationResolverRef.current =
+        resolve;
+
+      setConfirmation(options);
+    });
+  }
+
+  function finishConfirmation(result) {
+    const resolve =
+      confirmationResolverRef.current;
+
+    confirmationResolverRef.current =
+      null;
+
+    setConfirmation(null);
+    resolve?.(result);
+  }
+
   async function reloadImageWorkspace() {
-    const [nextImages, nextStudio] = await Promise.all([
+    const [
+      nextImages,
+      nextStudio,
+    ] = await Promise.all([
       loadImages(),
       loadStudio(),
     ]);
@@ -622,12 +645,13 @@ export default function ProductImages() {
         ...nextImages,
       ];
 
-      const nextPreview =
+      setPreviewImage(
         combined.find(
-          (image) => image.id === previewImage.id,
-        ) || null;
-
-      setPreviewImage(nextPreview);
+          (image) =>
+            image.id ===
+            previewImage.id,
+        ) || null,
+      );
     }
 
     return {
@@ -637,13 +661,21 @@ export default function ProductImages() {
   }
 
   async function uploadFiles(files) {
-    const imageFiles = Array.from(files || []);
+    const imageFiles = Array.from(
+      files || [],
+    );
 
-    if (!imageFiles.length || uploading) return;
+    if (
+      !imageFiles.length ||
+      uploading
+    ) {
+      return;
+    }
 
-    const invalid = imageFiles
-      .map(validateImageFile)
-      .find(Boolean);
+    const invalid =
+      imageFiles
+        .map(validateImageFile)
+        .find(Boolean);
 
     if (invalid) {
       toast.error(invalid);
@@ -653,34 +685,69 @@ export default function ProductImages() {
     setUploading(true);
 
     try {
-      for (const [index, file] of imageFiles.entries()) {
-        await uploadProductImage(id, file, {
-          altText: product?.name || file.name,
-          sortOrder: images.length + index,
-          isPrimary:
-            images.length === 0 && index === 0,
-        });
+      for (
+        const [index, file]
+        of imageFiles.entries()
+      ) {
+        await uploadProductImage(
+          id,
+          file,
+          {
+            altText:
+              product?.name ||
+              file.name,
+            sortOrder:
+              images.length +
+              index,
+            isPrimary:
+              images.length === 0 &&
+              index === 0,
+          },
+        );
       }
 
-      await reloadImageWorkspace();
+      const workspace =
+        await reloadImageWorkspace();
+
+      const nextOriginals =
+        (
+          workspace.studio?.images ||
+          workspace.images ||
+          []
+        ).filter(
+          (image) =>
+            !isPreparedImage(image),
+        );
+
+      if (nextOriginals.length) {
+        setSelectedOriginalId(
+          nextOriginals[
+            nextOriginals.length - 1
+          ].id,
+        );
+      }
 
       toast.success(
         imageFiles.length === 1
-          ? "Image uploaded"
-          : "Images uploaded",
+          ? "Photo uploaded"
+          : "Photos uploaded",
       );
     } catch (error) {
       if (
-        handleSubscriptionBlockedError(error, {
-          toastId: "product-images-upload-blocked",
-        })
+        handleSubscriptionBlockedError(
+          error,
+          {
+            toastId:
+              "product-images-upload-blocked",
+          },
+        )
       ) {
         return;
       }
 
       toast.error(
         error?.message ||
-          "Failed to upload product image",
+          "Failed to upload product photo",
       );
     } finally {
       setUploading(false);
@@ -710,13 +777,18 @@ export default function ProductImages() {
     event.preventDefault();
     event.stopPropagation();
 
-    const currentTarget = event.currentTarget;
-    const relatedTarget = event.relatedTarget;
+    const currentTarget =
+      event.currentTarget;
+
+    const relatedTarget =
+      event.relatedTarget;
 
     if (
       !currentTarget ||
       !relatedTarget ||
-      !currentTarget.contains(relatedTarget)
+      !currentTarget.contains(
+        relatedTarget,
+      )
     ) {
       setDragging(false);
     }
@@ -732,30 +804,41 @@ export default function ProductImages() {
 
     uploadFiles(
       Array.from(
-        event.dataTransfer?.files || [],
+        event.dataTransfer?.files ||
+          [],
       ),
     );
   }
 
-  async function handleSetPrimary(image) {
-    if (!image?.id || imageActionBusy) return;
+  async function handleSetPrimary(
+    image,
+  ) {
+    if (
+      !image?.id ||
+      imageActionBusy
+    ) {
+      return;
+    }
 
-    const cleaned = isCleanedImage(image);
+    const prepared =
+      isPreparedImage(image);
 
     if (
-      cleaned &&
+      prepared &&
       !image.isMarketplaceApproved
     ) {
       toast.error(
-        "Approve this cleaned image before using it as the main image",
+        "Approve this photo before using it as the main photo",
       );
       return;
     }
 
-    setImageActionBusy(`main-${image.id}`);
+    setImageActionBusy(
+      `main-${image.id}`,
+    );
 
     try {
-      if (cleaned) {
+      if (prepared) {
         await useProductImageAsMain(
           id,
           image.id,
@@ -768,113 +851,209 @@ export default function ProductImages() {
       }
 
       await reloadImageWorkspace();
-      toast.success("Main product image updated");
+
+      toast.success(
+        "Main product photo updated",
+      );
     } catch (error) {
       if (
-        handleSubscriptionBlockedError(error, {
-          toastId: "product-images-primary-blocked",
-        })
+        handleSubscriptionBlockedError(
+          error,
+          {
+            toastId:
+              "product-images-primary-blocked",
+          },
+        )
       ) {
         return;
       }
 
       toast.error(
         error?.message ||
-          "Failed to update the main image",
+          "Failed to update the main photo",
       );
     } finally {
       setImageActionBusy("");
     }
   }
 
-  async function handleDeleteImage(image) {
-    if (!image?.id || imageActionBusy) return;
+  async function handleDeleteImage(
+    image,
+  ) {
+    if (
+      !image?.id ||
+      imageActionBusy
+    ) {
+      return;
+    }
 
-    const label = isCleanedImage(image)
-      ? "cleaned image"
-      : "original image";
+    const prepared =
+      isPreparedImage(image);
 
-    const confirmed = window.confirm(
-      `Delete this ${label}?`,
-    );
+    const confirmed =
+      await requestConfirmation({
+        title: prepared
+          ? "Delete prepared photo?"
+          : "Delete original photo?",
+        description: prepared
+          ? "This prepared Marketplace version will be removed. This action cannot be undone."
+          : "This original photo and its prepared version will be removed. This action cannot be undone.",
+        confirmLabel: "Delete photo",
+        tone: "danger",
+      });
 
     if (!confirmed) return;
 
-    setImageActionBusy(`delete-${image.id}`);
+    setImageActionBusy(
+      `delete-${image.id}`,
+    );
 
     try {
-      await deleteProductImage(id, image.id);
-      await reloadImageWorkspace();
+      await deleteProductImage(
+        id,
+        image.id,
+      );
+
+      const workspace =
+        await reloadImageWorkspace();
+
       setPreviewImage(null);
-      toast.success("Image deleted");
+      setActionsOpen(false);
+
+      const remainingOriginals =
+        (
+          workspace.studio?.images ||
+          workspace.images ||
+          []
+        ).filter(
+          (item) =>
+            !isPreparedImage(item),
+        );
+
+      if (
+        image.id ===
+        selectedOriginalId
+      ) {
+        setSelectedOriginalId(
+          remainingOriginals[0]?.id ||
+            "",
+        );
+      }
+
+      toast.success("Photo deleted");
     } catch (error) {
       if (
-        handleSubscriptionBlockedError(error, {
-          toastId: "product-images-delete-blocked",
-        })
+        handleSubscriptionBlockedError(
+          error,
+          {
+            toastId:
+              "product-images-delete-blocked",
+          },
+        )
       ) {
         return;
       }
 
       toast.error(
         error?.message ||
-          "Failed to delete image",
+          "Failed to delete photo",
       );
     } finally {
       setImageActionBusy("");
     }
   }
 
-  async function handleCleanImage(image) {
-    if (!image?.id || imageActionBusy) return;
+  async function handlePrepareImage(
+    image,
+  ) {
+    if (
+      !image?.id ||
+      imageActionBusy
+    ) {
+      return;
+    }
 
     const currentResult =
-      cleanedForOriginal(image.id);
+      preparedForOriginal(image.id);
 
     if (currentResult) {
-      const confirmed = window.confirm(
-        currentResult.isMarketplaceApproved ||
-          currentResult.isPrimary
-          ? "Clean this photo again? The current approved or main result will be replaced and the new result will need review and approval."
-          : "Clean this photo again? The current cleaned result will be safely replaced.",
-      );
+      const confirmed =
+        await requestConfirmation({
+          title: "Prepare this photo again?",
+          description:
+            currentResult.isMarketplaceApproved ||
+            currentResult.isPrimary
+              ? "The approved or main Marketplace version will be replaced. The new version will need to be reviewed and approved again."
+              : "The current private preview will be replaced with a newly prepared version.",
+          confirmLabel: "Prepare again",
+        });
 
       if (!confirmed) return;
     }
 
-    setImageActionBusy(`clean-${image.id}`);
+    setImageActionBusy(
+      `clean-${image.id}`,
+    );
 
     try {
-      await cleanProductImage(id, image.id);
+      await cleanProductImage(
+        id,
+        image.id,
+      );
+
       await reloadImageWorkspace();
 
       toast.success(
         currentResult
-          ? "Cleaned result replaced and ready for review"
-          : "Cleaned image is ready for review",
+          ? "New version ready to review"
+          : "Photo ready to review",
       );
     } catch (error) {
       if (
-        handleSubscriptionBlockedError(error, {
-          toastId: "product-images-clean-blocked",
-        })
+        handleSubscriptionBlockedError(
+          error,
+          {
+            toastId:
+              "product-images-clean-blocked",
+          },
+        )
       ) {
         return;
       }
 
       toast.error(
         error?.message ||
-          "Failed to clean product image",
+          "Failed to prepare photo",
       );
     } finally {
       setImageActionBusy("");
     }
   }
 
-  async function handleApproveImage(image) {
-    if (!image?.id || imageActionBusy) return;
+  async function handleApproveImage(
+    image,
+  ) {
+    if (
+      !image?.id ||
+      imageActionBusy
+    ) {
+      return;
+    }
 
-    setImageActionBusy(`approval-${image.id}`);
+    if (
+      image.id === selectedPrepared?.id &&
+      !preparedPreviewAvailable
+    ) {
+      toast.error(
+        "The prepared photo is unavailable. Prepare the original photo again before approving.",
+      );
+
+      return;
+    }
+
+    setImageActionBusy(
+      `approval-${image.id}`,
+    );
 
     try {
       await approveProductImageForListing(
@@ -883,35 +1062,56 @@ export default function ProductImages() {
       );
 
       await reloadImageWorkspace();
-      toast.success("Image approved for listing");
+
+      toast.success(
+        "Photo approved for Marketplace",
+      );
     } catch (error) {
       if (
-        handleSubscriptionBlockedError(error, {
-          toastId: "product-images-approve-blocked",
-        })
+        handleSubscriptionBlockedError(
+          error,
+          {
+            toastId:
+              "product-images-approve-blocked",
+          },
+        )
       ) {
         return;
       }
 
       toast.error(
         error?.message ||
-          "Failed to approve image",
+          "Failed to approve photo",
       );
     } finally {
       setImageActionBusy("");
     }
   }
 
-  async function handleRemoveApproval(image) {
-    if (!image?.id || imageActionBusy) return;
+  async function handleRemoveApproval(
+    image,
+  ) {
+    if (
+      !image?.id ||
+      imageActionBusy
+    ) {
+      return;
+    }
 
-    const confirmed = window.confirm(
-      "Remove this image from the approved listing photos?",
-    );
+    const confirmed =
+      await requestConfirmation({
+        title: "Remove photo from Marketplace?",
+        description:
+          "Customers will no longer see this photo. The private prepared version will remain available for another review.",
+        confirmLabel: "Remove from Marketplace",
+        tone: "danger",
+      });
 
     if (!confirmed) return;
 
-    setImageActionBusy(`approval-${image.id}`);
+    setImageActionBusy(
+      `approval-${image.id}`,
+    );
 
     try {
       await removeProductImageListingApproval(
@@ -920,13 +1120,19 @@ export default function ProductImages() {
       );
 
       await reloadImageWorkspace();
-      toast.success("Listing approval removed");
+
+      toast.success(
+        "Photo removed from Marketplace",
+      );
     } catch (error) {
       if (
-        handleSubscriptionBlockedError(error, {
-          toastId:
-            "product-images-remove-approval-blocked",
-        })
+        handleSubscriptionBlockedError(
+          error,
+          {
+            toastId:
+              "product-images-remove-approval-blocked",
+          },
+        )
       ) {
         return;
       }
@@ -940,113 +1146,160 @@ export default function ProductImages() {
     }
   }
 
-  const stock = productStock(product);
+  const sourceImages =
+    Array.isArray(studio?.images) &&
+    studio.images.length
+      ? studio.images
+      : images;
 
-  const studioImages = Array.isArray(studio?.images)
-    ? studio.images
-    : [];
+  const originalImages =
+    useMemo(
+      () =>
+        sourceImages.filter(
+          (image) =>
+            !isPreparedImage(image),
+        ),
+      [sourceImages],
+    );
 
-  const sourceImages = studioImages.length
-    ? studioImages
-    : images;
+  const preparedImages =
+    useMemo(
+      () =>
+        sourceImages.filter(
+          isPreparedImage,
+        ),
+      [sourceImages],
+    );
 
-  const originalImages = sourceImages.filter(
-    (image) => !isCleanedImage(image),
-  );
-
-  const allCleanedImages = sourceImages.filter(
-    isCleanedImage,
-  );
-
-  function cleanedImageTime(image) {
+  function imageTimestamp(image) {
     const value =
       image?.updatedAt ||
       image?.createdAt ||
       "";
 
-    const timestamp = new Date(value).getTime();
+    const timestamp =
+      new Date(value).getTime();
 
     return Number.isFinite(timestamp)
       ? timestamp
       : 0;
   }
 
-  function cleanedForOriginal(originalId) {
+  function preparedForOriginal(
+    originalId,
+  ) {
     return (
-      allCleanedImages
+      preparedImages
         .filter(
           (image) =>
-            cleanString(image.sourceImageId) ===
+            cleanString(
+              image.sourceImageId,
+            ) ===
             cleanString(originalId),
         )
         .sort((left, right) => {
           const versionDifference =
-            Number(right?.studioVersion || 0) -
-            Number(left?.studioVersion || 0);
+            Number(
+              right?.studioVersion ||
+                0,
+            ) -
+            Number(
+              left?.studioVersion ||
+                0,
+            );
 
           if (versionDifference) {
             return versionDifference;
           }
 
           return (
-            cleanedImageTime(right) -
-            cleanedImageTime(left)
+            imageTimestamp(right) -
+            imageTimestamp(left)
           );
         })[0] || null
     );
   }
 
-  const cleanedImages = originalImages
-    .map((original) =>
-      cleanedForOriginal(original.id),
-    )
-    .filter(Boolean);
-
-  const libraryImages = [
-    ...originalImages,
-    ...cleanedImages,
-  ].sort((left, right) => {
-    if (left.isPrimary !== right.isPrimary) {
-      return left.isPrimary ? -1 : 1;
-    }
-
-    const sortDifference =
-      Number(left.sortOrder || 0) -
-      Number(right.sortOrder || 0);
-
-    if (sortDifference) return sortDifference;
-
-    return (
-      cleanedImageTime(left) -
-      cleanedImageTime(right)
-    );
-  });
-
-  const primaryImage =
-    libraryImages.find(
+  const selectedOriginal =
+    originalImages.find(
+      (image) =>
+        image.id ===
+        selectedOriginalId,
+    ) ||
+    originalImages.find(
       (image) => image.isPrimary,
     ) ||
-    libraryImages[0] ||
+    originalImages[0] ||
     null;
 
-  const approvedCount = cleanedImages.filter(
-    (image) => image.isMarketplaceApproved,
-  ).length;
+  const selectedPrepared =
+    selectedOriginal
+      ? preparedForOriginal(
+          selectedOriginal.id,
+        )
+      : null;
+
+  useEffect(() => {
+    if (
+      selectedOriginal &&
+      selectedOriginal.id !==
+        selectedOriginalId
+    ) {
+      setSelectedOriginalId(
+        selectedOriginal.id,
+      );
+    }
+  }, [
+    selectedOriginal,
+    selectedOriginalId,
+  ]);
+
+  const approvedCount =
+    preparedImages.filter(
+      (image) =>
+        image.isMarketplaceApproved,
+    ).length;
+
+  const stock =
+    productStock(product);
+
+  const workspaceBusy =
+    Boolean(imageActionBusy);
+
+  const prepareBusy =
+    selectedOriginal &&
+    imageActionBusy ===
+      `clean-${selectedOriginal.id}`;
+
+  const approvalBusy =
+    selectedPrepared &&
+    imageActionBusy ===
+      `approval-${selectedPrepared.id}`;
+
+  const mainBusy =
+    selectedPrepared &&
+    imageActionBusy ===
+      `main-${selectedPrepared.id}`;
+
+  const deleteBusy =
+    selectedPrepared &&
+    imageActionBusy ===
+      `delete-${selectedPrepared.id}`;
 
   if (loading && !product) {
     return (
       <main className="svx-product-images-page">
         <div className="svx-product-images-shell">
-          <div className="svx-product-images-skeleton is-hero" />
+          <div className="svx-product-images-loading-head" />
 
-          <div className="svx-product-images-skeleton-grid">
+          <div className="svx-product-images-loading-row">
             <span />
             <span />
             <span />
             <span />
           </div>
 
-          <div className="svx-product-images-skeleton is-card" />
+          <div className="svx-product-images-loading-card" />
         </div>
       </main>
     );
@@ -1055,295 +1308,228 @@ export default function ProductImages() {
   return (
     <main className="svx-product-images-page">
       <div className="svx-product-images-shell">
-        <header className="svx-product-images-hero">
+        <header className="svx-product-images-header">
           <div>
             <button
               type="button"
               className="svx-product-images-back"
               onClick={() =>
-                navigate(`/app/inventory/${id}`)
+                navigate(
+                  `/app/inventory/${id}`,
+                )
               }
             >
-              <ArrowLeft size={18} strokeWidth={2.4} />
+              <ArrowLeft
+                size={17}
+                strokeWidth={2.3}
+              />
               <span>Product details</span>
             </button>
 
-            <p className="svx-product-images-kicker">
-              Product images
-            </p>
+            <h1>Product photos</h1>
 
-            <h1>Prepare product photos.</h1>
-
-            <p className="svx-product-images-hero-text">
-              Upload original photos, create cleaned copies,
-              review the results, and approve only the images
-              you want customers to see.
+            <p>
+              Prepare clear photos for your
+              Marketplace listing.
             </p>
           </div>
 
-          <div className="svx-product-images-hero-card">
-            <StatusBadge
-              tone={approvedCount ? "success" : "warning"}
-            >
-              {approvedCount
-                ? `${approvedCount} approved`
-                : "No approved images"}
-            </StatusBadge>
+          <LoadingButton
+            icon={UploadCloud}
+            tone="primary"
+            loading={uploading}
+            onClick={() =>
+              fileInputRef.current?.click()
+            }
+          >
+            Upload photos
+          </LoadingButton>
 
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            multiple
+            hidden
+            onChange={handleUploadFiles}
+          />
+        </header>
+
+        <section className="svx-product-images-product">
+          <div className="svx-product-images-product-copy">
             <strong>
               {product?.name || "Product"}
             </strong>
-
-            <span>{categoryLabel(product)}</span>
+            <span>
+              {productDescription(product)}
+            </span>
           </div>
-        </header>
 
-        <section className="svx-product-images-summary">
-          <InfoRow
-            label="Selling price"
-            value={formatRwf(productPrice(product))}
-            tone="blue"
-          />
+          <dl className="svx-product-images-product-facts">
+            <div>
+              <dt>Price</dt>
+              <dd>
+                {formatRwf(
+                  productPrice(product),
+                )}
+              </dd>
+            </div>
 
-          <InfoRow
-            label="Available stock"
-            value={formatNumber(stock)}
-            tone={stock > 0 ? "success" : "danger"}
-          />
+            <div>
+              <dt>Stock</dt>
+              <dd>
+                {formatNumber(stock)}
+              </dd>
+            </div>
 
-          <InfoRow
-            label="Original photos"
-            value={formatNumber(originalImages.length)}
-            tone={
-              originalImages.length
-                ? "success"
-                : "warning"
-            }
-          />
+            <div>
+              <dt>Photos</dt>
+              <dd>
+                {formatNumber(
+                  originalImages.length,
+                )}
+              </dd>
+            </div>
 
-          <InfoRow
-            label="Approved for listing"
-            value={formatNumber(approvedCount)}
-            tone={
-              approvedCount
-                ? "success"
-                : "warning"
-            }
-          />
+            <div>
+              <dt>Approved</dt>
+              <dd>
+                {formatNumber(
+                  approvedCount,
+                )}
+              </dd>
+            </div>
+          </dl>
         </section>
 
-        <section className="svx-product-images-card">
-          <div className="svx-product-images-card-head">
+        <section className="svx-product-images-library">
+          <div className="svx-product-images-section-head">
             <div>
-              <h2>Product image library</h2>
+              <h2>Your photos</h2>
               <p>
-                Upload original product photos. You can still
-                preview, delete, or choose the main image here.
+                Select one photo to prepare or
+                manage.
               </p>
             </div>
 
-            <button
-              type="button"
-              className="svx-product-images-soft-button"
-              onClick={() =>
-                fileInputRef.current?.click()
-              }
-              disabled={uploading}
-            >
-              {uploading ? (
-                <Loader2
-                  size={16}
-                  className="svx-product-images-spin"
-                />
-              ) : (
-                <UploadCloud
-                  size={16}
-                  strokeWidth={2.35}
-                />
-              )}
-
-              <span>
-                {uploading
-                  ? "Uploading..."
-                  : "Upload images"}
+            {originalImages.length ? (
+              <span className="svx-product-images-library-count">
+                {originalImages.length}{" "}
+                {originalImages.length === 1
+                  ? "photo"
+                  : "photos"}
               </span>
-            </button>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              hidden
-              onChange={handleUploadFiles}
-            />
+            ) : null}
           </div>
 
-          {libraryImages.length ? (
-            <>
+          {originalImages.length ? (
+            <div
+              className={cx(
+                "svx-product-images-thumbnail-strip",
+                dragging && "is-dragging",
+              )}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              {originalImages.map(
+                (original) => {
+                  const prepared =
+                    preparedForOriginal(
+                      original.id,
+                    );
+
+                  const active =
+                    selectedOriginal?.id ===
+                    original.id;
+
+                  return (
+                    <button
+                      key={original.id}
+                      type="button"
+                      className={cx(
+                        "svx-product-images-thumbnail",
+                        active && "is-active",
+                      )}
+                      onClick={() =>
+                        setSelectedOriginalId(
+                          original.id,
+                        )
+                      }
+                    >
+                      <span className="svx-product-images-thumbnail-media">
+                        <ProductPhoto
+                          image={original}
+                          compact
+                          alt={
+                            original.altText ||
+                            product?.name ||
+                            "Product photo"
+                          }
+                        />
+                      </span>
+
+                      <span className="svx-product-images-thumbnail-copy">
+                        <strong>
+                          {original.isPrimary
+                            ? "Main original"
+                            : "Original photo"}
+                        </strong>
+
+                        <PhotoStatus
+                          image={prepared}
+                          compact
+                        />
+                      </span>
+
+                      {active ? (
+                        <span
+                          className="svx-product-images-thumbnail-check"
+                          aria-hidden="true"
+                        >
+                          <Check
+                            size={13}
+                            strokeWidth={3}
+                          />
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                },
+              )}
+
               <button
                 type="button"
-                className={cx(
-                  "svx-product-images-drop-strip",
-                  dragging && "is-dragging",
-                )}
+                className="svx-product-images-thumbnail-add"
                 onClick={() =>
                   fileInputRef.current?.click()
                 }
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
                 disabled={uploading}
               >
-                <UploadCloud
-                  size={17}
-                  strokeWidth={2.35}
-                />
+                {uploading ? (
+                  <Loader2
+                    size={20}
+                    className="svx-product-images-spin"
+                  />
+                ) : (
+                  <ImagePlus
+                    size={21}
+                    strokeWidth={2}
+                  />
+                )}
 
                 <span>
                   {uploading
-                    ? "Uploading..."
-                    : dragging
-                      ? "Drop to upload images"
-                      : "Drag more images here or click to add more"}
+                    ? "Uploading"
+                    : "Add photos"}
                 </span>
               </button>
-
-              <div className="svx-product-images-grid">
-                {libraryImages.map((image) => {
-                  const cleaned =
-                    isCleanedImage(image);
-
-                  return (
-                    <article
-                      key={image.id}
-                      className={cx(
-                        "svx-product-images-image-card",
-                        image.isPrimary &&
-                          "is-primary",
-                        cleaned &&
-                          "is-cleaned",
-                      )}
-                    >
-                      <button
-                        type="button"
-                        className="svx-product-images-image-preview"
-                        onClick={() =>
-                          setPreviewImage(image)
-                        }
-                      >
-                        <img
-                          src={imageUrl(image)}
-                          alt={
-                            image.altText ||
-                            product?.name ||
-                            "Product image"
-                          }
-                        />
-
-                        <span>
-                          <Eye
-                            size={15}
-                            strokeWidth={2.3}
-                          />
-                          View full image
-                        </span>
-                      </button>
-
-                      <footer>
-                        <div className="svx-product-images-library-badges">
-                          <StatusBadge
-                            tone={
-                              cleaned
-                                ? "blue"
-                                : "neutral"
-                            }
-                          >
-                            {cleaned
-                              ? "Cleaned"
-                              : "Original"}
-                          </StatusBadge>
-
-                          {image.isMarketplaceApproved ? (
-                            <StatusBadge tone="success">
-                              Approved
-                            </StatusBadge>
-                          ) : null}
-
-                          {image.isPrimary ? (
-                            <StatusBadge tone="success">
-                              Main
-                            </StatusBadge>
-                          ) : null}
-                        </div>
-
-                        <div className="svx-product-images-card-actions">
-                          <button
-                            type="button"
-                            className="svx-product-images-card-action"
-                            onClick={() =>
-                              setPreviewImage(image)
-                            }
-                          >
-                            <Eye
-                              size={14}
-                              strokeWidth={2.35}
-                            />
-                            <span>View</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            className="svx-product-images-card-action"
-                            onClick={() =>
-                              handleSetPrimary(image)
-                            }
-                            disabled={
-                              Boolean(imageActionBusy) ||
-                              image.isPrimary ||
-                              (cleaned &&
-                                !image.isMarketplaceApproved)
-                            }
-                          >
-                            <Star
-                              size={14}
-                              strokeWidth={2.35}
-                            />
-                            <span>
-                              {image.isPrimary
-                                ? "Main"
-                                : "Use as main"}
-                            </span>
-                          </button>
-
-                          <button
-                            type="button"
-                            className="svx-product-images-card-action is-danger"
-                            onClick={() =>
-                              handleDeleteImage(image)
-                            }
-                            disabled={Boolean(
-                              imageActionBusy,
-                            )}
-                          >
-                            <Trash2
-                              size={14}
-                              strokeWidth={2.35}
-                            />
-                            <span>Delete</span>
-                          </button>
-                        </div>
-                      </footer>
-                    </article>
-                  );
-                })}
-              </div>
-            </>
+            </div>
           ) : (
             <button
               type="button"
               className={cx(
-                "svx-product-images-upload-zone",
+                "svx-product-images-empty-upload",
                 dragging && "is-dragging",
               )}
               onClick={() =>
@@ -1354,139 +1540,496 @@ export default function ProductImages() {
               onDrop={handleDrop}
               disabled={uploading}
             >
-              <span aria-hidden="true">
-                <ImagePlus
-                  size={28}
-                  strokeWidth={2.25}
-                />
+              <span>
+                {uploading ? (
+                  <Loader2
+                    size={25}
+                    className="svx-product-images-spin"
+                  />
+                ) : (
+                  <ImagePlus
+                    size={26}
+                    strokeWidth={2}
+                  />
+                )}
               </span>
 
               <strong>
                 {uploading
-                  ? "Uploading images..."
+                  ? "Uploading photos"
                   : dragging
-                    ? "Drop images here"
-                    : "Drag images here or click to add images"}
+                    ? "Drop photos here"
+                    : "Add your first product photo"}
               </strong>
 
               <small>
-                JPG, PNG, or WEBP. Maximum 10MB per image.
+                JPG, PNG, or WEBP. Up to
+                10MB each.
               </small>
             </button>
           )}
         </section>
 
-        <section className="svx-product-images-card svx-product-images-studio">
-          <div className="svx-product-images-card-head">
+        <section className="svx-product-images-workspace">
+          <div className="svx-product-images-section-head">
             <div>
-              <p className="svx-product-images-section-label">
-                Prepare for listing
-              </p>
-
-              <h2>Clean and approve images</h2>
-
+              <h2>Selected photo</h2>
               <p>
-                Each original keeps one current cleaned result.
-                Cleaning again safely replaces it and starts a
-                new review.
+                Manage the original photo and its Marketplace
+                version in one place.
               </p>
             </div>
 
-            <div className="svx-product-images-studio-counts">
-              <StatusBadge
-                tone={approvedCount ? "success" : "warning"}
-              >
-                {approvedCount} approved
-              </StatusBadge>
-
-              <StatusBadge tone="neutral">
-                {cleanedImages.length} cleaned
-              </StatusBadge>
-            </div>
+            <PhotoStatus
+              image={selectedPrepared}
+            />
+          </div>
+          <div className="svx-product-images-process-note">
+            <strong>How this works</strong>
+            <p>
+              Select an original photo, prepare a private
+              Marketplace preview, then approve it when it
+              looks right.
+            </p>
           </div>
 
           {studioLoading ? (
-            <div className="svx-product-images-studio-loading">
+            <div className="svx-product-images-workspace-message">
               <Loader2
                 size={20}
                 className="svx-product-images-spin"
               />
-              <span>Loading image preparation...</span>
+              <span>
+                Loading photo workspace
+              </span>
             </div>
           ) : studioError ? (
-            <div className="svx-product-images-studio-error">
+            <div className="svx-product-images-workspace-message is-error">
               <strong>
-                Image preparation is unavailable
+                Photo preparation is unavailable
               </strong>
-              <p>{studioError}</p>
+              <span>{studioError}</span>
 
-              <button
-                type="button"
-                className="svx-product-images-soft-button"
+              <LoadingButton
+                icon={RefreshCw}
                 onClick={loadStudio}
               >
                 Try again
-              </button>
+              </LoadingButton>
             </div>
-          ) : originalImages.length ? (
-            <div className="svx-product-images-studio-list">
-              {originalImages.map((original) => (
-                <OriginalStudioGroup
-                  key={original.id}
-                  original={original}
-                  cleanedImage={cleanedForOriginal(
-                    original.id,
-                  )}
-                  productName={
-                    product?.name || "Product"
-                  }
-                  actionBusy={imageActionBusy}
-                  onPreview={setPreviewImage}
-                  onClean={handleCleanImage}
-                  onApprove={handleApproveImage}
-                  onRemoveApproval={
-                    handleRemoveApproval
-                  }
-                  onUseAsMain={handleSetPrimary}
-                  onDelete={handleDeleteImage}
-                />
-              ))}
+          ) : !selectedOriginal ? (
+            <div className="svx-product-images-workspace-message">
+              <ImagePlus
+                size={23}
+                strokeWidth={2}
+              />
+              <strong>
+                Upload a photo to begin
+              </strong>
+              <span>
+                Your original photo stays
+                unchanged.
+              </span>
             </div>
           ) : (
-            <div className="svx-product-images-studio-empty is-large">
-              <ImagePlus size={22} strokeWidth={2.2} />
+            <>
+              <div
+                className={cx(
+                  "svx-product-images-comparison",
+                  !selectedPrepared &&
+                    "has-no-result",
+                )}
+              >
+                <article className="svx-product-images-preview-panel">
+                  <header>
+                    <div>
+                      <span>Original</span>
+                      <strong>
+                        Uploaded photo
+                      </strong>
+                    </div>
 
-              <div>
-                <strong>
-                  Upload an original photo first
-                </strong>
-                <p>
-                  Once an original image is added, you can
-                  create and review a cleaned version here.
-                </p>
+                    <button
+                      type="button"
+                      className="svx-product-images-preview-link"
+                      onClick={() =>
+                        setPreviewImage(
+                          selectedOriginal,
+                        )
+                      }
+                    >
+                      <Eye
+                        size={15}
+                        strokeWidth={2.2}
+                      />
+                      View
+                    </button>
+                  </header>
+
+                  <button
+                    type="button"
+                    className="svx-product-images-large-photo"
+                    onClick={() =>
+                      setPreviewImage(
+                        selectedOriginal,
+                      )
+                    }
+                  >
+                    <ProductPhoto
+                      image={selectedOriginal}
+                      alt={
+                        selectedOriginal.altText ||
+                        product?.name ||
+                        "Original product photo"
+                      }
+                    />
+                  </button>
+                </article>
+
+                <article className="svx-product-images-preview-panel is-result">
+                  <header>
+                    <div>
+                      <span>
+                        Marketplace preview
+                      </span>
+                      <strong>
+                        {selectedPrepared
+                          ? selectedPrepared.isMarketplaceApproved
+                            ? "Visible to customers"
+                            : "Ready for review"
+                          : "Not prepared yet"}
+                      </strong>
+                    </div>
+
+                    {selectedPrepared ? (
+                      <button
+                        type="button"
+                        className="svx-product-images-preview-link"
+                        onClick={() =>
+                          setPreviewImage(
+                            selectedPrepared,
+                          )
+                        }
+                      >
+                        <Eye
+                          size={15}
+                          strokeWidth={2.2}
+                        />
+                        View
+                      </button>
+                    ) : null}
+                  </header>
+
+                  {selectedPrepared ? (
+                    <button
+                      type="button"
+                      className="svx-product-images-large-photo"
+                      onClick={() =>
+                        setPreviewImage(
+                          selectedPrepared,
+                        )
+                      }
+                    >
+                      <ProductPhoto
+                        image={selectedPrepared}
+                        alt={
+                          selectedPrepared.altText ||
+                          product?.name ||
+                          "Marketplace product photo"
+                        }
+                        onAvailabilityChange={
+                          setPreparedPreviewAvailable
+                        }
+                      />
+                    </button>
+                  ) : (
+                    <div className="svx-product-images-result-empty">
+                      <ImagePlus
+                        size={27}
+                        strokeWidth={1.8}
+                      />
+                      <strong>
+                        Prepare this photo
+                      </strong>
+                      <span>
+                        Storvex will resize,
+                        compress, and create the
+                        Marketplace preview.
+                      </span>
+                    </div>
+                  )}
+                </article>
               </div>
-            </div>
+
+              <div className="svx-product-images-workspace-footer">
+                <div className="svx-product-images-workspace-copy">
+                  <strong>
+                    {!selectedPrepared
+                      ? "Ready to prepare"
+                      : selectedPrepared.isMarketplaceApproved
+                        ? "Approved for Marketplace"
+                        : "Review before approving"}
+                  </strong>
+
+                  <span>
+                    {!selectedPrepared
+                      ? "Your original photo will remain unchanged."
+                      : selectedPrepared.isMarketplaceApproved
+                        ? "Customers can now see this photo on the product listing."
+                        : "Check the preview and approve it when it looks right."}
+                  </span>
+                </div>
+
+                <div className="svx-product-images-workspace-actions">
+                  {!selectedPrepared ? (
+                    <LoadingButton
+                      icon={RefreshCw}
+                      tone="primary"
+                      loading={prepareBusy}
+                      disabled={workspaceBusy}
+                      onClick={() =>
+                        handlePrepareImage(
+                          selectedOriginal,
+                        )
+                      }
+                    >
+                      Prepare photo
+                    </LoadingButton>
+                  ) : selectedPrepared.isMarketplaceApproved ? (
+                    <>
+                      <LoadingButton
+                        icon={RefreshCw}
+                        loading={prepareBusy}
+                        disabled={workspaceBusy}
+                        onClick={() =>
+                          handlePrepareImage(
+                            selectedOriginal,
+                          )
+                        }
+                      >
+                        Prepare again
+                      </LoadingButton>
+
+                      {!selectedPrepared.isPrimary ? (
+                        <LoadingButton
+                          icon={Star}
+                          tone="primary"
+                          loading={mainBusy}
+                          disabled={workspaceBusy}
+                          onClick={() =>
+                            handleSetPrimary(
+                              selectedPrepared,
+                            )
+                          }
+                        >
+                          Use as main photo
+                        </LoadingButton>
+                      ) : (
+                        <span className="svx-product-images-main-confirmation">
+                          <Star
+                            size={15}
+                            strokeWidth={2.3}
+                          />
+                          Main product photo
+                        </span>
+                      )}
+
+                      <LoadingButton
+                        icon={X}
+                        loading={approvalBusy}
+                        disabled={workspaceBusy}
+                        onClick={() =>
+                          handleRemoveApproval(
+                            selectedPrepared,
+                          )
+                        }
+                      >
+                        Remove from Marketplace
+                      </LoadingButton>
+                    </>
+                  ) : (
+                    <>
+                      <LoadingButton
+                        icon={RefreshCw}
+                        loading={prepareBusy}
+                        disabled={workspaceBusy}
+                        onClick={() =>
+                          handlePrepareImage(
+                            selectedOriginal,
+                          )
+                        }
+                      >
+                        Prepare again
+                      </LoadingButton>
+
+                      <LoadingButton
+                        icon={Check}
+                        tone="primary"
+                        loading={approvalBusy}
+                        disabled={
+                          workspaceBusy ||
+                          !preparedPreviewAvailable
+                        }
+                        onClick={() =>
+                          handleApproveImage(
+                            selectedPrepared,
+                          )
+                        }
+                      >
+                        {preparedPreviewAvailable
+                          ? "Approve for Marketplace"
+                          : "Photo unavailable"}
+                      </LoadingButton>
+                    </>
+                  )}
+
+                  <div
+                    className="svx-product-images-more"
+                    ref={menuRef}
+                  >
+                    <button
+                      type="button"
+                      className="svx-product-images-more-button"
+                      onClick={() =>
+                        setActionsOpen(
+                          (current) =>
+                            !current,
+                        )
+                      }
+                      aria-expanded={
+                        actionsOpen
+                      }
+                      aria-label="More photo actions"
+                    >
+                      <MoreHorizontal
+                        size={19}
+                        strokeWidth={2.2}
+                      />
+                      <ChevronDown
+                        size={13}
+                        strokeWidth={2.5}
+                      />
+                    </button>
+
+                    {actionsOpen ? (
+                      <div className="svx-product-images-more-menu">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActionsOpen(false);
+                            handlePrepareImage(
+                              selectedOriginal,
+                            );
+                          }}
+                          disabled={workspaceBusy}
+                        >
+                          <RefreshCw
+                            size={15}
+                            strokeWidth={2.2}
+                          />
+                          <span>
+                            {selectedPrepared
+                              ? "Prepare again"
+                              : "Prepare photo"}
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActionsOpen(false);
+                            setPreviewImage(
+                              selectedOriginal,
+                            );
+                          }}
+                        >
+                          <Eye
+                            size={15}
+                            strokeWidth={2.2}
+                          />
+                          <span>
+                            View original
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="is-danger"
+                          onClick={() => {
+                            setActionsOpen(false);
+                            handleDeleteImage(
+                              selectedPrepared ||
+                                selectedOriginal,
+                            );
+                          }}
+                          disabled={
+                            workspaceBusy ||
+                            deleteBusy
+                          }
+                        >
+                          <Trash2
+                            size={15}
+                            strokeWidth={2.2}
+                          />
+                          <span>
+                            Delete{" "}
+                            {selectedPrepared
+                              ? "prepared photo"
+                              : "original photo"}
+                          </span>
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </section>
 
-        <Link
-          to={`/app/inventory/${id}`}
-          className="svx-product-images-bottom-link"
-        >
-          <PackageCheck size={16} strokeWidth={2.35} />
-          Back to product details
-        </Link>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(confirmation)}
+        title={confirmation?.title || ""}
+        description={
+          confirmation?.description || ""
+        }
+        confirmLabel={
+          confirmation?.confirmLabel ||
+          "Continue"
+        }
+        cancelLabel={
+          confirmation?.cancelLabel ||
+          "Cancel"
+        }
+        tone={
+          confirmation?.tone ||
+          "default"
+        }
+        loading={false}
+        onConfirm={() =>
+          finishConfirmation(true)
+        }
+        onCancel={() =>
+          finishConfirmation(false)
+        }
+      />
 
       <FullImageViewer
         image={previewImage}
         productName={
-          product?.name || "Product image"
+          product?.name ||
+          "Product photo"
         }
-        onClose={() => setPreviewImage(null)}
-        onSetPrimary={handleSetPrimary}
+        onClose={() =>
+          setPreviewImage(null)
+        }
+        onSetPrimary={
+          handleSetPrimary
+        }
         onDelete={handleDeleteImage}
-        busy={Boolean(imageActionBusy)}
+        busy={workspaceBusy}
       />
     </main>
   );

@@ -1,8 +1,10 @@
 const crypto = require("crypto");
+const sharp = require("sharp");
 
 const prisma = require("../../config/database");
 const {
   STORAGE_VISIBILITY,
+  buildPrivateObjectLocation,
   deleteObject,
   downloadObject,
   isConfigured: isObjectStorageConfigured,
@@ -13,10 +15,7 @@ const {
   serializeOwnerProductImages,
 } = require("./inventory.productImageAccess.service");
 const {
-  removeProductBackground,
-} = require("./inventory.productBackgroundRemoval.service");
-const {
-  standardizeRemovedBackground,
+  standardizeSourceImage,
 } = require("./inventory.productImageStandard.service");
 
 const MAX_MARKETPLACE_IMAGES = 8;
@@ -49,10 +48,33 @@ function imageStudioEnabled() {
 }
 
 function imageStudioProvider() {
-  return (
-    cleanString(process.env.IMAGE_STUDIO_PROVIDER)?.toLowerCase() ||
-    "standard"
-  );
+  const configured =
+    cleanString(
+      process.env.IMAGE_STUDIO_PROVIDER,
+    )
+      ?.replace(/^["']|["']$/g, "")
+      .trim()
+      .toLowerCase() ||
+    "standard";
+
+  /*
+   * These names all refer to Storvex's free local
+   * Sharp preparation workflow. Keeping the aliases
+   * prevents harmless environment naming differences
+   * from disabling product-photo preparation.
+   */
+  if (
+    [
+      "standard",
+      "sharp",
+      "local",
+      "free",
+    ].includes(configured)
+  ) {
+    return "standard";
+  }
+
+  return configured;
 }
 
 function requireImageStudioEnabled() {
@@ -83,6 +105,23 @@ function requireObjectStorage() {
     );
   }
 
+  if (
+    !isObjectStorageConfigured(
+      STORAGE_VISIBILITY.PUBLIC,
+    )
+  ) {
+    throw createServiceError(
+      "Public product image storage is not configured",
+      {
+        status: 503,
+        code:
+          "PUBLIC_OBJECT_STORAGE_NOT_CONFIGURED",
+      },
+    );
+  }
+}
+
+function requirePublicObjectStorage() {
   if (
     !isObjectStorageConfigured(
       STORAGE_VISIBILITY.PUBLIC,
@@ -266,19 +305,191 @@ async function processWithProvider(source) {
     );
   }
 
-  const removedBackground =
-    await removeProductBackground(source.body);
-
   const standardized =
-    await standardizeRemovedBackground(
-      removedBackground.body,
+    await standardizeSourceImage(
+      source.body,
     );
 
   return {
     master: standardized.master,
     thumbnail: standardized.thumbnail,
-    provider: removedBackground.provider,
+    provider: "sharp",
   };
+}
+
+async function createMarketplaceBrandedImage({
+  imageBody,
+  logoBody,
+}) {
+  const source = Buffer.isBuffer(imageBody)
+    ? imageBody
+    : Buffer.from(imageBody || []);
+
+  const logo = Buffer.isBuffer(logoBody)
+    ? logoBody
+    : Buffer.from(logoBody || []);
+
+  if (!source.length) {
+    throw createServiceError(
+      "The prepared Marketplace photo is empty",
+      {
+        status: 422,
+        code:
+          "MARKETPLACE_IMAGE_EMPTY",
+      },
+    );
+  }
+
+  if (!logo.length) {
+    return source;
+  }
+
+  const sourceMetadata =
+    await sharp(source).metadata();
+
+  const width =
+    Number(sourceMetadata.width || 0);
+
+  const height =
+    Number(sourceMetadata.height || 0);
+
+  if (!width || !height) {
+    throw createServiceError(
+      "The prepared Marketplace photo dimensions could not be read",
+      {
+        status: 422,
+        code:
+          "MARKETPLACE_IMAGE_DIMENSIONS_INVALID",
+      },
+    );
+  }
+
+  const maximumLogoWidth =
+    Math.max(
+      1,
+      Math.round(width * 0.14),
+    );
+
+  const maximumLogoHeight =
+    Math.max(
+      1,
+      Math.round(height * 0.10),
+    );
+
+  const edgeSpacing =
+    Math.max(
+      1,
+      Math.round(
+        Math.min(width, height) * 0.04,
+      ),
+    );
+
+  const preparedLogo =
+    await sharp(logo, {
+      failOn: "error",
+    })
+      .ensureAlpha()
+      .resize({
+        width: maximumLogoWidth,
+        height: maximumLogoHeight,
+        fit: "inside",
+        position: "centre",
+        withoutEnlargement: false,
+      })
+      .png()
+      .toBuffer();
+
+  const logoMetadata =
+    await sharp(
+      preparedLogo,
+    ).metadata();
+
+  const logoWidth =
+    Number(logoMetadata.width || 0);
+
+  const logoHeight =
+    Number(logoMetadata.height || 0);
+
+  if (!logoWidth || !logoHeight) {
+    throw createServiceError(
+      "The business logo could not be prepared",
+      {
+        status: 422,
+        code:
+          "MARKETPLACE_LOGO_INVALID",
+      },
+    );
+  }
+
+  return sharp(source)
+    .composite([
+      {
+        input: preparedLogo,
+        left: Math.max(
+          0,
+          width -
+            logoWidth -
+            edgeSpacing,
+        ),
+        top: Math.max(
+          0,
+          height -
+            logoHeight -
+            edgeSpacing,
+        ),
+      },
+    ])
+    .webp({
+      lossless: true,
+      alphaQuality: 100,
+      effort: 5,
+    })
+    .toBuffer();
+}
+
+async function loadMarketplaceBusinessLogo(
+  tenantId,
+) {
+  const tenant =
+    await prisma.tenant.findUnique({
+      where: {
+        id: tenantId,
+      },
+      select: {
+        logoKey: true,
+      },
+    });
+
+  const logoKey =
+    cleanString(
+      tenant?.logoKey,
+    );
+
+  if (!logoKey) {
+    return null;
+  }
+
+  try {
+    const storedLogo =
+      await downloadObject(
+        logoKey,
+        {
+          visibility:
+            STORAGE_VISIBILITY.PRIVATE,
+        },
+      );
+
+    return storedLogo.body;
+  } catch (error) {
+    throw createServiceError(
+      "The business logo could not be read. Upload the logo again in Business settings.",
+      {
+        status: 409,
+        code:
+          "MARKETPLACE_BUSINESS_LOGO_UNAVAILABLE",
+      },
+    );
+  }
 }
 
 async function ensureProduct({
@@ -328,6 +539,7 @@ async function ensureImage({
       productId: true,
       url: true,
       key: true,
+      reviewKey: true,
       altText: true,
       sortOrder: true,
       isPrimary: true,
@@ -337,6 +549,19 @@ async function ensureImage({
       approvedAt: true,
       approvedById: true,
       studioVersion: true,
+      width: true,
+      height: true,
+      sizeBytes: true,
+      mimeType: true,
+      thumbnailUrl: true,
+      thumbnailKey: true,
+      reviewThumbnailKey: true,
+      thumbnailWidth: true,
+      thumbnailHeight: true,
+      thumbnailSizeBytes: true,
+      backgroundColor: true,
+      processingProvider: true,
+      processedAt: true,
       createdAt: true,
       updatedAt: true,
     },
@@ -420,6 +645,8 @@ async function getImageStudioState({
         mimeType: true,
         thumbnailUrl: true,
         thumbnailKey: true,
+        reviewKey: true,
+        reviewThumbnailKey: true,
         thumbnailWidth: true,
         thumbnailHeight: true,
         thumbnailSizeBytes: true,
@@ -569,6 +796,29 @@ async function cleanProductImage({
       source,
     );
 
+    const businessLogo =
+      await loadMarketplaceBusinessLogo(
+        tenantId,
+      );
+
+    const [
+      brandedMasterBody,
+      brandedThumbnailBody,
+    ] = await Promise.all([
+      createMarketplaceBrandedImage({
+        imageBody:
+          processed.master.body,
+        logoBody:
+          businessLogo,
+      }),
+      createMarketplaceBrandedImage({
+        imageBody:
+          processed.thumbnail.body,
+        logoBody:
+          businessLogo,
+      }),
+    ]);
+
     const objectKeys = buildStudioObjectKeys({
       tenantId,
       productId,
@@ -579,19 +829,21 @@ async function cleanProductImage({
       await Promise.all([
         uploadObject({
           key: objectKeys.masterKey,
-          body: processed.master.body,
+          body:
+            brandedMasterBody,
           contentType:
-            processed.master.mimeType,
+            "image/webp",
           visibility:
-            STORAGE_VISIBILITY.PUBLIC,
+            STORAGE_VISIBILITY.PRIVATE,
         }),
         uploadObject({
           key: objectKeys.thumbnailKey,
-          body: processed.thumbnail.body,
+          body:
+            brandedThumbnailBody,
           contentType:
-            processed.thumbnail.mimeType,
+            "image/webp",
           visibility:
-            STORAGE_VISIBILITY.PUBLIC,
+            STORAGE_VISIBILITY.PRIVATE,
         }),
       ]);
 
@@ -634,9 +886,11 @@ async function cleanProductImage({
         replacedObjectKeys =
           existingCleanedImages
             .flatMap((image) => [
-              cleanString(image.key),
-              cleanString(image.thumbnailKey),
-            ])
+                cleanString(image.reviewKey),
+                cleanString(
+                  image.reviewThumbnailKey,
+                ),
+              ])
             .filter(
               (key) =>
                 key &&
@@ -674,8 +928,13 @@ async function cleanProductImage({
                 id: currentCleanedImage.id,
               },
               data: {
-                url: masterUpload.publicUrl,
-                key: masterUpload.objectKey,
+                url:
+                    buildPrivateObjectLocation(
+                      masterUpload.objectKey,
+                    ),
+                  key: null,
+                  reviewKey:
+                    masterUpload.objectKey,
                 altText:
                   sourceImage.altText ||
                   `${product.name} product image`,
@@ -694,9 +953,12 @@ async function cleanProductImage({
                 mimeType:
                   processed.master.mimeType,
                 thumbnailUrl:
-                  thumbnailUpload.publicUrl,
-                thumbnailKey:
-                  thumbnailUpload.objectKey,
+                    buildPrivateObjectLocation(
+                      thumbnailUpload.objectKey,
+                    ),
+                  thumbnailKey: null,
+                  reviewThumbnailKey:
+                    thumbnailUpload.objectKey,
                 thumbnailWidth:
                   processed.thumbnail.width,
                 thumbnailHeight:
@@ -742,8 +1004,13 @@ async function cleanProductImage({
               data: {
                 tenantId,
                 productId,
-                url: masterUpload.publicUrl,
-                key: masterUpload.objectKey,
+                url:
+                    buildPrivateObjectLocation(
+                      masterUpload.objectKey,
+                    ),
+                  key: null,
+                  reviewKey:
+                    masterUpload.objectKey,
                 altText:
                   sourceImage.altText ||
                   `${product.name} product image`,
@@ -765,9 +1032,12 @@ async function cleanProductImage({
                 mimeType:
                   processed.master.mimeType,
                 thumbnailUrl:
-                  thumbnailUpload.publicUrl,
-                thumbnailKey:
-                  thumbnailUpload.objectKey,
+                    buildPrivateObjectLocation(
+                      thumbnailUpload.objectKey,
+                    ),
+                  thumbnailKey: null,
+                  reviewThumbnailKey:
+                    thumbnailUpload.objectKey,
                 thumbnailWidth:
                   processed.thumbnail.width,
                 thumbnailHeight:
@@ -832,7 +1102,7 @@ async function cleanProductImage({
           oldObjectKey,
           {
             visibility:
-              STORAGE_VISIBILITY.PUBLIC,
+              STORAGE_VISIBILITY.PRIVATE,
           },
         );
       } catch (cleanupError) {
@@ -866,7 +1136,7 @@ async function cleanProductImage({
           uploadedObjectKey,
           {
             visibility:
-              STORAGE_VISIBILITY.PUBLIC,
+              STORAGE_VISIBILITY.PRIVATE,
           },
         );
       } catch (cleanupError) {
@@ -913,6 +1183,8 @@ async function approveProductImage({
   branchId,
 }) {
   requireImageStudioEnabled();
+  requireObjectStorage();
+  requirePublicObjectStorage();
 
   const product = await ensureProduct({
     tenantId,
@@ -927,93 +1199,228 @@ async function approveProductImage({
 
   if (image.imageType !== "CLEANED") {
     throw createServiceError(
-      "Only cleaned images can be approved for the marketplace",
+      "Only prepared photos can be approved for the marketplace",
       {
         status: 409,
-        code: "MARKETPLACE_IMAGE_MUST_BE_CLEANED",
+        code:
+          "MARKETPLACE_IMAGE_MUST_BE_CLEANED",
       },
     );
   }
 
-  if (!image.isMarketplaceApproved) {
-    const approvedCount =
-      await prisma.productImage.count({
-        where: {
-          tenantId,
-          productId,
-          isMarketplaceApproved: true,
-        },
-      });
-
-    if (approvedCount >= MAX_MARKETPLACE_IMAGES) {
-      throw createServiceError(
-        `A product can have at most ${MAX_MARKETPLACE_IMAGES} approved marketplace images`,
-        {
-          status: 409,
-          code: "MARKETPLACE_IMAGE_LIMIT_REACHED",
-        },
-      );
-    }
+  if (image.isMarketplaceApproved) {
+    return serializeOwnerProductImage(
+      image,
+    );
   }
 
-  return prisma.$transaction(async (tx) => {
-    if (image.sourceImageId) {
-      await tx.productImage.updateMany({
-        where: {
-          tenantId,
-          productId,
-          imageType: "CLEANED",
-          sourceImageId: image.sourceImageId,
-          id: {
-            not: image.id,
-          },
-        },
-        data: {
-          isMarketplaceApproved: false,
-          approvedAt: null,
-          approvedById: null,
-        },
-      });
-    }
-
-    const approvedImage =
-      await tx.productImage.update({
-        where: {
-          id: image.id,
-        },
-        data: {
-          isMarketplaceApproved: true,
-          approvedAt: new Date(),
-          approvedById: userId || null,
-        },
-      });
-
-    await tx.productImageStudioRun.updateMany({
+  const approvedCount =
+    await prisma.productImage.count({
       where: {
         tenantId,
         productId,
-        resultImageId: image.id,
-      },
-      data: {
-        status: "READY",
+        isMarketplaceApproved: true,
       },
     });
 
-    await writeProductAudit(tx, {
-      tenantId,
-      productId,
-      productName: product.name,
-      userId,
-      branchId,
-      metadata: {
-        imageStudioImageApproved: true,
-        sourceImageId: image.sourceImageId,
-        resultImageId: image.id,
+  if (
+    approvedCount >=
+    MAX_MARKETPLACE_IMAGES
+  ) {
+    throw createServiceError(
+      `A product can have at most ${MAX_MARKETPLACE_IMAGES} approved marketplace images`,
+      {
+        status: 409,
+        code:
+          "MARKETPLACE_IMAGE_LIMIT_REACHED",
       },
-    });
+    );
+  }
 
-    return approvedImage;
-  });
+  const reviewKey =
+    cleanString(image.reviewKey);
+
+  const reviewThumbnailKey =
+    cleanString(
+      image.reviewThumbnailKey,
+    );
+
+  if (!reviewKey) {
+    throw createServiceError(
+      "This prepared photo is unavailable. Prepare the original photo again.",
+      {
+        status: 409,
+        code:
+          "PRODUCT_IMAGE_REVIEW_FILE_MISSING",
+      },
+    );
+  }
+
+  let privateMaster;
+  let privateThumbnail = null;
+
+  try {
+    [
+      privateMaster,
+      privateThumbnail,
+    ] = await Promise.all([
+      downloadObject(
+        reviewKey,
+        {
+          visibility:
+            STORAGE_VISIBILITY.PRIVATE,
+        },
+      ),
+      reviewThumbnailKey
+        ? downloadObject(
+            reviewThumbnailKey,
+            {
+              visibility:
+                STORAGE_VISIBILITY.PRIVATE,
+            },
+          )
+        : Promise.resolve(null),
+    ]);
+  } catch (error) {
+    throw createServiceError(
+      "This prepared photo is unavailable. Prepare the original photo again.",
+      {
+        status: 409,
+        code:
+          "PRODUCT_IMAGE_REVIEW_FILE_MISSING",
+      },
+    );
+  }
+
+  const uploadedPublicKeys = [];
+
+  try {
+    const publicMaster =
+      await uploadObject({
+        key: reviewKey,
+        body:
+          privateMaster.body,
+        contentType:
+          image.mimeType ||
+          privateMaster.contentType ||
+          "image/webp",
+        visibility:
+          STORAGE_VISIBILITY.PUBLIC,
+      });
+
+    uploadedPublicKeys.push(
+      publicMaster.objectKey,
+    );
+
+    const publicThumbnail =
+      privateThumbnail &&
+      reviewThumbnailKey
+        ? await uploadObject({
+            key: reviewThumbnailKey,
+            body:
+              privateThumbnail.body,
+            contentType:
+              privateThumbnail.contentType ||
+              "image/webp",
+            visibility:
+              STORAGE_VISIBILITY.PUBLIC,
+          })
+        : null;
+
+    if (publicThumbnail?.objectKey) {
+      uploadedPublicKeys.push(
+        publicThumbnail.objectKey,
+      );
+    }
+
+    const approvedImage =
+      await prisma.$transaction(
+        async (tx) => {
+          const updated =
+            await tx.productImage.update({
+              where: {
+                id: image.id,
+              },
+              data: {
+                url:
+                  publicMaster.publicUrl,
+                key:
+                  publicMaster.objectKey,
+                thumbnailUrl:
+                  publicThumbnail?.publicUrl ||
+                  publicMaster.publicUrl,
+                thumbnailKey:
+                  publicThumbnail?.objectKey ||
+                  publicMaster.objectKey,
+                isMarketplaceApproved:
+                  true,
+                approvedAt: new Date(),
+                approvedById:
+                  userId || null,
+              },
+            });
+
+          await tx.productImageStudioRun.updateMany({
+            where: {
+              tenantId,
+              productId,
+              resultImageId:
+                image.id,
+            },
+            data: {
+              status: "READY",
+            },
+          });
+
+          await writeProductAudit(tx, {
+            tenantId,
+            productId,
+            productName:
+              product.name,
+            userId,
+            branchId,
+            metadata: {
+              imageStudioImageApproved:
+                true,
+              sourceImageId:
+                image.sourceImageId,
+              resultImageId:
+                image.id,
+            },
+          });
+
+          return updated;
+        },
+      );
+
+    return serializeOwnerProductImage(
+      approvedImage,
+    );
+  } catch (error) {
+    for (
+      const publicKey
+      of [...new Set(uploadedPublicKeys)]
+    ) {
+      try {
+        await deleteObject(
+          publicKey,
+          {
+            visibility:
+              STORAGE_VISIBILITY.PUBLIC,
+          },
+        );
+      } catch (cleanupError) {
+        console.error(
+          "Approved image cleanup failed:",
+          publicKey,
+          cleanupError?.message ||
+            cleanupError,
+        );
+      }
+    }
+
+    throw error;
+  }
 }
 
 async function removeProductImageApproval({
@@ -1038,53 +1445,179 @@ async function removeProductImageApproval({
 
   if (image.imageType !== "CLEANED") {
     throw createServiceError(
-      "Only cleaned images can have marketplace approval",
+      "Only prepared photos can have marketplace approval",
       {
         status: 409,
-        code: "MARKETPLACE_IMAGE_MUST_BE_CLEANED",
+        code:
+          "MARKETPLACE_IMAGE_MUST_BE_CLEANED",
       },
     );
   }
 
-  return prisma.$transaction(async (tx) => {
-    const updatedImage =
-      await tx.productImage.update({
-        where: {
-          id: image.id,
+  if (!image.isMarketplaceApproved) {
+    return serializeOwnerProductImage(
+      image,
+    );
+  }
+
+  const publicObjectKeys = [
+    cleanString(image.key),
+    cleanString(image.thumbnailKey),
+  ].filter(Boolean);
+
+  const reviewKey =
+    cleanString(image.reviewKey);
+
+  const reviewThumbnailKey =
+    cleanString(
+      image.reviewThumbnailKey,
+    );
+
+  const updatedImage =
+    await prisma.$transaction(
+      async (tx) => {
+        const updated =
+          await tx.productImage.update({
+            where: {
+              id: image.id,
+            },
+            data: {
+              /*
+               * ProductImage.url is required by the current schema.
+               * For a legacy prepared image without a retained private
+               * review file, store a private unavailable location.
+               * The owner serializer returns url: null because reviewKey
+               * remains empty, so this placeholder is never exposed.
+               */
+              url:
+                buildPrivateObjectLocation(
+                  reviewKey ||
+                    `unavailable/product-images/${image.id}/master`,
+                ),
+              key: null,
+              thumbnailUrl:
+                buildPrivateObjectLocation(
+                  reviewThumbnailKey ||
+                    reviewKey ||
+                    `unavailable/product-images/${image.id}/thumbnail`,
+                ),
+              thumbnailKey: null,
+              isPrimary: false,
+              isMarketplaceApproved:
+                false,
+              approvedAt: null,
+              approvedById: null,
+            },
+          });
+
+        if (image.isPrimary) {
+          const sourceImage =
+            image.sourceImageId
+              ? await tx.productImage.findFirst({
+                  where: {
+                    id:
+                      image.sourceImageId,
+                    tenantId,
+                    productId,
+                  },
+                  select: {
+                    id: true,
+                  },
+                })
+              : null;
+
+          const fallbackImage =
+            sourceImage ||
+            await tx.productImage.findFirst({
+              where: {
+                tenantId,
+                productId,
+                id: {
+                  not: image.id,
+                },
+              },
+              orderBy: [
+                {
+                  sortOrder: "asc",
+                },
+                {
+                  createdAt: "asc",
+                },
+              ],
+              select: {
+                id: true,
+              },
+            });
+
+          if (fallbackImage) {
+            await tx.productImage.update({
+              where: {
+                id: fallbackImage.id,
+              },
+              data: {
+                isPrimary: true,
+              },
+            });
+          }
+        }
+
+        await tx.productImageStudioRun.updateMany({
+          where: {
+            tenantId,
+            productId,
+            resultImageId:
+              image.id,
+            status: "READY",
+          },
+          data: {
+            status: "REVIEW",
+          },
+        });
+
+        await writeProductAudit(tx, {
+          tenantId,
+          productId,
+          productName:
+            product.name,
+          userId,
+          branchId,
+          metadata: {
+            imageStudioImageApprovalRemoved:
+              true,
+            resultImageId:
+              image.id,
+          },
+        });
+
+        return updated;
+      },
+    );
+
+  for (
+    const publicObjectKey
+    of [...new Set(publicObjectKeys)]
+  ) {
+    try {
+      await deleteObject(
+        publicObjectKey,
+        {
+          visibility:
+            STORAGE_VISIBILITY.PUBLIC,
         },
-        data: {
-          isMarketplaceApproved: false,
-          approvedAt: null,
-          approvedById: null,
-        },
-      });
+      );
+    } catch (cleanupError) {
+      console.error(
+        "Public approved image cleanup failed:",
+        publicObjectKey,
+        cleanupError?.message ||
+          cleanupError,
+      );
+    }
+  }
 
-    await tx.productImageStudioRun.updateMany({
-      where: {
-        tenantId,
-        productId,
-        resultImageId: image.id,
-        status: "READY",
-      },
-      data: {
-        status: "REVIEW",
-      },
-    });
-
-    await writeProductAudit(tx, {
-      tenantId,
-      productId,
-      productName: product.name,
-      userId,
-      branchId,
-      metadata: {
-        imageStudioImageApprovalRemoved: true,
-        resultImageId: image.id,
-      },
-    });
-
-    return updatedImage;
-  });
+  return serializeOwnerProductImage(
+    updatedImage,
+  );
 }
 
 async function useProductImageAsMain({

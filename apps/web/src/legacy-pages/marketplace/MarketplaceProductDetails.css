@@ -2079,3 +2079,106 @@
       minmax(0, 1fr) !important;
   }
 }
+
+/* STORVEX PRODUCT DETAILS IMAGE STANDARD START */
+
+/*
+ * The prepared Marketplace image already contains its complete visual
+ * background. The product page must not add another visible background.
+ */
+.svx-product-main-image {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  place-items: center;
+  overflow: hidden;
+  background: transparent;
+}
+
+.svx-product-main-image > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+  object-position: center;
+}
+
+.svx-product-main-image
+  > .svx-marketplace-image-logo {
+  position: absolute;
+  inset: auto 4% 4% auto;
+  z-index: 5;
+}
+
+.svx-product-main-image
+  > .svx-marketplace-image-logo
+  > img {
+  position: static;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: right bottom;
+  opacity: 1;
+  transform: none;
+}
+
+/* STORVEX PRODUCT DETAILS IMAGE STANDARD END */
+
+/* STORVEX PRODUCT GALLERY THUMBNAILS START */
+
+/*
+ * Marketplace images are already prepared as square files.
+ * Gallery thumbnails must show that square directly without
+ * adding white space on the left or right.
+ */
+.svx-product-thumbnails {
+  display: grid;
+  grid-template-columns: repeat(4, 76px);
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.svx-product-thumbnails button {
+  position: relative;
+  display: block;
+  width: 76px;
+  height: 76px;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 1px solid var(--landing-border);
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.svx-product-thumbnails button.is-active {
+  border-color: var(--landing-primary);
+}
+
+.svx-product-thumbnails button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  background: transparent;
+}
+
+@media (max-width: 680px) {
+  .svx-product-thumbnails {
+    grid-template-columns: repeat(4, 64px);
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  .svx-product-thumbnails button {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* STORVEX PRODUCT GALLERY THUMBNAILS END */
