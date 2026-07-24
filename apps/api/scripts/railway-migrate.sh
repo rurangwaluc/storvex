@@ -8,6 +8,7 @@ BASELINE_DIR="apps/api/prisma/migrations/0_baseline"
 
 WHATSAPP_MIGRATION="20260214143250_whatsapp_growth_engine"
 SUPPORT_MIGRATION="20260517170000_support_tickets"
+DOCUMENT_SETTINGS_MIGRATION="202605250001_document_header_tax_settings"
 
 if test -d "$BASELINE_DIR"; then
   rm -rf /tmp/storvex-0-baseline
@@ -47,17 +48,31 @@ run_and_capture() {
     "$MIGRATION_OUTPUT"
 }
 
-contains_migration() {
-  local migration_name="$1"
+extract_failed_migration() {
+  local migration_name
 
-  printf '%s\n' \
-    "$MIGRATION_OUTPUT" \
-    | grep -q "$migration_name"
+  migration_name="$(
+    printf '%s\n' "$MIGRATION_OUTPUT" \
+      | sed -n \
+        's/^Migration name: \(.*\)$/\1/p' \
+      | tail -n 1
+  )"
+
+  if test -z "$migration_name"; then
+    migration_name="$(
+      printf '%s\n' "$MIGRATION_OUTPUT" \
+        | sed -n \
+          's/^The `\([^`]*\)` migration started.*$/\1/p' \
+        | tail -n 1
+    )"
+  fi
+
+  printf '%s' "$migration_name"
 }
 
 echo "Running Storvex database migrations..."
 
-for attempt in 1 2 3 4; do
+for attempt in 1 2 3 4 5 6; do
   run_and_capture
 
   if test "$MIGRATION_STATUS" -eq 0; then
@@ -67,49 +82,67 @@ for attempt in 1 2 3 4; do
     exit 0
   fi
 
-  if contains_migration \
-    "$WHATSAPP_MIGRATION"; then
+  FAILED_MIGRATION="$(
+    extract_failed_migration
+  )"
+
+  if test -z "$FAILED_MIGRATION"; then
     echo
     echo \
-      "Recovering known WhatsApp migration..."
+      "Could not identify the failed migration."
 
-    resolve_rolled_back \
-      "$WHATSAPP_MIGRATION"
-
-    node \
-      apps/api/scripts/prepare-whatsapp-audit-enum.js
-
-    echo
-    echo \
-      "Retrying remaining Storvex migrations..."
-
-    continue
-  fi
-
-  if contains_migration \
-    "$SUPPORT_MIGRATION"; then
-    echo
-    echo \
-      "Recovering platform support migration..."
-
-    resolve_rolled_back \
-      "$SUPPORT_MIGRATION"
-
-    node \
-      apps/api/scripts/prepare-platform-user-table.js
-
-    echo
-    echo \
-      "Retrying remaining Storvex migrations..."
-
-    continue
+    exit "$MIGRATION_STATUS"
   fi
 
   echo
   echo \
-    "Migration failed for an unexpected reason."
+    "Current failed migration: $FAILED_MIGRATION"
 
-  exit "$MIGRATION_STATUS"
+  case "$FAILED_MIGRATION" in
+    "$WHATSAPP_MIGRATION")
+      echo \
+        "Recovering known WhatsApp migration..."
+
+      resolve_rolled_back \
+        "$WHATSAPP_MIGRATION"
+
+      node \
+        apps/api/scripts/prepare-whatsapp-audit-enum.js
+      ;;
+
+    "$SUPPORT_MIGRATION")
+      echo \
+        "Recovering platform support migration..."
+
+      resolve_rolled_back \
+        "$SUPPORT_MIGRATION"
+
+      node \
+        apps/api/scripts/prepare-platform-user-table.js
+      ;;
+
+    "$DOCUMENT_SETTINGS_MIGRATION")
+      echo \
+        "Recovering document settings migration..."
+
+      resolve_rolled_back \
+        "$DOCUMENT_SETTINGS_MIGRATION"
+
+      node \
+        apps/api/scripts/prepare-document-settings.js
+      ;;
+
+    *)
+      echo \
+        "Migration failed for an unexpected reason."
+
+      exit "$MIGRATION_STATUS"
+      ;;
+  esac
+
+  echo
+  echo \
+    "Retrying remaining Storvex migrations..."
 done
 
 echo
