@@ -775,7 +775,7 @@ export default function VerifyOtp() {
       if (isEmail) setSendingEmail(true);
       else setSendingPhone(true);
 
-      const { data } = await apiClient.post("/auth/otp/send", {
+      const { data } = await apiClient.post("/api/auth/signup/otp/send", {
         intentId,
         channel,
       });
@@ -849,7 +849,7 @@ export default function VerifyOtp() {
       if (isEmail) setVerifyingEmail(true);
       else setVerifyingPhone(true);
 
-      const { data } = await apiClient.post("/auth/otp/verify", {
+      const { data } = await apiClient.post("/api/auth/signup/otp/verify", {
         intentId,
         channel,
         code,
