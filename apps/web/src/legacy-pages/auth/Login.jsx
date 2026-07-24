@@ -175,8 +175,8 @@ function LoginActionCard({ loading }) {
 export default function Login() {
   const nav = useNavigate();
 
-  const [email, setEmail] = useState("owner@ruraxis.com");
-  const [password, setPassword] = useState("Owner@12345");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   const trimmedEmail = useMemo(() => normalizeEmail(email), [email]);
