@@ -9,6 +9,7 @@ BASELINE_DIR="apps/api/prisma/migrations/0_baseline"
 WHATSAPP_MIGRATION="20260214143250_whatsapp_growth_engine"
 SUPPORT_MIGRATION="20260517170000_support_tickets"
 DOCUMENT_SETTINGS_MIGRATION="202605250001_document_header_tax_settings"
+CASH_DRAWER_MIGRATION="202605250003_cash_drawer_sessions_reasons"
 
 if test -d "$BASELINE_DIR"; then
   rm -rf /tmp/storvex-0-baseline
@@ -130,6 +131,17 @@ for attempt in 1 2 3 4 5 6; do
 
       node \
         apps/api/scripts/prepare-document-settings.js
+      ;;
+
+    "$CASH_DRAWER_MIGRATION")
+      echo \
+        "Recovering cash drawer migration..."
+
+      resolve_rolled_back \
+        "$CASH_DRAWER_MIGRATION"
+
+      node \
+        apps/api/scripts/prepare-cash-drawer.js
       ;;
 
     *)
