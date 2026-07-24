@@ -12,9 +12,9 @@
   },
   "deploy": {
     "preDeployCommand": [
-      "bash -lc 'mv apps/api/prisma/migrations/0_baseline /tmp/storvex-0-baseline && pnpm --filter @storvex/api exec prisma migrate deploy'"
+      "bash -lc 'mv apps/api/prisma/migrations/0_baseline /tmp/storvex-0-baseline && apps/api/node_modules/.bin/prisma migrate deploy --schema apps/api/prisma/schema.prisma'"
     ],
-    "startCommand": "pnpm --filter @storvex/api start",
+    "startCommand": "node apps/api/src/server.js",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
