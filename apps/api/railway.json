@@ -12,7 +12,7 @@
   },
   "deploy": {
     "preDeployCommand": [
-      "bash apps/api/scripts/railway-migrate.sh"
+      "pnpm --filter @storvex/api exec prisma migrate deploy"
     ],
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,

@@ -17,8 +17,7 @@ WORKDIR /app
 COPY . .
 
 RUN pnpm install --frozen-lockfile \
-  && pnpm --filter @storvex/api exec prisma generate \
-  && chmod +x apps/api/scripts/railway-migrate.sh
+  && pnpm --filter @storvex/api exec prisma generate
 
 EXPOSE 5000
 
