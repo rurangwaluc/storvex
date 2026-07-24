@@ -416,7 +416,7 @@ export default function TenantIntent() {
         deviceId,
       };
 
-      const data = await apiFetch("/auth/signup/owner-intent", {
+      const data = await apiFetch("/api/auth/signup/owner-intent", {
         method: "POST",
         body: payload,
       });
