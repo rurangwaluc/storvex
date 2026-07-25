@@ -650,6 +650,111 @@ export default function VerifyOtp() {
   }, [intentId, storeName, ownerEmail, ownerPhone, nav]);
 
   useEffect(() => {
+    if (!intentId) return undefined;
+
+    let cancelled = false;
+
+    async function restoreSecureStatus() {
+      try {
+        const { data } = await apiClient.get(
+          `/api/auth/signup/owner-intent/${encodeURIComponent(
+            intentId,
+          )}/status`,
+        );
+
+        if (cancelled) return;
+
+        persistVerifiedFlags(
+          Boolean(data?.emailVerified),
+          Boolean(data?.phoneVerified),
+        );
+
+        const now = Date.now();
+
+        const emailAvailableAt = data?.emailResendAvailableAt
+          ? new Date(data.emailResendAvailableAt).getTime()
+          : 0;
+
+        const phoneAvailableAt = data?.phoneResendAvailableAt
+          ? new Date(data.phoneResendAvailableAt).getTime()
+          : 0;
+
+        if (emailAvailableAt > now) {
+          setEmailCodeSent(true);
+          setEmailCooldown(
+            Math.max(
+              1,
+              Math.ceil(
+                (emailAvailableAt - now) /
+                  1000,
+              ),
+            ),
+          );
+        }
+
+        if (phoneAvailableAt > now) {
+          setPhoneCodeSent(true);
+          setPhoneCooldown(
+            Math.max(
+              1,
+              Math.ceil(
+                (phoneAvailableAt - now) /
+                  1000,
+              ),
+            ),
+          );
+        }
+      } catch (error) {
+        if (cancelled) return;
+
+        const status =
+          error?.response?.status;
+
+        if (
+          status === 401 ||
+          status === 403 ||
+          status === 404
+        ) {
+          const current =
+            readOnboardingState() || {};
+
+          saveOnboardingState({
+            ...current,
+            intentId: "",
+            onboardingToken: "",
+            emailVerified: false,
+            phoneVerified: false,
+            emailVerifiedFor: "",
+            phoneVerifiedFor: "",
+            passwordReady: false,
+          });
+
+          toast.error(
+            error?.response?.data?.message ||
+              "Your secure setup session ended. Review your details to continue.",
+          );
+
+          nav("/signup", {
+            replace: true,
+          });
+
+          return;
+        }
+
+        toast.error(
+          "We could not restore your verification progress. Please try again.",
+        );
+      }
+    }
+
+    void restoreSecureStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [intentId, nav]);
+
+  useEffect(() => {
     if (!intentId) return;
 
     if (!emailVerified && !emailCodeSent && !sendingEmail) {
@@ -814,10 +919,9 @@ export default function VerifyOtp() {
 
       if (!data?.sent) {
         toast.error(
-          data?.sendReason ||
-            (isEmail
-              ? "Email was not delivered. Check Resend configuration."
-              : "SMS was not delivered. Check Twilio configuration.")
+          (isEmail
+            ? "We could not send the email code. Check the email and try again."
+            : "We could not send the phone code. Check the number and try again.")
         );
         return;
       }

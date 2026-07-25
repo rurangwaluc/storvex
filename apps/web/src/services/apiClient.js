@@ -52,6 +52,44 @@ function safeJsonParse(value) {
   }
 }
 
+
+function getOnboardingToken() {
+  try {
+    const onboardingState = safeJsonParse(
+      localStorage.getItem("storvex_onboarding"),
+    );
+
+    return (
+      cleanString(onboardingState?.onboardingToken) ||
+      cleanString(
+        localStorage.getItem("storvex_onboardingToken"),
+      )
+    );
+  } catch {
+    return "";
+  }
+}
+
+function requestAlreadyHasOnboardingToken(headers) {
+  if (!headers) return false;
+
+  return Boolean(
+    headers["x-storvex-onboarding-token"] ||
+      headers["X-Storvex-Onboarding-Token"],
+  );
+}
+
+function isOnboardingRequest(path) {
+  const value = String(path || "");
+
+  return (
+    value.includes("/api/auth/signup/") ||
+    value.includes("/api/auth/otp/") ||
+    value.includes("/api/auth/owner-payment") ||
+    value.includes("/api/auth/confirm-signup")
+  );
+}
+
 function readStorageValue(key) {
   return (
     cleanString(localStorage.getItem(key)) ||
@@ -153,6 +191,17 @@ apiClient.interceptors.request.use(
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    const onboardingToken = getOnboardingToken();
+
+    if (
+      onboardingToken &&
+      isOnboardingRequest(config.url) &&
+      !requestAlreadyHasOnboardingToken(config.headers)
+    ) {
+      config.headers["x-storvex-onboarding-token"] =
+        onboardingToken;
     }
 
     const activeBranchId = getActiveBranchId();

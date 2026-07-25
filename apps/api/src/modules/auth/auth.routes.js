@@ -1,5 +1,11 @@
 const express = require("express");
 
+const prisma = require("../../config/database");
+const {
+  assertOnboardingAccess,
+  publicOnboardingError,
+} = require("./onboardingIntent.security");
+
 const router = express.Router();
 
 const authController = require("./auth.controller");
@@ -86,6 +92,40 @@ async function createOwnerPayment(req, res) {
   }
 
   try {
+    const intent = await prisma.ownerIntent.findUnique({
+      where: {
+        id: cleanString(intentId),
+      },
+      select: {
+        id: true,
+        status: true,
+        expiresAt: true,
+        onboardingTokenHash: true,
+        onboardingTokenExpiresAt: true,
+        onboardingTokenRevokedAt: true,
+      },
+    });
+
+    assertOnboardingAccess(
+      req,
+      intent,
+    );
+
+    await prisma.ownerIntent
+      .update({
+        where: {
+          id: intent.id,
+        },
+        data: {
+          lastAccessedAt:
+            new Date(),
+        },
+        select: {
+          id: true,
+        },
+      })
+      .catch(() => null);
+
     const result = await momoService.createPaymentFromPlan(
       cleanString(intentId),
       cleanString(planKey),
@@ -108,11 +148,15 @@ async function createOwnerPayment(req, res) {
     console.error("MoMo ERROR DETAILS:");
     console.error(err.response?.data || err.message);
 
-    return res.status(err.status || 500).json({
-      message: err.message || "MoMo payment failed",
-      error: err.response?.data || err.message,
-      reason: err.reason || undefined,
-    });
+    const publicError =
+      publicOnboardingError(
+        err,
+        "We could not start the payment. Please try again.",
+      );
+
+    return res
+      .status(publicError.status)
+      .json(publicError.body);
   }
 }
 
@@ -122,6 +166,11 @@ async function createOwnerPayment(req, res) {
 
 router.post("/owner-intent", authController.ownerIntent);
 router.post("/signup/owner-intent", authController.ownerIntent);
+
+router.get(
+  "/signup/owner-intent/:intentId/status",
+  authController.getOwnerIntentStatus
+);
 
 router.post("/otp/send", otpController.sendOtp);
 router.post("/otp/verify", otpController.verifyOtp);

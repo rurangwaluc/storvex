@@ -3,6 +3,7 @@ const ONBOARDING_KEY = "storvex_onboarding";
 export const ONBOARDING_STORAGE_KEYS = [
   ONBOARDING_KEY,
   "storvex_intentId",
+  "storvex_onboardingToken",
   "storvex_ownerPhone",
   "storvex_ownerEmail",
   "storvex_storeName",
@@ -44,6 +45,9 @@ export function readOnboardingState() {
 
     const fallback = {
       intentId: cleanString(storage.getItem("storvex_intentId")),
+      onboardingToken: cleanString(
+        storage.getItem("storvex_onboardingToken"),
+      ),
       storeName: cleanString(storage.getItem("storvex_storeName")),
       ownerName: cleanString(storage.getItem("storvex_ownerName")),
       email: cleanString(storage.getItem("storvex_ownerEmail")),
@@ -80,6 +84,10 @@ export function saveOnboardingState(nextState = {}) {
   storage.setItem(ONBOARDING_KEY, JSON.stringify(next));
 
   storage.setItem("storvex_intentId", cleanString(next.intentId));
+  storage.setItem(
+    "storvex_onboardingToken",
+    cleanString(next.onboardingToken),
+  );
   storage.setItem("storvex_ownerPhone", cleanString(next.phone));
   storage.setItem("storvex_ownerEmail", cleanString(next.email));
   storage.setItem("storvex_storeName", cleanString(next.storeName));
@@ -122,7 +130,13 @@ export function clearOnboardingState() {
 }
 
 export function hasOnboardingDraft(state = readOnboardingState()) {
-  return Boolean(state?.intentId && state?.storeName && state?.email && state?.phone);
+  return Boolean(
+    state?.intentId &&
+      state?.onboardingToken &&
+      state?.storeName &&
+      state?.email &&
+      state?.phone,
+  );
 }
 
 export function getOnboardingResumeTarget(state = readOnboardingState()) {

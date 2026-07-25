@@ -3,6 +3,11 @@ const prisma =
   require("../../config/database");
 
 const {
+  assertOnboardingAccess,
+  publicOnboardingError,
+} = require("./onboardingIntent.security");
+
+const {
   checkSmsOtp,
 } = require("../notifications");
 
@@ -116,41 +121,43 @@ async function sendOtp(
           expiresAt: true,
           emailVerified: true,
           phoneVerified: true,
+          onboardingTokenHash: true,
+          onboardingTokenExpiresAt: true,
+          onboardingTokenRevokedAt: true,
         },
       });
 
-    if (!intent) {
+    try {
+      assertOnboardingAccess(
+        req,
+        intent,
+      );
+    } catch (error) {
+      const publicError =
+        publicOnboardingError(
+          error,
+          "We could not send the code. Please start again.",
+        );
+
       return res
-        .status(404)
-        .json({
-          message:
-            "Owner intent not found",
-        });
+        .status(publicError.status)
+        .json(publicError.body);
     }
 
-    if (
-      intent.expiresAt <
-      new Date()
-    ) {
-      return res
-        .status(403)
-        .json({
-          message:
-            "Owner intent expired",
-        });
-    }
-
-    if (
-      intent.status ===
-      "CONSUMED"
-    ) {
-      return res
-        .status(403)
-        .json({
-          message:
-            "This signup was already completed. Please login.",
-        });
-    }
+    await prisma.ownerIntent
+      .update({
+        where: {
+          id: intent.id,
+        },
+        data: {
+          lastAccessedAt:
+            new Date(),
+        },
+        select: {
+          id: true,
+        },
+      })
+      .catch(() => null);
 
     if (
       channel === "EMAIL" &&
@@ -327,30 +334,45 @@ async function verifyOtp(
           id: true,
           email: true,
           phone: true,
+          status: true,
           expiresAt: true,
+          onboardingTokenHash: true,
+          onboardingTokenExpiresAt: true,
+          onboardingTokenRevokedAt: true,
         },
       });
 
-    if (!intent) {
+    try {
+      assertOnboardingAccess(
+        req,
+        intent,
+      );
+    } catch (error) {
+      const publicError =
+        publicOnboardingError(
+          error,
+          "We could not verify the code. Please start again.",
+        );
+
       return res
-        .status(404)
-        .json({
-          message:
-            "Owner intent not found",
-        });
+        .status(publicError.status)
+        .json(publicError.body);
     }
 
-    if (
-      intent.expiresAt <
-      new Date()
-    ) {
-      return res
-        .status(403)
-        .json({
-          message:
-            "Owner intent expired",
-        });
-    }
+    await prisma.ownerIntent
+      .update({
+        where: {
+          id: intent.id,
+        },
+        data: {
+          lastAccessedAt:
+            new Date(),
+        },
+        select: {
+          id: true,
+        },
+      })
+      .catch(() => null);
 
     const target =
       resolveTargetFromIntent(

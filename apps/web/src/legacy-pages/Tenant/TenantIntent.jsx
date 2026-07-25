@@ -421,14 +421,16 @@ export default function TenantIntent() {
         body: payload,
       });
 
-      const intentId = data?.intentId || data?.intent?.id || "";
+      const intentId = data?.intentId || "";
+      const onboardingToken = data?.onboardingToken || "";
 
-      if (!intentId) {
+      if (!intentId || !onboardingToken) {
         throw new Error("Store setup could not be started. Please try again.");
       }
 
       saveOnboardingState({
         intentId,
+        onboardingToken,
         storeName: payload.storeName,
         ownerName: payload.ownerName,
         email: payload.email,

@@ -91,6 +91,11 @@ model OwnerIntent {
   emailVerifiedAt DateTime?
   phoneVerifiedAt DateTime?
 
+  onboardingTokenHash      String?   @db.Text
+  onboardingTokenExpiresAt DateTime?
+  onboardingTokenRevokedAt DateTime?
+  lastAccessedAt            DateTime?
+
   deviceId           String? @db.Text
   browserFingerprint String? @db.Text
   signupIp           String? @db.Text
@@ -111,6 +116,8 @@ model OwnerIntent {
   otps            OtpCode[]
   otpDeliveryLogs OtpDeliveryLog[]
   payments        Payment[]
+
+  @@index([onboardingTokenExpiresAt])
 }
 
 model Payment {

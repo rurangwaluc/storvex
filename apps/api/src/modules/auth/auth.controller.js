@@ -4,6 +4,14 @@ const crypto = require("crypto");
 const prisma = require("../../config/database");
 
 const {
+  assertOnboardingAccess,
+  generateOnboardingAccess,
+  maskEmail,
+  maskPhone,
+  publicOnboardingError,
+} = require("./onboardingIntent.security");
+
+const {
   getPlanByKey,
   getPlanSnapshot,
   getTrialPlan,
@@ -570,6 +578,7 @@ async function ownerIntent(req, res) {
 
     const requestedSnapshot = snapshotPlanOrNull(requestedPlan);
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const onboardingAccess = generateOnboardingAccess();
 
     const intent = await prisma.ownerIntent.create({
       data: {
@@ -594,42 +603,28 @@ async function ownerIntent(req, res) {
         requestedEntitlements: requestedSnapshot?.entitlements || null,
         expiresAt,
         status: "PENDING",
+        onboardingTokenHash: onboardingAccess.tokenHash,
+        onboardingTokenExpiresAt: onboardingAccess.expiresAt,
+        onboardingTokenRevokedAt: null,
+        lastAccessedAt: new Date(),
       },
       select: {
         id: true,
-        storeName: true,
-        ownerName: true,
-        email: true,
-        phone: true,
-        shopType: true,
-        district: true,
-        sector: true,
-        address: true,
-        deviceId: true,
-        browserFingerprint: true,
         emailVerified: true,
         phoneVerified: true,
-        trialGrantedAt: true,
-        trialEligibilityCheckedAt: true,
-        trialBlockedReason: true,
-        requestedPlanKey: true,
-        requestedTierKey: true,
-        requestedCycleKey: true,
-        requestedStaffLimit: true,
-        requestedPriceAmount: true,
-        requestedCurrency: true,
-        requestedEntitlements: true,
         status: true,
         expiresAt: true,
-        createdAt: true,
       },
     });
 
     return res.status(201).json({
       intentId: intent.id,
+      onboardingToken: onboardingAccess.token,
       expiresAt: intent.expiresAt,
-      message: "Owner intent created. Proceed to OTP verification.",
-      intent,
+      emailVerified: !!intent.emailVerified,
+      phoneVerified: !!intent.phoneVerified,
+      nextStep: "VERIFY_CONTACTS",
+      message: "Store setup started.",
     });
   } catch (err) {
     console.error("ownerIntent error:", err);
@@ -639,6 +634,118 @@ async function ownerIntent(req, res) {
     }
 
     return res.status(500).json({ message: "Server error" });
+  }
+}
+
+
+async function getOwnerIntentStatus(req, res) {
+  try {
+    const intentId = cleanString(req.params?.intentId);
+
+    if (!intentId) {
+      return res.status(400).json({
+        message: "Your setup could not be restored. Please start again.",
+        reason: "ONBOARDING_ID_REQUIRED",
+      });
+    }
+
+    const intent = await prisma.ownerIntent.findUnique({
+      where: { id: intentId },
+      select: {
+        id: true,
+        storeName: true,
+        email: true,
+        phone: true,
+        status: true,
+        expiresAt: true,
+        emailVerified: true,
+        phoneVerified: true,
+        onboardingTokenHash: true,
+        onboardingTokenExpiresAt: true,
+        onboardingTokenRevokedAt: true,
+      },
+    });
+
+    assertOnboardingAccess(req, intent);
+
+    await prisma.ownerIntent
+      .update({
+        where: { id: intent.id },
+        data: { lastAccessedAt: new Date() },
+        select: { id: true },
+      })
+      .catch(() => null);
+
+    const recentCodes = await prisma.otpCode.findMany({
+      where: {
+        intentId: intent.id,
+        verifiedAt: null,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        channel: true,
+        createdAt: true,
+      },
+    });
+
+    const latestByChannel = {};
+
+    for (const code of recentCodes) {
+      if (!latestByChannel[code.channel]) {
+        latestByChannel[code.channel] = code;
+      }
+    }
+
+    const configuredCooldown = Number(
+      process.env.OTP_SEND_COOLDOWN_SECONDS || 60,
+    );
+
+    const cooldownSeconds =
+      Number.isFinite(configuredCooldown) &&
+      configuredCooldown >= 0
+        ? configuredCooldown
+        : 60;
+
+    function resendAvailableAt(channel) {
+      const latest = latestByChannel[channel];
+
+      if (!latest) return null;
+
+      return new Date(
+        new Date(latest.createdAt).getTime() +
+          cooldownSeconds * 1000,
+      );
+    }
+
+    return res.status(200).json({
+      intentId: intent.id,
+      status: intent.status,
+      storeName: intent.storeName,
+      maskedEmail: maskEmail(intent.email),
+      maskedPhone: maskPhone(intent.phone),
+      emailVerified: !!intent.emailVerified,
+      phoneVerified: !!intent.phoneVerified,
+      expiresAt: intent.expiresAt,
+      emailResendAvailableAt:
+        resendAvailableAt("EMAIL"),
+      phoneResendAvailableAt:
+        resendAvailableAt("PHONE"),
+      nextStep:
+        intent.emailVerified &&
+        intent.phoneVerified
+          ? "CREATE_PASSWORD"
+          : "VERIFY_CONTACTS",
+    });
+  } catch (error) {
+    const publicError = publicOnboardingError(
+      error,
+      "We could not restore your setup. Please try again.",
+    );
+
+    return res
+      .status(publicError.status)
+      .json(publicError.body);
   }
 }
 
@@ -800,20 +907,43 @@ async function confirmSignup(req, res) {
         requestedPriceAmount: true,
         requestedCurrency: true,
         requestedEntitlements: true,
+        onboardingTokenHash: true,
+        onboardingTokenExpiresAt: true,
+        onboardingTokenRevokedAt: true,
       },
     });
 
-    if (!intent) return res.status(404).json({ message: "Owner intent not found" });
+    try {
+      assertOnboardingAccess(
+        req,
+        intent,
+      );
+    } catch (error) {
+      const publicError =
+        publicOnboardingError(
+          error,
+          "We could not continue this setup. Please start again.",
+        );
 
-    if (intent.expiresAt < new Date()) {
-      return res.status(403).json({ message: "Owner intent expired" });
-    }
-
-    if (intent.status === "CONSUMED") {
       return res
-        .status(403)
-        .json({ message: "This signup was already completed. Please login." });
+        .status(publicError.status)
+        .json(publicError.body);
     }
+
+    await prisma.ownerIntent
+      .update({
+        where: {
+          id: intent.id,
+        },
+        data: {
+          lastAccessedAt:
+            new Date(),
+        },
+        select: {
+          id: true,
+        },
+      })
+      .catch(() => null);
 
     const tenantName = String(intent.storeName || "").trim();
     const ownerName = String(intent.ownerName || "").trim();
@@ -1084,6 +1214,7 @@ async function confirmSignup(req, res) {
               ? {
                   status: "CONSUMED",
                   convertedAt: new Date(),
+                  onboardingTokenRevokedAt: new Date(),
                   trialGrantedAt: new Date(),
                   trialEligibilityCheckedAt: new Date(),
                   trialBlockedReason: null,
@@ -1098,6 +1229,7 @@ async function confirmSignup(req, res) {
               : {
                   status: "CONSUMED",
                   convertedAt: new Date(),
+                  onboardingTokenRevokedAt: new Date(),
                   requestedPlanKey: planSnapshot.planKey,
                   requestedTierKey: planSnapshot.tierKey,
                   requestedCycleKey: planSnapshot.cycleKey,
@@ -1229,6 +1361,7 @@ async function resetPassword(req, res) {
 
 module.exports = {
   ownerIntent,
+  getOwnerIntentStatus,
   login,
   initiateSignup,
   confirmSignup,
