@@ -447,6 +447,18 @@ export default function OwnerPayment() {
     return stored === "TRIAL" ? "TRIAL" : "PAID";
   });
 
+  const originallySelectedPlanKey = useMemo(
+    () =>
+      String(
+        onboarding?.planKey ||
+          localStorage.getItem("storvex_planKey") ||
+          "",
+      )
+        .trim()
+        .toUpperCase(),
+    [onboarding?.planKey],
+  );
+
   const [selectedPlanKey, setSelectedPlanKey] = useState(() => {
     return localStorage.getItem("storvex_planKey") || "";
   });
@@ -769,6 +781,13 @@ export default function OwnerPayment() {
             }}
           >
             <PlanSummary selectedPlan={selectedPlan} storeName={storeName} />
+
+            {originallySelectedPlanKey &&
+            selectedPlan?.key?.toUpperCase() === originallySelectedPlanKey ? (
+              <p className="mt-4 inline-flex rounded-full bg-[var(--onboard-primary)]/10 px-3 py-1.5 text-xs font-black text-[var(--onboard-primary)]">
+                Selected earlier
+              </p>
+            ) : null}
 
             <p className="mt-4 text-xs font-bold leading-5 text-[var(--onboard-muted)]">
               Prices and plan capacity come directly from Storvex billing.

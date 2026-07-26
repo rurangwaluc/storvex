@@ -6,6 +6,7 @@ import Login from "./legacy-pages/auth/Login";
 import ForgotPassword from "./legacy-pages/auth/ForgotPassword";
 import ResetPassword from "./legacy-pages/auth/ResetPassword";
 import LandingPage from "./legacy-pages/public/LandingPage";
+import PricingPage from "./legacy-pages/public/PricingPage";
 import MarketplaceHome from "./legacy-pages/marketplace/MarketplaceHome";
 import MarketplaceShop from "./legacy-pages/marketplace/MarketplaceShop";
 import MarketplaceStores from "./legacy-pages/marketplace/MarketplaceStores";
@@ -130,6 +131,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
         <Route path="/marketplace" element={<MarketplaceHome />} />
         <Route
           path="/marketplace/shop"

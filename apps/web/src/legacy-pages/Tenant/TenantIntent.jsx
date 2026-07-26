@@ -17,7 +17,7 @@ import {
   UserRoundCheck,
   Wrench,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import OnboardingShell, {
@@ -275,7 +275,20 @@ function ResumeDraftCard({ draft, onContinue, onStartOver }) {
 
 export default function TenantIntent() {
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
   const previous = useMemo(() => readOnboardingState(), []);
+
+  const requestedPlanKey = useMemo(
+    () =>
+      cleanString(searchParams.get("plan"))
+        .replace(/[^a-zA-Z0-9_-]/g, "")
+        .toUpperCase(),
+    [searchParams],
+  );
+
+  const selectedPlanKey =
+    requestedPlanKey || cleanString(previous?.planKey).toUpperCase();
+
   const [draftVisible, setDraftVisible] = useState(hasOnboardingDraft(previous));
 
   const [loading, setLoading] = useState(false);
@@ -299,11 +312,24 @@ export default function TenantIntent() {
   }
 
   function continueDraft() {
+    if (requestedPlanKey) {
+      saveOnboardingState({
+        ...(previous || {}),
+        planKey: requestedPlanKey,
+        signupMode: "PAID",
+      });
+    }
+
     nav(getOnboardingResumeTarget(previous));
   }
 
   function startOver() {
     clearOnboardingState();
+
+    if (requestedPlanKey) {
+      localStorage.setItem("storvex_planKey", requestedPlanKey);
+      localStorage.setItem("storvex_signupMode", "PAID");
+    }
 
     setDraftVisible(false);
     setForm({
@@ -443,8 +469,8 @@ export default function TenantIntent() {
         deviceId,
         emailVerified: false,
         phoneVerified: false,
-        signupMode: "",
-        planKey: "",
+        signupMode: selectedPlanKey ? "PAID" : "",
+        planKey: selectedPlanKey,
       });
 
       toast.success("Store setup started");
@@ -485,6 +511,12 @@ export default function TenantIntent() {
             <span className="svx-onboard-step-pill">Step 1 of 3</span>
 
             <h2>Tell us about your business.</h2>
+
+            {selectedPlanKey ? (
+              <p className="mt-2 text-sm font-black text-[var(--onboard-primary)]">
+                Your selected plan will be kept for the Launch plan step.
+              </p>
+            ) : null}
 
             <p>
               Start with the real store identity and owner contact. This becomes the foundation for
