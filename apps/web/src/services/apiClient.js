@@ -12,8 +12,18 @@ function cleanString(value) {
 }
 
 function normalizeApiBaseUrl(value) {
-  const cleanValue = cleanString(value) || DEFAULT_API_BASE_URL;
-  return cleanValue.replace(/\/+$/, "");
+  const cleanValue = (
+    cleanString(value) || DEFAULT_API_BASE_URL
+  ).replace(/\/+$/, "");
+
+  if (
+    cleanValue === "/api" ||
+    cleanValue.toLowerCase().endsWith("/api")
+  ) {
+    return cleanValue;
+  }
+
+  return `${cleanValue}/api`;
 }
 
 export const API_BASE_URL = normalizeApiBaseUrl(
