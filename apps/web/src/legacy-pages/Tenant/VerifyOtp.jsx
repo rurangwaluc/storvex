@@ -250,9 +250,26 @@ function EyeOffIcon() {
   );
 }
 
-function DigitCodeInput({ value, onChange, disabled, label }) {
+function DigitCodeInput({
+  value,
+  onChange,
+  disabled,
+  label,
+  error,
+  autoFocus,
+}) {
   const inputRefs = useRef([]);
   const digits = Array.from({ length: OTP_LENGTH }, (_, index) => value[index] || "");
+
+  useEffect(() => {
+    if (!autoFocus || disabled || value) return undefined;
+
+    const timer = window.setTimeout(() => {
+      inputRefs.current[0]?.focus();
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [autoFocus, disabled, value]);
 
   function updateDigit(index, nextValue) {
     const clean = nextValue.replace(/[^\d]/g, "");
@@ -261,7 +278,11 @@ function DigitCodeInput({ value, onChange, disabled, label }) {
       const pasted = clean.slice(0, OTP_LENGTH);
       onChange(pasted);
 
-      const nextIndex = Math.min(pasted.length, OTP_LENGTH) - 1;
+      const nextIndex = Math.max(
+        0,
+        Math.min(pasted.length, OTP_LENGTH) - 1,
+      );
+
       inputRefs.current[nextIndex]?.focus();
       return;
     }
@@ -297,10 +318,19 @@ function DigitCodeInput({ value, onChange, disabled, label }) {
           ref={(node) => {
             inputRefs.current[index] = node;
           }}
-          className="h-[42px] w-[42px] rounded-[8px] border border-[var(--onboard-border)] bg-[var(--onboard-card)] text-center text-lg font-black text-[var(--onboard-text)] outline-none transition focus:border-[var(--onboard-primary)] focus:ring-2 focus:ring-[rgba(37,99,235,0.16)] disabled:cursor-not-allowed disabled:opacity-60"
+          className={cx(
+            "h-12 w-11 rounded-[10px] border-2 bg-[var(--onboard-card-soft)] text-center text-xl font-black text-[var(--onboard-text)] caret-[var(--onboard-primary)] outline-none transition duration-150 sm:w-12",
+            error
+              ? "border-red-500/70 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
+              : digit
+                ? "border-[var(--onboard-primary)] bg-[var(--onboard-card)]"
+                : "border-[var(--onboard-border)] hover:border-[var(--onboard-primary)]/60 focus:border-[var(--onboard-primary)] focus:bg-[var(--onboard-card)] focus:ring-4 focus:ring-[rgba(37,99,235,0.15)]",
+            disabled && "cursor-not-allowed opacity-55",
+          )}
           value={digit}
           onChange={(event) => updateDigit(index, event.target.value)}
           onKeyDown={(event) => handleKeyDown(index, event)}
+          onFocus={(event) => event.currentTarget.select()}
           inputMode="numeric"
           autoComplete={index === 0 ? "one-time-code" : "off"}
           maxLength={1}
@@ -332,6 +362,8 @@ function VerificationPanel({
   cooldown,
   hasSentCode,
   onSend,
+  error,
+  clearError,
 }) {
   const isEmail = type === "email";
   const disabled = verified || sending || verifying;
@@ -368,18 +400,55 @@ function VerificationPanel({
           <div className="mt-5">
             <DigitCodeInput
               value={code}
-              onChange={(nextValue) =>
-                setCode(nextValue.replace(/[^\d]/g, "").slice(0, OTP_LENGTH))
-              }
+              onChange={(nextValue) => {
+                clearError();
+                setCode(
+                  nextValue
+                    .replace(/[^\d]/g, "")
+                    .slice(0, OTP_LENGTH),
+                );
+              }}
               disabled={disabled || !hasSentCode}
               label={`${title} verification code`}
+              error={error}
+              autoFocus={hasSentCode && !verified}
             />
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-sm font-semibold text-[var(--onboard-muted)] md:justify-start">
+          <div
+            className={cx(
+              "mt-4 min-h-6 text-center text-sm font-bold md:text-left",
+              verified
+                ? "text-emerald-600"
+                : verifying
+                  ? "text-[var(--onboard-primary)]"
+                  : error
+                    ? "text-red-500"
+                    : "text-[var(--onboard-muted)]",
+            )}
+            role={error ? "alert" : "status"}
+            aria-live="polite"
+          >
+            {verified ? (
+              <span>✓ {isEmail ? "Email verified" : "Phone number verified"}</span>
+            ) : verifying ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                Checking code…
+              </span>
+            ) : error ? (
+              <span>{error}</span>
+            ) : hasSentCode ? (
+              <span>Enter the six-digit code. It will be checked automatically.</span>
+            ) : (
+              <span>Send a code to continue.</span>
+            )}
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-sm font-semibold text-[var(--onboard-muted)] md:justify-start">
             <span>
               {verified
-                ? "Verified."
+                ? "Verification complete."
                 : hasSentCode
                   ? "Didn’t receive the code?"
                   : "No code yet?"}
@@ -582,6 +651,9 @@ export default function VerifyOtp() {
   const [sendingPhone, setSendingPhone] = useState(false);
   const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [verifyingPhone, setVerifyingPhone] = useState(false);
+
+  const [emailError, setEmailError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   const [emailCooldown, setEmailCooldown] = useState(0);
   const [phoneCooldown, setPhoneCooldown] = useState(0);
@@ -877,8 +949,17 @@ export default function VerifyOtp() {
     const contactValue = isEmail ? ownerEmail : ownerPhone;
 
     try {
-      if (isEmail) setSendingEmail(true);
-      else setSendingPhone(true);
+      if (isEmail) {
+        setSendingEmail(true);
+        setEmailError("");
+        setEmailCode("");
+        lastEmailAttemptRef.current = "";
+      } else {
+        setSendingPhone(true);
+        setPhoneError("");
+        setPhoneCode("");
+        lastPhoneAttemptRef.current = "";
+      }
 
       const { data } = await apiClient.post("/api/auth/signup/otp/send", {
         intentId,
@@ -950,8 +1031,13 @@ export default function VerifyOtp() {
     }
 
     try {
-      if (isEmail) setVerifyingEmail(true);
-      else setVerifyingPhone(true);
+      if (isEmail) {
+        setVerifyingEmail(true);
+        setEmailError("");
+      } else {
+        setVerifyingPhone(true);
+        setPhoneError("");
+      }
 
       const { data } = await apiClient.post("/api/auth/signup/otp/verify", {
         intentId,
@@ -974,11 +1060,19 @@ export default function VerifyOtp() {
 
       toast.success(isEmail ? "Email verified" : "Phone verified");
     } catch (error) {
-      toast.error(
+      const message =
         error?.response?.data?.message ||
-          error?.message ||
-          "Verification failed",
-      );
+        "The code is incorrect or expired. Request a new code if needed.";
+
+      if (isEmail) {
+        setEmailError(message);
+        setEmailCode("");
+        lastEmailAttemptRef.current = "";
+      } else {
+        setPhoneError(message);
+        setPhoneCode("");
+        lastPhoneAttemptRef.current = "";
+      }
     } finally {
       if (isEmail) setVerifyingEmail(false);
       else setVerifyingPhone(false);
@@ -1064,6 +1158,8 @@ export default function VerifyOtp() {
             cooldown={emailCooldown}
             hasSentCode={emailCodeSent}
             onSend={() => send("EMAIL")}
+            error={emailError}
+            clearError={() => setEmailError("")}
           />
 
           <VerificationPanel
@@ -1083,6 +1179,8 @@ export default function VerifyOtp() {
             cooldown={phoneCooldown}
             hasSentCode={phoneCodeSent}
             onSend={() => send("PHONE")}
+            error={phoneError}
+            clearError={() => setPhoneError("")}
           />
         </div>
 
