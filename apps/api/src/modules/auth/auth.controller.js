@@ -980,8 +980,39 @@ async function confirmSignup(req, res) {
         });
       }
 
-      selectedPlan = getTrialPlan();
-      subscriptionDays = selectedPlan.days || getTrialDays();
+      const requestedTrialPlanKey =
+        cleanString(planKey) ||
+        cleanString(intent.requestedPlanKey);
+
+      if (!requestedTrialPlanKey) {
+        return res.status(400).json({
+          message: "Choose a Storvex plan before starting the free trial",
+        });
+      }
+
+      selectedPlan = getPlanByKey(requestedTrialPlanKey);
+
+      if (!selectedPlan) {
+        return res.status(400).json({
+          message: "The selected Storvex plan is invalid",
+        });
+      }
+
+      const genericTrialPlan = getTrialPlan();
+
+      if (selectedPlan.key === genericTrialPlan.key) {
+        return res.status(400).json({
+          message: "Choose Starter, Growth or Business for your free trial",
+        });
+      }
+
+      if (selectedPlan.isEnterprise) {
+        return res.status(400).json({
+          message: "Enterprise setup requires Storvex assistance",
+        });
+      }
+
+      subscriptionDays = getTrialDays();
     } else {
       const latestSuccessfulPayment = await prisma.payment.findFirst({
         where: {
@@ -1087,10 +1118,12 @@ async function confirmSignup(req, res) {
     };
 
     planSnapshot.entitlements =
-      paidEntitlementSnapshot ||
-      intent.requestedEntitlements ||
-      planSnapshot.entitlements ||
-      null;
+      signupMode === "TRIAL"
+        ? planSnapshot.entitlements || null
+        : paidEntitlementSnapshot ||
+          intent.requestedEntitlements ||
+          planSnapshot.entitlements ||
+          null;
 
     const hashedPassword = await bcrypt.hash(String(password), 12);
 

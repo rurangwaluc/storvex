@@ -38,10 +38,6 @@ function normalizePhone(value) {
   return digits;
 }
 
-function isValidRwandaPhone(value) {
-  return /^2507\d{8}$/.test(normalizePhone(value));
-}
-
 function normalizeContact(value) {
   return cleanString(value).toLowerCase();
 }
@@ -147,7 +143,7 @@ function formatMoney(amount, currency = "RWF") {
 
   if (!Number.isFinite(value)) return "—";
 
-  return `${new Intl.NumberFormat("en-US", {
+  return `${new Intl.NumberFormat("en-GB", {
     maximumFractionDigits: 0,
   }).format(Math.round(value))} ${currency}`;
 }
@@ -180,25 +176,6 @@ function ShieldIcon({ size = 34 }) {
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SparkIcon({ size = 34 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 3L13.55 8.45L19 10L13.55 11.55L12 17L10.45 11.55L5 10L10.45 8.45L12 3Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M18 15L18.8 17.2L21 18L18.8 18.8L18 21L17.2 18.8L15 18L17.2 17.2L18 15Z"
-        stroke="currentColor"
-        strokeWidth="2"
         strokeLinejoin="round"
       />
     </svg>
@@ -247,55 +224,6 @@ function SectionHeader({ icon, title, text }) {
         </p>
       </div>
     </div>
-  );
-}
-
-function StartOptionCard({ active, title, text, badge, icon, children, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cx(
-        "group relative overflow-hidden rounded-[28px] border p-6 text-left transition duration-300",
-        active
-          ? "z-10 -translate-y-1 border-[var(--onboard-primary)] bg-[var(--onboard-card)] shadow-[0_26px_90px_rgba(37,99,235,0.16)] ring-2 ring-[var(--onboard-primary)]"
-          : "border-[var(--onboard-border)] bg-[var(--onboard-card)] opacity-70 shadow-[0_18px_52px_rgba(15,45,90,0.04)] saturate-[0.86] hover:-translate-y-0.5 hover:border-[var(--onboard-primary)] hover:opacity-100 hover:saturate-100",
-      )}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div
-          className={cx(
-            "flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] text-[var(--onboard-primary)]",
-            active ? "bg-[var(--onboard-primary-soft)]" : "bg-[var(--onboard-card-soft)]",
-          )}
-        >
-          {icon}
-        </div>
-
-        {badge ? (
-          <span
-            className={cx(
-              "rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.14em]",
-              active
-                ? "bg-[var(--onboard-primary-soft)] text-[var(--onboard-primary)]"
-                : "bg-[var(--onboard-card-soft)] text-[var(--onboard-muted)]",
-            )}
-          >
-            {badge}
-          </span>
-        ) : null}
-      </div>
-
-      <h3 className="mt-5 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
-        {title}
-      </h3>
-
-      <p className="mt-3 text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
-        {text}
-      </p>
-
-      {children ? <div className="mt-5">{children}</div> : null}
-    </button>
   );
 }
 
@@ -440,12 +368,6 @@ export default function OwnerPayment() {
   const [loading, setLoading] = useState(false);
   const [plans, setPlans] = useState([]);
   const [trialDays, setTrialDays] = useState(30);
-  const [phone, setPhone] = useState(ownerPhone || "");
-
-  const [activationMode, setActivationMode] = useState(() => {
-    const stored = localStorage.getItem("storvex_signupMode");
-    return stored === "TRIAL" ? "TRIAL" : "PAID";
-  });
 
   const originallySelectedPlanKey = useMemo(
     () =>
@@ -549,20 +471,23 @@ export default function OwnerPayment() {
   ]);
 
   useEffect(() => {
+    if (!selectedPlan?.key) return;
+
+    localStorage.setItem("storvex_signupMode", "TRIAL");
+    localStorage.setItem("storvex_planKey", selectedPlan.key);
+
     saveOnboardingPatch({
       intentId,
       storeName,
       ownerName,
       email: ownerEmail,
-      phone: normalizePhone(phone || ownerPhone),
-      signupMode: activationMode,
-      planKey:
-        activationMode === "PAID" && selectedPlan
-          ? selectedPlan.key
-          : "",
-      launchPricing: Boolean(selectedPlan?.launchPricing),
+      phone: normalizePhone(ownerPhone),
+      signupMode: "TRIAL",
+      planKey: selectedPlan.key,
+      paymentReference: "",
+      launchPricing: Boolean(selectedPlan.launchPricing),
       marketplaceIncluded:
-        selectedPlan?.marketplaceIncluded !== false,
+        selectedPlan.marketplaceIncluded !== false,
       passwordReady: true,
     });
   }, [
@@ -571,39 +496,24 @@ export default function OwnerPayment() {
     ownerName,
     ownerEmail,
     ownerPhone,
-    phone,
-    activationMode,
     selectedPlan,
   ]);
 
-  function chooseTrial() {
-    setActivationMode("TRIAL");
-    localStorage.setItem("storvex_signupMode", "TRIAL");
-    localStorage.removeItem("storvex_planKey");
+  function choosePlan(plan) {
+    if (!plan?.key) return;
 
-    saveOnboardingPatch({
-      signupMode: "TRIAL",
-      planKey: "",
-      paymentReference: "",
-      launchPricing: true,
-      marketplaceIncluded: true,
-      phone: normalizePhone(phone || ownerPhone),
-      passwordReady: true,
-    });
-  }
-
-  function choosePaidPlan(plan) {
-    setActivationMode("PAID");
     setSelectedPlanKey(plan.key);
-    localStorage.setItem("storvex_signupMode", "PAID");
+    localStorage.setItem("storvex_signupMode", "TRIAL");
     localStorage.setItem("storvex_planKey", plan.key);
 
     saveOnboardingPatch({
-      signupMode: "PAID",
+      signupMode: "TRIAL",
       planKey: plan.key,
-      launchPricing: true,
-      marketplaceIncluded: true,
-      phone: normalizePhone(phone || ownerPhone),
+      paymentReference: "",
+      launchPricing: Boolean(plan.launchPricing),
+      marketplaceIncluded:
+        plan.marketplaceIncluded !== false,
+      phone: normalizePhone(ownerPhone),
       passwordReady: true,
     });
   }
@@ -623,7 +533,7 @@ export default function OwnerPayment() {
       mode,
     };
 
-    if (mode === "PAID") {
+    if (planKey) {
       payload.planKey = planKey;
     }
 
@@ -632,79 +542,34 @@ export default function OwnerPayment() {
     markSignupCompleted();
     clearOnboardingSession();
 
-    toast.success(mode === "TRIAL" ? "Trial account created. Please log in." : "Store account activated. Please log in.");
+    toast.success(
+      mode === "TRIAL"
+        ? `${trialDays}-day free trial started. Please log in.`
+        : "Store account activated. Please log in.",
+    );
     goToLogin(nav);
   }
 
   async function startTrial() {
-    chooseTrial();
-    setLoading(true);
-
-    try {
-      await completeSignup("TRIAL");
-    } catch (error) {
-      toast.error(error?.response?.data?.message || error?.message || "Trial signup failed");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function sendPaymentRequest() {
     if (!selectedPlan?.key) {
-      toast.error("Choose a paid plan first.");
+      toast.error("Choose a Storvex plan first.");
       return;
     }
 
-    const normalizedPhone = normalizePhone(phone || ownerPhone);
-
-    if (!isValidRwandaPhone(normalizedPhone)) {
-      toast.error("Use a Rwanda phone number like 078xxxxxxx or 25078xxxxxxx.");
-      return;
-    }
-
+    choosePlan(selectedPlan);
     setLoading(true);
 
     try {
-      const { data } = await apiClient.post("/auth/owner-payment", {
-        intentId,
-        planKey: selectedPlan.key,
-        phone: normalizedPhone,
-      });
-
-      const paymentReference = data?.paymentReference || data?.payment?.reference || "";
-
-      saveOnboardingPatch({
-        signupMode: "PAID",
-        planKey: selectedPlan.key,
-        paymentReference,
-        launchPricing: true,
-        marketplaceIncluded: true,
-        phone: normalizedPhone,
-        passwordReady: true,
-      });
-
-      await completeSignup("PAID", selectedPlan.key);
+      await completeSignup("TRIAL", selectedPlan.key);
     } catch (error) {
-      toast.error(error?.response?.data?.message || error?.message || "Payment request failed");
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Free trial signup failed",
+      );
     } finally {
       setLoading(false);
     }
-  }
-
-  function alreadyPaid() {
-    const normalizedPhone = normalizePhone(phone || ownerPhone);
-
-    saveOnboardingPatch({
-      signupMode: "PAID",
-      planKey: selectedPlan.key,
-      launchPricing: true,
-      marketplaceIncluded: true,
-      phone: normalizedPhone,
-      passwordReady: true,
-    });
-
-    toast.success("Log in after your payment is activated.");
-    goToLogin(nav);
   }
 
   if (booting || loadingPlans) {
@@ -714,92 +579,117 @@ export default function OwnerPayment() {
   return (
     <OnboardingShell
       activeStep={3}
-      title="Choose how to start."
-      subtitle={`Start free for ${trialDays} days, or activate the plan that fits your store.`}
+      title="Launch your Storvex plan."
+      subtitle={`Start your selected plan free for ${trialDays} days. No payment is required today.`}
       footer={
         <p className="svx-onboard-login-note">
-          Need to change security details? <Link to="/verify-otp">Back to security</Link>
+          Need to change security details?{" "}
+          <Link to="/verify-otp">Back to security</Link>
         </p>
       }
     >
-      <form className="svx-onboard-form">
+      <form
+        className="svx-onboard-form"
+        onSubmit={(event) => event.preventDefault()}
+      >
         <div className="svx-onboard-form-heading">
           <div>
             <span className="svx-onboard-step-pill">Step 3 of 3</span>
 
-            <h2>Start free or choose your plan.</h2>
+            <h2>Your launch plan.</h2>
 
             <p>
-              Try Storvex first, or activate a paid plan with the exact
-              price and capacity shown by Storvex billing.
+              Review the plan selected earlier or choose another plan before
+              starting your free trial.
             </p>
           </div>
 
           <span className="svx-onboard-safe-pill">
             <span>✓</span>
-            Marketplace included
+            No payment today
           </span>
         </div>
 
-        <section className="grid gap-5 lg:grid-cols-2">
-          <StartOptionCard
-            active={activationMode === "TRIAL"}
-            title="Start free trial"
-            text={`Use Storvex for ${trialDays} days before paying. Available once per verified owner.`}
-            badge="No payment today"
-            icon={<SparkIcon />}
-            onClick={chooseTrial}
-          >
-            <ul className="grid gap-2">
-              <FeatureItem>{trialDays} days free</FeatureItem>
-              <FeatureItem>WhatsApp customer updates included</FeatureItem>
-              <FeatureItem>Marketplace profile included</FeatureItem>
-            </ul>
+        <section className="svx-onboard-card">
+          <SectionHeader
+            icon={<ShieldIcon />}
+            title={`${trialDays}-day free trial`}
+            text="Your chosen plan and its real features become active when your store account is created."
+          />
 
-            {activationMode === "TRIAL" ? (
-              <AsyncButton
-                type="button"
-                loading={loading}
-                loadingText="Creating account..."
-                onClick={startTrial}
-                className="mt-6 w-full"
-              >
-                Start free trial
-                <span aria-hidden="true">→</span>
-              </AsyncButton>
-            ) : null}
-          </StartOptionCard>
+          <PlanSummary
+            selectedPlan={selectedPlan}
+            storeName={storeName}
+          />
 
-          <StartOptionCard
-            active={activationMode === "PAID"}
-            title="Choose a paid plan"
-            text="Activate with the plan that matches your current team, locations and business operations."
-            badge="Marketplace included"
-            icon={<PriceTagIcon />}
-            onClick={() => {
-              if (selectedPlan) choosePaidPlan(selectedPlan);
-            }}
-          >
-            <PlanSummary selectedPlan={selectedPlan} storeName={storeName} />
-
-            {originallySelectedPlanKey &&
-            selectedPlan?.key?.toUpperCase() === originallySelectedPlanKey ? (
-              <p className="mt-4 inline-flex rounded-full bg-[var(--onboard-primary)]/10 px-3 py-1.5 text-xs font-black text-[var(--onboard-primary)]">
-                Selected earlier
-              </p>
-            ) : null}
-
-            <p className="mt-4 text-xs font-bold leading-5 text-[var(--onboard-muted)]">
-              Prices and plan capacity come directly from Storvex billing.
+          {originallySelectedPlanKey &&
+          selectedPlan?.key?.toUpperCase() ===
+            originallySelectedPlanKey ? (
+            <p className="mt-4 inline-flex rounded-full bg-[var(--onboard-primary)]/10 px-3 py-1.5 text-xs font-black text-[var(--onboard-primary)]">
+              Selected earlier
             </p>
-          </StartOptionCard>
+          ) : null}
+
+          <div className="mt-6 grid gap-3 rounded-[22px] border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] p-5 sm:grid-cols-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+                Today
+              </p>
+
+              <p className="mt-2 text-sm font-black text-[var(--onboard-text)]">
+                No payment
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+                Trial period
+              </p>
+
+              <p className="mt-2 text-sm font-black text-[var(--onboard-text)]">
+                {trialDays} days
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+                After trial
+              </p>
+
+              <p className="mt-2 text-sm font-black text-[var(--onboard-text)]">
+                {selectedPlan
+                  ? `${formatMoney(
+                      selectedPlan.price,
+                      selectedPlan.currency,
+                    )} / month`
+                  : "Plan price applies"}
+              </p>
+            </div>
+          </div>
+
+          <AsyncButton
+            type="button"
+            loading={loading}
+            loadingText="Creating your store..."
+            disabled={!selectedPlan?.key}
+            onClick={startTrial}
+            className="mt-6 w-full sm:w-auto sm:min-w-[280px]"
+          >
+            Start {trialDays}-day free trial
+            <span aria-hidden="true">→</span>
+          </AsyncButton>
+
+          <p className="mt-3 text-xs font-bold leading-5 text-[var(--onboard-muted)]">
+            Available once per verified business owner. Your selected plan can
+            be changed before starting the trial.
+          </p>
         </section>
 
         <section className="svx-onboard-card">
           <SectionHeader
             icon={<PriceTagIcon />}
-            title="Storvex plans"
-            text="Pick the plan that matches your team, locations and daily operations. These details come directly from Storvex billing."
+            title="Choose your plan"
+            text={`Select the plan you want to use during the ${trialDays}-day free trial. The displayed monthly price applies after the trial.`}
           />
 
           <div className="grid gap-5 lg:grid-cols-3">
@@ -807,82 +697,14 @@ export default function OwnerPayment() {
               <PlanCard
                 key={plan.key}
                 plan={plan}
-                active={
-                  activationMode === "PAID" &&
-                  selectedPlan?.key === plan.key
-                }
-                onSelect={choosePaidPlan}
+                active={selectedPlan?.key === plan.key}
+                onSelect={choosePlan}
               />
             ))}
           </div>
         </section>
-
-        {activationMode === "PAID" ? (
-          <section className="svx-onboard-card">
-            <SectionHeader
-              icon={<ShieldIcon />}
-              title="Payment request"
-              text="Use a Rwanda mobile money number that can receive and approve the payment request."
-            />
-
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px] lg:items-end">
-              <label className="block">
-                <span className="mb-2 block text-xs font-black text-[var(--onboard-text)]">
-                  MoMo phone number
-                </span>
-
-                <input
-                  className="h-14 w-full rounded-[16px] border border-[var(--onboard-border)] bg-[var(--onboard-card)] px-4 text-sm font-black text-[var(--onboard-text)] outline-none transition placeholder:text-[var(--onboard-muted)] focus:border-[var(--onboard-primary)] focus:ring-4 focus:ring-[rgba(37,99,235,0.14)]"
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  placeholder="078xxxxxxx or 25078xxxxxxx"
-                  inputMode="tel"
-                />
-              </label>
-
-              <div
-                className={cx(
-                  "flex h-14 items-center justify-center rounded-[16px] px-4 text-sm font-black",
-                  isValidRwandaPhone(phone)
-                    ? "bg-emerald-500/10 text-emerald-600"
-                    : "bg-[var(--onboard-card-soft)] text-[var(--onboard-muted)]",
-                )}
-              >
-                {isValidRwandaPhone(phone) ? "Ready for MoMo" : "Phone needed"}
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <PlanSummary selectedPlan={selectedPlan} storeName={storeName} />
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <AsyncButton
-                type="button"
-                loading={loading}
-                loadingText="Activating account..."
-                onClick={sendPaymentRequest}
-                className="w-full"
-              >
-                Send payment request
-                <span aria-hidden="true">→</span>
-              </AsyncButton>
-
-              <AsyncButton
-                type="button"
-                variant="secondary"
-                disabled={loading}
-                onClick={alreadyPaid}
-                className="w-full"
-              >
-                I already paid
-              </AsyncButton>
-            </div>
-          </section>
-        ) : null}
       </form>
     </OnboardingShell>
   );
+
 }
-
-
