@@ -148,47 +148,36 @@ function formatMoney(amount, currency = "RWF") {
   }).format(Math.round(value))} ${currency}`;
 }
 
-function ShieldIcon({ size = 34 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 3.5L19 6.5V11.5C19 16 16.15 19.25 12 20.5C7.85 19.25 5 16 5 11.5V6.5L12 3.5Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M8.75 12L11 14.25L15.5 9.75"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function CompactPlanOption({ plan, active, onSelect }) {
   return (
     <button
       type="button"
       onClick={() => onSelect(plan)}
+      aria-pressed={active}
       className={cx(
-        "group flex w-full min-w-0 items-center justify-between gap-4 rounded-[18px] border px-5 py-5 text-left transition duration-200",
+        "group grid w-full min-w-0 gap-4 rounded-[16px] border px-4 py-4 text-left transition duration-200 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto] sm:items-center sm:px-5",
         active
-          ? "border-[var(--onboard-primary)] bg-[var(--onboard-primary-soft)] ring-1 ring-[var(--onboard-primary)]"
-          : "border-[var(--onboard-border)] bg-[var(--onboard-card)] hover:border-[var(--onboard-primary)]",
+          ? "border-[var(--onboard-primary)] bg-[var(--onboard-card-soft)]"
+          : "border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] hover:border-[color-mix(in_srgb,var(--onboard-primary)_55%,transparent)]",
       )}
+      style={
+        active
+          ? {
+              background:
+                "color-mix(in srgb, var(--onboard-card-soft) 92%, var(--onboard-primary) 8%)",
+            }
+          : undefined
+      }
     >
       <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-lg font-black tracking-[-0.03em] text-[var(--onboard-text)]">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <h3 className="text-base font-black tracking-[-0.025em] text-[var(--onboard-text)] sm:text-lg">
             {plan.name}
           </h3>
 
           {plan.recommended ? (
-            <span className="rounded-full bg-[var(--onboard-primary)] px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-white">
-              Recommended
+            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-[var(--onboard-primary)]">
+              Recommended for most stores
             </span>
           ) : null}
         </div>
@@ -196,21 +185,22 @@ function CompactPlanOption({ plan, active, onSelect }) {
         <p className="mt-1 text-sm font-bold text-[var(--onboard-muted)]">
           {formatMoney(plan.price, plan.currency)} / month
         </p>
-
-        <p className="mt-2 text-xs font-bold leading-5 text-[var(--onboard-muted)]">
-          {planCapacityLabel(plan)}
-        </p>
       </div>
+
+      <p className="min-w-0 text-xs font-bold leading-5 text-[var(--onboard-muted)] sm:text-sm">
+        {planCapacityLabel(plan)}
+      </p>
 
       <span
         className={cx(
-          "flex h-10 shrink-0 items-center justify-center rounded-[12px] px-4 text-xs font-black transition",
+          "flex h-9 w-9 shrink-0 items-center justify-center justify-self-start rounded-full border text-sm font-black transition sm:justify-self-end",
           active
-            ? "bg-[var(--onboard-primary)] text-white"
-            : "border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] text-[var(--onboard-text)] group-hover:border-[var(--onboard-primary)]",
+            ? "border-[var(--onboard-primary)] bg-[var(--onboard-primary)] text-white"
+            : "border-[var(--onboard-border)] bg-transparent text-transparent group-hover:border-[var(--onboard-primary)]",
         )}
+        aria-hidden="true"
       >
-        {active ? "Selected" : "Choose"}
+        ✓
       </span>
     </button>
   );
@@ -223,10 +213,11 @@ function SelectedPlanPanel({
   loading,
   onStartTrial,
   onChangePlan,
+  selectedEarlier,
 }) {
   if (!selectedPlan) {
     return (
-      <section className="rounded-[28px] border border-[var(--onboard-border)] bg-[var(--onboard-card)] p-6">
+      <section className="rounded-[24px] border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] p-6">
         <p className="text-sm font-bold text-[var(--onboard-muted)]">
           Your Storvex plan is loading.
         </p>
@@ -234,44 +225,48 @@ function SelectedPlanPanel({
     );
   }
 
+  const planLabel = selectedEarlier
+    ? "Your selected plan"
+    : selectedPlan.recommended
+      ? "Recommended for most stores"
+      : "Your launch plan";
+
   return (
-    <section className="overflow-hidden rounded-[28px] border border-[var(--onboard-border)] bg-[var(--onboard-card)]">
-      <div className="border-b border-[var(--onboard-border)] px-6 py-7 sm:px-8 sm:py-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="min-w-0">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--onboard-primary)]">
-              Your selected plan
-            </p>
+    <section className="rounded-[24px] border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] p-5 sm:p-7 lg:p-8">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--onboard-primary)]">
+            {planLabel}
+          </p>
 
-            <h2 className="mt-3 text-3xl font-black tracking-[-0.05em] text-[var(--onboard-text)] sm:text-4xl">
-              {selectedPlan.name}
-            </h2>
+          <h2 className="mt-2 text-3xl font-black tracking-[-0.05em] text-[var(--onboard-text)] sm:text-4xl">
+            {selectedPlan.name}
+          </h2>
 
-            <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-[var(--onboard-muted)] sm:text-base sm:leading-7">
-              Use the real {selectedPlan.name} plan free for {trialDays} days.
-              No payment is required today.
-            </p>
-          </div>
+          <p className="mt-3 max-w-xl text-sm font-semibold leading-6 text-[var(--onboard-muted)] sm:text-base">
+            Every {selectedPlan.name} feature is available during your{" "}
+            {trialDays}-day free trial.
+          </p>
+        </div>
 
-          <div className="shrink-0 lg:text-right">
-            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-              After trial
-            </p>
+        <div className="shrink-0 lg:text-right">
+          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+            After your trial
+          </p>
 
-            <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
-              {formatMoney(selectedPlan.price, selectedPlan.currency)}
-            </p>
+          <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)] sm:text-3xl">
+            {formatMoney(selectedPlan.price, selectedPlan.currency)}
+          </p>
 
-            <p className="mt-1 text-xs font-bold text-[var(--onboard-muted)]">
-              per month
-            </p>
-          </div>
+          <p className="mt-1 text-xs font-bold text-[var(--onboard-muted)]">
+            per month
+          </p>
         </div>
       </div>
 
-      <div className="grid border-b border-[var(--onboard-border)] sm:grid-cols-2 lg:grid-cols-4">
-        <div className="border-b border-[var(--onboard-border)] px-6 py-5 sm:border-r lg:border-b-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+      <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-[16px] border border-[var(--onboard-border)] bg-[var(--onboard-page)] px-4 py-4">
+          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
             Store
           </p>
 
@@ -280,9 +275,9 @@ function SelectedPlanPanel({
           </p>
         </div>
 
-        <div className="border-b border-[var(--onboard-border)] px-6 py-5 lg:border-b-0 lg:border-r">
-          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-            Capacity
+        <div className="rounded-[16px] border border-[var(--onboard-border)] bg-[var(--onboard-page)] px-4 py-4">
+          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+            Plan capacity
           </p>
 
           <p className="mt-2 text-sm font-black leading-5 text-[var(--onboard-text)]">
@@ -290,37 +285,37 @@ function SelectedPlanPanel({
           </p>
         </div>
 
-        <div className="border-b border-[var(--onboard-border)] px-6 py-5 sm:border-b-0 sm:border-r">
-          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-            Trial starts
+        <div className="rounded-[16px] border border-[var(--onboard-border)] bg-[var(--onboard-page)] px-4 py-4">
+          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+            Free trial
           </p>
 
           <p className="mt-2 text-sm font-black text-[var(--onboard-text)]">
-            Today
+            {trialDays} days
           </p>
         </div>
 
-        <div className="px-6 py-5">
-          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-            First payment
+        <div className="rounded-[16px] border border-[var(--onboard-border)] bg-[var(--onboard-page)] px-4 py-4">
+          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+            Payment today
           </p>
 
           <p className="mt-2 text-sm font-black text-[var(--onboard-text)]">
-            After {trialDays} days
+            No payment
           </p>
         </div>
       </div>
 
-      <div className="px-6 py-6 sm:px-8 sm:py-7">
+      <div className="mt-7 flex flex-col gap-4 border-t border-[var(--onboard-border)] pt-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <AsyncButton
             type="button"
             loading={loading}
             loadingText="Creating your store..."
             onClick={onStartTrial}
-            className="w-full sm:w-auto sm:min-w-[280px]"
+            className="w-full sm:w-auto sm:min-w-[220px]"
           >
-            Start {trialDays}-day free trial
+            Start free trial
             <span aria-hidden="true">→</span>
           </AsyncButton>
 
@@ -334,10 +329,16 @@ function SelectedPlanPanel({
           </button>
         </div>
 
-        <p className="mt-4 text-xs font-bold leading-5 text-[var(--onboard-muted)]">
-          Available once per verified business owner.
+        <p className="text-xs font-bold leading-5 text-[var(--onboard-muted)] sm:text-right">
+          {trialDays} days free
+          <span className="mx-2 text-[var(--onboard-border)]">•</span>
+          No payment today
         </p>
       </div>
+
+      <p className="mt-3 text-[11px] font-bold leading-5 text-[var(--onboard-muted)]">
+        Available once per verified business owner.
+      </p>
     </section>
   );
 }
@@ -587,11 +588,7 @@ export default function OwnerPayment() {
     <OnboardingShell
       activeStep={3}
       title="Launch your store."
-      subtitle={
-        selectedPlan
-          ? `Your ${trialDays}-day ${selectedPlan.name} trial starts today. No payment is required.`
-          : `Start Storvex free for ${trialDays} days. No payment is required.`
-      }
+      subtitle="Review your plan and start your free trial."
       footer={
         <p className="svx-onboard-login-note">
           Need to change security details?{" "}
@@ -600,7 +597,7 @@ export default function OwnerPayment() {
       }
     >
       <form
-        className="svx-onboard-form"
+        className="svx-onboard-form mx-auto w-full max-w-[1180px]"
         onSubmit={(event) => event.preventDefault()}
       >
         <SelectedPlanPanel
@@ -612,23 +609,28 @@ export default function OwnerPayment() {
           onChangePlan={() =>
             setShowPlanChoices((current) => !current)
           }
+          selectedEarlier={Boolean(
+            originallySelectedPlanKey &&
+              selectedPlan?.key?.toUpperCase() ===
+                originallySelectedPlanKey,
+          )}
         />
 
         {showPlanChoices ? (
-          <section className="mt-6 rounded-[28px] border border-[var(--onboard-border)] bg-[var(--onboard-card)] p-6 sm:p-8">
-            <div className="flex flex-col gap-3 border-b border-[var(--onboard-border)] pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <section className="mt-6 rounded-[24px] border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] p-5 sm:p-7">
+            <div className="flex flex-col gap-4 border-b border-[var(--onboard-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--onboard-primary)]">
                   Change plan
                 </p>
 
                 <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
-                  Choose the right plan for your store.
+                  Select another plan
                 </h2>
 
                 <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
-                  Every plan is free for {trialDays} days. The displayed
-                  monthly price applies after the trial.
+                  Every plan includes a {trialDays}-day free trial. Monthly
+                  billing begins only after the trial.
                 </p>
               </div>
 
@@ -641,7 +643,7 @@ export default function OwnerPayment() {
               </button>
             </div>
 
-            <div className="mt-6 grid gap-3">
+            <div className="mt-5 grid gap-2.5">
               {plans.map((plan) => (
                 <CompactPlanOption
                   key={plan.key}
@@ -653,8 +655,13 @@ export default function OwnerPayment() {
             </div>
 
             <p className="mt-5 text-xs font-bold leading-5 text-[var(--onboard-muted)]">
-              Full feature comparisons remain available on the public pricing
-              page.
+              Need the full comparison?{" "}
+              <Link
+                to="/pricing"
+                className="text-[var(--onboard-primary)] hover:underline"
+              >
+                View pricing details
+              </Link>
             </p>
           </section>
         ) : null}
