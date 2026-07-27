@@ -1,6 +1,9 @@
 "use strict";
 
 const prisma = require("../../config/database");
+const {
+  serializeOwnerProduct,
+} = require("../inventory/inventory.productImageAccess.service");
 const { recordMoneyAccountMovement, handleMoneyAccountError } = require("../money/moneyAccount.service");
 const {
   reserveSaleDocumentNumbersTx,
@@ -1071,12 +1074,20 @@ async function quickPicks(req, res) {
       take: limit,
     });
 
+    const serializedBestSellers = await Promise.all(
+      bestSellers.map((product) => serializeOwnerProduct(product)),
+    );
+
+    const serializedLatest = await Promise.all(
+      latest.map((product) => serializeOwnerProduct(product)),
+    );
+
     return res.json({
       periodDays,
       limit,
       branchScope: scope,
-      bestSellers,
-      latest: latest.map(decoratePosProduct),
+      bestSellers: serializedBestSellers,
+      latest: serializedLatest.map(decoratePosProduct),
     });
   } catch (err) {
     if (String(err?.message || "") === "BRANCH_ACCESS_DENIED") {

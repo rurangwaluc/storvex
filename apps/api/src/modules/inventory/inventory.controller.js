@@ -4,6 +4,7 @@ const {
   deleteObject,
 } = require("../../lib/storage/objectStorage");
 const {
+  serializeOwnerProduct,
   serializeOwnerProductImage,
   serializeOwnerProductImages,
 } = require("./inventory.productImageAccess.service");
@@ -1360,7 +1361,15 @@ async function searchProducts(req, res) {
       scope.mode === "SINGLE_BRANCH" ? scope.branchId : null,
     );
 
-    return res.json({ products: withListingAliases(enriched), count: enriched.length, branchScope: scope });
+    const serializedProducts = await Promise.all(
+      enriched.map((product) => serializeOwnerProduct(product)),
+    );
+
+    return res.json({
+      products: withListingAliases(serializedProducts),
+      count: serializedProducts.length,
+      branchScope: scope,
+    });
   } catch (err) {
     if (handleBranchError(res, err)) return;
 
