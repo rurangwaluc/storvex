@@ -27,8 +27,8 @@
 :root[data-theme="dark"] .storvex-onboarding {
   --onboard-bg: #06111f;
   --onboard-page: #06111f;
-  --onboard-card: #0a1828;
-  --onboard-card-soft: #0d1d32;
+  --onboard-card: #1f1f20;
+  --onboard-card-soft: #101923;
   --onboard-text: #ffffff;
   --onboard-muted: rgba(226, 237, 249, 0.72);
   --onboard-border: rgba(126, 166, 207, 0.16);
@@ -42,7 +42,7 @@
 }
 
 .storvex-onboarding main,
-.storvex-onboarding section,
+.storvex-onboarding > section,
 .svx-onboard-shell,
 .svx-onboard-top,
 .svx-onboard-content {
@@ -327,23 +327,9 @@
   position: relative;
   border: 1px solid var(--onboard-border);
   border-radius: 24px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--onboard-card) 96%, var(--onboard-primary-soft)),
-      var(--onboard-card)
-    );
+  background: var(--onboard-card);
   padding: 28px;
   box-shadow: var(--onboard-shadow);
-}
-
-:root[data-theme="dark"] .svx-onboard-card {
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--onboard-card) 92%, var(--onboard-primary-soft)),
-      var(--onboard-card)
-    );
 }
 
 .svx-onboard-card:has(.svx-business-category-picker.is-open) {
@@ -418,7 +404,7 @@
   height: 56px;
   border: 1px solid var(--onboard-border);
   border-radius: 14px;
-  background: var(--onboard-card);
+  background: var(--onboard-card-soft);
   padding: 0 18px;
   color: var(--onboard-text);
   outline: none;
@@ -574,12 +560,7 @@ select.svx-onboard-input {
   margin-bottom: 24px;
   border: 1px solid color-mix(in srgb, var(--onboard-primary) 22%, var(--onboard-border));
   border-radius: 24px;
-  background:
-    linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--onboard-card) 90%, var(--onboard-primary-soft)),
-      var(--onboard-card)
-    );
+  background: var(--onboard-card);
   padding: 22px;
   box-shadow: var(--onboard-shadow);
 }
@@ -688,7 +669,7 @@ select.svx-onboard-input {
   min-height: 56px;
   border: 1px solid var(--onboard-border);
   border-radius: 14px;
-  background: var(--onboard-card);
+  background: var(--onboard-card-soft);
   padding: 0 18px;
   color: var(--onboard-text);
   text-align: left;
@@ -737,7 +718,7 @@ select.svx-onboard-input {
   overflow: auto;
   border: 1px solid var(--onboard-border);
   border-radius: 20px;
-  background: var(--onboard-card);
+  background: var(--onboard-card-soft);
   padding: 10px;
   box-shadow:
     0 28px 80px rgba(15, 45, 90, 0.22),

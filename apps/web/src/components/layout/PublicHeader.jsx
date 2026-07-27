@@ -62,7 +62,6 @@ export default function PublicHeader() {
   const headerRef = useRef(null);
 
   const pathname = location.pathname || "/";
-  const isLoginPage = pathname === "/login";
 
   useEffect(() => {
     setIsMenuOpen(false);
@@ -190,22 +189,20 @@ export default function PublicHeader() {
             </span>
           </button>
 
-          {!isLoginPage ? (
-            <Link
-              to="/login"
-              className="svx-login-link"
-              onClick={closeMenu}
-            >
-              Log in
-            </Link>
-          ) : null}
+          <Link
+            to="/login"
+            className="svx-login-link"
+            onClick={closeMenu}
+          >
+            Log in
+          </Link>
 
           <Link
             to="/signup"
             className="svx-header-cta"
             onClick={closeMenu}
           >
-            {isLoginPage ? "Create account" : "Get started"}
+            Get started
           </Link>
 
           <button

@@ -4702,3 +4702,10 @@ body:has(
     filter: none !important;
   }
 }
+
+/* Provide landing-page variables to the shared public header only. */
+.svx-public-header-scope {
+  min-height: 0;
+  overflow: visible;
+  background: transparent;
+}
