@@ -48,6 +48,23 @@ export function buildApiUrl(path = "") {
   return cleanPath ? `${API_BASE_URL}/${cleanPath}` : API_BASE_URL;
 }
 
+function normalizeRequestPath(path) {
+  const value = String(path || "").trim();
+
+  if (!value || /^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  if (
+    API_BASE_URL.toLowerCase().endsWith("/api") &&
+    value.toLowerCase().startsWith("/api/")
+  ) {
+    return value.slice(4);
+  }
+
+  return value;
+}
+
 function getToken() {
   return localStorage.getItem("tenantToken") || localStorage.getItem("token") || "";
 }
@@ -195,6 +212,8 @@ function clearAuthStorage() {
 
 apiClient.interceptors.request.use(
   (config) => {
+    config.url = normalizeRequestPath(config.url);
+
     const token = getToken();
 
     config.headers = config.headers || {};

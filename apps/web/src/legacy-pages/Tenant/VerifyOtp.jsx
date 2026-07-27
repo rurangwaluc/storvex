@@ -729,7 +729,7 @@ export default function VerifyOtp() {
     async function restoreSecureStatus() {
       try {
         const { data } = await apiClient.get(
-          `/api/auth/signup/owner-intent/${encodeURIComponent(
+          `/auth/signup/owner-intent/${encodeURIComponent(
             intentId,
           )}/status`,
         );
@@ -961,7 +961,7 @@ export default function VerifyOtp() {
         lastPhoneAttemptRef.current = "";
       }
 
-      const { data } = await apiClient.post("/api/auth/signup/otp/send", {
+      const { data } = await apiClient.post("/auth/signup/otp/send", {
         intentId,
         channel,
       });
@@ -1039,7 +1039,7 @@ export default function VerifyOtp() {
         setPhoneError("");
       }
 
-      const { data } = await apiClient.post("/api/auth/signup/otp/verify", {
+      const { data } = await apiClient.post("/auth/signup/otp/verify", {
         intentId,
         channel,
         code,
