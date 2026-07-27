@@ -59,6 +59,40 @@
   box-sizing: border-box;
 }
 
+/* Launch plan confirmation surfaces */
+
+.svx-launch-plan-selector {
+  background: #ffffff;
+}
+
+.svx-launch-plan-option {
+  background: #f8fbff;
+}
+
+.svx-launch-plan-option.is-active {
+  background: color-mix(
+    in srgb,
+    #eef6ff 92%,
+    var(--onboard-primary) 8%
+  );
+}
+
+:root[data-theme="dark"] .svx-launch-plan-selector {
+  background: #1f1f20;
+}
+
+:root[data-theme="dark"] .svx-launch-plan-option {
+  background: #101923;
+}
+
+:root[data-theme="dark"] .svx-launch-plan-option.is-active {
+  background: color-mix(
+    in srgb,
+    #101923 88%,
+    var(--onboard-primary) 12%
+  );
+}
+
 .storvex-onboarding h1,
 .storvex-onboarding h2,
 .storvex-onboarding h3,

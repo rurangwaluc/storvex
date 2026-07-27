@@ -155,19 +155,11 @@ function CompactPlanOption({ plan, active, onSelect }) {
       onClick={() => onSelect(plan)}
       aria-pressed={active}
       className={cx(
-        "group grid w-full min-w-0 gap-4 rounded-[16px] border px-4 py-4 text-left transition duration-200 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto] sm:items-center sm:px-5",
+        "svx-launch-plan-option group grid w-full min-w-0 gap-4 rounded-[16px] border px-4 py-4 text-left transition duration-200 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto] sm:items-center sm:px-5",
         active
-          ? "border-[var(--onboard-primary)] bg-[var(--onboard-card-soft)]"
-          : "border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] hover:border-[color-mix(in_srgb,var(--onboard-primary)_55%,transparent)]",
+          ? "is-active border-[var(--onboard-primary)]"
+          : "border-[var(--onboard-border)] hover:border-[color-mix(in_srgb,var(--onboard-primary)_55%,transparent)]",
       )}
-      style={
-        active
-          ? {
-              background:
-                "color-mix(in srgb, var(--onboard-card-soft) 92%, var(--onboard-primary) 8%)",
-            }
-          : undefined
-      }
     >
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -617,7 +609,7 @@ export default function OwnerPayment() {
         />
 
         {showPlanChoices ? (
-          <section className="mt-6 rounded-[24px] border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] p-5 sm:p-7">
+          <section className="svx-launch-plan-selector mt-6 rounded-[24px] border border-[var(--onboard-border)] p-5 sm:p-7">
             <div className="flex flex-col gap-4 border-b border-[var(--onboard-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--onboard-primary)]">
