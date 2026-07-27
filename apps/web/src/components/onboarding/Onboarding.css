@@ -27,14 +27,14 @@
 :root[data-theme="dark"] .storvex-onboarding {
   --onboard-bg: #06111f;
   --onboard-page: #06111f;
-  --onboard-card: #1f1f20;
-  --onboard-card-soft: #101923;
+  --onboard-card: #0a1828;
+  --onboard-card-soft: #0d1d32;
   --onboard-text: #ffffff;
-  --onboard-muted: rgba(255, 255, 255, 0.72);
-  --onboard-border: rgba(255, 255, 255, 0.12);
+  --onboard-muted: rgba(226, 237, 249, 0.72);
+  --onboard-border: rgba(126, 166, 207, 0.16);
   --onboard-primary: #159cff;
   --onboard-primary-dark: #0b86df;
-  --onboard-primary-soft: rgba(21, 156, 255, 0.12);
+  --onboard-primary-soft: rgba(21, 156, 255, 0.1);
   --onboard-shadow: none;
   --onboard-shadow-strong: none;
 
