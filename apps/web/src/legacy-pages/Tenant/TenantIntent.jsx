@@ -394,7 +394,7 @@ export default function TenantIntent() {
     }
 
     if (!isValidRwandaPhone(phone)) {
-      toast.error("Use a Rwanda phone number like 078xxxxxxx or 25078xxxxxxx");
+      toast.error("Use a Rwanda mobile number like 07XXXXXXXX or +2507XXXXXXXX");
       return false;
     }
 
@@ -442,7 +442,7 @@ export default function TenantIntent() {
         deviceId,
       };
 
-      const data = await apiFetch("/api/auth/signup/owner-intent", {
+      const data = await apiFetch("/auth/signup/owner-intent", {
         method: "POST",
         body: payload,
       });
@@ -610,7 +610,7 @@ export default function TenantIntent() {
                     className="svx-onboard-input"
                     value={form.phone}
                     onChange={(event) => setField("phone", event.target.value)}
-                    placeholder="078xx xxxx"
+                    placeholder="07XX XXX XXX"
                     autoComplete="tel"
                     required
                   />
