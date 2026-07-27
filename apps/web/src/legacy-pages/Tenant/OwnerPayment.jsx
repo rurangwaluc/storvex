@@ -217,7 +217,7 @@ function SelectedPlanPanel({
 }) {
   if (!selectedPlan) {
     return (
-      <section className="rounded-[24px] border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] p-6">
+      <section className="svx-launch-plan-panel rounded-[24px] border border-[var(--onboard-border)] p-6">
         <p className="text-sm font-bold text-[var(--onboard-muted)]">
           Your Storvex plan is loading.
         </p>
@@ -232,7 +232,7 @@ function SelectedPlanPanel({
       : "Your launch plan";
 
   return (
-    <section className="rounded-[24px] border border-[var(--onboard-border)] bg-[var(--onboard-card-soft)] p-5 sm:p-7 lg:p-8">
+    <section className="svx-launch-plan-panel rounded-[24px] border border-[var(--onboard-border)] p-5 sm:p-7 lg:p-8">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--onboard-primary)]">
@@ -265,7 +265,7 @@ function SelectedPlanPanel({
       </div>
 
       <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-[16px] border border-[var(--onboard-border)] bg-[var(--onboard-page)] px-4 py-4">
+        <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
           <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
             Store
           </p>
@@ -275,7 +275,7 @@ function SelectedPlanPanel({
           </p>
         </div>
 
-        <div className="rounded-[16px] border border-[var(--onboard-border)] bg-[var(--onboard-page)] px-4 py-4">
+        <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
           <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
             Plan capacity
           </p>
@@ -285,7 +285,7 @@ function SelectedPlanPanel({
           </p>
         </div>
 
-        <div className="rounded-[16px] border border-[var(--onboard-border)] bg-[var(--onboard-page)] px-4 py-4">
+        <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
           <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
             Free trial
           </p>
@@ -295,7 +295,7 @@ function SelectedPlanPanel({
           </p>
         </div>
 
-        <div className="rounded-[16px] border border-[var(--onboard-border)] bg-[var(--onboard-page)] px-4 py-4">
+        <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
           <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
             Payment today
           </p>

@@ -66,6 +66,26 @@
   margin: 0;
 }
 
+
+/* Launch-plan confirmation surfaces */
+.svx-launch-plan-panel {
+  background: var(--onboard-card);
+}
+
+.svx-launch-plan-detail {
+  background: var(--onboard-card-soft);
+}
+
+:root[data-theme="dark"] .svx-launch-plan-panel {
+  background: #1f1f20;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+:root[data-theme="dark"] .svx-launch-plan-detail {
+  background: #101923;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 .storvex-onboarding h1,
 .storvex-onboarding h2,
 .storvex-onboarding h3 {
