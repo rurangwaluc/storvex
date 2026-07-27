@@ -93,10 +93,10 @@ function isOnboardingRequest(path) {
   const value = String(path || "");
 
   return (
-    value.includes("/api/auth/signup/") ||
-    value.includes("/api/auth/otp/") ||
-    value.includes("/api/auth/owner-payment") ||
-    value.includes("/api/auth/confirm-signup")
+    value.includes("/auth/signup/") ||
+    value.includes("/auth/otp/") ||
+    value.includes("/auth/owner-payment") ||
+    value.includes("/auth/confirm-signup")
   );
 }
 
