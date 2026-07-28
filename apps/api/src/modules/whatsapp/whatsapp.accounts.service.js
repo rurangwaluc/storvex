@@ -57,20 +57,16 @@ function buildSetupStatus(account) {
   const hasPhoneNumberId = hasValue(account?.phoneNumberId);
   const hasWabaId = hasValue(account?.wabaId);
   const hasAccessToken = hasValue(account?.accessToken);
-  const hasWebhookVerifyToken = hasValue(account?.webhookVerifyToken);
-  const hasAppSecret = hasValue(account?.appSecret);
-
+ 
   const requiredMissing = [];
 
   if (!hasPhone) requiredMissing.push("PHONE_NUMBER");
   if (!hasPhoneNumberId) requiredMissing.push("PHONE_NUMBER_ID");
   if (!hasAccessToken) requiredMissing.push("ACCESS_TOKEN");
-  if (!hasWebhookVerifyToken) requiredMissing.push("WEBHOOK_VERIFY_TOKEN");
-
+ 
   const warnings = [];
 
   if (!hasWabaId) warnings.push("WABA_ID_MISSING");
-  if (!hasAppSecret) warnings.push("APP_SECRET_MISSING");
 
   return {
     isReady: requiredMissing.length === 0 && Boolean(account?.isActive),
@@ -82,8 +78,6 @@ function buildSetupStatus(account) {
       hasPhoneNumberId,
       hasWabaId,
       hasAccessToken,
-      hasWebhookVerifyToken,
-      hasAppSecret,
     },
   };
 }
@@ -133,7 +127,7 @@ function validateRequiredPhoneNumber(phoneNumber) {
   }
 }
 
-function validateActiveCredentials({ phoneNumberId, accessToken, webhookVerifyToken, isActive }) {
+function validateActiveCredentials({ phoneNumberId, accessToken, isActive }) {
   if (!isActive) return;
 
   if (!normalizeStr(phoneNumberId)) {
@@ -142,10 +136,6 @@ function validateActiveCredentials({ phoneNumberId, accessToken, webhookVerifyTo
 
   if (!normalizeStr(accessToken)) {
     throw appError("ACCESS_TOKEN_REQUIRED_WHEN_ACTIVE");
-  }
-
-  if (!normalizeStr(webhookVerifyToken)) {
-    throw appError("WEBHOOK_VERIFY_TOKEN_REQUIRED_WHEN_ACTIVE");
   }
 }
 
@@ -290,7 +280,6 @@ async function createAccount(tenantId, data) {
   validateActiveCredentials({
     phoneNumberId: payload.phoneNumberId,
     accessToken: payload.accessToken,
-    webhookVerifyToken: payload.webhookVerifyToken,
     isActive: payload.isActive,
   });
 
@@ -369,7 +358,6 @@ async function updateAccount(tenantId, id, data) {
   validateActiveCredentials({
     phoneNumberId: payload.phoneNumberId,
     accessToken: payload.accessToken,
-    webhookVerifyToken: payload.webhookVerifyToken,
     isActive: payload.isActive,
   });
 
@@ -417,7 +405,6 @@ async function setAccountActive(tenantId, id, isActive) {
   validateActiveCredentials({
     phoneNumberId: existing.phoneNumberId,
     accessToken: existing.accessToken,
-    webhookVerifyToken: existing.webhookVerifyToken,
     isActive: nextIsActive,
   });
 

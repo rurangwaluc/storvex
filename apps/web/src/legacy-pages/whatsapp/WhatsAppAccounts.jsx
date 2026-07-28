@@ -58,9 +58,7 @@ function normalizeAccount(raw) {
     businessName: String(raw.businessName || ""),
     phoneNumberId: String(raw.phoneNumberId || ""),
     wabaId: String(raw.wabaId || ""),
-    webhookVerifyToken: String(raw.webhookVerifyToken || ""),
-    appSecret: String(raw.appSecret || ""),
-    hasAccessToken: Boolean(raw.hasAccessToken),
+     hasAccessToken: Boolean(raw.hasAccessToken),
     isActive: Boolean(raw.isActive),
     createdAt: raw.createdAt || null,
     updatedAt: raw.updatedAt || null,
@@ -80,11 +78,7 @@ function getAccountSetupSteps({ account = null, form = null, mode = "create" } =
   const hasAccessToken = Boolean(
     String(form?.accessToken || "").trim() || account?.hasAccessToken
   );
-  const webhookVerifyToken = String(
-    form?.webhookVerifyToken || account?.webhookVerifyToken || ""
-  ).trim();
-  const appSecret = String(form?.appSecret || account?.appSecret || "").trim();
-  const isActive = Boolean(form ? form.isActive : account?.isActive);
+   const isActive = Boolean(form ? form.isActive : account?.isActive);
 
   return [
     {
@@ -113,13 +107,7 @@ function getAccountSetupSteps({ account = null, form = null, mode = "create" } =
         : "Paste the approved WhatsApp token before activating live sending.",
       done: hasAccessToken,
     },
-    {
-      key: "webhook",
-      label: "Webhook verification ready",
-      help: "Verify token and app secret protect incoming WhatsApp events.",
-      done: Boolean(webhookVerifyToken && appSecret),
-    },
-    {
+     {
       key: "active",
       label: "Account activated",
       help: "Keep inactive until the required setup values are complete.",
@@ -149,9 +137,7 @@ function blankForm() {
     phoneNumberId: "",
     wabaId: "",
     accessToken: "",
-    webhookVerifyToken: "",
-    appSecret: "",
-    isActive: true,
+     isActive: true,
   };
 }
 
@@ -162,9 +148,7 @@ function sanitizePayload(form) {
     phoneNumberId: String(form.phoneNumberId || "").trim() || null,
     wabaId: String(form.wabaId || "").trim() || null,
     accessToken: String(form.accessToken || "").trim() || null,
-    webhookVerifyToken: String(form.webhookVerifyToken || "").trim() || null,
-    appSecret: String(form.appSecret || "").trim() || null,
-    isActive: Boolean(form.isActive),
+     isActive: Boolean(form.isActive),
   };
 }
 
@@ -615,9 +599,7 @@ function AccountDetailsPanel({ account, onEdit, onCreate }) {
         <AccountDetailRow icon={<ShieldIcon />} label="Phone number ID" value={account.phoneNumberId} />
         <AccountDetailRow icon={<UsersIcon />} label="WABA ID" value={account.wabaId} />
         <AccountDetailRow icon={<TokenIcon />} label="Access token" value={account.hasAccessToken ? "Saved" : ""} secure={account.hasAccessToken} />
-        <AccountDetailRow icon={<TokenIcon />} label="Webhook verify token" value={account.webhookVerifyToken} secure={Boolean(account.webhookVerifyToken)} />
-        <AccountDetailRow icon={<ShieldIcon />} label="App secret" value={account.appSecret} secure={Boolean(account.appSecret)} />
-        <AccountDetailRow icon={<CalendarIcon />} label="Created" value={formatDateTime(account.createdAt)} />
+         <AccountDetailRow icon={<CalendarIcon />} label="Created" value={formatDateTime(account.createdAt)} />
         <AccountDetailRow icon={<CalendarIcon />} label="Last updated" value={formatDateTime(account.updatedAt || account.createdAt)} />
       </div>
 
@@ -692,9 +674,7 @@ export default function WhatsAppAccounts() {
             phoneNumberId: found.phoneNumberId || "",
             wabaId: found.wabaId || "",
             accessToken: "",
-            webhookVerifyToken: "",
-            appSecret: "",
-            isActive: Boolean(found.isActive),
+             isActive: Boolean(found.isActive),
           });
         }
       }
@@ -781,9 +761,7 @@ export default function WhatsAppAccounts() {
       phoneNumberId: account.phoneNumberId || "",
       wabaId: account.wabaId || "",
       accessToken: "",
-      webhookVerifyToken: "",
-      appSecret: "",
-      isActive: Boolean(account.isActive),
+       isActive: Boolean(account.isActive),
     });
   }
 
@@ -827,9 +805,7 @@ export default function WhatsAppAccounts() {
         setForm((current) => ({
           ...current,
           accessToken: "",
-          webhookVerifyToken: "",
-          appSecret: "",
-        }));
+         }));
 
         toast.success("WhatsApp account updated");
       } else {
@@ -862,9 +838,7 @@ export default function WhatsAppAccounts() {
           phoneNumberId: created.phoneNumberId || "",
           wabaId: created.wabaId || "",
           accessToken: "",
-          webhookVerifyToken: "",
-          appSecret: "",
-          isActive: Boolean(created.isActive),
+           isActive: Boolean(created.isActive),
         });
 
         toast.success("WhatsApp account created");
@@ -1131,10 +1105,10 @@ export default function WhatsAppAccounts() {
                 <ShieldIcon />
               </IconShell>
               <div>
-                <strong>Private setup values</strong>
+                <strong>WhatsApp access</strong>
                 <span>
-                  These values are sensitive. When editing, leave a secret field empty to keep
-                  the current saved value.
+                  Paste the access token provided by Meta. Storvex keeps it private and never
+                  displays the saved token again.
                 </span>
               </div>
             </div>
@@ -1155,36 +1129,6 @@ export default function WhatsAppAccounts() {
               }
             />
 
-            <div className="svx-wa-form-grid">
-              <Field
-                label="Webhook verify token"
-                hint="Used when Meta verifies the webhook."
-              >
-                <input
-                  className="svx-wa-input"
-                  value={form.webhookVerifyToken}
-                  onChange={(event) => updateField("webhookVerifyToken", event.target.value)}
-                  placeholder={
-                    mode === "edit"
-                      ? "Leave empty to keep current saved verify token"
-                      : "Webhook verify token"
-                  }
-                />
-              </Field>
-
-              <Field label="App secret" hint="Used to verify trusted incoming requests.">
-                <input
-                  className="svx-wa-input"
-                  value={form.appSecret}
-                  onChange={(event) => updateField("appSecret", event.target.value)}
-                  placeholder={
-                    mode === "edit"
-                      ? "Leave empty to keep current saved app secret"
-                      : "App secret"
-                  }
-                />
-              </Field>
-            </div>
           </section>
 
           <label className="svx-wa-toggle-card">

@@ -48,8 +48,6 @@ function normalizeAccount(raw) {
     businessName: trimString(item.businessName),
     phoneNumberId: trimString(item.phoneNumberId),
     wabaId: trimString(item.wabaId),
-    webhookVerifyToken: trimString(item.webhookVerifyToken),
-    appSecret: trimString(item.appSecret),
     hasAccessToken: normalizeBoolean(item.hasAccessToken, false),
     isActive: normalizeBoolean(item.isActive, false),
     createdAt: item.createdAt || null,
@@ -80,14 +78,6 @@ function buildAccountPayload(payload = {}, { partial = false } = {}) {
 
   if (!partial || Object.prototype.hasOwnProperty.call(body, "accessToken")) {
     built.accessToken = normalizeNullableString(body.accessToken);
-  }
-
-  if (!partial || Object.prototype.hasOwnProperty.call(body, "webhookVerifyToken")) {
-    built.webhookVerifyToken = normalizeNullableString(body.webhookVerifyToken);
-  }
-
-  if (!partial || Object.prototype.hasOwnProperty.call(body, "appSecret")) {
-    built.appSecret = normalizeNullableString(body.appSecret);
   }
 
   if (!partial || Object.prototype.hasOwnProperty.call(body, "isActive")) {
