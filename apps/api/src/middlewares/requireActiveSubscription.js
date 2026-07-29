@@ -3,6 +3,10 @@ const {
   serializeSubscriptionEntitlements,
 } = require("../modules/billing/subscriptionEntitlements");
 
+const {
+  buildQueuedPlanActivationUpdate,
+} = require("../modules/billing/subscriptionPlanTransition");
+
 function toValidDate(value) {
   if (!value) return null;
   const d = new Date(value);
@@ -83,6 +87,53 @@ function isGraceStillActive(subscription, now) {
   return graceEndDate >= now;
 }
 
+async function activatePaidPlanAfterTrialIfDue(subscription, now) {
+  const nextPlanKey = String(subscription?.nextPlanKey || "").trim();
+
+  if (!nextPlanKey) {
+    return subscription;
+  }
+
+  const successfulRenewal = await prisma.payment.findFirst({
+    where: {
+      tenantId: subscription.tenantId,
+      purpose: "SUBSCRIPTION_RENEWAL",
+      status: "SUCCESS",
+      planKey: nextPlanKey,
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+    select: {
+      planKey: true,
+      tierKey: true,
+      cycleKey: true,
+      staffLimit: true,
+      branchLimit: true,
+      priceAmount: true,
+      currency: true,
+      entitlementSnapshot: true,
+    },
+  });
+
+  const activationUpdate = buildQueuedPlanActivationUpdate({
+    subscription,
+    successfulRenewal,
+    now,
+  });
+
+  if (!activationUpdate) {
+    return subscription;
+  }
+
+  return prisma.subscription.update({
+    where: {
+      tenantId: subscription.tenantId,
+    },
+    data: activationUpdate,
+  });
+}
+
 /**
  * Normalized lifecycle:
  *
@@ -126,6 +177,13 @@ async function updateSubscriptionAccessModeIfNeeded(subscription) {
       });
     }
     return subscription;
+  }
+
+  const resolvedSubscription =
+    await activatePaidPlanAfterTrialIfDue(subscription, now);
+
+  if (resolvedSubscription !== subscription) {
+    return resolvedSubscription;
   }
 
   const trialActive = isTrialStillActive(subscription, now);

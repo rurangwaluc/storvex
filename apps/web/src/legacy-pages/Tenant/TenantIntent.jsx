@@ -286,8 +286,18 @@ export default function TenantIntent() {
     [searchParams],
   );
 
+  const previousHasDraft = hasOnboardingDraft(previous);
+
   const selectedPlanKey =
-    requestedPlanKey || cleanString(previous?.planKey).toUpperCase();
+    requestedPlanKey ||
+    (previousHasDraft
+      ? cleanString(previous?.planKey).toUpperCase()
+      : "");
+
+  const planWasExplicitlySelected = Boolean(
+    requestedPlanKey ||
+      (previousHasDraft && previous?.planSelectionExplicit === true),
+  );
 
   const reviewMode = searchParams.get("review") === "1";
 
@@ -320,6 +330,8 @@ export default function TenantIntent() {
       saveOnboardingState({
         ...(previous || {}),
         planKey: requestedPlanKey,
+        planSelectionExplicit: true,
+        planSelectionSource: "PRICING",
         signupMode: "PAID",
       });
     }
@@ -332,6 +344,8 @@ export default function TenantIntent() {
 
     if (requestedPlanKey) {
       localStorage.setItem("storvex_planKey", requestedPlanKey);
+      localStorage.setItem("storvex_planSelectionExplicit", "true");
+      localStorage.setItem("storvex_planSelectionSource", "PRICING");
       localStorage.setItem("storvex_signupMode", "PAID");
     }
 
@@ -477,6 +491,12 @@ export default function TenantIntent() {
         phoneVerified: false,
         signupMode: selectedPlanKey ? "PAID" : "",
         planKey: selectedPlanKey,
+        planSelectionExplicit: planWasExplicitlySelected,
+        planSelectionSource: requestedPlanKey
+          ? "PRICING"
+          : planWasExplicitlySelected
+            ? previous?.planSelectionSource || "ONBOARDING"
+            : "",
       });
 
       toast.success("Store setup started");

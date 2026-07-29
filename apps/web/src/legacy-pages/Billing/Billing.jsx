@@ -118,7 +118,6 @@ function pickEffectiveBranchLimit(overview) {
 
 function pickCurrentPlan(plans, subscription) {
   return (
-    findSubscriptionPlan(plans, subscription?.nextPlanKey) ||
     findSubscriptionPlan(plans, subscription?.planKey) ||
     null
   );
@@ -379,6 +378,28 @@ export default function Billing({ embedded = false } = {}) {
     [plans, overview.subscription],
   );
 
+  const confirmedNextPlan = useMemo(() => {
+    const nextPlanKey = overview?.subscription?.nextPlanKey;
+
+    if (!nextPlanKey) return null;
+
+    const hasSuccessfulPayment = (overview?.payments || []).some(
+      (payment) =>
+        String(payment?.purpose || "").toUpperCase() ===
+          "SUBSCRIPTION_RENEWAL" &&
+        String(payment?.status || "").toUpperCase() === "SUCCESS" &&
+        payment?.planKey === nextPlanKey,
+    );
+
+    return hasSuccessfulPayment
+      ? findSubscriptionPlan(plans, nextPlanKey)
+      : null;
+  }, [
+    overview?.subscription?.nextPlanKey,
+    overview?.payments,
+    plans,
+  ]);
+
   const displayPlan = currentPlan || selectedPlan;
 
   async function loadBilling({ silent = false } = {}) {
@@ -541,6 +562,18 @@ export default function Billing({ embedded = false } = {}) {
               : formatMoney(subscription?.priceAmount, subscription?.currency)}
             <span>/ month</span>
           </div>
+
+          {confirmedNextPlan ? (
+            <div className="svx-billing-warning">
+              <strong>
+                Next paid plan: {confirmedNextPlan.name}
+              </strong>
+              <div>
+                Starts after your trial ends on{" "}
+                {formatDate(subscription?.trialEndDate)}.
+              </div>
+            </div>
+          ) : null}
 
           <div className="svx-billing-current-meta">
             <div>

@@ -16,6 +16,8 @@ export const ONBOARDING_STORAGE_KEYS = [
   "storvex_phoneVerified",
   "storvex_signupMode",
   "storvex_planKey",
+  "storvex_planSelectionExplicit",
+  "storvex_planSelectionSource",
 ];
 
 function getStorage() {
@@ -60,6 +62,11 @@ export function readOnboardingState() {
       phoneVerified: readBoolean("storvex_phoneVerified"),
       signupMode: cleanString(storage.getItem("storvex_signupMode")),
       planKey: cleanString(storage.getItem("storvex_planKey")),
+      planSelectionExplicit:
+        storage.getItem("storvex_planSelectionExplicit") === "true",
+      planSelectionSource: cleanString(
+        storage.getItem("storvex_planSelectionSource"),
+      ),
     };
 
     return {
@@ -111,6 +118,20 @@ export function saveOnboardingState(nextState = {}) {
 
   if (typeof next.planKey === "string") {
     storage.setItem("storvex_planKey", cleanString(next.planKey));
+  }
+
+  if (typeof next.planSelectionExplicit === "boolean") {
+    storage.setItem(
+      "storvex_planSelectionExplicit",
+      String(next.planSelectionExplicit),
+    );
+  }
+
+  if (typeof next.planSelectionSource === "string") {
+    storage.setItem(
+      "storvex_planSelectionSource",
+      cleanString(next.planSelectionSource),
+    );
   }
 }
 

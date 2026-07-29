@@ -267,3 +267,193 @@ test("counts only store-operation roles as staff seats", () => {
     );
   });
 });
+
+const {
+  isActiveTrial,
+  hasTrialEnded,
+  buildSuccessfulRenewalSubscriptionUpdate,
+  buildQueuedPlanActivationUpdate,
+} = require("../src/modules/billing/subscriptionPlanTransition");
+
+function growthTrial(overrides = {}) {
+  return {
+    tenantId: "tenant-1",
+    status: "ACTIVE",
+    accessMode: "TRIAL",
+    planKey: "LAUNCH_GROWTH",
+    tierKey: "GROWTH",
+    cycleKey: "MONTHLY",
+    staffLimit: 5,
+    branchLimit: 2,
+    priceAmount: 20000,
+    currency: "RWF",
+    entitlementSnapshot: {
+      planLevel: "GROWTH",
+    },
+    startDate: date("2026-07-01T10:00:00.000Z"),
+    endDate: date("2026-07-31T10:00:00.000Z"),
+    trialStartDate: date("2026-07-01T10:00:00.000Z"),
+    trialEndDate: date("2026-07-31T10:00:00.000Z"),
+    graceEndDate: null,
+    nextPlanKey: null,
+    ...overrides,
+  };
+}
+
+const STARTER_SNAPSHOT = {
+  planKey: "LAUNCH_STARTER",
+  tierKey: "STARTER",
+  cycleKey: "MONTHLY",
+  staffLimit: 2,
+  branchLimit: 1,
+  price: 10000,
+  currency: "RWF",
+  entitlements: {
+    planLevel: "STARTER",
+  },
+};
+
+test("recognizes an active trial and an ended trial", () => {
+  const activeTrial = growthTrial();
+
+  assert.equal(
+    isActiveTrial(activeTrial, date("2026-07-16T10:00:00.000Z")),
+    true,
+  );
+
+  assert.equal(
+    hasTrialEnded(activeTrial, date("2026-08-01T10:00:00.000Z")),
+    true,
+  );
+});
+
+test("queues Starter payment without replacing an active Growth trial", () => {
+  const now = date("2026-07-16T10:00:00.000Z");
+  const newEndDate = date("2026-08-30T10:00:00.000Z");
+
+  const result = buildSuccessfulRenewalSubscriptionUpdate({
+    subscription: growthTrial(),
+    planSnapshot: STARTER_SNAPSHOT,
+    branchLimit: 1,
+    renewalStart: date("2026-07-31T10:00:00.000Z"),
+    newEndDate,
+    graceEndDate: date("2026-09-02T10:00:00.000Z"),
+    now,
+  });
+
+  assert.equal(result.queued, true);
+  assert.equal(result.data.accessMode, "TRIAL");
+  assert.equal(result.data.nextPlanKey, "LAUNCH_STARTER");
+  assert.equal(result.data.endDate, newEndDate);
+  assert.equal("planKey" in result.data, false);
+  assert.equal("staffLimit" in result.data, false);
+  assert.equal("entitlementSnapshot" in result.data, false);
+});
+
+test("activates a paid plan immediately when no trial remains active", () => {
+  const result = buildSuccessfulRenewalSubscriptionUpdate({
+    subscription: growthTrial({
+      accessMode: "READ_ONLY",
+      trialEndDate: date("2026-07-01T10:00:00.000Z"),
+    }),
+    planSnapshot: STARTER_SNAPSHOT,
+    branchLimit: 1,
+    renewalStart: date("2026-07-16T10:00:00.000Z"),
+    newEndDate: date("2026-08-15T10:00:00.000Z"),
+    graceEndDate: date("2026-08-18T10:00:00.000Z"),
+    now: NOW,
+  });
+
+  assert.equal(result.queued, false);
+  assert.equal(result.data.accessMode, "ACTIVE");
+  assert.equal(result.data.planKey, "LAUNCH_STARTER");
+  assert.equal(result.data.staffLimit, 2);
+  assert.equal(result.data.branchLimit, 1);
+  assert.deepEqual(result.data.entitlementSnapshot, {
+    planLevel: "STARTER",
+  });
+  assert.equal(result.data.nextPlanKey, null);
+});
+
+test("activates the successfully paid Starter plan after Growth trial expiry", () => {
+  const subscription = growthTrial({
+    endDate: date("2026-08-30T10:00:00.000Z"),
+    nextPlanKey: "LAUNCH_STARTER",
+  });
+
+  const result = buildQueuedPlanActivationUpdate({
+    subscription,
+    successfulRenewal: {
+      planKey: "LAUNCH_STARTER",
+      tierKey: "STARTER",
+      cycleKey: "MONTHLY",
+      staffLimit: 2,
+      branchLimit: 1,
+      priceAmount: 10000,
+      currency: "RWF",
+      entitlementSnapshot: {
+        planLevel: "STARTER",
+      },
+    },
+    now: date("2026-08-01T10:00:00.000Z"),
+  });
+
+  assert.equal(result.accessMode, "ACTIVE");
+  assert.equal(result.planKey, "LAUNCH_STARTER");
+  assert.equal(result.staffLimit, 2);
+  assert.equal(result.branchLimit, 1);
+  assert.deepEqual(result.entitlementSnapshot, {
+    planLevel: "STARTER",
+  });
+  assert.deepEqual(
+    result.startDate,
+    date("2026-07-31T10:00:00.000Z"),
+  );
+  assert.equal(result.nextPlanKey, null);
+});
+
+test("does not activate a queued plan without a matching successful payment", () => {
+  const subscription = growthTrial({
+    nextPlanKey: "LAUNCH_STARTER",
+  });
+
+  const missingPayment = buildQueuedPlanActivationUpdate({
+    subscription,
+    successfulRenewal: null,
+    now: date("2026-08-01T10:00:00.000Z"),
+  });
+
+  const wrongPayment = buildQueuedPlanActivationUpdate({
+    subscription,
+    successfulRenewal: {
+      planKey: "LAUNCH_BUSINESS",
+    },
+    now: date("2026-08-01T10:00:00.000Z"),
+  });
+
+  assert.equal(missingPayment, null);
+  assert.equal(wrongPayment, null);
+});
+
+test("does not activate a paid next plan before the trial ends", () => {
+  const result = buildQueuedPlanActivationUpdate({
+    subscription: growthTrial({
+      nextPlanKey: "LAUNCH_STARTER",
+    }),
+    successfulRenewal: {
+      planKey: "LAUNCH_STARTER",
+      tierKey: "STARTER",
+      cycleKey: "MONTHLY",
+      staffLimit: 2,
+      branchLimit: 1,
+      priceAmount: 10000,
+      currency: "RWF",
+      entitlementSnapshot: {
+        planLevel: "STARTER",
+      },
+    },
+    now: date("2026-07-16T10:00:00.000Z"),
+  });
+
+  assert.equal(result, null);
+});

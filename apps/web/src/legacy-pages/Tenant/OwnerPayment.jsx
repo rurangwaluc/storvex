@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import OnboardingShell from "../../components/onboarding/OnboardingShell";
@@ -147,53 +147,170 @@ function formatMoney(amount, currency = "RWF") {
   }).format(Math.round(value))} ${currency}`;
 }
 
-function CompactPlanOption({ plan, active, onSelect }) {
+function getPlanFeatures(plan) {
+  const sectionItems = Array.isArray(plan?.sections)
+    ? plan.sections.flatMap((section) =>
+        Array.isArray(section?.items) ? section.items : [],
+      )
+    : [];
+
+  const source = sectionItems.length
+    ? sectionItems
+    : Array.isArray(plan?.features)
+      ? plan.features
+      : [];
+
+  return [...new Set(source.map(cleanString).filter(Boolean))].slice(0, 4);
+}
+
+function getPlanPosition(plan) {
+  const key = cleanString(plan?.key).toUpperCase();
+
+  if (key.includes("GROWTH")) return "growth";
+  if (key.includes("BUSINESS")) return "business";
+
+  return "starter";
+}
+
+function getPlanAudience(plan) {
+  const position = getPlanPosition(plan);
+
+  if (position === "growth") return "Best for growing stores";
+  if (position === "business") return "Best for established businesses";
+
+  return "Best for small shops";
+}
+
+function getStaffLabel(plan) {
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(plan)}
-      aria-pressed={active}
+    plan?.capacity?.staffLabel ||
+    (plan?.staffLimit
+      ? `Up to ${plan.staffLimit} active user${
+          plan.staffLimit === 1 ? "" : "s"
+        }`
+      : "Custom team capacity")
+  );
+}
+
+function getBranchLabel(plan) {
+  return (
+    plan?.capacity?.branchLabel ||
+    (plan?.branchLimit
+      ? `Up to ${plan.branchLimit} store location${
+          plan.branchLimit === 1 ? "" : "s"
+        }`
+      : "Custom location capacity")
+  );
+}
+
+
+function FullPlanOption({
+  plan,
+  active,
+  recommended,
+  onSelect,
+  trialDays,
+}) {
+  const features = getPlanFeatures(plan);
+
+  return (
+    <article
       className={cx(
-        "svx-launch-plan-option group grid w-full min-w-0 gap-4 rounded-[16px] border px-4 py-4 text-left transition duration-200 sm:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_auto] sm:items-center sm:px-5",
+        "svx-launch-choice flex min-w-0 flex-col rounded-[20px] border p-5 transition sm:p-6",
         active
           ? "is-active border-[var(--onboard-primary)]"
-          : "border-[var(--onboard-border)] hover:border-[color-mix(in_srgb,var(--onboard-primary)_55%,transparent)]",
+          : "border-[var(--onboard-border)]",
       )}
     >
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h3 className="text-base font-black tracking-[-0.025em] text-[var(--onboard-text)] sm:text-lg">
+      <div className="flex min-w-0 items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[var(--onboard-primary)]">
+            {getPlanAudience(plan)}
+          </p>
+
+          <h3 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
             {plan.name}
           </h3>
-
-          {plan.recommended ? (
-            <span className="text-[10px] font-black uppercase tracking-[0.12em] text-[var(--onboard-primary)]">
-              Recommended for most stores
-            </span>
-          ) : null}
         </div>
 
-        <p className="mt-1 text-sm font-bold text-[var(--onboard-muted)]">
-          {formatMoney(plan.price, plan.currency)} / month
+        {active ? (
+          <span className="shrink-0 text-xs font-black text-[var(--onboard-primary)]">
+            ✓ Selected
+          </span>
+        ) : recommended ? (
+          <span className="shrink-0 text-xs font-black text-[var(--onboard-primary)]">
+            Recommended
+          </span>
+        ) : null}
+      </div>
+
+      <p className="mt-4 min-h-[48px] text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
+        {plan.shortDescription}
+      </p>
+
+      <div className="mt-5 border-y border-[var(--onboard-border)] py-5">
+        <p className="text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
+          {formatMoney(plan.price, plan.currency)}
+        </p>
+
+        <p className="mt-1 text-xs font-bold text-[var(--onboard-muted)]">
+          per {plan.cycleLabel?.toLowerCase() || "month"} after the {trialDays}-day trial
         </p>
       </div>
 
-      <p className="min-w-0 text-xs font-bold leading-5 text-[var(--onboard-muted)] sm:text-sm">
-        {planCapacityLabel(plan)}
-      </p>
+      <div className="mt-5 grid gap-3 text-sm font-bold text-[var(--onboard-text)]">
+        <p>✓ {getStaffLabel(plan)}</p>
+        <p>✓ {getBranchLabel(plan)}</p>
+        <p>
+          ✓{" "}
+          {plan.marketplaceIncluded !== false
+            ? "Marketplace included"
+            : "Marketplace not included"}
+        </p>
+      </div>
 
-      <span
+      <div className="mt-6">
+        <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[var(--onboard-muted)]">
+          Key differences
+        </p>
+
+        <ul className="mt-3 grid gap-2.5">
+          {features.map((feature) => (
+            <li
+              key={feature}
+              className="flex items-start gap-2.5 text-xs font-semibold leading-5 text-[var(--onboard-muted)]"
+            >
+              <span
+                className="mt-0.5 text-[var(--onboard-primary)]"
+                aria-hidden="true"
+              >
+                ✓
+              </span>
+
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onSelect(plan)}
+        disabled={active}
         className={cx(
-          "flex h-9 w-9 shrink-0 items-center justify-center justify-self-start rounded-full border text-sm font-black transition sm:justify-self-end",
+          "mt-auto min-h-12 rounded-[14px] border px-5 pt-0 text-sm font-black transition disabled:cursor-default",
           active
-            ? "border-[var(--onboard-primary)] bg-[var(--onboard-primary)] text-white"
-            : "border-[var(--onboard-border)] bg-transparent text-transparent group-hover:border-[var(--onboard-primary)]",
+            ? "mt-7 border-[var(--onboard-primary)] bg-transparent text-[var(--onboard-primary)]"
+            : "mt-7 border-[var(--onboard-primary)] bg-[var(--onboard-primary)] text-white hover:opacity-90",
         )}
-        aria-hidden="true"
       >
-        ✓
-      </span>
-    </button>
+        {active ? `${plan.name} selected` : `Choose ${plan.name}`}
+      </button>
+
+      <p className="mt-3 text-center text-[10px] font-bold text-[var(--onboard-muted)]">
+        No payment today
+      </p>
+    </article>
   );
 }
 
@@ -209,23 +326,52 @@ function SelectedPlanPanel({
 }) {
   if (!selectedPlan) {
     return (
-      <section className="svx-launch-plan-panel rounded-[24px] border border-[var(--onboard-border)] p-6">
-        <p className="text-sm font-bold text-[var(--onboard-muted)]">
-          Your Storvex plan is loading.
+      <section className="svx-launch-plan-panel rounded-[24px] border border-[var(--onboard-border)] p-5 sm:p-7 lg:p-8">
+        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--onboard-primary)]">
+          Choose your plan
         </p>
+
+        <h2 className="mt-2 text-3xl font-black tracking-[-0.05em] text-[var(--onboard-text)] sm:text-4xl">
+          Select what fits your store today.
+        </h2>
+
+        <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-[var(--onboard-muted)] sm:text-base">
+          Compare your team size, store locations and key features below.
+          Every plan starts with a {trialDays}-day free trial, and there is no
+          payment today. Your trial starts with the plan you choose here.
+        </p>
+
+        <div className="mt-7 flex flex-col gap-3 border-t border-[var(--onboard-border)] pt-6 sm:flex-row">
+          <button
+            type="button"
+            onClick={onBackToAccount}
+            className="svx-onboard-back-action"
+          >
+            <span aria-hidden="true">←</span>
+            Back to account setup
+          </button>
+
+          <button
+            type="button"
+            disabled
+            className="min-h-12 rounded-[14px] border border-[var(--onboard-border)] px-5 text-sm font-black text-[var(--onboard-muted)] opacity-60"
+          >
+            Choose a plan to continue
+          </button>
+        </div>
       </section>
     );
   }
 
+  const features = getPlanFeatures(selectedPlan);
+
   const planLabel = selectedEarlier
     ? "Your selected plan"
-    : selectedPlan.recommended
-      ? "Recommended for most stores"
-      : "Your launch plan";
+    : "Your selected plan";
 
   return (
     <section className="svx-launch-plan-panel rounded-[24px] border border-[var(--onboard-border)] p-5 sm:p-7 lg:p-8">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+      <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_310px] lg:items-start">
         <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--onboard-primary)]">
             {planLabel}
@@ -235,70 +381,109 @@ function SelectedPlanPanel({
             {selectedPlan.name}
           </h2>
 
-          <p className="mt-3 max-w-xl text-sm font-semibold leading-6 text-[var(--onboard-muted)] sm:text-base">
-            Every {selectedPlan.name} feature is available during your{" "}
-            {trialDays}-day free trial.
+          <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-[var(--onboard-muted)] sm:text-base">
+            {selectedPlan.shortDescription}
           </p>
+
+          <div className="mt-7 grid gap-3 sm:grid-cols-3">
+            <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
+              <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+                Team
+              </p>
+
+              <p className="mt-2 text-sm font-black leading-5 text-[var(--onboard-text)]">
+                {getStaffLabel(selectedPlan)}
+              </p>
+            </div>
+
+            <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
+              <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+                Locations
+              </p>
+
+              <p className="mt-2 text-sm font-black leading-5 text-[var(--onboard-text)]">
+                {getBranchLabel(selectedPlan)}
+              </p>
+            </div>
+
+            <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
+              <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+                Marketplace
+              </p>
+
+              <p className="mt-2 text-sm font-black leading-5 text-[var(--onboard-text)]">
+                {selectedPlan.marketplaceIncluded !== false
+                  ? "Included"
+                  : "Not included"}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-7 border-t border-[var(--onboard-border)] pt-6">
+            <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+              Key differences
+            </p>
+
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+              {features.map((feature) => (
+                <li
+                  key={feature}
+                  className="flex items-start gap-3 text-sm font-semibold leading-6 text-[var(--onboard-text)]"
+                >
+                  <span
+                    className="text-[var(--onboard-primary)]"
+                    aria-hidden="true"
+                  >
+                    ✓
+                  </span>
+
+                  <span>{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        <div className="shrink-0 lg:text-right">
-          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-            After your trial
-          </p>
-
-          <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)] sm:text-3xl">
-            {formatMoney(selectedPlan.price, selectedPlan.currency)}
-          </p>
-
-          <p className="mt-1 text-xs font-bold text-[var(--onboard-muted)]">
-            per month
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
+        <aside className="svx-launch-plan-detail rounded-[20px] border border-[var(--onboard-border)] p-5 sm:p-6">
           <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-            Store
+            Your final choice
           </p>
 
-          <p className="mt-2 truncate text-sm font-black text-[var(--onboard-text)]">
+          <p className="mt-3 truncate text-sm font-black text-[var(--onboard-text)]">
             {storeName || "Your store"}
           </p>
-        </div>
 
-        <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
-          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-            Plan capacity
-          </p>
+          <div className="mt-5 border-y border-[var(--onboard-border)] py-5">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+              First {trialDays} days
+            </p>
 
-          <p className="mt-2 text-sm font-black leading-5 text-[var(--onboard-text)]">
-            {planCapacityLabel(selectedPlan)}
-          </p>
-        </div>
+            <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
+              Free
+            </p>
 
-        <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
-          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-            Free trial
-          </p>
+            <p className="mt-1 text-xs font-bold text-[var(--onboard-muted)]">
+              No payment today
+            </p>
+          </div>
 
-          <p className="mt-2 text-sm font-black text-[var(--onboard-text)]">
-            {trialDays} days
-          </p>
-        </div>
+          <div className="mt-5">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+              After the trial
+            </p>
 
-        <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
-          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-            Payment today
-          </p>
+            <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
+              {formatMoney(selectedPlan.price, selectedPlan.currency)}
+            </p>
 
-          <p className="mt-2 text-sm font-black text-[var(--onboard-text)]">
-            No payment
-          </p>
-        </div>
+            <p className="mt-1 text-xs font-bold text-[var(--onboard-muted)]">
+              per {selectedPlan.cycleLabel?.toLowerCase() || "month"}
+            </p>
+          </div>
+        </aside>
       </div>
 
-      <div className="mt-7 flex flex-col gap-4 border-t border-[var(--onboard-border)] pt-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-8 flex flex-col gap-4 border-t border-[var(--onboard-border)] pt-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="svx-launch-primary-actions">
           <button
             type="button"
@@ -315,9 +500,9 @@ function SelectedPlanPanel({
             loading={loading}
             loadingText="Creating your store..."
             onClick={onStartTrial}
-            className="w-full sm:w-auto sm:min-w-[220px]"
+            className="w-full sm:w-auto sm:min-w-[240px]"
           >
-            Start free trial
+            Start {trialDays}-day free trial
             <span aria-hidden="true">→</span>
           </AsyncButton>
 
@@ -331,16 +516,17 @@ function SelectedPlanPanel({
           </button>
         </div>
 
-        <p className="text-xs font-bold leading-5 text-[var(--onboard-muted)] sm:text-right">
-          {trialDays} days free
-          <span className="mx-2 text-[var(--onboard-border)]">•</span>
-          No payment today
-        </p>
-      </div>
+        <div className="max-w-md text-xs font-bold leading-5 text-[var(--onboard-muted)] lg:text-right">
+          <p>
+            The trial begins only after you press the final button.
+          </p>
 
-      <p className="mt-3 text-[11px] font-bold leading-5 text-[var(--onboard-muted)]">
-        Available once per verified business owner.
-      </p>
+          <p className="mt-1 text-[var(--onboard-text)]">
+            Your free trial starts with the plan you choose here. No payment is
+            taken today.
+          </p>
+        </div>
+      </div>
     </section>
   );
 }
@@ -388,18 +574,36 @@ export default function OwnerPayment() {
     [onboarding?.planKey],
   );
 
-  const [selectedPlanKey, setSelectedPlanKey] = useState(() => {
-    return localStorage.getItem("storvex_planKey") || "";
-  });
+  const explicitPlanSelection = useMemo(
+    () =>
+      onboarding?.planSelectionExplicit === true ||
+      localStorage.getItem("storvex_planSelectionExplicit") === "true",
+    [onboarding?.planSelectionExplicit],
+  );
 
-  const [showPlanChoices, setShowPlanChoices] = useState(false);
+  const initialSelectedPlanKey = explicitPlanSelection
+    ? originallySelectedPlanKey
+    : "";
 
-  const selectedPlan = useMemo(() => {
-    return (
-      findSubscriptionPlan(plans, selectedPlanKey) ||
-      pickRecommendedPlan(plans)
-    );
-  }, [plans, selectedPlanKey]);
+  const [selectedPlanKey, setSelectedPlanKey] = useState(
+    initialSelectedPlanKey,
+  );
+
+  const [showPlanChoices, setShowPlanChoices] = useState(
+    !initialSelectedPlanKey,
+  );
+
+  const confirmationRef = useRef(null);
+
+  const selectedPlan = useMemo(
+    () => findSubscriptionPlan(plans, selectedPlanKey),
+    [plans, selectedPlanKey],
+  );
+
+  const recommendedPlan = useMemo(
+    () => pickRecommendedPlan(plans),
+    [plans],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -422,12 +626,20 @@ export default function OwnerPayment() {
         const storedKey =
           localStorage.getItem("storvex_planKey") || "";
 
-        const initialPlan =
-          findSubscriptionPlan(nextPlans, storedKey) ||
-          pickRecommendedPlan(nextPlans);
+        const storedSelectionIsExplicit =
+          localStorage.getItem("storvex_planSelectionExplicit") ===
+          "true";
+
+        const initialPlan = storedSelectionIsExplicit
+          ? findSubscriptionPlan(nextPlans, storedKey)
+          : null;
 
         if (initialPlan) {
           setSelectedPlanKey(initialPlan.key);
+          setShowPlanChoices(false);
+        } else {
+          setSelectedPlanKey("");
+          setShowPlanChoices(true);
         }
       } catch (error) {
         if (!cancelled) {
@@ -480,10 +692,15 @@ export default function OwnerPayment() {
   ]);
 
   useEffect(() => {
-    if (!selectedPlan?.key) return;
+    if (!selectedPlanKey || !selectedPlan?.key) return;
 
     localStorage.setItem("storvex_signupMode", "TRIAL");
     localStorage.setItem("storvex_planKey", selectedPlan.key);
+    localStorage.setItem("storvex_planSelectionExplicit", "true");
+    localStorage.setItem(
+      "storvex_planSelectionSource",
+      onboarding?.planSelectionSource || "ONBOARDING",
+    );
 
     saveOnboardingPatch({
       intentId,
@@ -493,6 +710,9 @@ export default function OwnerPayment() {
       phone: normalizePhone(ownerPhone),
       signupMode: "TRIAL",
       planKey: selectedPlan.key,
+      planSelectionExplicit: true,
+      planSelectionSource:
+        onboarding?.planSelectionSource || "ONBOARDING",
       paymentReference: "",
       launchPricing: Boolean(selectedPlan.launchPricing),
       marketplaceIncluded:
@@ -515,10 +735,14 @@ export default function OwnerPayment() {
     setShowPlanChoices(false);
     localStorage.setItem("storvex_signupMode", "TRIAL");
     localStorage.setItem("storvex_planKey", plan.key);
+    localStorage.setItem("storvex_planSelectionExplicit", "true");
+    localStorage.setItem("storvex_planSelectionSource", "ONBOARDING");
 
     saveOnboardingPatch({
       signupMode: "TRIAL",
       planKey: plan.key,
+      planSelectionExplicit: true,
+      planSelectionSource: "ONBOARDING",
       paymentReference: "",
       launchPricing: Boolean(plan.launchPricing),
       marketplaceIncluded:
@@ -526,6 +750,13 @@ export default function OwnerPayment() {
       phone: normalizePhone(ownerPhone),
       passwordReady: true,
     });
+
+    window.setTimeout(() => {
+      confirmationRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
   }
 
   async function completeSignup(mode, planKey = "") {
@@ -601,8 +832,9 @@ export default function OwnerPayment() {
         className="svx-onboard-form mx-auto w-full max-w-[1180px]"
         onSubmit={(event) => event.preventDefault()}
       >
-        <SelectedPlanPanel
-          selectedPlan={selectedPlan}
+        <div ref={confirmationRef} className="scroll-mt-6">
+          <SelectedPlanPanel
+            selectedPlan={selectedPlan}
           storeName={storeName}
           trialDays={trialDays}
           loading={loading}
@@ -611,59 +843,61 @@ export default function OwnerPayment() {
           onChangePlan={() =>
             setShowPlanChoices((current) => !current)
           }
-          selectedEarlier={Boolean(
-            originallySelectedPlanKey &&
-              selectedPlan?.key?.toUpperCase() ===
-                originallySelectedPlanKey,
-          )}
-        />
+            selectedEarlier={Boolean(
+              originallySelectedPlanKey &&
+                selectedPlan?.key?.toUpperCase() ===
+                  originallySelectedPlanKey,
+            )}
+          />
+        </div>
 
         {showPlanChoices ? (
           <section className="svx-launch-plan-selector mt-6 rounded-[24px] border border-[var(--onboard-border)] p-5 sm:p-7">
             <div className="flex flex-col gap-4 border-b border-[var(--onboard-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--onboard-primary)]">
-                  Change plan
+                  {selectedPlan ? "Change plan" : "Choose a plan"}
                 </p>
 
                 <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
-                  Select another plan
+                  {selectedPlan
+                    ? "Select another plan"
+                    : "Choose the right plan for your store"}
                 </h2>
 
                 <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
-                  Every plan includes a {trialDays}-day free trial. Monthly
-                  billing begins only after the trial.
+                  Compare the complete plan details, then choose the plan that
+                  fits your store. Choosing a plan does not start the trial.
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowPlanChoices(false)}
-                className="h-10 self-start rounded-[12px] border border-[var(--onboard-border)] px-4 text-xs font-black text-[var(--onboard-text)] transition hover:border-[var(--onboard-primary)] hover:text-[var(--onboard-primary)] sm:self-auto"
-              >
-                Close
-              </button>
+              {selectedPlan ? (
+                <button
+                  type="button"
+                  onClick={() => setShowPlanChoices(false)}
+                  className="h-10 self-start rounded-[12px] border border-[var(--onboard-border)] px-4 text-xs font-black text-[var(--onboard-text)] transition hover:border-[var(--onboard-primary)] hover:text-[var(--onboard-primary)] sm:self-auto"
+                >
+                  Close
+                </button>
+              ) : null}
             </div>
 
-            <div className="mt-5 grid gap-2.5">
+            <div className="mt-6 grid items-stretch gap-4 lg:grid-cols-3">
               {plans.map((plan) => (
-                <CompactPlanOption
+                <FullPlanOption
                   key={plan.key}
                   plan={plan}
                   active={selectedPlan?.key === plan.key}
+                  recommended={recommendedPlan?.key === plan.key}
                   onSelect={choosePlan}
+                  trialDays={trialDays}
                 />
               ))}
             </div>
 
             <p className="mt-5 text-xs font-bold leading-5 text-[var(--onboard-muted)]">
-              Need the full comparison?{" "}
-              <Link
-                to="/pricing"
-                className="text-[var(--onboard-primary)] hover:underline"
-              >
-                View pricing details
-              </Link>
+              Selecting another plan updates your final choice above. Your free
+              trial does not begin until you confirm the selected plan.
             </p>
           </section>
         ) : null}

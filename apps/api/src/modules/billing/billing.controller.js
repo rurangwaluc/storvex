@@ -2,6 +2,10 @@ const crypto = require("crypto");
 const prisma = require("../../config/database");
 
 const {
+  buildSuccessfulRenewalSubscriptionUpdate,
+} = require("./subscriptionPlanTransition");
+
+const {
   serializeSubscriptionEntitlements,
 } = require("./subscriptionEntitlements");
 
@@ -606,6 +610,17 @@ async function devMarkRenewalPaymentSuccessful(req, res) {
     const graceEndDate = addDays(newEndDate, getGraceDays());
     const now = new Date();
 
+    const renewalTransition =
+      buildSuccessfulRenewalSubscriptionUpdate({
+        subscription: currentSubscription,
+        planSnapshot: snap,
+        branchLimit,
+        renewalStart,
+        newEndDate,
+        graceEndDate,
+        now,
+      });
+
     const result = await prisma.$transaction(async (tx) => {
       const updatedPayment = await tx.payment.update({
         where: { reference },
@@ -643,27 +658,11 @@ async function devMarkRenewalPaymentSuccessful(req, res) {
         },
       });
 
+      const subscriptionUpdate = renewalTransition.data;
+
       const updatedSubscription = await tx.subscription.update({
         where: { tenantId: payment.tenantId },
-        data: {
-          status: "ACTIVE",
-          accessMode: "ACTIVE",
-          planKey: snap.planKey,
-          tierKey: snap.tierKey,
-          cycleKey: snap.cycleKey,
-          staffLimit: snap.staffLimit,
-          branchLimit,
-          priceAmount: snap.price,
-          currency: snap.currency,
-          entitlementSnapshot: snap.entitlements || {},
-          startDate: renewalStart,
-          endDate: newEndDate,
-          graceEndDate,
-          readOnlySince: null,
-          lastPaymentAt: now,
-          renewedAt: now,
-          nextPlanKey: null,
-        },
+        data: subscriptionUpdate,
         select: {
           id: true,
           tenantId: true,

@@ -3,6 +3,10 @@ const crypto = require("crypto");
 const prisma = require("../../config/database");
 
 const {
+  buildSuccessfulRenewalSubscriptionUpdate,
+} = require("../billing/subscriptionPlanTransition");
+
+const {
   getPaidPlans,
   getPlanByKey,
   getPlanSnapshot,
@@ -308,6 +312,8 @@ async function markRenewalPaymentSuccessful({ payment, provider }) {
       currency: true,
       startDate: true,
       endDate: true,
+      trialStartDate: true,
+      trialEndDate: true,
       graceEndDate: true,
       readOnlySince: true,
       lastPaymentAt: true,
@@ -339,6 +345,17 @@ async function markRenewalPaymentSuccessful({ payment, provider }) {
   const newEndDate = addDays(renewalStart, snap.days);
   const graceEndDate = addDays(newEndDate, getGraceDaysSafe());
   const now = new Date();
+
+  const renewalTransition =
+    buildSuccessfulRenewalSubscriptionUpdate({
+      subscription,
+      planSnapshot: snap,
+      branchLimit: snap.branchLimit,
+      renewalStart,
+      newEndDate,
+      graceEndDate,
+      now,
+    });
 
   return prisma.$transaction(async (tx) => {
     const updatedPayment = await tx.payment.update({
@@ -378,27 +395,11 @@ async function markRenewalPaymentSuccessful({ payment, provider }) {
       },
     });
 
+    const subscriptionUpdate = renewalTransition.data;
+
     const updatedSubscription = await tx.subscription.update({
       where: { tenantId: payment.tenantId },
-      data: {
-        status: "ACTIVE",
-        accessMode: "ACTIVE",
-        planKey: snap.planKey,
-        tierKey: snap.tierKey,
-        cycleKey: snap.cycleKey,
-        staffLimit: snap.staffLimit,
-        branchLimit: snap.branchLimit,
-        priceAmount: snap.price,
-        entitlementSnapshot: snap.entitlements || {},
-        currency: snap.currency,
-        startDate: renewalStart,
-        endDate: newEndDate,
-        graceEndDate,
-        readOnlySince: null,
-        lastPaymentAt: now,
-        renewedAt: now,
-        nextPlanKey: null,
-      },
+      data: subscriptionUpdate,
       select: {
         id: true,
         tenantId: true,
@@ -414,10 +415,13 @@ async function markRenewalPaymentSuccessful({ payment, provider }) {
         currency: true,
         startDate: true,
         endDate: true,
+        trialStartDate: true,
+        trialEndDate: true,
         graceEndDate: true,
         readOnlySince: true,
         lastPaymentAt: true,
         renewedAt: true,
+        nextPlanKey: true,
         createdAt: true,
       },
     });
