@@ -409,69 +409,38 @@ async function enforceTrialGuardOrThrowTx(
   const cleanFingerprint = cleanString(browserFingerprint);
   const cleanIp = cleanString(ip);
 
-  if (!normalizedEmail || !normalizedPhone || !cleanDeviceId) {
-    const err = new Error("Missing email/phone/deviceId for trial");
+  if (!normalizedEmail || !normalizedPhone) {
+    const err = new Error("Missing email or phone for trial");
     err.status = 400;
     throw err;
   }
 
-  const deviceHash = sha256(cleanDeviceId);
+  const deviceHash = cleanDeviceId ? sha256(cleanDeviceId) : null;
   const fingerprintHash = cleanFingerprint ? sha256(cleanFingerprint) : null;
   const ipHash = cleanIp ? sha256(cleanIp) : null;
 
-  const guardChecks = [];
-
-  guardChecks.push({ email: normalizedEmail });
-  guardChecks.push({ normalizedEmail });
-  guardChecks.push({ phone: normalizedPhone });
-  guardChecks.push({ normalizedPhone });
-  guardChecks.push({ deviceId: cleanDeviceId });
-  guardChecks.push({ deviceHash });
-
-  if (cleanFingerprint) {
-    guardChecks.push({ browserFingerprint: cleanFingerprint });
-    guardChecks.push({ fingerprintHash });
-  }
-
-  if (cleanIp) {
-    guardChecks.push({ ip: cleanIp });
-    guardChecks.push({ ipHash });
-  }
-
   const dup = await tx.trialGuard.findFirst({
-    where: { OR: guardChecks },
+    where: {
+      OR: [
+        { email: normalizedEmail },
+        { normalizedEmail },
+        { phone: normalizedPhone },
+        { normalizedPhone },
+      ],
+    },
     select: {
-      id: true,
       email: true,
       phone: true,
-      deviceId: true,
-      browserFingerprint: true,
       normalizedEmail: true,
       normalizedPhone: true,
-      deviceHash: true,
-      fingerprintHash: true,
-      ip: true,
-      ipHash: true,
     },
   });
 
   if (dup) {
-    let blockedReason = "TRIAL_ALREADY_USED";
-
-    if (dup.email === normalizedEmail || dup.normalizedEmail === normalizedEmail) {
-      blockedReason = "TRIAL_ALREADY_USED_BY_EMAIL";
-    } else if (dup.phone === normalizedPhone || dup.normalizedPhone === normalizedPhone) {
-      blockedReason = "TRIAL_ALREADY_USED_BY_PHONE";
-    } else if (dup.deviceId === cleanDeviceId || dup.deviceHash === deviceHash) {
-      blockedReason = "TRIAL_ALREADY_USED_BY_DEVICE";
-    } else if (
-      cleanFingerprint &&
-      (dup.browserFingerprint === cleanFingerprint || dup.fingerprintHash === fingerprintHash)
-    ) {
-      blockedReason = "TRIAL_ALREADY_USED_BY_BROWSER";
-    } else if (cleanIp && (dup.ip === cleanIp || dup.ipHash === ipHash)) {
-      blockedReason = "TRIAL_ALREADY_USED_BY_IP";
-    }
+    const blockedReason =
+      dup.email === normalizedEmail || dup.normalizedEmail === normalizedEmail
+        ? "TRIAL_ALREADY_USED_BY_EMAIL"
+        : "TRIAL_ALREADY_USED_BY_PHONE";
 
     if (intentId) {
       await tx.ownerIntent.update({

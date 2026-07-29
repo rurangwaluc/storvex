@@ -60,13 +60,18 @@ function resolveTargetFromIntent(intent, channel) {
     : normalizePhone(intent.phone);
 }
 
-async function isTrialAlreadyBurned({ email, phone, deviceId, browserFingerprint }) {
+async function isTrialAlreadyBurned({ email, phone }) {
   const OR = [];
 
-  if (email) OR.push({ email });
-  if (phone) OR.push({ phone });
-  if (deviceId) OR.push({ deviceId });
-  if (browserFingerprint) OR.push({ browserFingerprint });
+  if (email) {
+    OR.push({ email });
+    OR.push({ normalizedEmail: email });
+  }
+
+  if (phone) {
+    OR.push({ phone });
+    OR.push({ normalizedPhone: phone });
+  }
 
   if (OR.length === 0) return false;
 
@@ -75,7 +80,7 @@ async function isTrialAlreadyBurned({ email, phone, deviceId, browserFingerprint
     select: { id: true },
   });
 
-  return !!hit;
+  return Boolean(hit);
 }
 
 async function logDelivery({
@@ -191,8 +196,6 @@ async function createAndSendOtp({ intent, intentId, channel }) {
   const burned = await isTrialAlreadyBurned({
     email: normalizeEmail(intent.email),
     phone: normalizePhone(intent.phone),
-    deviceId: cleanString(intent.deviceId),
-    browserFingerprint: cleanString(intent.browserFingerprint),
   });
 
   if (burned) {

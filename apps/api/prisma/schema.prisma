@@ -94,7 +94,7 @@ model OwnerIntent {
   onboardingTokenHash      String?   @db.Text
   onboardingTokenExpiresAt DateTime?
   onboardingTokenRevokedAt DateTime?
-  lastAccessedAt            DateTime?
+  lastAccessedAt           DateTime?
 
   deviceId           String? @db.Text
   browserFingerprint String? @db.Text
@@ -1565,8 +1565,8 @@ model TrialGuard {
 
   email              String? @unique @db.Text
   phone              String? @unique @db.Text
-  deviceId           String? @unique @db.Text
-  browserFingerprint String? @unique @db.Text
+  deviceId           String? @db.Text
+  browserFingerprint String? @db.Text
 
   normalizedEmail String? @db.Text
   normalizedPhone String? @db.Text
