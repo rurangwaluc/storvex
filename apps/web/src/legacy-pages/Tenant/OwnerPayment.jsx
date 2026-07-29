@@ -204,6 +204,7 @@ function SelectedPlanPanel({
   loading,
   onStartTrial,
   onChangePlan,
+  onBackToAccount,
   selectedEarlier,
 }) {
   if (!selectedPlan) {
@@ -298,7 +299,17 @@ function SelectedPlanPanel({
       </div>
 
       <div className="mt-7 flex flex-col gap-4 border-t border-[var(--onboard-border)] pt-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="svx-launch-primary-actions">
+          <button
+            type="button"
+            onClick={onBackToAccount}
+            disabled={loading}
+            className="svx-onboard-back-action"
+          >
+            <span aria-hidden="true">←</span>
+            Back to account setup
+          </button>
+
           <AsyncButton
             type="button"
             loading={loading}
@@ -582,8 +593,7 @@ export default function OwnerPayment() {
       subtitle="Review your plan and start your free trial."
       footer={
         <p className="svx-onboard-login-note">
-          Need to change security details?{" "}
-          <Link to="/verify-otp">Back to security</Link>
+          Your business and account details remain saved until setup is complete.
         </p>
       }
     >
@@ -597,6 +607,7 @@ export default function OwnerPayment() {
           trialDays={trialDays}
           loading={loading}
           onStartTrial={startTrial}
+          onBackToAccount={() => nav("/verify-otp")}
           onChangePlan={() =>
             setShowPlanChoices((current) => !current)
           }

@@ -1118,7 +1118,7 @@ export default function VerifyOtp() {
       subtitle="Verify the owner email and phone, then create the owner password."
       footer={
         <p className="svx-onboard-login-note">
-          Need to change details? <Link to="/signup">Back to business setup</Link>
+          Your progress is saved while you review earlier steps.
         </p>
       }
     >
@@ -1219,15 +1219,25 @@ export default function VerifyOtp() {
             </div>
           </div>
 
-          <AsyncButton
-            type="button"
-            disabled={!canContinue}
-            onClick={continueToActivation}
-            className="w-full sm:w-auto"
-          >
-            Choose how to start
-            <span aria-hidden="true">→</span>
-          </AsyncButton>
+          <div className="svx-onboard-navigation-actions">
+            <Link
+              to="/signup?review=1"
+              className="svx-onboard-back-action"
+            >
+              <span aria-hidden="true">←</span>
+              Back to business setup
+            </Link>
+
+            <AsyncButton
+              type="button"
+              disabled={!canContinue}
+              onClick={continueToActivation}
+              className="w-full sm:w-auto"
+            >
+              Choose how to start
+              <span aria-hidden="true">→</span>
+            </AsyncButton>
+          </div>
         </section>
       </form>
     </OnboardingShell>

@@ -289,7 +289,11 @@ export default function TenantIntent() {
   const selectedPlanKey =
     requestedPlanKey || cleanString(previous?.planKey).toUpperCase();
 
-  const [draftVisible, setDraftVisible] = useState(hasOnboardingDraft(previous));
+  const reviewMode = searchParams.get("review") === "1";
+
+  const [draftVisible, setDraftVisible] = useState(
+    hasOnboardingDraft(previous) && !reviewMode,
+  );
 
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({

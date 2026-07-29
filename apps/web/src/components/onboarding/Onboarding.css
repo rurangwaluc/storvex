@@ -188,6 +188,131 @@
   text-align: center;
 }
 
+.svx-onboard-progress-link,
+.svx-onboard-progress-static {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  justify-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+
+.svx-onboard-progress-link {
+  border-radius: 14px;
+  cursor: pointer;
+  transition:
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.svx-onboard-progress-link:hover {
+  transform: translateY(-1px);
+}
+
+.svx-onboard-progress-link:focus-visible {
+  outline: 2px solid var(--onboard-primary);
+  outline-offset: 6px;
+}
+
+.svx-onboard-progress-label {
+  margin-top: 10px;
+  color: var(--onboard-muted);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.svx-onboard-progress-step.is-active .svx-onboard-progress-label,
+.svx-onboard-progress-step.is-done .svx-onboard-progress-label {
+  color: var(--onboard-primary);
+  font-weight: 800;
+}
+
+.svx-onboard-progress-step.is-done .svx-onboard-progress-link:hover
+  .svx-onboard-progress-label {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.svx-onboard-navigation-actions,
+.svx-launch-primary-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.svx-onboard-back-action {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 1px solid var(--onboard-border);
+  border-radius: 14px;
+  background: transparent;
+  padding: 0 18px;
+  color: var(--onboard-text);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease,
+    background-color 160ms ease,
+    transform 160ms ease;
+}
+
+.svx-onboard-back-action:hover {
+  border-color: var(--onboard-primary);
+  color: var(--onboard-primary);
+  transform: translateY(-1px);
+}
+
+.svx-onboard-back-action:focus-visible {
+  outline: 2px solid var(--onboard-primary);
+  outline-offset: 3px;
+}
+
+.svx-onboard-back-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
+@media (max-width: 639px) {
+  .svx-onboard-navigation-actions {
+    width: 100%;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .svx-launch-primary-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .svx-launch-primary-actions .svx-onboard-back-action {
+    order: 3;
+  }
+
+  .svx-launch-primary-actions > :nth-child(2) {
+    order: 1;
+  }
+
+  .svx-launch-primary-actions > :nth-child(3) {
+    order: 2;
+  }
+
+  .svx-onboard-back-action {
+    width: 100%;
+  }
+}
+
 .svx-onboard-progress-top {
   position: relative;
   display: flex;
@@ -231,20 +356,6 @@
 
 .svx-onboard-progress-step.is-done .svx-onboard-progress-line {
   background: var(--onboard-primary);
-}
-
-.svx-onboard-progress-step p {
-  margin-top: 10px;
-  color: var(--onboard-muted);
-  font-size: 12.5px;
-  font-weight: 700;
-  line-height: 1.35;
-}
-
-.svx-onboard-progress-step.is-active p,
-.svx-onboard-progress-step.is-done p {
-  color: var(--onboard-primary);
-  font-weight: 800;
 }
 
 .svx-onboard-content {
