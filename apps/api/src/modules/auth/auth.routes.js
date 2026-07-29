@@ -74,6 +74,101 @@ function isMockPaymentResult(result) {
   );
 }
 
+async function getOwnerSignupPaymentStatus(req, res) {
+  const intentId = cleanString(
+    req.query.intentId ||
+      req.body?.intentId,
+  );
+
+  const reference = cleanString(
+    req.params.reference ||
+      req.query.reference ||
+      req.body?.reference,
+  );
+
+  if (!intentId || !reference) {
+    return res.status(400).json({
+      message: "intentId and reference are required",
+    });
+  }
+
+  try {
+    const intent = await prisma.ownerIntent.findUnique({
+      where: {
+        id: intentId,
+      },
+      select: {
+        id: true,
+        status: true,
+        expiresAt: true,
+        onboardingTokenHash: true,
+        onboardingTokenExpiresAt: true,
+        onboardingTokenRevokedAt: true,
+      },
+    });
+
+    assertOnboardingAccess(req, intent);
+
+    await prisma.ownerIntent
+      .update({
+        where: {
+          id: intent.id,
+        },
+        data: {
+          lastAccessedAt: new Date(),
+        },
+        select: {
+          id: true,
+        },
+      })
+      .catch(() => null);
+
+    const payment = await prisma.payment.findFirst({
+      where: {
+        intentId: intent.id,
+        reference,
+        purpose: "OWNER_SIGNUP",
+      },
+      select: {
+        reference: true,
+        status: true,
+        amount: true,
+        currency: true,
+        planKey: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!payment) {
+      return res.status(404).json({
+        message: "Payment request not found",
+      });
+    }
+
+    return res.json({
+      payment: {
+        reference: payment.reference,
+        status: payment.status,
+        amount: payment.amount,
+        currency: payment.currency,
+        planKey: payment.planKey,
+        createdAt: payment.createdAt,
+        updatedAt: payment.updatedAt,
+      },
+    });
+  } catch (err) {
+    const publicError = publicOnboardingError(
+      err,
+      "We could not check the payment. Please try again.",
+    );
+
+    return res
+      .status(publicError.status)
+      .json(publicError.body);
+  }
+}
+
 async function createOwnerPayment(req, res) {
   const { intentId, phone, planKey } = req.body || {};
 
@@ -187,6 +282,16 @@ router.get("/plans", (req, res) => {
 
 router.post("/owner-payment", createOwnerPayment);
 router.post("/signup/payment", createOwnerPayment);
+
+router.get(
+  "/owner-payment/:reference/status",
+  getOwnerSignupPaymentStatus,
+);
+
+router.get(
+  "/signup/payment/:reference/status",
+  getOwnerSignupPaymentStatus,
+);
 
 router.post("/confirm-signup", authController.confirmSignup);
 router.post("/signup/confirm", authController.confirmSignup);

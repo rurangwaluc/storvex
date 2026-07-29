@@ -1043,10 +1043,24 @@ async function confirmSignup(req, res) {
         return res.status(403).json({ message: "Payment not completed" });
       }
 
-      const effectivePlanKey =
-        cleanString(planKey) ||
-        cleanString(latestSuccessfulPayment?.planKey) ||
-        cleanString(intent.requestedPlanKey);
+      const requestedPaidPlanKey = cleanString(planKey);
+      const successfulPaymentPlanKey = cleanString(
+        latestSuccessfulPayment?.planKey,
+      );
+
+      if (
+        successfulPaymentPlanKey &&
+        requestedPaidPlanKey &&
+        requestedPaidPlanKey !== successfulPaymentPlanKey
+      ) {
+        return res.status(400).json({
+          message: "Selected plan does not match the completed payment",
+        });
+      }
+
+      const effectivePlanKey = latestSuccessfulPayment
+        ? successfulPaymentPlanKey
+        : cleanString(intent.requestedPlanKey) || requestedPaidPlanKey;
 
       if (effectivePlanKey) selectedPlan = getPlanByKey(effectivePlanKey);
 
@@ -1236,6 +1250,16 @@ async function confirmSignup(req, res) {
           },
         });
 
+        if (signupMode === "PAID" && latestSuccessfulPayment?.id) {
+          await tx.payment.update({
+            where: {
+              id: latestSuccessfulPayment.id,
+            },
+            data: {
+              tenantId: tenant.id,
+            },
+          });
+        }
         await tx.ownerIntent.update({
           where: { id: intent.id },
           data:

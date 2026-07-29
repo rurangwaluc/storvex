@@ -316,13 +316,17 @@ function FullPlanOption({
 
 function SelectedPlanPanel({
   selectedPlan,
-  storeName,
   trialDays,
   loading,
+  paymentStage,
+  paymentPhone,
+  paymentReference,
+  onPaymentPhoneChange,
   onStartTrial,
+  onStartPaid,
+  onCheckPayment,
   onChangePlan,
   onBackToAccount,
-  selectedEarlier,
 }) {
   if (!selectedPlan) {
     return (
@@ -332,16 +336,15 @@ function SelectedPlanPanel({
         </p>
 
         <h2 className="mt-2 text-3xl font-black tracking-[-0.05em] text-[var(--onboard-text)] sm:text-4xl">
-          Select what fits your store today.
+          Select the plan that fits your store.
         </h2>
 
         <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-[var(--onboard-muted)] sm:text-base">
-          Compare your team size, store locations and key features below.
-          Every plan starts with a {trialDays}-day free trial, and there is no
-          payment today. Your trial starts with the plan you choose here.
+          Compare the plans below. After choosing one, you can start free or
+          pay immediately.
         </p>
 
-        <div className="mt-7 flex flex-col gap-3 border-t border-[var(--onboard-border)] pt-6 sm:flex-row">
+        <div className="mt-7 border-t border-[var(--onboard-border)] pt-6">
           <button
             type="button"
             onClick={onBackToAccount}
@@ -349,14 +352,6 @@ function SelectedPlanPanel({
           >
             <span aria-hidden="true">←</span>
             Back to account setup
-          </button>
-
-          <button
-            type="button"
-            disabled
-            className="min-h-12 rounded-[14px] border border-[var(--onboard-border)] px-5 text-sm font-black text-[var(--onboard-muted)] opacity-60"
-          >
-            Choose a plan to continue
           </button>
         </div>
       </section>
@@ -365,167 +360,317 @@ function SelectedPlanPanel({
 
   const features = getPlanFeatures(selectedPlan);
 
-  const planLabel = selectedEarlier
-    ? "Your selected plan"
-    : "Your selected plan";
+  const paymentBusy =
+    paymentStage === "SENDING" ||
+    paymentStage === "PENDING";
 
   return (
     <section className="svx-launch-plan-panel rounded-[24px] border border-[var(--onboard-border)] p-5 sm:p-7 lg:p-8">
-      <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_310px] lg:items-start">
+      <header className="flex flex-col gap-4 border-b border-[var(--onboard-border)] pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--onboard-primary)]">
-            {planLabel}
+            Selected plan
           </p>
 
           <h2 className="mt-2 text-3xl font-black tracking-[-0.05em] text-[var(--onboard-text)] sm:text-4xl">
             {selectedPlan.name}
           </h2>
 
-          <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-[var(--onboard-muted)] sm:text-base">
+          <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
             {selectedPlan.shortDescription}
           </p>
-
-          <div className="mt-7 grid gap-3 sm:grid-cols-3">
-            <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
-              <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-                Team
-              </p>
-
-              <p className="mt-2 text-sm font-black leading-5 text-[var(--onboard-text)]">
-                {getStaffLabel(selectedPlan)}
-              </p>
-            </div>
-
-            <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
-              <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-                Locations
-              </p>
-
-              <p className="mt-2 text-sm font-black leading-5 text-[var(--onboard-text)]">
-                {getBranchLabel(selectedPlan)}
-              </p>
-            </div>
-
-            <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
-              <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-                Marketplace
-              </p>
-
-              <p className="mt-2 text-sm font-black leading-5 text-[var(--onboard-text)]">
-                {selectedPlan.marketplaceIncluded !== false
-                  ? "Included"
-                  : "Not included"}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-7 border-t border-[var(--onboard-border)] pt-6">
-            <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-              Key differences
-            </p>
-
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-              {features.map((feature) => (
-                <li
-                  key={feature}
-                  className="flex items-start gap-3 text-sm font-semibold leading-6 text-[var(--onboard-text)]"
-                >
-                  <span
-                    className="text-[var(--onboard-primary)]"
-                    aria-hidden="true"
-                  >
-                    ✓
-                  </span>
-
-                  <span>{feature}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
-        <aside className="svx-launch-plan-detail rounded-[20px] border border-[var(--onboard-border)] p-5 sm:p-6">
+        <button
+          type="button"
+          onClick={onChangePlan}
+          disabled={loading || paymentBusy}
+          className="self-start text-sm font-black text-[var(--onboard-primary)] underline decoration-transparent underline-offset-4 transition hover:decoration-current disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Change plan
+        </button>
+      </header>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
           <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-            Your final choice
+            Team
           </p>
 
-          <p className="mt-3 truncate text-sm font-black text-[var(--onboard-text)]">
-            {storeName || "Your store"}
+          <p className="mt-2 text-sm font-black leading-5 text-[var(--onboard-text)]">
+            {getStaffLabel(selectedPlan)}
+          </p>
+        </div>
+
+        <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
+          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+            Locations
           </p>
 
-          <div className="mt-5 border-y border-[var(--onboard-border)] py-5">
-            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-              First {trialDays} days
-            </p>
+          <p className="mt-2 text-sm font-black leading-5 text-[var(--onboard-text)]">
+            {getBranchLabel(selectedPlan)}
+          </p>
+        </div>
 
-            <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
-              Free
-            </p>
+        <div className="svx-launch-plan-detail rounded-[16px] border border-[var(--onboard-border)] px-4 py-4">
+          <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+            Marketplace
+          </p>
 
-            <p className="mt-1 text-xs font-bold text-[var(--onboard-muted)]">
-              No payment today
-            </p>
-          </div>
-
-          <div className="mt-5">
-            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
-              After the trial
-            </p>
-
-            <p className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
-              {formatMoney(selectedPlan.price, selectedPlan.currency)}
-            </p>
-
-            <p className="mt-1 text-xs font-bold text-[var(--onboard-muted)]">
-              per {selectedPlan.cycleLabel?.toLowerCase() || "month"}
-            </p>
-          </div>
-        </aside>
+          <p className="mt-2 text-sm font-black leading-5 text-[var(--onboard-text)]">
+            {selectedPlan.marketplaceIncluded !== false
+              ? "Included"
+              : "Not included"}
+          </p>
+        </div>
       </div>
 
-      <div className="mt-8 flex flex-col gap-4 border-t border-[var(--onboard-border)] pt-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="svx-launch-primary-actions">
-          <button
-            type="button"
-            onClick={onBackToAccount}
-            disabled={loading}
-            className="svx-onboard-back-action"
-          >
-            <span aria-hidden="true">←</span>
-            Back to account setup
-          </button>
+      <div className="mt-6 border-t border-[var(--onboard-border)] pt-6">
+        <p className="text-[9px] font-black uppercase tracking-[0.14em] text-[var(--onboard-muted)]">
+          Included in this plan
+        </p>
 
-          <AsyncButton
-            type="button"
-            loading={loading}
-            loadingText="Creating your store..."
-            onClick={onStartTrial}
-            className="w-full sm:w-auto sm:min-w-[240px]"
-          >
-            Start {trialDays}-day free trial
-            <span aria-hidden="true">→</span>
-          </AsyncButton>
+        <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+          {features.map((feature) => (
+            <li
+              key={feature}
+              className="flex items-start gap-3 text-sm font-semibold leading-6 text-[var(--onboard-text)]"
+            >
+              <span
+                className="text-[var(--onboard-primary)]"
+                aria-hidden="true"
+              >
+                ✓
+              </span>
 
-          <button
-            type="button"
-            onClick={onChangePlan}
-            disabled={loading}
-            className="h-12 rounded-[14px] border border-[var(--onboard-border)] px-5 text-sm font-black text-[var(--onboard-text)] transition hover:border-[var(--onboard-primary)] hover:text-[var(--onboard-primary)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Change plan
-          </button>
-        </div>
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
 
-        <div className="max-w-md text-xs font-bold leading-5 text-[var(--onboard-muted)] lg:text-right">
-          <p>
-            The trial begins only after you press the final button.
+      <div className="mt-8 border-t border-[var(--onboard-border)] pt-7">
+        <div className="max-w-2xl">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--onboard-primary)]">
+            Final step
           </p>
 
-          <p className="mt-1 text-[var(--onboard-text)]">
-            Your free trial starts with the plan you choose here. No payment is
-            taken today.
+          <h3 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)] sm:text-3xl">
+            How would you like to start?
+          </h3>
+
+          <p className="mt-2 text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
+            Choose one option below. Your store will be created after you
+            confirm that option.
           </p>
         </div>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-2 lg:items-stretch">
+          <article className="svx-launch-plan-detail flex flex-col rounded-[20px] border border-[var(--onboard-border)] p-5 sm:p-6">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-primary)]">
+              Start free
+            </p>
+
+            <h4 className="mt-3 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
+              {trialDays}-day free trial
+            </h4>
+
+            <p className="mt-2 text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
+              Open your store now without paying today.
+            </p>
+
+            <ul className="mt-5 space-y-3 text-sm font-bold leading-5 text-[var(--onboard-text)]">
+              <li className="flex items-start gap-3">
+                <span
+                  className="text-[var(--onboard-primary)]"
+                  aria-hidden="true"
+                >
+                  ✓
+                </span>
+                <span>Pay nothing today</span>
+              </li>
+
+              <li className="flex items-start gap-3">
+                <span
+                  className="text-[var(--onboard-primary)]"
+                  aria-hidden="true"
+                >
+                  ✓
+                </span>
+                <span>Your store opens immediately</span>
+              </li>
+
+              <li className="flex items-start gap-3">
+                <span
+                  className="text-[var(--onboard-primary)]"
+                  aria-hidden="true"
+                >
+                  ✓
+                </span>
+                <span>Pay before the trial ends to continue</span>
+              </li>
+            </ul>
+
+            <div className="mt-auto pt-6">
+              <AsyncButton
+                type="button"
+                loading={loading}
+                loadingText="Creating your store..."
+                disabled={paymentBusy}
+                onClick={onStartTrial}
+                className="w-full"
+              >
+                Start {trialDays}-day free trial
+                <span aria-hidden="true">→</span>
+              </AsyncButton>
+
+              <p className="mt-3 text-center text-xs font-bold text-[var(--onboard-muted)]">
+                No payment request will be sent.
+              </p>
+            </div>
+          </article>
+
+          <article className="svx-launch-plan-detail flex flex-col rounded-[20px] border border-[var(--onboard-border)] p-5 sm:p-6">
+            <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[var(--onboard-primary)]">
+              Pay now
+            </p>
+
+            <h4 className="mt-3 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
+              {formatMoney(
+                selectedPlan.price,
+                selectedPlan.currency,
+              )}
+            </h4>
+
+            <p className="mt-2 text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
+              Pay with MoMo and start the {selectedPlan.name} plan today.
+            </p>
+
+            <ul className="mt-5 space-y-3 text-sm font-bold leading-5 text-[var(--onboard-text)]">
+              <li className="flex items-start gap-3">
+                <span
+                  className="text-[var(--onboard-primary)]"
+                  aria-hidden="true"
+                >
+                  ✓
+                </span>
+                <span>Paid access starts after confirmation</span>
+              </li>
+
+              <li className="flex items-start gap-3">
+                <span
+                  className="text-[var(--onboard-primary)]"
+                  aria-hidden="true"
+                >
+                  ✓
+                </span>
+                <span>Your store opens immediately after payment</span>
+              </li>
+
+              <li className="flex items-start gap-3">
+                <span
+                  className="text-[var(--onboard-primary)]"
+                  aria-hidden="true"
+                >
+                  ✓
+                </span>
+                <span>No free-trial period is used</span>
+              </li>
+            </ul>
+
+            <div className="mt-auto pt-6">
+              <label
+                htmlFor="storvex-paid-signup-phone"
+                className="text-xs font-black text-[var(--onboard-text)]"
+              >
+                MoMo phone number
+              </label>
+
+              <input
+                id="storvex-paid-signup-phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={paymentPhone}
+                onChange={(event) =>
+                  onPaymentPhoneChange(event.target.value)
+                }
+                disabled={loading || paymentBusy}
+                placeholder="078xxxxxxx"
+                className="mt-2 min-h-12 w-full rounded-[14px] border border-[var(--onboard-border)] bg-[var(--onboard-card)] px-4 text-sm font-bold text-[var(--onboard-text)] outline-none transition placeholder:text-[var(--onboard-muted)] focus:border-[var(--onboard-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+              />
+
+              <AsyncButton
+                type="button"
+                variant="secondary"
+                loading={paymentStage === "SENDING"}
+                loadingText="Sending payment request..."
+                disabled={loading || paymentStage === "PENDING"}
+                onClick={onStartPaid}
+                className="mt-3 w-full"
+              >
+                Pay{" "}
+                {formatMoney(
+                  selectedPlan.price,
+                  selectedPlan.currency,
+                )}{" "}
+                and start
+              </AsyncButton>
+
+              {paymentStage === "PENDING" ? (
+                <div
+                  className="mt-4 rounded-[14px] border border-[var(--onboard-border)] bg-[var(--onboard-card)] p-4"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <p className="text-sm font-black text-[var(--onboard-text)]">
+                    Confirm the payment on your phone.
+                  </p>
+
+                  <p className="mt-1 text-xs font-semibold leading-5 text-[var(--onboard-muted)]">
+                    Keep this page open while Storvex checks the payment.
+                  </p>
+
+                  {paymentReference ? (
+                    <p className="mt-2 break-all text-[10px] font-bold text-[var(--onboard-muted)]">
+                      Reference: {paymentReference}
+                    </p>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={onCheckPayment}
+                    className="mt-3 min-h-10 rounded-[12px] border border-[var(--onboard-border)] px-4 text-xs font-black text-[var(--onboard-text)] transition hover:border-[var(--onboard-primary)] hover:text-[var(--onboard-primary)]"
+                  >
+                    Check payment now
+                  </button>
+                </div>
+              ) : null}
+
+              {paymentStage === "FAILED" ? (
+                <p
+                  className="mt-3 text-xs font-bold leading-5 text-red-600 dark:text-red-400"
+                  role="alert"
+                >
+                  The payment was not completed. Check the phone number and try
+                  again.
+                </p>
+              ) : null}
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div className="mt-7 border-t border-[var(--onboard-border)] pt-5">
+        <button
+          type="button"
+          onClick={onBackToAccount}
+          disabled={loading || paymentBusy}
+          className="svx-onboard-back-action"
+        >
+          <span aria-hidden="true">←</span>
+          Back to account setup
+        </button>
       </div>
     </section>
   );
@@ -561,6 +706,20 @@ export default function OwnerPayment() {
   const [loading, setLoading] = useState(false);
   const [plans, setPlans] = useState([]);
   const [trialDays, setTrialDays] = useState(30);
+  const [paymentPhone, setPaymentPhone] = useState(
+    normalizePhone(ownerPhone),
+  );
+  const [paymentReference, setPaymentReference] = useState(
+    onboarding?.paymentReference ||
+      localStorage.getItem("storvex_paymentReference") ||
+      "",
+  );
+  const [paymentStage, setPaymentStage] = useState(
+    paymentReference ? "PENDING" : "IDLE",
+  );
+
+  const paymentPollingRef = useRef(null);
+  const paidSignupFinalizingRef = useRef(false);
 
   const originallySelectedPlanKey = useMemo(
     () =>
@@ -731,6 +890,17 @@ export default function OwnerPayment() {
   function choosePlan(plan) {
     if (!plan?.key) return;
 
+    if (paymentPollingRef.current) {
+      window.clearInterval(paymentPollingRef.current);
+      paymentPollingRef.current = null;
+    }
+
+    setPaymentReference("");
+    setPaymentStage("IDLE");
+    paidSignupFinalizingRef.current = false;
+
+    localStorage.removeItem("storvex_paymentReference");
+
     setSelectedPlanKey(plan.key);
     setShowPlanChoices(false);
     localStorage.setItem("storvex_signupMode", "TRIAL");
@@ -791,6 +961,226 @@ export default function OwnerPayment() {
     goToLogin(nav);
   }
 
+  async function finalizePaidSignup(planKey) {
+    if (paidSignupFinalizingRef.current) return;
+
+    paidSignupFinalizingRef.current = true;
+    setPaymentStage("SUCCESS");
+    setLoading(true);
+
+    if (paymentPollingRef.current) {
+      window.clearInterval(paymentPollingRef.current);
+      paymentPollingRef.current = null;
+    }
+
+    try {
+      await completeSignup("PAID", planKey);
+    } catch (error) {
+      paidSignupFinalizingRef.current = false;
+      setPaymentStage("PENDING");
+
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Payment was confirmed, but store activation failed. Try again.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function checkPaidSignupPayment(
+    reference = paymentReference,
+    planKey = selectedPlan?.key,
+  ) {
+    const cleanReference = cleanString(reference);
+
+    if (!cleanReference || !intentId) return false;
+
+    try {
+      const { data } = await apiClient.get(
+        `/auth/owner-payment/${encodeURIComponent(
+          cleanReference,
+        )}/status`,
+        {
+          params: {
+            intentId,
+          },
+        },
+      );
+
+      const status = cleanString(
+        data?.payment?.status,
+      ).toUpperCase();
+
+      if (status === "SUCCESS") {
+        await finalizePaidSignup(
+          data?.payment?.planKey || planKey,
+        );
+
+        return true;
+      }
+
+      if (
+        status === "FAILED" ||
+        status === "CANCELLED" ||
+        status === "REJECTED"
+      ) {
+        if (paymentPollingRef.current) {
+          window.clearInterval(paymentPollingRef.current);
+          paymentPollingRef.current = null;
+        }
+
+        setPaymentStage("FAILED");
+        return false;
+      }
+
+      setPaymentStage("PENDING");
+      return false;
+    } catch (error) {
+      if (error?.response?.status === 404) {
+        setPaymentStage("FAILED");
+      }
+
+      return false;
+    }
+  }
+
+  function beginPaymentPolling(reference, planKey) {
+    if (paymentPollingRef.current) {
+      window.clearInterval(paymentPollingRef.current);
+    }
+
+    paymentPollingRef.current = window.setInterval(() => {
+      checkPaidSignupPayment(reference, planKey);
+    }, 3000);
+  }
+
+  async function startPaidActivation() {
+    if (!selectedPlan?.key) {
+      toast.error("Choose a Storvex plan first.");
+      return;
+    }
+
+    const normalizedPaymentPhone = normalizePhone(paymentPhone);
+
+    if (!/^2507\d{8}$/.test(normalizedPaymentPhone)) {
+      toast.error(
+        "Use a Rwanda phone number like 078xxxxxxx or 25078xxxxxxx.",
+      );
+
+      return;
+    }
+
+    setPaymentStage("SENDING");
+
+    localStorage.setItem("storvex_signupMode", "PAID");
+    localStorage.setItem("storvex_planKey", selectedPlan.key);
+
+    saveOnboardingPatch({
+      signupMode: "PAID",
+      planKey: selectedPlan.key,
+      phone: normalizePhone(ownerPhone),
+      paymentReference: "",
+      passwordReady: true,
+    });
+
+    try {
+      const { data } = await apiClient.post(
+        "/auth/owner-payment",
+        {
+          intentId,
+          planKey: selectedPlan.key,
+          phone: normalizedPaymentPhone,
+        },
+      );
+
+      const reference =
+        data?.paymentReference ||
+        data?.payment?.reference ||
+        "";
+
+      if (!reference) {
+        throw new Error(
+          "The payment request did not return a reference.",
+        );
+      }
+
+      setPaymentPhone(normalizedPaymentPhone);
+      setPaymentReference(reference);
+
+      localStorage.setItem(
+        "storvex_paymentReference",
+        reference,
+      );
+
+      saveOnboardingPatch({
+        signupMode: "PAID",
+        planKey: selectedPlan.key,
+        paymentReference: reference,
+      });
+
+      const returnedStatus = cleanString(
+        data?.payment?.status,
+      ).toUpperCase();
+
+      if (returnedStatus === "SUCCESS") {
+        await finalizePaidSignup(selectedPlan.key);
+        return;
+      }
+
+      setPaymentStage("PENDING");
+
+      toast.success(
+        "MoMo request sent. Confirm the payment on your phone.",
+      );
+
+      beginPaymentPolling(
+        reference,
+        selectedPlan.key,
+      );
+    } catch (error) {
+      setPaymentStage("FAILED");
+
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "We could not start the payment. Please try again.",
+      );
+    }
+  }
+
+  useEffect(() => {
+    if (
+      !paymentReference ||
+      !selectedPlan?.key ||
+      paymentStage !== "PENDING"
+    ) {
+      return undefined;
+    }
+
+    checkPaidSignupPayment(
+      paymentReference,
+      selectedPlan.key,
+    );
+
+    beginPaymentPolling(
+      paymentReference,
+      selectedPlan.key,
+    );
+
+    return () => {
+      if (paymentPollingRef.current) {
+        window.clearInterval(paymentPollingRef.current);
+        paymentPollingRef.current = null;
+      }
+    };
+  }, [
+    paymentReference,
+    selectedPlan?.key,
+    paymentStage,
+  ]);
+
   async function startTrial() {
     if (!selectedPlan?.key) {
       toast.error("Choose a Storvex plan first.");
@@ -821,7 +1211,7 @@ export default function OwnerPayment() {
     <OnboardingShell
       activeStep={3}
       title="Launch your store."
-      subtitle="Review your plan and start your free trial."
+      subtitle="Review your plan, then start a free trial or activate it now."
       footer={
         <p className="svx-onboard-login-note">
           Your business and account details remain saved until setup is complete.
@@ -832,24 +1222,37 @@ export default function OwnerPayment() {
         className="svx-onboard-form mx-auto w-full max-w-[1180px]"
         onSubmit={(event) => event.preventDefault()}
       >
-        <div ref={confirmationRef} className="scroll-mt-6">
-          <SelectedPlanPanel
-            selectedPlan={selectedPlan}
-          storeName={storeName}
-          trialDays={trialDays}
-          loading={loading}
-          onStartTrial={startTrial}
-          onBackToAccount={() => nav("/verify-otp")}
-          onChangePlan={() =>
-            setShowPlanChoices((current) => !current)
-          }
-            selectedEarlier={Boolean(
-              originallySelectedPlanKey &&
-                selectedPlan?.key?.toUpperCase() ===
-                  originallySelectedPlanKey,
-            )}
-          />
-        </div>
+        {selectedPlan ? (
+          <div ref={confirmationRef} className="scroll-mt-6">
+            <SelectedPlanPanel
+              selectedPlan={selectedPlan}
+              storeName={storeName}
+              trialDays={trialDays}
+              loading={loading}
+              paymentStage={paymentStage}
+              paymentPhone={paymentPhone}
+              paymentReference={paymentReference}
+              onPaymentPhoneChange={setPaymentPhone}
+              onStartTrial={startTrial}
+              onStartPaid={startPaidActivation}
+              onCheckPayment={() =>
+                checkPaidSignupPayment(
+                  paymentReference,
+                  selectedPlan?.key,
+                )
+              }
+              onBackToAccount={() => nav("/verify-otp")}
+              onChangePlan={() =>
+                setShowPlanChoices((current) => !current)
+              }
+              selectedEarlier={Boolean(
+                originallySelectedPlanKey &&
+                  selectedPlan?.key?.toUpperCase() ===
+                    originallySelectedPlanKey,
+              )}
+            />
+          </div>
+        ) : null}
 
         {showPlanChoices ? (
           <section className="svx-launch-plan-selector mt-6 rounded-[24px] border border-[var(--onboard-border)] p-5 sm:p-7">
@@ -879,7 +1282,16 @@ export default function OwnerPayment() {
                 >
                   Close
                 </button>
-              ) : null}
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => nav("/verify-otp")}
+                  className="svx-onboard-back-action self-start sm:self-auto"
+                >
+                  <span aria-hidden="true">←</span>
+                  Back to account setup
+                </button>
+              )}
             </div>
 
             <div className="mt-6 grid items-stretch gap-4 lg:grid-cols-3">
