@@ -1,56 +1,77 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  ChevronDown,
-  Menu,
-  Moon,
-  Sun,
-  X,
-} from "lucide-react";
+import { Menu, Moon, Sun, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 
+import { ROUTES } from "../../constants/routes";
 import { useTheme } from "../../hooks/useTheme";
-import "../../legacy-pages/public/LandingPage.css";
 
-const logoSrc = "/storvex_dark.webp";
-const whiteLogoSrc = "/storvex_white.webp";
+import "./PublicHeader.css";
 
-const navItems = [
-  { label: "Features", href: "/#features" },
-  { label: "How it works", href: "/#how-it-works" },
-  { label: "Marketplace", href: "/marketplace" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Resources", href: "/#resources", hasCaret: true },
+const DARK_LOGO = "/storvex_dark.webp";
+const LIGHT_LOGO = "/storvex_white.webp";
+
+const NAVIGATION = [
+  {
+    label: "Features",
+    href: "/#features",
+    anchor: true,
+  },
+  {
+    label: "Pricing",
+    href: "/pricing",
+  },
+  {
+    label: "Marketplace",
+    href: "/marketplace",
+  },
 ];
 
-function cx(...items) {
-  return items.filter(Boolean).join(" ");
+function cx(...values) {
+  return values.filter(Boolean).join(" ");
 }
 
-function PublicNavLink({
-  href,
+function routeIsActive(pathname, href) {
+  if (href === "/pricing") {
+    return pathname === "/pricing";
+  }
+
+  if (href === "/marketplace") {
+    return pathname.startsWith("/marketplace");
+  }
+
+  return false;
+}
+
+function NavigationLink({
+  item,
+  pathname,
   className,
-  children,
   onClick,
 }) {
-  if (href?.startsWith("/#")) {
+  const active =
+    !item.anchor &&
+    routeIsActive(pathname, item.href);
+
+  if (item.anchor) {
     return (
       <a
-        href={href}
+        href={item.href}
         className={className}
         onClick={onClick}
       >
-        {children}
+        {item.label}
       </a>
     );
   }
 
   return (
     <Link
-      to={href || "/signup"}
-      className={className}
+      to={item.href}
+      className={cx(className, active && "is-active")}
+      aria-current={active ? "page" : undefined}
       onClick={onClick}
     >
-      {children}
+      {item.label}
     </Link>
   );
 }
@@ -58,206 +79,199 @@ function PublicNavLink({
 export default function PublicHeader() {
   const { isDark, toggleTheme } = useTheme();
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const [menuOpen, setMenuOpen] = useState(false);
   const headerRef = useRef(null);
 
   const pathname = location.pathname || "/";
 
+  function closeMenu() {
+    setMenuOpen(false);
+  }
+
   useEffect(() => {
-    setIsMenuOpen(false);
+    closeMenu();
   }, [pathname]);
 
   useEffect(() => {
-    if (!isMenuOpen) return undefined;
-
-    function handlePointerDown(event) {
-      if (!headerRef.current) return;
-      if (headerRef.current.contains(event.target)) return;
-
-      setIsMenuOpen(false);
+    if (!menuOpen) {
+      return undefined;
     }
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow = "hidden";
 
     function handleKeyDown(event) {
       if (event.key === "Escape") {
-        setIsMenuOpen(false);
+        closeMenu();
       }
     }
 
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("touchstart", handlePointerDown, {
-      passive: true,
-    });
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener(
+      "keydown",
+      handleKeyDown,
+    );
 
     return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("touchstart", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow =
+        previousOverflow;
+
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown,
+      );
     };
-  }, [isMenuOpen]);
+  }, [menuOpen]);
 
   useEffect(() => {
     function handleResize() {
-      if (window.innerWidth > 760) {
-        setIsMenuOpen(false);
+      if (window.innerWidth > 860) {
+        closeMenu();
       }
     }
 
     window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener(
+        "resize",
+        handleResize,
+      );
     };
   }, []);
-
-  function closeMenu() {
-    setIsMenuOpen(false);
-  }
 
   return (
     <header
       ref={headerRef}
       className={cx(
-        "svx-header",
-        isMenuOpen && "is-menu-open",
+        "sp-header",
+        menuOpen && "is-open",
       )}
     >
-      <div className="svx-header-inner">
+      <div className="sp-header__inner">
         <Link
           to="/"
+          className="sp-header__brand"
           aria-label="Storvex home"
-          className="svx-logo-link"
           onClick={closeMenu}
         >
           <img
-            src={isDark ? whiteLogoSrc : logoSrc}
+            src={isDark ? LIGHT_LOGO : DARK_LOGO}
             alt="Storvex"
-            className="svx-header-logo"
             draggable="false"
           />
         </Link>
 
-        <nav className="svx-nav" aria-label="Main navigation">
-          {navItems.map((item) => (
-            <PublicNavLink
+        <nav
+          className="sp-header__nav"
+          aria-label="Main navigation"
+        >
+          {NAVIGATION.map((item) => (
+            <NavigationLink
               key={item.label}
-              href={item.href}
-            >
-              {item.label}
-
-              {item.hasCaret ? (
-                <ChevronDown
-                  size={13}
-                  strokeWidth={2.4}
-                  aria-hidden="true"
-                />
-              ) : null}
-            </PublicNavLink>
+              item={item}
+              pathname={pathname}
+              className="sp-header__nav-link"
+            />
           ))}
         </nav>
 
-        <div className="svx-header-actions">
+        <div className="sp-header__actions">
           <button
             type="button"
-            className="svx-theme-toggle"
+            className="sp-header__theme"
             onClick={toggleTheme}
             aria-label={
               isDark
                 ? "Switch to light mode"
                 : "Switch to dark mode"
             }
-            aria-pressed={isDark}
           >
-            <span
-              className={cx(
-                "svx-theme-option",
-                !isDark && "active",
-              )}
-              aria-hidden="true"
-            >
-              <Sun size={15} strokeWidth={2.4} />
-            </span>
-
-            <span
-              className={cx(
-                "svx-theme-option",
-                isDark && "active",
-              )}
-              aria-hidden="true"
-            >
-              <Moon size={15} strokeWidth={2.4} />
-            </span>
+            {isDark ? (
+              <Sun
+                size={17}
+                strokeWidth={2}
+                aria-hidden="true"
+              />
+            ) : (
+              <Moon
+                size={17}
+                strokeWidth={2}
+                aria-hidden="true"
+              />
+            )}
           </button>
 
           <Link
-            to="/login"
-            className="svx-login-link"
-            onClick={closeMenu}
+            to={ROUTES.login}
+            className="sp-header__login"
           >
             Log in
           </Link>
 
           <Link
             to="/signup"
-            className="svx-header-cta"
-            onClick={closeMenu}
+            className="sp-header__trial"
           >
-            Get started
+            Start free trial
           </Link>
 
           <button
             type="button"
-            className="svx-mobile-menu-button"
+            className="sp-header__menu-button"
             onClick={() =>
-              setIsMenuOpen((current) => !current)
+              setMenuOpen((current) => !current)
             }
             aria-label={
-              isMenuOpen ? "Close menu" : "Open menu"
+              menuOpen ? "Close menu" : "Open menu"
             }
-            aria-expanded={isMenuOpen}
-            aria-controls="storvex-mobile-menu"
+            aria-expanded={menuOpen}
+            aria-controls="storvex-public-navigation"
           >
-            {isMenuOpen ? (
-              <X size={21} strokeWidth={2.4} />
+            {menuOpen ? (
+              <X
+                size={21}
+                strokeWidth={2.2}
+                aria-hidden="true"
+              />
             ) : (
-              <Menu size={21} strokeWidth={2.4} />
+              <Menu
+                size={21}
+                strokeWidth={2.2}
+                aria-hidden="true"
+              />
             )}
           </button>
         </div>
       </div>
 
       <div
-        id="storvex-mobile-menu"
-        className="svx-mobile-menu"
-        aria-hidden={!isMenuOpen}
+        id="storvex-public-navigation"
+        className="sp-header__mobile"
+        aria-hidden={!menuOpen}
       >
         <nav
-          className="svx-mobile-menu-panel"
+          className="sp-header__mobile-panel"
           aria-label="Mobile navigation"
         >
-          {navItems.map((item) => (
-            <PublicNavLink
-              key={item.label}
-              href={item.href}
-              className="svx-mobile-menu-link"
-              onClick={closeMenu}
-            >
-              <span>{item.label}</span>
+          <div className="sp-header__mobile-links">
+            {NAVIGATION.map((item) => (
+              <NavigationLink
+                key={item.label}
+                item={item}
+                pathname={pathname}
+                className="sp-header__mobile-link"
+                onClick={closeMenu}
+              />
+            ))}
+          </div>
 
-              {item.hasCaret ? (
-                <ChevronDown
-                  size={16}
-                  strokeWidth={2.4}
-                  aria-hidden="true"
-                />
-              ) : null}
-            </PublicNavLink>
-          ))}
-
-          <div className="svx-mobile-menu-actions">
+          <div className="sp-header__mobile-actions">
             <Link
-              to="/login"
-              className="svx-mobile-menu-secondary"
+              to={ROUTES.login}
+              className="sp-header__mobile-login"
               onClick={closeMenu}
             >
               Log in
@@ -265,11 +279,38 @@ export default function PublicHeader() {
 
             <Link
               to="/signup"
-              className="svx-mobile-menu-primary"
+              className="sp-header__mobile-trial"
               onClick={closeMenu}
             >
-              Get started
+              Start free trial
             </Link>
+          </div>
+
+          <div className="sp-header__mobile-footer">
+            <span>
+              Store control for serious retailers.
+            </span>
+
+            <button
+              type="button"
+              onClick={toggleTheme}
+            >
+              {isDark ? (
+                <Sun
+                  size={16}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
+              ) : (
+                <Moon
+                  size={16}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                />
+              )}
+
+              {isDark ? "Light mode" : "Dark mode"}
+            </button>
           </div>
         </nav>
       </div>
