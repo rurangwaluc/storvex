@@ -12,7 +12,6 @@ export const ONBOARDING_STORAGE_KEYS = [
   "storvex_district",
   "storvex_sector",
   "storvex_address",
-  "storvex_deviceId",
   "storvex_emailVerified",
   "storvex_phoneVerified",
   "storvex_signupMode",

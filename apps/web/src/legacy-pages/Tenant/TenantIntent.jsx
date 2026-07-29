@@ -33,7 +33,7 @@ import {
 } from "../../components/onboarding/onboardingStorage";
 import AsyncButton from "../../components/ui/AsyncButton";
 import { apiFetch } from "../../services/apiClient";
-import { getOrCreateDeviceId } from "../../utils/deviceId";
+import { getDeviceIdentity } from "../../utils/deviceId";
 
 const BUSINESS_CATEGORIES = [
   {
@@ -428,7 +428,7 @@ export default function TenantIntent() {
     setLoading(true);
 
     try {
-      const deviceId = getOrCreateDeviceId();
+      const { deviceId, browserFingerprint } = await getDeviceIdentity();
 
       const payload = {
         storeName: cleanString(form.storeName),
@@ -440,6 +440,7 @@ export default function TenantIntent() {
         sector: cleanString(form.sector),
         address: cleanString(form.address),
         deviceId,
+        browserFingerprint,
       };
 
       const data = await apiFetch("/auth/signup/owner-intent", {
@@ -467,6 +468,7 @@ export default function TenantIntent() {
         sector: payload.sector,
         address: payload.address,
         deviceId,
+        browserFingerprint,
         emailVerified: false,
         phoneVerified: false,
         signupMode: selectedPlanKey ? "PAID" : "",

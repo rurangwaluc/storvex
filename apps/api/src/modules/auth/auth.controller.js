@@ -415,8 +415,16 @@ async function enforceTrialGuardOrThrowTx(
     throw err;
   }
 
-  const deviceHash = cleanDeviceId ? sha256(cleanDeviceId) : null;
-  const fingerprintHash = cleanFingerprint ? sha256(cleanFingerprint) : null;
+  if (!cleanDeviceId || !cleanFingerprint) {
+    const err = new Error(
+      "We could not verify this device for the free trial. Please refresh and try again."
+    );
+    err.status = 400;
+    throw err;
+  }
+
+  const deviceHash = sha256(cleanDeviceId);
+  const fingerprintHash = sha256(cleanFingerprint);
   const ipHash = cleanIp ? sha256(cleanIp) : null;
 
   const dup = await tx.trialGuard.findFirst({
@@ -426,6 +434,8 @@ async function enforceTrialGuardOrThrowTx(
         { normalizedEmail },
         { phone: normalizedPhone },
         { normalizedPhone },
+        { deviceHash },
+        { fingerprintHash },
       ],
     },
     select: {
@@ -433,14 +443,29 @@ async function enforceTrialGuardOrThrowTx(
       phone: true,
       normalizedEmail: true,
       normalizedPhone: true,
+      deviceHash: true,
+      fingerprintHash: true,
     },
   });
 
   if (dup) {
-    const blockedReason =
-      dup.email === normalizedEmail || dup.normalizedEmail === normalizedEmail
-        ? "TRIAL_ALREADY_USED_BY_EMAIL"
-        : "TRIAL_ALREADY_USED_BY_PHONE";
+    let blockedReason = "TRIAL_ALREADY_USED_BY_DEVICE";
+
+    if (
+      dup.email === normalizedEmail ||
+      dup.normalizedEmail === normalizedEmail
+    ) {
+      blockedReason = "TRIAL_ALREADY_USED_BY_EMAIL";
+    } else if (
+      dup.phone === normalizedPhone ||
+      dup.normalizedPhone === normalizedPhone
+    ) {
+      blockedReason = "TRIAL_ALREADY_USED_BY_PHONE";
+    } else if (dup.deviceHash === deviceHash) {
+      blockedReason = "TRIAL_ALREADY_USED_BY_DEVICE";
+    } else if (dup.fingerprintHash === fingerprintHash) {
+      blockedReason = "TRIAL_ALREADY_USED_BY_BROWSER";
+    }
 
     if (intentId) {
       await tx.ownerIntent.update({
@@ -452,7 +477,9 @@ async function enforceTrialGuardOrThrowTx(
       });
     }
 
-    throw createForbiddenTrialError("Free trial already used. Please choose a paid plan.");
+    throw createForbiddenTrialError(
+      "Free trial already used on this account or device. Please choose a paid plan."
+    );
   }
 
   if (intentId) {
