@@ -297,6 +297,109 @@ async function uniqueMarketplaceCode(
   throw error;
 }
 
+function isPrismaUniqueConstraintError(error) {
+  return error?.code === "P2002";
+}
+
+function uniqueConstraintTargets(error) {
+  const target = error?.meta?.target;
+
+  if (Array.isArray(target)) {
+    return target.map((item) => String(item));
+  }
+
+  if (target) {
+    return [String(target)];
+  }
+
+  return [];
+}
+
+async function createMarketplaceSellerProfile(tenant) {
+  const maximumAttempts = 5;
+
+  for (
+    let attempt = 0;
+    attempt < maximumAttempts;
+    attempt += 1
+  ) {
+    const publicSlug = await uniquePublicSlug(
+      tenant.id,
+      attempt === 0 ? null : `${tenant.name}-${attempt + 1}`,
+      tenant.name,
+    );
+
+    const marketplaceCode =
+      await uniqueMarketplaceCode(
+        tenant.id,
+        tenant.name,
+      );
+
+    try {
+      return await prisma.marketplaceSellerProfile.create({
+        data: {
+          tenantId: tenant.id,
+          publicSlug,
+          marketplaceCode,
+          displayName: tenant.name,
+          paymentMethods: [
+            ...DEFAULT_PAYMENT_METHODS,
+          ],
+        },
+      });
+    } catch (error) {
+      if (!isPrismaUniqueConstraintError(error)) {
+        throw error;
+      }
+
+      /*
+       * First Marketplace open can trigger more than one
+       * profile request at the same time. Another request may
+       * have created this tenant's profile after our initial
+       * lookup but before this create call.
+       */
+      const existing =
+        await prisma.marketplaceSellerProfile.findUnique({
+          where: {
+            tenantId: tenant.id,
+          },
+        });
+
+      if (existing) {
+        return existing;
+      }
+
+      const targets =
+        uniqueConstraintTargets(error);
+
+      const retryableGeneratedValueCollision =
+        targets.length === 0 ||
+        targets.some(
+          (target) =>
+            target.includes("publicSlug") ||
+            target.includes("marketplaceCode"),
+        );
+
+      if (
+        retryableGeneratedValueCollision &&
+        attempt < maximumAttempts - 1
+      ) {
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  const error = new Error(
+    "Marketplace profile could not be initialized",
+  );
+  error.status = 409;
+  error.code =
+    "MARKETPLACE_PROFILE_INITIALIZATION_FAILED";
+  throw error;
+}
+
 async function getMarketplaceSellerProfile(tenantId) {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
@@ -324,23 +427,10 @@ async function getMarketplaceSellerProfile(tenantId) {
   });
 
   if (!profile) {
-    profile = await prisma.marketplaceSellerProfile.create({
-      data: {
-        tenantId,
-        publicSlug: await uniquePublicSlug(
-          tenantId,
-          null,
-          tenant.name,
-        ),
-        marketplaceCode:
-          await uniqueMarketplaceCode(
-            tenantId,
-            tenant.name,
-          ),
-        displayName: tenant.name,
-        paymentMethods: [...DEFAULT_PAYMENT_METHODS],
-      },
-    });
+    profile =
+      await createMarketplaceSellerProfile(
+        tenant,
+      );
   }
 
   return {
@@ -504,6 +594,9 @@ module.exports = {
   marketplaceCodeBase,
   marketplaceCodeCandidate,
   uniqueMarketplaceCode,
+  isPrismaUniqueConstraintError,
+  uniqueConstraintTargets,
+  createMarketplaceSellerProfile,
   buildMarketplaceReadiness,
   getMarketplaceSellerProfile,
   getMarketplaceReadiness,
