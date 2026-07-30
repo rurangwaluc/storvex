@@ -72,31 +72,36 @@ const marketplaceCategories = [
   {
     name: "Electronics",
     shortName: "Electronics",
-    description: "Phones, laptops, TVs and accessories",
+    description: "Phones, laptops and accessories",
+    image: "/marketplace/categories/electronics.webp",
     icon: Cpu,
   },
   {
     name: "Hardware / Quincaillerie",
     shortName: "Hardware",
-    description: "Tools, building materials and fittings",
+    description: "Tools, materials and fittings",
+    image: "/marketplace/categories/hardware.webp",
     icon: Drill,
   },
   {
     name: "Home & kitchen materials",
     shortName: "Home & kitchen",
-    description: "Cookware, sinks, tiles and home materials",
+    description: "Cookware and home materials",
+    image: "/marketplace/categories/home-kitchen.webp",
     icon: Home,
   },
   {
     name: "Lighting",
     shortName: "Lighting",
-    description: "Bulbs, ceiling lights and flood lights",
+    description: "Bulbs, ceiling and outdoor lights",
+    image: "/marketplace/categories/lighting.webp",
     icon: LampCeiling,
   },
   {
     name: "Spare parts",
     shortName: "Spare parts",
-    description: "Screens, batteries, filters and parts",
+    description: "Batteries and replacement parts",
+    image: "/marketplace/categories/spare-parts.webp",
     icon: Wrench,
   },
 ];
@@ -107,6 +112,23 @@ function cx(...items) {
 
 function cleanString(value) {
   return String(value || "").trim();
+}
+
+function marketplaceImageSource(value) {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return cleanString(value);
+  }
+
+  return cleanString(
+    value.url ||
+    value.publicUrl ||
+    value.imageUrl ||
+    value.src,
+  );
 }
 
 export function formatMoney(value, currency = "RWF") {
@@ -1294,46 +1316,81 @@ export default function MarketplaceHome() {
         </section>
 
         <section className="svx-commerce-page-shell">
-          <div className="svx-commerce-section">
-            <div className="svx-commerce-section-heading">
+          <section
+            id="marketplace-categories"
+            className="svx-commerce-section svx-category-showcase"
+          >
+            <div className="svx-category-showcase__header">
               <div>
-                <span>Categories</span>
-                <h2>Browse categories</h2>
+                <span>Browse categories</span>
+                <h2>Shop by business category</h2>
               </div>
 
-              {category ? (
-                <button type="button" onClick={() => chooseCategory("")}>
-                  Clear category
-                </button>
-              ) : null}
-            </div>
-
-            <div className="svx-commerce-category-grid">
-              {marketplaceCategories.map((item) => {
-                const Icon = item.icon;
-
-                return (
+              <div className="svx-category-showcase__actions">
+                {category ? (
                   <button
                     type="button"
-                    key={item.name}
-                    className={category === item.name ? "is-active" : ""}
-                    onClick={() => chooseCategory(item.name)}
+                    className="svx-category-showcase__clear"
+                    onClick={() => chooseCategory("")}
                   >
-                    <span>
-                      <Icon size={25} strokeWidth={2} />
-                    </span>
+                    Clear selection
+                    <X size={15} strokeWidth={2} />
+                  </button>
+                ) : null}
 
-                    <div>
+                <Link
+                  to="/marketplace/shop"
+                  className="svx-category-showcase__all"
+                >
+                  Browse all products
+                  <ArrowRight size={16} strokeWidth={2} />
+                </Link>
+              </div>
+            </div>
+
+            <div className="svx-category-showcase__grid">
+              {marketplaceCategories.map((item) => (
+                <button
+                  type="button"
+                  key={item.name}
+                  className={cx(
+                    "svx-category-showcase__card",
+                    category === item.name &&
+                      "is-selected",
+                  )}
+                  aria-pressed={category === item.name}
+                  onClick={() => chooseCategory(item.name)}
+                >
+                  <span className="svx-category-showcase__media">
+                    <img
+                      src={item.image}
+                      alt=""
+                      aria-hidden="true"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </span>
+
+                  <span className="svx-category-showcase__body">
+                    <span className="svx-category-showcase__copy">
                       <strong>{item.shortName}</strong>
                       <small>{item.description}</small>
-                    </div>
+                    </span>
 
-                    <ArrowRight size={17} />
-                  </button>
-                );
-              })}
+                    <span
+                      className="svx-category-showcase__open"
+                      aria-hidden="true"
+                    >
+                      <ArrowRight
+                        size={16}
+                        strokeWidth={2}
+                      />
+                    </span>
+                  </span>
+                </button>
+              ))}
             </div>
-          </div>
+          </section>
 
           {!loading && !error && stores.length > 0 ? (
             <div className="svx-commerce-section">
