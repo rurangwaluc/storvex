@@ -45,6 +45,7 @@ import {
 
 import "../public/LandingPage.css";
 import "./MarketplacePublic.css";
+import "./MarketplaceCustomerPanel.css";
 
 const STORE_PAGE_SIZE = 12;
 

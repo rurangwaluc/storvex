@@ -1,0 +1,5778 @@
+/* =========================================================
+   STORVEX MARKETPLACE CUSTOMER WORKSPACE
+   Visual and internal layout only.
+   Existing open/close transforms and timing remain in
+   MarketplacePublic.css.
+========================================================= */
+
+.svx-marketplace-customer-layer {
+  z-index: 2147483100 !important;
+}
+
+.svx-marketplace-customer-panel {
+  display: grid !important;
+  width: min(590px, 100vw) !important;
+  min-height: 0;
+  grid-template-rows:
+    auto
+    auto
+    minmax(0, 1fr)
+    auto;
+  border-left: 1px solid var(--landing-border);
+  background: var(--landing-bg);
+  color: var(--landing-text);
+  box-shadow: none;
+}
+
+.svx-marketplace-customer-layer.mode-wishlist
+  .svx-marketplace-customer-panel,
+.svx-marketplace-customer-layer.mode-compare
+  .svx-marketplace-customer-panel {
+  grid-template-rows:
+    auto
+    auto
+    minmax(0, 1fr);
+}
+
+/* =========================================================
+   TOP MODE NAVIGATION
+========================================================= */
+
+.svx-marketplace-customer-tabs {
+  position: relative !important;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  border-bottom: 1px solid var(--landing-border);
+  background: var(--landing-bg);
+  padding: 0 26px;
+}
+
+.svx-marketplace-customer-tabs button {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  min-height: 64px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 12px;
+  color: var(--landing-muted);
+  font-size: 14px;
+  font-weight: 730;
+  box-shadow: none;
+}
+
+.svx-marketplace-customer-tabs button::after {
+  position: absolute;
+  right: 14px;
+  bottom: -1px;
+  left: 14px;
+  height: 2px;
+  background: transparent;
+  content: "";
+}
+
+.svx-marketplace-customer-tabs button.is-active {
+  background: transparent;
+  color: var(--landing-text);
+  box-shadow: none;
+}
+
+.svx-marketplace-customer-tabs button.is-active::after {
+  background: var(--landing-primary);
+}
+
+.svx-marketplace-customer-tabs button.is-active svg {
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-customer-tabs button b {
+  display: grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--landing-primary);
+  padding: 0 6px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* =========================================================
+   PANEL HEADING
+========================================================= */
+
+.svx-marketplace-customer-panel-head {
+  position: relative !important;
+  z-index: 3;
+  display: flex;
+  min-height: 112px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--landing-border);
+  background: var(--landing-bg);
+  padding: 23px 26px 21px;
+}
+
+.svx-marketplace-customer-panel-head > div {
+  min-width: 0;
+}
+
+.svx-marketplace-customer-panel-head span {
+  display: block;
+  color: var(--landing-primary);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.svx-marketplace-customer-panel-head h2 {
+  margin: 5px 0 0;
+  color: var(--landing-text);
+  font-family: var(--landing-heading-font);
+  font-size: 28px;
+  font-weight: 850;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.svx-marketplace-customer-panel-head p {
+  margin: 7px 0 0;
+  color: var(--landing-muted);
+  font-size: 14px;
+  font-weight: 620;
+  line-height: 1.4;
+}
+
+.svx-marketplace-customer-panel-head > button {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border: 1px solid var(--landing-border);
+  border-radius: 10px;
+  background: var(--landing-card);
+  color: var(--landing-text);
+  box-shadow: none;
+}
+
+.svx-marketplace-customer-panel-head > button:hover {
+  border-color: var(--landing-primary);
+  color: var(--landing-primary);
+}
+
+/* =========================================================
+   SCROLLING CONTENT
+========================================================= */
+
+.svx-marketplace-customer-panel-body {
+  position: relative !important;
+  z-index: 1;
+  min-width: 0;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  background: var(--landing-bg);
+  padding: 0 26px 30px;
+  scrollbar-width: thin;
+  overscroll-behavior: contain;
+}
+
+/* =========================================================
+   EMPTY STATES
+========================================================= */
+
+.svx-marketplace-customer-empty {
+  display: grid;
+  min-height: 330px;
+  align-content: center;
+  justify-items: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.svx-marketplace-customer-empty > svg {
+  width: 62px;
+  height: 62px;
+  border: 1px solid var(--landing-border);
+  border-radius: 14px;
+  background: var(--landing-card);
+  padding: 16px;
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-customer-empty h3 {
+  margin: 18px 0 0;
+  color: var(--landing-text);
+  font-family: var(--landing-heading-font);
+  font-size: 22px;
+  font-weight: 830;
+  line-height: 1.2;
+}
+
+.svx-marketplace-customer-empty p {
+  max-width: 330px;
+  margin: 8px 0 0;
+  color: var(--landing-muted);
+  font-size: 14px;
+  font-weight: 620;
+  line-height: 1.55;
+}
+
+/* =========================================================
+   CART PRODUCT ROW
+========================================================= */
+
+.svx-marketplace-cart-list {
+  display: grid;
+}
+
+.svx-marketplace-cart-row {
+  display: grid;
+  grid-template-columns:
+    108px
+    minmax(0, 1fr)
+    auto;
+  align-items: start;
+  column-gap: 17px;
+  row-gap: 13px;
+  border: 0;
+  border-bottom: 1px solid var(--landing-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 24px 0;
+  box-shadow: none;
+}
+
+.svx-marketplace-cart-row:first-child {
+  padding-top: 24px;
+}
+
+.svx-marketplace-cart-row:last-child {
+  border-bottom: 0;
+}
+
+.svx-marketplace-customer-product {
+  display: contents;
+}
+
+.svx-marketplace-customer-product-image {
+  display: flex;
+  width: 108px;
+  height: 108px;
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--landing-border);
+  border-radius: 11px;
+  background: var(--landing-card);
+  color: var(--landing-muted);
+}
+
+.svx-marketplace-customer-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.svx-marketplace-customer-product-copy {
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.svx-marketplace-customer-product-store {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  color: var(--landing-muted);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-marketplace-customer-product-store svg {
+  flex: 0 0 auto;
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-customer-product-title {
+  display: -webkit-box;
+  margin-top: 7px;
+  overflow: hidden;
+  color: var(--landing-text);
+  font-size: 17px;
+  font-weight: 810;
+  line-height: 1.32;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.svx-marketplace-customer-product-status {
+  display: block;
+  margin-top: 7px;
+  font-size: 13px;
+  font-weight: 720;
+  line-height: 1.3;
+}
+
+.svx-marketplace-customer-product-status.is-available {
+  color: var(--landing-success, #10b981);
+}
+
+.svx-marketplace-customer-product-status.is-unavailable {
+  color: var(--landing-danger, #ef4444);
+}
+
+.svx-marketplace-customer-product-price {
+  display: block;
+  margin-top: 9px;
+  color: var(--landing-text);
+  font-size: 18px;
+  font-weight: 860;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+/* Quantity and removal */
+
+.svx-marketplace-cart-controls {
+  display: grid;
+  min-width: 150px;
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  align-content: start;
+  justify-items: end;
+  gap: 12px;
+  margin: 0;
+}
+
+.svx-marketplace-cart-controls > div:first-child {
+  display: grid;
+  justify-items: end;
+  gap: 7px;
+}
+
+.svx-marketplace-cart-controls
+  > div:first-child
+  > span {
+  color: var(--landing-muted);
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.svx-marketplace-cart-quantity {
+  display: inline-grid;
+  grid-template-columns: 44px 46px 44px;
+  overflow: hidden;
+  border: 1px solid var(--landing-border);
+  border-radius: 9px;
+}
+
+.svx-marketplace-cart-quantity button,
+.svx-marketplace-cart-quantity span {
+  display: inline-flex;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+}
+
+.svx-marketplace-cart-quantity button {
+  border: 0;
+  background: var(--landing-card);
+  color: var(--landing-text);
+  box-shadow: none;
+}
+
+.svx-marketplace-cart-quantity button:hover:not(:disabled) {
+  background: var(--landing-primary-soft);
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-cart-quantity button:disabled {
+  cursor: not-allowed;
+  opacity: 0.38;
+}
+
+.svx-marketplace-cart-quantity span {
+  border-right: 1px solid var(--landing-border);
+  border-left: 1px solid var(--landing-border);
+  color: var(--landing-text);
+  font-size: 15px;
+  font-weight: 820;
+}
+
+.svx-marketplace-remove-button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 0 7px;
+  color: var(--landing-danger, #ef4444);
+  font-size: 13px;
+  font-weight: 740;
+  box-shadow: none;
+}
+
+.svx-marketplace-remove-button:hover {
+  background: color-mix(
+    in srgb,
+    var(--landing-danger, #ef4444) 8%,
+    transparent
+  );
+}
+
+/* Product total */
+
+.svx-marketplace-cart-line-total {
+  display: flex;
+  min-width: 0;
+  grid-column: 2 / 4;
+  grid-row: 2;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.svx-marketplace-cart-line-total > span {
+  color: var(--landing-muted);
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.svx-marketplace-cart-line-total > div {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.svx-marketplace-cart-line-total small {
+  color: var(--landing-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.svx-marketplace-cart-line-total strong {
+  color: var(--landing-text);
+  font-size: 16px;
+  font-weight: 850;
+}
+
+/* =========================================================
+   REQUEST SUMMARY
+========================================================= */
+
+.svx-marketplace-customer-panel-footer {
+  position: relative !important;
+  z-index: 4;
+  inset: auto !important;
+  border-top: 1px solid var(--landing-border);
+  background: var(--landing-bg);
+  padding: 19px 26px 23px;
+}
+
+.svx-marketplace-request-summary {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 0.7fr)
+    minmax(0, 1.3fr);
+  gap: 26px;
+}
+
+.svx-marketplace-request-summary > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.svx-marketplace-request-summary span {
+  color: var(--landing-muted);
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.svx-marketplace-request-summary strong {
+  color: var(--landing-text);
+  font-size: 15px;
+  font-weight: 820;
+}
+
+.svx-marketplace-request-summary .is-total {
+  border: 0;
+  padding: 0;
+}
+
+.svx-marketplace-request-summary .is-total span {
+  color: var(--landing-muted);
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.svx-marketplace-request-summary .is-total strong {
+  color: var(--landing-text);
+  font-size: 21px;
+  font-weight: 880;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.svx-marketplace-request-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 15px;
+  color: var(--landing-muted);
+}
+
+.svx-marketplace-request-note svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-request-note p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 620;
+  line-height: 1.45;
+}
+
+.svx-marketplace-request-button {
+  display: inline-flex;
+  width: 100%;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+  border: 1px solid var(--landing-primary);
+  border-radius: 9px;
+  background: var(--landing-primary);
+  padding: 0 18px;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 820;
+  box-shadow: none;
+}
+
+.svx-marketplace-request-button:hover:not(:disabled) {
+  border-color: var(--landing-primary-dark);
+  background: var(--landing-primary-dark);
+}
+
+/* =========================================================
+   SAVED PRODUCTS
+========================================================= */
+
+.svx-marketplace-wishlist-list {
+  display: grid;
+  gap: 14px;
+  padding-top: 22px;
+}
+
+.svx-marketplace-wishlist-row {
+  border: 1px solid var(--landing-border);
+  border-radius: 12px;
+  background: var(--landing-card);
+  padding: 15px;
+  box-shadow: none;
+}
+
+.svx-marketplace-wishlist-title {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.svx-marketplace-wishlist-price {
+  font-size: 18px;
+}
+
+.svx-marketplace-wishlist-store,
+.svx-marketplace-wishlist-category,
+.svx-marketplace-wishlist-availability {
+  font-size: 13px;
+}
+
+.svx-marketplace-wishlist-view,
+.svx-marketplace-wishlist-cart,
+.svx-marketplace-wishlist-remove {
+  min-height: 46px;
+  font-size: 14px;
+  font-weight: 750;
+  box-shadow: none;
+}
+
+/* =========================================================
+   COMPARISON
+========================================================= */
+
+.svx-marketplace-compare-workspace {
+  padding-top: 22px;
+}
+
+.svx-marketplace-compare-guidance {
+  margin: 0 0 18px;
+  border: 1px solid var(--landing-border);
+  border-radius: 12px;
+  background: var(--landing-card);
+  padding: 15px;
+}
+
+.svx-marketplace-compare-guidance strong {
+  font-size: 15px;
+}
+
+.svx-marketplace-compare-guidance p {
+  font-size: 13px;
+}
+
+.svx-marketplace-compare-table-label,
+.svx-marketplace-compare-table-value,
+.svx-marketplace-compare-product-copy p,
+.svx-marketplace-compare-category {
+  font-size: 13px;
+}
+
+.svx-marketplace-compare-product-copy > a {
+  font-size: 16px;
+}
+
+.svx-marketplace-compare-product-copy strong {
+  font-size: 18px;
+}
+
+.svx-marketplace-compare-cart-button {
+  min-height: 46px;
+  font-size: 14px;
+  box-shadow: none;
+}
+
+/* =========================================================
+   MOBILE / PWA
+========================================================= */
+
+@media (max-width: 820px) {
+  .svx-marketplace-customer-panel {
+    width: 100% !important;
+  }
+
+  .svx-marketplace-customer-tabs {
+    padding: 0 12px;
+  }
+
+  .svx-marketplace-customer-tabs button {
+    min-height: 56px;
+    padding: 0 7px;
+    font-size: 13px;
+  }
+
+  .svx-marketplace-customer-panel-head {
+    min-height: 94px;
+    padding: 18px 18px 16px;
+  }
+
+  .svx-marketplace-customer-panel-head h2 {
+    font-size: 23px;
+  }
+
+  .svx-marketplace-customer-panel-body {
+    padding-right: 18px;
+    padding-left: 18px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .svx-marketplace-customer-panel-footer {
+    padding:
+      17px
+      18px
+      calc(
+        19px +
+        env(safe-area-inset-bottom, 0px)
+      );
+  }
+
+  .svx-marketplace-cart-row {
+    grid-template-columns:
+      92px
+      minmax(0, 1fr);
+  }
+
+  .svx-marketplace-customer-product-image {
+    width: 92px;
+    height: 92px;
+  }
+
+  .svx-marketplace-customer-product-copy {
+    grid-column: 2;
+  }
+
+  .svx-marketplace-cart-controls {
+    min-width: 0;
+    grid-column: 2;
+    grid-row: 2;
+    grid-template-columns:
+      auto
+      auto;
+    align-items: end;
+    justify-content: space-between;
+    justify-items: stretch;
+  }
+
+  .svx-marketplace-cart-controls
+    > div:first-child {
+    justify-items: start;
+  }
+
+  .svx-marketplace-cart-line-total {
+    grid-column: 1 / 3;
+    grid-row: 3;
+    border-top: 1px solid var(--landing-border);
+    padding-top: 13px;
+  }
+}
+
+@media (max-width: 470px) {
+  .svx-marketplace-customer-tabs button {
+    gap: 5px;
+    font-size: 12px;
+  }
+
+  .svx-marketplace-customer-panel-head,
+  .svx-marketplace-customer-panel-body,
+  .svx-marketplace-customer-panel-footer {
+    padding-right: 15px;
+    padding-left: 15px;
+  }
+
+  .svx-marketplace-cart-row {
+    grid-template-columns:
+      80px
+      minmax(0, 1fr);
+    column-gap: 12px;
+  }
+
+  .svx-marketplace-customer-product-image {
+    width: 80px;
+    height: 80px;
+  }
+
+  .svx-marketplace-customer-product-title {
+    font-size: 16px;
+  }
+
+  .svx-marketplace-customer-product-price {
+    font-size: 17px;
+  }
+
+  .svx-marketplace-cart-controls {
+    grid-column: 1 / 3;
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+    margin-top: 3px;
+  }
+
+  .svx-marketplace-request-summary {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .svx-marketplace-customer-tabs button > svg {
+    display: none;
+  }
+
+  .svx-marketplace-customer-tabs button {
+    font-size: 12px;
+  }
+}
+
+
+/* =========================================================
+   MARKETPLACE CUSTOMER BUTTON SYSTEM
+========================================================= */
+
+.svx-marketplace-customer-panel button,
+.svx-marketplace-customer-panel a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.svx-marketplace-customer-panel button:focus-visible,
+.svx-marketplace-customer-panel a:focus-visible {
+  outline: 3px solid
+    color-mix(
+      in srgb,
+      var(--landing-primary) 28%,
+      transparent
+    );
+  outline-offset: 3px;
+}
+
+/* Tabs */
+
+.svx-marketplace-customer-tabs button {
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.svx-marketplace-customer-tabs button:hover {
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 6%,
+      transparent
+    );
+  color: var(--landing-text);
+}
+
+.svx-marketplace-customer-tabs button b {
+  min-width: 20px;
+  height: 20px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--landing-primary) 72%,
+      var(--landing-border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 16%,
+      var(--landing-bg)
+    );
+  color: var(--landing-primary);
+  font-size: 11px;
+}
+
+.svx-marketplace-customer-tabs
+  button.is-active
+  b {
+  border-color: var(--landing-primary);
+  background: var(--landing-primary);
+  color: #ffffff;
+}
+
+/* Close */
+
+.svx-marketplace-customer-panel-head
+  > button {
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.svx-marketplace-customer-panel-head
+  > button:hover {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 48%,
+      var(--landing-border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 7%,
+      var(--landing-card)
+    );
+}
+
+/* Quantity */
+
+.svx-marketplace-cart-quantity {
+  border-radius: 10px;
+  background: var(--landing-card);
+}
+
+.svx-marketplace-cart-quantity button {
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.svx-marketplace-cart-quantity button:first-child {
+  border-radius: 9px 0 0 9px;
+}
+
+.svx-marketplace-cart-quantity button:last-child {
+  border-radius: 0 9px 9px 0;
+}
+
+.svx-marketplace-cart-quantity button:hover:not(:disabled) {
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 12%,
+      var(--landing-card)
+    );
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-cart-quantity button:active:not(:disabled) {
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 18%,
+      var(--landing-card)
+    );
+}
+
+.svx-marketplace-cart-quantity span {
+  background: var(--landing-bg);
+}
+
+/* Remove */
+
+.svx-marketplace-remove-button {
+  min-height: 40px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--landing-danger, #ef4444) 30%,
+      var(--landing-border)
+    );
+  border-radius: 9px;
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-danger, #ef4444) 5%,
+      transparent
+    );
+  padding: 0 11px;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.svx-marketplace-remove-button:hover {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--landing-danger, #ef4444) 62%,
+      var(--landing-border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-danger, #ef4444) 10%,
+      transparent
+    );
+}
+
+.svx-marketplace-remove-button:active {
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-danger, #ef4444) 15%,
+      transparent
+    );
+}
+
+/* Primary request action */
+
+.svx-marketplace-request-button {
+  min-height: 52px;
+  border-radius: 9px;
+  letter-spacing: -0.01em;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.svx-marketplace-request-button:hover:not(:disabled) {
+  border-color: var(--landing-primary-dark);
+  background: var(--landing-primary-dark);
+}
+
+.svx-marketplace-request-button:active:not(:disabled) {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--landing-primary-dark) 88%,
+      #000000
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-primary-dark) 88%,
+      #000000
+    );
+}
+
+.svx-marketplace-request-button:disabled {
+  cursor: not-allowed;
+  border-color: var(--landing-border);
+  background: var(--landing-card);
+  color: var(--landing-muted);
+  opacity: 1;
+}
+
+/* Saved-product actions */
+
+.svx-marketplace-wishlist-view,
+.svx-marketplace-wishlist-cart,
+.svx-marketplace-wishlist-remove,
+.svx-marketplace-compare-cart-button {
+  border-radius: 9px;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.svx-marketplace-wishlist-view {
+  border: 1px solid var(--landing-border);
+  background: transparent;
+  color: var(--landing-text);
+}
+
+.svx-marketplace-wishlist-view:hover {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 45%,
+      var(--landing-border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 6%,
+      transparent
+    );
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-wishlist-cart,
+.svx-marketplace-compare-cart-button {
+  border: 1px solid var(--landing-primary);
+  background: var(--landing-primary);
+  color: #ffffff;
+}
+
+.svx-marketplace-wishlist-cart:hover:not(:disabled),
+.svx-marketplace-compare-cart-button:hover:not(:disabled) {
+  border-color: var(--landing-primary-dark);
+  background: var(--landing-primary-dark);
+}
+
+.svx-marketplace-wishlist-remove {
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--landing-danger, #ef4444) 28%,
+      var(--landing-border)
+    );
+  background: transparent;
+  color: var(--landing-danger, #ef4444);
+}
+
+/* Touch sizing */
+
+@media (max-width: 820px) {
+  .svx-marketplace-remove-button {
+    min-height: 44px;
+  }
+
+  .svx-marketplace-request-button {
+    min-height: 52px;
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-marketplace-customer-tabs button,
+  .svx-marketplace-customer-panel-head
+    > button,
+  .svx-marketplace-cart-quantity button,
+  .svx-marketplace-remove-button,
+  .svx-marketplace-request-button,
+  .svx-marketplace-wishlist-view,
+  .svx-marketplace-wishlist-cart,
+  .svx-marketplace-wishlist-remove,
+  .svx-marketplace-compare-cart-button {
+    transition-duration: 1ms !important;
+  }
+}
+
+
+/* =========================================================
+   FINAL CART PRODUCT COMPOSITION
+========================================================= */
+
+.svx-marketplace-cart-row {
+  display: grid;
+  grid-template-columns:
+    108px
+    minmax(0, 1fr);
+  align-items: start;
+  column-gap: 18px;
+  row-gap: 15px;
+}
+
+.svx-marketplace-customer-product {
+  display: contents;
+}
+
+.svx-marketplace-customer-product-image {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  background: var(--landing-card);
+}
+
+.svx-marketplace-customer-product-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.svx-marketplace-product-placeholder {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  color: var(--landing-muted);
+  text-align: center;
+}
+
+.svx-marketplace-product-placeholder svg {
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-product-placeholder small {
+  max-width: 74px;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.3;
+}
+
+.svx-marketplace-customer-product-copy {
+  display: grid;
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.svx-marketplace-customer-product-title {
+  font-size: 17px;
+}
+
+.svx-marketplace-customer-product-price {
+  font-size: 19px;
+}
+
+/* Quantity and remove now form one connected action row. */
+
+.svx-marketplace-cart-controls {
+  display: flex;
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 2;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0;
+}
+
+.svx-marketplace-cart-controls > div:first-child {
+  justify-items: start;
+}
+
+.svx-marketplace-remove-button {
+  width: auto;
+  min-width: 104px;
+  min-height: 44px;
+  flex: 0 0 auto;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--landing-danger, #ef4444) 35%,
+      var(--landing-border)
+    );
+  border-radius: 9px;
+  padding: 0 14px;
+  white-space: nowrap;
+}
+
+/* Line total stays directly beneath the product controls. */
+
+.svx-marketplace-cart-line-total {
+  display: flex;
+  min-width: 0;
+  grid-column: 2;
+  grid-row: 3;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--landing-border);
+  padding-top: 13px;
+}
+
+.svx-marketplace-cart-line-total > div {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.svx-marketplace-cart-line-total strong {
+  font-size: 17px;
+}
+
+/* Cleaner summary action */
+
+.svx-marketplace-request-button {
+  min-height: 50px;
+  border-radius: 9px;
+}
+
+@media (max-width: 520px) {
+  .svx-marketplace-cart-row {
+    grid-template-columns:
+      82px
+      minmax(0, 1fr);
+    column-gap: 12px;
+  }
+
+  .svx-marketplace-customer-product-image {
+    width: 82px;
+    height: 82px;
+  }
+
+  .svx-marketplace-cart-controls {
+    grid-column: 1 / 3;
+    align-items: flex-end;
+  }
+
+  .svx-marketplace-cart-line-total {
+    grid-column: 1 / 3;
+  }
+
+  .svx-marketplace-remove-button {
+    min-width: 96px;
+  }
+}
+
+@media (max-width: 360px) {
+  .svx-marketplace-cart-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .svx-marketplace-remove-button {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   PREMIUM PRODUCT COMPARISON
+   Visual layout only. Drawer movement remains untouched.
+========================================================= */
+
+/* Comparison benefits from a wider desktop workspace. */
+
+@media (min-width: 821px) {
+  .svx-marketplace-customer-layer.mode-compare
+    .svx-marketplace-customer-panel {
+    width: min(720px, 100vw) !important;
+  }
+}
+
+.svx-marketplace-customer-layer.mode-compare
+  .svx-marketplace-customer-panel-body {
+  padding:
+    20px
+    0
+    28px;
+}
+
+.svx-marketplace-compare-workspace {
+  min-width: 0;
+  padding: 0;
+}
+
+/* Intro guidance */
+
+.svx-marketplace-compare-guidance {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin:
+    0
+    24px
+    18px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--landing-primary) 22%,
+      var(--landing-border)
+    );
+  border-radius: 12px;
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 6%,
+      var(--landing-card)
+    );
+  padding: 14px 15px;
+}
+
+.svx-marketplace-compare-guidance > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-compare-guidance strong {
+  display: block;
+  color: var(--landing-text);
+  font-size: 15px;
+  font-weight: 810;
+  line-height: 1.3;
+}
+
+.svx-marketplace-compare-guidance p {
+  max-width: 520px;
+  margin: 5px 0 0;
+  color: var(--landing-muted);
+  font-size: 13px;
+  font-weight: 620;
+  line-height: 1.5;
+}
+
+/* Horizontal workspace */
+
+.svx-marketplace-compare-table-scroll {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding:
+    0
+    24px
+    10px;
+  scrollbar-width: thin;
+  overscroll-behavior-inline: contain;
+}
+
+.svx-marketplace-compare-table {
+  min-width:
+    calc(
+      132px +
+      (var(--compare-columns) * 232px)
+    );
+  padding: 0;
+}
+
+/* Product heading row */
+
+.svx-marketplace-compare-products-row,
+.svx-marketplace-compare-table-row {
+  display: grid;
+  grid-template-columns:
+    132px
+    repeat(
+      var(--compare-columns),
+      minmax(232px, 1fr)
+    );
+}
+
+.svx-marketplace-compare-products-row {
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--landing-border);
+  border-radius: 14px 14px 0 0;
+  background: var(--landing-card);
+}
+
+/* Sticky comparison labels */
+
+.svx-marketplace-compare-table-label {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  border-right: 1px solid var(--landing-border);
+  background: var(--landing-bg);
+  padding: 14px 15px;
+  color: var(--landing-muted);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.svx-marketplace-compare-table-label.is-product-label {
+  align-items: flex-start;
+  padding-top: 22px;
+  color: var(--landing-text);
+  font-size: 14px;
+  font-weight: 820;
+}
+
+/* Product cards */
+
+.svx-marketplace-compare-product {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  grid-template-columns:
+    82px
+    minmax(0, 1fr);
+  grid-template-rows:
+    auto
+    auto;
+  align-content: start;
+  gap: 14px 13px;
+  border-right: 1px solid var(--landing-border);
+  background: var(--landing-card);
+  padding:
+    18px
+    16px
+    16px;
+}
+
+.svx-marketplace-compare-product:last-child {
+  border-right: 0;
+}
+
+.svx-marketplace-compare-product-image {
+  display: flex;
+  width: 82px;
+  height: 82px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--landing-border);
+  border-radius: 11px;
+  background: #ffffff;
+  color: var(--landing-muted);
+}
+
+.svx-marketplace-compare-product-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.svx-marketplace-compare-product-copy {
+  min-width: 0;
+  padding:
+    2px
+    28px
+    0
+    0;
+}
+
+.svx-marketplace-compare-product-copy p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  margin: 0;
+  color: var(--landing-muted);
+  font-size: 12px;
+  font-weight: 680;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-marketplace-compare-product-copy p svg {
+  flex: 0 0 auto;
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-compare-product-copy > a {
+  display: -webkit-box;
+  margin-top: 7px;
+  overflow: hidden;
+  color: var(--landing-text);
+  font-size: 16px;
+  font-weight: 810;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.svx-marketplace-compare-product-copy strong {
+  display: block;
+  margin-top: 10px;
+  color: var(--landing-text);
+  font-size: 18px;
+  font-weight: 870;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.svx-marketplace-compare-product-copy del {
+  display: block;
+  margin-top: 4px;
+  color: var(--landing-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+/* Remove comparison item */
+
+.svx-marketplace-compare-remove {
+  position: absolute;
+  z-index: 3;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid var(--landing-border);
+  border-radius: 9px;
+  background: var(--landing-card);
+  color: var(--landing-muted);
+  box-shadow: none;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.svx-marketplace-compare-remove:hover {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--landing-danger, #ef4444) 52%,
+      var(--landing-border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-danger, #ef4444) 7%,
+      var(--landing-card)
+    );
+  color: var(--landing-danger, #ef4444);
+}
+
+/* Add-to-cart action */
+
+.svx-marketplace-compare-cart-button {
+  display: inline-flex;
+  min-height: 46px;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--landing-primary);
+  border-radius: 9px;
+  background: transparent;
+  padding: 0 14px;
+  color: var(--landing-primary);
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: none;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease;
+}
+
+.svx-marketplace-compare-cart-button:hover:not(:disabled) {
+  background: var(--landing-primary);
+  color: #ffffff;
+}
+
+.svx-marketplace-compare-cart-button:disabled {
+  cursor: not-allowed;
+  border-color: var(--landing-border);
+  background: transparent;
+  color: var(--landing-muted);
+  opacity: 0.7;
+}
+
+/* Comparison section headings */
+
+.svx-marketplace-compare-section-heading {
+  display: grid;
+  grid-template-columns:
+    132px
+    minmax(0, 1fr);
+  border-right: 1px solid var(--landing-border);
+  border-bottom: 1px solid var(--landing-border);
+  border-left: 1px solid var(--landing-border);
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 7%,
+      var(--landing-bg)
+    );
+}
+
+.svx-marketplace-compare-section-heading span {
+  grid-column: 1 / -1;
+  padding: 13px 15px;
+  color: var(--landing-text);
+  font-size: 13px;
+  font-weight: 820;
+  line-height: 1.2;
+  letter-spacing: 0.025em;
+  text-transform: none;
+}
+
+/* Comparison value rows */
+
+.svx-marketplace-compare-table-row {
+  min-height: 58px;
+  border-right: 1px solid var(--landing-border);
+  border-bottom: 1px solid var(--landing-border);
+  border-left: 1px solid var(--landing-border);
+}
+
+.svx-marketplace-compare-table-row:last-child {
+  border-radius: 0 0 14px 14px;
+  overflow: hidden;
+}
+
+.svx-marketplace-compare-table-value {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  border-right: 1px solid var(--landing-border);
+  background: var(--landing-card);
+  padding: 13px 15px;
+  color: var(--landing-text);
+  font-size: 13px;
+  font-weight: 720;
+  line-height: 1.4;
+}
+
+.svx-marketplace-compare-table-value:last-child {
+  border-right: 0;
+}
+
+.svx-marketplace-compare-table-value > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Best-value treatment */
+
+.svx-marketplace-compare-table-value.is-best {
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-success, #10b981) 7%,
+      var(--landing-card)
+    );
+}
+
+.svx-marketplace-compare-table-value > small {
+  display: inline-flex;
+  min-height: 22px;
+  flex: 0 0 auto;
+  align-items: center;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--landing-success, #10b981) 34%,
+      var(--landing-border)
+    );
+  border-radius: 6px;
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-success, #10b981) 8%,
+      transparent
+    );
+  padding: 0 7px;
+  color: var(--landing-success, #047857);
+  font-size: 10px;
+  font-weight: 820;
+  line-height: 1;
+  text-transform: none;
+}
+
+.svx-marketplace-compare-yes {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--landing-success, #047857);
+  font-weight: 760;
+}
+
+/* Subtle horizontal-scroll affordance */
+
+.svx-marketplace-compare-table-scroll::after {
+  display: block;
+  height: 1px;
+  content: "";
+}
+
+@media (max-width: 820px) {
+  .svx-marketplace-customer-layer.mode-compare
+    .svx-marketplace-customer-panel-body {
+    padding-top: 16px;
+  }
+
+  .svx-marketplace-compare-guidance {
+    margin:
+      0
+      16px
+      16px;
+  }
+
+  .svx-marketplace-compare-table-scroll {
+    padding:
+      0
+      16px
+      10px;
+  }
+
+  .svx-marketplace-compare-table {
+    min-width:
+      calc(
+        112px +
+        (var(--compare-columns) * 214px)
+      );
+  }
+
+  .svx-marketplace-compare-products-row,
+  .svx-marketplace-compare-table-row {
+    grid-template-columns:
+      112px
+      repeat(
+        var(--compare-columns),
+        minmax(214px, 1fr)
+      );
+  }
+
+  .svx-marketplace-compare-product {
+    grid-template-columns:
+      72px
+      minmax(0, 1fr);
+    padding:
+      16px
+      14px
+      14px;
+  }
+
+  .svx-marketplace-compare-product-image {
+    width: 72px;
+    height: 72px;
+  }
+
+  .svx-marketplace-compare-table-label {
+    padding:
+      12px
+      13px;
+  }
+
+  .svx-marketplace-compare-table-value {
+    padding:
+      12px
+      13px;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-marketplace-compare-guidance {
+    margin-right: 14px;
+    margin-left: 14px;
+  }
+
+  .svx-marketplace-compare-table-scroll {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-marketplace-compare-remove,
+  .svx-marketplace-compare-cart-button {
+    transition-duration: 1ms !important;
+  }
+}
+
+
+/* =========================================================
+   CUSTOMER PANEL TYPOGRAPHY AND CONTRAST
+========================================================= */
+
+.svx-marketplace-customer-panel {
+  --svx-panel-text: var(--landing-text);
+  --svx-panel-muted:
+    color-mix(
+      in srgb,
+      var(--landing-text) 66%,
+      var(--landing-bg)
+    );
+  --svx-panel-subtle:
+    color-mix(
+      in srgb,
+      var(--landing-text) 54%,
+      var(--landing-bg)
+    );
+  --svx-panel-success: #087a55;
+  --svx-panel-danger: #d92d3a;
+}
+
+/* Top tabs */
+
+.svx-marketplace-customer-tabs button {
+  color: var(--svx-panel-muted);
+  font-size: 15px;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.svx-marketplace-customer-tabs button.is-active {
+  color: var(--svx-panel-text);
+  font-weight: 820;
+}
+
+.svx-marketplace-customer-tabs button b {
+  font-size: 12px;
+  font-weight: 850;
+}
+
+/* Panel heading */
+
+.svx-marketplace-customer-panel-head span {
+  color: var(--landing-primary);
+  font-size: 14px;
+  font-weight: 830;
+}
+
+.svx-marketplace-customer-panel-head h2 {
+  color: var(--svx-panel-text);
+  font-size: 29px;
+  font-weight: 880;
+}
+
+.svx-marketplace-customer-panel-head p {
+  color: var(--svx-panel-muted);
+  font-size: 15px;
+  font-weight: 660;
+}
+
+/* Product identity */
+
+.svx-marketplace-customer-product-store {
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.svx-marketplace-customer-product-title {
+  color: var(--svx-panel-text);
+  font-size: 18px;
+  font-weight: 840;
+  line-height: 1.3;
+}
+
+.svx-marketplace-customer-product-status {
+  font-size: 14px;
+  font-weight: 780;
+}
+
+.svx-marketplace-customer-product-status.is-available {
+  color: var(--svx-panel-success);
+}
+
+.svx-marketplace-customer-product-status.is-unavailable {
+  color: var(--svx-panel-danger);
+}
+
+.svx-marketplace-customer-product-price {
+  color: var(--svx-panel-text);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+/* Quantity and removal */
+
+.svx-marketplace-cart-controls
+  > div:first-child
+  > span {
+  color: var(--svx-panel-muted);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.svx-marketplace-cart-quantity span {
+  color: var(--svx-panel-text);
+  font-size: 16px;
+  font-weight: 880;
+}
+
+.svx-marketplace-cart-quantity button {
+  color: var(--svx-panel-text);
+}
+
+.svx-marketplace-remove-button {
+  color: var(--svx-panel-danger);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+/* Per-product total */
+
+.svx-marketplace-cart-line-total > span {
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.svx-marketplace-cart-line-total small {
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.svx-marketplace-cart-line-total strong {
+  color: var(--svx-panel-text);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+/* Request summary */
+
+.svx-marketplace-request-summary span {
+  color: var(--svx-panel-muted);
+  font-size: 14px;
+  font-weight: 740;
+}
+
+.svx-marketplace-request-summary strong {
+  color: var(--svx-panel-text);
+  font-size: 16px;
+  font-weight: 860;
+}
+
+.svx-marketplace-request-summary
+  .is-total
+  span {
+  color: var(--svx-panel-muted);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.svx-marketplace-request-summary
+  .is-total
+  strong {
+  color: var(--svx-panel-text);
+  font-size: 23px;
+  font-weight: 920;
+}
+
+.svx-marketplace-request-note p {
+  color: var(--svx-panel-muted);
+  font-size: 14px;
+  font-weight: 660;
+  line-height: 1.5;
+}
+
+.svx-marketplace-request-button {
+  font-size: 16px;
+  font-weight: 850;
+}
+
+/* Saved products */
+
+.svx-marketplace-wishlist-store,
+.svx-marketplace-wishlist-category {
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.svx-marketplace-wishlist-title {
+  color: var(--svx-panel-text);
+  font-size: 17px;
+  font-weight: 830;
+}
+
+.svx-marketplace-wishlist-price {
+  color: var(--svx-panel-text);
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.svx-marketplace-wishlist-availability {
+  font-size: 14px;
+  font-weight: 780;
+}
+
+/* Compare */
+
+.svx-marketplace-compare-product-copy p {
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 720;
+}
+
+.svx-marketplace-compare-product-copy > a {
+  color: var(--svx-panel-text);
+  font-size: 17px;
+  font-weight: 840;
+}
+
+.svx-marketplace-compare-product-copy strong {
+  color: var(--svx-panel-text);
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.svx-marketplace-compare-product-copy del {
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 680;
+}
+
+.svx-marketplace-compare-section-heading span {
+  color: var(--svx-panel-text);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.svx-marketplace-compare-table-label {
+  color: var(--svx-panel-muted);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.svx-marketplace-compare-table-label.is-product-label {
+  color: var(--svx-panel-text);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.svx-marketplace-compare-table-value {
+  color: var(--svx-panel-text);
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.svx-marketplace-compare-table-value > small {
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.svx-marketplace-compare-yes {
+  color: var(--svx-panel-success);
+  font-weight: 800;
+}
+
+/* Light-mode visibility */
+
+:root:not([data-theme="dark"])
+  .svx-marketplace-customer-panel {
+  --svx-panel-text: #172033;
+  --svx-panel-muted: #536078;
+  --svx-panel-subtle: #6c778b;
+  --svx-panel-success: #087a55;
+  --svx-panel-danger: #d92d3a;
+}
+
+/* Dark-mode visibility */
+
+:root[data-theme="dark"]
+  .svx-marketplace-customer-panel {
+  --svx-panel-text: #f5f7fb;
+  --svx-panel-muted: #b5becc;
+  --svx-panel-subtle: #929dad;
+  --svx-panel-success: #32d49a;
+  --svx-panel-danger: #ff6b76;
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-customer-product-status.is-available,
+:root[data-theme="dark"]
+  .svx-marketplace-wishlist-availability.is-available,
+:root[data-theme="dark"]
+  .svx-marketplace-compare-yes {
+  color: #32d49a;
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-customer-product-status.is-unavailable,
+:root[data-theme="dark"]
+  .svx-marketplace-wishlist-availability.is-unavailable,
+:root[data-theme="dark"]
+  .svx-marketplace-remove-button {
+  color: #ff6b76;
+}
+
+/* Mobile and PWA readability floor */
+
+@media (max-width: 820px) {
+  .svx-marketplace-customer-tabs button {
+    font-size: 14px;
+  }
+
+  .svx-marketplace-customer-panel-head h2 {
+    font-size: 24px;
+  }
+
+  .svx-marketplace-customer-product-title {
+    font-size: 17px;
+  }
+
+  .svx-marketplace-customer-product-price {
+    font-size: 18px;
+  }
+
+  .svx-marketplace-cart-controls
+    > div:first-child
+    > span,
+  .svx-marketplace-request-summary span,
+  .svx-marketplace-request-note p,
+  .svx-marketplace-compare-table-label,
+  .svx-marketplace-compare-table-value {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 380px) {
+  .svx-marketplace-customer-tabs button {
+    font-size: 13px;
+  }
+
+  .svx-marketplace-customer-panel-head h2 {
+    font-size: 22px;
+  }
+}
+
+
+/* =========================================================
+   FULL-SCREEN MOBILE / PWA CUSTOMER WORKSPACE
+   Keeps the existing opening and closing animation.
+========================================================= */
+
+@media (max-width: 820px) {
+  /*
+   * Use the entire phone viewport.
+   * Do not redefine transform, transition, duration or easing.
+   */
+  .svx-marketplace-customer-panel {
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+
+    grid-template-rows:
+      auto
+      auto
+      minmax(0, 1fr)
+      auto !important;
+
+    background: var(--landing-bg);
+  }
+
+  .svx-marketplace-customer-layer.mode-wishlist
+    .svx-marketplace-customer-panel,
+  .svx-marketplace-customer-layer.mode-compare
+    .svx-marketplace-customer-panel {
+    grid-template-rows:
+      auto
+      auto
+      minmax(0, 1fr) !important;
+  }
+
+  /*
+   * Safe-area-aware drag handle.
+   */
+  .svx-marketplace-customer-drag-handle {
+    display: flex !important;
+    min-height:
+      calc(
+        22px +
+        env(safe-area-inset-top, 0px)
+      );
+    align-items: flex-end;
+    justify-content: center;
+    padding:
+      env(safe-area-inset-top, 0px)
+      0
+      7px;
+    background: var(--landing-bg);
+  }
+
+  .svx-marketplace-customer-drag-handle > span {
+    display: block;
+    width: 42px;
+    height: 4px;
+    border-radius: 999px;
+    background:
+      color-mix(
+        in srgb,
+        var(--svx-panel-muted) 58%,
+        transparent
+      );
+  }
+
+  /*
+   * Tabs remain at the top and never scroll away.
+   */
+  .svx-marketplace-customer-tabs {
+    position: relative !important;
+    z-index: 8;
+
+    display: grid;
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+    gap: 0;
+
+    margin: 0 !important;
+    border:
+      0;
+    border-bottom:
+      1px solid var(--landing-border);
+    border-radius: 0;
+
+    background: var(--landing-bg);
+
+    padding:
+      0
+      max(
+        10px,
+        env(safe-area-inset-right, 0px)
+      )
+      0
+      max(
+        10px,
+        env(safe-area-inset-left, 0px)
+      );
+  }
+
+  .svx-marketplace-customer-tabs button {
+    min-width: 0;
+    min-height: 58px;
+
+    gap: 6px;
+
+    border-radius: 0;
+
+    padding:
+      0
+      8px;
+
+    font-size: 14px;
+    font-weight: 780;
+    white-space: nowrap;
+  }
+
+  .svx-marketplace-customer-tabs button::after {
+    right: 8px;
+    left: 8px;
+  }
+
+  .svx-marketplace-customer-tabs button b {
+    min-width: 21px;
+    height: 21px;
+
+    padding:
+      0
+      5px;
+
+    font-size: 11px;
+  }
+
+  /*
+   * Heading is compact but readable.
+   */
+  .svx-marketplace-customer-panel-head {
+    min-height: 104px;
+
+    align-items: center;
+
+    border-bottom:
+      1px solid var(--landing-border);
+
+    padding:
+      17px
+      max(
+        18px,
+        env(safe-area-inset-right, 0px)
+      )
+      17px
+      max(
+        18px,
+        env(safe-area-inset-left, 0px)
+      );
+  }
+
+  .svx-marketplace-customer-panel-head span {
+    font-size: 14px;
+  }
+
+  .svx-marketplace-customer-panel-head h2 {
+    margin-top: 5px;
+
+    font-size: 25px;
+    line-height: 1.08;
+  }
+
+  .svx-marketplace-customer-panel-head p {
+    margin-top: 6px;
+
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .svx-marketplace-customer-panel-head > button {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+  }
+
+  /*
+   * Only the content area scrolls.
+   */
+  .svx-marketplace-customer-panel-body {
+    min-height: 0 !important;
+
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+
+    padding:
+      0
+      max(
+        18px,
+        env(safe-area-inset-right, 0px)
+      )
+      26px
+      max(
+        18px,
+        env(safe-area-inset-left, 0px)
+      );
+
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  /*
+   * Cart summary remains visible at the bottom.
+   */
+  .svx-marketplace-customer-panel-footer {
+    position: relative !important;
+    z-index: 9;
+
+    border-top:
+      1px solid var(--landing-border);
+
+    background: var(--landing-bg);
+
+    padding:
+      16px
+      max(
+        18px,
+        env(safe-area-inset-right, 0px)
+      )
+      calc(
+        18px +
+        env(safe-area-inset-bottom, 0px)
+      )
+      max(
+        18px,
+        env(safe-area-inset-left, 0px)
+      );
+  }
+}
+
+
+/* =========================================================
+   MOBILE CART TAB
+========================================================= */
+
+@media (max-width: 820px) {
+  .svx-marketplace-cart-list {
+    display: grid;
+  }
+
+  .svx-marketplace-cart-row {
+    display: grid;
+
+    grid-template-columns:
+      92px
+      minmax(0, 1fr);
+
+    align-items: start;
+
+    column-gap: 14px;
+    row-gap: 14px;
+
+    padding:
+      22px
+      0;
+  }
+
+  .svx-marketplace-customer-product-image {
+    width: 92px;
+    height: 92px;
+
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .svx-marketplace-product-placeholder small {
+    max-width: 66px;
+
+    font-size: 12px;
+  }
+
+  .svx-marketplace-customer-product-copy {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .svx-marketplace-customer-product-store {
+    font-size: 13px;
+  }
+
+  .svx-marketplace-customer-product-title {
+    font-size: 17px;
+    line-height: 1.3;
+  }
+
+  .svx-marketplace-customer-product-status {
+    font-size: 13px;
+  }
+
+  .svx-marketplace-customer-product-price {
+    font-size: 18px;
+  }
+
+  /*
+   * Quantity and Remove occupy one complete row.
+   */
+  .svx-marketplace-cart-controls {
+    display: flex;
+
+    min-width: 0;
+
+    grid-column:
+      1 / 3;
+    grid-row: 2;
+
+    align-items: flex-end;
+    justify-content: space-between;
+
+    gap: 14px;
+
+    margin: 0;
+  }
+
+  .svx-marketplace-cart-controls
+    > div:first-child {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+  }
+
+  .svx-marketplace-cart-controls
+    > div:first-child
+    > span {
+    font-size: 13px;
+  }
+
+  .svx-marketplace-cart-quantity {
+    grid-template-columns:
+      46px
+      48px
+      46px;
+  }
+
+  .svx-marketplace-cart-quantity button,
+  .svx-marketplace-cart-quantity span {
+    height: 46px;
+  }
+
+  .svx-marketplace-remove-button {
+    width: auto;
+    min-width: 112px;
+    min-height: 46px;
+
+    flex: 0 0 auto;
+
+    padding:
+      0
+      14px;
+  }
+
+  /*
+   * Product total receives its own readable line.
+   */
+  .svx-marketplace-cart-line-total {
+    grid-column:
+      1 / 3;
+    grid-row: 3;
+
+    align-items: baseline;
+
+    margin: 0;
+    border-top:
+      1px solid var(--landing-border);
+
+    padding-top: 14px;
+  }
+
+  .svx-marketplace-cart-line-total > span,
+  .svx-marketplace-cart-line-total small {
+    font-size: 13px;
+  }
+
+  .svx-marketplace-cart-line-total strong {
+    font-size: 17px;
+  }
+
+  /*
+   * Cart summary stacks cleanly on narrow phones.
+   */
+  .svx-marketplace-request-summary {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 0.65fr)
+      minmax(0, 1.35fr);
+
+    gap: 18px;
+  }
+
+  .svx-marketplace-request-summary
+    .is-total {
+    justify-content: flex-end;
+  }
+
+  .svx-marketplace-request-note {
+    margin-top: 13px;
+  }
+
+  .svx-marketplace-request-note p {
+    font-size: 13px;
+  }
+
+  .svx-marketplace-request-button {
+    min-height: 52px;
+
+    margin-top: 14px;
+
+    font-size: 16px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE SAVED PRODUCTS TAB
+========================================================= */
+
+@media (max-width: 820px) {
+  .svx-marketplace-wishlist-list {
+    gap: 0;
+
+    padding-top: 0;
+  }
+
+  .svx-marketplace-wishlist-row {
+    display: grid;
+
+    grid-template-columns:
+      92px
+      minmax(0, 1fr);
+
+    gap: 14px;
+
+    border: 0;
+    border-bottom:
+      1px solid var(--landing-border);
+    border-radius: 0;
+
+    background: transparent;
+
+    padding:
+      22px
+      0;
+  }
+
+  .svx-marketplace-wishlist-image {
+    width: 92px;
+    height: 96px;
+  }
+
+  .svx-marketplace-wishlist-title {
+    font-size: 17px;
+  }
+
+  .svx-marketplace-wishlist-price {
+    font-size: 18px;
+  }
+
+  .svx-marketplace-wishlist-actions {
+    display: grid !important;
+
+    grid-column:
+      1 / 3;
+
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr);
+
+    gap: 10px;
+  }
+
+  .svx-marketplace-wishlist-view,
+  .svx-marketplace-wishlist-cart {
+    min-width: 0;
+    min-height: 48px;
+  }
+
+  .svx-marketplace-wishlist-remove {
+    min-height: 46px;
+
+    grid-column:
+      1 / 3;
+  }
+}
+
+
+/* =========================================================
+   MOBILE COMPARE TAB
+========================================================= */
+
+@media (max-width: 820px) {
+  .svx-marketplace-customer-layer.mode-compare
+    .svx-marketplace-customer-panel-body {
+    overflow-x: hidden !important;
+
+    padding:
+      16px
+      0
+      28px;
+  }
+
+  .svx-marketplace-compare-workspace {
+    min-width: 0;
+  }
+
+  .svx-marketplace-compare-guidance {
+    margin:
+      0
+      18px
+      16px;
+  }
+
+  /*
+   * Comparison scrolls horizontally inside its own area,
+   * while the full-screen drawer remains vertically stable.
+   */
+  .svx-marketplace-compare-table-scroll {
+    width: 100%;
+    max-width: 100%;
+
+    overflow-x: auto;
+    overflow-y: visible;
+
+    padding:
+      0
+      18px
+      12px;
+
+    scroll-padding-left: 18px;
+    scroll-snap-type:
+      x proximity;
+
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: contain;
+  }
+
+  .svx-marketplace-compare-table {
+    min-width:
+      calc(
+        104px +
+        (
+          var(--compare-columns) *
+          min(76vw, 252px)
+        )
+      );
+  }
+
+  .svx-marketplace-compare-products-row,
+  .svx-marketplace-compare-table-row {
+    grid-template-columns:
+      104px
+      repeat(
+        var(--compare-columns),
+        minmax(
+          min(76vw, 252px),
+          1fr
+        )
+      );
+  }
+
+  .svx-marketplace-compare-product {
+    grid-template-columns:
+      72px
+      minmax(0, 1fr);
+
+    min-width: 0;
+
+    gap: 12px;
+
+    padding:
+      16px
+      14px
+      15px;
+
+    scroll-snap-align: start;
+  }
+
+  .svx-marketplace-compare-product-image {
+    width: 72px;
+    height: 72px;
+  }
+
+  .svx-marketplace-compare-product-copy {
+    padding-right: 26px;
+  }
+
+  .svx-marketplace-compare-product-copy > a {
+    font-size: 16px;
+  }
+
+  .svx-marketplace-compare-product-copy strong {
+    font-size: 18px;
+  }
+
+  .svx-marketplace-compare-cart-button {
+    min-height: 48px;
+
+    font-size: 14px;
+  }
+
+  .svx-marketplace-compare-table-label {
+    padding:
+      13px
+      12px;
+
+    font-size: 13px;
+  }
+
+  .svx-marketplace-compare-table-value {
+    min-height: 58px;
+
+    padding:
+      13px
+      14px;
+
+    font-size: 14px;
+  }
+
+  .svx-marketplace-compare-section-heading span {
+    padding:
+      14px
+      13px;
+
+    font-size: 14px;
+  }
+
+  .svx-marketplace-compare-table-value
+    > small {
+    min-height: 24px;
+
+    padding:
+      0
+      7px;
+
+    font-size: 11px;
+  }
+}
+
+
+/* =========================================================
+   SMALL PHONE CORRECTIONS
+========================================================= */
+
+@media (max-width: 430px) {
+  .svx-marketplace-customer-tabs {
+    padding:
+      0
+      8px;
+  }
+
+  .svx-marketplace-customer-tabs button {
+    min-height: 56px;
+
+    gap: 5px;
+
+    padding:
+      0
+      5px;
+
+    font-size: 13px;
+  }
+
+  .svx-marketplace-customer-tabs button svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .svx-marketplace-customer-tabs button b {
+    min-width: 20px;
+    height: 20px;
+
+    font-size: 10px;
+  }
+
+  .svx-marketplace-customer-panel-head {
+    min-height: 100px;
+
+    padding:
+      15px
+      18px;
+  }
+
+  .svx-marketplace-customer-panel-head h2 {
+    font-size: 23px;
+  }
+
+  .svx-marketplace-customer-panel-head p {
+    max-width:
+      calc(100vw - 104px);
+
+    font-size: 13px;
+  }
+
+  .svx-marketplace-customer-panel-body {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .svx-marketplace-cart-row {
+    grid-template-columns:
+      82px
+      minmax(0, 1fr);
+
+    column-gap: 12px;
+  }
+
+  .svx-marketplace-customer-product-image {
+    width: 82px;
+    height: 82px;
+  }
+
+  .svx-marketplace-cart-controls {
+    align-items: stretch;
+
+    flex-direction: column;
+  }
+
+  .svx-marketplace-cart-controls
+    > div:first-child {
+    width: 100%;
+  }
+
+  .svx-marketplace-cart-quantity {
+    width: 100%;
+
+    grid-template-columns:
+      48px
+      minmax(48px, 1fr)
+      48px;
+  }
+
+  .svx-marketplace-remove-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .svx-marketplace-request-summary {
+    grid-template-columns:
+      minmax(0, 1fr);
+
+    gap: 8px;
+  }
+
+  .svx-marketplace-request-summary
+    .is-total {
+    justify-content: space-between;
+  }
+
+  .svx-marketplace-compare-guidance {
+    margin-right: 14px;
+    margin-left: 14px;
+  }
+
+  .svx-marketplace-compare-table-scroll {
+    padding-right: 14px;
+    padding-left: 14px;
+
+    scroll-padding-left: 14px;
+  }
+
+  .svx-marketplace-compare-table {
+    min-width:
+      calc(
+        96px +
+        (
+          var(--compare-columns) *
+          min(78vw, 244px)
+        )
+      );
+  }
+
+  .svx-marketplace-compare-products-row,
+  .svx-marketplace-compare-table-row {
+    grid-template-columns:
+      96px
+      repeat(
+        var(--compare-columns),
+        minmax(
+          min(78vw, 244px),
+          1fr
+        )
+      );
+  }
+}
+
+
+@media (max-width: 360px) {
+  .svx-marketplace-customer-tabs
+    button
+    > svg {
+    display: none;
+  }
+
+  .svx-marketplace-customer-tabs button {
+    font-size: 13px;
+  }
+
+  .svx-marketplace-customer-panel-head {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .svx-marketplace-customer-panel-body,
+  .svx-marketplace-customer-panel-footer {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+}
+
+
+/* Installed PWA safe-area correction */
+
+@media (display-mode: standalone) and (max-width: 820px) {
+  .svx-marketplace-customer-panel {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+  }
+
+  .svx-marketplace-customer-panel-footer {
+    padding-bottom:
+      calc(
+        18px +
+        env(safe-area-inset-bottom, 0px)
+      );
+  }
+}
+
+
+/* =========================================================
+   FULL-SCREEN DRAWER ROW CORRECTION
+========================================================= */
+
+@media (max-width: 820px) {
+  /*
+   * Cart:
+   * drag handle, tabs, heading, scrolling body, summary.
+   */
+  .svx-marketplace-customer-layer.mode-cart
+    .svx-marketplace-customer-panel {
+    grid-template-rows:
+      auto
+      auto
+      auto
+      minmax(0, 1fr)
+      auto !important;
+  }
+
+  /*
+   * Saved and Compare:
+   * drag handle, tabs, heading, scrolling body.
+   */
+  .svx-marketplace-customer-layer.mode-wishlist
+    .svx-marketplace-customer-panel,
+  .svx-marketplace-customer-layer.mode-compare
+    .svx-marketplace-customer-panel {
+    grid-template-rows:
+      auto
+      auto
+      auto
+      minmax(0, 1fr) !important;
+  }
+
+  .svx-marketplace-customer-drag-handle,
+  .svx-marketplace-customer-tabs,
+  .svx-marketplace-customer-panel-head,
+  .svx-marketplace-customer-panel-footer {
+    min-width: 0;
+    flex: none !important;
+  }
+
+  .svx-marketplace-customer-panel-body {
+    min-width: 0;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+  }
+
+  /*
+   * Prevent long headings from expanding beyond their row.
+   */
+  .svx-marketplace-customer-panel-head > div {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .svx-marketplace-customer-panel-head h2,
+  .svx-marketplace-customer-panel-head p {
+    overflow-wrap: anywhere;
+  }
+}
+
+
+/* =========================================================
+   TAB LABEL VISIBILITY
+========================================================= */
+
+@media (max-width: 430px) {
+  .svx-marketplace-customer-tabs button {
+    display: flex;
+    min-width: 0;
+    justify-content: center;
+    overflow: visible;
+  }
+
+  .svx-marketplace-customer-tabs button svg {
+    flex: 0 0 auto;
+  }
+
+  .svx-marketplace-customer-tabs button b {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 370px) {
+  /*
+   * Preserve all three names on very narrow phones.
+   */
+  .svx-marketplace-customer-tabs button {
+    gap: 4px;
+    padding-right: 3px;
+    padding-left: 3px;
+    font-size: 12px;
+  }
+
+  .svx-marketplace-customer-tabs button > svg {
+    display: none;
+  }
+
+  .svx-marketplace-customer-tabs button b {
+    min-width: 19px;
+    height: 19px;
+    padding: 0 4px;
+    font-size: 10px;
+  }
+}
+
+
+/* =========================================================
+   MOBILE CART ACTION GRID
+   Clear two-column actions without horizontal scrolling.
+========================================================= */
+
+@media (max-width: 820px) {
+  .svx-marketplace-customer-panel,
+  .svx-marketplace-customer-panel-body,
+  .svx-marketplace-cart-list,
+  .svx-marketplace-cart-row {
+    max-width: 100%;
+    overflow-x: hidden !important;
+  }
+
+  .svx-marketplace-cart-controls {
+    display: grid !important;
+    width: 100%;
+    min-width: 0;
+    grid-column: 1 / 3;
+    grid-row: 2;
+    grid-template-columns:
+      minmax(0, 1.35fr)
+      minmax(112px, 0.65fr);
+    align-items: end;
+    gap: 12px;
+    margin: 0;
+  }
+
+  .svx-marketplace-cart-controls
+    > div:first-child {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    justify-items: stretch;
+    gap: 8px;
+  }
+
+  .svx-marketplace-cart-controls
+    > div:first-child
+    > span {
+    display: block;
+    color: var(--svx-panel-muted);
+    font-size: 13px;
+    font-weight: 760;
+  }
+
+  .svx-marketplace-cart-quantity {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns:
+      46px
+      minmax(48px, 1fr)
+      46px;
+  }
+
+  .svx-marketplace-cart-quantity button,
+  .svx-marketplace-cart-quantity span {
+    width: 100%;
+    min-width: 0;
+    height: 48px;
+  }
+
+  .svx-marketplace-remove-button {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    align-self: end;
+    padding: 0 12px;
+    white-space: nowrap;
+  }
+
+  .svx-marketplace-cart-line-total {
+    width: 100%;
+    min-width: 0;
+    grid-column: 1 / 3;
+    grid-row: 3;
+  }
+}
+
+
+/* Normal phone widths retain the two-column layout. */
+
+@media (max-width: 430px) {
+  .svx-marketplace-cart-controls {
+    display: grid !important;
+    grid-template-columns:
+      minmax(0, 1.3fr)
+      minmax(108px, 0.7fr);
+    align-items: end;
+    gap: 10px;
+  }
+
+  .svx-marketplace-cart-quantity {
+    grid-template-columns:
+      42px
+      minmax(44px, 1fr)
+      42px;
+  }
+
+  .svx-marketplace-cart-quantity button,
+  .svx-marketplace-cart-quantity span {
+    height: 46px;
+  }
+
+  .svx-marketplace-remove-button {
+    min-height: 46px;
+    font-size: 13px;
+  }
+}
+
+
+/* Only extremely narrow devices stack the actions. */
+
+@media (max-width: 330px) {
+  .svx-marketplace-cart-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-marketplace-remove-button {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   NO-SCROLL MOBILE PRODUCT COMPARISON
+========================================================= */
+
+.svx-marketplace-compare-mobile {
+  display: none;
+}
+
+@media (max-width: 820px) {
+  /*
+   * Desktop keeps the comparison table.
+   * Mobile uses complete vertical product cards.
+   */
+  .svx-marketplace-compare-table-scroll {
+    display: none !important;
+  }
+
+  .svx-marketplace-compare-mobile {
+    display: grid;
+    width: 100%;
+    max-width: 100%;
+    gap: 18px;
+    padding:
+      0
+      max(
+        16px,
+        env(safe-area-inset-right, 0px)
+      )
+      28px
+      max(
+        16px,
+        env(safe-area-inset-left, 0px)
+      );
+    overflow: visible;
+  }
+
+  .svx-marketplace-compare-mobile-card {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--landing-border);
+    border-radius: 14px;
+    background: var(--landing-card);
+  }
+
+  .svx-marketplace-compare-mobile-position {
+    display: flex;
+    min-height: 52px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    border-bottom: 1px solid var(--landing-border);
+    padding: 0 14px;
+  }
+
+  .svx-marketplace-compare-mobile-position > span {
+    color: var(--svx-panel-muted);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .svx-marketplace-compare-mobile-position > button {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    padding: 0 8px;
+    color: var(--svx-panel-danger);
+    font-size: 13px;
+    font-weight: 780;
+    box-shadow: none;
+  }
+
+  .svx-marketplace-compare-mobile-product {
+    display: grid;
+    grid-template-columns:
+      92px
+      minmax(0, 1fr);
+    align-items: start;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .svx-marketplace-compare-mobile-image {
+    display: flex;
+    width: 92px;
+    height: 92px;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid var(--landing-border);
+    border-radius: 11px;
+    background: #ffffff;
+    color: var(--svx-panel-muted);
+  }
+
+  .svx-marketplace-compare-mobile-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .svx-marketplace-compare-mobile-image > span {
+    display: grid;
+    justify-items: center;
+    gap: 7px;
+    color: var(--landing-primary);
+    text-align: center;
+  }
+
+  .svx-marketplace-compare-mobile-image small {
+    max-width: 68px;
+    color: var(--svx-panel-muted);
+    font-size: 11px;
+    font-weight: 650;
+    line-height: 1.3;
+  }
+
+  .svx-marketplace-compare-mobile-copy {
+    min-width: 0;
+  }
+
+  .svx-marketplace-compare-mobile-copy p {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow: hidden;
+    margin: 0;
+    color: var(--svx-panel-muted);
+    font-size: 13px;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .svx-marketplace-compare-mobile-copy p svg {
+    flex: 0 0 auto;
+    color: var(--landing-primary);
+  }
+
+  .svx-marketplace-compare-mobile-copy > a {
+    display: -webkit-box;
+    margin-top: 7px;
+    overflow: hidden;
+    color: var(--svx-panel-text);
+    font-size: 17px;
+    font-weight: 840;
+    line-height: 1.3;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .svx-marketplace-compare-mobile-copy > strong {
+    display: block;
+    margin-top: 10px;
+    color: var(--svx-panel-text);
+    font-size: 19px;
+    font-weight: 900;
+    line-height: 1.15;
+  }
+
+  .svx-marketplace-compare-mobile-copy > del {
+    display: block;
+    margin-top: 4px;
+    color: var(--svx-panel-muted);
+    font-size: 13px;
+    font-weight: 650;
+  }
+
+  /*
+   * Two columns where the phone width supports them.
+   */
+  .svx-marketplace-compare-mobile-summary {
+    display: grid;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    border-top: 1px solid var(--landing-border);
+    border-bottom: 1px solid var(--landing-border);
+  }
+
+  .svx-marketplace-compare-mobile-summary > div {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    min-height: 92px;
+    align-content: center;
+    gap: 6px;
+    border-right: 1px solid var(--landing-border);
+    border-bottom: 1px solid var(--landing-border);
+    padding: 14px;
+  }
+
+  .svx-marketplace-compare-mobile-summary
+    > div:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .svx-marketplace-compare-mobile-summary
+    > div:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+
+  .svx-marketplace-compare-mobile-summary
+    > div.is-best {
+    background:
+      color-mix(
+        in srgb,
+        var(--svx-panel-success) 8%,
+        transparent
+      );
+  }
+
+  .svx-marketplace-compare-mobile-summary span {
+    color: var(--svx-panel-muted);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .svx-marketplace-compare-mobile-summary strong {
+    color: var(--svx-panel-text);
+    font-size: 14px;
+    font-weight: 820;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .svx-marketplace-compare-mobile-summary small {
+    display: inline-flex;
+    width: fit-content;
+    min-height: 24px;
+    align-items: center;
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--svx-panel-success) 36%,
+        var(--landing-border)
+      );
+    border-radius: 6px;
+    background:
+      color-mix(
+        in srgb,
+        var(--svx-panel-success) 8%,
+        transparent
+      );
+    padding: 0 7px;
+    color: var(--svx-panel-success);
+    font-size: 11px;
+    font-weight: 820;
+  }
+
+  .svx-marketplace-compare-mobile-details {
+    display: grid;
+    margin: 0;
+    padding: 4px 16px;
+  }
+
+  .svx-marketplace-compare-mobile-details > div {
+    display: grid;
+    min-width: 0;
+    grid-template-columns:
+      minmax(0, 0.9fr)
+      minmax(0, 1.1fr);
+    gap: 14px;
+    border-bottom: 1px solid var(--landing-border);
+    padding: 13px 0;
+  }
+
+  .svx-marketplace-compare-mobile-details
+    > div:last-child {
+    border-bottom: 0;
+  }
+
+  .svx-marketplace-compare-mobile-details dt {
+    color: var(--svx-panel-muted);
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .svx-marketplace-compare-mobile-details dd {
+    min-width: 0;
+    margin: 0;
+    color: var(--svx-panel-text);
+    font-size: 13px;
+    font-weight: 760;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    text-align: right;
+  }
+
+  .svx-marketplace-compare-mobile-actions {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr);
+    gap: 10px;
+    border-top: 1px solid var(--landing-border);
+    padding: 14px;
+  }
+
+  .svx-marketplace-compare-mobile-actions > a,
+  .svx-marketplace-compare-mobile-actions > button {
+    display: inline-flex;
+    min-width: 0;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 9px;
+    padding: 0 12px;
+    font-size: 14px;
+    font-weight: 800;
+    box-shadow: none;
+  }
+
+  .svx-marketplace-compare-mobile-actions > a {
+    border: 1px solid var(--landing-border);
+    background: transparent;
+    color: var(--svx-panel-text);
+  }
+
+  .svx-marketplace-compare-mobile-actions > button {
+    border: 1px solid var(--landing-primary);
+    background: var(--landing-primary);
+    color: #ffffff;
+  }
+
+  .svx-marketplace-compare-mobile-actions
+    > button:disabled {
+    cursor: not-allowed;
+    border-color: var(--landing-border);
+    background: var(--landing-bg);
+    color: var(--svx-panel-muted);
+  }
+}
+
+@media (max-width: 350px) {
+  .svx-marketplace-compare-mobile-product {
+    grid-template-columns:
+      78px
+      minmax(0, 1fr);
+    gap: 11px;
+    padding: 14px;
+  }
+
+  .svx-marketplace-compare-mobile-image {
+    width: 78px;
+    height: 78px;
+  }
+
+  .svx-marketplace-compare-mobile-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-marketplace-compare-mobile-summary > div {
+    border-right: 0;
+    border-bottom: 1px solid var(--landing-border);
+  }
+
+  .svx-marketplace-compare-mobile-summary
+    > div:nth-last-child(-n + 2) {
+    border-bottom: 1px solid var(--landing-border);
+  }
+
+  .svx-marketplace-compare-mobile-summary
+    > div:last-child {
+    border-bottom: 0;
+  }
+
+  .svx-marketplace-compare-mobile-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+
+/* =========================================================
+   PREMIUM MARKETPLACE REQUEST CHECKOUT
+   Visual and internal layout only.
+   Drawer opening and closing mechanics remain untouched.
+========================================================= */
+
+.svx-marketplace-request-form {
+  display: grid !important;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows:
+    auto
+    minmax(0, 1fr)
+    auto;
+  overflow: hidden;
+  background: var(--landing-bg);
+}
+
+/* Header */
+
+.svx-marketplace-request-form
+  > .svx-marketplace-customer-panel-head {
+  min-height: 118px;
+  padding: 22px 28px;
+}
+
+.svx-marketplace-request-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 14px;
+}
+
+.svx-marketplace-request-heading > button {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  place-items: center;
+  border: 1px solid var(--landing-border);
+  border-radius: 10px;
+  background: var(--landing-card);
+  color: var(--svx-panel-text);
+  box-shadow: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.svx-marketplace-request-heading
+  > button:hover {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 48%,
+      var(--landing-border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 7%,
+      var(--landing-card)
+    );
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-request-heading > span {
+  min-width: 0;
+}
+
+.svx-marketplace-request-heading small {
+  display: block;
+  color: var(--landing-primary);
+  font-size: 13px;
+  font-weight: 840;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.svx-marketplace-request-heading h2 {
+  margin: 5px 0 0;
+  color: var(--svx-panel-text);
+  font-family: var(--landing-heading-font);
+  font-size: 29px;
+  font-weight: 880;
+  line-height: 1.08;
+  letter-spacing: -0.04em;
+}
+
+.svx-marketplace-request-form
+  > .svx-marketplace-customer-panel-head
+  > button {
+  width: 48px;
+  height: 48px;
+}
+
+/* Scrollable request content */
+
+.svx-marketplace-request-form
+  > .svx-marketplace-customer-panel-body {
+  min-width: 0;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding: 0 28px 34px;
+  background: var(--landing-bg);
+  scrollbar-width: thin;
+  overscroll-behavior-y: contain;
+}
+
+/* Sections */
+
+.svx-marketplace-request-section {
+  display: grid;
+  gap: 14px;
+  border-bottom: 1px solid var(--landing-border);
+  padding: 24px 0;
+}
+
+.svx-marketplace-request-section:first-child {
+  padding-top: 22px;
+}
+
+.svx-marketplace-request-section:last-child {
+  border-bottom: 0;
+}
+
+.svx-marketplace-request-section h3,
+.svx-marketplace-request-section > label,
+.svx-marketplace-request-section
+  label
+  > span {
+  margin: 0;
+  color: var(--svx-panel-text);
+  font-size: 15px;
+  font-weight: 820;
+  line-height: 1.3;
+}
+
+.svx-marketplace-request-section > small {
+  margin-top: -5px;
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 630;
+  line-height: 1.5;
+}
+
+/* Store identity */
+
+.svx-marketplace-request-store-summary {
+  display: grid;
+  min-height: 72px;
+  grid-template-columns:
+    46px
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 13px;
+  border: 1px solid var(--landing-border);
+  border-radius: 12px;
+  background: var(--landing-card);
+  padding: 13px 15px;
+}
+
+.svx-marketplace-request-store-summary
+  > svg {
+  width: 22px;
+  height: 22px;
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-request-store-summary
+  > span {
+  min-width: 0;
+}
+
+.svx-marketplace-request-store-summary small {
+  display: block;
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.3;
+}
+
+.svx-marketplace-request-store-summary strong {
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--svx-panel-text);
+  font-size: 16px;
+  font-weight: 840;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-marketplace-request-store-summary b {
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+/* Products */
+
+.svx-marketplace-request-products-section {
+  gap: 15px;
+}
+
+.svx-marketplace-request-products {
+  display: grid;
+  gap: 0;
+}
+
+.svx-marketplace-request-product {
+  display: grid;
+  min-width: 0;
+  grid-template-columns:
+    86px
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 15px;
+  border: 0;
+  border-bottom: 1px solid var(--landing-border);
+  border-radius: 0;
+  background: transparent;
+  padding: 17px 0;
+}
+
+.svx-marketplace-request-product:first-child {
+  padding-top: 2px;
+}
+
+.svx-marketplace-request-product:last-child {
+  border-bottom: 0;
+  padding-bottom: 2px;
+}
+
+.svx-marketplace-request-product-image {
+  display: flex;
+  width: 86px;
+  height: 86px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--landing-border);
+  border-radius: 11px;
+  background: var(--landing-card);
+  color: var(--svx-panel-muted);
+}
+
+.svx-marketplace-request-product-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.svx-marketplace-request-product-copy {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+
+.svx-marketplace-request-product-title {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--svx-panel-text);
+  font-size: 16px;
+  font-weight: 830;
+  line-height: 1.35;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.svx-marketplace-request-product-copy
+  > span {
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.35;
+}
+
+.svx-marketplace-request-product-link {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 36px;
+  align-items: center;
+  color: var(--landing-primary);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.svx-marketplace-request-product
+  > strong {
+  color: var(--svx-panel-text);
+  font-size: 16px;
+  font-weight: 880;
+  line-height: 1.25;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Customer fields */
+
+.svx-marketplace-request-fields {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.svx-marketplace-request-fields
+  > label:last-child {
+  grid-column: 1 / -1;
+}
+
+.svx-marketplace-request-fields label,
+.svx-marketplace-request-delivery label,
+.svx-marketplace-request-section > label {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.svx-marketplace-request-form input,
+.svx-marketplace-request-form select,
+.svx-marketplace-request-form textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  border: 1px solid var(--landing-border);
+  border-radius: 10px;
+  outline: 0;
+  background: var(--landing-card);
+  padding: 0 14px;
+  color: var(--svx-panel-text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.35;
+  box-shadow: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.svx-marketplace-request-form textarea {
+  min-height: 112px;
+  padding-top: 13px;
+  padding-bottom: 13px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.svx-marketplace-request-form input::placeholder,
+.svx-marketplace-request-form
+  textarea::placeholder {
+  color: var(--svx-panel-subtle);
+  opacity: 1;
+}
+
+.svx-marketplace-request-form input:focus,
+.svx-marketplace-request-form select:focus,
+.svx-marketplace-request-form textarea:focus {
+  border-color: var(--landing-primary);
+  outline: 3px solid
+    color-mix(
+      in srgb,
+      var(--landing-primary) 18%,
+      transparent
+    );
+  outline-offset: 1px;
+}
+
+.svx-marketplace-request-form input:disabled,
+.svx-marketplace-request-form select:disabled,
+.svx-marketplace-request-form
+  textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* Pickup, delivery and contact options */
+
+.svx-marketplace-request-options {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 11px;
+}
+
+.svx-marketplace-request-options label {
+  position: relative;
+  display: block;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.svx-marketplace-request-options input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.svx-marketplace-request-options
+  label
+  > span {
+  display: grid;
+  min-height: 76px;
+  grid-template-columns:
+    30px
+    minmax(0, 1fr);
+  align-content: center;
+  align-items: center;
+  column-gap: 11px;
+  border: 1px solid var(--landing-border);
+  border-radius: 11px;
+  background: var(--landing-card);
+  padding: 13px 14px;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.svx-marketplace-request-options
+  label
+  > span
+  > svg {
+  width: 22px;
+  height: 22px;
+  grid-row: 1 / 3;
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-request-options
+  label
+  > span
+  strong {
+  color: var(--svx-panel-text);
+  font-size: 15px;
+  font-weight: 820;
+  line-height: 1.25;
+}
+
+.svx-marketplace-request-options
+  label
+  > span
+  small {
+  margin-top: 4px;
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 620;
+  line-height: 1.4;
+}
+
+.svx-marketplace-request-options
+  input:checked
+  + span {
+  border-color: var(--landing-primary);
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 7%,
+      var(--landing-card)
+    );
+}
+
+.svx-marketplace-request-options
+  input:focus-visible
+  + span {
+  outline: 3px solid
+    color-mix(
+      in srgb,
+      var(--landing-primary) 22%,
+      transparent
+    );
+  outline-offset: 2px;
+}
+
+.svx-marketplace-request-fixed-option {
+  display: grid;
+  min-height: 72px;
+  grid-template-columns:
+    30px
+    minmax(0, 1fr);
+  align-items: center;
+  gap: 11px;
+  border: 1px solid var(--landing-border);
+  border-radius: 11px;
+  background: var(--landing-card);
+  padding: 13px 14px;
+}
+
+.svx-marketplace-request-fixed-option
+  > svg {
+  width: 22px;
+  height: 22px;
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-request-fixed-option
+  > span {
+  display: grid;
+  gap: 4px;
+}
+
+.svx-marketplace-request-fixed-option
+  strong {
+  color: var(--svx-panel-text);
+  font-size: 15px;
+  font-weight: 820;
+}
+
+.svx-marketplace-request-fixed-option
+  small {
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 620;
+  line-height: 1.4;
+}
+
+/* Delivery details */
+
+.svx-marketplace-request-delivery {
+  display: grid;
+  gap: 14px;
+  margin-top: 2px;
+}
+
+.svx-marketplace-request-delivery
+  > div:not(
+    .svx-marketplace-request-options
+  ) {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.svx-marketplace-request-delivery
+  > label:first-child {
+  grid-column: 1 / -1;
+}
+
+.svx-marketplace-request-delivery > p {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 660;
+  line-height: 1.45;
+}
+
+.svx-marketplace-request-delivery > p svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--landing-primary);
+}
+
+/* Request total */
+
+.svx-marketplace-request-total {
+  display: grid;
+  gap: 12px;
+  margin-top: 4px;
+  border: 1px solid var(--landing-border);
+  border-radius: 12px;
+  background: var(--landing-card);
+  padding: 16px;
+}
+
+.svx-marketplace-request-total span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.svx-marketplace-request-total small {
+  color: var(--svx-panel-muted);
+  font-size: 14px;
+  font-weight: 720;
+}
+
+.svx-marketplace-request-total strong {
+  color: var(--svx-panel-text);
+  font-size: 22px;
+  font-weight: 920;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.svx-marketplace-request-total p {
+  margin: 0;
+  border-top: 1px solid var(--landing-border);
+  padding-top: 12px;
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 630;
+  line-height: 1.5;
+}
+
+/* Loading and errors */
+
+.svx-marketplace-request-error,
+.svx-marketplace-request-loading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 2px;
+  border: 1px solid var(--landing-border);
+  border-radius: 10px;
+  background: var(--landing-card);
+  padding: 13px 14px;
+  color: var(--svx-panel-muted);
+  font-size: 14px;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.svx-marketplace-request-error {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--svx-panel-danger) 34%,
+      var(--landing-border)
+    );
+  color: var(--svx-panel-danger);
+}
+
+/* Fixed action footer */
+
+.svx-marketplace-request-footer {
+  position: relative !important;
+  z-index: 10;
+  border-top: 1px solid var(--landing-border);
+  background: var(--landing-bg);
+  padding:
+    18px
+    28px
+    22px;
+}
+
+.svx-marketplace-request-footer
+  .svx-marketplace-request-button {
+  width: 100%;
+  min-height: 54px;
+  margin: 0;
+  border: 1px solid var(--landing-primary);
+  border-radius: 10px;
+  background: var(--landing-primary);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 850;
+  box-shadow: none;
+}
+
+.svx-marketplace-request-footer
+  .svx-marketplace-request-button:hover:not(
+    :disabled
+  ) {
+  border-color: var(--landing-primary-dark);
+  background: var(--landing-primary-dark);
+  filter: none;
+  transform: none;
+}
+
+.svx-marketplace-request-footer
+  .svx-marketplace-request-button:disabled {
+  cursor: not-allowed;
+  border-color: var(--landing-border);
+  background: var(--landing-card);
+  color: var(--svx-panel-muted);
+}
+
+.svx-marketplace-request-footer > small {
+  display: block;
+  margin-top: 10px;
+  color: var(--svx-panel-muted);
+  font-size: 13px;
+  font-weight: 630;
+  line-height: 1.45;
+  text-align: center;
+}
+
+/* Success view */
+
+.svx-marketplace-request-success {
+  display: grid;
+  min-height: 430px;
+  align-content: center;
+  justify-items: center;
+  padding: 36px 24px;
+  text-align: center;
+}
+
+.svx-marketplace-request-success > svg {
+  width: 60px;
+  height: 60px;
+  color: var(--landing-primary);
+}
+
+.svx-marketplace-request-success h3 {
+  max-width: 370px;
+  margin: 18px 0 0;
+  color: var(--svx-panel-text);
+  font-size: 23px;
+  font-weight: 860;
+  line-height: 1.25;
+}
+
+.svx-marketplace-request-success > p {
+  max-width: 390px;
+  margin: 9px 0 0;
+  color: var(--svx-panel-muted);
+  font-size: 14px;
+  font-weight: 630;
+  line-height: 1.55;
+}
+
+.svx-marketplace-request-success dl {
+  width: 100%;
+  margin: 22px 0 0;
+  border-top: 1px solid var(--landing-border);
+}
+
+.svx-marketplace-request-success
+  dl
+  > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--landing-border);
+  padding: 13px 0;
+  text-align: left;
+}
+
+.svx-marketplace-request-success dt {
+  color: var(--svx-panel-muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.svx-marketplace-request-success dd {
+  margin: 0;
+  color: var(--svx-panel-text);
+  font-size: 14px;
+  font-weight: 840;
+  text-align: right;
+}
+
+/* =========================================================
+   MOBILE / PWA REQUEST WORKFLOW
+========================================================= */
+
+@media (max-width: 820px) {
+  .svx-marketplace-request-form {
+    height: 100%;
+    grid-template-rows:
+      auto
+      minmax(0, 1fr)
+      auto;
+  }
+
+  .svx-marketplace-request-form
+    > .svx-marketplace-customer-panel-head {
+    min-height: 106px;
+    padding:
+      16px
+      max(
+        16px,
+        env(safe-area-inset-right, 0px)
+      )
+      16px
+      max(
+        16px,
+        env(safe-area-inset-left, 0px)
+      );
+  }
+
+  .svx-marketplace-request-heading {
+    gap: 11px;
+  }
+
+  .svx-marketplace-request-heading > button {
+    width: 46px;
+    height: 46px;
+    flex-basis: 46px;
+  }
+
+  .svx-marketplace-request-heading small {
+    font-size: 12px;
+  }
+
+  .svx-marketplace-request-heading h2 {
+    font-size: 24px;
+  }
+
+  .svx-marketplace-request-form
+    > .svx-marketplace-customer-panel-body {
+    min-height: 0 !important;
+    padding:
+      0
+      max(
+        16px,
+        env(safe-area-inset-right, 0px)
+      )
+      28px
+      max(
+        16px,
+        env(safe-area-inset-left, 0px)
+      );
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  .svx-marketplace-request-section {
+    gap: 13px;
+    padding: 21px 0;
+  }
+
+  .svx-marketplace-request-section h3,
+  .svx-marketplace-request-section
+    > label,
+  .svx-marketplace-request-section
+    label
+    > span {
+    font-size: 15px;
+  }
+
+  .svx-marketplace-request-store-summary {
+    min-height: 68px;
+    grid-template-columns:
+      42px
+      minmax(0, 1fr)
+      auto;
+    padding: 12px 13px;
+  }
+
+  .svx-marketplace-request-products {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .svx-marketplace-request-product {
+    grid-template-columns:
+      78px
+      minmax(0, 1fr)
+      auto;
+    gap: 12px;
+    padding: 16px 0;
+  }
+
+  .svx-marketplace-request-product-image {
+    width: 78px;
+    height: 78px;
+  }
+
+  .svx-marketplace-request-product-title {
+    font-size: 15px;
+  }
+
+  .svx-marketplace-request-product-copy
+    > span,
+  .svx-marketplace-request-product-link {
+    font-size: 13px;
+  }
+
+  .svx-marketplace-request-product-link {
+    display: inline-flex;
+  }
+
+  .svx-marketplace-request-product
+    > strong {
+    font-size: 15px;
+  }
+
+  .svx-marketplace-request-fields {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .svx-marketplace-request-form input,
+  .svx-marketplace-request-form select,
+  .svx-marketplace-request-form textarea {
+    min-height: 52px;
+    font-size: 16px;
+  }
+
+  .svx-marketplace-request-options {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-marketplace-request-delivery
+    > div:not(
+      .svx-marketplace-request-options
+    ) {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-marketplace-request-footer {
+    padding:
+      15px
+      max(
+        16px,
+        env(safe-area-inset-right, 0px)
+      )
+      calc(
+        17px +
+        env(safe-area-inset-bottom, 0px)
+      )
+      max(
+        16px,
+        env(safe-area-inset-left, 0px)
+      );
+  }
+
+  .svx-marketplace-request-footer
+    .svx-marketplace-request-button {
+    min-height: 54px;
+    font-size: 16px;
+  }
+}
+
+/* Normal phone widths */
+
+@media (max-width: 520px) {
+  .svx-marketplace-request-heading h2 {
+    font-size: 22px;
+  }
+
+  .svx-marketplace-request-product {
+    grid-template-columns:
+      72px
+      minmax(0, 1fr);
+  }
+
+  .svx-marketplace-request-product-image {
+    width: 72px;
+    height: 72px;
+  }
+
+  .svx-marketplace-request-product
+    > strong {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .svx-marketplace-request-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-marketplace-request-fields
+    > label:last-child {
+    grid-column: auto;
+  }
+
+  .svx-marketplace-request-delivery
+    > div:not(
+      .svx-marketplace-request-options
+    ) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-marketplace-request-total strong {
+    font-size: 20px;
+  }
+}
+
+/* Keep useful two-column choices where they fit. */
+
+@media (max-width: 390px) {
+  .svx-marketplace-request-options {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .svx-marketplace-request-options
+    label
+    > span {
+    min-height: 82px;
+    grid-template-columns:
+      26px
+      minmax(0, 1fr);
+    padding: 11px;
+  }
+
+  .svx-marketplace-request-options
+    label
+    > span
+    strong {
+    font-size: 14px;
+  }
+
+  .svx-marketplace-request-options
+    label
+    > span
+    small {
+    font-size: 12px;
+  }
+}
+
+/* Only truly narrow phones stack option cards. */
+
+@media (max-width: 330px) {
+  .svx-marketplace-request-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-marketplace-request-heading > button,
+  .svx-marketplace-request-form input,
+  .svx-marketplace-request-form select,
+  .svx-marketplace-request-form textarea,
+  .svx-marketplace-request-options
+    label
+    > span {
+    transition-duration: 1ms !important;
+  }
+}
+
+
+/* =========================================================
+   FOCUSED REQUEST WORKFLOW
+   Fixes the hidden submit action and removes shopping tabs
+   while the customer is confirming request details.
+========================================================= */
+
+/*
+ * The request form replaces the normal cart workspace.
+ * It must own all remaining drawer height.
+ */
+.svx-marketplace-customer-panel:has(
+  > .svx-marketplace-request-form
+) {
+  grid-template-rows:
+    minmax(0, 1fr) !important;
+}
+
+.svx-marketplace-customer-panel:has(
+  > .svx-marketplace-request-form
+)
+  > .svx-marketplace-customer-tabs,
+.svx-marketplace-customer-panel:has(
+  > .svx-marketplace-request-form
+)
+  > .svx-marketplace-customer-drag-handle {
+  display: none !important;
+}
+
+.svx-marketplace-customer-panel
+  > .svx-marketplace-request-form {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-column: 1;
+  grid-row: 1;
+}
+
+/*
+ * Three dependable request regions:
+ * heading, scrollable content and submit footer.
+ */
+.svx-marketplace-request-form {
+  display: grid !important;
+  grid-template-rows:
+    auto
+    minmax(0, 1fr)
+    auto !important;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden !important;
+}
+
+.svx-marketplace-request-form
+  > .svx-marketplace-customer-panel-head {
+  grid-row: 1;
+  min-width: 0;
+  flex: none !important;
+}
+
+.svx-marketplace-request-form
+  > .svx-marketplace-customer-panel-body {
+  grid-row: 2;
+  min-width: 0;
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  flex: none !important;
+  scroll-padding-bottom: 28px;
+}
+
+.svx-marketplace-request-form
+  > .svx-marketplace-request-footer {
+  position: relative !important;
+  z-index: 20;
+  grid-row: 3;
+  inset: auto !important;
+  min-width: 0;
+  flex: none !important;
+}
+
+
+/* =========================================================
+   MOBILE / PWA REQUEST COMPOSITION
+========================================================= */
+
+@media (max-width: 820px) {
+  .svx-marketplace-customer-panel:has(
+    > .svx-marketplace-request-form
+  ) {
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+
+    grid-template-rows:
+      minmax(0, 1fr) !important;
+
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  .svx-marketplace-request-form {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+
+  /*
+   * Compact focused heading.
+   */
+  .svx-marketplace-request-form
+    > .svx-marketplace-customer-panel-head {
+    min-height:
+      calc(
+        86px +
+        env(safe-area-inset-top, 0px)
+      );
+
+    padding:
+      calc(
+        14px +
+        env(safe-area-inset-top, 0px)
+      )
+      16px
+      14px;
+  }
+
+  .svx-marketplace-request-heading {
+    width: 100%;
+    min-width: 0;
+    gap: 11px;
+  }
+
+  .svx-marketplace-request-heading > button {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+  }
+
+  .svx-marketplace-request-heading > span {
+    min-width: 0;
+  }
+
+  .svx-marketplace-request-heading small {
+    font-size: 12px;
+    letter-spacing: 0.02em;
+  }
+
+  .svx-marketplace-request-heading h2 {
+    overflow: hidden;
+    margin-top: 4px;
+    font-size: 22px;
+    line-height: 1.12;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .svx-marketplace-request-form
+    > .svx-marketplace-customer-panel-head
+    > button {
+    width: 46px;
+    height: 46px;
+    flex: 0 0 46px;
+  }
+
+  /*
+   * Comfortable vertical form flow.
+   */
+  .svx-marketplace-request-form
+    > .svx-marketplace-customer-panel-body {
+    padding:
+      0
+      16px
+      28px;
+  }
+
+  .svx-marketplace-request-section {
+    gap: 13px;
+    margin: 0;
+    border-bottom: 1px solid var(--landing-border);
+    border-radius: 0;
+    background: transparent;
+    padding: 21px 0;
+  }
+
+  .svx-marketplace-request-section:first-child {
+    padding-top: 18px;
+  }
+
+  .svx-marketplace-request-section h3,
+  .svx-marketplace-request-section
+    label
+    > span {
+    font-size: 15px;
+    line-height: 1.3;
+  }
+
+  /*
+   * Store summary remains one clear row.
+   */
+  .svx-marketplace-request-store-summary {
+    min-height: 70px;
+    grid-template-columns:
+      42px
+      minmax(0, 1fr)
+      auto;
+    gap: 11px;
+    padding: 12px 13px;
+  }
+
+  .svx-marketplace-request-store-summary small,
+  .svx-marketplace-request-store-summary b {
+    font-size: 13px;
+  }
+
+  .svx-marketplace-request-store-summary strong {
+    font-size: 15px;
+  }
+
+  /*
+   * Request products use the full phone width.
+   */
+  .svx-marketplace-request-product {
+    grid-template-columns:
+      72px
+      minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    padding: 16px 0;
+  }
+
+  .svx-marketplace-request-product-image {
+    width: 72px;
+    height: 72px;
+  }
+
+  .svx-marketplace-request-product-copy {
+    min-width: 0;
+  }
+
+  .svx-marketplace-request-product-title {
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  .svx-marketplace-request-product-copy
+    > span {
+    font-size: 13px;
+  }
+
+  .svx-marketplace-request-product-link {
+    display: inline-flex !important;
+    min-height: 38px;
+    font-size: 13px;
+  }
+
+  .svx-marketplace-request-product
+    > strong {
+    grid-column: 2;
+    font-size: 16px;
+    text-align: left;
+  }
+
+  /*
+   * Inputs never shrink below a comfortable mobile size.
+   */
+  .svx-marketplace-request-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .svx-marketplace-request-fields
+    > label:last-child {
+    grid-column: auto;
+  }
+
+  .svx-marketplace-request-form input,
+  .svx-marketplace-request-form select,
+  .svx-marketplace-request-form textarea {
+    min-height: 54px;
+    border-radius: 10px;
+    padding-right: 14px;
+    padding-left: 14px;
+    font-size: 16px;
+  }
+
+  .svx-marketplace-request-form textarea {
+    min-height: 108px;
+  }
+
+  /*
+   * Keep paired choices in two columns where usable.
+   */
+  .svx-marketplace-request-options {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .svx-marketplace-request-options
+    label
+    > span {
+    min-height: 88px;
+    grid-template-columns:
+      26px
+      minmax(0, 1fr);
+    align-content: center;
+    padding: 12px;
+  }
+
+  .svx-marketplace-request-options
+    label
+    > span
+    strong {
+    font-size: 14px;
+  }
+
+  .svx-marketplace-request-options
+    label
+    > span
+    small {
+    font-size: 12px;
+  }
+
+  .svx-marketplace-request-delivery
+    > div:not(
+      .svx-marketplace-request-options
+    ) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /*
+   * Submit action is always visible.
+   */
+  .svx-marketplace-request-footer {
+    position: relative !important;
+    z-index: 30;
+
+    width: 100%;
+
+    border-top: 1px solid var(--landing-border);
+    background: var(--landing-bg);
+
+    padding:
+      14px
+      16px
+      calc(
+        15px +
+        env(safe-area-inset-bottom, 0px)
+      );
+  }
+
+  .svx-marketplace-request-footer
+    .svx-marketplace-request-button {
+    display: inline-flex !important;
+    width: 100%;
+    min-height: 54px;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin: 0;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 850;
+  }
+
+  .svx-marketplace-request-footer > small {
+    display: block !important;
+    margin-top: 9px;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+}
+
+
+/* Narrow phone correction */
+
+@media (max-width: 350px) {
+  .svx-marketplace-request-heading h2 {
+    font-size: 20px;
+  }
+
+  .svx-marketplace-request-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+
+/* =========================================================
+   CONFIRM DETAILS — MOBILE/PWA VISIBILITY GUARANTEE
+========================================================= */
+
+@media (max-width: 820px) {
+  /*
+   * The request form controls the entire available drawer.
+   */
+  .svx-marketplace-customer-panel:has(
+    > .svx-marketplace-request-form
+  ) {
+    display: grid !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    grid-template-rows: minmax(0, 1fr) !important;
+    overflow: hidden !important;
+  }
+
+  .svx-marketplace-request-form {
+    display: grid !important;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    grid-template-rows:
+      auto
+      minmax(0, 1fr)
+      auto !important;
+    overflow: hidden !important;
+  }
+
+  /*
+   * Header remains visible without consuming excessive space.
+   */
+  .svx-marketplace-request-form
+    > .svx-marketplace-customer-panel-head {
+    position: relative !important;
+    z-index: 10;
+    min-width: 0;
+    min-height:
+      calc(
+        84px +
+        env(safe-area-inset-top, 0px)
+      );
+    flex: none !important;
+    padding:
+      calc(
+        13px +
+        env(safe-area-inset-top, 0px)
+      )
+      15px
+      13px;
+    background: var(--landing-bg);
+  }
+
+  .svx-marketplace-request-heading {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .svx-marketplace-request-heading > span {
+    min-width: 0;
+  }
+
+  .svx-marketplace-request-heading small {
+    font-size: 12px;
+    font-weight: 820;
+    letter-spacing: 0.02em;
+  }
+
+  .svx-marketplace-request-heading h2 {
+    max-width: 100%;
+    margin-top: 4px;
+    overflow: hidden;
+    color: var(--svx-panel-text);
+    font-size: 22px;
+    font-weight: 880;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /*
+   * This is the only vertically scrolling region.
+   */
+  .svx-marketplace-request-form
+    > .svx-marketplace-customer-panel-body {
+    position: relative !important;
+    z-index: 1;
+    width: 100%;
+    min-width: 0;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding:
+      0
+      16px
+      32px;
+    scroll-padding-top: 12px;
+    scroll-padding-bottom: 32px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+  }
+
+  /*
+   * Remove all legacy content-height restrictions.
+   */
+  .svx-marketplace-request-products,
+  .svx-marketplace-request-products-section,
+  .svx-marketplace-request-section {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .svx-marketplace-request-section {
+    display: grid;
+    gap: 13px;
+    margin: 0 !important;
+    border: 0;
+    border-bottom: 1px solid var(--landing-border);
+    border-radius: 0 !important;
+    background: transparent !important;
+    padding: 20px 0 !important;
+  }
+
+  .svx-marketplace-request-section:first-child {
+    padding-top: 18px !important;
+  }
+
+  .svx-marketplace-request-section:last-child {
+    border-bottom: 0;
+    padding-bottom: 22px !important;
+  }
+
+  .svx-marketplace-request-section h3,
+  .svx-marketplace-request-section
+    label
+    > span {
+    color: var(--svx-panel-text);
+    font-size: 15px !important;
+    font-weight: 820;
+    line-height: 1.35;
+  }
+
+  .svx-marketplace-request-section > small {
+    color: var(--svx-panel-muted);
+    font-size: 13px !important;
+    font-weight: 640;
+    line-height: 1.5;
+  }
+
+  /*
+   * Store information.
+   */
+  .svx-marketplace-request-store-summary {
+    width: 100%;
+    min-width: 0;
+    min-height: 68px;
+    grid-template-columns:
+      40px
+      minmax(0, 1fr)
+      auto;
+    gap: 11px;
+    padding: 12px 13px;
+  }
+
+  .svx-marketplace-request-store-summary small,
+  .svx-marketplace-request-store-summary b {
+    font-size: 13px !important;
+  }
+
+  .svx-marketplace-request-store-summary strong {
+    font-size: 15px !important;
+  }
+
+  /*
+   * Every product is completely visible.
+   */
+  .svx-marketplace-request-product {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns:
+      72px
+      minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    border: 0;
+    border-bottom: 1px solid var(--landing-border);
+    border-radius: 0;
+    background: transparent;
+    padding: 16px 0;
+  }
+
+  .svx-marketplace-request-product:last-child {
+    border-bottom: 0;
+  }
+
+  .svx-marketplace-request-product-image {
+    width: 72px !important;
+    height: 72px !important;
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    border-radius: 10px;
+  }
+
+  .svx-marketplace-request-product-copy {
+    min-width: 0;
+    grid-column: 2;
+  }
+
+  .svx-marketplace-request-product-title {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 16px !important;
+    font-weight: 830;
+    line-height: 1.35;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .svx-marketplace-request-product-copy
+    > span {
+    font-size: 13px !important;
+    line-height: 1.4;
+  }
+
+  .svx-marketplace-request-product-link {
+    display: inline-flex !important;
+    min-height: 38px;
+    align-items: center;
+    font-size: 13px !important;
+  }
+
+  .svx-marketplace-request-product
+    > strong {
+    min-width: 0;
+    grid-column: 2;
+    color: var(--svx-panel-text);
+    font-size: 16px !important;
+    font-weight: 880;
+    text-align: left;
+    white-space: normal;
+  }
+
+  /*
+   * Contact fields use one clear column.
+   */
+  .svx-marketplace-request-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 14px;
+  }
+
+  .svx-marketplace-request-fields
+    > label:last-child {
+    grid-column: auto !important;
+  }
+
+  .svx-marketplace-request-fields label,
+  .svx-marketplace-request-delivery label,
+  .svx-marketplace-request-section > label {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .svx-marketplace-request-form input,
+  .svx-marketplace-request-form select,
+  .svx-marketplace-request-form textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: 54px !important;
+    border-radius: 10px;
+    padding-right: 14px;
+    padding-left: 14px;
+    color: var(--svx-panel-text);
+    font-size: 16px !important;
+    font-weight: 650;
+  }
+
+  .svx-marketplace-request-form textarea {
+    min-height: 108px !important;
+    padding-top: 13px;
+    padding-bottom: 13px;
+  }
+
+  /*
+   * Two columns only for short choices.
+   */
+  .svx-marketplace-request-options {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px;
+  }
+
+  .svx-marketplace-request-options label {
+    min-width: 0;
+  }
+
+  .svx-marketplace-request-options
+    label
+    > span {
+    width: 100%;
+    min-width: 0;
+    min-height: 90px;
+    grid-template-columns:
+      25px
+      minmax(0, 1fr);
+    align-content: center;
+    gap: 9px;
+    padding: 12px;
+  }
+
+  .svx-marketplace-request-options
+    label
+    > span
+    strong {
+    font-size: 14px !important;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .svx-marketplace-request-options
+    label
+    > span
+    small {
+    font-size: 12px !important;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  /*
+   * Delivery address fields remain vertical.
+   */
+  .svx-marketplace-request-delivery
+    > div:not(
+      .svx-marketplace-request-options
+    ) {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-marketplace-request-delivery > p {
+    font-size: 13px !important;
+    line-height: 1.5;
+  }
+
+  /*
+   * Total is readable but does not dominate the form.
+   */
+  .svx-marketplace-request-total {
+    gap: 11px;
+    margin-top: 2px;
+    padding: 15px;
+  }
+
+  .svx-marketplace-request-total small {
+    font-size: 14px !important;
+  }
+
+  .svx-marketplace-request-total strong {
+    font-size: 21px !important;
+  }
+
+  .svx-marketplace-request-total p {
+    font-size: 13px !important;
+    line-height: 1.5;
+  }
+
+  /*
+   * Submit action always occupies the final grid row.
+   */
+  .svx-marketplace-request-form
+    > .svx-marketplace-request-footer {
+    position: relative !important;
+    z-index: 30;
+    inset: auto !important;
+    display: block !important;
+    width: 100%;
+    min-width: 0;
+    flex: none !important;
+    border-top: 1px solid var(--landing-border);
+    background: var(--landing-bg);
+    padding:
+      13px
+      16px
+      calc(
+        14px +
+        env(safe-area-inset-bottom, 0px)
+      );
+  }
+
+  .svx-marketplace-request-footer
+    .svx-marketplace-request-button {
+    display: inline-flex !important;
+    width: 100%;
+    min-height: 54px !important;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin: 0 !important;
+    border-radius: 10px;
+    font-size: 16px !important;
+    font-weight: 850;
+  }
+
+  .svx-marketplace-request-footer > small {
+    display: block !important;
+    margin-top: 8px;
+    color: var(--svx-panel-muted);
+    font-size: 13px !important;
+    line-height: 1.4;
+    text-align: center;
+  }
+}
+
+
+/* Keep two-column choices only where they genuinely fit. */
+
+@media (max-width: 350px) {
+  .svx-marketplace-request-options {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .svx-marketplace-request-heading h2 {
+    font-size: 20px;
+  }
+}
+
+
+/*
+ * When the mobile keyboard opens, keep the form scrollable
+ * and allow the browser to reduce the dynamic viewport.
+ */
+@supports (height: 100dvh) {
+  @media (max-width: 820px) {
+    .svx-marketplace-customer-panel:has(
+      > .svx-marketplace-request-form
+    ),
+    .svx-marketplace-request-form {
+      height: 100dvh !important;
+      min-height: 100dvh !important;
+      max-height: 100dvh !important;
+    }
+  }
+}
+
+
+/* =========================================================
+   REQUEST HEADER — AUTHORITATIVE NAVIGATION
+========================================================= */
+
+.svx-marketplace-request-header {
+  display: grid !important;
+  grid-template-columns:
+    auto
+    minmax(0, 1fr)
+    auto;
+  align-items: center;
+  gap: 18px;
+}
+
+.svx-marketplace-request-header
+  > .svx-marketplace-request-heading {
+  display: grid;
+  min-width: 0;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.svx-marketplace-request-heading small {
+  color: var(--landing-primary);
+  font-size: 13px;
+  font-weight: 820;
+  line-height: 1.2;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.svx-marketplace-request-heading h2 {
+  min-width: 0;
+  margin: 0;
+  color: var(--svx-panel-text);
+  font-size: 25px;
+  font-weight: 880;
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+}
+
+.svx-marketplace-request-back,
+.svx-marketplace-request-close {
+  display: inline-flex !important;
+  min-width: 92px;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--landing-border);
+  border-radius: 10px;
+  background: var(--landing-card);
+  padding: 0 13px;
+  color: var(--svx-panel-text);
+  font-size: 14px;
+  font-weight: 780;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.svx-marketplace-request-back:hover,
+.svx-marketplace-request-close:hover {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 48%,
+      var(--landing-border)
+    );
+  background:
+    color-mix(
+      in srgb,
+      var(--landing-primary) 7%,
+      var(--landing-card)
+    );
+  color: var(--landing-primary);
+}
+
+
+/* =========================================================
+   REQUEST WORKFLOW — STABLE MOBILE/PWA STRUCTURE
+========================================================= */
+
+@media (max-width: 820px) {
+  .svx-marketplace-request-form {
+    display: grid !important;
+    width: 100%;
+    height: 100dvh !important;
+    min-width: 0;
+    min-height: 0 !important;
+    max-height: 100dvh !important;
+    grid-template-rows:
+      auto
+      minmax(0, 1fr)
+      auto !important;
+    overflow: hidden !important;
+  }
+
+  .svx-marketplace-request-header {
+    position: relative !important;
+    z-index: 40;
+    min-height:
+      calc(
+        82px +
+        env(safe-area-inset-top, 0px)
+      ) !important;
+    grid-template-columns:
+      auto
+      minmax(0, 1fr)
+      auto;
+    gap: 8px;
+    border-bottom: 1px solid var(--landing-border);
+    background: var(--landing-bg);
+    padding:
+      calc(
+        10px +
+        env(safe-area-inset-top, 0px)
+      )
+      12px
+      10px !important;
+  }
+
+  .svx-marketplace-request-header
+    > .svx-marketplace-request-heading {
+    overflow: hidden;
+  }
+
+  .svx-marketplace-request-heading small {
+    font-size: 12px;
+  }
+
+  .svx-marketplace-request-heading h2 {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 20px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .svx-marketplace-request-back,
+  .svx-marketplace-request-close {
+    width: auto !important;
+    min-width: 76px;
+    height: 46px !important;
+    min-height: 46px;
+    flex: none !important;
+    padding: 0 10px;
+    font-size: 13px;
+  }
+
+  .svx-marketplace-request-form
+    > .svx-marketplace-customer-panel-body {
+    grid-row: 2;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    padding:
+      0
+      16px
+      30px !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  .svx-marketplace-request-form
+    > .svx-marketplace-request-footer {
+    position: relative !important;
+    z-index: 40;
+    grid-row: 3;
+    inset: auto !important;
+    display: block !important;
+    width: 100%;
+    flex: none !important;
+    border-top: 1px solid var(--landing-border);
+    background: var(--landing-bg);
+    padding:
+      13px
+      16px
+      calc(
+        14px +
+        env(safe-area-inset-bottom, 0px)
+      ) !important;
+  }
+}
+
+
+/* Compact phones retain both actions clearly. */
+
+@media (max-width: 390px) {
+  .svx-marketplace-request-header {
+    grid-template-columns:
+      48px
+      minmax(0, 1fr)
+      48px;
+    gap: 7px;
+    padding-right: 10px !important;
+    padding-left: 10px !important;
+  }
+
+  .svx-marketplace-request-back,
+  .svx-marketplace-request-close {
+    display: grid !important;
+    width: 48px !important;
+    min-width: 48px;
+    height: 48px !important;
+    place-items: center;
+    padding: 0;
+  }
+
+  .svx-marketplace-request-back > span,
+  .svx-marketplace-request-close > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .svx-marketplace-request-heading h2 {
+    font-size: 19px;
+  }
+}
+
+@media (max-width: 340px) {
+  .svx-marketplace-request-heading small {
+    display: none;
+  }
+
+  .svx-marketplace-request-heading h2 {
+    font-size: 18px;
+  }
+}
+
+
+/* =========================================================
+   REQUEST CONTENT TOP SPACING
+========================================================= */
+
+@media (max-width: 820px) {
+  .svx-marketplace-request-form
+    > .svx-marketplace-customer-panel-body {
+    padding-top: 16px !important;
+  }
+
+  .svx-marketplace-request-store-summary {
+    margin-top: 0 !important;
+  }
+}
+
+
+/* =========================================================
+   REQUEST CONTENT TOP SPACING — ALL SCREEN SIZES
+========================================================= */
+
+.svx-marketplace-request-form
+  > .svx-marketplace-customer-panel-body {
+  padding-top: 16px !important;
+}
+
+.svx-marketplace-request-store-summary {
+  margin-top: 0 !important;
+}

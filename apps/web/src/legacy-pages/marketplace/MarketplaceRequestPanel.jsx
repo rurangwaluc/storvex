@@ -791,38 +791,45 @@ export default function MarketplaceRequestPanel({
   }
 
   return (
-    <>
-      <header className="svx-marketplace-customer-panel-head">
-        <div className="svx-marketplace-request-heading">
-          <button
-            type="button"
-            onClick={onBack}
-            aria-label="Back to cart"
-          >
-            <ArrowLeft size={17} />
-          </button>
+    <form
+      className="svx-marketplace-request-form"
+      onSubmit={submit}
+    >
+      <header className="svx-marketplace-customer-panel-head svx-marketplace-request-header">
+        <button
+          type="button"
+          className="svx-marketplace-request-back"
+          onClick={onBack}
+          aria-label="Back to cart"
+        >
+          <ArrowLeft
+            size={19}
+            strokeWidth={2}
+            aria-hidden="true"
+          />
+          <span>Back</span>
+        </button>
 
-          <span>
-            <small>Send request</small>
-            <h2>
-              Confirm your details
-            </h2>
-          </span>
+        <div className="svx-marketplace-request-heading">
+          <small>Send request</small>
+
+          <h2>Confirm your details</h2>
         </div>
 
         <button
           type="button"
+          className="svx-marketplace-request-close"
           onClick={onClose}
           aria-label="Close request"
         >
-          <X size={19} />
+          <span>Close</span>
+          <X
+            size={19}
+            strokeWidth={2}
+            aria-hidden="true"
+          />
         </button>
       </header>
-
-      <form
-        className="svx-marketplace-request-form"
-        onSubmit={submit}
-      >
         <div className="svx-marketplace-customer-panel-body">
           {groups.length > 1 ? (
             <section className="svx-marketplace-request-section">
@@ -1474,7 +1481,6 @@ export default function MarketplaceRequestPanel({
             </small>
           </footer>
         ) : null}
-      </form>
-    </>
+    </form>
   );
 }

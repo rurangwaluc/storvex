@@ -41,6 +41,7 @@ import {
 } from "../../services/marketplaceApi";
 import { useTheme } from "../../hooks/useTheme";
 import MarketplaceCustomerPanel from "./MarketplaceCustomerPanel";
+import MarketplaceHeader from "./MarketplaceHeader";
 import {
   useMarketplaceCustomerSession,
 } from "./MarketplaceCustomerSession";
@@ -60,6 +61,8 @@ import {
 
 import "../public/LandingPage.css";
 import "./MarketplacePublic.css";
+import "./MarketplaceCustomerPanel.css";
+import "./MarketplaceHomePremium.css";
 
 const logoSrc = "/storvex_dark.webp";
 const whiteLogoSrc = "/storvex_white.webp";
@@ -135,408 +138,8 @@ export function marketplaceErrorMessage(error) {
   );
 }
 
-export function MarketplaceHeader() {
-  const { isDark, toggleTheme } = useTheme();
-  const location = useLocation();
-  const customerStore = useMarketplaceCustomerStore();
-  const customerSession =
-    useMarketplaceCustomerSession();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [customerPanelOpen, setCustomerPanelOpen] =
-    useState(false);
-  const [customerPanelMode, setCustomerPanelMode] =
-    useState("cart");
-  const headerRef = useRef(null);
+export { MarketplaceHeader };
 
-  function openCustomerPanel(mode) {
-    setMenuOpen(false);
-    setCustomerPanelMode(mode);
-    setCustomerPanelOpen(true);
-  }
-
-  useEffect(() => {
-    function handlePanelRequest(event) {
-      const mode =
-        event?.detail?.mode || "cart";
-
-      openCustomerPanel(mode);
-    }
-
-    window.addEventListener(
-      MARKETPLACE_CUSTOMER_PANEL_EVENT,
-      handlePanelRequest,
-    );
-
-    return () => {
-      window.removeEventListener(
-        MARKETPLACE_CUSTOMER_PANEL_EVENT,
-        handlePanelRequest,
-      );
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!menuOpen) return undefined;
-
-    const previousOverflow =
-      document.body.style.overflow;
-
-    document.body.style.overflow =
-      "hidden";
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setMenuOpen(false);
-      }
-    }
-
-    document.addEventListener(
-      "keydown",
-      handleEscape,
-    );
-
-    return () => {
-      document.body.style.overflow =
-        previousOverflow;
-
-      document.removeEventListener(
-        "keydown",
-        handleEscape,
-      );
-    };
-  }, [menuOpen]);
-
-  useEffect(() => {
-    if (!customerPanelOpen) return undefined;
-
-    function handleEscape(event) {
-      if (event.key === "Escape") {
-        setCustomerPanelOpen(false);
-      }
-    }
-
-    document.addEventListener("keydown", handleEscape);
-
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [customerPanelOpen]);
-
-  return (
-    <>
-      <header
-        ref={headerRef}
-        className={cx(
-          "svx-header",
-          menuOpen && "is-menu-open",
-        )}
-      >
-        <div className="svx-header-inner">
-          <Link
-            to="/"
-            aria-label="Storvex home"
-            className="svx-logo-link"
-            onClick={() => setMenuOpen(false)}
-          >
-            <img
-              src={isDark ? whiteLogoSrc : logoSrc}
-              alt="Storvex"
-              className="svx-header-logo"
-              draggable="false"
-            />
-          </Link>
-
-          <nav
-            className="svx-nav svx-marketplace-primary-nav"
-            aria-label="Marketplace navigation"
-          >
-            <Link to="/">For businesses</Link>
-
-            <Link
-              to="/marketplace"
-              className={
-                location.pathname === "/marketplace"
-                  ? "svx-marketplace-nav-active"
-                  : ""
-              }
-            >
-              Marketplace
-            </Link>
-
-            <Link
-              to="/marketplace/shop"
-              className={
-                location.pathname === "/marketplace/shop"
-                  ? "svx-marketplace-nav-active"
-                  : ""
-              }
-            >
-              Shop
-            </Link>
-
-              <Link
-                to="/marketplace/stores"
-                className={
-                  location.pathname === "/marketplace/stores"
-                    ? "svx-marketplace-nav-active"
-                    : ""
-                }
-              >
-                Stores
-              </Link>
-          </nav>
-
-          <div className="svx-header-actions">
-            <div className="svx-marketplace-customer-actions">
-              <button
-                type="button"
-                onClick={() =>
-                  openCustomerPanel("wishlist")
-                }
-                aria-label={`Open wishlist with ${customerStore.wishlist.length} products`}
-              >
-                <Heart size={17} />
-                {customerStore.wishlist.length ? (
-                  <b>
-                    {customerStore.wishlist.length}
-                  </b>
-                ) : null}
-              </button>
-
-              <button
-                type="button"
-                onClick={() =>
-                  openCustomerPanel("compare")
-                }
-                aria-label={`Open comparison with ${customerStore.compare.length} products`}
-              >
-                <GitCompareArrows size={17} />
-                {customerStore.compare.length ? (
-                  <b>
-                    {customerStore.compare.length}
-                  </b>
-                ) : null}
-              </button>
-
-              <button
-                type="button"
-                className="is-cart"
-                onClick={() =>
-                  openCustomerPanel("cart")
-                }
-                aria-label={`Open cart with ${customerStore.cartCount} items`}
-              >
-                <ShoppingCart size={17} />
-                <span>Cart</span>
-                {customerStore.cartCount ? (
-                  <b>{customerStore.cartCount}</b>
-                ) : null}
-              </button>
-            </div>
-
-            <button
-              type="button"
-              className="svx-theme-toggle"
-              onClick={toggleTheme}
-              aria-label={
-                isDark
-                  ? "Switch to light mode"
-                  : "Switch to dark mode"
-              }
-              aria-pressed={isDark}
-            >
-              <span
-                className={cx(
-                  "svx-theme-option",
-                  !isDark && "active",
-                )}
-              >
-                <Sun size={15} strokeWidth={2.4} />
-              </span>
-
-              <span
-                className={cx(
-                  "svx-theme-option",
-                  isDark && "active",
-                )}
-              >
-                <Moon size={15} strokeWidth={2.4} />
-              </span>
-            </button>
-
-            <Link
-              to={
-                customerSession.signedIn
-                  ? "/marketplace/account"
-                  : "/marketplace/account/sign-in"
-              }
-              className="svx-login-link"
-            >
-              <UserRound size={16} />
-              {customerSession.signedIn
-                ? "Account"
-                : "Sign in"}
-            </Link>
-
-            <Link
-              to="/login"
-              className="svx-login-link"
-            >
-              Owner access
-            </Link>
-
-            <Link
-              to="/signup"
-              className="svx-header-cta"
-            >
-              Sell on Storvex
-            </Link>
-
-            <button
-              type="button"
-              className="svx-mobile-menu-button"
-              onClick={() =>
-                setMenuOpen((current) => !current)
-              }
-              aria-label={
-                menuOpen ? "Close menu" : "Open menu"
-              }
-              aria-expanded={menuOpen}
-            >
-              {menuOpen ? (
-                <X size={21} strokeWidth={2.4} />
-              ) : (
-                <Menu size={21} strokeWidth={2.4} />
-              )}
-            </button>
-          </div>
-        </div>
-
-        <div
-          className="svx-mobile-menu"
-          aria-hidden={!menuOpen}
-        >
-          <button
-            type="button"
-            className="svx-mobile-menu-backdrop"
-            aria-label="Close menu"
-            tabIndex={menuOpen ? 0 : -1}
-            onClick={() => setMenuOpen(false)}
-          />
-
-          <nav
-            className="svx-mobile-menu-panel"
-            aria-label="Mobile Marketplace navigation"
-          >
-            <Link
-              to="/"
-              className="svx-mobile-menu-link"
-              onClick={() => setMenuOpen(false)}
-            >
-              <span>For businesses</span>
-            </Link>
-
-            <Link
-              to="/marketplace"
-              className="svx-mobile-menu-link"
-              onClick={() => setMenuOpen(false)}
-            >
-              <span>Marketplace home</span>
-            </Link>
-
-            <Link
-              to="/marketplace/shop"
-              className="svx-mobile-menu-link"
-              onClick={() => setMenuOpen(false)}
-            >
-              <span>Shop products</span>
-              <ChevronRight size={17} />
-            </Link>
-
-              <Link
-                to="/marketplace/stores"
-                className="svx-mobile-menu-link"
-                onClick={() => setMenuOpen(false)}
-              >
-                <span>Explore stores</span>
-                <ChevronRight size={17} />
-              </Link>
-
-            <button
-              type="button"
-              className="svx-mobile-menu-link"
-              onClick={() =>
-                openCustomerPanel("cart")
-              }
-            >
-              <span>Cart</span>
-              <b>{customerStore.cartCount}</b>
-            </button>
-
-            <button
-              type="button"
-              className="svx-mobile-menu-link"
-              onClick={() =>
-                openCustomerPanel("wishlist")
-              }
-            >
-              <span>Wishlist</span>
-              <b>{customerStore.wishlist.length}</b>
-            </button>
-
-            <button
-              type="button"
-              className="svx-mobile-menu-link"
-              onClick={() =>
-                openCustomerPanel("compare")
-              }
-            >
-              <span>Compare</span>
-              <b>{customerStore.compare.length}</b>
-            </button>
-
-            <div className="svx-mobile-menu-actions">
-              <Link
-                to={
-                  customerSession.signedIn
-                    ? "/marketplace/account"
-                    : "/marketplace/account/sign-in"
-                }
-                className="svx-mobile-menu-secondary"
-                onClick={() => setMenuOpen(false)}
-              >
-                {customerSession.signedIn
-                  ? "Customer account"
-                  : "Customer sign in"}
-              </Link>
-
-              <Link
-                to="/login"
-                className="svx-mobile-menu-secondary"
-                onClick={() => setMenuOpen(false)}
-              >
-                Owner access
-              </Link>
-            </div>
-          </nav>
-        </div>
-      </header>
-
-      <MarketplaceCustomerPanel
-        open={customerPanelOpen}
-        mode={customerPanelMode}
-        store={customerStore}
-        onClose={() =>
-          setCustomerPanelOpen(false)
-        }
-        onModeChange={setCustomerPanelMode}
-        notify={(message) =>
-          toast.success(message)
-        }
-      />
-    </>
-  );
-}
 
 function marketplaceCardDescription(
   value,
@@ -1567,245 +1170,123 @@ export default function MarketplaceHome() {
 
       <main>
 
-        <nav className="svx-commerce-category-nav">
-          <div>
-            <button
-              type="button"
-              className={!category ? "is-active" : ""}
-              onClick={() => chooseCategory("")}
-            >
-              All products
-            </button>
-
-            {marketplaceCategories.map((item) => (
-              <button
-                type="button"
-                key={item.name}
-                className={category === item.name ? "is-active" : ""}
-                onClick={() => chooseCategory(item.name)}
-              >
-                {item.shortName}
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        <section className="svx-commerce-hero">
-          <div className="svx-commerce-hero-inner">
-            <div className="svx-marketplace-hero-final">
-              <div className="svx-marketplace-hero-copy">
-
+        <section className="svx-home-hero">
+          <div className="svx-home-shell">
+            <div className="svx-home-hero-layout">
+              <div className="svx-home-hero-copy">
+                <span className="svx-home-eyebrow">
+                  Local products. Current availability.
+                </span>
 
                 <h1>
-                  Find products available from local stores.
+                  Find what local stores have ready.
+                  <strong>Compare it. Request it. Get it your way.</strong>
                 </h1>
 
                 <p>
-                  Search products and sellers, compare what is
-                  available, then confirm pickup or delivery directly
-                  with the store.
+                  Browse products from local businesses using Storvex.
+                  Compare price, stock and fulfilment, then send your
+                  request directly to the seller.
                 </p>
 
-                <form
-                  className="svx-marketplace-hero-search"
-                  onSubmit={submitSearch}
-                >
-                  <Search size={19} strokeWidth={2.2} />
+                <div className="svx-home-hero-actions">
+                  <a
+                    href="#marketplace-categories"
+                    className="svx-home-primary-action"
+                  >
+                    Browse available products
+                    <ArrowRight
+                      size={18}
+                      strokeWidth={2}
+                    />
+                  </a>
 
-                  <input
-                    value={searchInput}
-                    onChange={(event) =>
-                      setSearchInput(event.target.value)
-                    }
-                    placeholder="Search products or stores"
-                    aria-label="Search products or stores"
-                  />
+                  <a
+                    href="#marketplace-how-it-works"
+                    className="svx-home-how-action"
+                  >
+                    <span>
+                      <ArrowRight
+                        size={17}
+                        strokeWidth={2}
+                      />
+                    </span>
 
-                  <button type="submit">Search</button>
-                </form>
-
-                <a
-                  href="#marketplace-products"
-                  className="svx-marketplace-hero-link"
-                >
-                  Browse available products
-                  <ArrowRight size={15} />
-                </a>
+                    How it works
+                  </a>
+                </div>
               </div>
 
-              <div
-                className="svx-marketplace-hero-visual"
-                aria-hidden="true"
-              >
-                <div className="svx-marketplace-network">
-                  <svg
-                    viewBox="0 0 620 390"
-                    role="presentation"
-                    focusable="false"
-                  >
-                    <g className="svx-marketplace-network-lines">
-                      <path d="M310 188 L128 88" />
-                      <path d="M310 188 L492 88" />
-                      <path d="M310 188 L105 276" />
-                      <path d="M310 188 L515 276" />
-                      <path d="M310 188 L310 326" />
-                    </g>
+              <div className="svx-home-hero-visual">
+                <div className="svx-home-hero-image-wrap">
+                  <img
+                    src="/marketplace-hero.png"
+                    alt="Products and business essentials available through Storvex Marketplace"
+                    className="svx-home-hero-image"
+                    loading="eager"
+                    decoding="async"
+                  />
 
-                    <g className="svx-marketplace-network-node">
-                      <rect
-                        x="58"
-                        y="48"
-                        width="140"
-                        height="76"
-                        rx="12"
-                      />
-                      <circle cx="88" cy="76" r="15" />
-                      <path d="M81 70h14v12H81z" />
-                      <path d="M85 67h6" />
-                      <text x="145" y="76">Electronics</text>
-                      <text className="is-muted" x="145" y="96">
-                        Phones and devices
-                      </text>
-                    </g>
-
-                    <g className="svx-marketplace-network-node">
-                      <rect
-                        x="422"
-                        y="48"
-                        width="140"
-                        height="76"
-                        rx="12"
-                      />
-                      <circle cx="452" cy="76" r="15" />
-                      <path d="M445 83l14-14" />
-                      <path d="M451 69l8 8" />
-                      <text x="509" y="76">Hardware</text>
-                      <text className="is-muted" x="509" y="96">
-                        Tools and materials
-                      </text>
-                    </g>
-
-                    <g className="svx-marketplace-network-node">
-                      <rect
-                        x="35"
-                        y="242"
-                        width="155"
-                        height="76"
-                        rx="12"
-                      />
-                      <circle cx="66" cy="270" r="15" />
-                      <path d="M58 271l8-7 8 7v9H58z" />
-                      <text x="130" y="270">
-                        Home &amp; kitchen
-                      </text>
-                      <text className="is-muted" x="130" y="290">
-                        Everyday materials
-                      </text>
-                    </g>
-
-                    <g className="svx-marketplace-network-node">
-                      <rect
-                        x="430"
-                        y="242"
-                        width="155"
-                        height="76"
-                        rx="12"
-                      />
-                      <circle cx="461" cy="270" r="15" />
-                      <path d="M456 276h10" />
-                      <path d="M457 272a6 6 0 1 1 8 0" />
-                      <text x="525" y="270">Lighting</text>
-                      <text className="is-muted" x="525" y="290">
-                        Bulbs and fixtures
-                      </text>
-                    </g>
-
-                    <g className="svx-marketplace-network-node">
-                      <rect
-                        x="245"
-                        y="320"
-                        width="130"
-                        height="54"
-                        rx="12"
-                      />
-                      <circle cx="272" cy="347" r="14" />
-                      <path d="M266 353l12-12" />
-                      <circle cx="267" cy="352" r="3" />
-                      <text x="326" y="344">Spare parts</text>
-                      <text className="is-muted" x="326" y="360">
-                        Parts and replacements
-                      </text>
-                    </g>
-
-                    <g className="svx-marketplace-network-center">
-                      <rect
-                        className="svx-marketplace-hub-shell"
-                        x="234"
-                        y="117"
-                        width="152"
-                        height="142"
-                        rx="24"
-                      />
-
-                      <rect
-                        className="svx-marketplace-hub-icon"
-                        x="281"
-                        y="132"
-                        width="58"
-                        height="52"
-                        rx="16"
-                      />
-
-                      <path d="M292 154h36l-4-12h-28z" />
-                      <path d="M296 154v22h28v-22" />
-                      <path d="M304 176v-11h12v11" />
-                      <path d="M292 154c0 6 9 6 9 0" />
-                      <path d="M301 154c0 6 9 6 9 0" />
-                      <path d="M310 154c0 6 9 6 9 0" />
-                      <path d="M319 154c0 6 9 6 9 0" />
-
-                      <text
-                        className="svx-marketplace-hub-title"
-                        x="310"
-                        y="205"
-                      >
-                        Storvex
-                      </text>
-
-                      <text
-                        className="svx-marketplace-hub-copy"
-                        x="310"
-                        y="224"
-                      >
-                        Local stores and available stock
-                      </text>
-
-                      <text
-                        className="svx-marketplace-hub-copy"
-                        x="310"
-                        y="240"
-                      >
-                        Pickup or seller delivery
-                      </text>
-                    </g>
-                  </svg>
-
-                  <div className="svx-marketplace-network-status">
-                    <span>
-                      <Check size={15} />
-                      Available stock
-                    </span>
+                  <div className="svx-home-hero-image-label">
+                    <img
+                      src={iconSrc}
+                      alt=""
+                      aria-hidden="true"
+                    />
 
                     <span>
-                      <Store size={15} />
-                      Local sellers
-                    </span>
-
-                    <span>
-                      <Truck size={15} />
-                      Pickup or delivery
+                      <strong>Storvex Marketplace</strong>
+                      <small>
+                        Local stores. Current inventory.
+                      </small>
                     </span>
                   </div>
+                </div>
+              </div>
+
+              <div className="svx-home-hero-benefits">
+                <div>
+                  <PackageSearch size={21} />
+
+                  <span>
+                    <strong>Available products</strong>
+                    <small>
+                      See products local stores have published
+                    </small>
+                  </span>
+                </div>
+
+                <div>
+                  <Store size={21} />
+
+                  <span>
+                    <strong>Request directly</strong>
+                    <small>
+                      The seller confirms before it becomes a sale
+                    </small>
+                  </span>
+                </div>
+
+                <div>
+                  <GitCompareArrows size={21} />
+
+                  <span>
+                    <strong>Compare clearly</strong>
+                    <small>
+                      Review price, stock and fulfilment
+                    </small>
+                  </span>
+                </div>
+
+                <div>
+                  <Truck size={21} />
+
+                  <span>
+                    <strong>Pickup or delivery</strong>
+                    <small>
+                      Arrange fulfilment with the store
+                    </small>
+                  </span>
                 </div>
               </div>
             </div>

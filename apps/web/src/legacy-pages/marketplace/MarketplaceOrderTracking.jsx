@@ -33,6 +33,7 @@ import {
 
 import "../public/LandingPage.css";
 import "./MarketplacePublic.css";
+import "./MarketplaceCustomerPanel.css";
 import "./MarketplaceOrderTracking.css";
 
 function formatDateTime(value) {

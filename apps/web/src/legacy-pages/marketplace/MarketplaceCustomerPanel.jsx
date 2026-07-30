@@ -7,6 +7,7 @@ import {
   GitCompareArrows,
   Heart,
   Minus,
+  Package,
   Plus,
   ShoppingCart,
   Store,
@@ -16,6 +17,7 @@ import {
 import { Link } from "react-router-dom";
 
 import MarketplaceRequestPanel from "./MarketplaceRequestPanel";
+
 
 import {
   marketplaceComparisonCategory,
@@ -65,54 +67,96 @@ function EmptyPanel({ icon: Icon, title, text }) {
   );
 }
 
-function ProductIdentity({ item }) {
+function ProductIdentity({ item, onClose }) {
+  const [imageFailed, setImageFailed] =
+    useState(false);
+
+  const unavailable =
+    item.seller.temporarilyClosed ||
+    Number(item.availableQuantity || 0) <= 0;
+
+  const imageUrl =
+    item.image?.thumbnailUrl ||
+    item.image?.url ||
+    "";
+
   return (
     <div className="svx-marketplace-customer-product">
       <Link
         to={productUrl(item)}
         className="svx-marketplace-customer-product-image"
+        onClick={onClose}
+        aria-label={`View ${item.title}`}
       >
-        {item.image?.url ? (
+        {imageUrl && !imageFailed ? (
           <img
-            src={
-              item.image.thumbnailUrl ||
-              item.image.url
-            }
-            alt={
-              item.image.altText ||
-              item.title
-            }
+            src={imageUrl}
+            alt=""
             width={
               Number(
-                item.image
-                  .thumbnailWidth,
+                item.image?.thumbnailWidth,
               ) || 480
             }
             height={
               Number(
-                item.image
-                  .thumbnailHeight,
+                item.image?.thumbnailHeight,
               ) || 480
             }
             loading="lazy"
             decoding="async"
+            onError={() => setImageFailed(true)}
           />
-        ) : null}
+        ) : (
+          <span className="svx-marketplace-product-placeholder">
+            <Package
+              size={30}
+              strokeWidth={1.7}
+              aria-hidden="true"
+            />
+            <small>Image unavailable</small>
+          </span>
+        )}
       </Link>
 
-      <div>
-        <span>
-          <Store size={12} />
-          {item.seller.name}
-        </span>
+      <div className="svx-marketplace-customer-product-copy">
+        <div className="svx-marketplace-customer-product-store">
+          <Store
+            size={14}
+            strokeWidth={2}
+            aria-hidden="true"
+          />
+          <span>{item.seller.name}</span>
+        </div>
 
-        <Link to={productUrl(item)}>
-          <strong>{item.title}</strong>
+        <Link
+          to={productUrl(item)}
+          className="svx-marketplace-customer-product-title"
+          onClick={onClose}
+        >
+          {item.title}
         </Link>
 
-        <b>
+        <span
+          className={[
+            "svx-marketplace-customer-product-status",
+            unavailable
+              ? "is-unavailable"
+              : "is-available",
+          ].join(" ")}
+        >
+          {item.seller.temporarilyClosed
+            ? "Store temporarily closed"
+            : unavailable
+              ? "Currently unavailable"
+              : `${Math.max(
+                  0,
+                  Number(item.availableQuantity || 0),
+                )} available`}
+        </span>
+
+        <strong className="svx-marketplace-customer-product-price">
           {formatMoney(item.price, item.currency)}
-        </b>
+        </strong>
       </div>
     </div>
   );
@@ -121,7 +165,6 @@ function ProductIdentity({ item }) {
 function CartPanel({
   store,
   onClose,
-  onOpenMode,
   notify,
 }) {
   const [requestOpen, setRequestOpen] =
@@ -140,6 +183,12 @@ function CartPanel({
       .map((item) => item.seller.slug),
   );
 
+  const sellerCount = new Set(
+    store.cart
+      .map((item) => item?.seller?.slug)
+      .filter(Boolean),
+  ).size;
+
   if (requestOpen) {
     return (
       <MarketplaceRequestPanel
@@ -156,13 +205,21 @@ function CartPanel({
       <header className="svx-marketplace-customer-panel-head">
         <div>
           <span>Your cart</span>
+
           <h2>
             {store.cartCount
-              ? `${store.cartCount} item${
+              ? `${store.cartCount} product${
                   store.cartCount === 1 ? "" : "s"
                 }`
               : "Cart is empty"}
           </h2>
+
+          {store.cart.length ? (
+            <p>
+              From {sellerCount}{" "}
+              {sellerCount === 1 ? "store" : "stores"}
+            </p>
+          ) : null}
         </div>
 
         <button
@@ -170,7 +227,7 @@ function CartPanel({
           onClick={onClose}
           aria-label="Close cart"
         >
-          <X size={19} />
+          <X size={21} strokeWidth={2} />
         </button>
       </header>
 
@@ -179,7 +236,7 @@ function CartPanel({
           <EmptyPanel
             icon={ShoppingCart}
             title="Your cart is empty"
-            text="Add products to your cart to send a request."
+            text="Browse available products and add the ones you want to request."
           />
         ) : (
           <div className="svx-marketplace-cart-list">
@@ -194,41 +251,54 @@ function CartPanel({
                   key={item.key}
                   className="svx-marketplace-cart-row"
                 >
-                  <ProductIdentity item={item} />
+                  <ProductIdentity
+                    item={item}
+                    onClose={onClose}
+                  />
 
-                  <div className="svx-marketplace-cart-row-actions">
-                    <div className="svx-marketplace-cart-quantity">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          store.updateCartQuantity(
-                            item.key,
-                            item.quantity - 1,
-                          )
-                        }
-                        disabled={item.quantity <= 1}
-                        aria-label={`Reduce ${item.title} quantity`}
-                      >
-                        <Minus size={14} />
-                      </button>
+                  <div className="svx-marketplace-cart-controls">
+                    <div>
+                      <span>Quantity</span>
 
-                      <span>{item.quantity}</span>
+                      <div className="svx-marketplace-cart-quantity">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            store.updateCartQuantity(
+                              item.key,
+                              item.quantity - 1,
+                            )
+                          }
+                          disabled={item.quantity <= 1}
+                          aria-label={`Reduce ${item.title} quantity`}
+                        >
+                          <Minus
+                            size={17}
+                            strokeWidth={2}
+                          />
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={() =>
-                          store.updateCartQuantity(
-                            item.key,
-                            item.quantity + 1,
-                          )
-                        }
-                        disabled={
-                          item.quantity >= maximum
-                        }
-                        aria-label={`Increase ${item.title} quantity`}
-                      >
-                        <Plus size={14} />
-                      </button>
+                        <span>{item.quantity}</span>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            store.updateCartQuantity(
+                              item.key,
+                              item.quantity + 1,
+                            )
+                          }
+                          disabled={
+                            item.quantity >= maximum
+                          }
+                          aria-label={`Increase ${item.title} quantity`}
+                        >
+                          <Plus
+                            size={17}
+                            strokeWidth={2}
+                          />
+                        </button>
+                      </div>
                     </div>
 
                     <button
@@ -237,13 +307,16 @@ function CartPanel({
                       onClick={() =>
                         store.removeFromCart(item.key)
                       }
-                      aria-label={`Remove ${item.title} from cart`}
                     >
-                      <Trash2 size={15} />
+                      <Trash2
+                        size={17}
+                        strokeWidth={2}
+                      />
+                      <span>Remove</span>
                     </button>
                   </div>
 
-                  <footer>
+                  <footer className="svx-marketplace-cart-line-total">
                     <span>
                       {item.quantity} ×{" "}
                       {formatMoney(
@@ -252,12 +325,15 @@ function CartPanel({
                       )}
                     </span>
 
-                    <strong>
-                      {formatMoney(
-                        item.price * item.quantity,
-                        item.currency,
-                      )}
-                    </strong>
+                    <div>
+                      <small>Product total</small>
+                      <strong>
+                        {formatMoney(
+                          item.price * item.quantity,
+                          item.currency,
+                        )}
+                      </strong>
+                    </div>
                   </footer>
                 </article>
               );
@@ -268,20 +344,35 @@ function CartPanel({
 
       {store.cart.length ? (
         <footer className="svx-marketplace-customer-panel-footer">
-          <div>
-            <span>Estimated subtotal</span>
-            <strong>
-              {formatMoney(
-                store.cartSubtotal,
-                store.cart[0]?.currency,
-              )}
-            </strong>
+          <div className="svx-marketplace-request-summary">
+            <div>
+              <span>Products</span>
+              <strong>{store.cartCount}</strong>
+            </div>
+
+            <div className="is-total">
+              <span>Estimated total</span>
+              <strong>
+                {formatMoney(
+                  store.cartSubtotal,
+                  store.cart[0]?.currency,
+                )}
+              </strong>
+            </div>
           </div>
 
-          <p>
-            Stock and price will be checked again before
-            the request is sent.
-          </p>
+          <div className="svx-marketplace-request-note">
+            <Check
+              size={18}
+              strokeWidth={2}
+              aria-hidden="true"
+            />
+
+            <p>
+              Stock and price are confirmed by the store
+              before your request becomes a sale.
+            </p>
+          </div>
 
           <button
             type="button"
@@ -289,14 +380,12 @@ function CartPanel({
             disabled={validSellerGroups.size === 0}
             onClick={() => setRequestOpen(true)}
           >
-            <ShoppingCart size={16} />
             Continue to request
+            <ArrowRight
+              size={18}
+              strokeWidth={2}
+            />
           </button>
-
-          <small>
-            The store confirms current stock and price before
-            accepting your request.
-          </small>
         </footer>
       ) : null}
     </>
@@ -644,6 +733,216 @@ function ComparePanel({
                 </div>
               </div>
             ) : null}
+
+            <div className="svx-marketplace-compare-mobile">
+              {products.map((item, index) => {
+                const unavailable =
+                  item.seller.temporarilyClosed ||
+                  Number(item.availableQuantity || 0) <= 0;
+
+                const isLowestPrice =
+                  canRank &&
+                  Number(item.price) === lowestPrice;
+
+                const isHighestStock =
+                  canRank &&
+                  Number(item.availableQuantity || 0) ===
+                    highestStock;
+
+                return (
+                  <article
+                    key={`mobile-${item.key}`}
+                    className="svx-marketplace-compare-mobile-card"
+                  >
+                    <div className="svx-marketplace-compare-mobile-position">
+                      <span>Product {index + 1}</span>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          store.removeFromCompare(item.key)
+                        }
+                        aria-label={`Remove ${item.title} from comparison`}
+                      >
+                        <X size={17} strokeWidth={2} />
+                        Remove
+                      </button>
+                    </div>
+
+                    <div className="svx-marketplace-compare-mobile-product">
+                      <Link
+                        to={productUrl(item)}
+                        className="svx-marketplace-compare-mobile-image"
+                        onClick={onClose}
+                        aria-label={`View ${item.title}`}
+                      >
+                        {item.image?.url ? (
+                          <img
+                            src={
+                              item.image.thumbnailUrl ||
+                              item.image.url
+                            }
+                            alt=""
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        ) : (
+                          <span>
+                            <Package
+                              size={28}
+                              strokeWidth={1.7}
+                              aria-hidden="true"
+                            />
+                            <small>Image unavailable</small>
+                          </span>
+                        )}
+                      </Link>
+
+                      <div className="svx-marketplace-compare-mobile-copy">
+                        <p>
+                          <Store
+                            size={14}
+                            strokeWidth={2}
+                            aria-hidden="true"
+                          />
+                          <span>{item.seller.name}</span>
+                        </p>
+
+                        <Link
+                          to={productUrl(item)}
+                          onClick={onClose}
+                        >
+                          {item.title}
+                        </Link>
+
+                        <strong>
+                          {formatMoney(
+                            item.price,
+                            item.currency,
+                          )}
+                        </strong>
+
+                        {item.onSale ? (
+                          <del>
+                            {formatMoney(
+                              item.regularPrice,
+                              item.currency,
+                            )}
+                          </del>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="svx-marketplace-compare-mobile-summary">
+                      <div
+                        className={
+                          isLowestPrice ? "is-best" : ""
+                        }
+                      >
+                        <span>Current price</span>
+
+                        <strong>
+                          {formatMoney(
+                            item.price,
+                            item.currency,
+                          )}
+                        </strong>
+
+                        {isLowestPrice ? (
+                          <small>Lowest price</small>
+                        ) : null}
+                      </div>
+
+                      <div
+                        className={
+                          isHighestStock ? "is-best" : ""
+                        }
+                      >
+                        <span>Available stock</span>
+
+                        <strong>
+                          {Math.max(
+                            0,
+                            Number(
+                              item.availableQuantity || 0,
+                            ),
+                          )}{" "}
+                          available
+                        </strong>
+
+                        {isHighestStock ? (
+                          <small>Highest stock</small>
+                        ) : null}
+                      </div>
+
+                      <div>
+                        <span>Pickup</span>
+
+                        <strong>
+                          {item.pickupEnabled
+                            ? "Available"
+                            : "Not available"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Delivery</span>
+
+                        <strong>
+                          {item.deliveryEnabled
+                            ? "Available"
+                            : "Not available"}
+                        </strong>
+                      </div>
+                    </div>
+
+                    {comparisonFields.length ? (
+                      <dl className="svx-marketplace-compare-mobile-details">
+                        {comparisonFields.map((field) => (
+                          <div key={field.key}>
+                            <dt>{field.label}</dt>
+
+                            <dd>
+                              {marketplaceFieldValue(
+                                item,
+                                field,
+                              )}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    ) : null}
+
+                    <div className="svx-marketplace-compare-mobile-actions">
+                      <Link
+                        to={productUrl(item)}
+                        onClick={onClose}
+                      >
+                        View product
+                        <ArrowRight
+                          size={17}
+                          strokeWidth={2}
+                        />
+                      </Link>
+
+                      <button
+                        type="button"
+                        disabled={unavailable}
+                        onClick={() => addToCart(item)}
+                      >
+                        <ShoppingCart
+                          size={17}
+                          strokeWidth={2}
+                        />
+                        {unavailable
+                          ? "Unavailable"
+                          : "Add to cart"}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
 
             <div className="svx-marketplace-compare-table-scroll">
               <div
@@ -1083,7 +1382,6 @@ export default function MarketplaceCustomerPanel({
           <CartPanel
             store={store}
             onClose={onClose}
-            onOpenMode={onModeChange}
             notify={notify}
           />
         )}

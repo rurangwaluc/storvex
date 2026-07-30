@@ -43,6 +43,7 @@ import {
 
 import "../../components/onboarding/Onboarding.css";
 import "./MarketplacePublic.css";
+import "./MarketplaceCustomerPanel.css";
 import "./MarketplaceCustomerAuth.css";
 
 function cleanString(value) {

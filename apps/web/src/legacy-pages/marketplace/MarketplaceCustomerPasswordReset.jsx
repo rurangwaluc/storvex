@@ -29,6 +29,7 @@ import {
 
 import "../../components/onboarding/Onboarding.css";
 import "./MarketplacePublic.css";
+import "./MarketplaceCustomerPanel.css";
 import "./MarketplaceCustomerAuth.css";
 import "./MarketplaceCustomerPasswordReset.css";
 
