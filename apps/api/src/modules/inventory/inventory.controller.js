@@ -8,6 +8,9 @@ const {
   serializeOwnerProductImage,
   serializeOwnerProductImages,
 } = require("./inventory.productImageAccess.service");
+const {
+  resolveMarketplaceCategoryPath,
+} = require("../marketplace/marketplace.catalogue");
 const PDFDocument = require("pdfkit");
 const ExcelJS = require("exceljs");
 
@@ -420,16 +423,59 @@ function normalizeListingInput(body = {}, product = null, businessCategory = nul
     ? new Date(rawSaleEndsAt)
     : null;
 
-  const category =
-    cleanString(body.listingCategory || body.marketplaceCategory || body.publicCategory || product?.marketplaceCategory) ||
+  const attributes =
+    normalizePlainObject(
+      body.listingAttributes ||
+        body.marketplaceAttributes ||
+        body.attributes,
+    ) ||
+    normalizePlainObject(
+      product?.marketplaceAttributes,
+    ) ||
+    {};
+
+  const categoryInput =
+    cleanString(
+      body.listingCategory ||
+        body.marketplaceCategory ||
+        body.publicCategory ||
+        product?.marketplaceCategory,
+    ) ||
     cleanString(product?.category) ||
     businessCategory ||
     null;
 
-  const attributes =
-    normalizePlainObject(body.listingAttributes || body.marketplaceAttributes || body.attributes) ||
-    normalizePlainObject(product?.marketplaceAttributes) ||
-    {};
+  const subcategoryInput =
+    cleanString(
+      body.listingSubcategory ||
+        body.marketplaceSubcategory ||
+        body.publicSubcategory ||
+        product?.marketplaceSubcategory,
+    ) ||
+    cleanString(attributes.subcategory) ||
+    cleanString(product?.subcategory) ||
+    null;
+
+  const leafCategoryInput =
+    cleanString(
+      body.listingLeafCategory ||
+        body.marketplaceLeafCategory ||
+        body.publicLeafCategory ||
+        body.subSubcategory ||
+        product?.marketplaceLeafCategory,
+    ) ||
+    cleanString(attributes.leafCategory) ||
+    cleanString(attributes.subSubcategory) ||
+    cleanString(product?.subcategoryOther) ||
+    null;
+
+  const categoryPath =
+    resolveMarketplaceCategoryPath({
+      category: categoryInput,
+      subcategory: subcategoryInput,
+      leafCategory: leafCategoryInput,
+      attributes,
+    });
 
   return {
     marketplaceTitle: title,
@@ -452,10 +498,41 @@ function normalizeListingInput(body = {}, product = null, businessCategory = nul
       !Number.isNaN(saleEndsAt.getTime())
         ? saleEndsAt
         : null,
-    marketplaceCategory: category,
+    marketplaceCategory:
+      categoryPath?.categorySlug ||
+      categoryInput,
+    marketplaceSubcategory:
+      categoryPath?.subcategorySlug ||
+      null,
+    marketplaceLeafCategory:
+      categoryPath?.leafCategorySlug ||
+      null,
+    marketplaceCategoryPath:
+      categoryPath,
     marketplaceAttributes: {
       ...attributes,
       businessCategory,
+      category:
+        categoryPath?.categoryLabel ||
+        categoryInput,
+      categorySlug:
+        categoryPath?.categorySlug ||
+        null,
+      subcategory:
+        categoryPath?.subcategoryLabel ||
+        subcategoryInput,
+      subcategorySlug:
+        categoryPath?.subcategorySlug ||
+        null,
+      leafCategory:
+        categoryPath?.leafCategoryLabel ||
+        leafCategoryInput,
+      leafCategorySlug:
+        categoryPath?.leafCategorySlug ||
+        null,
+      subSubcategory:
+        categoryPath?.leafCategoryLabel ||
+        leafCategoryInput,
     },
   };
 }
@@ -494,6 +571,10 @@ function listingValidationErrors({
 
   if (!listing.marketplaceCategory) {
     errors.push("Listing category is required");
+  } else if (!listing.marketplaceCategoryPath) {
+    errors.push(
+      "Choose a valid Storvex Marketplace category",
+    );
   }
 
   if (
@@ -561,6 +642,8 @@ function productSelect() {
     marketplaceSaleStartsAt: true,
     marketplaceSaleEndsAt: true,
     marketplaceCategory: true,
+    marketplaceSubcategory: true,
+    marketplaceLeafCategory: true,
     marketplaceAttributes: true,
     marketplaceSlug: true,
     marketplacePublishedAt: true,
@@ -618,7 +701,12 @@ function withListingAliases(product) {
       product.marketplaceSaleEndsAt ?? null,
     listingCategory:
       product.marketplaceCategory || null,
-    listingAttributes: product.marketplaceAttributes || null,
+    listingSubcategory:
+      product.marketplaceSubcategory || null,
+    listingLeafCategory:
+      product.marketplaceLeafCategory || null,
+    listingAttributes:
+      product.marketplaceAttributes || null,
     listingSlug: product.marketplaceSlug || null,
     listingPublishedAt: product.marketplacePublishedAt || null,
     listingUnpublishedAt: product.marketplaceUnpublishedAt || null,
@@ -3293,10 +3381,16 @@ async function updateProductListingDraft(req, res) {
       marketplaceSaleStartsAt: true,
       marketplaceSaleEndsAt: true,
       marketplaceCategory: true,
+      marketplaceSubcategory: true,
+      marketplaceLeafCategory: true,
       marketplaceAttributes: true,
     });
 
-    const listing = normalizeListingInput(req.body || {}, product, businessCategory);
+    const listing = normalizeListingInput(
+      req.body || {},
+      product,
+      businessCategory,
+    );
     const nextSlug = slugify(req.body?.listingSlug || req.body?.marketplaceSlug || req.body?.slug || listing.marketplaceTitle);
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -3317,9 +3411,17 @@ async function updateProductListingDraft(req, res) {
             listing.marketplaceSaleStartsAt,
           marketplaceSaleEndsAt:
             listing.marketplaceSaleEndsAt,
-          marketplaceCategory: listing.marketplaceCategory,
-          marketplaceAttributes: listing.marketplaceAttributes,
-          marketplaceSlug: nextSlug ? `${nextSlug}-${product.id.slice(0, 6)}` : null,
+          marketplaceCategory:
+            listing.marketplaceCategory,
+          marketplaceSubcategory:
+            listing.marketplaceSubcategory,
+          marketplaceLeafCategory:
+            listing.marketplaceLeafCategory,
+          marketplaceAttributes:
+            listing.marketplaceAttributes,
+          marketplaceSlug: nextSlug
+            ? `${nextSlug}-${product.id.slice(0, 6)}`
+            : null,
           marketplaceStatus:
             product.marketplaceStatus === "PUBLISHED"
               ? "PUBLISHED"
@@ -3385,6 +3487,8 @@ async function publishProductListing(req, res) {
       marketplaceSaleStartsAt: true,
       marketplaceSaleEndsAt: true,
       marketplaceCategory: true,
+      marketplaceSubcategory: true,
+      marketplaceLeafCategory: true,
       marketplaceAttributes: true,
     });
 
@@ -3435,8 +3539,14 @@ async function publishProductListing(req, res) {
             listing.marketplaceSaleStartsAt,
           marketplaceSaleEndsAt:
             listing.marketplaceSaleEndsAt,
-          marketplaceCategory: listing.marketplaceCategory,
-          marketplaceAttributes: listing.marketplaceAttributes,
+          marketplaceCategory:
+            listing.marketplaceCategory,
+          marketplaceSubcategory:
+            listing.marketplaceSubcategory,
+          marketplaceLeafCategory:
+            listing.marketplaceLeafCategory,
+          marketplaceAttributes:
+            listing.marketplaceAttributes,
           marketplaceSlug: nextSlug,
           marketplaceStatus: "PUBLISHED",
           marketplacePublishedAt: new Date(),

@@ -15,6 +15,7 @@ const {
   getPublicStore,
   getPublicProduct,
   listPublicProducts,
+  getPublicMarketplaceCatalogue,
 } = require("./marketplace.public.service");
 
 function sendError(res, error, fallback) {
@@ -90,7 +91,10 @@ async function getProduct(req, res) {
 
 async function listProducts(req, res) {
   try {
-    const result = await listPublicProducts(req.query || {});
+    const result = await listPublicProducts(
+      req.query || {},
+    );
+
     return res.json(result);
   } catch (error) {
     return sendError(
@@ -101,6 +105,19 @@ async function listProducts(req, res) {
   }
 }
 
+function getCatalogue(req, res) {
+  try {
+    return res.json(
+      getPublicMarketplaceCatalogue(),
+    );
+  } catch (error) {
+    return sendError(
+      res,
+      error,
+      "Failed to load Marketplace categories",
+    );
+  }
+}
 
 async function recordAnalyticsEvent(req, res) {
   try {
@@ -186,4 +203,5 @@ module.exports = {
   getStore,
   getProduct,
   listProducts,
+  getCatalogue,
 };

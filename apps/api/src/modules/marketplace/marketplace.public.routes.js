@@ -75,6 +75,10 @@ router.get(
   "/requests/:trackingToken",
   controller.trackRequest,
 );
+router.get(
+  "/catalogue",
+  controller.getCatalogue,
+);
 router.get("/stores", controller.listStores);
 router.get("/stores/:storeSlug", controller.getStore);
 router.get(

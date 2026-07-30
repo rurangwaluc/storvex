@@ -2,6 +2,13 @@ const prisma = require("../../config/database");
 const {
   signGetUrl,
 } = require("../../lib/storage/objectStorage");
+const {
+  findCatalogueRow,
+  marketplaceCategoryDescendantSlugs,
+  normalizeCatalogueToken,
+  publicMarketplaceCatalogue,
+  resolveMarketplaceCategoryPath,
+} = require("./marketplace.catalogue");
 
 const DEFAULT_PAGE_SIZE = 24;
 const MAX_PAGE_SIZE = 60;
@@ -576,6 +583,21 @@ function serializePublicProduct(product, seller) {
   const image = images[0] || null;
   const pricing = activeMarketplacePricing(product);
 
+  const categoryPath =
+    resolveMarketplaceCategoryPath({
+      category:
+        product.marketplaceCategory ||
+        product.category,
+      subcategory:
+        product.marketplaceSubcategory ||
+        product.subcategory,
+      leafCategory:
+        product.marketplaceLeafCategory ||
+        product.subcategoryOther,
+      attributes:
+        product.marketplaceAttributes,
+    });
+
   if (availableQuantity <= 0 || !image) return null;
 
   return {
@@ -596,9 +618,31 @@ function serializePublicProduct(product, seller) {
     saleEndsAt: pricing.saleEndsAt,
     currency: seller.tenant.currencyCode || "RWF",
     category:
+      categoryPath?.categoryLabel ||
       product.marketplaceCategory ||
       product.category ||
       null,
+    categorySlug:
+      categoryPath?.categorySlug ||
+      null,
+    subcategory:
+      categoryPath?.subcategoryLabel ||
+      product.marketplaceSubcategory ||
+      product.subcategory ||
+      null,
+    subcategorySlug:
+      categoryPath?.subcategorySlug ||
+      null,
+    leafCategory:
+      categoryPath?.leafCategoryLabel ||
+      product.marketplaceLeafCategory ||
+      product.subcategoryOther ||
+      null,
+    leafCategorySlug:
+      categoryPath?.leafCategorySlug ||
+      null,
+    categoryBreadcrumbs:
+      categoryPath?.breadcrumbs || [],
     attributes:
       product.marketplaceAttributes &&
       typeof product.marketplaceAttributes === "object"
@@ -647,6 +691,8 @@ const publicProductSelect = {
   marketplaceSaleStartsAt: true,
   marketplaceSaleEndsAt: true,
   marketplaceCategory: true,
+  marketplaceSubcategory: true,
+  marketplaceLeafCategory: true,
   marketplaceAttributes: true,
   marketplaceSlug: true,
   marketplacePublishedAt: true,
@@ -1244,6 +1290,12 @@ async function listPublicProducts(query = {}) {
     query.subcategory,
     120,
   );
+  const leafCategory = cleanString(
+    query.leafCategory ||
+      query.leaf ||
+      query.subSubcategory,
+    120,
+  );
   const category = isMainMarketplaceCategory(requestedCategory)
     ? ""
     : requestedCategory;
@@ -1332,6 +1384,7 @@ async function listPublicProducts(query = {}) {
         search: search || "",
         category: requestedCategory || "",
         subcategory: subcategory || "",
+        leafCategory: leafCategory || "",
         minPrice: minimumPrice,
         maxPrice: maximumPrice,
         onSale: onSaleOnly,
@@ -1404,45 +1457,93 @@ async function listPublicProducts(query = {}) {
   const normalizedSearch =
     String(search || "").toLowerCase();
 
-  const normalizeCatalogueToken = (value) =>
-    String(value || "")
-      .trim()
-      .toLowerCase()
-      .replace(/&/g, " and ")
-      .replace(/[^a-z0-9]+/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
+  const requestedCategoryRow =
+    findCatalogueRow(requestedCategory);
+
+  const requestedSubcategoryRow =
+    findCatalogueRow(subcategory);
+
+  const requestedLeafCategoryRow =
+    findCatalogueRow(leafCategory);
+
+  const requestedCategorySlugs =
+    requestedCategoryRow
+      ? marketplaceCategoryDescendantSlugs(
+          requestedCategoryRow.node.slug,
+        )
+      : [];
+
+  const requestedSubcategorySlugs =
+    requestedSubcategoryRow
+      ? marketplaceCategoryDescendantSlugs(
+          requestedSubcategoryRow.node.slug,
+        )
+      : [];
+
+  const requestedLeafCategorySlug =
+    requestedLeafCategoryRow?.node.slug ||
+    null;
 
   const normalizedSubcategory =
     normalizeCatalogueToken(subcategory);
 
+  const normalizedLeafCategory =
+    normalizeCatalogueToken(leafCategory);
+
   const filteredProducts =
     allVisibleProducts.filter((product) => {
-      if (
-        requestedCategory &&
-        !productMatchesMarketplaceCategory(
-          {
-            category: product.category,
-            marketplaceCategory:
-              product.category,
-            marketplaceAttributes:
-              product.attributes,
-          },
-          requestedCategory,
-        )
-      ) {
-        return false;
+      if (requestedCategory) {
+        const matchesCatalogueCategory =
+          requestedCategorySlugs.length > 0 &&
+          [
+            product.categorySlug,
+            product.subcategorySlug,
+            product.leafCategorySlug,
+          ]
+            .filter(Boolean)
+            .some((slug) =>
+              requestedCategorySlugs.includes(
+                slug,
+              ),
+            );
+
+        const matchesLegacyCategory =
+          productMatchesMarketplaceCategory(
+            {
+              category: product.category,
+              subcategory:
+                product.subcategory,
+              subcategoryOther:
+                product.leafCategory,
+              marketplaceCategory:
+                product.category,
+              marketplaceSubcategory:
+                product.subcategory,
+              marketplaceLeafCategory:
+                product.leafCategory,
+              marketplaceAttributes:
+                product.attributes,
+            },
+            requestedCategory,
+          );
+
+        if (
+          !matchesCatalogueCategory &&
+          !matchesLegacyCategory
+        ) {
+          return false;
+        }
       }
 
-      if (category) {
+      if (category && !requestedCategoryRow) {
         const productCategory =
-          String(
-            product.category || "",
-          ).toLowerCase();
+          normalizeCatalogueToken(
+            product.category,
+          );
 
         if (
           productCategory !==
-          String(category).toLowerCase()
+          normalizeCatalogueToken(category)
         ) {
           return false;
         }
@@ -1457,6 +1558,12 @@ async function listPublicProducts(query = {}) {
             : {};
 
         const subcategoryValues = [
+          product.subcategorySlug,
+          product.leafCategorySlug,
+          product.subcategory,
+          product.leafCategory,
+          attributes.subcategorySlug,
+          attributes.leafCategorySlug,
           attributes.subcategory,
           attributes.subSubcategory,
           attributes.productType,
@@ -1466,7 +1573,20 @@ async function listPublicProducts(query = {}) {
           .filter(Boolean)
           .map(normalizeCatalogueToken);
 
-        const matchesSubcategory =
+        const matchesCatalogueSubcategory =
+          requestedSubcategorySlugs.length > 0 &&
+          [
+            product.subcategorySlug,
+            product.leafCategorySlug,
+          ]
+            .filter(Boolean)
+            .some((slug) =>
+              requestedSubcategorySlugs.includes(
+                slug,
+              ),
+            );
+
+        const matchesTextSubcategory =
           subcategoryValues.some(
             (value) =>
               value === normalizedSubcategory ||
@@ -1478,7 +1598,50 @@ async function listPublicProducts(query = {}) {
               ),
           );
 
-        if (!matchesSubcategory) {
+        if (
+          !matchesCatalogueSubcategory &&
+          !matchesTextSubcategory
+        ) {
+          return false;
+        }
+      }
+
+      if (normalizedLeafCategory) {
+        const leafValues = [
+          product.leafCategorySlug,
+          product.leafCategory,
+          product.subcategorySlug,
+          product.subcategory,
+          product.attributes?.leafCategorySlug,
+          product.attributes?.leafCategory,
+          product.attributes?.subSubcategory,
+          product.attributes?.productType,
+          product.title,
+        ]
+          .filter(Boolean)
+          .map(normalizeCatalogueToken);
+
+        const matchesCatalogueLeaf =
+          requestedLeafCategorySlug &&
+          product.leafCategorySlug ===
+            requestedLeafCategorySlug;
+
+        const matchesTextLeaf =
+          leafValues.some(
+            (value) =>
+              value === normalizedLeafCategory ||
+              value.includes(
+                normalizedLeafCategory,
+              ) ||
+              normalizedLeafCategory.includes(
+                value,
+              ),
+          );
+
+        if (
+          !matchesCatalogueLeaf &&
+          !matchesTextLeaf
+        ) {
           return false;
         }
       }
@@ -1488,6 +1651,8 @@ async function listPublicProducts(query = {}) {
           product.title,
           product.description,
           product.category,
+          product.subcategory,
+          product.leafCategory,
           product.seller?.name,
         ]
           .filter(Boolean)
@@ -1621,12 +1786,20 @@ async function listPublicProducts(query = {}) {
       search: search || "",
       category: requestedCategory || "",
       subcategory: subcategory || "",
+      leafCategory: leafCategory || "",
       minPrice: minimumPrice,
       maxPrice: maximumPrice,
       onSale: onSaleOnly,
       fulfilment,
       sort,
     },
+  };
+}
+
+function getPublicMarketplaceCatalogue() {
+  return {
+    categories:
+      publicMarketplaceCatalogue(),
   };
 }
 
@@ -1641,6 +1814,7 @@ module.exports = {
   getPublicStore,
   getPublicProduct,
   listPublicProducts,
+  getPublicMarketplaceCatalogue,
 };
 
 module.exports.__private = {

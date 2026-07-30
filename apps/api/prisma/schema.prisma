@@ -826,6 +826,8 @@ model Product {
   marketplaceSaleStartsAt  DateTime?
   marketplaceSaleEndsAt    DateTime?
   marketplaceCategory      String?                  @db.Text
+  marketplaceSubcategory   String?                  @db.Text
+  marketplaceLeafCategory  String?                  @db.Text
   marketplaceAttributes    Json?
   marketplaceSlug          String?                  @db.Text
   marketplacePublishedAt   DateTime?
@@ -861,6 +863,8 @@ model Product {
   @@index([tenantId, supplierName])
   @@index([tenantId, marketplaceStatus])
   @@index([tenantId, marketplaceCategory])
+  @@index([tenantId, marketplaceSubcategory])
+  @@index([tenantId, marketplaceLeafCategory])
 }
 
 model ProductImage {

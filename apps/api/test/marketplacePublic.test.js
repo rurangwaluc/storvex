@@ -531,3 +531,74 @@ test(
     );
   },
 );
+
+test(
+  "serializes a stable Marketplace category hierarchy",
+  () => {
+    const product = serializePublicProduct(
+      {
+        name: "HP Laptop",
+        sellPrice: 700000,
+        marketplaceSlug: "hp-laptop",
+        marketplaceTitle: "HP Laptop",
+        marketplacePrice: 650000,
+        marketplaceCategory: "electronics",
+        marketplaceSubcategory: "computers",
+        marketplaceLeafCategory: "laptops",
+        marketplaceAttributes: {},
+        branchInventory: [
+          {
+            qtyOnHand: 3,
+            qtyReserved: 1,
+          },
+        ],
+        images: [
+          {
+            url: "hp-laptop.webp",
+            imageType: "CLEANED",
+            isMarketplaceApproved: true,
+            isPrimary: true,
+            sortOrder: 0,
+          },
+        ],
+      },
+      {
+        publicSlug: "computer-store",
+        displayName: "Computer Store",
+        pickupEnabled: true,
+        deliveryEnabled: false,
+        temporarilyClosed: false,
+        tenant: {
+          name: "Computer Store",
+          currencyCode: "RWF",
+        },
+      },
+    );
+
+    assert.equal(
+      product.categorySlug,
+      "electronics",
+    );
+
+    assert.equal(
+      product.subcategorySlug,
+      "computers",
+    );
+
+    assert.equal(
+      product.leafCategorySlug,
+      "laptops",
+    );
+
+    assert.deepEqual(
+      product.categoryBreadcrumbs.map(
+        (item) => item.slug,
+      ),
+      [
+        "electronics",
+        "computers",
+        "laptops",
+      ],
+    );
+  },
+);
