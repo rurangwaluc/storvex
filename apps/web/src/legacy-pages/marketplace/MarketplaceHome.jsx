@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Cpu,
   Drill,
+  Eye,
   GitCompareArrows,
   Heart,
   Home,
@@ -20,6 +21,7 @@ import {
   Settings2,
   ShoppingBag,
   ShoppingCart,
+  Star,
   Store,
   Sun,
   UserRound,
@@ -63,6 +65,8 @@ import "../public/LandingPage.css";
 import "./MarketplacePublic.css";
 import "./MarketplaceCustomerPanel.css";
 import "./MarketplaceHomePremium.css";
+import "./MarketplaceProductCard.css";
+import "./MarketplaceHomeFinish.css";
 
 const logoSrc = "/storvex_dark.webp";
 const whiteLogoSrc = "/storvex_white.webp";
@@ -72,6 +76,7 @@ const marketplaceCategories = [
   {
     name: "Electronics",
     shortName: "Electronics",
+    slug: "electronics",
     description: "Phones, laptops and accessories",
     image: "/marketplace/categories/electronics.webp",
     icon: Cpu,
@@ -79,6 +84,7 @@ const marketplaceCategories = [
   {
     name: "Hardware / Quincaillerie",
     shortName: "Hardware",
+    slug: "hardware",
     description: "Tools, materials and fittings",
     image: "/marketplace/categories/hardware.webp",
     icon: Drill,
@@ -86,6 +92,7 @@ const marketplaceCategories = [
   {
     name: "Home & kitchen materials",
     shortName: "Home & kitchen",
+    slug: "home-and-kitchen",
     description: "Cookware and home materials",
     image: "/marketplace/categories/home-kitchen.webp",
     icon: Home,
@@ -93,6 +100,7 @@ const marketplaceCategories = [
   {
     name: "Lighting",
     shortName: "Lighting",
+    slug: "lighting",
     description: "Bulbs, ceiling and outdoor lights",
     image: "/marketplace/categories/lighting.webp",
     icon: LampCeiling,
@@ -100,6 +108,7 @@ const marketplaceCategories = [
   {
     name: "Spare parts",
     shortName: "Spare parts",
+    slug: "spare-parts",
     description: "Batteries and replacement parts",
     image: "/marketplace/categories/spare-parts.webp",
     icon: Wrench,
@@ -203,6 +212,7 @@ export function ProductCard({ product }) {
 
   const [activeImageIndex, setActiveImageIndex] =
     useState(0);
+
   const [compareMessage, setCompareMessage] =
     useState("");
 
@@ -211,23 +221,50 @@ export function ProductCard({ product }) {
   )}/${encodeURIComponent(product.slug)}`;
 
   const inCart = customerStore.isInCart(key);
+
   const inWishlist =
     customerStore.isInWishlist(key);
+
   const inCompare =
     customerStore.isInCompare(key);
 
-  const primaryImage = images[0] || product.image;
-  const secondaryImage = images[1] || null;
+  const primaryImage =
+    images[0] || product.image;
+
   const activeImage =
     images[activeImageIndex] || primaryImage;
+
+  const activeImageSrc =
+    marketplaceImageSource(activeImage) ||
+    marketplaceImageSource(primaryImage);
 
   const discountPercent =
     marketplaceDiscountPercent(product);
 
-  const descriptionPreview =
-    marketplaceCardDescription(
-      product.description,
-    );
+  const ratingValue = Math.max(
+    0,
+    Math.min(
+      5,
+      Number(
+        product.averageRating ||
+          product.rating?.average ||
+          0,
+      ),
+    ),
+  );
+
+  const reviewCount = Math.max(
+    0,
+    Number(
+      product.reviewCount ||
+        product.rating?.count ||
+        0,
+    ),
+  );
+
+  const hasRatings =
+    ratingValue > 0 &&
+    reviewCount > 0;
 
   const saleSaving = product.onSale
     ? Math.max(
@@ -252,6 +289,12 @@ export function ProductCard({ product }) {
     });
   }
 
+  function viewProduct(event) {
+    event?.stopPropagation();
+    trackProductCardOpen();
+    navigate(productUrl);
+  }
+
   function openProductCard(event) {
     if (
       event.target.closest(
@@ -261,8 +304,7 @@ export function ProductCard({ product }) {
       return;
     }
 
-    trackProductCardOpen();
-    navigate(productUrl);
+    viewProduct();
   }
 
   function handleProductCardKeyDown(event) {
@@ -274,16 +316,19 @@ export function ProductCard({ product }) {
     }
 
     event.preventDefault();
-    trackProductCardOpen();
-    navigate(productUrl);
+    viewProduct();
   }
 
-  function toggleCart() {
+  function toggleCart(event) {
+    event?.stopPropagation();
+
     if (inCart) {
       customerStore.removeFromCart(key);
+
       toast.success(
         `${product.title} removed from cart`,
       );
+
       return;
     }
 
@@ -296,6 +341,7 @@ export function ProductCard({ product }) {
           ? "This store is temporarily closed."
           : "This product is not available.",
       );
+
       return;
     }
 
@@ -311,7 +357,9 @@ export function ProductCard({ product }) {
     );
   }
 
-  function toggleWishlist() {
+  function toggleWishlist(event) {
+    event?.stopPropagation();
+
     const active =
       customerStore.toggleWishlist(product);
 
@@ -331,7 +379,9 @@ export function ProductCard({ product }) {
     );
   }
 
-  function toggleCompare() {
+  function toggleCompare(event) {
+    event?.stopPropagation();
+
     const result =
       customerStore.toggleCompare(product);
 
@@ -339,6 +389,7 @@ export function ProductCard({ product }) {
       setCompareMessage(
         "You can compare up to 4 products.",
       );
+
       toast.error(
         "You can compare up to 4 products.",
       );
@@ -346,6 +397,7 @@ export function ProductCard({ product }) {
       setCompareMessage(
         "Compare products from the same category.",
       );
+
       toast.error(
         "Choose products from the same category.",
       );
@@ -379,6 +431,7 @@ export function ProductCard({ product }) {
     <article
       className={cx(
         "svx-commerce-product-card",
+        "svx-marketplace-product-card",
         product.onSale && "is-on-sale",
       )}
       role="link"
@@ -387,63 +440,55 @@ export function ProductCard({ product }) {
       onClick={openProductCard}
       onKeyDown={handleProductCardKeyDown}
     >
-      <div className="svx-commerce-product-media">
+      <div className="svx-marketplace-product-card__visual">
         <Link
           to={productUrl}
-          className="svx-commerce-product-image"
+          className="svx-marketplace-product-card__image"
           aria-label={`View ${product.title}`}
           onClick={trackProductCardOpen}
         >
-          {primaryImage ? (
-            <>
-              <img
-                className="svx-commerce-product-image-primary"
-                src={
-                  activeImage?.url ||
-                  primaryImage.url
-                }
-                alt={
-                  activeImage?.altText ||
-                  primaryImage.altText ||
-                  product.title
-                }
-                loading="lazy"
-              />
-
-              {secondaryImage ? (
-                <img
-                  className="svx-commerce-product-image-secondary"
-                  src={secondaryImage.url}
-                  alt=""
-                  aria-hidden="true"
-                  loading="lazy"
-                />
-              ) : null}
-            </>
-          ) : null}
-
-          <div className="svx-commerce-product-badges">
-            {product.onSale ? (
-              <span className="is-sale">
-                Sale {discountPercent}% off
-              </span>
-            ) : null}
-
-            {product.seller?.temporarilyClosed ? (
-              <span className="is-closed">
-                Store closed
-              </span>
-            ) : product.availableQuantity <= 3 ? (
-              <span>Few remaining</span>
-            ) : (
-              <span className="is-available">
-                Available
-              </span>
-            )}
-          </div>
+          {activeImageSrc ? (
+            <img
+              src={activeImageSrc}
+              alt={
+                activeImage?.altText ||
+                primaryImage?.altText ||
+                product.title
+              }
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <ShoppingBag
+              size={44}
+              aria-hidden="true"
+            />
+          )}
         </Link>
 
-        <div className="svx-commerce-product-quick-actions">
+        <div className="svx-marketplace-product-card__badges">
+          {product.onSale ? (
+            <span className="is-sale">
+              Sale {discountPercent}% off
+            </span>
+          ) : null}
+
+          {product.seller?.temporarilyClosed ? (
+            <span className="is-closed">
+              Store closed
+            </span>
+          ) : product.availableQuantity <= 3 ? (
+            <span className="is-low-stock">
+              Few remaining
+            </span>
+          ) : (
+            <span className="is-available">
+              In stock
+            </span>
+          )}
+        </div>
+
+        <div className="svx-marketplace-product-card__visual-actions">
           <button
             type="button"
             className={cx(
@@ -463,7 +508,7 @@ export function ProductCard({ product }) {
             }
           >
             <Heart
-              size={17}
+              size={21}
               fill={
                 inWishlist
                   ? "currentColor"
@@ -490,122 +535,155 @@ export function ProductCard({ product }) {
                 : "Compare product"
             }
           >
-            <GitCompareArrows size={17} />
+            <GitCompareArrows size={20} />
           </button>
+
         </div>
 
         {images.length > 1 ? (
           <div
-            className="svx-commerce-product-image-switcher"
+            className="svx-marketplace-product-card__image-switcher"
             aria-label="Choose product image"
           >
-            {images.slice(0, 4).map((image, index) => (
-              <button
-                type="button"
-                key={`${image.url}-${index}`}
-                className={
-                  activeImageIndex === index
-                    ? "is-active"
-                    : ""
-                }
-                onClick={() =>
-                  setActiveImageIndex(index)
-                }
-                aria-label={`Show product image ${
-                  index + 1
-                }`}
-                aria-pressed={
-                  activeImageIndex === index
-                }
-              />
-            ))}
+            {images.slice(0, 4).map(
+              (image, index) => (
+                <button
+                  type="button"
+                  key={`${marketplaceImageSource(
+                    image,
+                  )}-${index}`}
+                  className={
+                    activeImageIndex === index
+                      ? "is-active"
+                      : ""
+                  }
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setActiveImageIndex(index);
+                  }}
+                  aria-label={`Show product image ${
+                    index + 1
+                  }`}
+                  aria-pressed={
+                    activeImageIndex === index
+                  }
+                />
+              ),
+            )}
           </div>
         ) : null}
       </div>
 
-      <div className="svx-commerce-product-content">
-        <div className="svx-commerce-product-main-link">
-          <p>
-            <Store size={13} />
-            <span>{product.seller?.name}</span>
-          </p>
-
-          <h3>{product.title}</h3>
+      <div className="svx-marketplace-product-card__content">
+        <div className="svx-marketplace-product-card__seller">
+          <span className="svx-marketplace-product-card__seller-name">
+            {product.seller?.name}
+          </span>
         </div>
 
-        {descriptionPreview ? (
-          <p className="svx-commerce-product-description">
-            {descriptionPreview}
-          </p>
-        ) : null}
+        <h3>{product.title}</h3>
 
         <div
-          className={cx(
-            "svx-commerce-product-price",
-            product.onSale && "is-sale",
-          )}
+          className="svx-marketplace-product-card__rating"
+          aria-label={
+            hasRatings
+              ? `${ratingValue.toFixed(1)} out of 5 from ${reviewCount} reviews`
+              : "No product reviews yet"
+          }
         >
-          <div className="svx-commerce-product-price-copy">
+          <span
+            className="svx-marketplace-product-card__stars"
+            aria-hidden="true"
+          >
+            {Array.from({ length: 5 }).map(
+              (_, index) => (
+                <Star
+                  key={index}
+                  size={16}
+                  strokeWidth={2}
+                  fill={
+                    hasRatings &&
+                    index < Math.round(ratingValue)
+                      ? "currentColor"
+                      : "none"
+                  }
+                />
+              ),
+            )}
+          </span>
+
+          <span>
+            {hasRatings
+              ? `${ratingValue.toFixed(1)} (${reviewCount})`
+              : "No reviews yet"}
+          </span>
+        </div>
+
+        <div className="svx-marketplace-product-card__pricing">
+          <div className="svx-marketplace-product-card__price-line">
+            <strong>
+              {formatMoney(
+                product.price,
+                product.currency,
+              )}
+            </strong>
+
             {product.onSale ? (
-              <span className="svx-commerce-product-sale-label">
-                Sale price
-              </span>
-            ) : null}
-
-            <div className="svx-commerce-product-price-values">
-              <strong>
+              <del>
                 {formatMoney(
-                  product.price,
+                  product.regularPrice,
                   product.currency,
                 )}
-              </strong>
-
-              {product.onSale ? (
-                <del>
-                  {formatMoney(
-                    product.regularPrice,
-                    product.currency,
-                  )}
-                </del>
-              ) : null}
-            </div>
-
-            {product.onSale && saleSaving > 0 ? (
-              <small className="svx-commerce-product-saving">
-                Save{" "}
-                {formatMoney(
-                  saleSaving,
-                  product.currency,
-                )}
-              </small>
+              </del>
             ) : null}
           </div>
 
-
+          {product.onSale && saleSaving > 0 ? (
+            <small>
+              Save{" "}
+              {formatMoney(
+                saleSaving,
+                product.currency,
+              )}{" "}
+              ({discountPercent}%)
+            </small>
+          ) : null}
         </div>
 
-        <button
-          type="button"
-          className={cx(
-            "svx-commerce-product-cart-button",
-            inCart && "is-active",
-          )}
-          onClick={toggleCart}
-          aria-pressed={inCart}
-        >
-          {inCart ? (
-            <Check size={16} />
-          ) : (
-            <ShoppingCart size={16} />
-          )}
+        <div className="svx-marketplace-product-card__purchase-actions">
+          <button
+            type="button"
+            className={cx(
+              "svx-marketplace-product-card__cart",
+              inCart && "is-active",
+            )}
+            onClick={toggleCart}
+            aria-pressed={inCart}
+          >
+            {inCart ? (
+              <Check size={22} />
+            ) : (
+              <ShoppingCart size={22} />
+            )}
 
-          <span>
-            {inCart ? "In cart" : "Add to cart"}
-          </span>
-        </button>
+            <span>
+              {inCart ? "In cart" : "Add to cart"}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className="svx-marketplace-product-card__open"
+            onClick={viewProduct}
+            aria-label={`View ${product.title}`}
+            title="View product"
+          >
+            <Eye size={23} />
+          </button>
+        </div>
 
         <span
-          className="svx-commerce-product-action-message"
+          className="svx-marketplace-product-card__message"
           role="status"
           aria-live="polite"
         >
@@ -709,7 +787,12 @@ export function MarketplaceFooter({
 
   return (
     <section className="svx-footer-section">
-      <div className="svx-footer-shell">
+      <div
+        className={cx(
+          "svx-footer-shell",
+          !showCta && "is-compact",
+        )}
+      >
         {showCta ? (
           <div className="svx-footer-cta">
             <div className="svx-footer-cta-copy">
@@ -1187,7 +1270,7 @@ export default function MarketplaceHome() {
   }
 
   return (
-    <div className="storvex-landing storvex-marketplace">
+    <div className="storvex-landing storvex-marketplace svx-marketplace-home">
       <MarketplaceHeader />
 
       <main>
@@ -1350,16 +1433,11 @@ export default function MarketplaceHome() {
 
             <div className="svx-category-showcase__grid">
               {marketplaceCategories.map((item) => (
-                <button
-                  type="button"
-                  key={item.name}
-                  className={cx(
-                    "svx-category-showcase__card",
-                    category === item.name &&
-                      "is-selected",
-                  )}
-                  aria-pressed={category === item.name}
-                  onClick={() => chooseCategory(item.name)}
+                <Link
+                  key={item.slug}
+                  to={`/marketplace/category/${item.slug}`}
+                  className="svx-category-showcase__card"
+                  aria-label={`Browse ${item.shortName}`}
                 >
                   <span className="svx-category-showcase__media">
                     <img
@@ -1387,7 +1465,7 @@ export default function MarketplaceHome() {
                       />
                     </span>
                   </span>
-                </button>
+                </Link>
               ))}
             </div>
           </section>

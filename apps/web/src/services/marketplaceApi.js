@@ -19,6 +19,10 @@ export function listMarketplaceProducts(params = {}) {
   return apiFetch(`/marketplace/products${buildQuery(params)}`);
 }
 
+export function getMarketplaceCatalogue() {
+  return apiFetch("/marketplace/catalogue");
+}
+
 export function listMarketplaceStores(params = {}) {
   return apiFetch(`/marketplace/stores${buildQuery(params)}`);
 }

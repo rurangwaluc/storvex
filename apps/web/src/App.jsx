@@ -9,6 +9,7 @@ import LandingPage from "./legacy-pages/public/LandingPage";
 import PricingPage from "./legacy-pages/public/PricingPage";
 import MarketplaceHome from "./legacy-pages/marketplace/MarketplaceHome";
 import MarketplaceShop from "./legacy-pages/marketplace/MarketplaceShop";
+import MarketplaceCategory from "./legacy-pages/marketplace/MarketplaceCategory";
 import MarketplaceStores from "./legacy-pages/marketplace/MarketplaceStores";
 import MarketplaceStorePage from "./legacy-pages/marketplace/MarketplaceStorePage";
 import MarketplaceProductDetails from "./legacy-pages/marketplace/MarketplaceProductDetails";
@@ -136,6 +137,10 @@ export default function App() {
         <Route
           path="/marketplace/shop"
           element={<MarketplaceShop />}
+        />
+        <Route
+          path="/marketplace/category/:categorySlug"
+          element={<MarketplaceCategory />}
         />
         <Route
           path="/marketplace/stores"

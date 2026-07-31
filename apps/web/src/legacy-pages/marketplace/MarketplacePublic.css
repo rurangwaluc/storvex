@@ -12990,3 +12990,13 @@ body:has(.storvex-marketplace) #root {
 }
 
 /* STORVEX BUSINESS LOGO DISPLAY STANDARD END */
+
+/* Marketplace footer without CTA */
+
+.svx-footer-shell.is-compact {
+  padding-top: 0 !important;
+}
+
+.svx-footer-shell.is-compact .svx-footer-main {
+  margin-top: 0 !important;
+}
