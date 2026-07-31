@@ -577,8 +577,51 @@
 }
 
 /* ---------------------------------------------------------
-   MOBILE / PWA GUTTERS
+   PREMIUM FEATURED STORES RESPONSIVE AUTHORITY
    --------------------------------------------------------- */
+
+/*
+ * Tablet portrait:
+ * two genuinely readable cards, never three compressed cards.
+ */
+
+@media (min-width: 621px) and (max-width: 820px) {
+  .svx-marketplace-home
+    .svx-commerce-store-grid,
+  .svx-marketplace-home
+    .svx-commerce-store-grid:has(
+      > :only-child
+    ) {
+    width: 100% !important;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+    justify-content: stretch !important;
+    gap: 12px !important;
+  }
+
+  .svx-marketplace-home
+    .svx-commerce-store-grid:has(
+      > :only-child
+    ) {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .svx-marketplace-home
+    .svx-commerce-store-grid
+    .svx-commerce-store-card {
+    grid-template-columns:
+      56px minmax(0, 1fr) 20px !important;
+    gap: 12px !important;
+    min-height: 96px;
+    padding: 14px !important;
+  }
+}
+
+/*
+ * Mobile and installed PWA:
+ * one full-width card with a deliberate information hierarchy.
+ */
 
 @media (max-width: 620px) {
   .svx-marketplace-home
@@ -597,48 +640,120 @@
     grid-template-columns:
       minmax(0, 1fr) auto;
     align-items: center;
-    gap: 10px;
-    margin-bottom: 13px !important;
+    gap: 12px;
+    margin-bottom: 14px !important;
+  }
+
+  .svx-marketplace-home
+    .svx-commerce-section-heading
+    > div {
+    min-width: 0;
   }
 
   .svx-marketplace-home
     .svx-commerce-section-heading
     > a {
     width: auto;
-    max-width: 132px;
+    max-width: none;
+    flex: 0 0 auto;
     white-space: nowrap;
   }
+
+  /*
+   * Featured stores always use one complete row.
+   */
+
+  .svx-marketplace-home
+    .svx-commerce-store-grid,
+  .svx-marketplace-home
+    .svx-commerce-store-grid:has(
+      > :only-child
+    ),
+  .svx-marketplace-home
+    .svx-commerce-store-grid:has(
+      > :nth-child(2):last-child
+    ),
+  .svx-marketplace-home
+    .svx-commerce-store-grid:has(
+      > :nth-child(3):last-child
+    ) {
+    display: grid;
+    width: 100% !important;
+    min-width: 0;
+    max-width: 100% !important;
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+    justify-content: stretch !important;
+    gap: 10px !important;
+  }
+
+  /*
+   * Card anatomy:
+   * logo | information | arrow
+   */
 
   .svx-marketplace-home
     .svx-commerce-store-grid
     .svx-commerce-store-card {
-    min-height: 88px;
+    box-sizing: border-box;
+    display: grid;
+    width: 100% !important;
+    min-width: 0;
+    max-width: none !important;
+    min-height: 102px;
     grid-template-columns:
-      54px minmax(0, 1fr) 18px;
-    gap: 11px;
-    padding: 12px;
+      58px minmax(0, 1fr) 22px !important;
+    align-items: center;
+    gap: 14px !important;
+    padding: 15px !important;
   }
 
   .svx-marketplace-home
     .svx-commerce-store-grid
     .svx-commerce-store-logo {
-    width: 54px;
-    height: 54px;
-    min-width: 54px;
+    box-sizing: border-box;
+    width: 58px !important;
+    height: 58px !important;
+    min-width: 58px;
+    flex: 0 0 58px;
+    padding: 7px;
+  }
+
+  .svx-marketplace-home
+    .svx-commerce-store-grid
+    .svx-commerce-store-logo
+    img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .svx-marketplace-home
+    .svx-commerce-store-grid
+    .svx-commerce-store-details {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
   }
 
   /*
-   * Put open status below the store name on compact cards.
-   * This prevents the name and status from squeezing each other.
+   * Status gets its own row above the business name.
+   * This removes the competition between status and name.
    */
 
   .svx-marketplace-home
     .svx-commerce-store-grid
     .svx-commerce-store-details
     > div:first-child {
-    grid-template-columns:
-      minmax(0, 1fr);
-    gap: 3px;
+    display: flex !important;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    gap: 4px !important;
   }
 
   .svx-marketplace-home
@@ -646,50 +761,104 @@
     .svx-commerce-store-details
     > div:first-child
     > span {
-    justify-self: start;
+    order: -1;
+    display: block;
+    max-width: 100%;
+    flex: none;
+    overflow: hidden;
+    font-size: 8px;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
   }
-}
 
-/*
- * From 520px upward, multiple real stores may form
- * readable columns. One store remains full width.
- */
+  /*
+   * Business name never splits across multiple lines.
+   * Exceptionally long names are truncated professionally.
+   */
 
-@media (min-width: 520px) and (max-width: 620px) {
   .svx-marketplace-home
-    .svx-commerce-store-grid:not(
-      :has(> :only-child)
-    ) {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr)) !important;
+    .svx-commerce-store-grid
+    .svx-commerce-store-details
+    h3 {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    overflow: hidden !important;
+    font-size: 14px;
+    font-weight: 850;
+    line-height: 1.3;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+  }
+
+  /*
+   * Supporting information also stays clean and single-line.
+   */
+
+  .svx-marketplace-home
+    .svx-commerce-store-grid
+    .svx-commerce-store-details
+    p,
+  .svx-marketplace-home
+    .svx-commerce-store-grid
+    .svx-commerce-store-location,
+  .svx-marketplace-home
+    .svx-commerce-store-grid
+    .svx-commerce-store-services {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    overflow: hidden;
+    font-size: 9px;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
   }
 
   .svx-marketplace-home
-    .svx-commerce-store-grid:has(
-      > :only-child
-    ) {
-    grid-template-columns:
-      minmax(0, 1fr) !important;
-  }
-}
-
-/*
- * Below 520px, Featured stores use one clear column.
- */
-
-@media (max-width: 519px) {
+    .svx-commerce-store-grid
+    .svx-commerce-store-location
+    span,
   .svx-marketplace-home
-    .svx-commerce-store-grid {
-    grid-template-columns:
-      minmax(0, 1fr) !important;
+    .svx-commerce-store-grid
+    .svx-commerce-store-services
+    span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
   }
-}
 
-/*
- * Product cards retain two columns above 440px.
- */
+  .svx-marketplace-home
+    .svx-commerce-store-grid
+    .svx-commerce-store-card
+    > svg {
+    width: 18px;
+    height: 18px;
+    justify-self: end;
+    flex: 0 0 18px;
+  }
 
-@media (min-width: 441px) and (max-width: 620px) {
+  /*
+   * New arrivals remain two columns above 440px.
+   */
+
   .svx-marketplace-home
     #marketplace-products
     .svx-commerce-product-grid,
@@ -710,12 +879,50 @@
     ) {
     grid-template-columns:
       repeat(2, minmax(0, 1fr)) !important;
+    justify-content: stretch !important;
     gap: 10px;
   }
 }
 
 /*
- * At 440px and below, use one full ProductCard column.
+ * Very small phones receive slightly tighter card anatomy
+ * while preserving one-line content.
+ */
+
+@media (max-width: 390px) {
+  .svx-marketplace-home
+    .svx-commerce-page-shell {
+    width: calc(100% - 20px) !important;
+  }
+
+  .svx-marketplace-home
+    .svx-commerce-store-grid
+    .svx-commerce-store-card {
+    min-height: 96px;
+    grid-template-columns:
+      52px minmax(0, 1fr) 18px !important;
+    gap: 11px !important;
+    padding: 12px !important;
+  }
+
+  .svx-marketplace-home
+    .svx-commerce-store-grid
+    .svx-commerce-store-logo {
+    width: 52px !important;
+    height: 52px !important;
+    min-width: 52px;
+  }
+
+  .svx-marketplace-home
+    .svx-commerce-store-grid
+    .svx-commerce-store-details
+    h3 {
+    font-size: 13px;
+  }
+}
+
+/*
+ * 440px and below use one full ProductCard column.
  */
 
 @media (max-width: 440px) {
