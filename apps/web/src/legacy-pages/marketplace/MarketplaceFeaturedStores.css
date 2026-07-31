@@ -868,3 +868,10 @@
     text-align: left;
   }
 }
+
+/* Keep the mobile featured store short. */
+@media (max-width: 520px) {
+  .svx-featured-store__product:nth-child(n + 3) {
+    display: none;
+  }
+}
