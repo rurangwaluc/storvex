@@ -1969,3 +1969,56 @@
     max-height: 42px;
   }
 }
+
+/* MARKETPLACE DESKTOP CATEGORY LAYER FIX */
+
+/*
+ * The primary and secondary header rows create separate stacking
+ * contexts because they use entrance transforms. Keep the primary
+ * row above the secondary row so the category menu remains visible.
+ */
+@media (min-width: 1081px) {
+  .smh {
+    overflow: visible;
+  }
+
+  .smh__primary {
+    position: relative;
+    z-index: 30;
+    overflow: visible;
+  }
+
+  .smh__primary-inner {
+    position: relative;
+    overflow: visible;
+  }
+
+  .smh__secondary {
+    position: relative;
+    z-index: 10;
+  }
+
+  .smh__categories {
+    position: relative;
+    z-index: 40;
+  }
+
+  .smh__categories-trigger {
+    position: relative;
+    z-index: 2;
+  }
+
+  .smh__categories-menu {
+    z-index: 50;
+    max-height: min(520px, calc(100vh - 110px));
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .smh__categories-menu.is-open {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+}

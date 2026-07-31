@@ -402,3 +402,22 @@
     animation: none;
   }
 }
+
+/* MARKETPLACE MOBILE SEARCH PANEL WIDTH */
+
+@media (max-width: 820px) {
+  .smh-searchbox-panel {
+    right: auto;
+    left: 50%;
+    width: 92%;
+    max-width: 92%;
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 380px) {
+  .smh-searchbox-panel {
+    width: 90%;
+    max-width: 90%;
+  }
+}
