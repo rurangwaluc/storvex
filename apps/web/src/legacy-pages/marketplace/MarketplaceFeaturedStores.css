@@ -486,7 +486,60 @@
   }
 }
 
+/* Smooth featured-store carousel movement */
+
+.svx-featured-store__slide-panel {
+  animation-duration: 420ms;
+  animation-timing-function:
+    cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: both;
+  will-change: transform, opacity;
+}
+
+.svx-featured-store__slide-panel.is-next {
+  animation-name:
+    svx-featured-store-slide-next;
+}
+
+.svx-featured-store__slide-panel.is-previous {
+  animation-name:
+    svx-featured-store-slide-previous;
+}
+
+.svx-featured-store__products-area {
+  animation-delay: 35ms;
+}
+
+.svx-featured-store__info {
+  animation-delay: 70ms;
+}
+
+@keyframes svx-featured-store-slide-next {
+  from {
+    opacity: 0;
+    transform: translateX(22px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes svx-featured-store-slide-previous {
+  from {
+    opacity: 0;
+    transform: translateX(-22px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .svx-featured-store__slide-panel,
   .svx-featured-store__progress span,
   .svx-featured-store__skeleton-brand i,
   .svx-featured-store__skeleton-brand b,
@@ -495,6 +548,7 @@
   .svx-featured-store__skeleton-products i,
   .svx-featured-store__skeleton-info i {
     animation: none;
+    transition: none;
   }
 }
 

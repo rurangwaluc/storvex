@@ -153,6 +153,11 @@ export default function MarketplaceFeaturedStores() {
     setReducedMotion,
   ] = useState(false);
 
+  const [
+    slideDirection,
+    setSlideDirection,
+  ] = useState("next");
+
   const loadFeaturedStores =
     useCallback(async () => {
       setLoading(true);
@@ -251,8 +256,10 @@ export default function MarketplaceFeaturedStores() {
     slides.length > 1;
 
   const moveTo = useCallback(
-    (index) => {
+    (index, direction = "next") => {
       if (!slides.length) return;
+
+      setSlideDirection(direction);
 
       setActiveIndex(
         (index + slides.length) %
@@ -264,7 +271,10 @@ export default function MarketplaceFeaturedStores() {
 
   const showPrevious =
     useCallback(() => {
-      moveTo(activeIndex - 1);
+      moveTo(
+        activeIndex - 1,
+        "previous",
+      );
     }, [
       activeIndex,
       moveTo,
@@ -272,7 +282,10 @@ export default function MarketplaceFeaturedStores() {
 
   const showNext =
     useCallback(() => {
-      moveTo(activeIndex + 1);
+      moveTo(
+        activeIndex + 1,
+        "next",
+      );
     }, [
       activeIndex,
       moveTo,
@@ -396,7 +409,14 @@ export default function MarketplaceFeaturedStores() {
         aria-label={`Visit ${store.name}`}
       />
 
-      <div className="svx-featured-store__identity">
+      <div
+        key={`identity-${store.slug}-${activeIndex}`}
+        className={cx(
+          "svx-featured-store__identity",
+          "svx-featured-store__slide-panel",
+          `is-${slideDirection}`,
+        )}
+      >
         <span className="svx-featured-store__label">
           Featured store
         </span>
@@ -448,7 +468,14 @@ export default function MarketplaceFeaturedStores() {
         </div>
       </div>
 
-      <div className="svx-featured-store__products-area">
+      <div
+        key={`products-${store.slug}-${activeIndex}`}
+        className={cx(
+          "svx-featured-store__products-area",
+          "svx-featured-store__slide-panel",
+          `is-${slideDirection}`,
+        )}
+      >
         <span className="svx-featured-store__products-title">
           Latest products
         </span>
@@ -477,6 +504,12 @@ export default function MarketplaceFeaturedStores() {
                   onClick={(event) => {
                     event.stopPropagation();
                   }}
+                  onTouchStart={(event) => {
+                    event.stopPropagation();
+                  }}
+                  onTouchEnd={(event) => {
+                    event.stopPropagation();
+                  }}
                 >
                   {image ? (
                     <img
@@ -498,7 +531,14 @@ export default function MarketplaceFeaturedStores() {
         </div>
       </div>
 
-      <aside className="svx-featured-store__info">
+      <aside
+        key={`info-${store.slug}-${activeIndex}`}
+        className={cx(
+          "svx-featured-store__info",
+          "svx-featured-store__slide-panel",
+          `is-${slideDirection}`,
+        )}
+      >
         <span className="svx-featured-store__info-label">
           Store information
         </span>
@@ -575,7 +615,12 @@ export default function MarketplaceFeaturedStores() {
                   onClick={(event) => {
                     event.preventDefault();
                     event.stopPropagation();
-                    moveTo(index);
+                    moveTo(
+                      index,
+                      index > activeIndex
+                        ? "next"
+                        : "previous",
+                    );
                   }}
                   aria-label={`Show ${slide.store.name}`}
                   aria-current={
