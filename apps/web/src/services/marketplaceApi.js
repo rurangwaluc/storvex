@@ -15,8 +15,14 @@ function buildQuery(params = {}) {
   return value ? `?${value}` : "";
 }
 
-export function listMarketplaceProducts(params = {}) {
-  return apiFetch(`/marketplace/products${buildQuery(params)}`);
+export function listMarketplaceProducts(
+  params = {},
+  options = {},
+) {
+  return apiFetch(
+    `/marketplace/products${buildQuery(params)}`,
+    options,
+  );
 }
 
 export function getMarketplaceCatalogue() {

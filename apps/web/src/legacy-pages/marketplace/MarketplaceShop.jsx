@@ -654,12 +654,15 @@ export default function MarketplaceShop() {
               <span>Shop products</span>
 
               <h1>
-                Products from local stores
+                {search
+                  ? `Search results for “${search}”`
+                  : "Products from local stores"}
               </h1>
 
               <p>
-                Find products, compare prices
-                and choose pickup or delivery.
+                {search
+                  ? `Compare every available match for “${search}”, then choose pickup or delivery.`
+                  : "Find products, compare prices and choose pickup or delivery."}
               </p>
             </div>
 
@@ -1164,21 +1167,51 @@ export default function MarketplaceShop() {
               {!loading &&
               !error &&
               products.length === 0 ? (
-                <div className="svx-commerce-state">
+                <div
+                  className={cx(
+                    "svx-commerce-state",
+                    search &&
+                      "svx-shop-search-empty",
+                  )}
+                >
                   <PackageSearch size={34} />
+
+                  <span className="svx-shop-search-empty-label">
+                    {search
+                      ? "Search completed"
+                      : "No matching products"}
+                  </span>
+
                   <h2>
-                    No products found
+                    {search
+                      ? `We could not find “${search}”`
+                      : "No products found"}
                   </h2>
+
                   <p>
-                    Try another category, price
-                    or search.
+                    {search
+                      ? "Check the spelling, use fewer words, or browse every available product."
+                      : "Try another category, price range or search term."}
                   </p>
+
+                  {search ? (
+                    <div className="svx-shop-search-empty-query">
+                      <Search
+                        size={16}
+                        aria-hidden="true"
+                      />
+
+                      <span>{search}</span>
+                    </div>
+                  ) : null}
 
                   <button
                     type="button"
                     onClick={clearFilters}
                   >
-                    Clear filters
+                    {search
+                      ? "Browse all products"
+                      : "Clear filters"}
                   </button>
                 </div>
               ) : null}

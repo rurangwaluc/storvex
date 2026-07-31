@@ -40,6 +40,8 @@ import {
   useMarketplaceCustomerStore,
 } from "./marketplaceCustomerStore";
 
+import MarketplaceSearchBox from "./MarketplaceSearchBox";
+
 import "./MarketplaceHeader.css";
 
 const MARKETPLACE_CATEGORIES = [
@@ -131,7 +133,7 @@ export default function MarketplaceHeader() {
 
     navigate(
       query
-        ? `/marketplace/shop?q=${encodeURIComponent(query)}`
+        ? `/marketplace/shop?search=${encodeURIComponent(query)}`
         : "/marketplace/shop",
     );
 
@@ -347,32 +349,13 @@ export default function MarketplaceHeader() {
               </div>
             </div>
 
-            <form
+            <MarketplaceSearchBox
               className="smh__search"
+              value={searchInput}
+              onChange={setSearchInput}
               onSubmit={submitSearch}
-            >
-              <Search
-                size={19}
-                strokeWidth={2.1}
-                aria-hidden="true"
-              />
-
-              <input
-                type="search"
-                value={searchInput}
-                onChange={(event) =>
-                  setSearchInput(
-                    event.target.value,
-                  )
-                }
-                placeholder="Search products or stores"
-                aria-label="Search products or stores"
-              />
-
-              <button type="submit">
-                Search
-              </button>
-            </form>
+              placeholder="Search products"
+            />
 
             <div className="smh__actions">
               <button
@@ -472,30 +455,13 @@ export default function MarketplaceHeader() {
             </div>
           </div>
 
-          <form
-            className="smh__mobile-search"
-            onSubmit={submitSearch}
-          >
-            <Search
-              size={19}
-              strokeWidth={2.1}
-              aria-hidden="true"
-            />
-
-            <input
-              type="search"
+          <MarketplaceSearchBox
+              className="smh__mobile-search"
               value={searchInput}
-              onChange={(event) =>
-                setSearchInput(event.target.value)
-              }
-              placeholder="Search products or stores"
-              aria-label="Search products or stores"
+              onChange={setSearchInput}
+              onSubmit={submitSearch}
+              placeholder="Search products"
             />
-
-            <button type="submit">
-              Search
-            </button>
-          </form>
         </div>
 
         <div className="smh__secondary">
