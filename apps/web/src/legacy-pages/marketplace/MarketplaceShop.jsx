@@ -25,6 +25,7 @@ import {
 import {
   syncMarketplaceProductSnapshots,
 } from "./marketplaceCustomerStore";
+import MarketplaceFeaturedStores from "./MarketplaceFeaturedStores";
 import {
   LoadingProducts,
   MarketplaceFooter,
@@ -648,47 +649,7 @@ export default function MarketplaceShop() {
       <MarketplaceHeader />
 
       <main className="svx-shop">
-        <header className="svx-shop-head">
-          <div className="svx-shop-head-inner">
-            <div className="svx-shop-title">
-              <span>Shop products</span>
-
-              <h1>
-                {search
-                  ? `Search results for “${search}”`
-                  : "Products from local stores"}
-              </h1>
-
-              <p>
-                {search
-                  ? `Compare every available match for “${search}”, then choose pickup or delivery.`
-                  : "Find products, compare prices and choose pickup or delivery."}
-              </p>
-            </div>
-
-            <form
-              className="svx-shop-search"
-              onSubmit={submitSearch}
-            >
-              <Search size={18} />
-
-              <input
-                value={searchInput}
-                onChange={(event) =>
-                  setSearchInput(
-                    event.target.value,
-                  )
-                }
-                placeholder="Search products or stores"
-                aria-label="Search products or stores"
-              />
-
-              <button type="submit">
-                Search
-              </button>
-            </form>
-          </div>
-        </header>
+        <MarketplaceFeaturedStores />
 
         <section
           id="marketplace-shop-products"
