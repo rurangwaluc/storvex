@@ -13498,3 +13498,26 @@ body:has(.storvex-marketplace) #root {
     transition: none;
   }
 }
+
+/* Keep the mobile product filter sheet centred and off the screen edges. */
+@media (max-width: 900px) {
+  .svx-shop-filters {
+    right: auto;
+    left: 50%;
+    width: 90%;
+    max-width: 620px;
+    border-right:
+      1px solid var(--landing-border);
+    border-left:
+      1px solid var(--landing-border);
+    border-radius: 16px 16px 0 0;
+    transform:
+      translate(-50%, 102%);
+  }
+
+  .svx-shop-layout.is-filter-open
+    .svx-shop-filters {
+    transform:
+      translate(-50%, 0);
+  }
+}
