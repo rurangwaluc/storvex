@@ -186,6 +186,23 @@ export default function MarketplaceShop() {
     releasePageScrollLock();
   }, []);
 
+  useEffect(() => {
+    if (!filtersOpen) {
+      releasePageScrollLock();
+      return undefined;
+    }
+
+    const body = document.body;
+    const root = document.documentElement;
+
+    body.style.overflow = "hidden";
+    root.style.overflow = "hidden";
+
+    return () => {
+      releasePageScrollLock();
+    };
+  }, [filtersOpen]);
+
   const initialSearch = cleanString(
     searchParams.get("search"),
   );
@@ -786,12 +803,15 @@ export default function MarketplaceShop() {
               />
             ) : null}
 
-            <aside className="svx-shop-filters">
+            <aside
+              className="svx-shop-filters"
+              aria-label="Product filters"
+            >
               <div className="svx-shop-filters-head">
                 <div>
                   <strong>Filters</strong>
                   <small>
-                    Find the right product
+                    Narrow down the products
                   </small>
                 </div>
 
@@ -1099,7 +1119,13 @@ export default function MarketplaceShop() {
                   setFiltersOpen(false)
                 }
               >
-                View products
+                <span>Show products</span>
+
+                <b>
+                  {loading
+                    ? "..."
+                    : pagination.total.toLocaleString()}
+                </b>
               </button>
             </aside>
 
