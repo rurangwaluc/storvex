@@ -13525,20 +13525,21 @@ body:has(.storvex-marketplace) #root {
 /* Final mobile filter action positioning. */
 @media (max-width: 900px) {
   .svx-shop-filters {
-    padding-bottom: 0;
+    padding-bottom:
+      calc(
+        16px +
+        env(
+          safe-area-inset-bottom,
+          0px
+        )
+      );
   }
 
   .svx-shop-view-results {
     position: sticky;
     z-index: 10;
     right: auto;
-    bottom: 0;
-    left: auto;
-    width: calc(100% - 32px);
-    min-height: 50px;
-    margin:
-      0
-      16px
+    bottom:
       calc(
         12px +
         env(
@@ -13546,34 +13547,81 @@ body:has(.storvex-marketplace) #root {
           0px
         )
       );
+    left: auto;
+    isolation: isolate;
+    display: flex;
+    width: calc(100% - 32px);
+    min-height: 52px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin:
+      18px
+      16px
+      0;
+    border:
+      2px solid
+      color-mix(
+        in srgb,
+        var(--landing-primary) 82%,
+        #ffffff
+      );
+    border-radius: 9px;
+    background: var(--landing-primary);
+    padding: 0 16px;
+    color: #ffffff;
+    font: inherit;
+    font-size: 0.8rem;
+    font-weight: 850;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 1;
+    appearance: none;
+    box-shadow: none;
+    filter: none;
   }
 
   .svx-shop-view-results::before {
-    position: absolute;
-    z-index: -1;
-    top: -13px;
-    right: -16px;
-    bottom:
-      calc(
-        -12px -
-        env(
-          safe-area-inset-bottom,
-          0px
-        )
-      );
-    left: -16px;
-    border-top:
-      1px solid var(--landing-border);
-    background: #1f1f1f;
-    content: "";
+    display: none;
+    content: none;
   }
 
-  :root:not([data-theme="dark"])
-    .svx-shop-view-results::before {
-    background: var(--landing-surface);
+  .svx-shop-view-results span {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .svx-shop-view-results b {
+    display: grid;
+    min-width: 30px;
+    height: 30px;
+    place-items: center;
+    border:
+      1px solid rgb(255 255 255 / 28%);
+    border-radius: 7px;
+    background: rgb(255 255 255 / 16%);
+    padding: 0 8px;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 850;
+  }
+
+  .svx-shop-view-results:focus-visible {
+    outline:
+      3px solid
+      color-mix(
+        in srgb,
+        var(--landing-primary) 38%,
+        #ffffff
+      );
+    outline-offset: 3px;
+  }
+
+  .svx-shop-view-results:active {
+    border-color: #ffffff;
   }
 
   .svx-shop-clear {
-    margin-bottom: 28px;
+    margin-bottom: 8px;
   }
 }
