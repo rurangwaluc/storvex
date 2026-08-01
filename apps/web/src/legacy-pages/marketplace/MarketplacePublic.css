@@ -13521,3 +13521,59 @@ body:has(.storvex-marketplace) #root {
       translate(-50%, 0);
   }
 }
+
+/* Final mobile filter action positioning. */
+@media (max-width: 900px) {
+  .svx-shop-filters {
+    padding-bottom: 0;
+  }
+
+  .svx-shop-view-results {
+    position: sticky;
+    z-index: 10;
+    right: auto;
+    bottom: 0;
+    left: auto;
+    width: calc(100% - 32px);
+    min-height: 50px;
+    margin:
+      0
+      16px
+      calc(
+        12px +
+        env(
+          safe-area-inset-bottom,
+          0px
+        )
+      );
+  }
+
+  .svx-shop-view-results::before {
+    position: absolute;
+    z-index: -1;
+    top: -13px;
+    right: -16px;
+    bottom:
+      calc(
+        -12px -
+        env(
+          safe-area-inset-bottom,
+          0px
+        )
+      );
+    left: -16px;
+    border-top:
+      1px solid var(--landing-border);
+    background: #1f1f1f;
+    content: "";
+  }
+
+  :root:not([data-theme="dark"])
+    .svx-shop-view-results::before {
+    background: var(--landing-surface);
+  }
+
+  .svx-shop-clear {
+    margin-bottom: 28px;
+  }
+}
