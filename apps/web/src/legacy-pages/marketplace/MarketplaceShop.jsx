@@ -186,23 +186,6 @@ export default function MarketplaceShop() {
     releasePageScrollLock();
   }, []);
 
-  useEffect(() => {
-    if (!filtersOpen) {
-      releasePageScrollLock();
-      return undefined;
-    }
-
-    const body = document.body;
-    const root = document.documentElement;
-
-    body.style.overflow = "hidden";
-    root.style.overflow = "hidden";
-
-    return () => {
-      releasePageScrollLock();
-    };
-  }, [filtersOpen]);
-
   const initialSearch = cleanString(
     searchParams.get("search"),
   );
@@ -258,6 +241,7 @@ export default function MarketplaceShop() {
     useState(false);
   const [sortOpen, setSortOpen] =
     useState(false);
+
   const sortRef = useRef(null);
   const [
     expandedCategory,
