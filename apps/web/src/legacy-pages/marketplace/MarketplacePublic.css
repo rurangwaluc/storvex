@@ -13067,10 +13067,12 @@ body:has(.storvex-marketplace) #root {
 
 /* Desktop filter panel */
 
-.svx-shop-layout {
-  grid-template-columns:
-    252px minmax(0, 1fr);
-  gap: 24px;
+@media (min-width: 901px) {
+  .svx-shop-layout {
+    grid-template-columns:
+      252px minmax(0, 1fr);
+    gap: 24px;
+  }
 }
 
 .svx-shop-filters {
@@ -13449,37 +13451,6 @@ body:has(.storvex-marketplace) #root {
 }
 
 @media (max-width: 520px) {
-  .svx-shop-catalogue {
-    width: calc(100% - 20px);
-    padding-top: 20px;
-  }
-
-  .svx-shop-catalogue-head {
-    top: 60px;
-    align-items: center;
-    margin-right: -10px;
-    margin-left: -10px;
-    padding:
-      11px
-      10px;
-  }
-
-  .svx-shop-catalogue-head h2 {
-    font-size: 1.35rem;
-  }
-
-  .svx-shop-catalogue-head p {
-    margin-top: 4px;
-    font-size: 0.7rem;
-  }
-
-  .svx-shop-catalogue-actions {
-    display: grid;
-    width: 126px;
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-
   .svx-shop-filter-trigger,
   .svx-shop-sort-trigger {
     min-height: 42px;
