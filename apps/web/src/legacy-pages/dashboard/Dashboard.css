@@ -1431,3 +1431,47 @@
 }
 
 /* OWNER DASHBOARD SALES TREND END */
+
+/*
+ * OWNER DASHBOARD DAILY VIEW POLISH
+ *
+ * Keep the desktop dashboard focused without
+ * making mobile cards cramped.
+ */
+
+@media (min-width: 721px) {
+  .svx-owner-dashboard {
+    gap: 18px;
+  }
+
+  .svx-owner-main-grid,
+  .svx-owner-secondary-grid,
+  .svx-owner-bottom-grid {
+    gap: 18px;
+  }
+
+  .svx-owner-main-grid
+    > .svx-dashboard-card,
+  .svx-owner-secondary-grid
+    > .svx-dashboard-card,
+  .svx-owner-bottom-grid
+    > .svx-dashboard-card,
+  .svx-owner-dashboard
+    > .svx-dashboard-card {
+    padding: 21px;
+  }
+
+  .svx-row-stack {
+    gap: 14px;
+  }
+
+  .svx-dashboard-section-head {
+    margin-bottom: 16px;
+  }
+
+  .svx-action-center-grid {
+    gap: 14px;
+  }
+}
+
+/* OWNER DASHBOARD DAILY VIEW POLISH END */

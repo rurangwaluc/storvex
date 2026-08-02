@@ -558,22 +558,128 @@ function ProductRow({ item }) {
   );
 }
 
+function activityLabel(item = {}) {
+  const action = String(item?.action || "")
+    .trim()
+    .toUpperCase();
+
+  const entity = String(
+    item?.entity ||
+      item?.type ||
+      "",
+  )
+    .trim()
+    .toUpperCase();
+
+  const labels = {
+    "PRODUCT:CREATED": "Product added",
+    "PRODUCT:UPDATED": "Product details updated",
+    "PRODUCT:PRODUCT_CREATED": "Product added",
+    "PRODUCT:PRODUCT_UPDATED": "Product details updated",
+    "PRODUCT:PRODUCT_DELETED": "Product removed",
+    "PRODUCT:PRODUCT_ARCHIVED": "Product archived",
+    "PRODUCT:DELETED": "Product removed",
+    "PRODUCT:ARCHIVED": "Product archived",
+
+    "SALE:CREATED": "Sale recorded",
+    "SALE:UPDATED": "Sale updated",
+    "SALE:CANCELLED": "Sale cancelled",
+    "SALE:COMPLETED": "Sale completed",
+
+    "EXPENSE:CREATED": "Expense recorded",
+    "EXPENSE:UPDATED": "Expense updated",
+    "EXPENSE:APPROVED": "Expense approved",
+    "EXPENSE:REJECTED": "Expense rejected",
+
+    "CUSTOMER:CREATED": "Customer added",
+    "CUSTOMER:UPDATED": "Customer details updated",
+
+    "SUPPLIER:CREATED": "Supplier added",
+    "SUPPLIER:UPDATED": "Supplier details updated",
+
+    "REPAIR:CREATED": "Repair received",
+    "REPAIR:UPDATED": "Repair updated",
+    "REPAIR:COMPLETED": "Repair completed",
+
+    "STOCK:CREATED": "Stock added",
+    "STOCK:UPDATED": "Stock updated",
+    "STOCK:ADJUSTED": "Stock quantity adjusted",
+  };
+
+  const exactLabel =
+    labels[`${entity}:${action}`];
+
+  if (exactLabel) {
+    return exactLabel;
+  }
+
+  const readableAction = action
+    .replace(new RegExp(`^${entity}_`), "")
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .trim();
+
+  if (!readableAction) {
+    return "Business activity";
+  }
+
+  return (
+    readableAction.charAt(0).toUpperCase() +
+    readableAction.slice(1)
+  );
+}
+
+function activityEntityLabel(item = {}) {
+  const value = String(
+    item?.entity ||
+      item?.type ||
+      "Record",
+  )
+    .replaceAll("_", " ")
+    .toLowerCase()
+    .trim();
+
+  return (
+    value.charAt(0).toUpperCase() +
+    value.slice(1)
+  );
+}
+
 function ActivityRow({ item }) {
-  const action = String(item?.action || "Activity").replaceAll("_", " ");
-  const entity = item?.entity || item?.type || "Record";
-  const amount = Number(item?.amount || item?.total || item?.value || 0);
-  const status = item?.status || item?.paymentStatus || "Done";
+  const amount = Number(
+    item?.amount ||
+      item?.total ||
+      item?.value ||
+      0,
+  );
+
+  const status =
+    item?.status ||
+    item?.paymentStatus ||
+    "Done";
 
   return (
     <div className="svx-activity-row">
       <div className="svx-activity-main">
-        <strong>{action}</strong>
-        <span>{[entity, fmtDate(item?.createdAt)].filter(Boolean).join(" · ")}</span>
+        <strong>{activityLabel(item)}</strong>
+        <span>
+          {[
+            activityEntityLabel(item),
+            fmtDate(item?.createdAt),
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        </span>
       </div>
 
       <div className="svx-activity-meta">
-        {amount > 0 ? <strong>{money(amount)}</strong> : null}
-        <Badge tone={statusTone(status)}>{status}</Badge>
+        {amount > 0 ? (
+          <strong>{money(amount)}</strong>
+        ) : null}
+
+        <Badge tone={statusTone(status)}>
+          {status}
+        </Badge>
       </div>
     </div>
   );
@@ -885,7 +991,9 @@ export default function Dashboard() {
     workspace?.currentUser?.name ||
     localStorage.getItem("userName") ||
     "";
-  const firstName = firstWord(ownerName);
+  const firstName =
+    firstWord(ownerName) ||
+    firstWord(tenantName);
   const businessCategory = tenant?.businessCategory || tenant?.category || tenant?.shopType;
   const normalizedCategory = normalizeCategory(businessCategory);
   const location = [tenant?.district, tenant?.sector].filter(Boolean).join(" · ");
@@ -953,17 +1061,6 @@ export default function Dashboard() {
 
   const focusItems = useMemo(() => {
     const items = [];
-
-    if (ownerPriority?.title && ownerPriority.title !== "No urgent owner action") {
-      items.push({
-        icon: AlertTriangle,
-        tone: ownerPriority.tone === "danger" ? "danger" : ownerPriority.tone === "warning" ? "warning" : "info",
-        title: ownerPriority.title,
-        text: ownerPriority.text || "Needs owner attention.",
-        action: "Open checks",
-        to: "/app/reports/owner-checks",
-      });
-    }
 
     if (lowStockCount > 0 || outOfStockCount > 0) {
       items.push({
@@ -1038,9 +1135,9 @@ export default function Dashboard() {
       items.push({
         icon: ShoppingCart,
         tone: "info",
-        title: "Product listing not live yet",
-        text: "Products stay private until the owner chooses what should appear publicly.",
-        action: "Review",
+        title: "Choose products to show online",
+        text: "Your products are still private. Publish only the ones customers should see.",
+        action: "Choose products",
         to: "/app/inventory",
       });
     }
@@ -1049,9 +1146,9 @@ export default function Dashboard() {
       items.push({
         icon: ClipboardList,
         tone: "warning",
-        title: "Setup needs finishing",
-        text: `${missing.length} setup item${missing.length === 1 ? "" : "s"} still affect operational readiness.`,
-        action: "Open setup",
+        title: "Finish business setup",
+        text: `${missing.length} item${missing.length === 1 ? "" : "s"} still need your attention before everything is ready.`,
+        action: "Continue setup",
         to: "/app/settings",
       });
     }
@@ -1078,7 +1175,6 @@ export default function Dashboard() {
     subscription,
     listingPublished,
     missing,
-    ownerPriority,
   ]);
 
   const actionCenterItems = useMemo(() => {
@@ -1251,10 +1347,10 @@ export default function Dashboard() {
         </section>
 
         <section className="svx-dashboard-card svx-recent-panel svx-reveal-card">
-          <SectionTitle title="Recent business movement" action={<Link to="/app/reports" className="svx-text-link">View all</Link>} />
+          <SectionTitle title="Recent activity" action={<Link to="/app/reports" className="svx-text-link">View all</Link>} />
 
           {!activity.length ? (
-            <EmptyState title="No recent activity" text="Sales, stock, expenses, and listing changes will appear here." />
+            <EmptyState title="No recent activity" text="New sales, stock changes, expenses, and product updates will appear here." />
           ) : (
             <div className="svx-row-stack">
               {activity.slice(0, 5).map((item) => (
@@ -1267,8 +1363,8 @@ export default function Dashboard() {
 
       <section className="svx-dashboard-card svx-action-center svx-reveal-card">
         <SectionTitle
-          eyebrow="Action center"
-          title="What the owner should handle next"
+          eyebrow="Next actions"
+          title="What needs your attention"
           action={<Badge tone={focusItems.length > 1 || focusItems[0]?.title !== "No urgent action" ? "warning" : "success"}>{focusItems.length} active</Badge>}
         />
 
