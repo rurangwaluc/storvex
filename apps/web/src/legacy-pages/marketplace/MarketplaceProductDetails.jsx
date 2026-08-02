@@ -405,14 +405,41 @@ export default function MarketplaceProductDetails() {
   const images = useMemo(() => {
     if (!product) return [];
 
+    const productImages = Array.isArray(product.images)
+      ? product.images.filter((image) => imageUrl(image))
+      : [];
+
+    const orderedImages = [...productImages].sort(
+      (first, second) => {
+        const primaryDifference =
+          Number(Boolean(second?.isPrimary)) -
+          Number(Boolean(first?.isPrimary));
+
+        if (primaryDifference !== 0) {
+          return primaryDifference;
+        }
+
+        return (
+          Number(first?.sortOrder || 0) -
+          Number(second?.sortOrder || 0)
+        );
+      },
+    );
+
+    const fallbackImage = product.image;
+
     if (
-      Array.isArray(product.images) &&
-      product.images.length
+      fallbackImage &&
+      imageUrl(fallbackImage) &&
+      !orderedImages.some(
+        (image) =>
+          imageUrl(image) === imageUrl(fallbackImage),
+      )
     ) {
-      return product.images;
+      orderedImages.push(fallbackImage);
     }
 
-    return product.image ? [product.image] : [];
+    return orderedImages;
   }, [product]);
 
   const activeImage =
