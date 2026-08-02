@@ -5,17 +5,14 @@ import {
   ArrowLeft,
   BadgeCheck,
   Barcode,
-  Boxes,
   ChevronRight,
+  Boxes,
   ClipboardList,
-  DollarSign,
   ImagePlus,
   Layers3,
   PackageCheck,
   Save,
-  ShieldCheck,
   Tags,
-  Warehouse,
 } from "lucide-react";
 
 import AsyncButton from "../../components/ui/AsyncButton";
@@ -26,150 +23,16 @@ import {
 } from "../../services/inventoryApi";
 import { getWorkspaceContext } from "../../services/storeApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import {
+  getBusinessProductConfig,
+  getKnownProductCategories,
+  getProductCategoryFields,
+  getProductSubcategoryOptions,
+  normalizeBusinessCategory,
+} from "../../utils/productFormConfig";
 import "./InventoryEdit.css";
 
 const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
-
-const BUSINESS_CATEGORY_META = {
-  ELECTRONICS: {
-    label: "Electronics",
-    eyebrow: "Device-ready stock",
-    help: "Use processor, memory, storage, condition, warranty, and device details where they matter.",
-    categoryOptions: [
-      "Phones",
-      "Laptops",
-      "Tablets",
-      "Desktop Computers",
-      "Monitors",
-      "Printers",
-      "Networking",
-      "TV & Audio",
-      "Gaming",
-      "Cameras",
-      "Storage",
-      "Accessories",
-      "Smart Devices",
-      "Components",
-      "Other",
-    ],
-  },
-  HARDWARE: {
-    label: "Hardware / Quincaillerie",
-    eyebrow: "Building materials stock",
-    help: "Use unit, size, material, and grade to keep hardware stock clear.",
-    categoryOptions: [
-      "Cement",
-      "Iron sheets",
-      "Paint",
-      "Plumbing",
-      "Electrical",
-      "Tools",
-      "Locks",
-      "Tiles",
-      "Timber",
-      "Fasteners",
-      "Adhesives",
-      "Other",
-    ],
-  },
-  HOME_KITCHEN: {
-    label: "Home & kitchen",
-    eyebrow: "Home product stock",
-    help: "Use material, color, set size, and room/use case for clean product records.",
-    categoryOptions: [
-      "Cookware",
-      "Kitchen appliances",
-      "Dining",
-      "Home appliances",
-      "Storage",
-      "Cleaning",
-      "Furniture",
-      "Decor",
-      "Bathroom",
-      "Bedding",
-      "Other",
-    ],
-  },
-  LIGHTING: {
-    label: "Lighting",
-    eyebrow: "Lighting stock",
-    help: "Use wattage, voltage, fitting, and indoor/outdoor details.",
-    categoryOptions: [
-      "Bulbs",
-      "Tubes",
-      "Ceiling lights",
-      "Wall lights",
-      "Outdoor lights",
-      "Solar lights",
-      "LED strips",
-      "Switches",
-      "Cables",
-      "Accessories",
-      "Other",
-    ],
-  },
-  SPARE_PARTS: {
-    label: "Spare parts",
-    eyebrow: "Compatibility-first stock",
-    help: "Use part number, compatible model, condition, and warranty where needed.",
-    categoryOptions: [
-      "Phone parts",
-      "Laptop parts",
-      "Printer parts",
-      "TV parts",
-      "Audio parts",
-      "Power parts",
-      "Cables",
-      "Screens",
-      "Batteries",
-      "Boards",
-      "Other",
-    ],
-  },
-};
-
-const DEFAULT_META = BUSINESS_CATEGORY_META.ELECTRONICS;
-
-const ELECTRONICS_SUBCATEGORIES = {
-  Accessories: [
-    "Charger",
-    "Headphones / Earbuds",
-    "Phone cover",
-    "Screen protector",
-    "Adapter / Dongle",
-    "Cable",
-    "Power bank",
-    "SSD / HDD",
-    "RAM",
-    "Keyboard / Mouse",
-    "Laptop bag",
-    "Battery",
-    "Remote",
-    "Tripod",
-    "Microphone",
-    "Webcam",
-    "Other",
-  ],
-  Storage: ["SSD", "HDD", "Memory card", "Flash disk", "External drive", "Other"],
-  Components: ["RAM", "Motherboard", "Power supply", "Battery", "Screen", "Keyboard", "Fan", "Other"],
-};
-
-const UNIT_OPTIONS = [
-  "Piece",
-  "Box",
-  "Carton",
-  "Pack",
-  "Pair",
-  "Set",
-  "Bag",
-  "Kg",
-  "Litre",
-  "Metre",
-  "Roll",
-  "Bundle",
-];
-
-const CONDITION_OPTIONS = ["New", "Used", "Refurbished", "Open box"];
 
 function cx(...items) {
   return items.filter(Boolean).join(" ");
@@ -203,13 +66,7 @@ function isOtherCategory(value) {
 }
 
 function allKnownCategoryOptions() {
-  return Array.from(
-    new Set(
-      Object.values(BUSINESS_CATEGORY_META)
-        .flatMap((item) => item.categoryOptions || [])
-        .filter(Boolean),
-    ),
-  );
+  return getKnownProductCategories();
 }
 
 function categorySelectValue(category, options = allKnownCategoryOptions()) {
@@ -238,17 +95,6 @@ function formatPlain(value) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(Number.isFinite(n) ? n : 0);
-}
-
-function normalizeBusinessCategory(value) {
-  const raw = cleanString(value).toUpperCase();
-
-  if (["HARDWARE", "QUINCAILLERIE"].includes(raw)) return "HARDWARE";
-  if (["HOME_KITCHEN", "HOME_AND_KITCHEN", "HOME & KITCHEN"].includes(raw)) return "HOME_KITCHEN";
-  if (raw === "LIGHTING") return "LIGHTING";
-  if (["SPARE_PARTS", "SPARE PARTS", "AUTO_PARTS"].includes(raw)) return "SPARE_PARTS";
-
-  return "ELECTRONICS";
 }
 
 function readCachedWorkspace() {
@@ -280,10 +126,6 @@ function productStock(product) {
   return Number(product?.effectiveStockQty ?? product?.branchStockQty ?? product?.stockQty ?? 0);
 }
 
-function productReserved(product) {
-  return Number(product?.branchReservedQty ?? product?.reservedQty ?? 0);
-}
-
 function branchLabel(product) {
   const scope = product?.branchScope || {};
   const code = cleanString(scope?.code || scope?.branchCode);
@@ -301,24 +143,7 @@ function branchLabel(product) {
   return "Current branch";
 }
 
-function productImages(product) {
-  const images = Array.isArray(product?.images) ? product.images : [];
-  return images
-    .map((image) => {
-      if (typeof image === "string") return { url: image };
-      return image;
-    })
-    .filter((image) => cleanString(image?.url || image?.imageUrl));
-}
 
-function productInitials(name) {
-  const parts = cleanString(name).split(/\s+/).filter(Boolean);
-
-  if (!parts.length) return "P";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-}
 
 function productStatus(product) {
   const qty = productStock(product);
@@ -351,150 +176,6 @@ function currentAttributes(product) {
 
   return raw;
 }
-
-function attributeFieldsFor(categoryKey, productCategory) {
-  if (categoryKey === "HARDWARE") {
-    return [
-      { name: "unit", label: "Selling unit", type: "select", options: UNIT_OPTIONS, placeholder: "Piece" },
-      { name: "size", label: "Size / measurement", placeholder: "Example: 20L, 12mm, 2m" },
-      { name: "material", label: "Material", placeholder: "Example: steel, PVC, wood" },
-      { name: "grade", label: "Grade / quality", placeholder: "Example: standard, heavy duty" },
-    ];
-  }
-
-  if (categoryKey === "HOME_KITCHEN") {
-    return [
-      { name: "material", label: "Material", placeholder: "Example: stainless steel, glass" },
-      { name: "color", label: "Color", placeholder: "Example: black" },
-      { name: "size", label: "Size", placeholder: "Example: medium, 2L, queen" },
-      { name: "setPieces", label: "Pieces in set", type: "number", placeholder: "Example: 6" },
-    ];
-  }
-
-  if (categoryKey === "LIGHTING") {
-    return [
-      { name: "wattage", label: "Wattage", placeholder: "Example: 12W" },
-      { name: "voltage", label: "Voltage", placeholder: "Example: 220V" },
-      { name: "fitting", label: "Fitting", placeholder: "Example: E27, GU10" },
-      { name: "lightColor", label: "Light color", placeholder: "Example: warm white" },
-    ];
-  }
-
-  if (categoryKey === "SPARE_PARTS") {
-    return [
-      { name: "partNumber", label: "Part number", placeholder: "Example: A2337-SCREEN" },
-      { name: "compatibleModel", label: "Compatible model", placeholder: "Example: iPhone 13, HP 840 G5" },
-      { name: "condition", label: "Condition", type: "select", options: CONDITION_OPTIONS, placeholder: "New" },
-      { name: "warrantyDays", label: "Warranty days", type: "number", placeholder: "Example: 30" },
-    ];
-  }
-
-  if (["Phones", "Tablets"].includes(productCategory)) {
-    return [
-      { name: "storage", label: "Storage", placeholder: "Example: 128GB" },
-      { name: "memory", label: "Memory", placeholder: "Example: 6GB RAM" },
-      { name: "color", label: "Color", placeholder: "Example: Midnight" },
-      { name: "condition", label: "Condition", type: "select", options: CONDITION_OPTIONS, placeholder: "New" },
-    ];
-  }
-
-  if (["Laptops", "Desktop Computers"].includes(productCategory)) {
-    return [
-      { name: "processor", label: "Processor", placeholder: "Example: Core i5" },
-      { name: "memory", label: "Memory", placeholder: "Example: 8GB RAM" },
-      { name: "storage", label: "Storage", placeholder: "Example: 512GB SSD" },
-      { name: "condition", label: "Condition", type: "select", options: CONDITION_OPTIONS, placeholder: "New" },
-    ];
-  }
-
-  if (productCategory === "Accessories") {
-    return [
-      { name: "compatibility", label: "Compatible with", placeholder: "Example: USB-C phones" },
-      { name: "color", label: "Color", placeholder: "Example: black" },
-      { name: "warrantyDays", label: "Warranty days", type: "number", placeholder: "Example: 30" },
-      { name: "unit", label: "Selling unit", type: "select", options: UNIT_OPTIONS, placeholder: "Piece" },
-    ];
-  }
-
-  return [
-    { name: "model", label: "Model", placeholder: "Example: 2024 model" },
-    { name: "specification", label: "Key specification", placeholder: "Example: Bluetooth, 4K, dual-band" },
-    { name: "condition", label: "Condition", type: "select", options: CONDITION_OPTIONS, placeholder: "New" },
-    { name: "warrantyDays", label: "Warranty days", type: "number", placeholder: "Example: 30" },
-  ];
-}
-
-
-function trackingCopyFor(categoryKey) {
-  if (categoryKey === "HARDWARE") {
-    return {
-      title: "Item tracking",
-      text: "Use manufacturer serial only for machines, power tools, pumps, or warranty-controlled items.",
-      normalTitle: "Normal stock",
-      normalText: "Best for paint, cement, fittings, tools, and materials sold as normal stock.",
-      trackedTitle: "Serial number",
-      trackedText: "Use only for hardware items that have a manufacturer serial or warranty card.",
-      inputLabel: "Serial number",
-      inputPlaceholder: "Example: drill or machine serial number",
-      requiredMessage: "Serial number is required when item tracking is on",
-    };
-  }
-
-  if (categoryKey === "HOME_KITCHEN") {
-    return {
-      title: "Item tracking",
-      text: "Use serial tracking only for appliances or warranty-sensitive home products.",
-      normalTitle: "Normal stock",
-      normalText: "Best for cookware, dining, decor, furniture, and everyday home goods.",
-      trackedTitle: "Appliance serial",
-      trackedText: "Use for appliances or warranty items that must be identified one by one.",
-      inputLabel: "Appliance serial",
-      inputPlaceholder: "Example: appliance serial number",
-      requiredMessage: "Appliance serial is required when item tracking is on",
-    };
-  }
-
-  if (categoryKey === "LIGHTING") {
-    return {
-      title: "Item tracking",
-      text: "Use serial or batch tracking only for solar kits, drivers, fixtures, or warranty-controlled lighting.",
-      normalTitle: "Normal stock",
-      normalText: "Best for bulbs, tubes, switches, cables, and common lighting accessories.",
-      trackedTitle: "Serial / batch code",
-      trackedText: "Use for lighting items that need warranty, batch, or installation traceability.",
-      inputLabel: "Serial / batch code",
-      inputPlaceholder: "Example: solar kit serial or batch code",
-      requiredMessage: "Serial or batch code is required when item tracking is on",
-    };
-  }
-
-  if (categoryKey === "SPARE_PARTS") {
-    return {
-      title: "Part tracking",
-      text: "Use tracking only when a part has a serial, batch, or warranty code.",
-      normalTitle: "Normal stock",
-      normalText: "Best for common parts where quantity and compatibility are enough.",
-      trackedTitle: "Serial / batch code",
-      trackedText: "Use for warranty-sensitive parts or parts that must be traced one by one.",
-      inputLabel: "Serial / batch code",
-      inputPlaceholder: "Example: part serial, batch, or warranty code",
-      requiredMessage: "Serial or batch code is required when part tracking is on",
-    };
-  }
-
-  return {
-    title: "Tracking",
-    text: "Use serial or IMEI only when this product must be identified one by one.",
-    normalTitle: "Normal stock",
-    normalText: "Best for products where every unit is the same.",
-    trackedTitle: "Serial / IMEI",
-    trackedText: "Best for phones, laptops, and warranty-sensitive items.",
-    inputLabel: "Serial / IMEI",
-    inputPlaceholder: "Serial or IMEI number",
-    requiredMessage: "Serial or IMEI is required when tracking is on",
-  };
-}
-
 
 function Field({ label, required = false, help, children, wide = false }) {
   return (
@@ -536,23 +217,7 @@ function SummaryRow({ label, value, tone }) {
   );
 }
 
-function MiniCard({ icon: Icon, label, value, tone = "neutral" }) {
-  return (
-    <div className={cx("svx-edit-mini-card", `is-${tone}`)}>
-      <span aria-hidden="true">
-        <Icon size={18} strokeWidth={2.25} />
-      </span>
-      <div>
-        <p>{label}</p>
-        <strong>{value}</strong>
-      </div>
-    </div>
-  );
-}
 
-function StatusBadge({ tone = "neutral", children }) {
-  return <span className={cx("svx-edit-badge", `is-${tone}`)}>{children}</span>;
-}
 
 export default function InventoryEdit() {
   const { id } = useParams();
@@ -664,9 +329,9 @@ export default function InventoryEdit() {
   }, [loadProduct]);
 
   const businessCategory = businessCategoryFromWorkspace(workspace);
-  const meta = BUSINESS_CATEGORY_META[businessCategory] || DEFAULT_META;
-  const trackingCopy = trackingCopyFor(businessCategory);
-  const productCategoryOptions = meta.categoryOptions;
+  const meta = getBusinessProductConfig(businessCategory);
+  const trackingCopy = meta.tracking;
+  const productCategoryOptions = meta.categories;
   const selectedCategory = isOtherCategory(form.category)
     ? cleanString(form.customCategory)
     : cleanString(form.category);
@@ -676,28 +341,31 @@ export default function InventoryEdit() {
     category: selectedCategory || meta.label,
     name: form.name,
   });
-  const subcategoryOptions = ELECTRONICS_SUBCATEGORIES[selectedCategory || form.category] || [];
+  const subcategoryOptions =
+    getProductSubcategoryOptions(
+      businessCategory,
+      selectedCategory || form.category,
+    );
+
   const attributeFields = useMemo(
-    () => attributeFieldsFor(businessCategory, selectedCategory || form.category),
-    [businessCategory, selectedCategory, form.category],
+    () =>
+      getProductCategoryFields(
+        businessCategory,
+        selectedCategory || form.category,
+      ),
+    [
+      businessCategory,
+      selectedCategory,
+      form.category,
+    ],
   );
 
   const status = productStatus(product);
   const listing = listingStatus(product);
-  const images = productImages(product);
   const qty = productStock(product);
-  const reserved = productReserved(product);
   const costPrice = parseNumber(form.costPrice);
   const sellPrice = parseNumber(form.sellPrice);
   const minStockLevel = parseNumber(form.minStockLevel);
-  const profitPerItem =
-    costPrice !== null && sellPrice !== null ? sellPrice - costPrice : 0;
-  const stockValue =
-    sellPrice !== null ? qty * sellPrice : 0;
-  const stockCost =
-    costPrice !== null ? qty * costPrice : 0;
-  const margin =
-    sellPrice && sellPrice > 0 ? Math.round((profitPerItem / sellPrice) * 100) : 0;
 
   function setField(name, value) {
     setForm((current) => ({
@@ -732,7 +400,7 @@ export default function InventoryEdit() {
     const category = selectedCategory;
 
     if (!name) {
-      toast.error("Product name is required");
+      toast.error(`${meta.itemLabel} name is required`);
       return false;
     }
 
@@ -821,79 +489,77 @@ export default function InventoryEdit() {
   return (
     <main className="svx-edit-page">
       <form className="svx-edit-shell" onSubmit={handleSubmit}>
+
         <header className="svx-edit-hero">
+          <Link
+            to={`/app/inventory/${product.id}`}
+            className="svx-edit-back"
+          >
+            <ArrowLeft size={18} strokeWidth={2.4} />
+            <span>Product details</span>
+          </Link>
+
           <div className="svx-edit-hero-copy">
-            <button
-              type="button"
-              className="svx-edit-back"
-              onClick={() => navigate(`/app/inventory/${id}`)}
-              disabled={saving}
-            >
-              <ArrowLeft size={18} strokeWidth={2.4} />
-              <span>Product details</span>
-            </button>
-
-            <div className="svx-edit-kicker-row">
-              <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
-              <StatusBadge tone={listing.tone}>{listing.label}</StatusBadge>
-            </div>
-
-            <h1>Edit product.</h1>
-            <p>
-              Update product information, category details, and prices. Stock quantity changes stay separate through stock movement.
+            <p className="svx-edit-kicker">
+              {meta.eyebrow}
             </p>
-          </div>
 
-          <div className="svx-edit-hero-card">
-            <span className="svx-edit-avatar" aria-hidden="true">
-              {productInitials(form.name)}
-            </span>
+            <h1>
+              Edit {meta.itemLabelLower}.
+            </h1>
 
-            <div>
-              <p>{form.name || "Product"}</p>
+            <p>
+              Update its information and price. Stock quantity
+              remains protected and is changed through Update stock.
+            </p>
+
+            <div
+              className="svx-edit-status-line"
+              aria-label="Product status"
+            >
+              <span className={`is-${status.tone}`}>
+                {status.label}
+              </span>
+
+              <span className={`is-${listing.tone}`}>
+                {listing.label}
+              </span>
+
               <span>{displayCategory}</span>
             </div>
-
-            <ChevronRight size={18} strokeWidth={2.5} />
           </div>
         </header>
-
-        <section className="svx-edit-metrics" aria-label="Product edit preview">
-          <MiniCard icon={Warehouse} label="Current stock" value={formatPlain(qty)} note={branchLabel(product)} tone={status.tone} />
-          <MiniCard icon={DollarSign} label="Stock value" value={formatRwf(stockValue)} tone="green" />
-          <MiniCard icon={ShieldCheck} label="Margin" value={`${Number.isFinite(margin) ? margin : 0}%`} tone={profitPerItem >= 0 ? "green" : "red"} />
-          <MiniCard icon={ImagePlus} label="Images" value={`${images.length}`} note="Listing later" tone="blue" />
-        </section>
 
         <div className="svx-edit-layout">
           <div className="svx-edit-main">
             <section className="svx-edit-card">
               <SectionHeader
                 icon={PackageCheck}
-                title="Product basics"
-                text="Edit what helps the owner find, sell, and control this product."
-                badge={meta.eyebrow}
+                title={`${meta.itemLabel} details`}
+                text={`Update the main information used to find and sell this ${meta.itemLabelLower}.`}
               />
 
               <div className="svx-edit-grid">
-                <Field label="Product name" required wide>
+                <Field label={`${meta.itemLabel} name`} required wide>
                   <input
                     className="svx-edit-input"
                     value={form.name}
                     onChange={(event) => setField("name", event.target.value)}
-                    placeholder="Example: HP Pavilion 15"
+                    placeholder={meta.productNamePlaceholder}
                     disabled={saving}
                   />
                 </Field>
 
-                <Field label="Product category" required>
+                <Field label={`${meta.itemLabel} category`} required>
                   <select
                     className="svx-edit-input"
                     value={form.category}
                     onChange={(event) => handleCategoryChange(event.target.value)}
                     disabled={saving}
                   >
-                    <option value="">Choose category</option>
+                    <option value="">
+                      {meta.categoryPrompt}
+                    </option>
                     {productCategoryOptions.map((item) => (
                       <option key={item} value={item}>
                         {item}
@@ -908,7 +574,7 @@ export default function InventoryEdit() {
                       className="svx-edit-input"
                       value={form.customCategory}
                       onChange={(event) => setField("customCategory", event.target.value)}
-                      placeholder="Write the product category"
+                      placeholder={`Write the ${meta.itemLabelLower} category`}
                       disabled={saving}
                     />
                   </Field>
@@ -919,13 +585,13 @@ export default function InventoryEdit() {
                     className="svx-edit-input"
                     value={form.brand}
                     onChange={(event) => setField("brand", event.target.value)}
-                    placeholder="Example: HP"
+                    placeholder={meta.brandPlaceholder}
                     disabled={saving}
                   />
                 </Field>
 
                 {subcategoryOptions.length ? (
-                  <Field label="Product type">
+                  <Field label={`${meta.itemLabel} type`}>
                     <select
                       className="svx-edit-input"
                       value={form.subcategory}
@@ -978,9 +644,8 @@ export default function InventoryEdit() {
             <section className="svx-edit-card">
               <SectionHeader
                 icon={Layers3}
-                title="Category details"
-                text={meta.help}
-                badge="Category-aware"
+                title={`${meta.itemLabel} specifications`}
+                text={`Only details relevant to this ${meta.itemLabelLower} category are shown.`}
               />
 
               <div className="svx-edit-grid">
@@ -1020,7 +685,7 @@ export default function InventoryEdit() {
               <SectionHeader
                 icon={BadgeCheck}
                 title={trackingCopy.title}
-                text={trackingCopy.text}
+                text={trackingCopy.question}
               />
 
               <div className="svx-edit-choice-grid">
@@ -1130,49 +795,51 @@ export default function InventoryEdit() {
             <section className="svx-edit-card svx-edit-side-card">
               <SectionHeader
                 icon={ClipboardList}
-                title="Before saving"
-                text="Quick check for this product."
+                title={`${meta.itemLabel} review`}
+                text="Confirm the essential details before saving."
               />
 
               <div className="svx-edit-summary">
-                <SummaryRow label="Product" value={form.name || "Not named"} />
-                <SummaryRow label="Category" value={displayCategory} />
-                <SummaryRow label="Current stock" value={formatPlain(qty)} tone={status.tone} />
-                <SummaryRow label="Reserved" value={formatPlain(reserved)} />
-                <SummaryRow label="Cost" value={formatRwf(costPrice || 0)} />
-                <SummaryRow label="Selling price" value={formatRwf(sellPrice || 0)} />
-                <SummaryRow label="Profit per item" value={formatRwf(profitPerItem)} tone={profitPerItem >= 0 ? "success" : "danger"} />
-                <SummaryRow label="Stock cost" value={formatRwf(stockCost)} />
-                <SummaryRow label="Possible sales value" value={formatRwf(stockValue)} tone="success" />
+                <SummaryRow
+                  label={meta.itemLabel}
+                  value={form.name || `Unnamed ${meta.itemLabelLower}`}
+                />
+                <SummaryRow
+                  label="Category"
+                  value={displayCategory}
+                />
+                <SummaryRow
+                  label="Selling price"
+                  value={formatRwf(sellPrice || 0)}
+                />
+                <SummaryRow
+                  label="Current stock"
+                  value={formatPlain(qty)}
+                  tone={status.tone}
+                />
+                <SummaryRow
+                  label="Listing"
+                  value={listing.label}
+                  tone={listing.tone}
+                />
               </div>
-            </section>
 
-            <section className="svx-edit-card svx-edit-listing-note">
-              <SectionHeader
-                icon={ImagePlus}
-                title="Product listing"
-                text="Product listing publishing stays separate."
-              />
+              <Link
+                to={`/app/inventory/${id}/images`}
+                className="svx-edit-photo-action"
+              >
+                <ImagePlus size={17} strokeWidth={2.35} />
+                <span>Manage photos and marketplace</span>
+                <ChevronRight size={16} strokeWidth={2.4} />
+              </Link>
 
-              <div className="svx-edit-listing-box">
-                <StatusBadge tone={listing.tone}>{listing.label}</StatusBadge>
-                <p>{images.length ? `${images.length} image${images.length === 1 ? "" : "s"} attached` : "No images attached yet"}</p>
-                <span>
-                  Images and public visibility are managed separately. Editing this product does not force listing changes.
-                </span>
-              </div>
+              <p className="svx-edit-photo-help">
+                Photos and marketplace visibility are managed
+                separately from product information.
+              </p>
             </section>
 
             <section className="svx-edit-save-card">
-              <button
-                type="button"
-                className="svx-edit-secondary"
-                onClick={() => navigate(`/app/inventory/${id}`)}
-                disabled={saving}
-              >
-                Cancel
-              </button>
-
               <AsyncButton
                 type="submit"
                 loading={saving}
@@ -1183,10 +850,14 @@ export default function InventoryEdit() {
                 <span>Save changes</span>
               </AsyncButton>
 
-              <Link to={`/app/inventory/${id}`} className="svx-edit-muted-link">
-                Back to product details
-                <ChevronRight size={15} strokeWidth={2.4} />
-              </Link>
+              <button
+                type="button"
+                className="svx-edit-secondary"
+                onClick={() => navigate(`/app/inventory/${id}`)}
+                disabled={saving}
+              >
+                Cancel
+              </button>
             </section>
           </aside>
         </div>

@@ -5,170 +5,30 @@ import {
   ArrowLeft,
   BadgeCheck,
   Barcode,
-  Boxes,
   CheckCircle2,
-  ChevronRight,
   ClipboardList,
-  DollarSign,
   ImagePlus,
   Layers3,
   PackagePlus,
   Save,
-  ShieldCheck,
   Smartphone,
   Store,
   Tags,
-  Warehouse,
 } from "lucide-react";
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import { createProduct } from "../../services/inventoryApi";
 import { getWorkspaceContext } from "../../services/storeApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import {
+  getBusinessProductConfig,
+  getProductCategoryFields,
+  getProductSubcategoryOptions,
+  normalizeBusinessCategory,
+} from "../../utils/productFormConfig";
 import "./InventoryCreate.css";
 
 const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
-
-const BUSINESS_CATEGORY_META = {
-  ELECTRONICS: {
-    label: "Electronics",
-    eyebrow: "Device-ready stock",
-    help: "Use model, serial, warranty, and device details where they matter.",
-    categoryOptions: [
-      "Phones",
-      "Laptops",
-      "Tablets",
-      "Desktop Computers",
-      "Monitors",
-      "Printers",
-      "Networking",
-      "TV & Audio",
-      "Gaming",
-      "Cameras",
-      "Storage",
-      "Accessories",
-      "Smart Devices",
-      "Components",
-      "Other",
-    ],
-  },
-  HARDWARE: {
-    label: "Hardware / Quincaillerie",
-    eyebrow: "Building materials stock",
-    help: "Use unit, size, material, and grade to keep hardware stock clear.",
-    categoryOptions: [
-      "Cement",
-      "Iron sheets",
-      "Paint",
-      "Plumbing",
-      "Electrical",
-      "Tools",
-      "Locks",
-      "Tiles",
-      "Timber",
-      "Fasteners",
-      "Adhesives",
-      "Other",
-    ],
-  },
-  HOME_KITCHEN: {
-    label: "Home & kitchen",
-    eyebrow: "Home product stock",
-    help: "Use material, color, set size, and room/use case for clean product records.",
-    categoryOptions: [
-      "Cookware",
-      "Kitchen appliances",
-      "Dining",
-      "Home appliances",
-      "Storage",
-      "Cleaning",
-      "Furniture",
-      "Decor",
-      "Bathroom",
-      "Bedding",
-      "Other",
-    ],
-  },
-  LIGHTING: {
-    label: "Lighting",
-    eyebrow: "Lighting stock",
-    help: "Use wattage, voltage, fitting, and indoor/outdoor details.",
-    categoryOptions: [
-      "Bulbs",
-      "Tubes",
-      "Ceiling lights",
-      "Wall lights",
-      "Outdoor lights",
-      "Solar lights",
-      "LED strips",
-      "Switches",
-      "Cables",
-      "Accessories",
-      "Other",
-    ],
-  },
-  SPARE_PARTS: {
-    label: "Spare parts",
-    eyebrow: "Compatibility-first stock",
-    help: "Use part number, compatible model, condition, and warranty where needed.",
-    categoryOptions: [
-      "Phone parts",
-      "Laptop parts",
-      "Printer parts",
-      "TV parts",
-      "Audio parts",
-      "Power parts",
-      "Cables",
-      "Screens",
-      "Batteries",
-      "Boards",
-      "Other",
-    ],
-  },
-};
-
-const DEFAULT_META = BUSINESS_CATEGORY_META.ELECTRONICS;
-
-const ELECTRONICS_SUBCATEGORIES = {
-  Accessories: [
-    "Charger",
-    "Headphones / Earbuds",
-    "Phone cover",
-    "Screen protector",
-    "Adapter / Dongle",
-    "Cable",
-    "Power bank",
-    "SSD / HDD",
-    "RAM",
-    "Keyboard / Mouse",
-    "Laptop bag",
-    "Battery",
-    "Remote",
-    "Tripod",
-    "Microphone",
-    "Webcam",
-    "Other",
-  ],
-  Storage: ["SSD", "HDD", "Memory card", "Flash disk", "External drive", "Other"],
-  Components: ["RAM", "Motherboard", "Power supply", "Battery", "Screen", "Keyboard", "Fan", "Other"],
-};
-
-const UNIT_OPTIONS = [
-  "Piece",
-  "Box",
-  "Carton",
-  "Pack",
-  "Pair",
-  "Set",
-  "Bag",
-  "Kg",
-  "Litre",
-  "Metre",
-  "Roll",
-  "Bundle",
-];
-
-const CONDITION_OPTIONS = ["New", "Used", "Refurbished", "Open box"];
 
 function cx(...items) {
   return items.filter(Boolean).join(" ");
@@ -199,17 +59,6 @@ function makeSku({ brand, category, name }) {
 
 function isOtherCategory(value) {
   return cleanString(value).toLowerCase() === "other";
-}
-
-function normalizeBusinessCategory(value) {
-  const raw = cleanString(value).toUpperCase();
-
-  if (["HARDWARE", "QUINCAILLERIE"].includes(raw)) return "HARDWARE";
-  if (["HOME_KITCHEN", "HOME_AND_KITCHEN", "HOME & KITCHEN"].includes(raw)) return "HOME_KITCHEN";
-  if (raw === "LIGHTING") return "LIGHTING";
-  if (["SPARE_PARTS", "SPARE PARTS", "AUTO_PARTS"].includes(raw)) return "SPARE_PARTS";
-
-  return "ELECTRONICS";
 }
 
 function parseNumber(value) {
@@ -262,15 +111,6 @@ function readCachedWorkspace() {
   return null;
 }
 
-function productInitials(name) {
-  const parts = cleanString(name).split(/\s+/).filter(Boolean);
-
-  if (!parts.length) return "P";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-}
-
 function businessCategoryFromWorkspace(workspace) {
   const tenant = workspace?.tenant || workspace?.business || workspace?.store || {};
   return normalizeBusinessCategory(
@@ -281,150 +121,6 @@ function businessCategoryFromWorkspace(workspace) {
       workspace?.category,
   );
 }
-
-function attributeFieldsFor(categoryKey, productCategory) {
-  if (categoryKey === "HARDWARE") {
-    return [
-      { name: "unit", label: "Selling unit", type: "select", options: UNIT_OPTIONS, placeholder: "Piece" },
-      { name: "size", label: "Size / measurement", placeholder: "Example: 20L, 12mm, 2m" },
-      { name: "material", label: "Material", placeholder: "Example: steel, PVC, wood" },
-      { name: "grade", label: "Grade / quality", placeholder: "Example: standard, heavy duty" },
-    ];
-  }
-
-  if (categoryKey === "HOME_KITCHEN") {
-    return [
-      { name: "material", label: "Material", placeholder: "Example: stainless steel, glass" },
-      { name: "color", label: "Color", placeholder: "Example: black" },
-      { name: "size", label: "Size", placeholder: "Example: medium, 2L, queen" },
-      { name: "setPieces", label: "Pieces in set", type: "number", placeholder: "Example: 6" },
-    ];
-  }
-
-  if (categoryKey === "LIGHTING") {
-    return [
-      { name: "wattage", label: "Wattage", placeholder: "Example: 12W" },
-      { name: "voltage", label: "Voltage", placeholder: "Example: 220V" },
-      { name: "fitting", label: "Fitting", placeholder: "Example: E27, GU10" },
-      { name: "lightColor", label: "Light color", placeholder: "Example: warm white" },
-    ];
-  }
-
-  if (categoryKey === "SPARE_PARTS") {
-    return [
-      { name: "partNumber", label: "Part number", placeholder: "Example: A2337-SCREEN" },
-      { name: "compatibleModel", label: "Compatible model", placeholder: "Example: iPhone 13, HP 840 G5" },
-      { name: "condition", label: "Condition", type: "select", options: CONDITION_OPTIONS, placeholder: "New" },
-      { name: "warrantyDays", label: "Warranty days", type: "number", placeholder: "Example: 30" },
-    ];
-  }
-
-  if (["Phones", "Tablets"].includes(productCategory)) {
-    return [
-      { name: "storage", label: "Storage", placeholder: "Example: 128GB" },
-      { name: "memory", label: "Memory", placeholder: "Example: 6GB RAM" },
-      { name: "color", label: "Color", placeholder: "Example: Midnight" },
-      { name: "condition", label: "Condition", type: "select", options: CONDITION_OPTIONS, placeholder: "New" },
-    ];
-  }
-
-  if (["Laptops", "Desktop Computers"].includes(productCategory)) {
-    return [
-      { name: "processor", label: "Processor", placeholder: "Example: Core i5" },
-      { name: "memory", label: "Memory", placeholder: "Example: 8GB RAM" },
-      { name: "storage", label: "Storage", placeholder: "Example: 512GB SSD" },
-      { name: "condition", label: "Condition", type: "select", options: CONDITION_OPTIONS, placeholder: "New" },
-    ];
-  }
-
-  if (productCategory === "Accessories") {
-    return [
-      { name: "compatibility", label: "Compatible with", placeholder: "Example: USB-C phones" },
-      { name: "color", label: "Color", placeholder: "Example: black" },
-      { name: "warrantyDays", label: "Warranty days", type: "number", placeholder: "Example: 30" },
-      { name: "unit", label: "Selling unit", type: "select", options: UNIT_OPTIONS, placeholder: "Piece" },
-    ];
-  }
-
-  return [
-    { name: "model", label: "Model", placeholder: "Example: 2024 model" },
-    { name: "specification", label: "Key specification", placeholder: "Example: Bluetooth, 4K, dual-band" },
-    { name: "condition", label: "Condition", type: "select", options: CONDITION_OPTIONS, placeholder: "New" },
-    { name: "warrantyDays", label: "Warranty days", type: "number", placeholder: "Example: 30" },
-  ];
-}
-
-
-function trackingCopyFor(categoryKey) {
-  if (categoryKey === "HARDWARE") {
-    return {
-      title: "Item tracking",
-      text: "Use manufacturer serial only for machines, power tools, pumps, or warranty-controlled items.",
-      normalTitle: "Normal stock",
-      normalText: "Best for paint, cement, fittings, tools, and materials sold as normal stock.",
-      trackedTitle: "Serial number",
-      trackedText: "Use only for hardware items that have a manufacturer serial or warranty card.",
-      inputLabel: "Serial number",
-      inputPlaceholder: "Example: drill or machine serial number",
-      requiredMessage: "Serial number is required when item tracking is on",
-    };
-  }
-
-  if (categoryKey === "HOME_KITCHEN") {
-    return {
-      title: "Item tracking",
-      text: "Use serial tracking only for appliances or warranty-sensitive home products.",
-      normalTitle: "Normal stock",
-      normalText: "Best for cookware, dining, decor, furniture, and everyday home goods.",
-      trackedTitle: "Appliance serial",
-      trackedText: "Use for appliances or warranty items that must be identified one by one.",
-      inputLabel: "Appliance serial",
-      inputPlaceholder: "Example: appliance serial number",
-      requiredMessage: "Appliance serial is required when item tracking is on",
-    };
-  }
-
-  if (categoryKey === "LIGHTING") {
-    return {
-      title: "Item tracking",
-      text: "Use serial or batch tracking only for solar kits, drivers, fixtures, or warranty-controlled lighting.",
-      normalTitle: "Normal stock",
-      normalText: "Best for bulbs, tubes, switches, cables, and common lighting accessories.",
-      trackedTitle: "Serial / batch code",
-      trackedText: "Use for lighting items that need warranty, batch, or installation traceability.",
-      inputLabel: "Serial / batch code",
-      inputPlaceholder: "Example: solar kit serial or batch code",
-      requiredMessage: "Serial or batch code is required when item tracking is on",
-    };
-  }
-
-  if (categoryKey === "SPARE_PARTS") {
-    return {
-      title: "Part tracking",
-      text: "Use tracking only when a part has a serial, batch, or warranty code.",
-      normalTitle: "Normal stock",
-      normalText: "Best for common parts where quantity and compatibility are enough.",
-      trackedTitle: "Serial / batch code",
-      trackedText: "Use for warranty-sensitive parts or parts that must be traced one by one.",
-      inputLabel: "Serial / batch code",
-      inputPlaceholder: "Example: part serial, batch, or warranty code",
-      requiredMessage: "Serial or batch code is required when part tracking is on",
-    };
-  }
-
-  return {
-    title: "Tracking",
-    text: "Use serial or IMEI only when this product must be identified one by one.",
-    normalTitle: "Normal stock",
-    normalText: "Best for products where every unit is the same.",
-    trackedTitle: "Serial / IMEI",
-    trackedText: "Best for phones, laptops, and warranty-sensitive items.",
-    inputLabel: "Serial / IMEI",
-    inputPlaceholder: "Serial or IMEI number",
-    requiredMessage: "Serial or IMEI is required when tracking is on",
-  };
-}
-
 
 function Field({ label, required = false, help, children, wide = false }) {
   return (
@@ -462,20 +158,6 @@ function SummaryRow({ label, value, tone }) {
     <div className={cx("svx-product-summary-row", tone && `is-${tone}`)}>
       <span>{label}</span>
       <strong>{value}</strong>
-    </div>
-  );
-}
-
-function MiniCard({ icon: Icon, label, value, tone = "neutral" }) {
-  return (
-    <div className={cx("svx-product-mini-card", `is-${tone}`)}>
-      <span aria-hidden="true">
-        <Icon size={18} strokeWidth={2.25} />
-      </span>
-      <div>
-        <p>{label}</p>
-        <strong>{value}</strong>
-      </div>
     </div>
   );
 }
@@ -532,9 +214,9 @@ export default function InventoryCreate() {
   }, []);
 
   const businessCategory = businessCategoryFromWorkspace(workspace);
-  const meta = BUSINESS_CATEGORY_META[businessCategory] || DEFAULT_META;
-  const trackingCopy = trackingCopyFor(businessCategory);
-  const productCategoryOptions = meta.categoryOptions;
+  const meta = getBusinessProductConfig(businessCategory);
+  const trackingCopy = meta.tracking;
+  const productCategoryOptions = meta.categories;
   const selectedCategory = isOtherCategory(form.category)
     ? cleanString(form.customCategory)
     : cleanString(form.category);
@@ -544,31 +226,30 @@ export default function InventoryCreate() {
     category: selectedCategory || meta.label,
     name: form.name,
   });
-  const subcategoryOptions = ELECTRONICS_SUBCATEGORIES[selectedCategory || form.category] || [];
+  const subcategoryOptions =
+    getProductSubcategoryOptions(
+      businessCategory,
+      selectedCategory || form.category,
+    );
+
   const attributeFields = useMemo(
-    () => attributeFieldsFor(businessCategory, selectedCategory || form.category),
-    [businessCategory, selectedCategory, form.category],
+    () =>
+      getProductCategoryFields(
+        businessCategory,
+        selectedCategory || form.category,
+      ),
+    [
+      businessCategory,
+      selectedCategory,
+      form.category,
+    ],
   );
 
   const costPrice = parseNumber(form.costPrice);
   const sellPrice = parseNumber(form.sellPrice);
   const stockQty = parseNumber(form.stockQty);
   const minStockLevel = parseNumber(form.minStockLevel);
-  const profitPerItem =
-    costPrice !== null && sellPrice !== null ? sellPrice - costPrice : 0;
-  const stockValue =
-    stockQty !== null && sellPrice !== null ? stockQty * sellPrice : 0;
-  const stockCost =
-    stockQty !== null && costPrice !== null ? stockQty * costPrice : 0;
-  const margin =
-    sellPrice && sellPrice > 0 ? Math.round((profitPerItem / sellPrice) * 100) : 0;
 
-  const stockTone =
-    stockQty === null || stockQty <= 0
-      ? "danger"
-      : minStockLevel !== null && stockQty <= minStockLevel
-        ? "warning"
-        : "success";
 
   function setField(name, value) {
     setForm((current) => ({
@@ -603,7 +284,7 @@ export default function InventoryCreate() {
     const category = selectedCategory;
 
     if (!name) {
-      toast.error("Product name is required");
+      toast.error(`${meta.itemLabel} name is required`);
       return false;
     }
 
@@ -657,6 +338,11 @@ export default function InventoryCreate() {
 
     if (!validateForm()) return;
 
+    const saveDestination =
+      event.nativeEvent?.submitter?.value === "photos"
+        ? "photos"
+        : "product";
+
     setSaving(true);
 
     try {
@@ -682,11 +368,19 @@ export default function InventoryCreate() {
 
       toast.success("Product saved");
 
-      if (productId) {
-        navigate(`/app/inventory/${productId}`);
-      } else {
+      if (!productId) {
         navigate("/app/inventory");
+        return;
       }
+
+      if (saveDestination === "photos") {
+        navigate(
+          `/app/inventory/${productId}/images?setup=1`,
+        );
+        return;
+      }
+
+      navigate(`/app/inventory/${productId}`);
     } catch (error) {
       handleSubscriptionBlockedError(error) || toast.error(error?.message || "Failed to save product");
     } finally {
@@ -698,74 +392,59 @@ export default function InventoryCreate() {
     <main className="svx-product-page">
       <form className="svx-product-shell" onSubmit={handleSubmit}>
         <header className="svx-product-hero">
+          <button
+            type="button"
+            className="svx-product-back"
+            onClick={() => navigate("/app/inventory")}
+            disabled={saving}
+          >
+            <ArrowLeft size={18} strokeWidth={2.4} />
+            <span>Inventory</span>
+          </button>
+
           <div className="svx-product-hero-copy">
-            <button
-              type="button"
-              className="svx-product-back"
-              onClick={() => navigate("/app/inventory")}
-              disabled={saving}
-            >
-              <ArrowLeft size={18} strokeWidth={2.4} />
-              <span>Inventory</span>
-            </button>
-
-            <p className="svx-product-kicker">Create product</p>
-            <h1>Add a product.</h1>
-            <p>
-              Save the product for stock and sales first. Product images are added later only when the owner chooses to publish it.
+            <p className="svx-product-kicker">
+              {meta.eyebrow}
             </p>
-          </div>
 
-          <div className="svx-product-hero-card">
-            <span className="svx-product-avatar" aria-hidden="true">
-              {productInitials(form.name)}
-            </span>
+            <h1>
+              Add {meta.itemLabelLower}.
+            </h1>
 
-            <div>
-              <p>{form.name || "New product"}</p>
-              <span>{displayCategory}</span>
-            </div>
-
-            <ChevronRight size={18} strokeWidth={2.5} />
+            <p>{meta.pageDescription}</p>
           </div>
         </header>
-
-        <section className="svx-product-metrics" aria-label="Product preview">
-          <MiniCard icon={Warehouse} label="Branch" value={branchLabel} tone="blue" />
-          <MiniCard icon={DollarSign} label="Selling value" value={formatRwf(stockValue)} tone="green" />
-          <MiniCard icon={ShieldCheck} label="Margin" value={`${Number.isFinite(margin) ? margin : 0}%`} tone={profitPerItem >= 0 ? "green" : "red"} />
-          <MiniCard icon={Boxes} label="Starting stock" value={stockQty === null ? "0" : formatPlain(stockQty)} tone={stockTone} />
-        </section>
 
         <div className="svx-product-layout">
           <div className="svx-product-main">
             <section className="svx-product-card">
               <SectionHeader
                 icon={PackagePlus}
-                title="Product basics"
-                text="Only ask for what helps the owner sell, find, and control this product."
-                badge={meta.eyebrow}
+                title={`${meta.itemLabel} details`}
+                text={`Enter the main information used to find and sell this ${meta.itemLabelLower}.`}
               />
 
               <div className="svx-product-grid">
-                <Field label="Product name" required wide>
+                <Field label={`${meta.itemLabel} name`} required wide>
                   <input
                     className="svx-product-input"
                     value={form.name}
                     onChange={(event) => setField("name", event.target.value)}
-                    placeholder="Example: Dell Inspiron 15"
+                    placeholder={meta.productNamePlaceholder}
                     disabled={saving}
                   />
                 </Field>
 
-                <Field label="Product category" required>
+                <Field label={`${meta.itemLabel} category`} required>
                   <select
                     className="svx-product-input"
                     value={form.category}
                     onChange={(event) => handleCategoryChange(event.target.value)}
                     disabled={saving}
                   >
-                    <option value="">Choose category</option>
+                    <option value="">
+                      {meta.categoryPrompt}
+                    </option>
                     {productCategoryOptions.map((item) => (
                       <option key={item} value={item}>
                         {item}
@@ -780,7 +459,7 @@ export default function InventoryCreate() {
                       className="svx-product-input"
                       value={form.customCategory}
                       onChange={(event) => setField("customCategory", event.target.value)}
-                      placeholder="Write the product category"
+                      placeholder={`Write the ${meta.itemLabelLower} category`}
                       disabled={saving}
                     />
                   </Field>
@@ -791,13 +470,13 @@ export default function InventoryCreate() {
                     className="svx-product-input"
                     value={form.brand}
                     onChange={(event) => setField("brand", event.target.value)}
-                    placeholder="Example: Dell"
+                    placeholder={meta.brandPlaceholder}
                     disabled={saving}
                   />
                 </Field>
 
                 {subcategoryOptions.length ? (
-                  <Field label="Product type">
+                  <Field label={`${meta.itemLabel} type`}>
                     <select
                       className="svx-product-input"
                       value={form.subcategory}
@@ -850,9 +529,8 @@ export default function InventoryCreate() {
             <section className="svx-product-card">
               <SectionHeader
                 icon={Layers3}
-                title="Category details"
-                text={meta.help}
-                badge="Category-aware"
+                title={`${meta.itemLabel} specifications`}
+                text={`Only details relevant to this ${meta.itemLabelLower} category are shown.`}
               />
 
               <div className="svx-product-grid">
@@ -892,7 +570,7 @@ export default function InventoryCreate() {
               <SectionHeader
                 icon={BadgeCheck}
                 title={trackingCopy.title}
-                text={trackingCopy.text}
+                text={trackingCopy.question}
               />
 
               <div className="svx-product-choice-grid">
@@ -998,52 +676,69 @@ export default function InventoryCreate() {
             <section className="svx-product-card svx-product-side-card">
               <SectionHeader
                 icon={ClipboardList}
-                title="Before saving"
-                text="Quick check for this product."
+                title={`${meta.itemLabel} review`}
+                text="Confirm the essential details before saving."
               />
 
               <div className="svx-product-summary">
-                <SummaryRow label="Product" value={form.name || "Not named"} />
-                <SummaryRow label="Category" value={displayCategory} />
-                <SummaryRow label="Cost" value={formatRwf(costPrice || 0)} />
-                <SummaryRow label="Selling price" value={formatRwf(sellPrice || 0)} />
-                <SummaryRow label="Profit per item" value={formatRwf(profitPerItem)} tone={profitPerItem >= 0 ? "success" : "danger"} />
-                <SummaryRow label="Stock cost" value={formatRwf(stockCost)} />
-                <SummaryRow label="Possible sales value" value={formatRwf(stockValue)} tone="success" />
+                <SummaryRow
+                  label={meta.itemLabel}
+                  value={form.name || `New ${meta.itemLabelLower}`}
+                />
+                <SummaryRow
+                  label="Category"
+                  value={displayCategory}
+                />
+                <SummaryRow
+                  label="Selling price"
+                  value={formatRwf(sellPrice || 0)}
+                />
+                <SummaryRow
+                  label="Starting stock"
+                  value={stockQty === null ? "0" : formatPlain(stockQty)}
+                />
+                <SummaryRow
+                  label="Branch"
+                  value={branchLabel}
+                />
               </div>
-            </section>
 
-            <section className="svx-product-card svx-product-listing-note">
-              <SectionHeader
-                icon={ImagePlus}
-                title="Product images"
-                text="Images are not required for internal stock."
-              />
-
-              <p>
-                Save the product first. Images can be added after creation and used for product details, listing, and future sales flows.
+              <p className="svx-product-photo-help">
+                Photos are optional for internal stock. Add them when
+                this item needs product images or marketplace visibility.
               </p>
             </section>
 
             <section className="svx-product-save-card">
+              <AsyncButton
+                type="submit"
+                value="photos"
+                loading={saving}
+                loadingText="Saving product..."
+                className="svx-product-primary"
+              >
+                <ImagePlus size={17} strokeWidth={2.4} />
+                <span>Save and add photos</span>
+              </AsyncButton>
+
+              <button
+                type="submit"
+                value="product"
+                className="svx-product-secondary"
+                disabled={saving}
+              >
+                <Save size={17} strokeWidth={2.4} />
+                <span>Save product only</span>
+              </button>
+
               <button
                 type="button"
-                className="svx-product-secondary"
+                className="svx-product-cancel"
                 onClick={() => navigate("/app/inventory")}
                 disabled={saving}
               >
                 Cancel
               </button>
-
-              <AsyncButton
-                type="submit"
-                loading={saving}
-                loadingText="Saving product..."
-                className="svx-product-primary"
-              >
-                <Save size={17} strokeWidth={2.4} />
-                <span>Save product</span>
-              </AsyncButton>
             </section>
           </aside>
         </div>
