@@ -245,99 +245,36 @@ async function createRealPhotoCanvas({
   quality,
 }) {
   /*
-   * Every Marketplace photo is exported to the same square
-   * Storvex dimensions while keeping the complete photo visible.
+   * Keep the complete product photo visible.
    *
-   * Near-square photos receive a subtle blurred edge extension.
-   * Wide or tall photos use the neutral Storvex background so
-   * large blurred bands never dominate the product image.
+   * A square cannot contain a rectangular photo without
+   * either cropping the photo or leaving unused space.
+   * Storvex fills that space with a softly blurred version
+   * of the same uploaded photo, then places the complete
+   * original photo above it.
+   *
+   * Nothing unrelated is generated and the product is
+   * never stretched or cropped.
    */
-
-  const sourceMetadata =
-    await sourcePipeline(source).metadata();
-
-  const sourceWidth =
-    Number(sourceMetadata.width || 0);
-
-  const sourceHeight =
-    Number(sourceMetadata.height || 0);
-
-  if (!sourceWidth || !sourceHeight) {
-    throw createImageError(
-      "The product photo dimensions could not be detected.",
-      {
-        code:
-          "PRODUCT_IMAGE_DIMENSIONS_MISSING",
-      },
-    );
-  }
-
-  const containScale = Math.min(
-    canvasSize / sourceWidth,
-    canvasSize / sourceHeight,
-  );
-
-  const containedWidth = Math.max(
-    1,
-    Math.round(sourceWidth * containScale),
-  );
-
-  const containedHeight = Math.max(
-    1,
-    Math.round(sourceHeight * containScale),
-  );
-
-  const occupiedCanvasRatio =
-    (containedWidth * containedHeight) /
-    (canvasSize * canvasSize);
-
-  /*
-   * Blur is useful only when the complete photo already occupies
-   * most of the square. Below this level the blurred extension
-   * becomes visually dominant, so Storvex uses its neutral canvas.
-   */
-  const useBlurredBackground =
-    occupiedCanvasRatio >= 0.72;
-
-  let background;
-
-  if (useBlurredBackground) {
-    background = await sourcePipeline(source)
-      .resize({
-        width: canvasSize,
-        height: canvasSize,
-        fit: "cover",
-        position: "centre",
-        withoutEnlargement: false,
-      })
-      .blur(
-        Math.max(
-          12,
-          Math.round(canvasSize * 0.018),
-        ),
-      )
-      .modulate({
-        brightness: 0.82,
-        saturation: 0.82,
-      })
-      .toBuffer();
-  } else {
-    background = await sharp({
-      create: {
-        width: canvasSize,
-        height: canvasSize,
-        channels: 3,
-        background:
-          configuredBackgroundColor(),
-      },
+  const background = await sourcePipeline(source)
+    .resize({
+      width: canvasSize,
+      height: canvasSize,
+      fit: "cover",
+      position: "centre",
+      withoutEnlargement: false,
     })
-      .webp({
-        quality,
-        effort: 5,
-        smartSubsample: true,
-      })
-      .toBuffer();
-  }
+    .blur(
+      Math.max(
+        12,
+        Math.round(canvasSize * 0.018),
+      ),
+    )
+    .modulate({
+      brightness: 0.82,
+      saturation: 0.82,
+    })
+    .toBuffer();
 
   const foreground = await sourcePipeline(source)
     .ensureAlpha()
@@ -378,9 +315,7 @@ async function createRealPhotoCanvas({
     height: canvasSize,
     sizeBytes: buffer.length,
     mimeType: "image/webp",
-    backgroundColor: useBlurredBackground
-      ? null
-      : configuredBackgroundColor(),
+    backgroundColor: null,
   };
 }
 
