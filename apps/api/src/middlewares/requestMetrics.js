@@ -14,10 +14,60 @@ function environmentFlag(value) {
     .toLowerCase() === "true";
 }
 
+function normalizeMetricPath(path) {
+  const segments = String(path || "/")
+    .split("/")
+    .filter(Boolean);
+
+  if (
+    segments[0] === "api" &&
+    segments[1] === "suppliers" &&
+    segments.length >= 3
+  ) {
+    segments[2] = ":id";
+  }
+
+  if (
+    segments[0] === "api" &&
+    segments[1] === "customers" &&
+    segments.length >= 3
+  ) {
+    segments[2] = ":id";
+  }
+
+  if (
+    segments[0] === "api" &&
+    segments[1] === "inventory" &&
+    segments[2] === "products" &&
+    segments.length >= 4
+  ) {
+    segments[3] = ":id";
+  }
+
+  if (
+    segments[0] === "api" &&
+    segments[1] === "marketplace" &&
+    segments[2] === "stores" &&
+    segments.length >= 4
+  ) {
+    segments[3] = ":storeSlug";
+
+    if (
+      segments[4] === "products" &&
+      segments.length >= 6
+    ) {
+      segments[5] = ":productSlug";
+    }
+  }
+
+  return `/${segments.join("/")}` || "/";
+}
+
 function requestPath(req) {
   const originalUrl = String(req?.originalUrl || req?.url || "");
+  const pathname = originalUrl.split("?")[0] || "/";
 
-  return originalUrl.split("?")[0] || "/";
+  return normalizeMetricPath(pathname);
 }
 
 function shouldTrackRequest(req) {
@@ -112,6 +162,8 @@ module.exports.TRACKED_API_PREFIXES =
   TRACKED_API_PREFIXES;
 module.exports.createRequestMetricsMiddleware =
   createRequestMetricsMiddleware;
+module.exports.normalizeMetricPath =
+  normalizeMetricPath;
 module.exports.requestPath = requestPath;
 module.exports.shouldTrackRequest =
   shouldTrackRequest;

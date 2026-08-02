@@ -5,6 +5,7 @@ const { EventEmitter } = require("node:events");
 const {
   TRACKED_API_PREFIXES,
   createRequestMetricsMiddleware,
+  normalizeMetricPath,
   requestPath,
   shouldTrackRequest,
 } = require(
@@ -69,6 +70,46 @@ test(
         originalUrl: "/api/inventory",
       }),
       false,
+    );
+  },
+);
+
+test(
+  "normalizes identifiers and public slugs in metric paths",
+  () => {
+    assert.equal(
+      normalizeMetricPath(
+        "/api/suppliers/fc61c8fe-6966-4fc2-8e4f-388ddde9d20a/balance",
+      ),
+      "/api/suppliers/:id/balance",
+    );
+
+    assert.equal(
+      normalizeMetricPath(
+        "/api/customers/9c05c532-5392-483e-9927-cc8cff29ad90",
+      ),
+      "/api/customers/:id",
+    );
+
+    assert.equal(
+      normalizeMetricPath(
+        "/api/inventory/products/8e8ad055-f7c4-4767-a446-e465dd7c4abd",
+      ),
+      "/api/inventory/products/:id",
+    );
+
+    assert.equal(
+      normalizeMetricPath(
+        "/api/marketplace/stores/ruraxis-ltd",
+      ),
+      "/api/marketplace/stores/:storeSlug",
+    );
+
+    assert.equal(
+      normalizeMetricPath(
+        "/api/marketplace/stores/ruraxis-ltd/products/hp-pavilion-15-6ee692",
+      ),
+      "/api/marketplace/stores/:storeSlug/products/:productSlug",
     );
   },
 );
