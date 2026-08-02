@@ -3,6 +3,8 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
+const requestMetrics = require("./middlewares/requestMetrics");
+
 const authenticate = require("./middlewares/authenticate");
 const requireTenant = require("./middlewares/requireTenant");
 const requireRole = require("./middlewares/requireRole");
@@ -63,6 +65,9 @@ const supportAttachmentsRoutes = require("./modules/supportTickets/supportAttach
 const app = express();
 
 app.use(cors());
+
+// Disabled by default. Enable only when collecting a performance baseline.
+app.use(requestMetrics);
 
 /**
  * IMPORTANT
