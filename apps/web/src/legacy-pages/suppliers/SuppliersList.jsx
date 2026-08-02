@@ -9,7 +9,6 @@ import PageSkeleton from "../../components/ui/PageSkeleton";
 import {
   activateSupplier,
   deactivateSupplier,
-  getSupplierBalance,
   listSuppliers,
 } from "../../services/suppliersApi";
 
@@ -503,16 +502,25 @@ export default function SuppliersList() {
 
       setSuppliers(rows);
 
-      const balanceResults = await Promise.allSettled(
-        rows.map((supplier) => getSupplierBalance(supplier.id)),
-      );
-
-      const nextBalances = {};
-      balanceResults.forEach((result, index) => {
-        const supplierId = rows[index]?.id;
-        if (!supplierId || result.status !== "fulfilled") return;
-        nextBalances[supplierId] = result.value;
-      });
+      const nextBalances =
+        Object.fromEntries(
+          rows
+            .filter((supplier) => supplier?.id)
+            .map((supplier) => [
+              supplier.id,
+              supplier.financialSummary || {
+                totals: {
+                  totalBilled: 0,
+                  totalPaid: 0,
+                  balanceDue: 0,
+                  openBills: 0,
+                  paymentsCount: 0,
+                },
+                lastPayment: null,
+                lastSupply: null,
+              },
+            ]),
+        );
 
       setSupplierBalances(nextBalances);
     } catch (err) {

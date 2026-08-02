@@ -1,6 +1,12 @@
 // src/modules/suppliers/suppliers.controller.js
 const { Prisma } = require("@prisma/client");
 const prisma = require("../../config/database");
+const {
+  loadSupplierListSummaries,
+} = require(
+  "./supplierListSummary.service",
+);
+
 const { recordMoneyAccountMovement, handleMoneyAccountError } = require("../money/moneyAccount.service");
 
 function cleanString(value) {
@@ -409,8 +415,21 @@ async function listSuppliers(req, res) {
       },
     });
 
+    const financialSummaries =
+      await loadSupplierListSummaries({
+        database: prisma,
+        tenantId,
+        supplierIds: rows.map(
+          (supplier) => supplier.id,
+        ),
+      });
+
     return res.json({
-      suppliers: rows.map(serializeSupplier),
+      suppliers: rows.map((supplier) => ({
+        ...serializeSupplier(supplier),
+        financialSummary:
+          financialSummaries[supplier.id],
+      })),
       count: rows.length,
     });
   } catch (err) {
