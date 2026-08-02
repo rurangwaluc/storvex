@@ -1,5 +1,8 @@
 # Storvex
 
+
+pnpm --filter @storvex/api storage:local
+
 Storvex is a business-control platform for technical retail businesses.
 
 Current focus:

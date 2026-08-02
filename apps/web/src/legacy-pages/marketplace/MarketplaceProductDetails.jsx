@@ -34,6 +34,7 @@ import {
 import {
   MarketplaceFooter,
   MarketplaceHeader,
+  ProductCard,
   formatMoney,
   marketplaceErrorMessage,
 } from "./MarketplaceHome";
@@ -54,6 +55,7 @@ import {
 
 import "../public/LandingPage.css";
 import "./MarketplacePublic.css";
+import "./MarketplaceProductCard.css";
 import "./MarketplaceCustomerPanel.css";
 import "./MarketplaceProductDetails.css";
 
@@ -286,66 +288,6 @@ function DetailState({
         {action}
       </div>
     </main>
-  );
-}
-
-function RelatedProduct({ product }) {
-  const url = `/marketplace/${encodeURIComponent(
-    product.seller.slug,
-  )}/${encodeURIComponent(product.slug)}`;
-
-  return (
-    <Link
-      to={url}
-      className="svx-product-related-card"
-    >
-      <div className="svx-product-related-image">
-        <img
-          src={imageUrl(
-            product.image,
-            {
-              thumbnail: true,
-            },
-          )}
-          alt={
-            product.image?.altText ||
-            product.title
-          }
-          width={imageDimension(
-            product.image,
-            "thumbnailWidth",
-            480,
-          )}
-          height={imageDimension(
-            product.image,
-            "thumbnailHeight",
-            480,
-          )}
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-
-      <div>
-        <small>{product.seller.name}</small>
-        <h3>{product.title}</h3>
-
-        <strong>
-          {formatMoney(product.price, product.currency)}
-        </strong>
-
-        {product.onSale ? (
-          <del>
-            {formatMoney(
-              product.regularPrice,
-              product.currency,
-            )}
-          </del>
-        ) : null}
-      </div>
-
-      <ChevronRight size={17} />
-    </Link>
   );
 }
 
@@ -729,151 +671,154 @@ export default function MarketplaceProductDetails() {
             </button>
 
             <section className="svx-product-detail-hero">
-              <div className="svx-product-gallery">
-                <div className="svx-product-main-image">
-                  <img
-                    src={imageUrl(
-                      activeImage,
-                    )}
-                    alt={
-                      activeImage?.altText ||
-                      product.title
-                    }
-                    width={imageDimension(
-                      activeImage,
-                      "width",
-                      1600,
-                    )}
-                    height={imageDimension(
-                      activeImage,
-                      "height",
-                      1600,
-                    )}
-                    loading="eager"
-                    decoding="async"
-                    fetchPriority="high"
-                  />
-
-                  {product.onSale ? (
-                    <span className="svx-product-sale-text">
-                      {discountPercent}% off
-                    </span>
+              <div className="svx-product-media-column">
+                <div className="svx-product-gallery">
+                  {images.length > 1 ? (
+                    <div
+                      className="svx-product-thumbnails"
+                      aria-label="Product images"
+                    >
+                      {images.map((image, index) => (
+                        <button
+                          type="button"
+                          key={`${imageUrl(image)}-${index}`}
+                          className={
+                            index === activeImageIndex
+                              ? "is-active"
+                              : ""
+                          }
+                          onClick={() =>
+                            setActiveImageIndex(index)
+                          }
+                          aria-label={`Show product image ${index + 1}`}
+                          aria-pressed={
+                            index === activeImageIndex
+                          }
+                        >
+                          <img
+                            src={imageUrl(image, {
+                              thumbnail: true,
+                            })}
+                            alt=""
+                            width={imageDimension(
+                              image,
+                              "thumbnailWidth",
+                              480,
+                            )}
+                            height={imageDimension(
+                              image,
+                              "thumbnailHeight",
+                              480,
+                            )}
+                            loading="lazy"
+                            decoding="async"
+                          />
+                        </button>
+                      ))}
+                    </div>
                   ) : null}
+
+                  <div className="svx-product-main-image">
+                    <img
+                      src={imageUrl(activeImage)}
+                      alt={
+                        activeImage?.altText ||
+                        product.title
+                      }
+                      width={imageDimension(
+                        activeImage,
+                        "width",
+                        1600,
+                      )}
+                      height={imageDimension(
+                        activeImage,
+                        "height",
+                        1600,
+                      )}
+                      loading="eager"
+                      decoding="async"
+                      fetchPriority="high"
+                    />
+
+                    {product.onSale ? (
+                      <span className="svx-product-sale-text">
+                        Save {discountPercent}%
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
 
-                {images.length > 1 ? (
-                  <div
-                    className="svx-product-thumbnails"
-                    aria-label="Product images"
-                  >
-                    {images.map((image, index) => (
-                      <button
-                        type="button"
-                        key={`${imageUrl(image)}-${index}`}
-                        className={
-                          index === activeImageIndex
-                            ? "is-active"
-                            : ""
-                        }
-                        onClick={() =>
-                          setActiveImageIndex(index)
-                        }
-                        aria-label={`Show product image ${index + 1}`}
-                        aria-pressed={
-                          index === activeImageIndex
-                        }
-                      >
-                        <img
-                          src={imageUrl(
-                            image,
-                            {
-                              thumbnail: true,
-                            },
-                          )}
-                          alt=""
-                          width={imageDimension(
-                            image,
-                            "thumbnailWidth",
-                            480,
-                          )}
-                          height={imageDimension(
-                            image,
-                            "thumbnailHeight",
-                            480,
-                          )}
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      </button>
-                    ))}
+                <div className="svx-product-confidence">
+                  <div>
+                    <PackageCheck size={20} />
+
+                    <span>
+                      <strong>Stock confirmed</strong>
+                      <small>
+                        Checked again when the store receives
+                        your request.
+                      </small>
+                    </span>
                   </div>
-                ) : null}
 
-              {product.description ? (
-                <section className="svx-product-full-description">
-                  <h2>Product description</h2>
-
-                  <p>{product.description}</p>
-                </section>
-              ) : null}
-
-              {relatedProducts.length ? (
-                <section className="svx-product-related is-gallery-related">
-                  <header>
+                  {store.pickupEnabled ? (
                     <div>
-                      <h2>Similar products</h2>
-                      <p>
-                        More available products in this
-                        category.
-                      </p>
+                      <Store size={20} />
+
+                      <span>
+                        <strong>Store pickup</strong>
+                        <small>
+                          Collect after the store confirms
+                          your request.
+                        </small>
+                      </span>
                     </div>
+                  ) : null}
 
-                    <Link
-                      to={`/marketplace?category=${encodeURIComponent(
-                        product.category || "",
-                      )}`}
-                    >
-                      View all
-                      <ChevronRight size={15} />
-                    </Link>
-                  </header>
+                  {store.deliveryEnabled ? (
+                    <div>
+                      <Truck size={20} />
 
-                  <div className="svx-product-related-grid">
-                    {relatedProducts.map((item) => (
-                      <RelatedProduct
-                        key={`${item.seller.slug}-${item.slug}`}
-                        product={item}
-                      />
-                    ))}
-                  </div>
-                </section>
-              ) : null}
+                      <span>
+                        <strong>Delivery available</strong>
+                        <small>
+                          Area, fee and timing are confirmed
+                          by the store.
+                        </small>
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
-              <div className="svx-product-summary">
+              <aside className="svx-product-summary">
                 <Link
                   to={storeSearchUrl}
                   className="svx-product-store-line"
                 >
-                  <Store size={16} />
+                  <span className="svx-product-store-line-icon">
+                    <Store size={18} />
+                  </span>
 
                   <span>
                     <small>Sold by</small>
                     <strong>{store.name}</strong>
                   </span>
 
-                  <ChevronRight size={16} />
+                  <ChevronRight size={17} />
                 </Link>
 
-                <h1>{product.title}</h1>
+                <div className="svx-product-heading">
+                  <h1>{product.title}</h1>
 
-                {product.description ? (
-                  <p className="svx-product-description">
-                    {productDescriptionPreview(
-                      product.description,
-                    )}
-                  </p>
-                ) : null}
+                  {product.description ? (
+                    <p className="svx-product-description">
+                      {productDescriptionPreview(
+                        product.description,
+                      )}
+                    </p>
+                  ) : null}
+                </div>
 
                 <div
                   className={cx(
@@ -905,7 +850,7 @@ export default function MarketplaceProductDetails() {
 
                   {product.onSale && saving > 0 ? (
                     <span>
-                      Save{" "}
+                      You save{" "}
                       {formatMoney(
                         saving,
                         product.currency,
@@ -914,116 +859,121 @@ export default function MarketplaceProductDetails() {
                   ) : null}
                 </div>
 
-                <div className="svx-product-availability">
-                  <PackageCheck size={18} />
+                <div className="svx-product-purchase-card">
+                  <div className="svx-product-availability">
+                    <PackageCheck size={19} />
 
-                  <span>
-                    <strong>
-                      {storeClosed
-                        ? "Store temporarily closed"
-                        : `${availableQuantity} available`}
-                    </strong>
+                    <span>
+                      <strong>
+                        {storeClosed
+                          ? "Store temporarily closed"
+                          : availableQuantity <= 3
+                            ? "Few remaining"
+                            : "In stock"}
+                      </strong>
 
-                    <small>
-                      Availability is confirmed before
-                      handover.
-                    </small>
-                  </span>
-                </div>
+                      <small>
+                        Availability is confirmed before the
+                        store accepts your request.
+                      </small>
+                    </span>
+                  </div>
 
-                <div className="svx-product-buy-row">
-                  <div
-                    className="svx-product-quantity"
-                    aria-label="Quantity"
-                  >
+                  <div className="svx-product-buy-row">
+                    <div
+                      className="svx-product-quantity"
+                      aria-label="Quantity"
+                    >
+                      <button
+                        type="button"
+                        onClick={decreaseQuantity}
+                        disabled={quantity <= 1}
+                        aria-label="Reduce quantity"
+                      >
+                        <Minus size={16} />
+                      </button>
+
+                      <strong>{quantity}</strong>
+
+                      <button
+                        type="button"
+                        onClick={increaseQuantity}
+                        disabled={
+                          quantity >= availableQuantity
+                        }
+                        aria-label="Increase quantity"
+                      >
+                        <Plus size={16} />
+                      </button>
+                    </div>
+
                     <button
                       type="button"
-                      onClick={decreaseQuantity}
-                      disabled={quantity <= 1}
-                      aria-label="Reduce quantity"
+                      className={cx(
+                        "svx-product-add-cart",
+                        inCart && "is-active",
+                      )}
+                      onClick={addToCart}
+                      disabled={!canAddToCart}
                     >
-                      <Minus size={16} />
-                    </button>
+                      {inCart ? (
+                        <Check size={19} />
+                      ) : (
+                        <ShoppingCart size={19} />
+                      )}
 
-                    <strong>{quantity}</strong>
-
-                    <button
-                      type="button"
-                      onClick={increaseQuantity}
-                      disabled={
-                        quantity >= availableQuantity
-                      }
-                      aria-label="Increase quantity"
-                    >
-                      <Plus size={16} />
+                      <span>
+                        {storeClosed
+                          ? "Store closed"
+                          : inCart
+                            ? "Add more to cart"
+                            : "Add to cart"}
+                      </span>
                     </button>
                   </div>
 
-                  <button
-                    type="button"
-                    className={cx(
-                      "svx-product-add-cart",
-                      inCart && "is-active",
-                    )}
-                    onClick={addToCart}
-                    disabled={!canAddToCart}
-                  >
-                    {inCart ? (
-                      <Check size={18} />
-                    ) : (
-                      <ShoppingCart size={18} />
-                    )}
+                  <div className="svx-product-secondary-actions">
+                    <button
+                      type="button"
+                      className={
+                        inWishlist ? "is-active" : ""
+                      }
+                      onClick={toggleWishlist}
+                      aria-pressed={inWishlist}
+                    >
+                      <Heart size={17} />
 
-                    <span>
-                      {storeClosed
-                        ? "Store closed"
-                        : inCart
-                          ? "Add more to cart"
-                          : "Add to cart"}
-                    </span>
-                  </button>
-                </div>
+                      {inWishlist
+                        ? "Saved"
+                        : "Save product"}
+                    </button>
 
-                <div className="svx-product-secondary-actions">
-                  <button
-                    type="button"
-                    className={
-                      inWishlist ? "is-active" : ""
-                    }
-                    onClick={toggleWishlist}
-                    aria-pressed={inWishlist}
-                  >
-                    <Heart size={17} />
+                    <button
+                      type="button"
+                      className={
+                        inCompare ? "is-active" : ""
+                      }
+                      onClick={toggleCompare}
+                      aria-pressed={inCompare}
+                    >
+                      <GitCompareArrows size={17} />
 
-                    {inWishlist
-                      ? "Saved"
-                      : "Save product"}
-                  </button>
-
-                  <button
-                    type="button"
-                    className={
-                      inCompare ? "is-active" : ""
-                    }
-                    onClick={toggleCompare}
-                    aria-pressed={inCompare}
-                  >
-                    <GitCompareArrows size={17} />
-
-                    {inCompare
-                      ? "In comparison"
-                      : "Compare"}
-                  </button>
+                      {inCompare
+                        ? "In comparison"
+                        : "Compare"}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="svx-product-fulfilment">
                   {store.pickupEnabled ? (
                     <div>
-                      <Store size={18} />
+                      <Store size={19} />
+
                       <span>
                         <strong>Store pickup</strong>
                         <small>
-                          Confirm the collection time
+                          Collection is arranged directly
                           with the store.
                         </small>
                       </span>
@@ -1032,116 +982,236 @@ export default function MarketplaceProductDetails() {
 
                   {store.deliveryEnabled ? (
                     <div>
-                      <Truck size={18} />
+                      <Truck size={19} />
+
                       <span>
-                        <strong>Seller delivery</strong>
+                        <strong>Delivery available</strong>
                         <small>
-                          Delivery details are confirmed
-                          directly with the store.
+                          Delivery area, fee and timing are
+                          confirmed by the store.
                         </small>
                       </span>
                     </div>
                   ) : null}
                 </div>
+              </aside>
+            </section>
 
-                <div className="svx-product-store-compact">
-                  <div className="svx-product-store-compact-head">
-                    <div className="svx-product-store-logo">
-                      {store.logoUrl ? (
-                        <img
-                          src={store.logoUrl}
-                          alt={`${store.name} logo`}
-                          loading="lazy"
-                          decoding="async"
-                        />
-                      ) : (
-                        <Store size={21} />
-                      )}
-                    </div>
+            <nav
+              className="svx-product-section-nav"
+              aria-label="Product information"
+            >
+              {product.description ? (
+                <a href="#product-overview">Overview</a>
+              ) : null}
 
-                    <span>
-                      <small>Available from</small>
-                      <strong>{store.name}</strong>
+              {specificationFields.length ? (
+                <a href="#product-specifications">
+                  Specifications
+                </a>
+              ) : null}
 
-                      {location ? (
-                        <em>
-                          <MapPin size={12} />
-                          {location}
-                        </em>
-                      ) : null}
-                    </span>
+              <a href="#product-store">Store</a>
+
+              {relatedProducts.length ? (
+                <a href="#similar-products">
+                  Similar products
+                </a>
+              ) : null}
+            </nav>
+
+            <section className="svx-product-content-grid">
+              <div className="svx-product-content-main">
+                {product.description ? (
+                  <article
+                    id="product-overview"
+                    className="svx-product-overview"
+                  >
+                    <header>
+                      <small>Product overview</small>
+                      <h2>About this product</h2>
+                    </header>
+
+                    <p>{product.description}</p>
+                  </article>
+                ) : null}
+
+                {specificationFields.length ? (
+                  <article
+                    id="product-specifications"
+                    className="svx-product-info-section"
+                  >
+                    <header>
+                      <small>Product details</small>
+                      <h2>Specifications</h2>
+                      <p>
+                        Information provided by the seller to
+                        help you compare and decide.
+                      </p>
+                    </header>
+
+                    <dl className="svx-product-specifications">
+                      {specificationFields.map((field) => (
+                        <div key={field.key}>
+                          <dt>{field.label}</dt>
+                          <dd>
+                            {marketplaceFieldValue(
+                              product,
+                              field,
+                            )}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </article>
+                ) : null}
+              </div>
+
+              <aside
+                id="product-store"
+                className="svx-product-store-panel"
+              >
+                <header>
+                  <div className="svx-product-store-logo">
+                    {store.logoUrl ? (
+                      <img
+                        src={store.logoUrl}
+                        alt={`${store.name} logo`}
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <Store size={23} />
+                    )}
                   </div>
 
-                  {store.description ? (
-                    <p>{store.description}</p>
-                  ) : null}
+                  <span>
+                    <small>Available from</small>
+                    <strong>{store.name}</strong>
 
+                    {location ? (
+                      <em>
+                        <MapPin size={13} />
+                        {location}
+                      </em>
+                    ) : null}
+                  </span>
+                </header>
+
+                {store.description ? (
+                  <p>{store.description}</p>
+                ) : null}
+
+                <dl>
                   {store.paymentMethods?.length ? (
-                    <div className="svx-product-store-compact-row">
-                      <strong>Payment</strong>
-                      <span>
+                    <div>
+                      <dt>Payment</dt>
+                      <dd>
                         {humanizeMarketplaceValues(
                           store.paymentMethods,
                         )}
-                      </span>
+                      </dd>
                     </div>
                   ) : null}
 
                   {store.deliveryAreas?.length ? (
-                    <div className="svx-product-store-compact-row">
-                      <strong>Delivery areas</strong>
-                      <span>
+                    <div>
+                      <dt>Delivery areas</dt>
+                      <dd>
                         {store.deliveryAreas.join(", ")}
-                      </span>
+                      </dd>
                     </div>
                   ) : null}
+                </dl>
 
-                  <div className="svx-product-store-compact-actions">
-                    {whatsapp ? (
-                      <a
-                        href={whatsapp}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Contact store
-                      </a>
-                    ) : null}
+                <div className="svx-product-store-actions">
+                  {whatsapp ? (
+                    <a
+                      href={whatsapp}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Contact store
+                    </a>
+                  ) : null}
 
-                    <Link to={storeSearchUrl}>
-                      More from this store
-                    </Link>
-                  </div>
+                  <Link to={storeSearchUrl}>
+                    More from this store
+                  </Link>
                 </div>
-              </div>
+              </aside>
             </section>
 
-            {specificationFields.length ? (
-              <section className="svx-product-information">
-                <article className="svx-product-info-section">
-                  <header>
-                    <h2>Product specifications</h2>
+            {relatedProducts.length ? (
+              <section
+                id="similar-products"
+                className="svx-product-related"
+              >
+                <header>
+                  <div>
+                    <small>More to explore</small>
+                    <h2>Similar products</h2>
                     <p>
-                      Important product information provided
-                      by the seller.
+                      More available products in this category.
                     </p>
-                  </header>
+                  </div>
 
-                  <dl className="svx-product-specifications">
-                    {specificationFields.map((field) => (
-                      <div key={field.key}>
-                        <dt>{field.label}</dt>
-                        <dd>
-                          {marketplaceFieldValue(
-                            product,
-                            field,
-                          )}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                </article>
+                  <Link
+                    to={`/marketplace?category=${encodeURIComponent(
+                      product.category || "",
+                    )}`}
+                  >
+                    View all
+                    <ChevronRight size={15} />
+                  </Link>
+                </header>
+
+                <div className="svx-commerce-product-grid svx-product-related-grid">
+                  {relatedProducts.map((item) => (
+                    <ProductCard
+                      key={`${item.seller.slug}-${item.slug}`}
+                      product={item}
+                    />
+                  ))}
+                </div>
               </section>
             ) : null}
+
+            <div
+              className="svx-product-mobile-purchase"
+              aria-label="Product purchase"
+            >
+              <div>
+                <small>Price</small>
+
+                <strong>
+                  {formatMoney(
+                    product.price,
+                    product.currency,
+                  )}
+                </strong>
+              </div>
+
+              <button
+                type="button"
+                onClick={addToCart}
+                disabled={!canAddToCart}
+              >
+                {inCart ? (
+                  <Check size={18} />
+                ) : (
+                  <ShoppingCart size={18} />
+                )}
+
+                <span>
+                  {storeClosed
+                    ? "Store closed"
+                    : inCart
+                      ? "Add more"
+                      : "Add to cart"}
+                </span>
+              </button>
+            </div>
 
 
           </main>

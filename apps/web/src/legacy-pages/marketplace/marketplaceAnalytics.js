@@ -102,5 +102,21 @@ export async function trackMarketplaceActivity(
 export function trackMarketplaceActivityQuietly(
   payload = {},
 ) {
-  void trackMarketplaceActivity(payload);
+  /*
+   * Browser extensions can intercept local development fetches
+   * and surface failed analytics requests as unhandled errors.
+   * Analytics remains enabled in deployed environments.
+   */
+  if (
+    typeof window !== "undefined" &&
+    ["localhost", "127.0.0.1"].includes(
+      window.location.hostname,
+    )
+  ) {
+    return;
+  }
+
+  void trackMarketplaceActivity(payload).catch(
+    () => undefined,
+  );
 }
