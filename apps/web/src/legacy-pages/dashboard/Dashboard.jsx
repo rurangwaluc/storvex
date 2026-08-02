@@ -20,7 +20,6 @@ import {
 import {
   getActiveBranchId,
 } from "../../services/apiClient";
-import { getWorkspaceContext } from "../../services/storeApi";
 import { getTenantDashboard } from "../../services/dashboardApi";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import "./Dashboard.css";
@@ -903,50 +902,56 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    let active = true;
+    function applyWorkspace(value) {
+      if (!value) return;
 
-    async function loadWorkspace() {
-      try {
-        const workspaceData =
-          await getWorkspaceContext();
-
-        if (!active) return;
-
-        if (workspaceData) {
-          setWorkspace(workspaceData);
-
-          try {
-            sessionStorage.setItem(
-              WORKSPACE_CACHE_KEY,
-              JSON.stringify(workspaceData),
-            );
-            localStorage.setItem(
-              WORKSPACE_CACHE_KEY,
-              JSON.stringify(workspaceData),
-            );
-          } catch {}
-        }
-      } catch (error) {
-        console.error(
-          "Dashboard workspace load failed:",
-          error,
-        );
-
-        if (!active) return;
-
-        const cachedWorkspace =
-          readCachedWorkspace();
-
-        if (cachedWorkspace) {
-          setWorkspace(cachedWorkspace);
-        }
-      }
+      setWorkspace(value);
     }
 
-    loadWorkspace();
+    function handleWorkspaceRefreshed(event) {
+      const nextWorkspace =
+        event?.detail?.workspace ||
+        readCachedWorkspace();
+
+      applyWorkspace(nextWorkspace);
+    }
+
+    function handleStorage(event) {
+      if (
+        event.key !== WORKSPACE_CACHE_KEY
+      ) {
+        return;
+      }
+
+      applyWorkspace(
+        readCachedWorkspace(),
+      );
+    }
+
+    applyWorkspace(
+      readCachedWorkspace(),
+    );
+
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      handleWorkspaceRefreshed,
+    );
+
+    window.addEventListener(
+      "storage",
+      handleStorage,
+    );
 
     return () => {
-      active = false;
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
+        handleWorkspaceRefreshed,
+      );
+
+      window.removeEventListener(
+        "storage",
+        handleStorage,
+      );
     };
   }, []);
 
