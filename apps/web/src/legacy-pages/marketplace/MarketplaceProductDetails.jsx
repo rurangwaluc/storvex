@@ -699,7 +699,21 @@ export default function MarketplaceProductDetails() {
 
             <section className="svx-product-detail-hero">
               <div className="svx-product-media-column">
-                <div className="svx-product-gallery">
+                <div
+
+                  className={cx(
+
+                    "svx-product-gallery",
+
+                    images.length === 1
+
+                      ? "has-single-image"
+
+                      : "has-multiple-images",
+
+                  )}
+
+                >
                   {images.length > 1 ? (
                     <div
                       className="svx-product-thumbnails"

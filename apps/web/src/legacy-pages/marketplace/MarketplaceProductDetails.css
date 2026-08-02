@@ -3569,4 +3569,30 @@
   }
 }
 
+/* Single-image product gallery */
+
+.svx-product-gallery.has-single-image {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+
+.svx-product-gallery.has-single-image
+  .svx-product-main-image {
+  width: 100%;
+  grid-column: 1;
+}
+
+.svx-product-media-column:has(
+  .svx-product-gallery.has-single-image
+)
+  .svx-product-confidence {
+  margin-left: 0;
+}
+
+@media (max-width: 1120px) {
+  .svx-product-gallery.has-single-image {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* STORVEX PRODUCT DETAILS 10/10 REDESIGN END */
