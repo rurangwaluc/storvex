@@ -2,9 +2,11 @@
 
 import dynamic from "next/dynamic";
 import React from "react";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "react-hot-toast";
 
 import StorvexAppLoader from "../components/pwa/StorvexAppLoader";
+import { queryClient } from "../lib/queryClient";
 import { ThemeProvider } from "../theme/ThemeProvider";
 
 const App = dynamic(() => import("../App"), {
@@ -15,10 +17,11 @@ const App = dynamic(() => import("../App"), {
 export default function LegacyClientApp() {
   return (
     <React.StrictMode>
-      <ThemeProvider>
-        <App />
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <App />
 
-        <Toaster
+          <Toaster
           position="top-right"
           toastOptions={{
             duration: 3500,
@@ -33,8 +36,9 @@ export default function LegacyClientApp() {
               fontWeight: 700,
             },
           }}
-        />
-      </ThemeProvider>
+          />
+        </ThemeProvider>
+      </QueryClientProvider>
     </React.StrictMode>
   );
 }

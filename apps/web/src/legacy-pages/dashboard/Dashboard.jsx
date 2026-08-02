@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -16,6 +17,9 @@ import {
   Wrench,
 } from "lucide-react";
 
+import {
+  getActiveBranchId,
+} from "../../services/apiClient";
 import { getWorkspaceContext } from "../../services/storeApi";
 import { getTenantDashboard } from "../../services/dashboardApi";
 import PageSkeleton from "../../components/ui/PageSkeleton";
@@ -753,104 +757,119 @@ function categoryFocus(category, activeRepairs, listingMissingImages, lowStockCo
 
 export default function Dashboard() {
   const [workspace, setWorkspace] = useState(() => readCachedWorkspace());
-  const [dashboard, setDashboard] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [activeBranchId, setDashboardBranchId] = useState(
+    () => getActiveBranchId() || "default",
+  );
 
-  async function loadDashboard({ quiet = false } = {}) {
-    if (!quiet && !dashboard) setLoading(true);
+  const {
+    data: dashboard = null,
+    error: dashboardError,
+    isPending: dashboardPending,
+    isFetching: dashboardFetching,
+    refetch: refetchDashboard,
+  } = useQuery({
+    queryKey: ["tenant-dashboard", activeBranchId],
+    queryFn: getTenantDashboard,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-    try {
-      const [dashboardData, workspaceData] = await Promise.allSettled([
-        getTenantDashboard(),
-        getWorkspaceContext(),
-      ]);
-
-      if (dashboardData.status === "fulfilled") {
-        setDashboard(dashboardData.value || null);
-      }
-
-      if (workspaceData.status === "fulfilled" && workspaceData.value) {
-        setWorkspace(workspaceData.value);
-
-        try {
-          sessionStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify(workspaceData.value));
-          localStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify(workspaceData.value));
-        } catch {}
-      } else {
-        const cachedWorkspace = readCachedWorkspace();
-        if (cachedWorkspace) setWorkspace(cachedWorkspace);
-      }
-
-      if (dashboardData.status === "rejected") {
-        throw dashboardData.reason;
-      }
-    } catch (error) {
-      console.error("Dashboard load failed:", error);
-      toast.error("Failed to load dashboard");
-    } finally {
-      if (!quiet) setLoading(false);
+  useEffect(() => {
+    function handleBranchChanged() {
+      setDashboardBranchId(
+        getActiveBranchId() || "default",
+      );
     }
-  }
+
+    window.addEventListener(
+      "storvex:branch-changed",
+      handleBranchChanged,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "storvex:branch-changed",
+        handleBranchChanged,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
 
-    async function run() {
-      if (!dashboard) setLoading(true);
-
+    async function loadWorkspace() {
       try {
-        const [dashboardData, workspaceData] = await Promise.allSettled([
-          getTenantDashboard(),
-          getWorkspaceContext(),
-        ]);
+        const workspaceData =
+          await getWorkspaceContext();
 
         if (!active) return;
 
-        if (dashboardData.status === "fulfilled") {
-          setDashboard(dashboardData.value || null);
-        }
-
-        if (workspaceData.status === "fulfilled" && workspaceData.value) {
-          setWorkspace(workspaceData.value);
+        if (workspaceData) {
+          setWorkspace(workspaceData);
 
           try {
-            sessionStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify(workspaceData.value));
-            localStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify(workspaceData.value));
+            sessionStorage.setItem(
+              WORKSPACE_CACHE_KEY,
+              JSON.stringify(workspaceData),
+            );
+            localStorage.setItem(
+              WORKSPACE_CACHE_KEY,
+              JSON.stringify(workspaceData),
+            );
           } catch {}
-        } else {
-          const cachedWorkspace = readCachedWorkspace();
-          if (cachedWorkspace) setWorkspace(cachedWorkspace);
-        }
-
-        if (dashboardData.status === "rejected") {
-          throw dashboardData.reason;
         }
       } catch (error) {
-        console.error("Dashboard load failed:", error);
-        if (active) toast.error("Failed to load dashboard");
-      } finally {
-        if (active) setLoading(false);
+        console.error(
+          "Dashboard workspace load failed:",
+          error,
+        );
+
+        if (!active) return;
+
+        const cachedWorkspace =
+          readCachedWorkspace();
+
+        if (cachedWorkspace) {
+          setWorkspace(cachedWorkspace);
+        }
       }
     }
 
-    run();
+    loadWorkspace();
 
     return () => {
       active = false;
     };
   }, []);
 
-  async function handleRefresh() {
-    setRefreshing(true);
+  useEffect(() => {
+    if (!dashboardError) return;
 
-    try {
-      await loadDashboard({ quiet: true });
-      toast.success("Dashboard refreshed");
-    } finally {
-      setRefreshing(false);
+    console.error(
+      "Dashboard load failed:",
+      dashboardError,
+    );
+
+    toast.error("Failed to load dashboard", {
+      id: "dashboard-load-error",
+    });
+  }, [dashboardError]);
+
+  async function handleRefresh() {
+    const result = await refetchDashboard();
+
+    if (result.error) {
+      return;
     }
+
+    toast.success("Dashboard refreshed");
   }
+
+  const loading = dashboardPending;
+  const refreshing =
+    dashboardFetching && !dashboardPending;
 
   const tenant = dashboard?.tenant || workspace?.tenant || workspace?.business || {};
   const subscription = dashboard?.subscriptionSummary || null;

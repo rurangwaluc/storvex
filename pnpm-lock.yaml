@@ -251,6 +251,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.100.11
+        version: 5.101.0(react@19.2.4)
       axios:
         specifier: ^1.13.5
         version: 1.17.0
@@ -9282,6 +9285,11 @@ snapshots:
     dependencies:
       '@tanstack/query-core': 5.101.0
       react: 19.2.0
+
+  '@tanstack/react-query@5.101.0(react@19.2.4)':
+    dependencies:
+      '@tanstack/query-core': 5.101.0
+      react: 19.2.4
 
   '@tsconfig/node10@1.0.12': {}
 
