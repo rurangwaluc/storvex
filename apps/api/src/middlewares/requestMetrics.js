@@ -1,5 +1,12 @@
 const { performance } = require("node:perf_hooks");
 
+const {
+  createRequestPrismaMetrics,
+  runWithRequestPrismaMetrics,
+} = require(
+  "../lib/metrics/requestPrismaMetrics",
+);
+
 const TRACKED_API_PREFIXES = Object.freeze([
   "/api/marketplace",
   "/api/dashboard",
@@ -118,6 +125,8 @@ function createRequestMetricsMiddleware({
     }
 
     const startedAt = now();
+    const prismaMetrics =
+      createRequestPrismaMetrics();
 
     res.once("finish", () => {
       const durationMs = Number(
@@ -131,6 +140,14 @@ function createRequestMetricsMiddleware({
         path: requestPath(req),
         statusCode: Number(res.statusCode || 0),
         durationMs,
+        prismaOperationCount:
+          prismaMetrics.prismaOperationCount,
+        prismaOperationDurationMs:
+          Number(
+            prismaMetrics
+              .prismaOperationDurationMs
+              .toFixed(2),
+          ),
         responseBytes: numericHeader(
           responseHeader(res, "content-length"),
         ),
@@ -150,7 +167,10 @@ function createRequestMetricsMiddleware({
       }
     });
 
-    next();
+    runWithRequestPrismaMetrics(
+      prismaMetrics,
+      next,
+    );
   };
 }
 

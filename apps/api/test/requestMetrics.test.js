@@ -181,6 +181,10 @@ test(
         path: metrics[0].path,
         statusCode: metrics[0].statusCode,
         durationMs: metrics[0].durationMs,
+        prismaOperationCount:
+          metrics[0].prismaOperationCount,
+        prismaOperationDurationMs:
+          metrics[0].prismaOperationDurationMs,
         responseBytes: metrics[0].responseBytes,
         contentType: metrics[0].contentType,
       },
@@ -190,6 +194,8 @@ test(
         path: "/api/marketplace/products",
         statusCode: 200,
         durationMs: 12.35,
+        prismaOperationCount: 0,
+        prismaOperationDurationMs: 0,
         responseBytes: 321,
         contentType: "application/json",
       },
