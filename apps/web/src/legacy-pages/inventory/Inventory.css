@@ -3557,3 +3557,40 @@
     padding-top: 16px !important;
   }
 }
+
+/*
+ * INVENTORY OWNER SUMMARY
+ *
+ * Three decision-focused cards:
+ * products, stock value, and stock attention.
+ */
+
+.svx-inventory-metric-grid {
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 980px) {
+  .svx-inventory-metric-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-inventory-metric-grid
+    > :last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 620px) {
+  .svx-inventory-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-inventory-metric-grid
+    > :last-child {
+    grid-column: auto;
+  }
+}
+
+/* INVENTORY OWNER SUMMARY END */

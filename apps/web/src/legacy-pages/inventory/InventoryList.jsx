@@ -1,7 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
+import {
+  useInfiniteQuery,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import {
+  getActiveBranchId,
+} from "../../services/apiClient";
 import inventoryApi from "../../services/inventoryApi";
 import "./Inventory.css";
 
@@ -585,20 +593,18 @@ function StockAdjustmentModal({
 
 export default function InventoryList() {
   const navigate = useNavigate();
-
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [summaryLoading, setSummaryLoading] = useState(true);
-
-  const [products, setProducts] = useState([]);
-  const [summary, setSummary] = useState(null);
-  const [nextCursor, setNextCursor] = useState(null);
+  const queryClient = useQueryClient();
 
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("newest");
   const [stockFilter, setStockFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("");
-  const [activeBranchLabel, setActiveBranchLabel] = useState(() => activeBranchNameFromStorage());
+  const [activeBranchId, setInventoryBranchId] = useState(
+    () => getActiveBranchId() || "default",
+  );
+  const [activeBranchLabel, setActiveBranchLabel] = useState(
+    () => activeBranchNameFromStorage(),
+  );
 
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [stockModalOpen, setStockModalOpen] = useState(false);
@@ -606,70 +612,150 @@ export default function InventoryList() {
   const [savingStock, setSavingStock] = useState(false);
   const [actionsMenu, setActionsMenu] = useState(null);
 
-  const loadSummary = useCallback(async () => {
-    setSummaryLoading(true);
+  const summaryQuery = useQuery({
+    queryKey: [
+      "inventory-summary",
+      activeBranchId,
+    ],
+    queryFn: () =>
+      inventoryApi.getInventorySummary(
+        {},
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      ),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-    try {
-      const data = await inventoryApi.getInventorySummary();
-      setSummary(data?.summary || null);
-    } catch (error) {
-      toast.error(error?.message || "Failed to load stock summary");
-    } finally {
-      setSummaryLoading(false);
-    }
-  }, []);
-
-  const loadProducts = useCallback(
-    async ({ append = false, cursor = null } = {}) => {
-      if (append) setLoadingMore(true);
-      else setLoading(true);
-
-      try {
-        const params = {
+  const productsQuery = useInfiniteQuery({
+    queryKey: [
+      "inventory-products",
+      activeBranchId,
+      query,
+      categoryFilter,
+      stockFilter,
+      sort,
+    ],
+    initialPageParam: null,
+    queryFn: ({ pageParam }) =>
+      inventoryApi.getProducts(
+        {
           q: query,
           sort,
           category: categoryFilter,
           lowStock: stockFilter === "low",
           outOfStock: stockFilter === "out",
           limit: PAGE_SIZE,
-          cursor: append ? cursor : undefined,
-        };
+          cursor: pageParam || undefined,
+        },
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      ),
+    getNextPageParam: (lastPage) =>
+      lastPage?.nextCursor || undefined,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-        const data = await inventoryApi.getProducts(params);
-        const nextProducts = Array.isArray(data?.products) ? data.products : [];
+  const summary =
+    summaryQuery.data?.summary ||
+    null;
 
-        setProducts((prev) => (append ? [...prev, ...nextProducts] : nextProducts));
-        setNextCursor(data?.nextCursor || null);
-      } catch (error) {
-        toast.error(error?.message || "Failed to load products");
-      } finally {
-        setLoading(false);
-        setLoadingMore(false);
-      }
-    },
-    [categoryFilter, query, sort, stockFilter],
+  const products = useMemo(
+    () =>
+      (productsQuery.data?.pages || [])
+        .flatMap((page) =>
+          Array.isArray(page?.products)
+            ? page.products
+            : [],
+        ),
+    [productsQuery.data],
   );
 
+  const nextCursor =
+    productsQuery.hasNextPage
+      ? productsQuery.data?.pages?.at(-1)
+          ?.nextCursor || null
+      : null;
+
+  const loading =
+    productsQuery.isPending;
+
+  const loadingMore =
+    productsQuery.isFetchingNextPage;
+
+  const summaryLoading =
+    summaryQuery.isPending;
+
   useEffect(() => {
-    loadSummary();
-    loadProducts({ append: false });
-  }, [loadSummary, loadProducts]);
+    if (!summaryQuery.error) return;
+
+    toast.error(
+      summaryQuery.error?.message ||
+        "Failed to load stock summary",
+      {
+        id: "inventory-summary-error",
+      },
+    );
+  }, [summaryQuery.error]);
+
+  useEffect(() => {
+    if (!productsQuery.error) return;
+
+    toast.error(
+      productsQuery.error?.message ||
+        "Failed to load products",
+      {
+        id: "inventory-products-error",
+      },
+    );
+  }, [productsQuery.error]);
 
   useEffect(() => {
     function onBranchChanged() {
-      setActiveBranchLabel(activeBranchNameFromStorage());
-      loadSummary();
-      loadProducts({ append: false });
+      setActiveBranchLabel(
+        activeBranchNameFromStorage(),
+      );
+
+      setInventoryBranchId(
+        getActiveBranchId() || "default",
+      );
     }
 
-    window.addEventListener("storvex:branch-changed", onBranchChanged);
-    window.addEventListener("storvex:workspace-refreshed", onBranchChanged);
+    window.addEventListener(
+      "storvex:branch-changed",
+      onBranchChanged,
+    );
+
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      onBranchChanged,
+    );
 
     return () => {
-      window.removeEventListener("storvex:branch-changed", onBranchChanged);
-      window.removeEventListener("storvex:workspace-refreshed", onBranchChanged);
+      window.removeEventListener(
+        "storvex:branch-changed",
+        onBranchChanged,
+      );
+
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
+        onBranchChanged,
+      );
     };
-  }, [loadSummary, loadProducts]);
+  }, []);
 
   useEffect(() => {
     if (!actionsMenu) return undefined;
@@ -829,7 +915,21 @@ export default function InventoryList() {
 
       setActionsMenu(null);
       setStockModalOpen(false);
-      await Promise.all([loadSummary(), loadProducts({ append: false })]);
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: [
+            "inventory-summary",
+            activeBranchId,
+          ],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [
+            "inventory-products",
+            activeBranchId,
+          ],
+        }),
+      ]);
     } catch (error) {
       toast.error(error?.message || "Failed to update stock");
     } finally {
@@ -838,8 +938,14 @@ export default function InventoryList() {
   }
 
   function handleLoadMore() {
-    if (!nextCursor || loadingMore) return;
-    loadProducts({ append: true, cursor: nextCursor });
+    if (
+      !productsQuery.hasNextPage ||
+      productsQuery.isFetchingNextPage
+    ) {
+      return;
+    }
+
+    productsQuery.fetchNextPage();
   }
 
   const visibleStats = useMemo(() => {
@@ -901,37 +1007,72 @@ export default function InventoryList() {
 
         <section className="svx-inventory-metric-grid">
           <MetricCard
-            label="Total Products"
-            value={summaryLoading ? "—" : formatNumber(visibleStats.totalProducts)}
-            sub="Catalog"
+            label="Total products"
+            value={
+              summaryLoading
+                ? "—"
+                : formatNumber(
+                    visibleStats.totalProducts,
+                  )
+            }
+            sub="Products in this branch"
             tone="blue"
             icon={<BoxIcon />}
           />
+
           <MetricCard
-            label="Total Stock Value"
-            value={summaryLoading ? "—" : formatRwf(visibleStats.stockValue)}
-            sub="Value"
+            label="Total stock value"
+            value={
+              summaryLoading
+                ? "—"
+                : formatRwf(
+                    visibleStats.stockValue,
+                  )
+            }
+            sub="Value at selling price"
             tone="green"
             icon={<BagIcon />}
           />
+
           <MetricCard
-            label="Low Stock Items"
-            value={summaryLoading ? "—" : formatNumber(visibleStats.lowStockCount)}
-            sub="Low"
-            tone="orange"
-            icon={<LockIcon />}
-          />
-          <MetricCard
-            label="Out of Stock"
-            value={formatNumber(visibleStats.outOfStockCount)}
-            sub="Empty"
-            tone="red"
-            icon={<AlertIcon />}
+            label="Stock needing attention"
+            value={
+              summaryLoading
+                ? "—"
+                : formatNumber(
+                    visibleStats.lowStockCount +
+                      visibleStats.outOfStockCount,
+                  )
+            }
+            sub={
+              visibleStats.lowStockCount +
+                visibleStats.outOfStockCount >
+              0
+                ? `${formatNumber(
+                    visibleStats.lowStockCount,
+                  )} low · ${formatNumber(
+                    visibleStats.outOfStockCount,
+                  )} out of stock`
+                : "All products stocked"
+            }
+            tone={
+              visibleStats.outOfStockCount > 0
+                ? "red"
+                : visibleStats.lowStockCount > 0
+                  ? "orange"
+                  : "green"
+            }
+            icon={
+              visibleStats.outOfStockCount > 0
+                ? <AlertIcon />
+                : <LockIcon />
+            }
           />
         </section>
 
-        <section className="svx-inventory-dashboard-grid svx-inventory-dashboard-grid--focused">
-          <article className="svx-inventory-panel svx-inventory-panel--alerts">
+        {lowStockProducts.length > 0 ? (
+          <section className="svx-inventory-dashboard-grid svx-inventory-dashboard-grid--focused">
+            <article className="svx-inventory-panel svx-inventory-panel--alerts">
             <div className="svx-inventory-panel-header">
               <h2 className="svx-inventory-panel-title">Low Stock Alerts</h2>
               <button type="button" onClick={() => setStockFilter("low")} className="svx-inventory-link-button">
@@ -965,8 +1106,9 @@ export default function InventoryList() {
                 <p className="svx-inventory-empty-line">No low stock items in this view.</p>
               )}
             </div>
-          </article>
-        </section>
+            </article>
+          </section>
+        ) : null}
 
         <section className="svx-inventory-table-card">
           <div className="svx-inventory-toolbar">
