@@ -1,10 +1,8 @@
 const prisma = require("../../config/database");
 
 const {
-  buildFinancialSummary,
-  buildCashFlowSummary,
-  buildOwnerChecksReport,
-} = require("../reports/reports.service");
+  loadTenantDashboardOwnerSummary,
+} = require("./tenantDashboardSummary.service");
 
 function money(n) {
   const x = Number(n);
@@ -198,7 +196,6 @@ async function getTenantDashboard(req, res) {
 
     const [
       tenant,
-      todaySalesAgg,
       monthSalesAgg,
       productCount,
       stockProducts,
@@ -207,9 +204,7 @@ async function getTenantDashboard(req, res) {
       recentAudit,
       paymentRows,
       weeklySalesRows,
-      ownerFinancialToday,
-      ownerCashFlowToday,
-      ownerChecksPayload,
+      ownerSummary,
     ] = await Promise.all([
       prisma.tenant.findUnique({
         where: { id: tenantId },
@@ -252,15 +247,12 @@ async function getTenantDashboard(req, res) {
       prisma.sale.aggregate({
         where: {
           tenantId,
-          createdAt: { gte: todayStart, lte: todayEnd },
-        },
-        _sum: { total: true },
-      }),
-
-      prisma.sale.aggregate({
-        where: {
-          tenantId,
+          ...(activeBranchId
+            ? { branchId: activeBranchId }
+            : {}),
           createdAt: { gte: monthStart, lte: now },
+          isDraft: false,
+          isCancelled: false,
         },
         _sum: { total: true },
       }),
@@ -324,6 +316,9 @@ async function getTenantDashboard(req, res) {
       prisma.repair.count({
         where: {
           tenantId,
+          ...(activeBranchId
+            ? { branchId: activeBranchId }
+            : {}),
           status: { in: ["RECEIVED", "IN_PROGRESS"] },
         },
       }),
@@ -331,12 +326,20 @@ async function getTenantDashboard(req, res) {
       prisma.interStoreDeal.count({
         where: {
           borrowerTenantId: tenantId,
+          ...(activeBranchId
+            ? { borrowerBranchId: activeBranchId }
+            : {}),
           status: { in: ["BORROWED", "SOLD"] },
         },
       }),
 
       prisma.auditLog.findMany({
-        where: { tenantId },
+        where: {
+          tenantId,
+          ...(activeBranchId
+            ? { branchId: activeBranchId }
+            : {}),
+        },
         orderBy: { createdAt: "desc" },
         take: 10,
         select: {
@@ -351,6 +354,9 @@ async function getTenantDashboard(req, res) {
         by: ["method"],
         where: {
           tenantId,
+          ...(activeBranchId
+            ? { branchId: activeBranchId }
+            : {}),
           createdAt: { gte: todayStart, lte: todayEnd },
         },
         _sum: { amount: true },
@@ -359,7 +365,12 @@ async function getTenantDashboard(req, res) {
       prisma.sale.findMany({
         where: {
           tenantId,
+          ...(activeBranchId
+            ? { branchId: activeBranchId }
+            : {}),
           createdAt: { gte: weekStart, lte: todayEnd },
+          isDraft: false,
+          isCancelled: false,
         },
         select: {
           createdAt: true,
@@ -368,25 +379,13 @@ async function getTenantDashboard(req, res) {
         orderBy: { createdAt: "asc" },
       }),
 
-      buildFinancialSummary({
-        user: req.user,
-        query: {
-          from: localDateISO(now),
-          to: localDateISO(now),
-        },
-      }),
-
-      buildCashFlowSummary({
-        user: req.user,
-        query: {
-          from: localDateISO(now),
-          to: localDateISO(now),
-        },
-      }),
-
-      buildOwnerChecksReport({
-        user: req.user,
-        query: {},
+      loadTenantDashboardOwnerSummary({
+        database: prisma,
+        tenantId,
+        activeBranchId,
+        todayStart,
+        todayEnd,
+        now,
       }),
     ]);
 
@@ -534,14 +533,37 @@ async function getTenantDashboard(req, res) {
       paymentSummary.total += amount;
     }
 
-    const todayFinancial = ownerFinancialToday?.summary || {};
-    const todayCashFlow = ownerCashFlowToday?.cashFlow || {};
-    const ownerChecks = ownerChecksPayload?.ownerChecks || {};
+    const ownerToday =
+      ownerSummary?.ownerToday || {
+        sales: 0,
+        expenses: 0,
+        productCost: 0,
+        profitEstimate: 0,
+        salesCount: 0,
+      };
 
-    const customersOweMe = ownerChecks.customersOweMe || { total: 0, count: 0 };
-    const overdueCustomerMoney = ownerChecks.overdueCustomerMoney || { total: 0, count: 0 };
-    const iOweSuppliers = ownerChecks.iOweSuppliers || { total: 0, count: 0 };
-    const stockToReview = ownerChecks.stockToReview || { count: 0, products: [] };
+    const customersOweMe =
+      ownerSummary?.customersOweMe || {
+        total: 0,
+        count: 0,
+      };
+
+    const overdueCustomerMoney =
+      ownerSummary?.overdueCustomerMoney || {
+        total: 0,
+        count: 0,
+      };
+
+    const iOweSuppliers =
+      ownerSummary?.iOweSuppliers || {
+        total: 0,
+        count: 0,
+      };
+
+    const stockToReview = {
+      count: lowStockCount + outOfStockCount,
+      products: lowStockProducts,
+    };
 
     const ownerAttentionCount =
       Number(customersOweMe.count || 0) +
@@ -597,17 +619,17 @@ async function getTenantDashboard(req, res) {
 
       subscriptionSummary: formatSubscriptionState(tenant?.subscription || null),
 
-      todaySales: money(todaySalesAgg?._sum?.total),
+      todaySales: money(ownerToday.sales),
       monthlyRevenue: money(monthSalesAgg?._sum?.total),
       weeklySales,
 
       ownerToday: {
-        sales: money(todayFinancial.revenue ?? todaySalesAgg?._sum?.total),
-        moneyReceived: money(todayCashFlow.moneyIn ?? paymentSummary.total),
-        expenses: money(todayFinancial.approvedExpenses),
-        productCost: money(todayFinancial.costOfGoodsSold),
-        profitEstimate: money(todayFinancial.profitEstimate),
-        salesCount: Number(todayFinancial.salesCount || 0),
+        sales: money(ownerToday.sales),
+        moneyReceived: money(paymentSummary.total),
+        expenses: money(ownerToday.expenses),
+        productCost: money(ownerToday.productCost),
+        profitEstimate: money(ownerToday.profitEstimate),
+        salesCount: Number(ownerToday.salesCount || 0),
       },
 
       paymentSummary,
