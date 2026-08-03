@@ -1,10 +1,12 @@
 import {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import {
   Check,
   ChevronDown,
@@ -22,6 +24,9 @@ import {
 import {
   listMarketplaceStores,
 } from "../../services/marketplaceApi";
+import {
+  marketplaceQueryKeys,
+} from "../../lib/marketplaceQueryKeys";
 import {
   MarketplaceFooter,
   MarketplaceHeader,
@@ -171,28 +176,6 @@ export default function MarketplaceStores() {
       ),
     );
 
-  const [stores, setStores] =
-    useState([]);
-
-  const [districts, setDistricts] =
-    useState([]);
-
-  const [pagination, setPagination] =
-    useState({
-      page: 1,
-      limit: STORES_PAGE_SIZE,
-      total: 0,
-      pages: 1,
-      hasPreviousPage: false,
-      hasNextPage: false,
-    });
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
-
   const [filtersOpen, setFiltersOpen] =
     useState(false);
 
@@ -212,81 +195,95 @@ export default function MarketplaceStores() {
       (option) => option.value === sort,
     ) || sortOptions[0];
 
-  const loadStores = useCallback(
-    async () => {
-      setLoading(true);
-      setError("");
-
-      try {
-        const result =
-          await listMarketplaceStores({
-            search,
-            district,
-            fulfilment,
-            openOnly:
-              openOnly ? true : "",
-            sort,
-            page,
-            limit: STORES_PAGE_SIZE,
-          });
-
-        setStores(
-          Array.isArray(result?.stores)
-            ? result.stores
-            : [],
-        );
-
-        setDistricts(
-          Array.isArray(result?.districts)
-            ? result.districts
-            : [],
-        );
-
-        setPagination({
-          page:
-            result?.pagination?.page || 1,
-          limit:
-            result?.pagination?.limit ||
-            STORES_PAGE_SIZE,
-          total:
-            result?.pagination?.total || 0,
-          pages: Math.max(
-            1,
-            result?.pagination?.pages || 1,
-          ),
-          hasPreviousPage: Boolean(
-            result?.pagination
-              ?.hasPreviousPage,
-          ),
-          hasNextPage: Boolean(
-            result?.pagination
-              ?.hasNextPage,
-          ),
-        });
-      } catch (requestError) {
-        setStores([]);
-        setError(
-          marketplaceErrorMessage(
-            requestError,
-          ),
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
+  const storeParams = useMemo(
+    () => ({
+      search,
+      district,
+      fulfilment,
+      openOnly:
+        openOnly ? true : "",
+      sort,
+      page,
+      limit: STORES_PAGE_SIZE,
+    }),
     [
+      search,
       district,
       fulfilment,
       openOnly,
-      page,
-      search,
       sort,
+      page,
     ],
   );
 
-  useEffect(() => {
-    loadStores();
-  }, [loadStores]);
+  const storesQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.stores(
+        storeParams,
+      ),
+    queryFn: () =>
+      listMarketplaceStores(
+        storeParams,
+      ),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const storesData =
+    storesQuery.data || null;
+
+  const stores =
+    Array.isArray(storesData?.stores)
+      ? storesData.stores
+      : [];
+
+  const districts =
+    Array.isArray(storesData?.districts)
+      ? storesData.districts
+      : [];
+
+  const pagination = {
+    page: Number(
+      storesData?.pagination?.page || page,
+    ),
+    limit: Number(
+      storesData?.pagination?.limit ||
+        STORES_PAGE_SIZE,
+    ),
+    total: Number(
+      storesData?.pagination?.total || 0,
+    ),
+    pages: Math.max(
+      1,
+      Number(
+        storesData?.pagination?.pages || 1,
+      ),
+    ),
+    hasPreviousPage: Boolean(
+      storesData?.pagination
+        ?.hasPreviousPage,
+    ),
+    hasNextPage: Boolean(
+      storesData?.pagination
+        ?.hasNextPage,
+    ),
+  };
+
+  const loading =
+    storesQuery.isPending;
+
+  const error =
+    storesQuery.error
+      ? marketplaceErrorMessage(
+          storesQuery.error,
+        )
+      : "";
+
+  function loadStores() {
+    return storesQuery.refetch();
+  }
 
   useEffect(() => {
     const next =

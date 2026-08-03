@@ -1,8 +1,12 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import {
   ArrowRight,
   LoaderCircle,
@@ -16,6 +20,9 @@ import {
 import {
   listMarketplaceProducts,
 } from "../../services/marketplaceApi";
+import {
+  marketplaceQueryKeys,
+} from "../../lib/marketplaceQueryKeys";
 
 import "./MarketplaceSearchBox.css";
 
@@ -100,13 +107,8 @@ export default function MarketplaceSearchBox({
   const navigate = useNavigate();
 
   const rootRef = useRef(null);
-  const requestRef = useRef(null);
 
-  const [suggestions, setSuggestions] =
-    useState([]);
-  const [loading, setLoading] =
-    useState(false);
-  const [error, setError] =
+  const [debouncedQuery, setDebouncedQuery] =
     useState("");
   const [open, setOpen] =
     useState(false);
@@ -119,82 +121,20 @@ export default function MarketplaceSearchBox({
   const canSearch =
     query.length >= MINIMUM_QUERY_LENGTH;
 
-  const itemCount =
-    suggestions.length +
-    (canSearch ? 1 : 0);
-
   useEffect(() => {
     if (!canSearch) {
-      requestRef.current?.abort();
-      requestRef.current = null;
-
-      setSuggestions([]);
-      setLoading(false);
-      setError("");
+      setDebouncedQuery("");
       setOpen(false);
       setActiveIndex(-1);
-
       return undefined;
     }
 
+    setOpen(true);
+    setActiveIndex(-1);
+
     const timer = window.setTimeout(
-      async () => {
-        requestRef.current?.abort();
-
-        const controller =
-          new AbortController();
-
-        requestRef.current = controller;
-
-        setLoading(true);
-        setError("");
-        setOpen(true);
-        setActiveIndex(-1);
-
-        try {
-          const response =
-            await listMarketplaceProducts(
-              {
-                search: query,
-                page: 1,
-                limit: SUGGESTION_LIMIT,
-                sort: "name",
-              },
-              {
-                signal: controller.signal,
-              },
-            );
-
-          if (controller.signal.aborted) {
-            return;
-          }
-
-          setSuggestions(
-            Array.isArray(response?.products)
-              ? response.products.slice(
-                  0,
-                  SUGGESTION_LIMIT,
-                )
-              : [],
-          );
-        } catch (requestError) {
-          if (
-            controller.signal.aborted ||
-            requestError?.code ===
-              "ERR_CANCELED"
-          ) {
-            return;
-          }
-
-          setSuggestions([]);
-          setError(
-            "Quick results could not be loaded.",
-          );
-        } finally {
-          if (!controller.signal.aborted) {
-            setLoading(false);
-          }
-        }
+      () => {
+        setDebouncedQuery(query);
       },
       SEARCH_DELAY,
     );
@@ -203,6 +143,73 @@ export default function MarketplaceSearchBox({
       window.clearTimeout(timer);
     };
   }, [canSearch, query]);
+
+  const suggestionParams = useMemo(
+    () => ({
+      search: debouncedQuery,
+      page: 1,
+      limit: SUGGESTION_LIMIT,
+      sort: "name",
+    }),
+    [
+      debouncedQuery,
+    ],
+  );
+
+  const suggestionsQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.products(
+        suggestionParams,
+      ),
+    queryFn: ({
+      signal,
+    }) =>
+      listMarketplaceProducts(
+        suggestionParams,
+        {
+          signal,
+        },
+      ),
+    enabled:
+      debouncedQuery.length >=
+      MINIMUM_QUERY_LENGTH,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const suggestions = useMemo(
+    () =>
+      Array.isArray(
+        suggestionsQuery.data?.products,
+      )
+        ? suggestionsQuery.data.products.slice(
+            0,
+            SUGGESTION_LIMIT,
+          )
+        : [],
+    [
+      suggestionsQuery.data,
+    ],
+  );
+
+  const itemCount =
+    suggestions.length +
+    (canSearch ? 1 : 0);
+
+  const loading =
+    canSearch &&
+    (
+      debouncedQuery !== query ||
+      suggestionsQuery.isPending ||
+      suggestionsQuery.isFetching
+    );
+
+  const error =
+    suggestionsQuery.error
+      ? "Quick results could not be loaded."
+      : "";
 
   useEffect(() => {
     function closeOutside(event) {
@@ -228,13 +235,6 @@ export default function MarketplaceSearchBox({
       );
     };
   }, []);
-
-  useEffect(
-    () => () => {
-      requestRef.current?.abort();
-    },
-    [],
-  );
 
   function openProduct(product) {
     const url = productUrl(product);

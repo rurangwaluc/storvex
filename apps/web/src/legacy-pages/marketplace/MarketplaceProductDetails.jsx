@@ -1,9 +1,11 @@
 import {
-  useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import {
   AlertCircle,
   ArrowLeft,
@@ -31,6 +33,9 @@ import {
   getMarketplaceProduct,
   listMarketplaceProducts,
 } from "../../services/marketplaceApi";
+import {
+  marketplaceQueryKeys,
+} from "../../lib/marketplaceQueryKeys";
 import {
   MarketplaceFooter,
   MarketplaceHeader,
@@ -296,93 +301,125 @@ export default function MarketplaceProductDetails() {
   const navigate = useNavigate();
   const customerStore = useMarketplaceCustomerStore();
 
-  const [product, setProduct] = useState(null);
-  const [store, setStore] = useState(null);
-  const [relatedProducts, setRelatedProducts] =
-    useState([]);
-
   const [activeImageIndex, setActiveImageIndex] =
     useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const loadProduct = useCallback(async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const data = await getMarketplaceProduct(
+  const productQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.product({
         storeSlug,
         productSlug,
-      );
-
-      if (!data?.product || !data?.store) {
-        throw new Error(
-          "This product is no longer available.",
-        );
-      }
-
-      setProduct(data.product);
-      setStore(data.store);
-      setActiveImageIndex(0);
-      setQuantity(1);
-
-      syncMarketplaceProductSnapshots([
-        data.product,
-      ]);
-
-      trackMarketplaceActivityQuietly({
-        eventType: "PRODUCT_VIEW",
+      }),
+    queryFn: () =>
+      getMarketplaceProduct(
         storeSlug,
         productSlug,
-        source: "product-details",
-      });
+      ),
+    enabled:
+      Boolean(storeSlug) &&
+      Boolean(productSlug),
+    staleTime: 2 * 60_000,
+    gcTime: 15 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-      try {
-        const relatedData =
-          await listMarketplaceProducts({
-            category: data.product.category,
-            limit: 5,
-          });
+  const productData =
+    productQuery.data || null;
 
-        const products = Array.isArray(
-          relatedData?.products,
+  const product =
+    productData?.product || null;
+
+  const store =
+    productData?.store || null;
+
+  const relatedParams = useMemo(
+    () => ({
+      category:
+        product?.category || undefined,
+      limit: 5,
+    }),
+    [
+      product?.category,
+    ],
+  );
+
+  const relatedQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.products(
+        relatedParams,
+      ),
+    queryFn: () =>
+      listMarketplaceProducts(
+        relatedParams,
+      ),
+    enabled: Boolean(product?.category),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const relatedProducts = useMemo(() => {
+    const items =
+      Array.isArray(
+        relatedQuery.data?.products,
+      )
+        ? relatedQuery.data.products
+        : [];
+
+    return items
+      .filter(
+        (item) =>
+          !(
+            item.slug === product?.slug &&
+            item.seller?.slug ===
+              product?.seller?.slug
+          ),
+      )
+      .slice(0, 4);
+  }, [
+    relatedQuery.data,
+    product?.slug,
+    product?.seller?.slug,
+  ]);
+
+  const loading =
+    productQuery.isPending;
+
+  const error =
+    productQuery.error
+      ? marketplaceErrorMessage(
+          productQuery.error,
         )
-          ? relatedData.products
-          : [];
+      : "";
 
-        setRelatedProducts(
-          products
-            .filter(
-              (item) =>
-                !(
-                  item.slug === data.product.slug &&
-                  item.seller?.slug ===
-                    data.product.seller?.slug
-                ),
-            )
-            .slice(0, 4),
-        );
-      } catch {
-        setRelatedProducts([]);
-      }
-    } catch (loadError) {
-      setProduct(null);
-      setStore(null);
-      setRelatedProducts([]);
-      setError(
-        marketplaceErrorMessage(loadError),
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [productSlug, storeSlug]);
+  function loadProduct() {
+    return productQuery.refetch();
+  }
 
   useEffect(() => {
-    loadProduct();
-  }, [loadProduct]);
+    if (!product) return;
+
+    setActiveImageIndex(0);
+    setQuantity(1);
+
+    syncMarketplaceProductSnapshots([
+      product,
+    ]);
+
+    trackMarketplaceActivityQuietly({
+      eventType: "PRODUCT_VIEW",
+      storeSlug,
+      productSlug,
+      source: "product-details",
+    });
+  }, [
+    product,
+    productSlug,
+    storeSlug,
+  ]);
 
   useEffect(() => {
     window.scrollTo({

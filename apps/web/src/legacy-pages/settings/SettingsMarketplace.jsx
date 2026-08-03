@@ -5,6 +5,9 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -26,6 +29,9 @@ import {
   getMarketplaceProfile,
   updateMarketplaceProfile,
 } from "../../services/storeApi";
+import {
+  marketplaceQueryKeys,
+} from "../../lib/marketplaceQueryKeys";
 import "./SettingsMarketplace.css";
 import "./Settings.css";
 
@@ -221,6 +227,7 @@ function LoadingView() {
 
 export default function SettingsMarketplace() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [profile, setProfile] = useState(null);
   const [store, setStore] = useState(null);
@@ -398,6 +405,10 @@ export default function SettingsMarketplace() {
       setForm(profileSnapshot(nextProfile));
       setActiveSection("");
 
+      void queryClient.invalidateQueries({
+        queryKey: marketplaceQueryKeys.all,
+      });
+
       toast.success("Marketplace store settings saved");
     } catch (error) {
       toast.error(
@@ -429,6 +440,10 @@ export default function SettingsMarketplace() {
       setProfile(nextProfile);
       setReadiness(data?.readiness || null);
       setForm(profileSnapshot(nextProfile));
+
+      void queryClient.invalidateQueries({
+        queryKey: marketplaceQueryKeys.all,
+      });
 
       toast.success(
         enable

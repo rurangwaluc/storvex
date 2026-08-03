@@ -43,6 +43,9 @@ import {
   unwrapProductResponse,
 } from "../../lib/inventoryQueryKeys";
 import {
+  marketplaceQueryKeys,
+} from "../../lib/marketplaceQueryKeys";
+import {
   getApprovedProductImages,
   getProductImageUrl,
 } from "../../utils/productImages";
@@ -1061,6 +1064,10 @@ export default function InventoryDetail() {
 
       setListingForm(submittedForm);
 
+      void queryClient.invalidateQueries({
+        queryKey: marketplaceQueryKeys.all,
+      });
+
       toast.success("Listing draft saved");
     } catch (error) {
       toast.error(error?.message || "Failed to save listing draft");
@@ -1111,6 +1118,10 @@ export default function InventoryDetail() {
           payload.listingSaleEndsAt ?? null,
       }));
 
+      void queryClient.invalidateQueries({
+        queryKey: marketplaceQueryKeys.all,
+      });
+
       toast.success("Product published");
     } catch (error) {
       toast.error(
@@ -1138,6 +1149,10 @@ export default function InventoryDetail() {
         listingStatus: "INTERNAL",
         marketplaceStatus: "INTERNAL",
       }));
+
+      void queryClient.invalidateQueries({
+        queryKey: marketplaceQueryKeys.all,
+      });
 
       toast.success("Product unpublished");
     } catch (error) {

@@ -1,10 +1,12 @@
 import {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import {
   Check,
   ChevronDown,
@@ -32,6 +34,9 @@ import {
   listMarketplaceProducts,
   listMarketplaceStores,
 } from "../../services/marketplaceApi";
+import {
+  marketplaceQueryKeys,
+} from "../../lib/marketplaceQueryKeys";
 import {
   syncMarketplaceProductSnapshots,
 } from "./marketplaceCustomerStore";
@@ -252,13 +257,6 @@ export default function MarketplaceCategory() {
   const [subcategoryOpen, setSubcategoryOpen] =
     useState(false);
 
-  const [catalogue, setCatalogue] =
-    useState([]);
-  const [catalogueLoading, setCatalogueLoading] =
-    useState(true);
-  const [catalogueError, setCatalogueError] =
-    useState("");
-
   const [searchInput, setSearchInput] =
     useState(initialSearch);
   const [search, setSearch] =
@@ -286,23 +284,33 @@ export default function MarketplaceCategory() {
     useState(false);
   const sortRef = useRef(null);
 
-  const [stores, setStores] =
-    useState([]);
-  const [products, setProducts] =
-    useState([]);
-  const [loading, setLoading] =
-    useState(true);
-  const [error, setError] =
-    useState("");
-  const [pagination, setPagination] =
-    useState({
-      page: initialPage,
-      limit: initialPageSize,
-      total: 0,
-      pages: 1,
-      hasPreviousPage: false,
-      hasNextPage: false,
-    });
+  const catalogueQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.catalogue(),
+    queryFn: getMarketplaceCatalogue,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const catalogueData =
+    catalogueQuery.data || null;
+
+  const catalogue =
+    Array.isArray(catalogueData?.categories)
+      ? catalogueData.categories
+      : [];
+
+  const catalogueLoading =
+    catalogueQuery.isPending;
+
+  const catalogueError =
+    catalogueQuery.error
+      ? marketplaceErrorMessage(
+          catalogueQuery.error,
+        )
+      : "";
 
   const categoryPath = useMemo(
     () =>
@@ -378,148 +386,61 @@ export default function MarketplaceCategory() {
             ).toLocaleString()}`
       : "Any price";
 
-  const loadCatalogue = useCallback(
-    async () => {
-      setCatalogueLoading(true);
-      setCatalogueError("");
-
-      try {
-        const data =
-          await getMarketplaceCatalogue();
-
-        setCatalogue(
-          Array.isArray(data?.categories)
-            ? data.categories
-            : [],
-        );
-      } catch (loadError) {
-        setCatalogueError(
-          marketplaceErrorMessage(loadError),
-        );
-      } finally {
-        setCatalogueLoading(false);
-      }
-    },
+  const storeParams = useMemo(
+    () => ({
+      sort: "name",
+      limit: 100,
+    }),
     [],
   );
 
-  useEffect(() => {
-    loadCatalogue();
-  }, [loadCatalogue]);
+  const storesQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.stores(
+        storeParams,
+      ),
+    queryFn: () =>
+      listMarketplaceStores(
+        storeParams,
+      ),
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-  useEffect(() => {
-    let active = true;
+  const storesData =
+    storesQuery.data || null;
 
-    async function loadStores() {
-      try {
-        const data =
-          await listMarketplaceStores({
-            sort: "name",
-            limit: 100,
-          });
+  const stores =
+    Array.isArray(storesData?.stores)
+      ? storesData.stores
+      : [];
 
-        if (!active) return;
-
-        setStores(
-          Array.isArray(data?.stores)
-            ? data.stores
-            : [],
-        );
-      } catch {
-        if (active) {
-          setStores([]);
-        }
-      }
-    }
-
-    loadStores();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const loadProducts = useCallback(
-    async () => {
-      if (
-        catalogueLoading ||
-        !categoryPath
-      ) {
-        return;
-      }
-
-      setLoading(true);
-      setError("");
-
-      try {
-        const productData =
-          await listMarketplaceProducts({
-            search,
-            category: categoryQuery,
-            subcategory:
-              subcategoryQuery || undefined,
-            leafCategory:
-              leafCategoryQuery || undefined,
-            sort,
-            fulfilment,
-            minPrice: minimumPrice,
-            maxPrice: maximumPrice,
-            onSale:
-              onSaleOnly || undefined,
-            store:
-              storeSlug || undefined,
-            page,
-            limit: pageSize,
-          });
-
-        const nextProducts =
-          Array.isArray(productData?.products)
-            ? productData.products
-            : [];
-
-        setProducts(nextProducts);
-
-        setPagination({
-          page: Number(
-            productData?.pagination?.page || 1,
-          ),
-          limit: Number(
-            productData?.pagination?.limit ||
-              DEFAULT_CATEGORY_PAGE_SIZE,
-          ),
-          total: Number(
-            productData?.pagination?.total || 0,
-          ),
-          pages: Math.max(
-            1,
-            Number(
-              productData?.pagination?.pages || 1,
-            ),
-          ),
-          hasPreviousPage: Boolean(
-            productData?.pagination
-              ?.hasPreviousPage,
-          ),
-          hasNextPage: Boolean(
-            productData?.pagination
-              ?.hasNextPage,
-          ),
-        });
-      } catch (loadError) {
-        setError(
-          marketplaceErrorMessage(loadError),
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
+  const productParams = useMemo(
+    () => ({
+      search,
+      category: categoryQuery,
+      subcategory:
+        subcategoryQuery || undefined,
+      leafCategory:
+        leafCategoryQuery || undefined,
+      sort,
+      fulfilment,
+      minPrice: minimumPrice,
+      maxPrice: maximumPrice,
+      onSale:
+        onSaleOnly || undefined,
+      store:
+        storeSlug || undefined,
+      page,
+      limit: pageSize,
+    }),
     [
-      catalogueLoading,
-      categoryPath,
+      search,
       categoryQuery,
       subcategoryQuery,
       leafCategoryQuery,
-      search,
       sort,
       fulfilment,
       minimumPrice,
@@ -531,9 +452,77 @@ export default function MarketplaceCategory() {
     ],
   );
 
-  useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+  const productsQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.products(
+        productParams,
+      ),
+    queryFn: () =>
+      listMarketplaceProducts(
+        productParams,
+      ),
+    enabled:
+      !catalogueLoading &&
+      Boolean(categoryPath),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const productData =
+    productsQuery.data || null;
+
+  const products =
+    Array.isArray(productData?.products)
+      ? productData.products
+      : [];
+
+  const pagination = {
+    page: Number(
+      productData?.pagination?.page || page,
+    ),
+    limit: Number(
+      productData?.pagination?.limit ||
+        pageSize,
+    ),
+    total: Number(
+      productData?.pagination?.total || 0,
+    ),
+    pages: Math.max(
+      1,
+      Number(
+        productData?.pagination?.pages || 1,
+      ),
+    ),
+    hasPreviousPage: Boolean(
+      productData?.pagination
+        ?.hasPreviousPage,
+    ),
+    hasNextPage: Boolean(
+      productData?.pagination
+        ?.hasNextPage,
+    ),
+  };
+
+  const loading =
+    productsQuery.isPending &&
+    productsQuery.fetchStatus !== "idle";
+
+  const error =
+    productsQuery.error
+      ? marketplaceErrorMessage(
+          productsQuery.error,
+        )
+      : "";
+
+  function loadCatalogue() {
+    return catalogueQuery.refetch();
+  }
+
+  function loadProducts() {
+    return productsQuery.refetch();
+  }
 
   useEffect(() => {
     syncMarketplaceProductSnapshots(

@@ -1,10 +1,12 @@
 import {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import {
   Check,
   ChevronDown,
@@ -22,6 +24,9 @@ import {
 import {
   listMarketplaceProducts,
 } from "../../services/marketplaceApi";
+import {
+  marketplaceQueryKeys,
+} from "../../lib/marketplaceQueryKeys";
 import {
   syncMarketplaceProductSnapshots,
 } from "./marketplaceCustomerStore";
@@ -248,22 +253,6 @@ export default function MarketplaceShop() {
     setExpandedCategory,
   ] = useState(initialCategory);
 
-  const [products, setProducts] =
-    useState([]);
-  const [loading, setLoading] =
-    useState(true);
-  const [error, setError] =
-    useState("");
-  const [pagination, setPagination] =
-    useState({
-      page: initialPage,
-      limit: SHOP_PAGE_SIZE,
-      total: 0,
-      pages: 1,
-      hasPreviousPage: false,
-      hasNextPage: false,
-    });
-
   const selectedCategory = useMemo(
     () =>
       shopCategories.find(
@@ -272,80 +261,95 @@ export default function MarketplaceShop() {
     [category],
   );
 
-  const loadProducts = useCallback(async () => {
-    setLoading(true);
-    setError("");
+  const productParams = useMemo(
+    () => ({
+      search,
+      category,
+      subcategory,
+      sort,
+      fulfilment,
+      minPrice: minimumPrice,
+      maxPrice: maximumPrice,
+      onSale: onSaleOnly || undefined,
+      page,
+      limit: SHOP_PAGE_SIZE,
+    }),
+    [
+      search,
+      category,
+      subcategory,
+      sort,
+      fulfilment,
+      minimumPrice,
+      maximumPrice,
+      onSaleOnly,
+      page,
+    ],
+  );
 
-    try {
-      const productData =
-        await listMarketplaceProducts({
-          search,
-          category,
-          subcategory,
-          sort,
-          fulfilment,
-          minPrice: minimumPrice,
-          maxPrice: maximumPrice,
-          onSale: onSaleOnly || undefined,
-          page,
-          limit: SHOP_PAGE_SIZE,
-        });
+  const productsQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.products(
+        productParams,
+      ),
+    queryFn: () =>
+      listMarketplaceProducts(
+        productParams,
+      ),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-      const nextProducts =
-        Array.isArray(productData?.products)
-          ? productData.products
-          : [];
+  const productData =
+    productsQuery.data || null;
 
-      setProducts(nextProducts);
+  const products =
+    Array.isArray(productData?.products)
+      ? productData.products
+      : [];
 
-      setPagination({
-        page: Number(
-          productData?.pagination?.page || 1,
-        ),
-        limit: Number(
-          productData?.pagination?.limit ||
-            SHOP_PAGE_SIZE,
-        ),
-        total: Number(
-          productData?.pagination?.total || 0,
-        ),
-        pages: Math.max(
-          1,
-          Number(
-            productData?.pagination?.pages || 1,
-          ),
-        ),
-        hasPreviousPage: Boolean(
-          productData?.pagination
-            ?.hasPreviousPage,
-        ),
-        hasNextPage: Boolean(
-          productData?.pagination
-            ?.hasNextPage,
-        ),
-      });
-    } catch (loadError) {
-      setError(
-        marketplaceErrorMessage(loadError),
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    search,
-    category,
-    subcategory,
-    sort,
-    fulfilment,
-    minimumPrice,
-    maximumPrice,
-    onSaleOnly,
-    page,
-  ]);
+  const pagination = {
+    page: Number(
+      productData?.pagination?.page || page,
+    ),
+    limit: Number(
+      productData?.pagination?.limit ||
+        SHOP_PAGE_SIZE,
+    ),
+    total: Number(
+      productData?.pagination?.total || 0,
+    ),
+    pages: Math.max(
+      1,
+      Number(
+        productData?.pagination?.pages || 1,
+      ),
+    ),
+    hasPreviousPage: Boolean(
+      productData?.pagination
+        ?.hasPreviousPage,
+    ),
+    hasNextPage: Boolean(
+      productData?.pagination
+        ?.hasNextPage,
+    ),
+  };
 
-  useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+  const loading =
+    productsQuery.isPending;
+
+  const error =
+    productsQuery.error
+      ? marketplaceErrorMessage(
+          productsQuery.error,
+        )
+      : "";
+
+  function loadProducts() {
+    return productsQuery.refetch();
+  }
 
   useEffect(() => {
     syncMarketplaceProductSnapshots(

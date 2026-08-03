@@ -1,10 +1,12 @@
 import {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import {
   ArrowLeft,
   Check,
@@ -30,6 +32,9 @@ import {
   getMarketplaceStore,
   listMarketplaceProducts,
 } from "../../services/marketplaceApi";
+import {
+  marketplaceQueryKeys,
+} from "../../lib/marketplaceQueryKeys";
 import {
   LoadingProducts,
   MarketplaceFooter,
@@ -174,15 +179,6 @@ export default function MarketplaceStorePage() {
     ) || 1,
   );
 
-  const [storeDetails, setStoreDetails] =
-    useState(null);
-
-  const [categories, setCategories] =
-    useState([]);
-
-  const [products, setProducts] =
-    useState([]);
-
   const [searchInput, setSearchInput] =
     useState(initialSearch);
 
@@ -210,22 +206,6 @@ export default function MarketplaceStorePage() {
   const [page, setPage] =
     useState(initialPage);
 
-  const [loadingStore, setLoadingStore] =
-    useState(true);
-
-  const [
-    loadingProducts,
-    setLoadingProducts,
-  ] = useState(true);
-
-  const [storeError, setStoreError] =
-    useState("");
-
-  const [
-    productsError,
-    setProductsError,
-  ] = useState("");
-
   const [sortOpen, setSortOpen] =
     useState(false);
 
@@ -235,16 +215,6 @@ export default function MarketplaceStorePage() {
   const sortRef = useRef(null);
   const trackedStoreSlugRef = useRef("");
   const trackedSearchKeyRef = useRef("");
-
-  const [pagination, setPagination] =
-    useState({
-      page: initialPage,
-      limit: STORE_PAGE_SIZE,
-      total: 0,
-      pages: 1,
-      hasPreviousPage: false,
-      hasNextPage: false,
-    });
 
   const selectedSort =
     sortOptions.find(
@@ -266,121 +236,144 @@ export default function MarketplaceStorePage() {
     onSaleOnly,
   ].filter(Boolean).length;
 
-  const loadStore = useCallback(
-    async () => {
-      setLoadingStore(true);
-      setStoreError("");
-
-      try {
-        const result =
-          await getMarketplaceStore(
-            storeSlug,
-            {
-              page: 1,
-              limit: 1,
-            },
-          );
-
-        setStoreDetails(
-          result?.store || null,
-        );
-
-        setCategories(
-          Array.isArray(result?.categories)
-            ? result.categories
-            : [],
-        );
-      } catch (error) {
-        setStoreDetails(null);
-        setStoreError(
-          marketplaceErrorMessage(error),
-        );
-      } finally {
-        setLoadingStore(false);
-      }
-    },
-    [storeSlug],
+  const storeDetailParams = useMemo(
+    () => ({
+      page: 1,
+      limit: 1,
+    }),
+    [],
   );
 
-  const loadProducts = useCallback(
-    async () => {
-      setLoadingProducts(true);
-      setProductsError("");
+  const storeQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.store({
+        storeSlug,
+        params: storeDetailParams,
+      }),
+    queryFn: () =>
+      getMarketplaceStore(
+        storeSlug,
+        storeDetailParams,
+      ),
+    enabled: Boolean(storeSlug),
+    staleTime: 2 * 60_000,
+    gcTime: 15 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-      try {
-        const result =
-          await listMarketplaceProducts({
-            store: storeSlug,
-            search,
-            category,
-            sort,
-            fulfilment,
-            minPrice: minimumPrice,
-            maxPrice: maximumPrice,
-            onSale:
-              onSaleOnly || undefined,
-            page,
-            limit: STORE_PAGE_SIZE,
-          });
+  const storeData =
+    storeQuery.data || null;
 
-        const nextProducts =
-          Array.isArray(result?.products)
-            ? result.products
-            : [];
+  const storeDetails =
+    storeData?.store || null;
 
-        setProducts(nextProducts);
+  const categories =
+    Array.isArray(storeData?.categories)
+      ? storeData.categories
+      : [];
 
-        setPagination({
-          page: Number(
-            result?.pagination?.page || 1,
-          ),
-          limit: Number(
-            result?.pagination?.limit ||
-              STORE_PAGE_SIZE,
-          ),
-          total: Number(
-            result?.pagination?.total || 0,
-          ),
-          pages: Math.max(
-            1,
-            Number(
-              result?.pagination?.pages || 1,
-            ),
-          ),
-          hasPreviousPage: Boolean(
-            result?.pagination
-              ?.hasPreviousPage,
-          ),
-          hasNextPage: Boolean(
-            result?.pagination
-              ?.hasNextPage,
-          ),
-        });
-      } catch (error) {
-        setProducts([]);
-        setProductsError(
-          marketplaceErrorMessage(error),
-        );
-      } finally {
-        setLoadingProducts(false);
-      }
-    },
-    [
+  const productParams = useMemo(
+    () => ({
+      store: storeSlug,
+      search,
       category,
+      sort,
       fulfilment,
-      maximumPrice,
+      minPrice: minimumPrice,
+      maxPrice: maximumPrice,
+      onSale:
+        onSaleOnly || undefined,
+      page,
+      limit: STORE_PAGE_SIZE,
+    }),
+    [
+      storeSlug,
+      search,
+      category,
+      sort,
+      fulfilment,
       minimumPrice,
+      maximumPrice,
       onSaleOnly,
       page,
-      search,
-      sort,
-      storeSlug,
     ],
   );
 
-  useEffect(() => {
-    loadStore();
-  }, [loadStore]);
+  const productsQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.products(
+        productParams,
+      ),
+    queryFn: () =>
+      listMarketplaceProducts(
+        productParams,
+      ),
+    enabled: Boolean(storeSlug),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const productData =
+    productsQuery.data || null;
+
+  const products =
+    Array.isArray(productData?.products)
+      ? productData.products
+      : [];
+
+  const pagination = {
+    page: Number(
+      productData?.pagination?.page || page,
+    ),
+    limit: Number(
+      productData?.pagination?.limit ||
+        STORE_PAGE_SIZE,
+    ),
+    total: Number(
+      productData?.pagination?.total || 0,
+    ),
+    pages: Math.max(
+      1,
+      Number(
+        productData?.pagination?.pages || 1,
+      ),
+    ),
+    hasPreviousPage: Boolean(
+      productData?.pagination
+        ?.hasPreviousPage,
+    ),
+    hasNextPage: Boolean(
+      productData?.pagination
+        ?.hasNextPage,
+    ),
+  };
+
+  const loadingStore =
+    storeQuery.isPending;
+
+  const loadingProducts =
+    productsQuery.isPending;
+
+  const storeError =
+    storeQuery.error
+      ? marketplaceErrorMessage(
+          storeQuery.error,
+        )
+      : "";
+
+  const productsError =
+    productsQuery.error
+      ? marketplaceErrorMessage(
+          productsQuery.error,
+        )
+      : "";
+
+  function loadProducts() {
+    return productsQuery.refetch();
+  }
 
   useEffect(() => {
     if (
