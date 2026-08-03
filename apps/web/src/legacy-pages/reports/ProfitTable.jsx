@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { getFinancialSummary } from "../../services/reportsApi";
+import {
+  reportQueryKeys,
+} from "../../lib/reportQueryKeys";
+import {
+  useActiveBranchId,
+} from "../../hooks/useActiveBranchId";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import "../dashboard/Dashboard.css";
 import "./Reports.css";
@@ -243,39 +252,67 @@ function RangeControls({ selectedPreset, setSelectedPreset, range, setRange }) {
 }
 
 export default function ProfitTable() {
-  const [selectedPreset, setSelectedPreset] = useState("month");
-  const [range, setRange] = useState(() => rangeForPreset("month"));
-  const [payload, setPayload] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [selectedPreset, setSelectedPreset] =
+    useState("month");
+  const [range, setRange] =
+    useState(() => rangeForPreset("month"));
+
+  const activeBranchId =
+    useActiveBranchId();
+
+  const explicitBranchId =
+    activeBranchId === "default"
+      ? undefined
+      : activeBranchId;
+
+  const requestRange = useMemo(
+    () => ({
+      from: range.from,
+      to: range.to,
+      branchId: explicitBranchId,
+    }),
+    [
+      range.from,
+      range.to,
+      explicitBranchId,
+    ],
+  );
+
+  const financialQuery = useQuery({
+    queryKey:
+      reportQueryKeys.financialSummary({
+        branchId: activeBranchId,
+        from: range.from,
+        to: range.to,
+      }),
+    queryFn: () =>
+      getFinancialSummary(
+        requestRange,
+      ),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const payload =
+    financialQuery.data || null;
+  const loading =
+    financialQuery.isPending;
 
   useEffect(() => {
-    let alive = true;
+    if (!financialQuery.error) return;
 
-    async function load() {
-      setLoading(true);
-
-      try {
-        const data = await getFinancialSummary(range);
-        if (!alive) return;
-        setPayload(data || null);
-      } catch (error) {
-        if (!alive) return;
-        toast.error(
-          error?.response?.data?.message ||
-            error?.message ||
-            "Failed to load sales and profit report",
-        );
-      } finally {
-        if (alive) setLoading(false);
-      }
-    }
-
-    load();
-
-    return () => {
-      alive = false;
-    };
-  }, [range.from, range.to, range.branchId, range.allBranches]);
+    toast.error(
+      financialQuery.error?.response
+        ?.data?.message ||
+        financialQuery.error?.message ||
+        "Failed to load sales and profit report",
+      {
+        id: "profit-report-load-error",
+      },
+    );
+  }, [financialQuery.error]);
 
   const summary = payload?.summary || {};
   const topSellers = Array.isArray(payload?.topSellers) ? payload.topSellers : [];

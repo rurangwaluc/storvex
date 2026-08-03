@@ -1,8 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { getProductsReport } from "../../services/reportsApi";
+import {
+  reportQueryKeys,
+} from "../../lib/reportQueryKeys";
+import {
+  useActiveBranchId,
+} from "../../hooks/useActiveBranchId";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import "../dashboard/Dashboard.css";
 import "./Reports.css";
@@ -259,39 +268,71 @@ function RangeControls({ selectedPreset, setSelectedPreset, range, setRange }) {
 }
 
 export default function ProductsReport() {
-  const [selectedPreset, setSelectedPreset] = useState("month");
-  const [range, setRange] = useState(() => rangeForPreset("month"));
-  const [payload, setPayload] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [selectedPreset, setSelectedPreset] =
+    useState("month");
+  const [range, setRange] =
+    useState(() => rangeForPreset("month"));
+
+  const activeBranchId =
+    useActiveBranchId();
+
+  const explicitBranchId =
+    activeBranchId === "default"
+      ? undefined
+      : activeBranchId;
+
+  const requestRange = useMemo(
+    () => ({
+      from: range.from,
+      to: range.to,
+      branchId: explicitBranchId,
+    }),
+    [
+      range.from,
+      range.to,
+      explicitBranchId,
+    ],
+  );
+
+  const productsQuery = useQuery({
+    queryKey:
+      reportQueryKeys.productReport({
+        branchId: activeBranchId,
+        from: range.from,
+        to: range.to,
+        limit: 5,
+        threshold: 5,
+      }),
+    queryFn: () =>
+      getProductsReport(
+        requestRange,
+        5,
+        5,
+      ),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const payload =
+    productsQuery.data || null;
+  const loading =
+    productsQuery.isPending;
 
   useEffect(() => {
-    let alive = true;
+    if (!productsQuery.error) return;
 
-    async function load() {
-      setLoading(true);
-
-      try {
-        const data = await getProductsReport(range, 5, 5);
-        if (!alive) return;
-        setPayload(data || null);
-      } catch (error) {
-        if (!alive) return;
-        toast.error(
-          error?.response?.data?.message ||
-            error?.message ||
-            "Failed to load products report",
-        );
-      } finally {
-        if (alive) setLoading(false);
-      }
-    }
-
-    load();
-
-    return () => {
-      alive = false;
-    };
-  }, [range.from, range.to, range.branchId, range.allBranches]);
+    toast.error(
+      productsQuery.error?.response
+        ?.data?.message ||
+        productsQuery.error?.message ||
+        "Failed to load products report",
+      {
+        id: "products-report-load-error",
+      },
+    );
+  }, [productsQuery.error]);
 
   const bestSellers = Array.isArray(payload?.bestSellers) ? payload.bestSellers : [];
   const needRestock = Array.isArray(payload?.needRestock) ? payload.needRestock : [];

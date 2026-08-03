@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { getFinancialSummary } from "../../services/reportsApi";
+import {
+  reportQueryKeys,
+} from "../../lib/reportQueryKeys";
+import {
+  useActiveBranchId,
+} from "../../hooks/useActiveBranchId";
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import { cn } from "../../lib/cn";
@@ -264,10 +273,54 @@ export default function TrialBalance() {
     to: todayISO(),
   });
 
-  const [preset, setPreset] = useState("MONTH");
-  const [payload, setPayload] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [preset, setPreset] =
+    useState("MONTH");
+
+  const activeBranchId =
+    useActiveBranchId();
+
+  const explicitBranchId =
+    activeBranchId === "default"
+      ? undefined
+      : activeBranchId;
+
+  const requestRange = useMemo(
+    () => ({
+      from: range.from,
+      to: range.to,
+      branchId: explicitBranchId,
+    }),
+    [
+      range.from,
+      range.to,
+      explicitBranchId,
+    ],
+  );
+
+  const financialQuery = useQuery({
+    queryKey:
+      reportQueryKeys.financialSummary({
+        branchId: activeBranchId,
+        from: range.from,
+        to: range.to,
+      }),
+    queryFn: () =>
+      getFinancialSummary(
+        requestRange,
+      ),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const payload =
+    financialQuery.data || null;
+  const loading =
+    financialQuery.isPending;
+  const refreshing =
+    financialQuery.isFetching &&
+    !financialQuery.isPending;
 
   const summary = payload?.summary || {};
   const branchScope = payload?.branchScope || {};
@@ -288,33 +341,33 @@ export default function TrialBalance() {
     return `${formatDate(range.from)} — ${formatDate(range.to)}`;
   }, [range]);
 
-  async function loadReport({ quiet = false } = {}) {
-    if (!quiet) setLoading(true);
-
-    try {
-      const data = await getFinancialSummary(range);
-      setPayload(data || null);
-    } catch (error) {
-      console.error("Trial balance failed:", error);
-      toast.error(error?.response?.data?.message || "Failed to load trial balance");
-    } finally {
-      if (!quiet) setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    loadReport();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [range.from, range.to]);
+    if (!financialQuery.error) return;
+
+    console.error(
+      "Trial balance failed:",
+      financialQuery.error,
+    );
+
+    toast.error(
+      financialQuery.error?.response
+        ?.data?.message ||
+        financialQuery.error?.message ||
+        "Failed to load trial balance",
+      {
+        id: "trial-balance-load-error",
+      },
+    );
+  }, [financialQuery.error]);
 
   async function refresh() {
-    setRefreshing(true);
+    const result =
+      await financialQuery.refetch();
 
-    try {
-      await loadReport({ quiet: true });
-      toast.success("Trial balance refreshed");
-    } finally {
-      setRefreshing(false);
+    if (!result.error) {
+      toast.success(
+        "Trial balance refreshed",
+      );
     }
   }
 
@@ -373,7 +426,7 @@ export default function TrialBalance() {
 
           <div className="flex flex-col gap-3 sm:flex-row xl:shrink-0">
              <Link
-                to="/dashboard/reports"
+                to="/app/reports"
                 className="inline-flex h-11 w-full items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] px-4 text-sm font-black text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 sm:w-auto"
             >
                 Back to reports

@@ -1,8 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { getOwnerChecksReport } from "../../services/reportsApi";
+import {
+  reportQueryKeys,
+} from "../../lib/reportQueryKeys";
+import {
+  useActiveBranchId,
+} from "../../hooks/useActiveBranchId";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import "../dashboard/Dashboard.css";
 import "./Reports.css";
@@ -167,29 +176,47 @@ function StockRow({ item, index }) {
 }
 
 export default function OwnerChecksReport() {
-  const [payload, setPayload] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const activeBranchId =
+    useActiveBranchId();
 
-  async function load() {
-    setLoading(true);
+  const explicitBranchId =
+    activeBranchId === "default"
+      ? undefined
+      : activeBranchId;
 
-    try {
-      const data = await getOwnerChecksReport();
-      setPayload(data || null);
-    } catch (error) {
-      toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Failed to load owner checks",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+  const ownerChecksQuery = useQuery({
+    queryKey:
+      reportQueryKeys.ownerCheck({
+        branchId: activeBranchId,
+      }),
+    queryFn: () =>
+      getOwnerChecksReport({
+        branchId: explicitBranchId,
+      }),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const payload =
+    ownerChecksQuery.data || null;
+  const loading =
+    ownerChecksQuery.isPending;
 
   useEffect(() => {
-    load();
-  }, []);
+    if (!ownerChecksQuery.error) return;
+
+    toast.error(
+      ownerChecksQuery.error?.response
+        ?.data?.message ||
+        ownerChecksQuery.error?.message ||
+        "Failed to load owner checks",
+      {
+        id: "owner-checks-report-load-error",
+      },
+    );
+  }, [ownerChecksQuery.error]);
 
   const ownerChecks = payload?.ownerChecks || {};
   const stockList = stockProducts(ownerChecks);

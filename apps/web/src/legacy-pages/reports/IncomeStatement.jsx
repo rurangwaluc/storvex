@@ -1,8 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { getIncomeStatement } from "../../services/reportsApi";
+import {
+  reportQueryKeys,
+} from "../../lib/reportQueryKeys";
+import {
+  useActiveBranchId,
+} from "../../hooks/useActiveBranchId";
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import { cn } from "../../lib/cn";
@@ -270,10 +279,54 @@ export default function IncomeStatement() {
     to: todayISO(),
   });
 
-  const [preset, setPreset] = useState("MONTH");
-  const [payload, setPayload] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [preset, setPreset] =
+    useState("MONTH");
+
+  const activeBranchId =
+    useActiveBranchId();
+
+  const explicitBranchId =
+    activeBranchId === "default"
+      ? undefined
+      : activeBranchId;
+
+  const requestRange = useMemo(
+    () => ({
+      from: range.from,
+      to: range.to,
+      branchId: explicitBranchId,
+    }),
+    [
+      range.from,
+      range.to,
+      explicitBranchId,
+    ],
+  );
+
+  const incomeQuery = useQuery({
+    queryKey:
+      reportQueryKeys.incomeStatement({
+        branchId: activeBranchId,
+        from: range.from,
+        to: range.to,
+      }),
+    queryFn: () =>
+      getIncomeStatement(
+        requestRange,
+      ),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const payload =
+    incomeQuery.data || null;
+  const loading =
+    incomeQuery.isPending;
+  const refreshing =
+    incomeQuery.isFetching &&
+    !incomeQuery.isPending;
 
   const statement = payload?.incomeStatement || {};
   const branchScope = payload?.branchScope || {};
@@ -301,33 +354,33 @@ export default function IncomeStatement() {
     return `${formatDate(range.from)} — ${formatDate(range.to)}`;
   }, [range]);
 
-  async function loadReport({ quiet = false } = {}) {
-    if (!quiet) setLoading(true);
-
-    try {
-      const data = await getIncomeStatement(range);
-      setPayload(data || null);
-    } catch (error) {
-      console.error("Income statement failed:", error);
-      toast.error(error?.response?.data?.message || "Failed to load income statement");
-    } finally {
-      if (!quiet) setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    loadReport();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [range.from, range.to]);
+    if (!incomeQuery.error) return;
+
+    console.error(
+      "Income statement failed:",
+      incomeQuery.error,
+    );
+
+    toast.error(
+      incomeQuery.error?.response
+        ?.data?.message ||
+        incomeQuery.error?.message ||
+        "Failed to load income statement",
+      {
+        id: "income-statement-load-error",
+      },
+    );
+  }, [incomeQuery.error]);
 
   async function refresh() {
-    setRefreshing(true);
+    const result =
+      await incomeQuery.refetch();
 
-    try {
-      await loadReport({ quiet: true });
-      toast.success("Income statement refreshed");
-    } finally {
-      setRefreshing(false);
+    if (!result.error) {
+      toast.success(
+        "Income statement refreshed",
+      );
     }
   }
 

@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { getCashFlowReport } from "../../services/reportsApi";
 import { getMoneySummary } from "../../services/moneyApi";
+import {
+  reportQueryKeys,
+} from "../../lib/reportQueryKeys";
+import {
+  useActiveBranchId,
+} from "../../hooks/useActiveBranchId";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import "../dashboard/Dashboard.css";
 import "./Reports.css";
@@ -258,46 +267,94 @@ function RangeControls({ selectedPreset, setSelectedPreset, range, setRange }) {
 }
 
 export default function CashFlowReport() {
-  const [selectedPreset, setSelectedPreset] = useState("month");
-  const [range, setRange] = useState(() => rangeForPreset("month"));
-  const [payload, setPayload] = useState(null);
-  const [moneySummary, setMoneySummary] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [selectedPreset, setSelectedPreset] =
+    useState("month");
+  const [range, setRange] =
+    useState(() => rangeForPreset("month"));
+
+  const activeBranchId =
+    useActiveBranchId();
+
+  const explicitBranchId =
+    activeBranchId === "default"
+      ? undefined
+      : activeBranchId;
+
+  const requestRange = useMemo(
+    () => ({
+      from: range.from,
+      to: range.to,
+      branchId: explicitBranchId,
+    }),
+    [
+      range.from,
+      range.to,
+      explicitBranchId,
+    ],
+  );
+
+  const cashFlowQuery = useQuery({
+    queryKey:
+      reportQueryKeys.cashFlow({
+        branchId: activeBranchId,
+        from: range.from,
+        to: range.to,
+      }),
+    queryFn: async () => {
+      const [
+        cashFlowData,
+        moneyData,
+      ] = await Promise.all([
+        getCashFlowReport(
+          requestRange,
+        ),
+        getMoneySummary(
+          {
+            branchId:
+              explicitBranchId,
+          },
+          {
+            branchId:
+              explicitBranchId,
+          },
+        ).catch(() => null),
+      ]);
+
+      return {
+        payload:
+          cashFlowData || null,
+        moneySummary:
+          moneyData || null,
+      };
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const payload =
+    cashFlowQuery.data?.payload ||
+    null;
+  const moneySummary =
+    cashFlowQuery.data?.moneySummary ||
+    null;
+  const loading =
+    cashFlowQuery.isPending;
 
   useEffect(() => {
-    let alive = true;
+    if (!cashFlowQuery.error) return;
 
-    async function load() {
-      setLoading(true);
-
-      try {
-        const [cashFlowData, moneyData] = await Promise.all([
-          getCashFlowReport(range),
-          getMoneySummary().catch(() => null),
-        ]);
-
-        if (!alive) return;
-
-        setPayload(cashFlowData);
-        setMoneySummary(moneyData);
-      } catch (error) {
-        if (!alive) return;
-        toast.error(
-          error?.response?.data?.message ||
-            error?.message ||
-            "Failed to load money report",
-        );
-      } finally {
-        if (alive) setLoading(false);
-      }
-    }
-
-    load();
-
-    return () => {
-      alive = false;
-    };
-  }, [range.from, range.to, range.branchId, range.allBranches]);
+    toast.error(
+      cashFlowQuery.error?.response
+        ?.data?.message ||
+        cashFlowQuery.error?.message ||
+        "Failed to load money report",
+      {
+        id: "cash-flow-report-load-error",
+      },
+    );
+  }, [cashFlowQuery.error]);
 
   const cashFlow = payload?.cashFlow || {};
 
