@@ -1,8 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import { cn } from "../../lib/cn";
+import {
+  customerQueryKeys,
+  unwrapCustomersResponse,
+} from "../../lib/customerQueryKeys";
 import AsyncButton from "../../components/ui/AsyncButton";
 import TableSkeleton from "../../components/ui/TableSkeleton";
 import "./Customers.css";
@@ -404,39 +412,44 @@ function CustomerFormModal({ initial, onSave, onClose, busy }) {
 }
 
 function LedgerDrawer({ customerId, onClose }) {
-  const [loading, setLoading] = useState(true);
-  const [ledger, setLedger] = useState(null);
+  const ledgerQuery = useQuery({
+    queryKey:
+      customerQueryKeys.ledger(
+        customerId,
+      ),
+    queryFn: () =>
+      getCustomerLedger(customerId),
+    enabled: Boolean(customerId),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const loading =
+    ledgerQuery.isPending;
+
+  const ledger =
+    ledgerQuery.data
+      ? normalizeLedgerResponse(
+          ledgerQuery.data,
+        )
+      : null;
 
   useEffect(() => {
-    const controller = new AbortController();
+    if (!ledgerQuery.error) return;
 
-    async function loadLedger() {
-      try {
-        setLoading(true);
+    toast.error(
+      ledgerQuery.error?.message ||
+        "Failed to load customer history",
+    );
+  }, [ledgerQuery.error]);
 
-        const result = await getCustomerLedger(customerId, {}, { signal: controller.signal });
-
-        if (!controller.signal.aborted) {
-          setLedger(normalizeLedgerResponse(result));
-        }
-      } catch (error) {
-        if (!controller.signal.aborted) {
-          toast.error(error?.message || "Failed to load customer history");
-          setLedger(null);
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void loadLedger();
-
-    return () => controller.abort();
-  }, [customerId]);
-
-  const sales = Array.isArray(ledger?.sales) ? ledger.sales : [];
+  const sales = Array.isArray(
+    ledger?.sales,
+  )
+    ? ledger.sales
+    : [];
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -613,11 +626,8 @@ function ConfirmModal({
 
 export default function CustomerList() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
 
-  const [customers, setCustomers] = useState([]);
-  const [customerSummary, setCustomerSummary] = useState(null);
   const [q, setQ] = useState("");
   const [showInactive, setShowInactive] = useState(false);
   const [sourceFilter, setSourceFilter] = useState("ALL");
@@ -632,105 +642,76 @@ export default function CustomerList() {
 
   const [ledgerId, setLedgerId] = useState(null);
 
-  const abortRef = useRef(null);
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-
-    return () => {
-      mountedRef.current = false;
-      if (abortRef.current) abortRef.current.abort();
-    };
-  }, []);
-
-  async function load(options = {}) {
-    if (abortRef.current) {
-      abortRef.current.abort();
-    }
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    if (options.silent) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-
-    try {
-      const data = await listCustomers(
-        {
-          q: q.trim() || undefined,
-          includeInactive: showInactive,
-          source: sourceFilter,
-          withOutstanding,
-        },
-        {
-          signal: controller.signal,
-        },
-      );
-
-      if (
-        !mountedRef.current ||
-        controller.signal.aborted
-      ) {
-        return;
-      }
-
-      setCustomers(
-        normalizeCustomerResponse(data),
-      );
-
-      setCustomerSummary(
-        data?.summary || null,
-      );
-    } catch (error) {
-      if (controller.signal.aborted) {
-        return;
-      }
-
-      toast.error(
-        error?.message ||
-          "Failed to load customers",
-      );
-
-      setCustomers([]);
-      setCustomerSummary(null);
-    } finally {
-      if (
-        !mountedRef.current ||
-        controller.signal.aborted
-      ) {
-        return;
-      }
-
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
-
-  useEffect(() => {
-    void load();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    showInactive,
-    sourceFilter,
-    withOutstanding,
-  ]);
+  const [debouncedQuery, setDebouncedQuery] =
+    useState("");
 
   useEffect(() => {
     const timeout = setTimeout(() => {
-      void load({
-        silent: true,
-      });
+      setDebouncedQuery(q.trim());
     }, 250);
 
     return () => clearTimeout(timeout);
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
+
+  const customerListScope = useMemo(
+    () => ({
+      q:
+        debouncedQuery ||
+        undefined,
+      includeInactive: showInactive,
+      source: sourceFilter,
+      withOutstanding,
+    }),
+    [
+      debouncedQuery,
+      showInactive,
+      sourceFilter,
+      withOutstanding,
+    ],
+  );
+
+  const customersQuery = useQuery({
+    queryKey:
+      customerQueryKeys.list(
+        customerListScope,
+      ),
+    queryFn: () =>
+      listCustomers(
+        customerListScope,
+      ),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+    placeholderData:
+      (previousData) =>
+        previousData,
+  });
+
+  const customers =
+    unwrapCustomersResponse(
+      customersQuery.data,
+    );
+
+  const customerSummary =
+    customersQuery.data?.summary ||
+    null;
+
+  const loading =
+    customersQuery.isPending;
+
+  const refreshing =
+    customersQuery.isFetching &&
+    !customersQuery.isPending;
+
+  useEffect(() => {
+    if (!customersQuery.error) return;
+
+    toast.error(
+      customersQuery.error?.message ||
+        "Failed to load customers",
+    );
+  }, [customersQuery.error]);
 
   const filtered = customers;
 
@@ -805,23 +786,19 @@ export default function CustomerList() {
       if (editTarget?.id) {
         const updated = await updateCustomer(editTarget.id, payload);
 
-        setCustomers((current) =>
-          current.map((customer) =>
-            customer.id === editTarget.id
-              ? {
-                  ...customer,
-                  ...updated,
-                  outstanding: customer.outstanding || updated?.outstanding || 0,
-                }
-              : customer,
-          ),
-        );
+        await queryClient.invalidateQueries({
+          queryKey:
+            customerQueryKeys.all,
+        });
 
         toast.success("Customer updated");
       } else {
         const created = await createCustomer(payload);
 
-        setCustomers((current) => [{ ...created, outstanding: 0 }, ...current]);
+        await queryClient.invalidateQueries({
+          queryKey:
+            customerQueryKeys.all,
+        });
 
         toast.success("Customer created");
       }
@@ -831,7 +808,7 @@ export default function CustomerList() {
     } catch (error) {
       toast.error(error?.message || "Failed to save customer");
     } finally {
-      if (mountedRef.current) setFormBusy(false);
+      setFormBusy(false);
     }
   }
 
@@ -843,20 +820,17 @@ export default function CustomerList() {
     try {
       await deactivateCustomer(confirmTarget.customer.id);
 
-      setCustomers((current) =>
-        current.map((customer) =>
-          customer.id === confirmTarget.customer.id
-            ? { ...customer, isActive: false }
-            : customer,
-        ),
-      );
+      await queryClient.invalidateQueries({
+        queryKey:
+          customerQueryKeys.all,
+      });
 
       toast.success("Customer deactivated");
       setConfirmTarget(null);
     } catch (error) {
       toast.error(error?.message || "Failed to deactivate customer");
     } finally {
-      if (mountedRef.current) setConfirmBusy(false);
+      setConfirmBusy(false);
     }
   }
 
@@ -868,25 +842,17 @@ export default function CustomerList() {
     try {
       const updated = await reactivateCustomer(confirmTarget.customer.id);
 
-      setCustomers((current) =>
-        current.map((customer) =>
-          customer.id === confirmTarget.customer.id
-            ? {
-                ...customer,
-                ...updated,
-                isActive: true,
-                outstanding: customer.outstanding || updated?.outstanding || 0,
-              }
-            : customer,
-        ),
-      );
+      await queryClient.invalidateQueries({
+        queryKey:
+          customerQueryKeys.all,
+      });
 
       toast.success("Customer reactivated");
       setConfirmTarget(null);
     } catch (error) {
       toast.error(error?.message || "Failed to reactivate customer");
     } finally {
-      if (mountedRef.current) setConfirmBusy(false);
+      setConfirmBusy(false);
     }
   }
 
