@@ -31,6 +31,9 @@ import {
 import {
   dashboardQueryKeys,
 } from "../../lib/dashboardQueryKeys";
+import {
+  reportQueryKeys,
+} from "../../lib/reportQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./PosReceipt.css";
 
@@ -1265,6 +1268,10 @@ export default function PosReceipt() {
       queryClient.invalidateQueries({
         queryKey:
           dashboardQueryKeys.all,
+      }),
+      queryClient.invalidateQueries({
+        queryKey:
+          reportQueryKeys.all,
       }),
     ];
 

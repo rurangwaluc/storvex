@@ -25,6 +25,9 @@ import {
 import {
   dashboardQueryKeys,
 } from "../../lib/dashboardQueryKeys";
+import {
+  reportQueryKeys,
+} from "../../lib/reportQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./SalesList.css";
 
@@ -721,6 +724,10 @@ export default function SalesList() {
         queryClient.invalidateQueries({
           queryKey:
             dashboardQueryKeys.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            reportQueryKeys.all,
         }),
       ];
 

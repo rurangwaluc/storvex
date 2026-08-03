@@ -18,6 +18,12 @@ import {
   customerQueryKeys,
 } from "../../lib/customerQueryKeys";
 import {
+  dashboardQueryKeys,
+} from "../../lib/dashboardQueryKeys";
+import {
+  reportQueryKeys,
+} from "../../lib/reportQueryKeys";
+import {
   addSalePayment,
   getOutstandingCredit,
   getOverdueCredit,
@@ -820,6 +826,14 @@ export default function CreditDashboard() {
         queryClient.invalidateQueries({
           queryKey:
             customerQueryKeys.lists(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            dashboardQueryKeys.all,
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            reportQueryKeys.all,
         }),
       ];
 

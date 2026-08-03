@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -10,6 +13,12 @@ import {
   getReportsDashboard,
 } from "../../services/reportsApi";
 import { getMoneySummary } from "../../services/moneyApi";
+import {
+  getActiveBranchId,
+} from "../../services/apiClient";
+import {
+  reportQueryKeys,
+} from "../../lib/reportQueryKeys";
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import { cn } from "../../lib/cn";
@@ -362,55 +371,143 @@ function DownloadCard({
 }
 
 export default function Reports() {
-  const [selectedPreset, setSelectedPreset] = useState("month");
-  const [range, setRange] = useState(() => rangeForPreset("month"));
-  const [loading, setLoading] = useState(true);
-  const [downloading, setDownloading] = useState(false);
-  const [summary, setSummary] = useState(null);
-  const [insights, setInsights] = useState(null);
-  const [moneySummary, setMoneySummary] = useState(null);
+  const [selectedPreset, setSelectedPreset] =
+    useState("month");
+  const [range, setRange] =
+    useState(() => rangeForPreset("month"));
+  const [downloading, setDownloading] =
+    useState(false);
+  const [activeBranchId, setActiveBranchId] =
+    useState(
+      () => getActiveBranchId() || "default",
+    );
+
+  const explicitBranchId =
+    activeBranchId === "default"
+      ? undefined
+      : activeBranchId;
+
+  const requestRange = useMemo(
+    () => ({
+      from: range.from,
+      to: range.to,
+      branchId: explicitBranchId,
+    }),
+    [
+      range.from,
+      range.to,
+      explicitBranchId,
+    ],
+  );
+
+  const reportsQuery = useQuery({
+    queryKey:
+      reportQueryKeys.overview({
+        branchId: activeBranchId,
+        from: range.from,
+        to: range.to,
+        allBranches: false,
+      }),
+    queryFn: async () => {
+      const [
+        dashboard,
+        insightData,
+        moneyData,
+      ] = await Promise.all([
+        getReportsDashboard(
+          requestRange,
+        ),
+        getInsights(
+          requestRange,
+          8,
+          5,
+        ),
+        getMoneySummary(
+          {
+            branchId:
+              explicitBranchId,
+          },
+          {
+            branchId:
+              explicitBranchId,
+          },
+        ).catch(() => null),
+      ]);
+
+      return {
+        summary: dashboard || null,
+        insights: insightData || null,
+        moneySummary:
+          moneyData || null,
+      };
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const summary =
+    reportsQuery.data?.summary || null;
+  const insights =
+    reportsQuery.data?.insights || null;
+  const moneySummary =
+    reportsQuery.data?.moneySummary ||
+    null;
+  const loading =
+    reportsQuery.isPending;
 
   const rangeLabel = useMemo(
-    () => `${formatDate(range.from)} to ${formatDate(range.to)}`,
-    [range.from, range.to],
+    () =>
+      `${formatDate(range.from)} to ${formatDate(range.to)}`,
+    [
+      range.from,
+      range.to,
+    ],
   );
 
   useEffect(() => {
-    let alive = true;
-
-    async function load() {
-      setLoading(true);
-
-      try {
-        const [dashboard, insightData, moneyData] = await Promise.all([
-          getReportsDashboard(range),
-          getInsights(range, 8, 5),
-          getMoneySummary().catch(() => null),
-        ]);
-
-        if (!alive) return;
-
-        setSummary(dashboard);
-        setInsights(insightData);
-        setMoneySummary(moneyData);
-      } catch (error) {
-        if (!alive) return;
-        toast.error(
-          error?.response?.data?.message ||
-            error?.message ||
-            "Failed to load reports",
-        );
-      } finally {
-        if (alive) setLoading(false);
-      }
+    function handleBranchChanged() {
+      setActiveBranchId(
+        getActiveBranchId() ||
+          "default",
+      );
     }
 
-    load();
+    window.addEventListener(
+      "storvex:branch-changed",
+      handleBranchChanged,
+    );
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      handleBranchChanged,
+    );
 
     return () => {
-      alive = false;
+      window.removeEventListener(
+        "storvex:branch-changed",
+        handleBranchChanged,
+      );
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
+        handleBranchChanged,
+      );
     };
-  }, [range.from, range.to, range.branchId, range.allBranches]);
+  }, []);
+
+  useEffect(() => {
+    if (!reportsQuery.error) return;
+
+    toast.error(
+      reportsQuery.error?.response
+        ?.data?.message ||
+        reportsQuery.error?.message ||
+        "Failed to load reports",
+      {
+        id: "reports-load-error",
+      },
+    );
+  }, [reportsQuery.error]);
 
   const numbers = useMemo(() => {
     const sales = getValue(summary, [
@@ -534,11 +631,19 @@ export default function Reports() {
     try {
       const sameDay = range.from === range.to;
       const blob = sameDay
-        ? await downloadDailyClosePdf(range.from, {
-            branchId: range.branchId,
-            allBranches: range.allBranches,
-          })
-        : await downloadPeriodPdf(range, 12, 5);
+        ? await downloadDailyClosePdf(
+            range.from,
+            {
+              branchId:
+                explicitBranchId,
+              allBranches: false,
+            },
+          )
+        : await downloadPeriodPdf(
+            requestRange,
+            12,
+            5,
+          );
 
       const filename = sameDay
         ? `storvex-business-report-${fileSafe(range.from)}.pdf`

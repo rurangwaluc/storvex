@@ -24,6 +24,9 @@ import {
 import {
   dashboardQueryKeys,
 } from "../../lib/dashboardQueryKeys";
+import {
+  reportQueryKeys,
+} from "../../lib/reportQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./CashDrawer.css";
 
@@ -1443,6 +1446,10 @@ export default function CashDrawer() {
       queryClient.invalidateQueries({
         queryKey:
           dashboardQueryKeys.all,
+      }),
+      queryClient.invalidateQueries({
+        queryKey:
+          reportQueryKeys.all,
       }),
     ]);
   }

@@ -25,6 +25,9 @@ import {
   dashboardQueryKeys,
 } from "../../lib/dashboardQueryKeys";
 import {
+  reportQueryKeys,
+} from "../../lib/reportQueryKeys";
+import {
   getActiveBranchId,
 } from "../../services/apiClient";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
@@ -1299,6 +1302,11 @@ export default function Expenses() {
           dashboardQueryKeys.all,
       });
 
+      void queryClient.invalidateQueries({
+        queryKey:
+          reportQueryKeys.all,
+      });
+
       if (
         isCashDrawerExpense(
           updated ||
@@ -1364,6 +1372,11 @@ export default function Expenses() {
           expenseQueryKeys.lists(),
       });
 
+      void queryClient.invalidateQueries({
+        queryKey:
+          reportQueryKeys.all,
+      });
+
       toast.success("Expense deleted");
       setDeleteTarget(null);
     } catch (error) {
@@ -1389,6 +1402,11 @@ export default function Expenses() {
     void queryClient.invalidateQueries({
       queryKey:
         expenseQueryKeys.lists(),
+    });
+
+    void queryClient.invalidateQueries({
+      queryKey:
+        reportQueryKeys.all,
     });
 
     setShowForm(false);
@@ -1427,6 +1445,11 @@ export default function Expenses() {
     void queryClient.invalidateQueries({
       queryKey:
         expenseQueryKeys.lists(),
+    });
+
+    void queryClient.invalidateQueries({
+      queryKey:
+        reportQueryKeys.all,
     });
 
     setShowForm(false);
