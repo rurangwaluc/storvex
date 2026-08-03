@@ -1,8 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import {
+  getActiveBranchId,
+} from "../../services/apiClient";
+import {
+  salesQueryKeys,
+  unwrapSalesResponse,
+} from "../../lib/salesQueryKeys";
+import {
+  customerQueryKeys,
+} from "../../lib/customerQueryKeys";
 import {
   addSalePayment,
   getOutstandingCredit,
@@ -459,17 +473,23 @@ function PaymentModal({
 
 export default function CreditDashboard() {
   const navigate = useNavigate();
-
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const [outstanding, setOutstanding] = useState([]);
-  const [overdue, setOverdue] = useState([]);
+  const queryClient = useQueryClient();
 
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [activeBranchLabel, setActiveBranchLabel] = useState(() => activeBranchNameFromStorage());
+  const [
+    activeBranchId,
+    setActiveBranchId,
+  ] = useState(
+    () => getActiveBranchId() || "default",
+  );
+  const [
+    activeBranchLabel,
+    setActiveBranchLabel,
+  ] = useState(
+    () => activeBranchNameFromStorage(),
+  );
 
   const [payOpen, setPayOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
@@ -478,83 +498,143 @@ export default function CreditDashboard() {
   const [payNote, setPayNote] = useState("");
   const [paySaving, setPaySaving] = useState(false);
 
-  const mountedRef = useRef(true);
+  const branchRequestOptions = useMemo(
+    () => ({
+      activeBranchId:
+        activeBranchId === "default"
+          ? undefined
+          : activeBranchId,
+    }),
+    [activeBranchId],
+  );
+
+  const outstandingQuery = useQuery({
+    queryKey:
+      salesQueryKeys.outstandingCredit(
+        activeBranchId,
+      ),
+    queryFn: () =>
+      getOutstandingCredit(
+        {},
+        branchRequestOptions,
+      ),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const overdueQuery = useQuery({
+    queryKey:
+      salesQueryKeys.overdueCredit(
+        activeBranchId,
+      ),
+    queryFn: () =>
+      getOverdueCredit(
+        {},
+        branchRequestOptions,
+      ),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const outstanding =
+    unwrapSalesResponse(
+      outstandingQuery.data,
+    );
+
+  const overdue =
+    unwrapSalesResponse(
+      overdueQuery.data,
+    );
+
+  const loading =
+    outstandingQuery.isPending ||
+    overdueQuery.isPending;
+
+  const refreshing =
+    !loading &&
+    (
+      outstandingQuery.isFetching ||
+      overdueQuery.isFetching
+    );
+
+  const queryError =
+    outstandingQuery.error ||
+    overdueQuery.error;
 
   useEffect(() => {
-    mountedRef.current = true;
+    if (!queryError) return;
 
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+    console.error(queryError);
 
-  async function load({ silent = false } = {}) {
-    if (silent) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
+    if (
+      !handleSubscriptionBlockedError(
+        queryError,
+        {
+          toastId:
+            "pay-later-dashboard-blocked",
+        },
+      )
+    ) {
+      toast.error(
+        queryError?.message ||
+          "Failed to load customer balances",
+        {
+          id:
+            "credit-dashboard-load-error",
+        },
+      );
     }
-
-    try {
-      const [outstandingData, overdueData] = await Promise.all([
-        getOutstandingCredit(),
-        getOverdueCredit(),
-      ]);
-
-      if (!mountedRef.current) return;
-
-      const outstandingList = Array.isArray(outstandingData)
-        ? outstandingData
-        : Array.isArray(outstandingData?.sales)
-          ? outstandingData.sales
-          : [];
-
-      const overdueList = Array.isArray(overdueData)
-        ? overdueData
-        : Array.isArray(overdueData?.sales)
-          ? overdueData.sales
-          : [];
-
-      setOutstanding(outstandingList);
-      setOverdue(overdueList);
-      setVisibleCount(PAGE_SIZE);
-      setActiveBranchLabel(activeBranchNameFromStorage());
-    } catch (error) {
-      if (!mountedRef.current) return;
-
-      console.error(error);
-
-      if (!handleSubscriptionBlockedError(error, { toastId: "pay-later-dashboard-blocked" })) {
-        toast.error(error?.message || "Failed to load customer balances");
-      }
-
-      setOutstanding([]);
-      setOverdue([]);
-    } finally {
-      if (!mountedRef.current) return;
-
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
+  }, [queryError]);
 
   useEffect(() => {
-    void load();
-
     function onBranchChanged() {
-      setActiveBranchLabel(activeBranchNameFromStorage());
-      void load({ silent: true });
+      setActiveBranchId(
+        getActiveBranchId() ||
+          "default",
+      );
+      setActiveBranchLabel(
+        activeBranchNameFromStorage(),
+      );
+
+      void queryClient.invalidateQueries({
+        queryKey:
+          salesQueryKeys.credit(),
+      });
     }
 
-    window.addEventListener("storvex:branch-changed", onBranchChanged);
-    window.addEventListener("storvex:workspace-refreshed", onBranchChanged);
+    window.addEventListener(
+      "storvex:branch-changed",
+      onBranchChanged,
+    );
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      onBranchChanged,
+    );
 
     return () => {
-      window.removeEventListener("storvex:branch-changed", onBranchChanged);
-      window.removeEventListener("storvex:workspace-refreshed", onBranchChanged);
+      window.removeEventListener(
+        "storvex:branch-changed",
+        onBranchChanged,
+      );
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
+        onBranchChanged,
+      );
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [queryClient]);
+
+  async function refreshCredit() {
+    setVisibleCount(PAGE_SIZE);
+
+    await Promise.all([
+      outstandingQuery.refetch(),
+      overdueQuery.refetch(),
+    ]);
+  }
 
   const overdueIds = useMemo(() => {
     return new Set(overdue.map((sale) => sale.id).filter(Boolean));
@@ -699,15 +779,71 @@ export default function CreditDashboard() {
     setPaySaving(true);
 
     try {
-      await addSalePayment(selectedSale.id, {
-        amount,
-        method: payMethod,
-        note: cleanString(payNote) || null,
-      });
+      await addSalePayment(
+        selectedSale.id,
+        {
+          amount,
+          method: payMethod,
+          note:
+            cleanString(payNote) ||
+            null,
+        },
+        branchRequestOptions,
+      );
+
+      const customerId =
+        cleanString(
+          selectedSale?.customer?.id,
+        ) ||
+        cleanString(
+          selectedSale?.customerId,
+        );
+
+      const refreshTasks = [
+        queryClient.invalidateQueries({
+          queryKey:
+            salesQueryKeys.credit(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            salesQueryKeys.list(
+              activeBranchId,
+            ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            salesQueryKeys.detail(
+              activeBranchId,
+              selectedSale.id,
+            ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            customerQueryKeys.lists(),
+        }),
+      ];
+
+      if (customerId) {
+        refreshTasks.push(
+          queryClient.invalidateQueries({
+            queryKey:
+              customerQueryKeys.ledger(
+                customerId,
+              ),
+          }),
+          queryClient.invalidateQueries({
+            queryKey:
+              customerQueryKeys.detail(
+                customerId,
+              ),
+          }),
+        );
+      }
+
+      await Promise.all(refreshTasks);
 
       toast.success("Payment recorded");
       closePayModal();
-      await load({ silent: true });
     } catch (error) {
       if (handleSubscriptionBlockedError(error, { toastId: "pay-later-payment-blocked" })) {
         return;
@@ -761,7 +897,7 @@ export default function CreditDashboard() {
             Sales list
           </Link>
 
-          <AsyncButton loading={refreshing} onClick={() => load({ silent: true })} className="svx-dues-button secondary">
+          <AsyncButton loading={refreshing} onClick={refreshCredit} className="svx-dues-button secondary">
             Refresh
           </AsyncButton>
 
