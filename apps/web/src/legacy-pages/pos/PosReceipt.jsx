@@ -22,6 +22,12 @@ import {
 import {
   inventoryQueryKeys,
 } from "../../lib/inventoryQueryKeys";
+import {
+  customerQueryKeys,
+} from "../../lib/customerQueryKeys";
+import {
+  posQueryKeys,
+} from "../../lib/posQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./PosReceipt.css";
 
@@ -1225,6 +1231,14 @@ export default function PosReceipt() {
   async function refreshSaleWorkspace({
     inventoryChanged = false,
   } = {}) {
+    const customerId =
+      cleanString(
+        receipt?.customer?.id,
+      ) ||
+      cleanString(
+        receipt?.customerId,
+      );
+
     const tasks = [
       receiptQuery.refetch(),
       queryClient.invalidateQueries({
@@ -1235,7 +1249,34 @@ export default function PosReceipt() {
         queryKey:
           salesQueryKeys.credit(),
       }),
+      queryClient.invalidateQueries({
+        queryKey:
+          customerQueryKeys.lists(),
+      }),
+      queryClient.invalidateQueries({
+        queryKey:
+          posQueryKeys.drawerStatus(
+            activeBranchId,
+          ),
+      }),
     ];
+
+    if (customerId) {
+      tasks.push(
+        queryClient.invalidateQueries({
+          queryKey:
+            customerQueryKeys.detail(
+              customerId,
+            ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            customerQueryKeys.ledger(
+              customerId,
+            ),
+        }),
+      );
+    }
 
     if (inventoryChanged) {
       tasks.push(
@@ -1273,11 +1314,22 @@ export default function PosReceipt() {
     setPaymentBusy(true);
 
     try {
-      await addSalePayment(id, {
-        amount,
-        method: payMethod,
-        note: cleanString(payNote) || null,
-      });
+      await addSalePayment(
+        id,
+        {
+          amount,
+          method: payMethod,
+          note:
+            cleanString(payNote) ||
+            null,
+        },
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      );
 
       await refreshSaleWorkspace();
 
@@ -1303,7 +1355,20 @@ export default function PosReceipt() {
     setCancelBusy(true);
 
     try {
-      await cancelSaleApi(id, { note: cleanString(cancelNote) || null });
+      await cancelSaleApi(
+        id,
+        {
+          note:
+            cleanString(cancelNote) ||
+            null,
+        },
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      );
 
       await refreshSaleWorkspace({
         inventoryChanged: true,
@@ -1392,12 +1457,24 @@ export default function PosReceipt() {
     setRefundBusy(true);
 
     try {
-      await createSaleRefund(id, {
-        items: refundItems,
-        method: refundMethod,
-        reason: cleanString(refundReason),
-        note: cleanString(refundNote) || null,
-      });
+      await createSaleRefund(
+        id,
+        {
+          items: refundItems,
+          method: refundMethod,
+          reason:
+            cleanString(refundReason),
+          note:
+            cleanString(refundNote) ||
+            null,
+        },
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      );
 
       await refreshSaleWorkspace({
         inventoryChanged: true,

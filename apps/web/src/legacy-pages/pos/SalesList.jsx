@@ -16,6 +16,12 @@ import {
 import {
   inventoryQueryKeys,
 } from "../../lib/inventoryQueryKeys";
+import {
+  customerQueryKeys,
+} from "../../lib/customerQueryKeys";
+import {
+  posQueryKeys,
+} from "../../lib/posQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./SalesList.css";
 
@@ -627,10 +633,36 @@ export default function SalesList() {
 
     setCancelBusy(true);
 
+    const cancelledSale =
+      sales.find(
+        (sale) =>
+          String(sale?.id) ===
+          String(cancelSaleId),
+      ) || null;
+
+    const customerId =
+      cleanString(
+        cancelledSale?.customer?.id,
+      ) ||
+      cleanString(
+        cancelledSale?.customerId,
+      );
+
     try {
-      await cancelSaleApi(cancelSaleId, {
-        note: cleanString(cancelNote) || null,
-      });
+      await cancelSaleApi(
+        cancelSaleId,
+        {
+          note:
+            cleanString(cancelNote) ||
+            null,
+        },
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      );
 
       queryClient.setQueryData(
         salesQueryKeys.list(
@@ -653,7 +685,7 @@ export default function SalesList() {
           ),
       );
 
-      await Promise.all([
+      const refreshTasks = [
         queryClient.invalidateQueries({
           queryKey:
             salesQueryKeys.detail(
@@ -663,13 +695,46 @@ export default function SalesList() {
         }),
         queryClient.invalidateQueries({
           queryKey:
+            salesQueryKeys.credit(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
             inventoryQueryKeys.productLists(),
         }),
         queryClient.invalidateQueries({
           queryKey:
             inventoryQueryKeys.summaries(),
         }),
-      ]);
+        queryClient.invalidateQueries({
+          queryKey:
+            customerQueryKeys.lists(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            posQueryKeys.drawerStatus(
+              activeBranchId,
+            ),
+        }),
+      ];
+
+      if (customerId) {
+        refreshTasks.push(
+          queryClient.invalidateQueries({
+            queryKey:
+              customerQueryKeys.detail(
+                customerId,
+              ),
+          }),
+          queryClient.invalidateQueries({
+            queryKey:
+              customerQueryKeys.ledger(
+                customerId,
+              ),
+          }),
+        );
+      }
+
+      await Promise.all(refreshTasks);
 
       toast.success("Sale cancelled");
       setCancelOpen(false);
