@@ -3596,3 +3596,25 @@
 }
 
 /* STORVEX PRODUCT DETAILS 10/10 REDESIGN END */
+
+
+/* Complete prepared Marketplace image */
+/*
+ * Display the complete prepared Marketplace image.
+ * The business logo is embedded in the image itself,
+ * so the image must keep its natural full canvas.
+ */
+.svx-product-detail-page .svx-product-main-image {
+  min-height: 0;
+  aspect-ratio: auto;
+  overflow: visible;
+}
+
+.svx-product-detail-page .svx-product-main-image > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+  object-position: center;
+}
