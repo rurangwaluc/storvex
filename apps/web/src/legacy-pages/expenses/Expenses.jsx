@@ -1,6 +1,7 @@
 // frontend-stores/src/pages/expenses/Expenses.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { createPortal } from "react-dom";
@@ -17,6 +18,12 @@ import {
 import {
   posQueryKeys,
 } from "../../lib/posQueryKeys";
+import {
+  expenseQueryKeys,
+} from "../../lib/expenseQueryKeys";
+import {
+  getActiveBranchId,
+} from "../../services/apiClient";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./Expenses.css";
 
@@ -1015,92 +1022,149 @@ function DeleteConfirmDialog({ expense, busy, onConfirm, onClose }) {
 export default function Expenses() {
   const queryClient = useQueryClient();
 
-  const [loading, setLoading] = useState(true);
-  const [expenses, setExpenses] = useState([]);
-  const [storeLocationScope, setStoreLocationScope] = useState(null);
+  const [activeBranchId, setActiveBranchId] =
+    useState(
+      () => getActiveBranchId() || "default",
+    );
 
   const [q, setQ] = useState("");
-  const [filterStatus, setFilterStatus] = useState("ALL");
-  const [scopeMode, setScopeMode] = useState("CURRENT");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [showForm, setShowForm] = useState(false);
-  const [editingExpense, setEditingExpense] = useState(null);
+  const [filterStatus, setFilterStatus] =
+    useState("ALL");
+  const [scopeMode, setScopeMode] =
+    useState("CURRENT");
+  const [visibleCount, setVisibleCount] =
+    useState(PAGE_SIZE);
+  const [showForm, setShowForm] =
+    useState(false);
+  const [editingExpense, setEditingExpense] =
+    useState(null);
 
-  const [approveBusy, setApproveBusy] = useState("");
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteBusy, setDeleteBusy] = useState(false);
-  const [openActionMenuId, setOpenActionMenuId] = useState("");
+  const [approveBusy, setApproveBusy] =
+    useState("");
+  const [deleteTarget, setDeleteTarget] =
+    useState(null);
+  const [deleteBusy, setDeleteBusy] =
+    useState(false);
+  const [
+    openActionMenuId,
+    setOpenActionMenuId,
+  ] = useState("");
 
-  const [activeStoreLocationLabel, setActiveStoreLocationLabel] = useState(() =>
-    activeStoreLocationNameFromStorage()
+  const [
+    activeStoreLocationLabel,
+    setActiveStoreLocationLabel,
+  ] = useState(
+    () =>
+      activeStoreLocationNameFromStorage(),
   );
 
-  const mountedRef = useRef(true);
-  const requestRef = useRef(0);
+  const expenseListKey =
+    expenseQueryKeys.list(
+      scopeMode,
+      activeBranchId,
+    );
 
-  useEffect(() => {
-    mountedRef.current = true;
+  const expensesQuery = useQuery({
+    queryKey: expenseListKey,
+    queryFn: async () => {
+      const allStoreLocations =
+        scopeMode === "ALL";
 
-    function onStoreLocationChanged() {
-      setActiveStoreLocationLabel(activeStoreLocationNameFromStorage());
-      setScopeMode("CURRENT");
-      setShowForm(false);
-      void load({ nextScopeMode: "CURRENT" });
-    }
-
-    window.addEventListener("storvex:branch-changed", onStoreLocationChanged);
-    window.addEventListener("storvex:workspace-refreshed", onStoreLocationChanged);
-
-    return () => {
-      mountedRef.current = false;
-      window.removeEventListener("storvex:branch-changed", onStoreLocationChanged);
-      window.removeEventListener("storvex:workspace-refreshed", onStoreLocationChanged);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function load({ nextScopeMode = scopeMode, silent = false } = {}) {
-    const requestId = requestRef.current + 1;
-    requestRef.current = requestId;
-
-    if (!silent) setLoading(true);
-
-    try {
-      const data = await getExpenses({
-        allStoreLocations: nextScopeMode === "ALL",
+      const response = await getExpenses({
+        allStoreLocations,
+        branchId:
+          allStoreLocations ||
+          activeBranchId === "default"
+            ? undefined
+            : activeBranchId,
       });
 
-      if (!mountedRef.current || requestRef.current !== requestId) return;
+      return {
+        expenses: Array.isArray(
+          response?.expenses,
+        )
+          ? response.expenses
+          : Array.isArray(response)
+            ? response
+            : [],
+        storeLocationScope:
+          storeLocationScopeFromResponse(
+            response,
+          ),
+      };
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-      const list = Array.isArray(data?.expenses) ? data.expenses : Array.isArray(data) ? data : [];
+  const expenses =
+    expensesQuery.data?.expenses || [];
 
-      setExpenses(list);
-      setStoreLocationScope(storeLocationScopeFromResponse(data));
-      setVisibleCount(PAGE_SIZE);
-      setActiveStoreLocationLabel(activeStoreLocationNameFromStorage());
-    } catch (error) {
-      if (!mountedRef.current || requestRef.current !== requestId) return;
+  const storeLocationScope =
+    expensesQuery.data
+      ?.storeLocationScope || null;
 
-      if (!handleSubscriptionBlockedError(error, { toastId: "expenses-load-blocked" })) {
-        toast.error(error?.message || "Failed to load expenses");
-      }
-
-      setExpenses([]);
-      setStoreLocationScope(null);
-
-      if (nextScopeMode === "ALL") {
-        setScopeMode("CURRENT");
-      }
-    } finally {
-      if (!mountedRef.current || requestRef.current !== requestId) return;
-      setLoading(false);
-    }
-  }
+  const loading =
+    expensesQuery.isPending;
 
   useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    function onStoreLocationChanged() {
+      setActiveBranchId(
+        getActiveBranchId() || "default",
+      );
+      setActiveStoreLocationLabel(
+        activeStoreLocationNameFromStorage(),
+      );
+      setScopeMode("CURRENT");
+      setShowForm(false);
+      setEditingExpense(null);
+      setVisibleCount(PAGE_SIZE);
+    }
+
+    window.addEventListener(
+      "storvex:branch-changed",
+      onStoreLocationChanged,
+    );
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      onStoreLocationChanged,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "storvex:branch-changed",
+        onStoreLocationChanged,
+      );
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
+        onStoreLocationChanged,
+      );
+    };
   }, []);
+
+  useEffect(() => {
+    if (!expensesQuery.error) return;
+
+    if (
+      !handleSubscriptionBlockedError(
+        expensesQuery.error,
+        {
+          toastId:
+            "expenses-load-blocked",
+        },
+      )
+    ) {
+      toast.error(
+        expensesQuery.error?.message ||
+          "Failed to load expenses",
+        {
+          id: "expenses-load-error",
+        },
+      );
+    }
+  }, [expensesQuery.error]);
 
   const usingAllStoreLocations = scopeMode === "ALL" || isAllStoreLocationsScope(storeLocationScope);
 
@@ -1172,10 +1236,11 @@ export default function Expenses() {
     };
   }, [expenses]);
 
-  async function handleScopeChange(nextScopeMode) {
+  function handleScopeChange(nextScopeMode) {
     setScopeMode(nextScopeMode);
     setShowForm(false);
-    await load({ nextScopeMode, silent: false });
+    setEditingExpense(null);
+    setVisibleCount(PAGE_SIZE);
   }
 
   async function handleApprove(id) {
@@ -1195,19 +1260,36 @@ export default function Expenses() {
           scopeMode === "ALL",
       });
 
-      setExpenses((prev) =>
-        prev.map((expense) =>
-          expense.id === id
-            ? {
-                ...expense,
-                ...updated,
-                status: updated?.status || "APPROVED",
-                approvedAt: updated?.approvedAt || new Date().toISOString(),
-                approvedBy: updated?.approvedBy || expense.approvedBy,
-              }
-            : expense
-        )
+      queryClient.setQueryData(
+        expenseListKey,
+        (current) => ({
+          ...(current || {}),
+          expenses: (
+            current?.expenses || []
+          ).map((expense) =>
+            expense.id === id
+              ? {
+                  ...expense,
+                  ...updated,
+                  status:
+                    updated?.status ||
+                    "APPROVED",
+                  approvedAt:
+                    updated?.approvedAt ||
+                    new Date().toISOString(),
+                  approvedBy:
+                    updated?.approvedBy ||
+                    expense.approvedBy,
+                }
+              : expense,
+          ),
+        }),
       );
+
+      void queryClient.invalidateQueries({
+        queryKey:
+          expenseQueryKeys.lists(),
+      });
 
       if (
         isCashDrawerExpense(
@@ -1255,7 +1337,25 @@ export default function Expenses() {
         allStoreLocations: scopeMode === "ALL",
       });
 
-      setExpenses((prev) => prev.filter((expense) => expense.id !== deleteTarget.id));
+      queryClient.setQueryData(
+        expenseListKey,
+        (current) => ({
+          ...(current || {}),
+          expenses: (
+            current?.expenses || []
+          ).filter(
+            (expense) =>
+              expense.id !==
+              deleteTarget.id,
+          ),
+        }),
+      );
+
+      void queryClient.invalidateQueries({
+        queryKey:
+          expenseQueryKeys.lists(),
+      });
+
       toast.success("Expense deleted");
       setDeleteTarget(null);
     } catch (error) {
@@ -1267,7 +1367,22 @@ export default function Expenses() {
   }
 
   function handleCreated(expense) {
-    setExpenses((prev) => [expense, ...prev]);
+    queryClient.setQueryData(
+      expenseListKey,
+      (current) => ({
+        ...(current || {}),
+        expenses: [
+          expense,
+          ...(current?.expenses || []),
+        ],
+      }),
+    );
+
+    void queryClient.invalidateQueries({
+      queryKey:
+        expenseQueryKeys.lists(),
+    });
+
     setShowForm(false);
     setEditingExpense(null);
   }
@@ -1284,7 +1399,28 @@ export default function Expenses() {
   }
 
   function handleUpdated(updated) {
-    setExpenses((prev) => prev.map((expense) => (expense.id === updated.id ? { ...expense, ...updated } : expense)));
+    queryClient.setQueryData(
+      expenseListKey,
+      (current) => ({
+        ...(current || {}),
+        expenses: (
+          current?.expenses || []
+        ).map((expense) =>
+          expense.id === updated.id
+            ? {
+                ...expense,
+                ...updated,
+              }
+            : expense,
+        ),
+      }),
+    );
+
+    void queryClient.invalidateQueries({
+      queryKey:
+        expenseQueryKeys.lists(),
+    });
+
     setShowForm(false);
     setEditingExpense(null);
   }
