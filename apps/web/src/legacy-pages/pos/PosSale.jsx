@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -14,6 +18,20 @@ import {
 } from "../../services/posApi";
 import { searchProducts } from "../../services/inventoryApi";
 import { listCustomers } from "../../services/customersApi";
+import { getActiveBranchId } from "../../services/apiClient";
+import {
+  customerQueryKeys,
+  unwrapCustomersResponse,
+} from "../../lib/customerQueryKeys";
+import {
+  salesQueryKeys,
+} from "../../lib/salesQueryKeys";
+import {
+  inventoryQueryKeys,
+} from "../../lib/inventoryQueryKeys";
+import {
+  posQueryKeys,
+} from "../../lib/posQueryKeys";
 import { getCashDrawerStatus } from "../../services/cashDrawerApi";
 import { getDocumentSettings } from "../../services/storeApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
@@ -810,24 +828,224 @@ function CartItemCard({ item, onDec, onInc, onRemove }) {
 
 export default function PosSale() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [bootLoading, setBootLoading] = useState(true);
+  const [activeBranchId, setActiveBranchId] =
+    useState(
+      () => getActiveBranchId() || "default",
+    );
+
+  const customersQuery = useQuery({
+    queryKey:
+      customerQueryKeys.list(activeBranchId),
+    queryFn: async () => {
+      const response = await listCustomers(
+        {},
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      );
+
+      return unwrapCustomersResponse(response);
+    },
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const quickPicksQuery = useQuery({
+    queryKey: posQueryKeys.quickPicks(
+      activeBranchId,
+      7,
+      PAGE_SIZE,
+    ),
+    queryFn: async () => {
+      const response = await getQuickPicks(
+        {
+          periodDays: 7,
+          limit: PAGE_SIZE,
+        },
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      );
+
+      return {
+        bestSellers: Array.isArray(
+          response?.bestSellers,
+        )
+          ? response.bestSellers.slice(
+              0,
+              PAGE_SIZE,
+            )
+          : [],
+        latest: Array.isArray(
+          response?.latest,
+        )
+          ? response.latest.slice(
+              0,
+              PAGE_SIZE,
+            )
+          : [],
+      };
+    },
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const posContextQuery = useQuery({
+    queryKey:
+      posQueryKeys.context(activeBranchId),
+    queryFn: () =>
+      getPosContext({
+        branchId:
+          activeBranchId === "default"
+            ? undefined
+            : activeBranchId,
+      }),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const drawerStatusQuery = useQuery({
+    queryKey:
+      posQueryKeys.drawerStatus(
+        activeBranchId,
+      ),
+    queryFn: () =>
+      getCashDrawerStatus(
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      ),
+    staleTime: 15_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const documentSettingsQuery = useQuery({
+    queryKey:
+      posQueryKeys.documentSettings(),
+    queryFn: async () => {
+      const response =
+        await getDocumentSettings();
+
+      return (
+        response?.documentSettings ||
+        null
+      );
+    },
+    staleTime: 5 * 60_000,
+    gcTime: 15 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const customers =
+    customersQuery.data || [];
+
+  const customersLoading =
+    customersQuery.isPending;
+
+  const quickBest =
+    quickPicksQuery.data?.bestSellers || [];
+
+  const quickLatest =
+    quickPicksQuery.data?.latest || [];
+
+  const quickLoading =
+    quickPicksQuery.isPending;
+
+  const posContext =
+    posContextQuery.data || null;
+
+  const drawerStatus =
+    drawerStatusQuery.data || null;
+
+  const drawerLoading =
+    drawerStatusQuery.isPending;
+
+  const documentSettings =
+    documentSettingsQuery.data || null;
+
+  const documentSettingsLoading =
+    documentSettingsQuery.isPending;
+
   const [activeBranchLabel, setActiveBranchLabel] = useState(() => activeBranchNameFromStorage());
-  const [posContext, setPosContext] = useState(null);
   const [workspaceContext, setWorkspaceContext] = useState(() => readWorkspaceCache());
 
-  const [productResults, setProductResults] = useState([]);
   const [productQuery, setProductQuery] = useState("");
+  const [debouncedProductQuery, setDebouncedProductQuery] =
+    useState("");
   const [selectedProductCategory, setSelectedProductCategory] = useState("ALL");
-  const [searching, setSearching] = useState(false);
 
-  const [quickBest, setQuickBest] = useState([]);
-  const [quickLatest, setQuickLatest] = useState([]);
-  const [quickLoading, setQuickLoading] = useState(true);
+  const productSearchQuery = useQuery({
+    queryKey: posQueryKeys.productSearch(
+      activeBranchId,
+      debouncedProductQuery,
+      PAGE_SIZE,
+    ),
+    queryFn: async () => {
+      const response = await searchProducts(
+        {
+          q: debouncedProductQuery,
+          limit: PAGE_SIZE,
+        },
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      );
 
-  const [customers, setCustomers] = useState([]);
+      return Array.isArray(response?.products)
+        ? response.products.slice(0, PAGE_SIZE)
+        : [];
+    },
+    enabled: Boolean(debouncedProductQuery),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const productResults =
+    debouncedProductQuery
+      ? productSearchQuery.data || []
+      : [];
+
+  const searching =
+    Boolean(productQuery.trim()) &&
+    (
+      productQuery.trim() !==
+        debouncedProductQuery ||
+      productSearchQuery.isPending ||
+      productSearchQuery.isFetching
+    );
+
   const [customerQuery, setCustomerQuery] = useState("");
-  const [customersLoading, setCustomersLoading] = useState(true);
 
   const [cart, setCart] = useState([]);
   const [savingSale, setSavingSale] = useState(false);
@@ -852,176 +1070,19 @@ export default function PosSale() {
   const [dueDate, setDueDate] = useState("");
   const [amountPaid, setAmountPaid] = useState("");
 
-  const [drawerLoading, setDrawerLoading] = useState(true);
-  const [drawerStatus, setDrawerStatus] = useState(null);
   const [drawerRefreshBusy, setDrawerRefreshBusy] = useState(false);
-
-  const [documentSettings, setDocumentSettings] = useState(null);
-  const [documentSettingsLoading, setDocumentSettingsLoading] = useState(true);
-
-  const searchTimer = useRef(null);
-  const mountedRef = useRef(true);
-  const productReqIdRef = useRef(0);
-
-  useEffect(() => {
-    mountedRef.current = true;
-
-    return () => {
-      mountedRef.current = false;
-      if (searchTimer.current) clearTimeout(searchTimer.current);
-    };
-  }, []);
-
-  async function loadDrawerStatus({ silent = false } = {}) {
-    if (!silent) setDrawerRefreshBusy(true);
-    setDrawerLoading(true);
-
-    try {
-      const status = await getCashDrawerStatus();
-      if (!mountedRef.current) return;
-
-      setDrawerStatus(status);
-    } catch (error) {
-      if (!mountedRef.current) return;
-
-      if (!handleSubscriptionBlockedError(error, { toastId: "drawer-status-blocked" })) {
-        setDrawerStatus(null);
-      }
-    } finally {
-      if (!mountedRef.current) return;
-
-      setDrawerLoading(false);
-      setDrawerRefreshBusy(false);
-    }
-  }
-
-  async function loadDocumentSettings() {
-    setDocumentSettingsLoading(true);
-
-    try {
-      const data = await getDocumentSettings();
-      if (!mountedRef.current) return;
-
-      setDocumentSettings(data?.documentSettings || null);
-    } catch (error) {
-      if (!mountedRef.current) return;
-
-      if (!handleSubscriptionBlockedError(error, { toastId: "document-settings-load-blocked" })) {
-        setDocumentSettings(null);
-      }
-    } finally {
-      if (!mountedRef.current) return;
-      setDocumentSettingsLoading(false);
-    }
-  }
-
-  async function loadCustomers() {
-    setCustomersLoading(true);
-
-    try {
-      const result = await listCustomers();
-      if (!mountedRef.current) return;
-
-      const list = Array.isArray(result)
-        ? result
-        : Array.isArray(result?.customers)
-          ? result.customers
-          : [];
-
-      setCustomers(list);
-    } catch (error) {
-      if (!mountedRef.current) return;
-
-      if (!handleSubscriptionBlockedError(error, { toastId: "customers-load-blocked" })) {
-        toast.error(error?.message || "Failed to load customers");
-      }
-
-      setCustomers([]);
-    } finally {
-      if (!mountedRef.current) return;
-      setCustomersLoading(false);
-    }
-  }
-
-  async function loadPosContext() {
-    setWorkspaceContext(readWorkspaceCache());
-
-    try {
-      const data = await getPosContext();
-      if (!mountedRef.current) return;
-      setPosContext(data || null);
-    } catch (error) {
-      if (!mountedRef.current) return;
-
-      if (!handleSubscriptionBlockedError(error, { toastId: "pos-context-blocked" })) {
-        setPosContext(null);
-      }
-    }
-  }
-
-  async function loadQuickPicks() {
-    setQuickLoading(true);
-
-    try {
-      const data = await getQuickPicks({
-        periodDays: 7,
-        limit: PAGE_SIZE,
-      });
-
-      if (!mountedRef.current) return;
-
-      setQuickBest(Array.isArray(data?.bestSellers) ? data.bestSellers.slice(0, PAGE_SIZE) : []);
-      setQuickLatest(Array.isArray(data?.latest) ? data.latest.slice(0, PAGE_SIZE) : []);
-    } catch (error) {
-      if (!mountedRef.current) return;
-
-      if (!handleSubscriptionBlockedError(error, { toastId: "quick-picks-blocked" })) {
-        setQuickBest([]);
-        setQuickLatest([]);
-      }
-    } finally {
-      if (!mountedRef.current) return;
-      setQuickLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function boot() {
-      setBootLoading(true);
-
-      try {
-        await Promise.all([
-          loadPosContext(),
-          loadQuickPicks(),
-          loadCustomers(),
-          loadDrawerStatus({ silent: true }),
-          loadDocumentSettings(),
-        ]);
-      } finally {
-        if (!cancelled && mountedRef.current) setBootLoading(false);
-      }
-    }
-
-    boot();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   useEffect(() => {
     function onBranchChanged() {
+      setActiveBranchId(
+        getActiveBranchId() || "default",
+      );
       setActiveBranchLabel(activeBranchNameFromStorage());
+      setWorkspaceContext(readWorkspaceCache());
       setCart([]);
-      setProductResults([]);
       setProductQuery("");
+      setDebouncedProductQuery("");
       setSelectedProductCategory("ALL");
-      loadPosContext();
-      loadQuickPicks();
-      loadDrawerStatus({ silent: true });
-      loadDocumentSettings();
     }
 
     window.addEventListener("storvex:branch-changed", onBranchChanged);
@@ -1034,51 +1095,111 @@ export default function PosSale() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    const q = productQuery.trim();
+    const errors = [
+      {
+        error: posContextQuery.error,
+        toastId: "pos-context-blocked",
+      },
+      {
+        error: drawerStatusQuery.error,
+        toastId: "drawer-status-blocked",
+      },
+      {
+        error:
+          documentSettingsQuery.error,
+        toastId:
+          "document-settings-load-blocked",
+      },
+    ];
 
-    if (searchTimer.current) clearTimeout(searchTimer.current);
+    errors.forEach(({ error, toastId }) => {
+      if (!error) return;
 
-    if (!q) {
-      setProductResults([]);
-      setSearching(false);
-      return;
+      console.error(
+        `${toastId}:`,
+        error,
+      );
+
+      handleSubscriptionBlockedError(
+        error,
+        { toastId },
+      );
+    });
+  }, [
+    posContextQuery.error,
+    drawerStatusQuery.error,
+    documentSettingsQuery.error,
+  ]);
+
+  useEffect(() => {
+    if (!quickPicksQuery.error) return;
+
+    console.error(
+      "POS quick picks load failed:",
+      quickPicksQuery.error,
+    );
+
+    handleSubscriptionBlockedError(
+      quickPicksQuery.error,
+      {
+        toastId: "quick-picks-blocked",
+      },
+    );
+  }, [quickPicksQuery.error]);
+
+  useEffect(() => {
+    if (!customersQuery.error) return;
+
+    console.error(
+      "POS customers load failed:",
+      customersQuery.error,
+    );
+
+    if (
+      !handleSubscriptionBlockedError(
+        customersQuery.error,
+        {
+          toastId: "customers-load-blocked",
+        },
+      )
+    ) {
+      toast.error(
+        customersQuery.error?.message ||
+          "Failed to load customers",
+        {
+          id: "pos-customers-load-error",
+        },
+      );
     }
+  }, [customersQuery.error]);
 
-    setSearching(true);
-    const myReqId = ++productReqIdRef.current;
+  useEffect(() => {
+    const cleanQuery = productQuery.trim();
 
-    searchTimer.current = setTimeout(async () => {
-      try {
-        const result = await searchProducts({
-          q,
-          limit: PAGE_SIZE,
-        });
-
-        if (cancelled || !mountedRef.current) return;
-        if (myReqId !== productReqIdRef.current) return;
-
-        setProductResults(Array.isArray(result?.products) ? result.products.slice(0, PAGE_SIZE) : []);
-      } catch (error) {
-        if (cancelled || !mountedRef.current) return;
-        if (myReqId !== productReqIdRef.current) return;
-
-        if (!handleSubscriptionBlockedError(error, { toastId: "product-search-blocked" })) {
-          setProductResults([]);
-        }
-      } finally {
-        if (cancelled || !mountedRef.current) return;
-        if (myReqId !== productReqIdRef.current) return;
-
-        setSearching(false);
-      }
+    const timer = window.setTimeout(() => {
+      setDebouncedProductQuery(cleanQuery);
     }, 220);
 
     return () => {
-      cancelled = true;
-      if (searchTimer.current) clearTimeout(searchTimer.current);
+      window.clearTimeout(timer);
     };
   }, [productQuery]);
+
+  useEffect(() => {
+    if (!productSearchQuery.error) return;
+
+    console.error(
+      "POS product search failed:",
+      productSearchQuery.error,
+    );
+
+    handleSubscriptionBlockedError(
+      productSearchQuery.error,
+      {
+        toastId: "product-search-blocked",
+      },
+    );
+  }, [productSearchQuery.error]);
 
   useEffect(() => {
     if (saleType === "CASH") {
@@ -1382,6 +1503,16 @@ export default function PosSale() {
     return {};
   }
 
+  async function refreshDrawerStatus() {
+    setDrawerRefreshBusy(true);
+
+    try {
+      await drawerStatusQuery.refetch();
+    } finally {
+      setDrawerRefreshBusy(false);
+    }
+  }
+
   async function completeSale() {
     if (cart.length === 0) {
       toast.error("Add at least one product");
@@ -1448,9 +1579,40 @@ export default function PosSale() {
       setPaymentMethod("CASH");
       setPaymentReference("");
 
+      const refreshTasks = [
+        queryClient.invalidateQueries({
+          queryKey:
+            salesQueryKeys.list(activeBranchId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            salesQueryKeys.credit(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            inventoryQueryKeys.productLists(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            inventoryQueryKeys.summaries(),
+        }),
+      ];
+
+      if (customerMode === "NEW") {
+        refreshTasks.push(
+          queryClient.invalidateQueries({
+            queryKey:
+              customerQueryKeys.list(
+                activeBranchId,
+              ),
+          }),
+        );
+      }
+
+      await Promise.all(refreshTasks);
+
       toast.success("Sale completed");
-      await loadCustomers();
-      void loadDrawerStatus({ silent: true });
+      void drawerStatusQuery.refetch();
 
       navigate(`/app/pos/sales/${saleId}`);
     } catch (error) {
@@ -1463,7 +1625,7 @@ export default function PosSale() {
         String(error?.message || "").toLowerCase().includes("cash drawer")
       ) {
         toast.error("Open the cash drawer before taking cash.");
-        void loadDrawerStatus({ silent: true });
+        void drawerStatusQuery.refetch();
         return;
       }
 
@@ -1473,7 +1635,13 @@ export default function PosSale() {
     }
   }
 
-  if (bootLoading) {
+  if (
+    customersQuery.isPending ||
+    quickPicksQuery.isPending ||
+    posContextQuery.isPending ||
+    drawerStatusQuery.isPending ||
+    documentSettingsQuery.isPending
+  ) {
     return <PosSaleSkeleton />;
   }
 
@@ -1789,7 +1957,7 @@ export default function PosSale() {
                     <span>{drawerCopy.note}</span>
 
                     <div>
-                      <AsyncButton loading={drawerRefreshBusy} onClick={() => loadDrawerStatus({ silent: false })} variant="secondary">
+                      <AsyncButton loading={drawerRefreshBusy} onClick={refreshDrawerStatus} variant="secondary">
                         Check drawer
                       </AsyncButton>
 
