@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import {
+  customerQueryKeys,
+} from "../../lib/customerQueryKeys";
 import "./Customers.css";
 import {
   getCustomer,
@@ -203,59 +209,64 @@ function LedgerSaleRow({ sale }) {
 
 export default function CustomerView() {
   const { id } = useParams();
-  const mountedRef = useRef(true);
 
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [customer, setCustomer] = useState(null);
-  const [ledger, setLedger] = useState(normalizeLedger(null));
+  const customerQuery = useQuery({
+    queryKey:
+      customerQueryKeys.detail(id),
+    queryFn: () => getCustomer(id),
+    enabled: Boolean(id),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const ledgerQuery = useQuery({
+    queryKey:
+      customerQueryKeys.ledger(id),
+    queryFn: () =>
+      getCustomerLedger(id),
+    enabled: Boolean(id),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const customer =
+    customerQuery.data || null;
+
+  const ledger = normalizeLedger(
+    ledgerQuery.data,
+  );
+
+  const loading =
+    customerQuery.isPending ||
+    ledgerQuery.isPending;
+
+  const refreshing =
+    customerQuery.isFetching ||
+    ledgerQuery.isFetching;
+
+  const queryError =
+    customerQuery.error ||
+    ledgerQuery.error;
 
   useEffect(() => {
-    mountedRef.current = true;
+    if (!queryError) return;
 
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+    toast.error(
+      queryError?.message ||
+        "Failed to load customer",
+    );
+  }, [queryError]);
 
-  async function loadCustomer(options = {}) {
-    if (!id) return;
-
-    if (options.silent) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-
-    try {
-      const [customerData, ledgerData] = await Promise.all([
-        getCustomer(id),
-        getCustomerLedger(id),
-      ]);
-
-      if (!mountedRef.current) return;
-
-      setCustomer(customerData || null);
-      setLedger(normalizeLedger(ledgerData));
-    } catch (error) {
-      console.error(error);
-      toast.error(error?.message || "Failed to load customer");
-      if (mountedRef.current) {
-        setCustomer(null);
-        setLedger(normalizeLedger(null));
-      }
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    }
+  async function refreshCustomer() {
+    await Promise.all([
+      customerQuery.refetch(),
+      ledgerQuery.refetch(),
+    ]);
   }
-
-  useEffect(() => {
-    void loadCustomer();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
 
   const summary = ledger?.summary || {};
   const marketplace = ledger?.marketplace || {};
@@ -354,7 +365,7 @@ export default function CustomerView() {
                 loading={refreshing}
                 loadingText="Refreshing..."
                 variant="secondary"
-                onClick={() => loadCustomer({ silent: true })}
+                onClick={refreshCustomer}
               >
                 Refresh
               </AsyncButton>

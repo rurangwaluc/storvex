@@ -1,9 +1,16 @@
 // frontend-stores/src/pages/customers/CustomerEdit.jsx
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import {
+  customerQueryKeys,
+} from "../../lib/customerQueryKeys";
 import "./Customers.css";
 import { getCustomer, updateCustomer } from "../../services/customersApi";
 
@@ -157,62 +164,67 @@ const EMPTY_FORM = {
 export default function CustomerEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const mountedRef = useRef(true);
+  const queryClient = useQueryClient();
 
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
-  const [customer, setCustomer] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [
+    hydratedCustomerId,
+    setHydratedCustomerId,
+  ] = useState("");
+
+  const customerQuery = useQuery({
+    queryKey:
+      customerQueryKeys.detail(id),
+    queryFn: () => getCustomer(id),
+    enabled: Boolean(id),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const customer =
+    customerQuery.data || null;
+
+  const loading =
+    customerQuery.isPending;
 
   useEffect(() => {
-    mountedRef.current = true;
-
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    async function loadCustomer() {
-      if (!id) {
-        setLoading(false);
-        setCustomer(null);
-        return;
-      }
-
-      try {
-        setLoading(true);
-
-        const data = await getCustomer(id);
-
-        if (!mountedRef.current) return;
-
-        setCustomer(data || null);
-        setForm({
-          name: data?.name || "",
-          phone: data?.phone || "",
-          email: data?.email || "",
-          address: data?.address || "",
-          tinNumber: data?.tinNumber || "",
-          idNumber: data?.idNumber || "",
-          notes: data?.notes || "",
-          whatsappOptIn: Boolean(data?.whatsappOptIn),
-        });
-      } catch (error) {
-        console.error(error);
-
-        if (mountedRef.current) {
-          toast.error(error?.message || "Failed to load customer");
-          setCustomer(null);
-        }
-      } finally {
-        if (mountedRef.current) setLoading(false);
-      }
+    if (
+      !customer?.id ||
+      hydratedCustomerId === customer.id
+    ) {
+      return;
     }
 
-    void loadCustomer();
-  }, [id]);
+    setForm({
+      name: customer.name || "",
+      phone: customer.phone || "",
+      email: customer.email || "",
+      address: customer.address || "",
+      tinNumber: customer.tinNumber || "",
+      idNumber: customer.idNumber || "",
+      notes: customer.notes || "",
+      whatsappOptIn: Boolean(
+        customer.whatsappOptIn,
+      ),
+    });
+
+    setHydratedCustomerId(customer.id);
+  }, [
+    customer,
+    hydratedCustomerId,
+  ]);
+
+  useEffect(() => {
+    if (!customerQuery.error) return;
+
+    toast.error(
+      customerQuery.error?.message ||
+        "Failed to load customer",
+    );
+  }, [customerQuery.error]);
 
   function setField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -239,7 +251,7 @@ export default function CustomerEdit() {
     try {
       setSaving(true);
 
-      await updateCustomer(id, {
+      const updated = await updateCustomer(id, {
         name,
         phone,
         email: String(form.email || "").trim() || null,
@@ -249,6 +261,22 @@ export default function CustomerEdit() {
         notes: String(form.notes || "").trim() || null,
         whatsappOptIn: Boolean(form.whatsappOptIn),
       });
+
+      queryClient.setQueryData(
+        customerQueryKeys.detail(id),
+        updated,
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey:
+            customerQueryKeys.lists(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            customerQueryKeys.ledger(id),
+        }),
+      ]);
 
       toast.success("Customer updated");
       navigate(`/app/customers/${id}`);
