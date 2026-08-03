@@ -18,7 +18,6 @@ import {
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import { createProduct } from "../../services/inventoryApi";
-import { getWorkspaceContext } from "../../services/storeApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import {
   getBusinessProductConfig,
@@ -186,30 +185,44 @@ export default function InventoryCreate() {
   });
 
   useEffect(() => {
-    let active = true;
+    function refreshWorkspaceFromCache() {
+      const nextWorkspace = readCachedWorkspace();
 
-    async function loadWorkspace() {
-      try {
-        const data = await getWorkspaceContext();
-        if (!active) return;
-
-        if (data) {
-          setWorkspace(data);
-
-          try {
-            sessionStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify(data));
-            localStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify(data));
-          } catch {}
-        }
-      } catch {
-        // Keep cached/default category. Creating products should not be blocked by a failed context refresh.
+      if (nextWorkspace) {
+        setWorkspace(nextWorkspace);
       }
     }
 
-    loadWorkspace();
+    function handleStorage(event) {
+      if (
+        event.key === WORKSPACE_CACHE_KEY ||
+        event.key === "activeBranchId" ||
+        event.key === "storvex_activeBranchId"
+      ) {
+        refreshWorkspaceFromCache();
+      }
+    }
+
+    refreshWorkspaceFromCache();
+
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      refreshWorkspaceFromCache,
+    );
+    window.addEventListener(
+      "storage",
+      handleStorage,
+    );
 
     return () => {
-      active = false;
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
+        refreshWorkspaceFromCache,
+      );
+      window.removeEventListener(
+        "storage",
+        handleStorage,
+      );
     };
   }, []);
 

@@ -6,6 +6,10 @@ import {
   useState,
 } from "react";
 import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
   useNavigate,
   useParams,
 } from "react-router-dom";
@@ -40,6 +44,13 @@ import {
 import {
   getStoreProfile,
 } from "../../services/storeApi";
+import {
+  getActiveBranchId,
+} from "../../services/apiClient";
+import {
+  inventoryQueryKeys,
+  unwrapProductResponse,
+} from "../../lib/inventoryQueryKeys";
 import ConfirmDialog from "../../components/feedback/ConfirmDialog";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./ProductImages.css";
@@ -385,32 +396,90 @@ export default function ProductImages() {
   const fileInputRef = useRef(null);
   const menuRef = useRef(null);
 
-  const [product, setProduct] =
-    useState(null);
+  const activeBranchId =
+    getActiveBranchId() || "default";
+  const queryClient = useQueryClient();
 
-  const [
-    businessProfile,
-    setBusinessProfile,
-  ] = useState(null);
+  const productQuery = useQuery({
+    queryKey: inventoryQueryKeys.product(
+      activeBranchId,
+      id,
+    ),
+    queryFn: async () => {
+      const response = await getProductById(id);
 
-  const [images, setImages] =
-    useState([]);
+      return unwrapProductResponse(response);
+    },
+    enabled: Boolean(id),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-  const [studio, setStudio] =
-    useState(null);
+  const storeProfileQuery = useQuery({
+    queryKey:
+      inventoryQueryKeys.storeProfile(),
+    queryFn: async () => {
+      const response = await getStoreProfile();
 
-  const [loading, setLoading] =
-    useState(true);
+      return (
+        response?.profile ||
+        response?.tenant ||
+        response ||
+        null
+      );
+    },
+    staleTime: 5 * 60_000,
+    gcTime: 15 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-  const [
-    studioLoading,
-    setStudioLoading,
-  ] = useState(true);
+  const product =
+    productQuery.data || null;
 
-  const [
-    studioError,
-    setStudioError,
-  ] = useState("");
+  const businessProfile =
+    storeProfileQuery.data || null;
+
+  const imagesQuery = useQuery({
+    queryKey:
+      inventoryQueryKeys.productImages(id),
+    queryFn: async () => {
+      const response = await getProductImages(id);
+
+      return Array.isArray(response?.images)
+        ? response.images
+        : [];
+    },
+    enabled: Boolean(id),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const studioQuery = useQuery({
+    queryKey:
+      inventoryQueryKeys.productImageStudio(id),
+    queryFn: async () => {
+      const response =
+        await getProductImageStudio(id);
+
+      return response?.studio || null;
+    },
+    enabled: Boolean(id),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const images = imagesQuery.data || [];
+  const studio = studioQuery.data || null;
+  const studioLoading = studioQuery.isPending;
+  const studioError =
+    studioQuery.error?.message || "";
 
   const [uploading, setUploading] =
     useState(false);
@@ -451,114 +520,45 @@ export default function ProductImages() {
     setPreparedPreviewAvailable,
   ] = useState(false);
 
-  const loadImages = useCallback(
-    async () => {
-      const imageData =
-        await getProductImages(id);
+  const reloadImageWorkspace =
+    useCallback(async () => {
+      const [
+        imagesResult,
+        studioResult,
+      ] = await Promise.all([
+        imagesQuery.refetch(),
+        studioQuery.refetch(),
+      ]);
 
       const nextImages =
-        Array.isArray(
-          imageData?.images,
-        )
-          ? imageData.images
-          : [];
+        imagesResult.data || [];
 
-      setImages(nextImages);
+      const nextStudio =
+        studioResult.data || null;
 
-      return nextImages;
-    },
-    [id],
-  );
+      if (previewImage?.id) {
+        const combined = [
+          ...(nextStudio?.images || []),
+          ...nextImages,
+        ];
 
-  const loadStudio = useCallback(
-    async () => {
-      setStudioLoading(true);
-
-      try {
-        const result =
-          await getProductImageStudio(
-            id,
-          );
-
-        const nextStudio =
-          result?.studio || null;
-
-        setStudio(nextStudio);
-        setStudioError("");
-
-        return nextStudio;
-      } catch (error) {
-        setStudioError(
-          error?.message ||
-            "Photo preparation is temporarily unavailable",
+        setPreviewImage(
+          combined.find(
+            (image) =>
+              image.id === previewImage.id,
+          ) || null,
         );
-
-        return null;
-      } finally {
-        setStudioLoading(false);
-      }
-    },
-    [id],
-  );
-
-  const load = useCallback(
-    async () => {
-      setLoading(true);
-
-      try {
-        const [
-          productData,
-          profileData,
-        ] = await Promise.all([
-          getProductById(id),
-          getStoreProfile(),
-          loadImages(),
-        ]);
-
-        setProduct(
-          productData?.product ||
-            productData,
-        );
-
-        setBusinessProfile(
-          profileData?.profile ||
-            profileData?.tenant ||
-            profileData ||
-            null,
-        );
-      } catch (error) {
-        if (
-          handleSubscriptionBlockedError(
-            error,
-            {
-              toastId:
-                "product-images-load-blocked",
-            },
-          )
-        ) {
-          return;
-        }
-
-        toast.error(
-          error?.message ||
-            "Failed to load product photos",
-        );
-      } finally {
-        setLoading(false);
       }
 
-      await loadStudio();
-    },
-    [
-      id,
-      loadImages,
-      loadStudio,
-    ],
-  );
-
-  useEffect(() => {
-    load();
-  }, [load]);
+      return {
+        images: nextImages,
+        studio: nextStudio,
+      };
+    }, [
+      imagesQuery,
+      previewImage?.id,
+      studioQuery,
+    ]);
 
   useEffect(() => {
     function closeMenu(event) {
@@ -603,36 +603,6 @@ export default function ProductImages() {
 
     setConfirmation(null);
     resolve?.(result);
-  }
-
-  async function reloadImageWorkspace() {
-    const [
-      nextImages,
-      nextStudio,
-    ] = await Promise.all([
-      loadImages(),
-      loadStudio(),
-    ]);
-
-    if (previewImage?.id) {
-      const combined = [
-        ...(nextStudio?.images || []),
-        ...nextImages,
-      ];
-
-      setPreviewImage(
-        combined.find(
-          (image) =>
-            image.id ===
-            previewImage.id,
-        ) || null,
-      );
-    }
-
-    return {
-      images: nextImages,
-      studio: nextStudio,
-    };
   }
 
   async function uploadFiles(files) {
@@ -1258,7 +1228,25 @@ export default function ProductImages() {
     imageActionBusy ===
       `delete-${selectedPrepared.id}`;
 
-  if (loading && !product) {
+  const initialLoading =
+    productQuery.isPending ||
+    storeProfileQuery.isPending ||
+    imagesQuery.isPending ||
+    studioQuery.isPending;
+
+  const initialError =
+    productQuery.error ||
+    storeProfileQuery.error ||
+    imagesQuery.error;
+
+  if (initialError) {
+    console.error(
+      "Product Photos initial load failed:",
+      initialError,
+    );
+  }
+
+  if (initialLoading && !product) {
     return (
       <main className="svx-product-images-page">
         <div className="svx-product-images-shell">

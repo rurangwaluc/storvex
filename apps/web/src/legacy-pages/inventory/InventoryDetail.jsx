@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -29,6 +33,11 @@ import {
   updateProductListingDraft,
 } from "../../services/inventoryApi";
 import { useAuthRole } from "../../auth/useAuthRole";
+import { getActiveBranchId } from "../../services/apiClient";
+import {
+  inventoryQueryKeys,
+  unwrapProductResponse,
+} from "../../lib/inventoryQueryKeys";
 import {
   getApprovedProductImages,
   getProductImageUrl,
@@ -768,9 +777,42 @@ export default function InventoryDetail() {
   const navigate = useNavigate();
   const userRole = useAuthRole();
   const isOwner = userRole === "OWNER";
+  const queryClient = useQueryClient();
 
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [activeBranchId, setActiveBranchId] = useState(
+    () => getActiveBranchId() || "default",
+  );
+
+  const productQueryKey = inventoryQueryKeys.product(
+    activeBranchId,
+    id,
+  );
+
+  const productQuery = useQuery({
+    queryKey: productQueryKey,
+    queryFn: async () => {
+      const response = await getProductById(id);
+      return unwrapProductResponse(response);
+    },
+    enabled: Boolean(id),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const product = productQuery.data || null;
+  const loading = productQuery.isPending;
+
+  function setProduct(updater) {
+    queryClient.setQueryData(
+      productQueryKey,
+      (currentProduct) =>
+        typeof updater === "function"
+          ? updater(currentProduct)
+          : updater,
+    );
+  }
   const [stockDrawerOpen, setStockDrawerOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const [listingSaving, setListingSaving] = useState("");
@@ -793,30 +835,61 @@ export default function InventoryDetail() {
     note: "",
   });
 
-  const loadProduct = useCallback(
-    async ({ quiet = false } = {}) => {
-      if (!id) return;
+  useEffect(() => {
+    function refreshActiveBranch() {
+      setActiveBranchId(
+        getActiveBranchId() || "default",
+      );
+    }
 
-      if (!quiet) setLoading(true);
-
-      try {
-        const response = await getProductById(id);
-        const nextProduct = response?.product || response?.data?.product || response?.data || response;
-
-        setProduct(nextProduct || null);
-      } catch (error) {
-        console.error("Product detail load failed:", error);
-        toast.error(error?.message || "Failed to load product");
-      } finally {
-        if (!quiet) setLoading(false);
+    function handleStorage(event) {
+      if (
+        event.key === "activeBranchId" ||
+        event.key === "storvex_activeBranchId" ||
+        event.key === "storvex_active_branch_id" ||
+        event.key === "storvex_me_cache_v2"
+      ) {
+        refreshActiveBranch();
       }
-    },
-    [id],
-  );
+    }
+
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      refreshActiveBranch,
+    );
+    window.addEventListener(
+      "storage",
+      handleStorage,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
+        refreshActiveBranch,
+      );
+      window.removeEventListener(
+        "storage",
+        handleStorage,
+      );
+    };
+  }, []);
 
   useEffect(() => {
-    loadProduct();
-  }, [loadProduct]);
+    if (!productQuery.error) return;
+
+    console.error(
+      "Product detail load failed:",
+      productQuery.error,
+    );
+
+    toast.error(
+      productQuery.error?.message ||
+        "Failed to load product",
+      {
+        id: `inventory-product-${id}-load-error`,
+      },
+    );
+  }, [id, productQuery.error]);
 
   useEffect(() => {
     if (!stockDrawerOpen) return undefined;
@@ -990,7 +1063,7 @@ export default function InventoryDetail() {
           ),
         );
       } else {
-        await loadProduct({ quiet: true });
+        await productQuery.refetch();
       }
 
       setListingForm(submittedForm);
@@ -1162,7 +1235,7 @@ export default function InventoryDetail() {
 
       toast.success("Stock updated");
       setStockDrawerOpen(false);
-      await loadProduct({ quiet: true });
+      await productQuery.refetch();
     } catch (error) {
       console.error("Stock update failed:", error);
       toast.error(error?.message || "Failed to update stock");

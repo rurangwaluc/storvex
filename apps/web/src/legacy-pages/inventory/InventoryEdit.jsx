@@ -1,4 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
@@ -21,7 +25,11 @@ import {
   getProductById,
   updateProduct,
 } from "../../services/inventoryApi";
-import { getWorkspaceContext } from "../../services/storeApi";
+import { getActiveBranchId } from "../../services/apiClient";
+import {
+  inventoryQueryKeys,
+  unwrapProductResponse,
+} from "../../lib/inventoryQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import {
   getBusinessProductConfig,
@@ -222,10 +230,33 @@ function SummaryRow({ label, value, tone }) {
 export default function InventoryEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [workspace, setWorkspace] = useState(() => readCachedWorkspace());
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [activeBranchId, setActiveBranchId] = useState(
+    () => getActiveBranchId() || "default",
+  );
+
+  const productQueryKey = inventoryQueryKeys.product(
+    activeBranchId,
+    id,
+  );
+
+  const productQuery = useQuery({
+    queryKey: productQueryKey,
+    queryFn: async () => {
+      const response = await getProductById(id);
+      return unwrapProductResponse(response);
+    },
+    enabled: Boolean(id),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const product = productQuery.data || null;
+  const loading = productQuery.isPending;
   const [saving, setSaving] = useState(false);
   const [trackSerial, setTrackSerial] = useState(false);
   const [form, setForm] = useState({
@@ -244,89 +275,158 @@ export default function InventoryEdit() {
     categoryAttributes: {},
   });
 
-  const loadProduct = useCallback(async () => {
-    if (!id) return;
-
-    setLoading(true);
-
-    try {
-      const response = await getProductById(id);
-      const nextProduct = response?.product || response?.data?.product || response?.data || response;
-
-      if (!nextProduct?.id) {
-        toast.error("Product not found");
-        navigate("/app/inventory");
-        return;
-      }
-
-      setProduct(nextProduct);
-      setTrackSerial(Boolean(cleanString(nextProduct.serial)));
-
-      setForm({
-        name: cleanString(nextProduct.name),
-        sku: cleanString(nextProduct.sku),
-        barcode: cleanString(nextProduct.barcode),
-        serial: cleanString(nextProduct.serial),
-        brand: cleanString(nextProduct.brand),
-        category: categorySelectValue(cleanString(nextProduct.category)),
-        customCategory: allKnownCategoryOptions().includes(cleanString(nextProduct.category))
-          ? ""
-          : cleanString(nextProduct.category),
-        subcategory: cleanString(nextProduct.subcategory),
-        subcategoryOther: cleanString(nextProduct.subcategoryOther),
-        costPrice: nextProduct.costPrice === null || nextProduct.costPrice === undefined ? "" : String(nextProduct.costPrice),
-        sellPrice:
-          nextProduct.sellPrice === null || nextProduct.sellPrice === undefined
-            ? nextProduct.price === null || nextProduct.price === undefined
-              ? ""
-              : String(nextProduct.price)
-            : String(nextProduct.sellPrice),
-        minStockLevel:
-          nextProduct.minStockLevel === null || nextProduct.minStockLevel === undefined
-            ? ""
-            : String(nextProduct.minStockLevel),
-        categoryAttributes: currentAttributes(nextProduct),
-      });
-    } catch (error) {
-      console.error("Product edit load failed:", error);
-      toast.error(error?.message || "Failed to load product");
-      navigate("/app/inventory");
-    } finally {
-      setLoading(false);
-    }
-  }, [id, navigate]);
-
   useEffect(() => {
-    let active = true;
+    function refreshWorkspaceFromCache() {
+      const nextWorkspace = readCachedWorkspace();
 
-    async function loadWorkspace() {
-      try {
-        const data = await getWorkspaceContext();
-        if (!active) return;
-
-        if (data) {
-          setWorkspace(data);
-
-          try {
-            sessionStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify(data));
-            localStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify(data));
-          } catch {}
-        }
-      } catch {
-        // Keep cached/default category if workspace refresh fails.
+      if (nextWorkspace) {
+        setWorkspace(nextWorkspace);
       }
     }
 
-    loadWorkspace();
+    function handleStorage(event) {
+      if (
+        event.key === WORKSPACE_CACHE_KEY ||
+        event.key === "activeBranchId" ||
+        event.key === "storvex_activeBranchId"
+      ) {
+        refreshWorkspaceFromCache();
+      }
+    }
+
+    refreshWorkspaceFromCache();
+
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      refreshWorkspaceFromCache,
+    );
+    window.addEventListener(
+      "storage",
+      handleStorage,
+    );
 
     return () => {
-      active = false;
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
+        refreshWorkspaceFromCache,
+      );
+      window.removeEventListener(
+        "storage",
+        handleStorage,
+      );
     };
   }, []);
 
   useEffect(() => {
-    loadProduct();
-  }, [loadProduct]);
+    function refreshActiveBranch() {
+      setActiveBranchId(
+        getActiveBranchId() || "default",
+      );
+    }
+
+    function handleStorage(event) {
+      if (
+        event.key === "activeBranchId" ||
+        event.key === "storvex_activeBranchId" ||
+        event.key === "storvex_active_branch_id" ||
+        event.key === WORKSPACE_CACHE_KEY
+      ) {
+        refreshActiveBranch();
+      }
+    }
+
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      refreshActiveBranch,
+    );
+    window.addEventListener(
+      "storage",
+      handleStorage,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
+        refreshActiveBranch,
+      );
+      window.removeEventListener(
+        "storage",
+        handleStorage,
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!productQuery.error) return;
+
+    console.error(
+      "Product edit load failed:",
+      productQuery.error,
+    );
+
+    toast.error(
+      productQuery.error?.message ||
+        "Failed to load product",
+      {
+        id: `inventory-product-${id}-edit-error`,
+      },
+    );
+
+    navigate("/app/inventory");
+  }, [
+    id,
+    navigate,
+    productQuery.error,
+  ]);
+
+  useEffect(() => {
+    if (!product?.id) return;
+
+    setTrackSerial(
+      Boolean(cleanString(product.serial)),
+    );
+
+    setForm({
+      name: cleanString(product.name),
+      sku: cleanString(product.sku),
+      barcode: cleanString(product.barcode),
+      serial: cleanString(product.serial),
+      brand: cleanString(product.brand),
+      category: categorySelectValue(
+        cleanString(product.category),
+      ),
+      customCategory:
+        allKnownCategoryOptions().includes(
+          cleanString(product.category),
+        )
+          ? ""
+          : cleanString(product.category),
+      subcategory: cleanString(product.subcategory),
+      subcategoryOther: cleanString(
+        product.subcategoryOther,
+      ),
+      costPrice:
+        product.costPrice === null ||
+        product.costPrice === undefined
+          ? ""
+          : String(product.costPrice),
+      sellPrice:
+        product.sellPrice === null ||
+        product.sellPrice === undefined
+          ? product.price === null ||
+            product.price === undefined
+            ? ""
+            : String(product.price)
+          : String(product.sellPrice),
+      minStockLevel:
+        product.minStockLevel === null ||
+        product.minStockLevel === undefined
+          ? ""
+          : String(product.minStockLevel),
+      categoryAttributes:
+        currentAttributes(product),
+    });
+  }, [product]);
 
   const businessCategory = businessCategoryFromWorkspace(workspace);
   const meta = getBusinessProductConfig(businessCategory);
@@ -467,7 +567,31 @@ export default function InventoryEdit() {
         categoryAttributes: buildAttributes(),
       };
 
-      await updateProduct(id, payload);
+      const response = await updateProduct(
+        id,
+        payload,
+      );
+
+      const updatedProduct =
+        unwrapProductResponse(response);
+
+      if (updatedProduct?.id) {
+        queryClient.setQueryData(
+          productQueryKey,
+          updatedProduct,
+        );
+      } else {
+        await productQuery.refetch();
+      }
+
+      queryClient.invalidateQueries({
+        queryKey:
+          inventoryQueryKeys.productLists(),
+      });
+      queryClient.invalidateQueries({
+        queryKey:
+          inventoryQueryKeys.summaries(),
+      });
 
       toast.success("Product updated");
       navigate(`/app/inventory/${id}`);
