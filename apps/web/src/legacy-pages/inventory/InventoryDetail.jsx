@@ -6,6 +6,10 @@ import {
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
+  defaultStockAdjustmentReason,
+  stockAdjustmentReasons,
+} from "../../lib/stockAdjustmentReasons";
+import {
   AlertTriangle,
   ArrowLeft,
   Boxes,
@@ -431,14 +435,6 @@ function stockActionCopy(type) {
   };
 }
 
-const LOSS_REASONS = [
-  { value: "DAMAGED", label: "Damaged" },
-  { value: "MISSING", label: "Missing" },
-  { value: "EXPIRED", label: "Expired" },
-  { value: "RETURNED_BAD", label: "Returned bad" },
-  { value: "OTHER", label: "Other" },
-];
-
 function StatusBadge({ tone = "neutral", children }) {
   return <span className={cx("svx-detail-badge", `is-${tone}`)}>{children}</span>;
 }
@@ -607,7 +603,6 @@ function StockUpdateDrawer({
   const copy = stockActionCopy(form.type);
   const type = cleanString(form.type).toUpperCase();
   const preview = stockPreview(qty, form);
-  const change = preview - qty;
 
   return (
     <div className="svx-stock-drawer-layer" role="dialog" aria-modal="true" aria-label="Update stock">
@@ -699,26 +694,37 @@ function StockUpdateDrawer({
             </label>
           )}
 
-          {type === "LOSS" ? (
-            <label className="svx-stock-field">
-              <span>Reason</span>
-              <select
-                className="svx-stock-input"
-                value={form.lossReason}
-                onChange={(event) => onChange("lossReason", event.target.value)}
-                disabled={saving}
-              >
-                {LOSS_REASONS.map((reason) => (
-                  <option key={reason.value} value={reason.value}>
-                    {reason.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
+          <label className="svx-stock-field">
+            <span>
+              Reason <b aria-hidden="true">*</b>
+            </span>
+            <select
+              className="svx-stock-input"
+              value={form.reason}
+              onChange={(event) =>
+                onChange(
+                  "reason",
+                  event.target.value,
+                )
+              }
+              disabled={saving}
+              required
+            >
+              {stockAdjustmentReasons(
+                type,
+              ).map((reason) => (
+                <option
+                  key={reason.value}
+                  value={reason.value}
+                >
+                  {reason.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <label className="svx-stock-field is-wide">
-            <span>Note</span>
+            <span>Additional details</span>
             <textarea
               className="svx-stock-textarea"
               value={form.note}
@@ -728,20 +734,6 @@ function StockUpdateDrawer({
             />
           </label>
         </div>
-
-        <section className="svx-stock-impact">
-          <div>
-            <span>Stock change</span>
-            <strong className={cx(change > 0 && "is-success", change < 0 && "is-danger")}>
-              {change > 0 ? `+${formatNumber(change)}` : formatNumber(change)}
-            </strong>
-          </div>
-
-          <div>
-            <span>Movement type</span>
-            <strong>{copy.title}</strong>
-          </div>
-        </section>
 
         <footer className="svx-stock-drawer-actions">
           <button type="button" className="svx-detail-secondary-button" onClick={onClose} disabled={saving}>
@@ -831,7 +823,8 @@ export default function InventoryDetail() {
     type: "RESTOCK",
     quantity: "",
     newStockQty: "",
-    lossReason: "DAMAGED",
+    reason:
+      defaultStockAdjustmentReason("RESTOCK"),
     note: "",
   });
 
@@ -1162,7 +1155,8 @@ export default function InventoryDetail() {
       type: defaultType,
       quantity: "",
       newStockQty: "",
-      lossReason: "DAMAGED",
+      reason:
+      defaultStockAdjustmentReason("RESTOCK"),
       note: "",
     });
     setStockDrawerOpen(true);
@@ -1176,7 +1170,10 @@ export default function InventoryDetail() {
         ? {
             quantity: "",
             newStockQty: "",
-            lossReason: value === "LOSS" ? current.lossReason || "DAMAGED" : current.lossReason,
+            reason:
+              defaultStockAdjustmentReason(
+                value,
+              ),
           }
         : {}),
     }));
@@ -1187,6 +1184,27 @@ export default function InventoryDetail() {
     const qty = Number(stockForm.quantity);
     const newQty = Number(stockForm.newStockQty);
     const currentQty = productStock(product);
+
+    const reason = cleanString(
+      stockForm.reason,
+    ).toUpperCase();
+
+    if (!reason) {
+      toast.error(
+        "Choose a reason for this stock update",
+      );
+      return false;
+    }
+
+    if (
+      reason === "OTHER" &&
+      !cleanString(stockForm.note)
+    ) {
+      toast.error(
+        "Explain the stock update when Other is selected",
+      );
+      return false;
+    }
 
     if (!["RESTOCK", "LOSS", "CORRECTION"].includes(type)) {
       toast.error("Choose a stock movement type");
@@ -1229,7 +1247,7 @@ export default function InventoryDetail() {
         type,
         quantity: type === "CORRECTION" ? undefined : Number(stockForm.quantity),
         newStockQty: type === "CORRECTION" ? Number(stockForm.newStockQty) : undefined,
-        lossReason: type === "LOSS" ? stockForm.lossReason : undefined,
+        reason: stockForm.reason,
         note: stockForm.note,
       });
 

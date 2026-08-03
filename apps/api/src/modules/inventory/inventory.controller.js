@@ -21,15 +21,33 @@ const INVENTORY_AUDIT_ACTIONS = {
   PRODUCT_ACTIVATED: "PRODUCT_ACTIVATED",
 };
 
-const LOSS_REASON_OPTIONS = [
-  "STOLEN",
-  "DAMAGED",
-  "LOST",
-  "EXPIRED",
-  "INTERNAL_USE",
-  "COUNTING_ERROR",
-  "OTHER",
-];
+const STOCK_ADJUSTMENT_REASON_OPTIONS = {
+  RESTOCK: [
+    "SUPPLIER_DELIVERY",
+    "CUSTOMER_RETURN",
+    "BRANCH_TRANSFER_RECEIVED",
+    "OPENING_STOCK",
+    "FOUND_STOCK",
+    "OTHER",
+  ],
+  LOSS: [
+    "DAMAGED",
+    "MISSING",
+    "STOLEN",
+    "EXPIRED",
+    "INTERNAL_USE",
+    "RETURNED_UNSELLABLE",
+    "OTHER",
+  ],
+  CORRECTION: [
+    "PHYSICAL_COUNT",
+    "PREVIOUS_ENTRY_ERROR",
+    "MISSED_MOVEMENT",
+    "DUPLICATE_MOVEMENT",
+    "WRONG_BRANCH_ALLOCATION",
+    "OTHER",
+  ],
+};
 
 function getTenantId(req) {
   return req.user?.tenantId || null;
@@ -96,9 +114,25 @@ function normalizeAdjustmentType(x) {
   return null;
 }
 
-function normalizeLossReason(x) {
-  const v = String(x || "").trim().toUpperCase();
-  return LOSS_REASON_OPTIONS.includes(v) ? v : null;
+function normalizeStockAdjustmentReason(type, value) {
+  const normalizedType =
+    normalizeAdjustmentType(type);
+
+  const normalizedReason =
+    String(value || "")
+      .trim()
+      .toUpperCase();
+
+  const allowedReasons =
+    STOCK_ADJUSTMENT_REASON_OPTIONS[
+      normalizedType
+    ] || [];
+
+  return allowedReasons.includes(
+    normalizedReason,
+  )
+    ? normalizedReason
+    : null;
 }
 
 function parseDateOnly(s) {
@@ -1902,9 +1936,18 @@ async function adjustStock(req, res) {
     }
 
     const productId = String(req.params.id || "");
-    const type = normalizeAdjustmentType(req.body.type);
-    const rawNote = cleanString(req.body.note);
-    const lossReason = normalizeLossReason(req.body.lossReason);
+    const type =
+      normalizeAdjustmentType(req.body.type);
+
+    const rawNote =
+      cleanString(req.body.note);
+
+    const reason =
+      normalizeStockAdjustmentReason(
+        type,
+        req.body.reason ??
+          req.body.lossReason,
+      );
 
     if (!productId) {
       return res.status(400).json({ message: "Missing product id" });
@@ -1916,26 +1959,25 @@ async function adjustStock(req, res) {
       });
     }
 
-    if (type === "LOSS" && !lossReason) {
+    if (!reason) {
       return res.status(400).json({
         message:
-          "LOSS requires lossReason. Use one of: STOLEN, DAMAGED, LOST, EXPIRED, INTERNAL_USE, COUNTING_ERROR, OTHER.",
-        code: "LOSS_REASON_REQUIRED",
+          "Choose a valid reason for this stock update.",
+        code:
+          "STOCK_ADJUSTMENT_REASON_REQUIRED",
       });
     }
 
-    if (type === "LOSS" && (lossReason === "STOLEN" || lossReason === "OTHER") && !rawNote) {
+    if (reason === "OTHER" && !rawNote) {
       return res.status(400).json({
-        message: "A note is required when lossReason is STOLEN or OTHER.",
-        code: "LOSS_NOTE_REQUIRED",
+        message:
+          "Explain the stock update when Other is selected.",
+        code:
+          "STOCK_ADJUSTMENT_NOTE_REQUIRED",
       });
     }
 
-    const note = buildStockAdjustmentNote({
-      type,
-      lossReason,
-      note: rawNote,
-    });
+    const note = rawNote;
 
     const isOwner = userRole === "OWNER";
 
@@ -2054,6 +2096,7 @@ async function adjustStock(req, res) {
             delta,
             beforeQty: beforeQtyBranch,
             afterQty,
+            reason,
             note: note || null,
             createdById: userId || null,
           },
@@ -2064,6 +2107,7 @@ async function adjustStock(req, res) {
             delta: true,
             beforeQty: true,
             afterQty: true,
+            reason: true,
             note: true,
             createdAt: true,
           },
@@ -2088,7 +2132,7 @@ async function adjustStock(req, res) {
             beforeQty: beforeQtyBranch,
             afterQty,
             globalAfterQty,
-            lossReason: type === "LOSS" ? lossReason : null,
+            reason,
             note: note || null,
           },
         });
@@ -2103,7 +2147,7 @@ async function adjustStock(req, res) {
           delta,
           type,
           adjustmentId: adj.id,
-          lossReason: type === "LOSS" ? lossReason : null,
+          reason,
           globalAfterQty,
         };
       },

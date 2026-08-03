@@ -81,7 +81,10 @@ function normalizeStockAdjustmentPayload(payload = {}) {
     type: cleanString(payload.type).toUpperCase(),
     quantity: payload.quantity,
     newStockQty: payload.newStockQty,
-    lossReason: cleanString(payload.lossReason).toUpperCase(),
+    reason: cleanString(
+      payload.reason ??
+        payload.lossReason,
+    ).toUpperCase(),
     note: cleanString(payload.note),
   });
 }

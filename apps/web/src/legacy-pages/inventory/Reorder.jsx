@@ -3,6 +3,10 @@ import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
+  defaultStockAdjustmentReason,
+  stockAdjustmentReasons,
+} from "../../lib/stockAdjustmentReasons";
+import {
   AlertTriangle,
   ArrowLeft,
   Boxes,
@@ -25,14 +29,6 @@ import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./Reorder.css";
 
 const PAGE_SIZE = 10;
-
-const LOSS_REASONS = [
-  { value: "DAMAGED", label: "Damaged" },
-  { value: "MISSING", label: "Missing" },
-  { value: "EXPIRED", label: "Expired" },
-  { value: "RETURNED_BAD", label: "Returned bad" },
-  { value: "OTHER", label: "Other" },
-];
 
 function cx(...items) {
   return items.filter(Boolean).join(" ");
@@ -231,7 +227,6 @@ function StockDrawer({
   const type = cleanString(form.type).toUpperCase();
   const copy = stockActionCopy(type);
   const previewQty = stockPreview(currentQty, form);
-  const change = previewQty - currentQty;
 
   return createPortal(
     <div className="svx-restock-stock-layer" role="dialog" aria-modal="true" aria-label="Update stock">
@@ -321,25 +316,36 @@ function StockDrawer({
             </label>
           )}
 
-          {type === "LOSS" ? (
-            <label>
-              <span>Reason</span>
-              <select
-                value={form.lossReason}
-                onChange={(event) => onChange("lossReason", event.target.value)}
-                disabled={saving}
-              >
-                {LOSS_REASONS.map((reason) => (
-                  <option key={reason.value} value={reason.value}>
-                    {reason.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
+          <label>
+            <span>
+              Reason <b aria-hidden="true">*</b>
+            </span>
+            <select
+              value={form.reason}
+              onChange={(event) =>
+                onChange(
+                  "reason",
+                  event.target.value,
+                )
+              }
+              disabled={saving}
+              required
+            >
+              {stockAdjustmentReasons(
+                type,
+              ).map((reason) => (
+                <option
+                  key={reason.value}
+                  value={reason.value}
+                >
+                  {reason.label}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <label>
-            <span>Note</span>
+            <span>Additional details</span>
             <textarea
               value={form.note}
               onChange={(event) => onChange("note", event.target.value)}
@@ -348,20 +354,6 @@ function StockDrawer({
             />
           </label>
         </div>
-
-        <section className="svx-restock-stock-impact">
-          <div>
-            <span>Stock change</span>
-            <strong className={cx(change > 0 && "is-success", change < 0 && "is-danger")}>
-              {change > 0 ? `+${formatNumber(change)}` : formatNumber(change)}
-            </strong>
-          </div>
-
-          <div>
-            <span>Movement type</span>
-            <strong>{copy.title}</strong>
-          </div>
-        </section>
 
         <footer className="svx-restock-stock-actions">
           <button type="button" onClick={onClose} disabled={saving} className="svx-restock-cancel-button">
@@ -418,7 +410,8 @@ export default function Reorder() {
     type: "RESTOCK",
     quantity: 1,
     newStockQty: 0,
-    lossReason: "DAMAGED",
+    reason:
+      defaultStockAdjustmentReason("RESTOCK"),
     note: "",
   });
 
@@ -531,7 +524,8 @@ export default function Reorder() {
       type: "RESTOCK",
       quantity: Math.max(1, Number(suggestedQty || 1)),
       newStockQty: productStock(product),
-      lossReason: "DAMAGED",
+      reason:
+      defaultStockAdjustmentReason("RESTOCK"),
       note: "",
     });
     setStockOpen(true);
@@ -552,7 +546,10 @@ export default function Reorder() {
         ? {
             quantity: value === "CORRECTION" ? current.quantity : current.quantity || 1,
             newStockQty: value === "CORRECTION" && stockProduct ? productStock(stockProduct) : current.newStockQty,
-            lossReason: value === "LOSS" ? current.lossReason || "DAMAGED" : current.lossReason,
+            reason:
+              defaultStockAdjustmentReason(
+                value,
+              ),
           }
         : {}),
     }));
@@ -565,6 +562,27 @@ export default function Reorder() {
     const quantity = Number(stockForm.quantity);
     const newStockQty = Number(stockForm.newStockQty);
     const currentQty = productStock(stockProduct);
+
+    const reason = cleanString(
+      stockForm.reason,
+    ).toUpperCase();
+
+    if (!reason) {
+      toast.error(
+        "Choose a reason for this stock update",
+      );
+      return false;
+    }
+
+    if (
+      reason === "OTHER" &&
+      !cleanString(stockForm.note)
+    ) {
+      toast.error(
+        "Explain the stock update when Other is selected",
+      );
+      return false;
+    }
 
     if (!["RESTOCK", "LOSS", "CORRECTION"].includes(type)) {
       toast.error("Choose a stock movement type");
@@ -608,12 +626,13 @@ export default function Reorder() {
           ? {
               type: "CORRECTION",
               newStockQty: Number(stockForm.newStockQty),
+              reason: stockForm.reason,
               note: cleanString(stockForm.note),
             }
           : {
               type,
               quantity: Number(stockForm.quantity),
-              lossReason: type === "LOSS" ? stockForm.lossReason : undefined,
+              reason: stockForm.reason,
               note: cleanString(stockForm.note),
             };
 

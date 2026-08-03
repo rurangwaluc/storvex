@@ -8,6 +8,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
+  defaultStockAdjustmentReason,
+  stockAdjustmentReasons,
+} from "../../lib/stockAdjustmentReasons";
+import {
   getActiveBranchId,
 } from "../../services/apiClient";
 import inventoryApi from "../../services/inventoryApi";
@@ -19,19 +23,10 @@ const DEFAULT_STOCK_FORM = {
   type: "RESTOCK",
   quantity: 1,
   newStockQty: 0,
-  lossReason: "DAMAGED",
+  reason:
+      defaultStockAdjustmentReason("RESTOCK"),
   note: "",
 };
-
-const LOSS_REASONS = [
-  { value: "DAMAGED", label: "Damaged" },
-  { value: "STOLEN", label: "Stolen" },
-  { value: "LOST", label: "Lost" },
-  { value: "EXPIRED", label: "Expired" },
-  { value: "INTERNAL_USE", label: "Used inside the business" },
-  { value: "COUNTING_ERROR", label: "Counting mistake" },
-  { value: "OTHER", label: "Other reason" },
-];
 
 const CATEGORY_LABELS = {
   ELECTRONICS: "Electronics",
@@ -428,7 +423,10 @@ function StockAdjustmentModal({
         ? {
             quantity: value === "CORRECTION" ? prev.quantity : prev.quantity || 1,
             newStockQty: value === "CORRECTION" ? branchStock(product) : prev.newStockQty,
-            lossReason: value === "LOSS" ? prev.lossReason || "DAMAGED" : prev.lossReason,
+            reason:
+              defaultStockAdjustmentReason(
+                value,
+              ),
           }
         : {}),
     }));
@@ -438,7 +436,6 @@ function StockAdjustmentModal({
   const type = cleanString(form.type).toUpperCase();
   const copy = stockActionCopy(type);
   const previewQty = stockPreview(currentQty, form);
-  const change = previewQty - currentQty;
 
   return createPortal(
     <div className="svx-inventory-stock-drawer-layer" role="dialog" aria-modal="true" aria-label="Update stock">
@@ -526,23 +523,32 @@ function StockAdjustmentModal({
             </Field>
           )}
 
-          {type === "LOSS" ? (
-            <Field label="Reason" required>
-              <select
-                value={form.lossReason}
-                onChange={(e) => update("lossReason", e.target.value)}
-                className="input-premium"
-              >
-                {LOSS_REASONS.map((reason) => (
-                  <option key={reason.value} value={reason.value}>
-                    {reason.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          ) : null}
+          <Field label="Reason" required>
+            <select
+              value={form.reason}
+              onChange={(event) =>
+                update(
+                  "reason",
+                  event.target.value,
+                )
+              }
+              className="input-premium"
+              required
+            >
+              {stockAdjustmentReasons(
+                type,
+              ).map((reason) => (
+                <option
+                  key={reason.value}
+                  value={reason.value}
+                >
+                  {reason.label}
+                </option>
+              ))}
+            </select>
+          </Field>
 
-          <Field label="Note" className={type === "LOSS" ? "" : "sm:col-span-2"}>
+          <Field label="Additional details" className={type === "LOSS" ? "" : "sm:col-span-2"}>
             <textarea
               value={form.note}
               onChange={(e) => update("note", e.target.value)}
@@ -551,20 +557,6 @@ function StockAdjustmentModal({
             />
           </Field>
         </div>
-
-        <section className="svx-inventory-stock-impact">
-          <div>
-            <span>Stock change</span>
-            <strong className={cn(change > 0 && "is-success", change < 0 && "is-danger")}>
-              {change > 0 ? `+${formatNumber(change)}` : formatNumber(change)}
-            </strong>
-          </div>
-
-          <div>
-            <span>Movement type</span>
-            <strong>{copy.title}</strong>
-          </div>
-        </section>
 
         <footer className="svx-inventory-stock-actions">
           <button
@@ -872,9 +864,29 @@ export default function InventoryList() {
     const quantity = Number(stockForm.quantity);
     const newStockQty = Number(stockForm.newStockQty);
     const currentQty = branchStock(selectedProduct);
+    const reason = cleanString(
+      stockForm.reason,
+    ).toUpperCase();
 
     if (!["RESTOCK", "LOSS", "CORRECTION"].includes(type)) {
       toast.error("Choose a stock movement type");
+      return;
+    }
+
+    if (!reason) {
+      toast.error(
+        "Choose a reason for this stock update",
+      );
+      return;
+    }
+
+    if (
+      reason === "OTHER" &&
+      !cleanString(stockForm.note)
+    ) {
+      toast.error(
+        "Explain the stock update when Other is selected",
+      );
       return;
     }
 
@@ -901,12 +913,13 @@ export default function InventoryList() {
           ? {
               type: "CORRECTION",
               newStockQty,
+              reason: stockForm.reason,
               note: stockForm.note,
             }
           : {
               type,
               quantity,
-              lossReason: type === "LOSS" ? stockForm.lossReason : undefined,
+              reason: stockForm.reason,
               note: stockForm.note,
             };
 

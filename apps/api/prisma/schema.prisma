@@ -1627,6 +1627,7 @@ model StockAdjustment {
   delta       Int
   beforeQty   Int
   afterQty    Int
+  reason      String?
   note        String?
   createdById String?
   createdAt   DateTime            @default(now())
