@@ -1,5 +1,8 @@
 // frontend-stores/src/pages/expenses/Expenses.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useQueryClient,
+} from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 
@@ -11,6 +14,9 @@ import {
   getExpenses,
   updateExpense,
 } from "../../services/expensesApi";
+import {
+  posQueryKeys,
+} from "../../lib/posQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./Expenses.css";
 
@@ -1007,6 +1013,8 @@ function DeleteConfirmDialog({ expense, busy, onConfirm, onClose }) {
 }
 
 export default function Expenses() {
+  const queryClient = useQueryClient();
+
   const [loading, setLoading] = useState(true);
   const [expenses, setExpenses] = useState([]);
   const [storeLocationScope, setStoreLocationScope] = useState(null);
@@ -1174,9 +1182,17 @@ export default function Expenses() {
     setOpenActionMenuId("");
     setApproveBusy(id);
 
+    const expenseBeingApproved =
+      expenses.find(
+        (expense) =>
+          String(expense?.id) ===
+          String(id),
+      ) || null;
+
     try {
       const updated = await approveExpense(id, {
-        allStoreLocations: scopeMode === "ALL",
+        allStoreLocations:
+          scopeMode === "ALL",
       });
 
       setExpenses((prev) =>
@@ -1192,6 +1208,28 @@ export default function Expenses() {
             : expense
         )
       );
+
+      if (
+        isCashDrawerExpense(
+          updated ||
+            expenseBeingApproved,
+        )
+      ) {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey:
+              posQueryKeys.drawerStatuses(),
+          }),
+          queryClient.invalidateQueries({
+            queryKey:
+              posQueryKeys.drawerMovements(),
+          }),
+          queryClient.invalidateQueries({
+            queryKey:
+              posQueryKeys.drawerSessions(),
+          }),
+        ]);
+      }
 
       toast.success("Expense approved");
     } catch (error) {

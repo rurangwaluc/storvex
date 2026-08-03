@@ -46,6 +46,34 @@ export const posQueryKeys = {
     cleanKeyPart(branchId),
   ],
 
+  drawerMovements: () => [
+    ...posQueryKeys.all,
+    "drawer-movements",
+  ],
+
+  drawerMovementList: (
+    branchId,
+    limit = 100,
+  ) => [
+    ...posQueryKeys.drawerMovements(),
+    cleanKeyPart(branchId),
+    Number(limit) || 100,
+  ],
+
+  drawerSessions: () => [
+    ...posQueryKeys.all,
+    "drawer-sessions",
+  ],
+
+  drawerSessionList: (
+    branchId,
+    limit = 15,
+  ) => [
+    ...posQueryKeys.drawerSessions(),
+    cleanKeyPart(branchId),
+    Number(limit) || 15,
+  ],
+
   documentSettings: () => [
     ...posQueryKeys.all,
     "document-settings",

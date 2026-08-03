@@ -1,4 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -11,6 +14,12 @@ import {
   openCashDrawer,
   recordCashDrawerMovement,
 } from "../../services/cashDrawerApi";
+import {
+  getActiveBranchId,
+} from "../../services/apiClient";
+import {
+  posQueryKeys,
+} from "../../lib/posQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./CashDrawer.css";
 
@@ -1142,124 +1151,291 @@ function MovementModal({
 }
 
 export default function CashDrawer() {
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [activeBranchId, setActiveBranchId] =
+    useState(
+      () => getActiveBranchId() || "default",
+    );
 
-  const [status, setStatus] = useState(null);
-  const [movements, setMovements] = useState([]);
-  const [sessions, setSessions] = useState([]);
-  const [visibleSessionCount, setVisibleSessionCount] = useState(RECENT_SESSION_INITIAL_COUNT);
+  const branchRequestOptions = useMemo(
+    () => ({
+      branchId:
+        activeBranchId === "default"
+          ? undefined
+          : activeBranchId,
+    }),
+    [activeBranchId],
+  );
 
-  const [q, setQ] = useState("");
-  const [typeFilter, setTypeFilter] = useState("ALL");
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const statusQuery = useQuery({
+    queryKey:
+      posQueryKeys.drawerStatus(
+        activeBranchId,
+      ),
+    queryFn: () =>
+      getCashDrawerStatus(
+        {},
+        branchRequestOptions,
+      ),
+    staleTime: 15_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-  const [openModal, setOpenModal] = useState(false);
-  const [openAmount, setOpenAmount] = useState("");
-  const [openReason, setOpenReason] = useState("NORMAL_FLOAT");
-  const [openNote, setOpenNote] = useState("");
-  const [openSaving, setOpenSaving] = useState(false);
+  const movementsQuery = useQuery({
+    queryKey:
+      posQueryKeys.drawerMovementList(
+        activeBranchId,
+        100,
+      ),
+    queryFn: async () => {
+      const response =
+        await getCashDrawerMovements(
+          {
+            limit: 100,
+            branchId:
+              branchRequestOptions.branchId,
+          },
+          branchRequestOptions,
+        );
 
-  const [closeModal, setCloseModal] = useState(false);
-  const [countedCash, setCountedCash] = useState("");
-  const [closeVarianceReason, setCloseVarianceReason] = useState("");
-  const [closeNote, setCloseNote] = useState("");
-  const [closeSaving, setCloseSaving] = useState(false);
-
-  const [movementModal, setMovementModal] = useState(false);
-  const [movementTypeValue, setMovementTypeValue] = useState("IN");
-  const [movementReasonValue, setMovementReasonValue] = useState("OTHER");
-  const [movementAmountValue, setMovementAmountValue] = useState("");
-  const [movementNoteValue, setMovementNoteValue] = useState("");
-  const [movementSaving, setMovementSaving] = useState(false);
-
-  const [activeBranchLabel, setActiveBranchLabel] = useState(() => activeBranchNameFromStorage());
-
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  async function load({ silent = false } = {}) {
-    if (silent) {
-      setRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-
-    try {
-      const [statusData, movementData, sessionData] = await Promise.all([
-        getCashDrawerStatus(),
-        getCashDrawerMovements({ limit: 100 }),
-        getCashDrawerSessions({ limit: RECENT_SESSION_MAX_COUNT }),
-      ]);
-
-      if (!mountedRef.current) return;
-
-      const movementList = Array.isArray(movementData)
-        ? movementData
-        : Array.isArray(movementData?.movements)
-          ? movementData.movements
-          : Array.isArray(movementData?.items)
-            ? movementData.items
-            : [];
-
-      const sessionList = Array.isArray(sessionData)
-        ? sessionData
-        : Array.isArray(sessionData?.sessions)
-          ? sessionData.sessions
-          : Array.isArray(sessionData?.items)
-            ? sessionData.items
-            : [];
-
-      setStatus(statusData || null);
-      setMovements(movementList);
-      setSessions(sessionList);
-      setVisibleCount(PAGE_SIZE);
-      setVisibleSessionCount(RECENT_SESSION_INITIAL_COUNT);
-      setActiveBranchLabel(branchLabelFromStatus(statusData));
-    } catch (error) {
-      if (!mountedRef.current) return;
-
-      console.error(error);
-
-      if (!handleSubscriptionBlockedError(error, { toastId: "cash-drawer-load-blocked" })) {
-        toast.error(error?.message || "Failed to load cash drawer");
+      if (Array.isArray(response)) {
+        return response;
       }
 
-      setStatus(null);
-      setMovements([]);
-      setSessions([]);
-    } finally {
-      if (!mountedRef.current) return;
+      if (
+        Array.isArray(
+          response?.movements,
+        )
+      ) {
+        return response.movements;
+      }
 
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
+      if (Array.isArray(response?.items)) {
+        return response.items;
+      }
+
+      return [];
+    },
+    staleTime: 15_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const sessionsQuery = useQuery({
+    queryKey:
+      posQueryKeys.drawerSessionList(
+        activeBranchId,
+        RECENT_SESSION_MAX_COUNT,
+      ),
+    queryFn: async () => {
+      const response =
+        await getCashDrawerSessions(
+          {
+            limit:
+              RECENT_SESSION_MAX_COUNT,
+            branchId:
+              branchRequestOptions.branchId,
+          },
+          branchRequestOptions,
+        );
+
+      if (Array.isArray(response)) {
+        return response;
+      }
+
+      if (
+        Array.isArray(
+          response?.sessions,
+        )
+      ) {
+        return response.sessions;
+      }
+
+      if (Array.isArray(response?.items)) {
+        return response.items;
+      }
+
+      return [];
+    },
+    staleTime: 15_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const status = statusQuery.data || null;
+  const movements =
+    movementsQuery.data || [];
+  const sessions =
+    sessionsQuery.data || [];
+
+  const loading =
+    statusQuery.isPending ||
+    movementsQuery.isPending ||
+    sessionsQuery.isPending;
+
+  const refreshing =
+    !loading &&
+    (
+      statusQuery.isFetching ||
+      movementsQuery.isFetching ||
+      sessionsQuery.isFetching
+    );
+
+  const [visibleSessionCount, setVisibleSessionCount] =
+    useState(
+      RECENT_SESSION_INITIAL_COUNT,
+    );
+
+  const [q, setQ] = useState("");
+  const [typeFilter, setTypeFilter] =
+    useState("ALL");
+  const [visibleCount, setVisibleCount] =
+    useState(PAGE_SIZE);
+
+  const [openModal, setOpenModal] =
+    useState(false);
+  const [openAmount, setOpenAmount] =
+    useState("");
+  const [openReason, setOpenReason] =
+    useState("NORMAL_FLOAT");
+  const [openNote, setOpenNote] =
+    useState("");
+  const [openSaving, setOpenSaving] =
+    useState(false);
+
+  const [closeModal, setCloseModal] =
+    useState(false);
+  const [countedCash, setCountedCash] =
+    useState("");
+  const [
+    closeVarianceReason,
+    setCloseVarianceReason,
+  ] = useState("");
+  const [closeNote, setCloseNote] =
+    useState("");
+  const [closeSaving, setCloseSaving] =
+    useState(false);
+
+  const [movementModal, setMovementModal] =
+    useState(false);
+  const [
+    movementTypeValue,
+    setMovementTypeValue,
+  ] = useState("IN");
+  const [
+    movementReasonValue,
+    setMovementReasonValue,
+  ] = useState("OTHER");
+  const [
+    movementAmountValue,
+    setMovementAmountValue,
+  ] = useState("");
+  const [
+    movementNoteValue,
+    setMovementNoteValue,
+  ] = useState("");
+  const [
+    movementSaving,
+    setMovementSaving,
+  ] = useState(false);
+
+  const [
+    activeBranchLabel,
+    setActiveBranchLabel,
+  ] = useState(
+    () => activeBranchNameFromStorage(),
+  );
+
+  const drawerError =
+    statusQuery.error ||
+    movementsQuery.error ||
+    sessionsQuery.error;
 
   useEffect(() => {
-    void load();
+    if (!drawerError) return;
 
+    console.error(
+      "Cash drawer load failed:",
+      drawerError,
+    );
+
+    if (
+      !handleSubscriptionBlockedError(
+        drawerError,
+        {
+          toastId:
+            "cash-drawer-load-blocked",
+        },
+      )
+    ) {
+      toast.error(
+        drawerError?.message ||
+          "Failed to load cash drawer",
+        {
+          id: "cash-drawer-load-error",
+        },
+      );
+    }
+  }, [drawerError]);
+
+  useEffect(() => {
+    if (!status) return;
+
+    setActiveBranchLabel(
+      branchLabelFromStatus(status),
+    );
+  }, [status]);
+
+  useEffect(() => {
     function onBranchChanged() {
-      setActiveBranchLabel(activeBranchNameFromStorage());
-      void load({ silent: true });
+      setActiveBranchId(
+        getActiveBranchId() || "default",
+      );
+      setActiveBranchLabel(
+        activeBranchNameFromStorage(),
+      );
+      setVisibleCount(PAGE_SIZE);
+      setVisibleSessionCount(
+        RECENT_SESSION_INITIAL_COUNT,
+      );
     }
 
-    window.addEventListener("storvex:branch-changed", onBranchChanged);
-    window.addEventListener("storvex:workspace-refreshed", onBranchChanged);
+    window.addEventListener(
+      "storvex:branch-changed",
+      onBranchChanged,
+    );
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      onBranchChanged,
+    );
 
     return () => {
-      window.removeEventListener("storvex:branch-changed", onBranchChanged);
-      window.removeEventListener("storvex:workspace-refreshed", onBranchChanged);
+      window.removeEventListener(
+        "storvex:branch-changed",
+        onBranchChanged,
+      );
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
+        onBranchChanged,
+      );
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function refreshDrawer() {
+    setVisibleCount(PAGE_SIZE);
+    setVisibleSessionCount(
+      RECENT_SESSION_INITIAL_COUNT,
+    );
+
+    await Promise.all([
+      statusQuery.refetch(),
+      movementsQuery.refetch(),
+      sessionsQuery.refetch(),
+    ]);
+  }
 
   const openSession = openSessionFromStatus(status);
   const drawerOpen = isDrawerOpen(status);
@@ -1385,18 +1561,21 @@ export default function CashDrawer() {
         note: openNote,
       });
 
-      await openCashDrawer({
-        openingCash: amount,
-        openingAmount: amount,
-        openingReason: openReason,
-        openingNote: openNote,
-        note,
-      });
+      await openCashDrawer(
+        {
+          openingCash: amount,
+          openingAmount: amount,
+          openingReason: openReason,
+          openingNote: openNote,
+          note,
+        },
+        branchRequestOptions,
+      );
 
       toast.success("Cash drawer opened");
       setOpenModal(false);
       resetOpenForm();
-      await load({ silent: true });
+      await refreshDrawer();
     } catch (error) {
       if (handleSubscriptionBlockedError(error, { toastId: "cash-drawer-open-blocked" })) {
         return;
@@ -1452,22 +1631,29 @@ export default function CashDrawer() {
         note: closeNote,
       });
 
-      await closeCashDrawer({
-        countedCash: amount,
-        countedAmount: amount,
-        expectedCash,
-        closingReason: effectiveClosingReason,
-        differenceReason: effectiveClosingReason,
-        closingExplanation: closeNote,
-        differenceExplanation: closeNote,
-        closeNote: note,
-        note,
-      });
+      await closeCashDrawer(
+        {
+          countedCash: amount,
+          countedAmount: amount,
+          expectedCash,
+          closingReason:
+            effectiveClosingReason,
+          differenceReason:
+            effectiveClosingReason,
+          closingExplanation:
+            closeNote,
+          differenceExplanation:
+            closeNote,
+          closeNote: note,
+          note,
+        },
+        branchRequestOptions,
+      );
 
       toast.success("Cash drawer closed");
       setCloseModal(false);
       resetCloseForm();
-      await load({ silent: true });
+      await refreshDrawer();
     } catch (error) {
       if (handleSubscriptionBlockedError(error, { toastId: "cash-drawer-close-blocked" })) {
         return;
@@ -1495,18 +1681,24 @@ export default function CashDrawer() {
     setMovementSaving(true);
 
     try {
-      await recordCashDrawerMovement({
-        type: movementTypeValue,
-        direction: movementTypeValue,
-        reason: movementReasonValue,
-        amount,
-        note: cleanString(movementNoteValue) || null,
-      });
+      await recordCashDrawerMovement(
+        {
+          type: movementTypeValue,
+          direction: movementTypeValue,
+          reason: movementReasonValue,
+          amount,
+          note:
+            cleanString(
+              movementNoteValue,
+            ) || null,
+        },
+        branchRequestOptions,
+      );
 
       toast.success("Cash movement saved");
       setMovementModal(false);
       resetMovementForm();
-      await load({ silent: true });
+      await refreshDrawer();
     } catch (error) {
       if (handleSubscriptionBlockedError(error, { toastId: "cash-movement-save-blocked" })) {
         return;
@@ -1617,7 +1809,7 @@ export default function CashDrawer() {
               Sales list
             </Link>
 
-            <AsyncButton loading={refreshing} onClick={() => load({ silent: true })} className={secondaryBtn()}>
+            <AsyncButton loading={refreshing} onClick={refreshDrawer} className={secondaryBtn()}>
               Refresh
             </AsyncButton>
           </div>
