@@ -28,6 +28,9 @@ import {
 import {
   posQueryKeys,
 } from "../../lib/posQueryKeys";
+import {
+  dashboardQueryKeys,
+} from "../../lib/dashboardQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./PosReceipt.css";
 
@@ -1258,6 +1261,10 @@ export default function PosReceipt() {
           posQueryKeys.drawerStatus(
             activeBranchId,
           ),
+      }),
+      queryClient.invalidateQueries({
+        queryKey:
+          dashboardQueryKeys.all,
       }),
     ];
 

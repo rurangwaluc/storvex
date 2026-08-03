@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   useQuery,
+  useQueryClient,
 } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -20,6 +21,9 @@ import {
 import {
   posQueryKeys,
 } from "../../lib/posQueryKeys";
+import {
+  dashboardQueryKeys,
+} from "../../lib/dashboardQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./CashDrawer.css";
 
@@ -1151,6 +1155,8 @@ function MovementModal({
 }
 
 export default function CashDrawer() {
+  const queryClient = useQueryClient();
+
   const [activeBranchId, setActiveBranchId] =
     useState(
       () => getActiveBranchId() || "default",
@@ -1434,6 +1440,10 @@ export default function CashDrawer() {
       statusQuery.refetch(),
       movementsQuery.refetch(),
       sessionsQuery.refetch(),
+      queryClient.invalidateQueries({
+        queryKey:
+          dashboardQueryKeys.all,
+      }),
     ]);
   }
 

@@ -22,6 +22,9 @@ import {
   expenseQueryKeys,
 } from "../../lib/expenseQueryKeys";
 import {
+  dashboardQueryKeys,
+} from "../../lib/dashboardQueryKeys";
+import {
   getActiveBranchId,
 } from "../../services/apiClient";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
@@ -1289,6 +1292,11 @@ export default function Expenses() {
       void queryClient.invalidateQueries({
         queryKey:
           expenseQueryKeys.lists(),
+      });
+
+      void queryClient.invalidateQueries({
+        queryKey:
+          dashboardQueryKeys.all,
       });
 
       if (

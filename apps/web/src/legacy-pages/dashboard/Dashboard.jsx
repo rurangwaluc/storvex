@@ -21,6 +21,9 @@ import {
   getActiveBranchId,
 } from "../../services/apiClient";
 import { getTenantDashboard } from "../../services/dashboardApi";
+import {
+  dashboardQueryKeys,
+} from "../../lib/dashboardQueryKeys";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import "./Dashboard.css";
 
@@ -873,8 +876,25 @@ export default function Dashboard() {
     isFetching: dashboardFetching,
     refetch: refetchDashboard,
   } = useQuery({
-    queryKey: ["tenant-dashboard", activeBranchId],
-    queryFn: getTenantDashboard,
+    queryKey:
+      dashboardQueryKeys.summary(
+        activeBranchId,
+      ),
+    queryFn: () =>
+      getTenantDashboard(
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      ),
     staleTime: 30_000,
     gcTime: 5 * 60_000,
     retry: 1,
@@ -892,10 +912,18 @@ export default function Dashboard() {
       "storvex:branch-changed",
       handleBranchChanged,
     );
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      handleBranchChanged,
+    );
 
     return () => {
       window.removeEventListener(
         "storvex:branch-changed",
+        handleBranchChanged,
+      );
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
         handleBranchChanged,
       );
     };

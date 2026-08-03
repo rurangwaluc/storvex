@@ -22,6 +22,9 @@ import {
 import {
   posQueryKeys,
 } from "../../lib/posQueryKeys";
+import {
+  dashboardQueryKeys,
+} from "../../lib/dashboardQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./SalesList.css";
 
@@ -714,6 +717,10 @@ export default function SalesList() {
             posQueryKeys.drawerStatus(
               activeBranchId,
             ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            dashboardQueryKeys.all,
         }),
       ];
 

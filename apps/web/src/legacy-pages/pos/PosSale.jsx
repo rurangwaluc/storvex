@@ -32,6 +32,9 @@ import {
 import {
   posQueryKeys,
 } from "../../lib/posQueryKeys";
+import {
+  dashboardQueryKeys,
+} from "../../lib/dashboardQueryKeys";
 import { getCashDrawerStatus } from "../../services/cashDrawerApi";
 import { getDocumentSettings } from "../../services/storeApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
@@ -1636,6 +1639,10 @@ export default function PosSale() {
         queryClient.invalidateQueries({
           queryKey:
             inventoryQueryKeys.summaries(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            dashboardQueryKeys.all,
         }),
       ];
 
