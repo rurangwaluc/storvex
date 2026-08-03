@@ -33,25 +33,25 @@ const PANEL =
 const OWNER_REPORTS = [
   {
     title: "Money report",
-    text: "Cash, MoMo, bank, other money, money in, and money out.",
+    text: "Money in, money out and balances.",
     to: "/app/reports/cash-flow",
     tag: "Money",
   },
   {
     title: "Sales and profit",
-    text: "Sales made, expenses paid, and estimated profit.",
+    text: "Sales, costs and estimated profit.",
     to: "/app/reports/profit-table",
     tag: "Profit",
   },
   {
     title: "Products report",
-    text: "Best sellers, low stock, slow stock, and stock movement.",
+    text: "Best sellers and stock to review.",
     to: "/app/reports/products",
     tag: "Stock",
   },
   {
     title: "Owner checks",
-    text: "Customer money, supplier money, overdue money, and stock issues.",
+    text: "Debts, overdue money and stock issues.",
     to: "/app/reports/owner-checks",
     tag: "Control",
   },
@@ -197,23 +197,6 @@ function cashBalance(moneySummary) {
   );
 }
 
-function ownerSentence(numbers) {
-  const sales = cleanNumber(numbers.sales);
-  const moneyReceived = cleanNumber(numbers.moneyReceived);
-  const expenses = cleanNumber(numbers.expenses);
-  const profit = cleanNumber(numbers.profit);
-
-  if (sales === 0 && moneyReceived === 0 && expenses === 0) {
-    return "No sales, payments, or approved expenses were recorded in this period.";
-  }
-
-  if (profit >= 0) {
-    return `You sold ${money(sales)}, received ${money(moneyReceived)}, spent ${money(expenses)}, and your estimated profit is ${money(profit)}.`;
-  }
-
-  return `You sold ${money(sales)}, received ${money(moneyReceived)}, but expenses are higher than sales by ${money(Math.abs(profit))}.`;
-}
-
 function KpiCard({ label, value, helper, tone = "blue" }) {
   const tones = {
     blue: "before:bg-[var(--dashboard-primary)]",
@@ -236,9 +219,11 @@ function KpiCard({ label, value, helper, tone = "blue" }) {
         {value}
       </strong>
 
-      <p className="mt-3 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-        {helper}
-      </p>
+      {helper ? (
+        <p className="mt-3 text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
+          {helper}
+        </p>
+      ) : null}
     </article>
   );
 }
@@ -248,7 +233,7 @@ function MoneyTile({ label, value, helper }) {
     <div className="svx-report-money-tile">
       <span>{label}</span>
       <strong>{value}</strong>
-      <p>{helper}</p>
+      {helper ? <p>{helper}</p> : null}
     </div>
   );
 }
@@ -260,7 +245,7 @@ function AttentionTile({ label, value, helper, tone = "blue" }) {
         <span>{label}</span>
         <strong>{value}</strong>
       </div>
-      <p>{helper}</p>
+      {helper ? <p>{helper}</p> : null}
     </article>
   );
 }
@@ -269,16 +254,11 @@ function ReportLink({ report }) {
   return (
     <Link to={report.to} className="svx-report-link-card">
       <div className="svx-report-link-top">
-        <span>{report.tag}</span>
+        <h3>{report.title}</h3>
         <small>→</small>
       </div>
 
-      <div>
-        <h3>{report.title}</h3>
-        <p>{report.text}</p>
-      </div>
-
-      <strong>Open report</strong>
+      <p>{report.text}</p>
     </Link>
   );
 }
@@ -305,11 +285,8 @@ function DownloadCard({
     <section className={cn(CARD, "svx-report-download-card p-5 sm:p-6")}>
       <div className="svx-report-download-head">
         <div>
-          <p className="svx-report-eyebrow">Download report</p>
-          <h2>Choose any date and download a business report</h2>
-          <span>
-            Use this when the owner needs a daily, weekly, monthly, yearly, or custom report.
-          </span>
+          <p className="svx-report-eyebrow">Report period</p>
+          <h2>Choose a period</h2>
         </div>
 
         <AsyncButton
@@ -611,14 +588,6 @@ export default function Reports() {
     return { cash, momo, bank, other, total };
   }, [moneySummary]);
 
-  const attentionCount = useMemo(() => {
-    let count = 0;
-    if (cleanNumber(numbers.customersOwe) > 0) count += 1;
-    if (cleanNumber(numbers.suppliersOwe) > 0) count += 1;
-    if (cleanNumber(numbers.overdue) > 0) count += 1;
-    if (cleanNumber(numbers.stockToReview) > 0) count += 1;
-    return count;
-  }, [numbers.customersOwe, numbers.suppliersOwe, numbers.overdue, numbers.stockToReview]);
 
   async function handleDownload() {
     if (!range.from || !range.to) {
@@ -667,33 +636,21 @@ export default function Reports() {
   }
 
   return (
-    <main className="svx-owner-dashboard svx-business-reports">
+    <main className="svx-owner-dashboard svx-business-reports svx-report-overview">
       <section className="svx-report-hero svx-dashboard-card">
         <div>
-          <p className="svx-report-eyebrow">Business reports</p>
-          <h1>Know exactly what happened in the business</h1>
+          <p className="svx-report-eyebrow">Reports</p>
+          <h1>Business reports</h1>
           <span>
-            Simple owner reports for sales, money received, expenses, profit, customers who owe you, and stock movement.
+            Sales, profit, money and issues for the selected period.
           </span>
         </div>
 
         <aside>
-          <p>Showing</p>
+          <p>Period</p>
           <strong>{rangeLabel}</strong>
           <span>{summary?.branchScope?.label || "Current branch"}</span>
         </aside>
-      </section>
-
-      <section className="svx-report-owner-answer svx-dashboard-card">
-        <div>
-          <p className="svx-report-eyebrow">Owner answer</p>
-          <h2>What happened in this period</h2>
-          <strong>{ownerSentence(numbers)}</strong>
-        </div>
-
-        <div className="svx-report-owner-status">
-          <span>{attentionCount > 0 ? `${attentionCount} need attention` : "No urgent issue"}</span>
-        </div>
       </section>
 
       <DownloadCard
@@ -709,25 +666,25 @@ export default function Reports() {
         <KpiCard
           label="Sales made"
           value={money(numbers.sales)}
-          helper={`${numberLabel(numbers.salesCount)} sale${cleanNumber(numbers.salesCount) === 1 ? "" : "s"} in this period`}
+          helper={`${numberLabel(numbers.salesCount)} sale${cleanNumber(numbers.salesCount) === 1 ? "" : "s"}`}
           tone="blue"
         />
         <KpiCard
           label="Money received"
           value={money(numbers.moneyReceived)}
-          helper="Money paid into cash, MoMo, bank, or other methods"
+          helper="Payments received"
           tone="green"
         />
         <KpiCard
           label="Expenses"
           value={money(numbers.expenses)}
-          helper={`${numberLabel(numbers.expenseCount)} approved expense${cleanNumber(numbers.expenseCount) === 1 ? "" : "s"}`}
+          helper={`${numberLabel(numbers.expenseCount)} approved`}
           tone="amber"
         />
         <KpiCard
           label="Profit estimate"
           value={money(numbers.profit)}
-          helper={cleanNumber(numbers.profit) >= 0 ? "Sales minus approved expenses" : "Expenses are higher than sales"}
+          helper={cleanNumber(numbers.profit) >= 0 ? "After approved expenses" : "Business made a loss"}
           tone={cleanNumber(numbers.profit) >= 0 ? "green" : "red"}
         />
       </section>
@@ -735,17 +692,17 @@ export default function Reports() {
       <section className="svx-report-money-position svx-dashboard-card">
         <div className="svx-report-section-head">
           <div>
-            <p className="svx-report-eyebrow">Money position</p>
-            <h2>Where the business money is now</h2>
+            <p className="svx-report-eyebrow">Current money</p>
+            <h2>Money available</h2>
           </div>
           <strong>{money(currentMoney.total)}</strong>
         </div>
 
         <div className="svx-report-money-grid">
-          <MoneyTile label="Cash" value={money(currentMoney.cash)} helper="Physical cash in drawer" />
-          <MoneyTile label="MoMo" value={money(currentMoney.momo)} helper="Money on MoMo" />
-          <MoneyTile label="Bank" value={money(currentMoney.bank)} helper="Money in the bank" />
-          <MoneyTile label="Other" value={money(currentMoney.other)} helper="Card, cheque, or other payments" />
+          <MoneyTile label="Cash" value={money(currentMoney.cash)} helper="" />
+          <MoneyTile label="MoMo" value={money(currentMoney.momo)} helper="" />
+          <MoneyTile label="Bank" value={money(currentMoney.bank)} helper="" />
+          <MoneyTile label="Other" value={money(currentMoney.other)} helper="" />
         </div>
       </section>
 
@@ -753,7 +710,7 @@ export default function Reports() {
         <div className="svx-report-section-head">
           <div>
             <p className="svx-report-eyebrow">Needs attention</p>
-            <h2>What the owner should check</h2>
+            <h2>Needs attention</h2>
           </div>
         </div>
 
@@ -761,25 +718,25 @@ export default function Reports() {
           <AttentionTile
             label="Customers owe me"
             value={money(numbers.customersOwe)}
-            helper="Customer credit still unpaid."
+            helper=""
             tone={cleanNumber(numbers.customersOwe) > 0 ? "warning" : "good"}
           />
           <AttentionTile
             label="I owe suppliers"
             value={money(numbers.suppliersOwe)}
-            helper="Supplier bills still unpaid."
+            helper=""
             tone={cleanNumber(numbers.suppliersOwe) > 0 ? "danger" : "good"}
           />
           <AttentionTile
             label="Overdue customer money"
             value={money(numbers.overdue)}
-            helper="Money that should already have been collected."
+            helper=""
             tone={cleanNumber(numbers.overdue) > 0 ? "danger" : "good"}
           />
           <AttentionTile
             label="Stock to review"
             value={numberLabel(numbers.stockToReview)}
-            helper="Products that may need restocking."
+            helper=""
             tone={cleanNumber(numbers.stockToReview) > 0 ? "warning" : "good"}
           />
         </div>
@@ -788,8 +745,8 @@ export default function Reports() {
       <section className="svx-report-links svx-dashboard-card">
         <div className="svx-report-section-head">
           <div>
-            <p className="svx-report-eyebrow">Open report</p>
-            <h2>Choose what you want to understand</h2>
+            <p className="svx-report-eyebrow">Detailed reports</p>
+            <h2>More reports</h2>
           </div>
         </div>
 

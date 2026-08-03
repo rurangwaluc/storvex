@@ -2248,3 +2248,277 @@
     min-height: auto;
   }
 }
+
+
+/* Compact business reports overview */
+.svx-report-overview {
+  display: grid;
+  max-width: 1320px;
+  gap: 14px;
+  padding-top: 18px;
+}
+
+.svx-report-overview .svx-report-hero {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 26px;
+  border-radius: 24px;
+}
+
+.svx-report-overview .svx-report-hero h1 {
+  max-width: none;
+  margin-top: 6px;
+  font-size: clamp(30px, 3.2vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.svx-report-overview .svx-report-hero > div > span {
+  display: block;
+  max-width: 650px;
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.svx-report-overview .svx-report-hero > aside {
+  min-width: 245px;
+  padding: 15px 17px;
+  border-radius: 17px;
+}
+
+.svx-report-overview .svx-report-hero > aside strong {
+  margin-top: 5px;
+  font-size: 14px;
+}
+
+.svx-report-overview .svx-report-hero > aside span {
+  margin-top: 5px;
+  font-size: 10px;
+}
+
+.svx-report-overview .svx-report-download-card,
+.svx-report-overview .svx-report-money-position,
+.svx-report-overview .svx-report-attention,
+.svx-report-overview .svx-report-links {
+  padding: 20px;
+  border-radius: 24px;
+}
+
+.svx-report-overview .svx-report-download-head {
+  align-items: center;
+}
+
+.svx-report-overview .svx-report-download-head h2,
+.svx-report-overview .svx-report-section-head h2 {
+  margin-top: 4px;
+  font-size: clamp(20px, 1.8vw, 26px);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.svx-report-overview .svx-report-primary-button {
+  min-height: 42px;
+  border-radius: 13px;
+  padding-inline: 18px;
+}
+
+.svx-report-overview .svx-report-range-controls {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px 18px;
+  margin-top: 16px;
+}
+
+.svx-report-overview .svx-report-range-buttons {
+  gap: 7px;
+}
+
+.svx-report-overview .svx-report-range-buttons button {
+  min-height: 38px;
+  padding-inline: 14px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+
+.svx-report-overview .svx-report-date-grid {
+  grid-column: 1 / -1;
+  max-width: 560px;
+  gap: 10px;
+}
+
+.svx-report-overview .svx-report-date-grid input {
+  min-height: 42px;
+  border-radius: 12px;
+}
+
+.svx-report-overview .svx-report-period {
+  grid-column: 1 / -1;
+  min-height: auto;
+  padding: 10px 13px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+
+.svx-report-overview .svx-report-kpi-grid,
+.svx-report-overview .svx-report-money-grid,
+.svx-report-overview .svx-report-attention-grid,
+.svx-report-overview .svx-report-link-grid {
+  gap: 12px;
+}
+
+.svx-report-overview .svx-report-kpi-card {
+  min-height: 112px;
+  padding: 17px;
+  border-radius: 20px;
+}
+
+.svx-report-overview .svx-report-kpi-card::before {
+  width: 4px;
+}
+
+.svx-report-overview .svx-report-money-value {
+  margin-top: 12px;
+  font-size: clamp(22px, 1.8vw, 29px);
+}
+
+.svx-report-overview .svx-report-kpi-card p:last-child {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.svx-report-overview .svx-report-section-head {
+  align-items: center;
+}
+
+.svx-report-overview .svx-report-section-head > strong {
+  font-size: clamp(25px, 2.3vw, 36px);
+}
+
+.svx-report-overview .svx-report-money-grid,
+.svx-report-overview .svx-report-attention-grid,
+.svx-report-overview .svx-report-link-grid {
+  margin-top: 14px;
+}
+
+.svx-report-overview .svx-report-money-tile,
+.svx-report-overview .svx-report-attention-tile {
+  min-height: 92px;
+  padding: 15px;
+  border-radius: 17px;
+}
+
+.svx-report-overview .svx-report-money-tile strong,
+.svx-report-overview .svx-report-attention-tile strong {
+  margin-top: 8px;
+  font-size: clamp(20px, 1.8vw, 28px);
+}
+
+.svx-report-overview .svx-report-attention-tile::before {
+  width: 4px;
+}
+
+.svx-report-overview .svx-report-link-card {
+  display: block;
+  min-height: 124px;
+  padding: 16px;
+  border-radius: 17px;
+}
+
+.svx-report-overview .svx-report-link-top {
+  gap: 12px;
+}
+
+.svx-report-overview .svx-report-link-top h3 {
+  color: var(--dashboard-text);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+}
+
+.svx-report-overview .svx-report-link-top small {
+  color: var(--dashboard-primary);
+  font-size: 17px;
+  font-weight: 1000;
+}
+
+.svx-report-overview .svx-report-link-card > p {
+  margin-top: 12px;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+  .svx-report-overview .svx-report-hero {
+    grid-template-columns: 1fr;
+    padding: 21px;
+  }
+
+  .svx-report-overview .svx-report-hero h1 {
+    font-size: clamp(28px, 7vw, 38px);
+  }
+
+  .svx-report-overview .svx-report-hero > aside {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .svx-report-overview .svx-report-range-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-report-overview .svx-report-date-grid,
+  .svx-report-overview .svx-report-period {
+    grid-column: auto;
+  }
+
+  .svx-report-overview .svx-report-link-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .svx-report-overview {
+    gap: 12px;
+  }
+
+  .svx-report-overview .svx-report-hero,
+  .svx-report-overview .svx-report-download-card,
+  .svx-report-overview .svx-report-money-position,
+  .svx-report-overview .svx-report-attention,
+  .svx-report-overview .svx-report-links {
+    padding: 17px;
+    border-radius: 20px;
+  }
+
+  .svx-report-overview .svx-report-download-head,
+  .svx-report-overview .svx-report-section-head {
+    align-items: stretch;
+  }
+
+  .svx-report-overview .svx-report-primary-button {
+    width: 100%;
+  }
+
+  .svx-report-overview .svx-report-kpi-grid,
+  .svx-report-overview .svx-report-money-grid,
+  .svx-report-overview .svx-report-attention-grid,
+  .svx-report-overview .svx-report-link-grid,
+  .svx-report-overview .svx-report-date-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svx-report-overview .svx-report-kpi-card,
+  .svx-report-overview .svx-report-money-tile,
+  .svx-report-overview .svx-report-attention-tile,
+  .svx-report-overview .svx-report-link-card {
+    min-height: auto;
+  }
+
+  .svx-report-overview .svx-report-section-head > strong {
+    font-size: 28px;
+  }
+}
