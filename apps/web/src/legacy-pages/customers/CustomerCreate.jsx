@@ -1,9 +1,15 @@
 // frontend-stores/src/pages/customers/CustomerCreate.jsx
 import { useState } from "react";
+import {
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import {
+  customerQueryKeys,
+} from "../../lib/customerQueryKeys";
 import "./Customers.css";
 import { createCustomer } from "../../services/customersApi";
 
@@ -100,6 +106,7 @@ function FormSwitch({ checked, onChange, disabled }) {
 
 export default function CustomerCreate() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -138,7 +145,7 @@ export default function CustomerCreate() {
     try {
       setSaving(true);
 
-      await createCustomer({
+      const created = await createCustomer({
         name,
         phone,
         email: String(form.email || "").trim() || null,
@@ -147,6 +154,18 @@ export default function CustomerCreate() {
         idNumber: String(form.idNumber || "").trim() || null,
         notes: String(form.notes || "").trim() || null,
         whatsappOptIn: Boolean(form.whatsappOptIn),
+      });
+
+      if (created?.id) {
+        queryClient.setQueryData(
+          customerQueryKeys.detail(created.id),
+          created,
+        );
+      }
+
+      await queryClient.invalidateQueries({
+        queryKey:
+          customerQueryKeys.lists(),
       });
 
       toast.success("Customer created");

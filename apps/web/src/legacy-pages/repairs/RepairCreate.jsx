@@ -1,8 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import {
+  customerQueryKeys,
+  unwrapCustomersResponse,
+} from "../../lib/customerQueryKeys";
 import { getCurrentShopType, supportsRepairs } from "../../utils/categoryFeatures";
 import { listCustomers } from "../../services/customersApi";
 import { createRepair } from "../../services/repairsApi";
@@ -61,13 +68,6 @@ const EMPTY_FORM = {
   warrantyEnd: "",
 };
 
-function normalizeCustomers(data) {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.customers)) return data.customers;
-  if (Array.isArray(data?.items)) return data.items;
-  return [];
-}
-
 function FieldLabel({ children, required = false }) {
   return (
     <label className={cx("mb-1.5 block text-sm font-medium", strong())}>
@@ -107,44 +107,44 @@ export default function RepairCreate() {
   if (!supportsRepairs(shopType)) return <RepairsUnavailable />;
 
   const navigate = useNavigate();
-  const mountedRef = useRef(true);
 
-  const [customers, setCustomers] = useState([]);
-  const [loadingCustomers, setLoadingCustomers] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
 
+  const customersQuery = useQuery({
+    queryKey:
+      customerQueryKeys.list({
+        includeInactive: false,
+        source: "ALL",
+        withOutstanding: false,
+      }),
+    queryFn: () =>
+      listCustomers(),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const customers =
+    unwrapCustomersResponse(
+      customersQuery.data,
+    ).filter(
+      (customer) =>
+        customer.isActive !== false,
+    );
+
+  const loadingCustomers =
+    customersQuery.isPending;
+
   useEffect(() => {
-    mountedRef.current = true;
+    if (!customersQuery.error) return;
 
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    async function loadCustomers() {
-      try {
-        setLoadingCustomers(true);
-
-        const data = await listCustomers();
-
-        if (!mountedRef.current) return;
-
-        const rows = normalizeCustomers(data).filter((customer) => customer.isActive !== false);
-        setCustomers(rows);
-      } catch (error) {
-        if (!mountedRef.current) return;
-
-        toast.error(error?.message || "Failed to load customers");
-        setCustomers([]);
-      } finally {
-        if (mountedRef.current) setLoadingCustomers(false);
-      }
-    }
-
-    void loadCustomers();
-  }, []);
+    toast.error(
+      customersQuery.error?.message ||
+        "Failed to load customers",
+    );
+  }, [customersQuery.error]);
 
   function setField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));

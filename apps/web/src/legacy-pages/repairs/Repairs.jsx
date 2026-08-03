@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import { createPortal } from "react-dom";
 import { jwtDecode } from "jwt-decode";
 import toast from "react-hot-toast";
@@ -14,6 +17,10 @@ import {
   updateRepairStatus,
 } from "../../services/repairsApi";
 import { listCustomers } from "../../services/customersApi";
+import {
+  customerQueryKeys,
+  unwrapCustomersResponse,
+} from "../../lib/customerQueryKeys";
 import { getCurrentShopType, supportsRepairs } from "../../utils/categoryFeatures";
 import "./Repairs.css";
 
@@ -53,13 +60,6 @@ const EMPTY_REPAIR_FORM = {
   approvalStatus: "NOT_REQUESTED",
   approvalNote: "",
 };
-
-function normalizeCustomers(data) {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.customers)) return data.customers;
-  if (Array.isArray(data?.items)) return data.items;
-  return [];
-}
 
 function cleanString(value) {
   const text = String(value || "").trim();
@@ -1017,8 +1017,6 @@ export default function Repairs() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
 
-  const [customers, setCustomers] = useState([]);
-  const [customersLoading, setCustomersLoading] = useState(false);
   const [repairModalOpen, setRepairModalOpen] = useState(false);
   const [repairModalMode, setRepairModalMode] = useState("create");
   const [repairForm, setRepairForm] = useState(EMPTY_REPAIR_FORM);
@@ -1193,20 +1191,50 @@ export default function Repairs() {
     }
   }
 
-  async function loadCustomersForModal() {
-    setCustomersLoading(true);
+  const customersQuery = useQuery({
+    queryKey:
+      customerQueryKeys.list({
+        includeInactive: false,
+        source: "ALL",
+        withOutstanding: false,
+      }),
+    queryFn: () =>
+      listCustomers(),
+    enabled: repairModalOpen,
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-    try {
-      const data = await listCustomers();
-      const rows = normalizeCustomers(data).filter((customer) => customer.isActive !== false);
-      setCustomers(rows);
-    } catch (error) {
-      toast.error(error?.message || "Failed to load customers");
-      setCustomers([]);
-    } finally {
-      setCustomersLoading(false);
+  const customers =
+    unwrapCustomersResponse(
+      customersQuery.data,
+    ).filter(
+      (customer) =>
+        customer.isActive !== false,
+    );
+
+  const customersLoading =
+    customersQuery.isPending &&
+    repairModalOpen;
+
+  useEffect(() => {
+    if (
+      !repairModalOpen ||
+      !customersQuery.error
+    ) {
+      return;
     }
-  }
+
+    toast.error(
+      customersQuery.error?.message ||
+        "Failed to load customers",
+    );
+  }, [
+    customersQuery.error,
+    repairModalOpen,
+  ]);
 
   function setRepairFormField(key, value) {
     setRepairForm((current) => ({ ...current, [key]: value }));
@@ -1237,7 +1265,6 @@ export default function Repairs() {
     setRepairForm(EMPTY_REPAIR_FORM);
     setCustomerSearch("");
     setRepairModalOpen(true);
-    void loadCustomersForModal();
   }
 
   function openEditRepairModal(repair) {
@@ -1258,7 +1285,6 @@ export default function Repairs() {
     });
     setCustomerSearch(repair.customer?.name || repair.customer?.phone || "");
     setRepairModalOpen(true);
-    void loadCustomersForModal();
   }
 
   function closeRepairModal() {

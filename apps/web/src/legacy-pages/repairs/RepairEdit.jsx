@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useQuery,
+} from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import {
+  customerQueryKeys,
+  unwrapCustomersResponse,
+} from "../../lib/customerQueryKeys";
 import { getCurrentShopType, supportsRepairs } from "../../utils/categoryFeatures";
 import { listCustomers } from "../../services/customersApi";
 import { getRepair, updateRepair } from "../../services/repairsApi";
@@ -51,13 +58,6 @@ function secondaryBtn(disabled = false) {
     "inline-flex h-11 items-center justify-center rounded-2xl bg-[var(--color-surface-2)] px-5 text-sm font-semibold text-[var(--color-text)] transition hover:opacity-90",
     disabled && "cursor-not-allowed opacity-60",
   );
-}
-
-function normalizeCustomers(data) {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.customers)) return data.customers;
-  if (Array.isArray(data?.items)) return data.items;
-  return [];
 }
 
 function normalizeRepair(data) {
@@ -140,7 +140,6 @@ export default function RepairEdit() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [customers, setCustomers] = useState([]);
   const [repair, setRepair] = useState(null);
 
   const [form, setForm] = useState({
@@ -166,19 +165,11 @@ export default function RepairEdit() {
       try {
         setLoading(true);
 
-        const [customersData, repairData] = await Promise.all([
-          listCustomers(),
-          getRepair(id),
-        ]);
+        const repairData = await getRepair(id);
 
         if (!mountedRef.current) return;
 
         const normalized = normalizeRepair(repairData);
-        const customerRows = normalizeCustomers(customersData).filter(
-          (customer) => customer.isActive !== false || customer.id === normalized.customerId,
-        );
-
-        setCustomers(customerRows);
         setRepair(normalized);
 
         setForm({
@@ -204,6 +195,61 @@ export default function RepairEdit() {
   function setField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
+
+  const customersQuery = useQuery({
+    queryKey:
+      customerQueryKeys.list({
+        includeInactive: false,
+        source: "ALL",
+        withOutstanding: false,
+      }),
+    queryFn: () =>
+      listCustomers(),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const customers = useMemo(() => {
+    const activeCustomers =
+      unwrapCustomersResponse(
+        customersQuery.data,
+      ).filter(
+        (customer) =>
+          customer.isActive !== false,
+      );
+
+    const currentCustomer =
+      repair?.customer || null;
+
+    if (
+      !currentCustomer?.id ||
+      activeCustomers.some(
+        (customer) =>
+          customer.id === currentCustomer.id,
+      )
+    ) {
+      return activeCustomers;
+    }
+
+    return [
+      currentCustomer,
+      ...activeCustomers,
+    ];
+  }, [
+    customersQuery.data,
+    repair?.customer,
+  ]);
+
+  useEffect(() => {
+    if (!customersQuery.error) return;
+
+    toast.error(
+      customersQuery.error?.message ||
+        "Failed to load customers",
+    );
+  }, [customersQuery.error]);
 
   const selectedCustomer = useMemo(() => {
     return customers.find((customer) => customer.id === form.customerId) || repair?.customer || null;
@@ -245,7 +291,10 @@ export default function RepairEdit() {
     }
   }
 
-  if (loading) {
+  if (
+    loading ||
+    customersQuery.isPending
+  ) {
     return <EditSkeleton />;
   }
 
