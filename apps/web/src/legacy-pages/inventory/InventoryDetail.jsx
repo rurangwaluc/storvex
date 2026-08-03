@@ -7,13 +7,11 @@ import {
   Boxes,
   ChevronRight,
   ClipboardList,
-  DollarSign,
   Edit3,
   Eye,
   ImagePlus,
   Layers3,
   PackageCheck,
-  RefreshCw,
   ShoppingCart,
   Tags,
   Warehouse,
@@ -31,6 +29,10 @@ import {
   updateProductListingDraft,
 } from "../../services/inventoryApi";
 import { useAuthRole } from "../../auth/useAuthRole";
+import {
+  getApprovedProductImages,
+  getProductImageUrl,
+} from "../../utils/productImages";
 import "./InventoryDetail.css";
 
 const PAGE_SIZE = 6;
@@ -84,13 +86,7 @@ function productReserved(product) {
 }
 
 function productImages(product) {
-  const images = Array.isArray(product?.images) ? product.images : [];
-  return images
-    .map((image) => {
-      if (typeof image === "string") return { url: image };
-      return image;
-    })
-    .filter((image) => cleanString(image?.url || image?.imageUrl));
+  return getApprovedProductImages(product);
 }
 
 function categoryText(product) {
@@ -460,22 +456,6 @@ function DetailSection({ icon: Icon, title, text, action, children }) {
   );
 }
 
-function SummaryCard({ icon: Icon, label, value, note, tone = "neutral" }) {
-  return (
-    <article className={cx("svx-detail-summary-card", `is-${tone}`)}>
-      <span aria-hidden="true">
-        <Icon size={18} strokeWidth={2.25} />
-      </span>
-
-      <div>
-        <p>{label}</p>
-        <strong>{value}</strong>
-        {note ? <small>{note}</small> : null}
-      </div>
-    </article>
-  );
-}
-
 function InfoRow({ label, value, tone }) {
   return (
     <div className={cx("svx-detail-info-row", tone && `is-${tone}`)}>
@@ -487,46 +467,63 @@ function InfoRow({ label, value, tone }) {
 
 function Gallery({ product, onViewImage }) {
   const images = productImages(product);
-  const mainImage = images.find((image) => image?.isPrimary) || images[0] || null;
-  const main = mainImage?.url || mainImage?.imageUrl || "";
+
+  if (!images.length) return null;
+
+  const mainImage = images[0];
+  const main = getProductImageUrl(mainImage);
+
+  if (!main) return null;
 
   return (
     <div className="svx-detail-gallery">
       <div className="svx-detail-main-image">
-        {main ? (
-          <button
-            type="button"
-            className="svx-detail-main-image-view"
-            onClick={() => onViewImage(mainImage)}
-            aria-label="View product image"
-          >
-            <img src={main} alt={product?.name || "Product"} loading="lazy" />
-            <span>
-              <Eye size={15} strokeWidth={2.35} />
-              View product image
-            </span>
-          </button>
-        ) : (
-          <div className="svx-detail-image-empty">
-            <ImagePlus size={30} strokeWidth={2.2} />
-            <span>No image yet</span>
-          </div>
-        )}
+        <button
+          type="button"
+          className="svx-detail-main-image-view"
+          onClick={() => onViewImage(mainImage)}
+          aria-label="View product image"
+        >
+          <img
+            src={main}
+            alt={product?.name || "Product"}
+            loading="lazy"
+          />
+
+          <span>
+            <Eye size={15} strokeWidth={2.35} />
+            View product image
+          </span>
+        </button>
       </div>
 
-      {images.length ? (
+      {images.length > 1 ? (
         <div className="svx-detail-thumb-strip">
-          {images.slice(0, 5).map((image, index) => (
-            <button
-              type="button"
-              key={image?.id || image?.url || index}
-              className={cx(image?.isPrimary && "is-active")}
-              onClick={() => onViewImage(image)}
-              aria-label="View product image"
-            >
-              <img src={image.url || image.imageUrl} alt="" loading="lazy" />
-            </button>
-          ))}
+          {images.slice(0, 5).map(
+            (image, index) => (
+              <button
+                type="button"
+                key={
+                  image?.id ||
+                  getProductImageUrl(image) ||
+                  index
+                }
+                className={cx(
+                  index === 0 && "is-active",
+                )}
+                onClick={() =>
+                  onViewImage(image)
+                }
+                aria-label="View product image"
+              >
+                <img
+                  src={getProductImageUrl(image)}
+                  alt=""
+                  loading="lazy"
+                />
+              </button>
+            ),
+          )}
         </div>
       ) : null}
     </div>
@@ -553,7 +550,7 @@ function ProductImageViewer({ image, productName, onClose }) {
 
   if (!image) return null;
 
-  const url = image.url || image.imageUrl || "";
+  const url = getProductImageUrl(image);
 
   return (
     <div className="svx-detail-product-viewer-layer" role="dialog" aria-modal="true" aria-label="Product image preview">
@@ -773,13 +770,11 @@ export default function InventoryDetail() {
   const isOwner = userRole === "OWNER";
 
   const [product, setProduct] = useState(null);
-  const [stockRows, setStockRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMovements, setLoadingMovements] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [stockDrawerOpen, setStockDrawerOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const [listingSaving, setListingSaving] = useState("");
+  const [listingEditorOpen, setListingEditorOpen] = useState(false);
   const [listingForm, setListingForm] = useState({
     title: "",
     description: "",
@@ -819,34 +814,9 @@ export default function InventoryDetail() {
     [id],
   );
 
-  const loadMovements = useCallback(async () => {
-    if (!id) return;
-
-    setLoadingMovements(true);
-
-    try {
-      const response = await getProductStockAdjustments(id, { limit: PAGE_SIZE });
-      const rows =
-        response?.adjustments ||
-        response?.stockAdjustments ||
-        response?.items ||
-        response?.data?.adjustments ||
-        response?.data ||
-        [];
-
-      setStockRows(Array.isArray(rows) ? rows.slice(0, PAGE_SIZE) : []);
-    } catch (error) {
-      console.error("Product stock movement load failed:", error);
-      setStockRows([]);
-    } finally {
-      setLoadingMovements(false);
-    }
-  }, [id]);
-
   useEffect(() => {
     loadProduct();
-    loadMovements();
-  }, [loadProduct, loadMovements]);
+  }, [loadProduct]);
 
   useEffect(() => {
     if (!stockDrawerOpen) return undefined;
@@ -1040,43 +1010,47 @@ export default function InventoryDetail() {
     setListingSaving("publish");
 
     try {
-      const submittedForm = {
-        ...listingForm,
-      };
+      await publishProductListing(
+        product.id,
+        payload,
+      );
 
       /*
-       * Publish the complete listing in one request.
-       * Sending an empty publish payload previously cleared
-       * the persisted sale price and schedule.
+       * Marketplace operations must never replace branch-aware
+       * inventory values. Update listing fields only.
        */
-      const response =
-        await publishProductListing(
-          product.id,
-          payload,
-        );
+      setProduct((current) => ({
+        ...current,
+        listingStatus: "PUBLISHED",
+        marketplaceStatus: "PUBLISHED",
+        listingTitle: payload.listingTitle,
+        marketplaceTitle: payload.listingTitle,
+        listingDescription: payload.listingDescription,
+        marketplaceDescription: payload.listingDescription,
+        listingPrice: payload.listingPrice,
+        marketplacePrice: payload.listingPrice,
+        listingCategory: payload.listingCategory,
+        marketplaceCategory: payload.listingCategory,
+        listingSalePrice:
+          payload.listingSalePrice ?? null,
+        marketplaceSalePrice:
+          payload.listingSalePrice ?? null,
+        listingSaleStartsAt:
+          payload.listingSaleStartsAt ?? null,
+        marketplaceSaleStartsAt:
+          payload.listingSaleStartsAt ?? null,
+        listingSaleEndsAt:
+          payload.listingSaleEndsAt ?? null,
+        marketplaceSaleEndsAt:
+          payload.listingSaleEndsAt ?? null,
+      }));
 
-      const nextProduct =
-        response?.product ||
-        response?.data?.product ||
-        response?.data ||
-        response;
-
-      if (nextProduct?.id) {
-        setProduct(
-          mergeListingPayloadIntoProduct(
-            nextProduct,
-            payload,
-          ),
-        );
-      } else {
-        await loadProduct({ quiet: true });
-      }
-
-      setListingForm(submittedForm);
-
-      toast.success("Product listing published");
+      toast.success("Product published");
     } catch (error) {
-      toast.error(error?.message || "Failed to publish product listing");
+      toast.error(
+        error?.message ||
+          "Failed to publish product"
+      );
     } finally {
       setListingSaving("");
     }
@@ -1086,28 +1060,27 @@ export default function InventoryDetail() {
     setListingSaving("unpublish");
 
     try {
-      const response = await unpublishProductListing(product.id);
-      const nextProduct = response?.product || response?.data?.product || response?.data || response;
+      await unpublishProductListing(product.id);
 
-      if (nextProduct?.id) setProduct(nextProduct);
-      else await loadProduct({ quiet: true });
+      /*
+       * Unpublishing changes marketplace visibility only.
+       * Stock, prices, product identity, photos, and branch
+       * inventory remain untouched.
+       */
+      setProduct((current) => ({
+        ...current,
+        listingStatus: "INTERNAL",
+        marketplaceStatus: "INTERNAL",
+      }));
 
-      toast.success("Product listing unpublished");
+      toast.success("Product unpublished");
     } catch (error) {
-      toast.error(error?.message || "Failed to unpublish product listing");
+      toast.error(
+        error?.message ||
+          "Failed to unpublish product"
+      );
     } finally {
       setListingSaving("");
-    }
-  }
-
-  async function handleRefresh() {
-    setRefreshing(true);
-
-    try {
-      await Promise.all([loadProduct({ quiet: true }), loadMovements()]);
-      toast.success("Product refreshed");
-    } finally {
-      setRefreshing(false);
     }
   }
 
@@ -1189,7 +1162,7 @@ export default function InventoryDetail() {
 
       toast.success("Stock updated");
       setStockDrawerOpen(false);
-      await Promise.all([loadProduct({ quiet: true }), loadMovements()]);
+      await loadProduct({ quiet: true });
     } catch (error) {
       console.error("Stock update failed:", error);
       toast.error(error?.message || "Failed to update stock");
@@ -1203,16 +1176,23 @@ export default function InventoryDetail() {
   const listingStatus = productListingStatus(product);
   const attributes = useMemo(() => normalizedCategoryAttributes(product), [product]);
   const images = productImages(product);
+  const hasApprovedPhoto = images.length > 0;
+  const listingPrice = Number(listingForm.price || 0);
+  const listingDetailsComplete = Boolean(
+    cleanString(listingForm.title) &&
+      cleanString(listingForm.category) &&
+      cleanString(listingForm.description) &&
+      Number.isFinite(listingPrice) &&
+      listingPrice >= 0
+  );
+  const isPublished =
+    listingStatus.value === "PUBLISHED";
 
   const qty = productStock(product);
   const reserved = productReserved(product);
   const costPrice = Number(product?.costPrice || 0);
   const sellPrice = Number(product?.sellPrice || product?.price || 0);
   const minStockLevel = Number(product?.minStockLevel || 0);
-  const stockSellValue = qty * sellPrice;
-  const stockCostValue = qty * costPrice;
-  const profitPerItem = sellPrice - costPrice;
-  const possibleProfit = qty * profitPerItem;
   const category = categoryText(product);
 
   if (loading && !product) {
@@ -1263,54 +1243,24 @@ export default function InventoryDetail() {
           </div>
 
           <div className="svx-detail-hero-actions">
-            <AsyncButton
+            <button
               type="button"
-              loading={refreshing}
-              loadingText="Refreshing..."
               className="svx-detail-secondary-button"
-              onClick={handleRefresh}
+              onClick={() => openStockDrawer("RESTOCK")}
             >
-              <RefreshCw size={16} strokeWidth={2.35} />
-              <span>Refresh</span>
-            </AsyncButton>
+              <Warehouse size={16} strokeWidth={2.35} />
+              <span>Update stock</span>
+            </button>
 
-            <Link to={`/app/inventory/${product.id}/edit`} className="svx-detail-primary-button">
+            <Link
+              to={`/app/inventory/${product.id}/edit`}
+              className="svx-detail-primary-button"
+            >
               <Edit3 size={16} strokeWidth={2.35} />
               <span>Edit product</span>
             </Link>
           </div>
         </header>
-
-        <section className="svx-detail-summary-grid" aria-label="Product summary">
-          <SummaryCard
-            icon={Warehouse}
-            label="Current stock"
-            value={formatNumber(qty)}
-            note={reserved > 0 ? `${formatNumber(reserved)} reserved` : branchLabel(product)}
-            tone={status.tone}
-          />
-          <SummaryCard
-            icon={DollarSign}
-            label="Selling price"
-            value={formatRwf(sellPrice)}
-            note={`Profit per item ${formatRwf(profitPerItem)}`}
-            tone={profitPerItem >= 0 ? "success" : "danger"}
-          />
-          <SummaryCard
-            icon={Tags}
-            label="Stock value"
-            value={formatRwf(stockSellValue)}
-            note={`Cost value ${formatRwf(stockCostValue)}`}
-            tone="success"
-          />
-          <SummaryCard
-            icon={ImagePlus}
-            label="Product photos"
-            value={imageStatus.label}
-            note={images.length ? `${images.length} image${images.length === 1 ? "" : "s"} attached` : "Click Add images below"}
-            tone={imageStatus.tone}
-          />
-        </section>
 
         <div className="svx-detail-layout">
           <div className="svx-detail-main">
@@ -1320,8 +1270,48 @@ export default function InventoryDetail() {
               text="Clear product information for sales, stock control, and product image preparation."
               action={<StatusBadge tone={status.tone}>{status.label}</StatusBadge>}
             >
-              <div className="svx-detail-overview-grid">
-                <Gallery product={product} onViewImage={setImagePreview} />
+              <div
+                className={cx(
+                  "svx-detail-overview-grid",
+                  !images.length &&
+                    "is-without-image",
+                )}
+              >
+                {images.length ? (
+                  <Gallery
+                    product={product}
+                    onViewImage={setImagePreview}
+                  />
+                ) : (
+                  <Link
+                    to={`/app/inventory/${product.id}/images?setup=1`}
+                    className="svx-detail-add-photo"
+                  >
+                    <span
+                      className="svx-detail-add-photo-icon"
+                      aria-hidden="true"
+                    >
+                      <ImagePlus
+                        size={22}
+                        strokeWidth={2.3}
+                      />
+                    </span>
+
+                    <span className="svx-detail-add-photo-copy">
+                      <strong>Add product photos</strong>
+                      <small>
+                        Add and prepare a clear photo so staff can
+                        recognise this product and it can be published
+                        to the marketplace.
+                      </small>
+                    </span>
+
+                    <ChevronRight
+                      size={18}
+                      strokeWidth={2.4}
+                    />
+                  </Link>
+                )}
 
                 <div className="svx-detail-info-grid">
                   <InfoRow label="Product name" value={product?.name} />
@@ -1353,189 +1343,123 @@ export default function InventoryDetail() {
             </DetailSection>
 
             <DetailSection
-              icon={ImagePlus}
-              title="Product setup"
-              text="Use this area to prepare photos and listing details without leaving the product page."
+              icon={ShoppingCart}
+              title="Marketplace readiness"
+              text="See what is ready and the next action needed before this product can be published."
             >
-              <div className="svx-detail-setup-simple-grid">
-                <article className="svx-detail-setup-panel">
-                  <div className="svx-detail-setup-panel-head">
-                    <div>
-                      <h3>Product photos</h3>
-                      <p>Help staff recognize this product quickly.</p>
-                    </div>
-                    <StatusBadge tone={imageStatus.tone}>{imageStatus.label}</StatusBadge>
-                  </div>
+              <div className="svx-detail-readiness">
+                <div className="svx-detail-marketplace-summary">
+                  <div>
+                    <div className="svx-detail-marketplace-title-row">
+                      <h3>
+                        {isPublished
+                          ? "Published"
+                          : !hasApprovedPhoto
+                            ? "Add product photos"
+                            : !listingDetailsComplete
+                              ? "Complete marketplace details"
+                              : "Ready to publish"}
+                      </h3>
 
-                  <div className="svx-detail-setup-fact">
-                    <strong>{images.length ? `${images.length} image${images.length === 1 ? "" : "s"} attached` : "No images yet"}</strong>
-                    <span>Use clear JPG, PNG, or WEBP images up to 10MB each.</span>
-                  </div>
-
-                  <div className="svx-detail-setup-actions">
-                    {images.length ? (
-                      <button
-                        type="button"
-                        className="svx-detail-secondary-button"
-                        onClick={() => setImagePreview(images.find((image) => image?.isPrimary) || images[0])}
+                      <StatusBadge
+                        tone={
+                          isPublished
+                            ? "success"
+                            : hasApprovedPhoto &&
+                                listingDetailsComplete
+                              ? "success"
+                              : "warning"
+                        }
                       >
-                        <Eye size={16} strokeWidth={2.35} />
-                        <span>View product image</span>
-                      </button>
-                    ) : null}
-
-                    <Link to={`/app/inventory/${product.id}/images`} className="svx-detail-primary-button">
-                      <ImagePlus size={16} strokeWidth={2.35} />
-                      <span>{images.length ? "Manage images" : "Add images"}</span>
-                    </Link>
-                  </div>
-                </article>
-
-                <article className="svx-detail-setup-panel">
-                  <div className="svx-detail-setup-panel-head">
-                    <div>
-                      <h3>Product listing</h3>
-                      <p>Prepare the product before it becomes public later.</p>
-                    </div>
-                    <StatusBadge tone={listingStatus.tone}>{listingStatus.label}</StatusBadge>
-                  </div>
-
-                  <div className="svx-detail-listing-compact-form">
-                    <label className="svx-detail-listing-field">
-                      <span>Listing title</span>
-                      <input
-                        value={listingForm.title}
-                        onChange={(event) => updateListingField("title", event.target.value)}
-                        placeholder="Product name for listing"
-                        disabled={Boolean(listingSaving)}
-                      />
-                    </label>
-
-                    <div className="svx-detail-listing-field-grid">
-                      <label className="svx-detail-listing-field">
-                        <span>Normal price</span>
-                        <input
-                          type="number"
-                          min="0"
-                          value={listingForm.price}
-                          onChange={(event) => updateListingField("price", event.target.value)}
-                          placeholder="0"
-                          disabled={Boolean(listingSaving)}
-                        />
-                      </label>
-
-                      <label className="svx-detail-listing-field">
-                        <span>Listing category</span>
-                        <input
-                          value={listingForm.category}
-                          onChange={(event) => updateListingField("category", event.target.value)}
-                          placeholder="Product category"
-                          disabled={Boolean(listingSaving)}
-                        />
-                      </label>
+                        {isPublished
+                          ? "Published"
+                          : hasApprovedPhoto &&
+                              listingDetailsComplete
+                            ? "Ready"
+                            : "Action needed"}
+                      </StatusBadge>
                     </div>
 
-                    {isOwner ? (
-                      <div className="svx-detail-listing-sale-box">
-                        <div className="svx-detail-listing-sale-head">
-                        <div>
-                          <strong>Sale price</strong>
-                          <span>
-                            Optional. Customers see the lower price only while the sale is active.
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="svx-detail-listing-field-grid">
-                        <label className="svx-detail-listing-field">
-                          <span>Lower sale price</span>
-                          <input
-                            type="number"
-                            min="0"
-                            value={listingForm.salePrice}
-                            onChange={(event) => updateListingField("salePrice", event.target.value)}
-                            placeholder="Leave empty when not on sale"
-                            disabled={Boolean(listingSaving)}
-                          />
-                        </label>
-
-                        <label className="svx-detail-listing-field">
-                          <span>Sale starts</span>
-                          <input
-                            type="datetime-local"
-                            className="svx-detail-listing-date-input"
-                            value={listingForm.saleStartsAt}
-                            onClick={openNativeDateTimePicker}
-                            onChange={(event) =>
-                              updateListingDateField(
-                                "saleStartsAt",
-                                event,
-                              )
-                            }
-                            disabled={Boolean(listingSaving)}
-                          />
-                        </label>
-
-                        <label className="svx-detail-listing-field">
-                          <span>Sale ends</span>
-                          <input
-                            type="datetime-local"
-                            className="svx-detail-listing-date-input"
-                            value={listingForm.saleEndsAt}
-                            onClick={openNativeDateTimePicker}
-                            onChange={(event) =>
-                              updateListingDateField(
-                                "saleEndsAt",
-                                event,
-                              )
-                            }
-                            disabled={Boolean(listingSaving)}
-                          />
-                        </label>
-
-                        <button
-                          type="button"
-                          className="svx-detail-listing-clear-sale"
-                          onClick={() =>
-                            setListingForm((current) => ({
-                              ...current,
-                              salePrice: "",
-                              saleStartsAt: "",
-                              saleEndsAt: "",
-                            }))
-                          }
-                          disabled={Boolean(listingSaving)}
-                        >
-                          Clear sale
-                        </button>
-                      </div>
-                      </div>
-                    ) : null}
-
-                    <label className="svx-detail-listing-field">
-                      <span>Listing description</span>
-                      <textarea
-                        value={listingForm.description}
-                        onChange={(event) => updateListingField("description", event.target.value)}
-                        placeholder="Short owner-approved product description"
-                        disabled={Boolean(listingSaving)}
-                      />
-                    </label>
+                    <p>
+                      {isPublished
+                        ? "This product is visible in the marketplace."
+                        : !hasApprovedPhoto
+                          ? "Add and approve one prepared product photo before publishing."
+                          : !listingDetailsComplete
+                            ? "Add the public title, category, price, and description."
+                            : "The product photo and marketplace details are complete."}
+                    </p>
                   </div>
 
-                  <div className="svx-detail-setup-actions is-three">
-                    <AsyncButton
-                      type="button"
-                      loading={listingSaving === "draft"}
-                      loadingText="Saving..."
-                      className="svx-detail-secondary-button"
-                      onClick={saveListingDraft}
-                      disabled={Boolean(listingSaving)}
+                  <div className="svx-detail-marketplace-facts">
+                    <span>
+                      <strong>{images.length}</strong>
+                      {images.length === 1
+                        ? " photo ready"
+                        : " photos ready"}
+                    </span>
+
+                    <span>
+                      <strong>
+                        {listingDetailsComplete
+                          ? "Complete"
+                          : "Incomplete"}
+                      </strong>
+                      Marketplace details
+                    </span>
+                  </div>
+                </div>
+
+                <div className="svx-detail-readiness-actions">
+                  {!hasApprovedPhoto ? (
+                    <Link
+                      to={`/app/inventory/${product.id}/images?setup=1`}
+                      className="svx-detail-primary-button"
                     >
-                      <ClipboardList size={16} strokeWidth={2.35} />
-                      <span>Save draft</span>
-                    </AsyncButton>
+                      <ImagePlus size={16} strokeWidth={2.35} />
+                      <span>Add product photos</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      to={`/app/inventory/${product.id}/images`}
+                      className="svx-detail-secondary-button"
+                    >
+                      <ImagePlus size={16} strokeWidth={2.35} />
+                      <span>Manage photos</span>
+                    </Link>
+                  )}
 
+                  <button
+                    type="button"
+                    className={
+                      listingEditorOpen
+                        ? "svx-detail-secondary-button"
+                        : "svx-detail-primary-button"
+                    }
+                    onClick={() =>
+                      setListingEditorOpen(
+                        (current) => !current
+                      )
+                    }
+                  >
+                    <ClipboardList
+                      size={16}
+                      strokeWidth={2.35}
+                    />
+                    <span>
+                      {listingEditorOpen
+                        ? "Close marketplace details"
+                        : isPublished
+                          ? "Edit marketplace details"
+                          : listingDetailsComplete
+                            ? "Edit marketplace details"
+                            : "Complete marketplace details"}
+                    </span>
+                  </button>
+
+                  {!isPublished &&
+                  hasApprovedPhoto &&
+                  listingDetailsComplete ? (
                     <AsyncButton
                       type="button"
                       loading={listingSaving === "publish"}
@@ -1544,113 +1468,308 @@ export default function InventoryDetail() {
                       onClick={publishListing}
                       disabled={Boolean(listingSaving)}
                     >
-                      <ShoppingCart size={16} strokeWidth={2.35} />
-                      <span>Publish</span>
+                      <ShoppingCart
+                        size={16}
+                        strokeWidth={2.35}
+                      />
+                      <span>Publish product</span>
                     </AsyncButton>
+                  ) : null}
 
-                    {listingStatus.value === "PUBLISHED" ? (
+                  {isPublished ? (
+                    <AsyncButton
+                      type="button"
+                      loading={listingSaving === "unpublish"}
+                      loadingText="Unpublishing..."
+                      className="svx-detail-secondary-button"
+                      onClick={unpublishListing}
+                      disabled={Boolean(listingSaving)}
+                    >
+                      <X size={16} strokeWidth={2.35} />
+                      <span>Unpublish</span>
+                    </AsyncButton>
+                  ) : null}
+                </div>
+
+                {listingEditorOpen ? (
+                  <div className="svx-detail-listing-editor">
+                    <div className="svx-detail-listing-editor-head">
+                      <div>
+                        <h3>Marketplace details</h3>
+                        <p>
+                          Edit only the information customers will see.
+                        </p>
+                      </div>
+
+                      <StatusBadge tone={listingStatus.tone}>
+                        {listingStatus.label}
+                      </StatusBadge>
+                    </div>
+
+                    <div className="svx-detail-listing-compact-form">
+                      <label className="svx-detail-listing-field">
+                        <span>Marketplace title</span>
+                        <input
+                          value={listingForm.title}
+                          onChange={(event) =>
+                            updateListingField(
+                              "title",
+                              event.target.value
+                            )
+                          }
+                          placeholder="Product name customers will see"
+                          disabled={Boolean(listingSaving)}
+                        />
+                      </label>
+
+                      <div className="svx-detail-listing-field-grid">
+                        <label className="svx-detail-listing-field">
+                          <span>Marketplace price</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={listingForm.price}
+                            onChange={(event) =>
+                              updateListingField(
+                                "price",
+                                event.target.value
+                              )
+                            }
+                            placeholder="0"
+                            disabled={Boolean(listingSaving)}
+                          />
+                        </label>
+
+                        <label className="svx-detail-listing-field">
+                          <span>Marketplace category</span>
+                          <input
+                            value={listingForm.category}
+                            onChange={(event) =>
+                              updateListingField(
+                                "category",
+                                event.target.value
+                              )
+                            }
+                            placeholder="Product category"
+                            disabled={Boolean(listingSaving)}
+                          />
+                        </label>
+                      </div>
+
+                      {isOwner ? (
+                        <div className="svx-detail-listing-sale-box">
+                          <div className="svx-detail-listing-sale-head">
+                            <div>
+                              <strong>Optional sale</strong>
+                              <span>
+                                Set a lower price and optional start and end dates.
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="svx-detail-listing-field-grid">
+                            <label className="svx-detail-listing-field">
+                              <span>Sale price</span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={listingForm.salePrice}
+                                onChange={(event) =>
+                                  updateListingField(
+                                    "salePrice",
+                                    event.target.value
+                                  )
+                                }
+                                placeholder="Leave empty when not on sale"
+                                disabled={Boolean(listingSaving)}
+                              />
+                            </label>
+
+                            <label className="svx-detail-listing-field">
+                              <span>Sale starts</span>
+                              <input
+                                type="datetime-local"
+                                className="svx-detail-listing-date-input"
+                                value={listingForm.saleStartsAt}
+                                onClick={openNativeDateTimePicker}
+                                onChange={(event) =>
+                                  updateListingDateField(
+                                    "saleStartsAt",
+                                    event
+                                  )
+                                }
+                                disabled={Boolean(listingSaving)}
+                              />
+                            </label>
+
+                            <label className="svx-detail-listing-field">
+                              <span>Sale ends</span>
+                              <input
+                                type="datetime-local"
+                                className="svx-detail-listing-date-input"
+                                value={listingForm.saleEndsAt}
+                                onClick={openNativeDateTimePicker}
+                                onChange={(event) =>
+                                  updateListingDateField(
+                                    "saleEndsAt",
+                                    event
+                                  )
+                                }
+                                disabled={Boolean(listingSaving)}
+                              />
+                            </label>
+
+                            <button
+                              type="button"
+                              className="svx-detail-listing-clear-sale"
+                              onClick={() =>
+                                setListingForm((current) => ({
+                                  ...current,
+                                  salePrice: "",
+                                  saleStartsAt: "",
+                                  saleEndsAt: "",
+                                }))
+                              }
+                              disabled={Boolean(listingSaving)}
+                            >
+                              Clear sale
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <label className="svx-detail-listing-field">
+                        <span>Marketplace description</span>
+                        <textarea
+                          value={listingForm.description}
+                          onChange={(event) =>
+                            updateListingField(
+                              "description",
+                              event.target.value
+                            )
+                          }
+                          placeholder="Describe this product clearly for customers"
+                          disabled={Boolean(listingSaving)}
+                        />
+                      </label>
+                    </div>
+
+                    <div className="svx-detail-listing-editor-actions">
                       <AsyncButton
                         type="button"
-                        loading={listingSaving === "unpublish"}
-                        loadingText="Unpublishing..."
+                        loading={listingSaving === "draft"}
+                        loadingText="Saving..."
                         className="svx-detail-secondary-button"
-                        onClick={unpublishListing}
+                        onClick={saveListingDraft}
                         disabled={Boolean(listingSaving)}
                       >
-                        <X size={16} strokeWidth={2.35} />
-                        <span>Unpublish</span>
+                        <ClipboardList
+                          size={16}
+                          strokeWidth={2.35}
+                        />
+                        <span>Save marketplace details</span>
                       </AsyncButton>
+
+                      {!isPublished ? (
+                        <AsyncButton
+                          type="button"
+                          loading={listingSaving === "publish"}
+                          loadingText="Publishing..."
+                          className="svx-detail-primary-button"
+                          onClick={publishListing}
+                          disabled={
+                            Boolean(listingSaving) ||
+                            !hasApprovedPhoto
+                          }
+                        >
+                          <ShoppingCart
+                            size={16}
+                            strokeWidth={2.35}
+                          />
+                          <span>Save and publish</span>
+                        </AsyncButton>
+                      ) : null}
+                    </div>
+
+                    {!hasApprovedPhoto ? (
+                      <p className="svx-detail-publish-note">
+                        Add and approve a product photo before publishing.
+                      </p>
                     ) : null}
                   </div>
-                </article>
+                ) : null}
               </div>
             </DetailSection>
 
-            <DetailSection
-              icon={ClipboardList}
-              title="Recent stock movement"
-              text="Latest restocks, losses, and corrections for this product."
-              action={<Link to={`/app/inventory/${product.id}/stock-adjustments`} className="svx-detail-text-link">View history</Link>}
-            >
-              {loadingMovements ? (
-                <div className="svx-detail-movement-loading">
-                  {[1, 2, 3].map((item) => (
-                    <span key={item} />
-                  ))}
-                </div>
-              ) : stockRows.length ? (
-                <div className="svx-detail-movement-list">
-                  {stockRows.map((row, index) => {
-                    const tone = stockChangeTone(row?.type, row?.delta);
-
-                    return (
-                      <div key={row?.id || index} className="svx-detail-movement-row">
-                        <div>
-                          <strong>{stockChangeLabel(row?.type)}</strong>
-                          <span>{formatDateTime(row?.createdAt || row?.date)}</span>
-                        </div>
-
-                        <div>
-                          <StatusBadge tone={tone}>{stockChangeValue(row)}</StatusBadge>
-                          {row?.note ? <small>{row.note}</small> : null}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <EmptyState title="No stock movement yet" text="Restocks, losses, and count corrections will appear here." />
-              )}
-            </DetailSection>
           </div>
 
           <aside className="svx-detail-side">
             <DetailSection
               icon={Boxes}
-              title="Stock control"
-              text="Stock quantity can only be changed through stock movement."
+              title="Stock and pricing"
+              text="Current availability and selling information for this branch."
             >
               <div className="svx-detail-side-stack">
-                <InfoRow label="Current stock" value={formatNumber(qty)} tone={status.tone} />
-                <InfoRow label="Low stock alert" value={minStockLevel > 0 ? formatNumber(minStockLevel) : "Not set"} />
-                <InfoRow label="Reserved" value={formatNumber(reserved)} />
-                <InfoRow label="Branch" value={branchLabel(product)} />
+                <InfoRow
+                  label="Current stock"
+                  value={formatNumber(qty)}
+                  tone={status.tone}
+                />
+                <InfoRow
+                  label="Reserved"
+                  value={formatNumber(reserved)}
+                />
+                <InfoRow
+                  label="Low stock alert"
+                  value={
+                    minStockLevel > 0
+                      ? formatNumber(minStockLevel)
+                      : "Not set"
+                  }
+                />
+                <InfoRow
+                  label="Cost price"
+                  value={formatRwf(costPrice)}
+                />
+                <InfoRow
+                  label="Selling price"
+                  value={formatRwf(sellPrice)}
+                />
+                <InfoRow
+                  label="Branch"
+                  value={branchLabel(product)}
+                />
               </div>
-            </DetailSection>
-
-            <DetailSection
-              icon={DollarSign}
-              title="Price and value"
-              text="Owner-facing money summary for this product."
-            >
-              <div className="svx-detail-side-stack">
-                <InfoRow label="Cost price" value={formatRwf(costPrice)} />
-                <InfoRow label="Selling price" value={formatRwf(sellPrice)} />
-                <InfoRow label="Profit per item" value={formatRwf(profitPerItem)} tone={profitPerItem >= 0 ? "success" : "danger"} />
-                <InfoRow label="Possible profit" value={formatRwf(possibleProfit)} tone={possibleProfit >= 0 ? "success" : "danger"} />
-              </div>
-            </DetailSection>
-
-            <section className="svx-detail-action-card">
-              <Link to={`/app/inventory/${product.id}/edit`} className="svx-detail-primary-button">
-                <Edit3 size={16} strokeWidth={2.35} />
-                <span>Edit product</span>
-              </Link>
 
               <button
                 type="button"
-                className="svx-detail-secondary-button"
-                onClick={() => openStockDrawer("RESTOCK")}
+                className="svx-detail-secondary-button svx-detail-stock-action"
+                onClick={() =>
+                  openStockDrawer("RESTOCK")
+                }
               >
-                <Warehouse size={16} strokeWidth={2.35} />
+                <Warehouse
+                  size={16}
+                  strokeWidth={2.35}
+                />
                 <span>Update stock</span>
               </button>
 
-              <Link to="/app/inventory" className="svx-detail-muted-link">
-                Back to products
-                <ChevronRight size={15} strokeWidth={2.4} />
+              <Link
+                to={`/app/inventory/stock-history?productId=${encodeURIComponent(product.id)}`}
+                className="svx-detail-stock-history-link"
+              >
+                <ClipboardList
+                  size={15}
+                  strokeWidth={2.3}
+                />
+                <span>View stock history</span>
+                <ChevronRight
+                  size={15}
+                  strokeWidth={2.4}
+                />
               </Link>
-            </section>
+            </DetailSection>
           </aside>
         </div>
 

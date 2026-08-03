@@ -60,37 +60,12 @@ function cleanString(value) {
   return String(value || "").trim();
 }
 
-function formatRwf(value) {
-  const amount = Number(value || 0);
-
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(amount) ? amount : 0)}`;
-}
-
 function formatNumber(value) {
   const number = Number(value || 0);
 
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(Number.isFinite(number) ? number : 0);
-}
-
-function productPrice(product) {
-  return Number(
-    product?.sellPrice ??
-      product?.price ??
-      0,
-  );
-}
-
-function productStock(product) {
-  return Number(
-    product?.effectiveStockQty ??
-      product?.branchStockQty ??
-      product?.stockQty ??
-      0,
-  );
 }
 
 function productDescription(product) {
@@ -254,7 +229,7 @@ function PhotoStatus({
     state = "main";
   } else if (image?.isMarketplaceApproved) {
     label = compact
-      ? "Approved for Marketplace"
+      ? "Ready for marketplace"
       : "Approved and visible on Marketplace";
     state = "approved";
   } else if (image) {
@@ -1064,7 +1039,7 @@ export default function ProductImages() {
       await reloadImageWorkspace();
 
       toast.success(
-        "Photo approved for Marketplace",
+        "Photo approved for marketplace",
       );
     } catch (error) {
       if (
@@ -1103,7 +1078,7 @@ export default function ProductImages() {
         title: "Remove photo from Marketplace?",
         description:
           "Customers will no longer see this photo. The private prepared version will remain available for another review.",
-        confirmLabel: "Remove from Marketplace",
+        confirmLabel: "Remove from marketplace",
         tone: "danger",
       });
 
@@ -1260,9 +1235,6 @@ export default function ProductImages() {
         image.isMarketplaceApproved,
     ).length;
 
-  const stock =
-    productStock(product);
-
   const workspaceBusy =
     Boolean(imageActionBusy);
 
@@ -1329,8 +1301,8 @@ export default function ProductImages() {
             <h1>Product photos</h1>
 
             <p>
-              Prepare clear photos for your
-              Marketplace listing.
+              Add, prepare, and choose the photos customers
+              will see for this product.
             </p>
           </div>
 
@@ -1367,23 +1339,7 @@ export default function ProductImages() {
 
           <dl className="svx-product-images-product-facts">
             <div>
-              <dt>Price</dt>
-              <dd>
-                {formatRwf(
-                  productPrice(product),
-                )}
-              </dd>
-            </div>
-
-            <div>
-              <dt>Stock</dt>
-              <dd>
-                {formatNumber(stock)}
-              </dd>
-            </div>
-
-            <div>
-              <dt>Photos</dt>
+              <dt>Photos added</dt>
               <dd>
                 {formatNumber(
                   originalImages.length,
@@ -1392,7 +1348,7 @@ export default function ProductImages() {
             </div>
 
             <div>
-              <dt>Approved</dt>
+              <dt>Ready for marketplace</dt>
               <dd>
                 {formatNumber(
                   approvedCount,
@@ -1407,8 +1363,8 @@ export default function ProductImages() {
             <div>
               <h2>Your photos</h2>
               <p>
-                Select one photo to prepare or
-                manage.
+                Select a photo to prepare it, approve it,
+                or choose it as the main product photo.
               </p>
             </div>
 
@@ -1472,8 +1428,8 @@ export default function ProductImages() {
                       <span className="svx-product-images-thumbnail-copy">
                         <strong>
                           {original.isPrimary
-                            ? "Main original"
-                            : "Original photo"}
+                            ? "Main product photo"
+                            : "Product photo"}
                         </strong>
 
                         <PhotoStatus
@@ -1575,8 +1531,8 @@ export default function ProductImages() {
             <div>
               <h2>Selected photo</h2>
               <p>
-                Manage the original photo and its Marketplace
-                version in one place.
+                Compare the uploaded photo with the version
+                customers will see.
               </p>
             </div>
 
@@ -1585,11 +1541,24 @@ export default function ProductImages() {
             />
           </div>
           <div className="svx-product-images-process-note">
-            <strong>How this works</strong>
+            <strong>
+              {!selectedOriginal
+                ? "Next step: Add a product photo"
+                : !selectedPrepared
+                  ? "Next step: Prepare this photo"
+                  : selectedPrepared.isMarketplaceApproved
+                    ? "Ready for marketplace"
+                    : "Next step: Review and approve"}
+            </strong>
+
             <p>
-              Select an original photo, prepare a private
-              Marketplace preview, then approve it when it
-              looks right.
+              {!selectedOriginal
+                ? "Upload a clear photo to begin."
+                : !selectedPrepared
+                  ? "Create the customer-facing version while keeping the uploaded photo unchanged."
+                  : selectedPrepared.isMarketplaceApproved
+                    ? "Customers can see this photo when the product is published."
+                    : "Check the customer photo and approve it when it looks correct."}
             </p>
           </div>
 
@@ -1643,7 +1612,7 @@ export default function ProductImages() {
                 <article className="svx-product-images-preview-panel">
                   <header>
                     <div>
-                      <span>Original</span>
+                      <span>Uploaded photo</span>
                       <strong>
                         Uploaded photo
                       </strong>
@@ -1695,8 +1664,8 @@ export default function ProductImages() {
                       <strong>
                         {selectedPrepared
                           ? selectedPrepared.isMarketplaceApproved
-                            ? "Visible to customers"
-                            : "Ready for review"
+                            ? "Ready for marketplace"
+                            : "Waiting for approval"
                           : "Not prepared yet"}
                       </strong>
                     </div>
@@ -1767,7 +1736,7 @@ export default function ProductImages() {
                     {!selectedPrepared
                       ? "Ready to prepare"
                       : selectedPrepared.isMarketplaceApproved
-                        ? "Approved for Marketplace"
+                        ? "Ready for marketplace"
                         : "Review before approving"}
                   </strong>
 
@@ -1877,7 +1846,7 @@ export default function ProductImages() {
                         }
                       >
                         {preparedPreviewAvailable
-                          ? "Approve for Marketplace"
+                          ? "Approve for marketplace"
                           : "Photo unavailable"}
                       </LoadingButton>
                     </>
