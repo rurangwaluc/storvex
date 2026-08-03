@@ -642,7 +642,6 @@ function ProductRow({ product, onAdd }) {
   const stock = productStock(product);
   const disabled = !Number.isFinite(stock) || stock <= 0;
   const facts = categoryAwareProductFacts(product, 3);
-  const trackingText = productTrackingText(product);
   const imageUrl = productImageUrl(product);
   const metaItems = productMetaItems(product);
 
@@ -706,10 +705,17 @@ function ProductRow({ product, onAdd }) {
           ) : null}
 
           <div className="svx-pos-product-badges">
-            <StatusBadge tone={stock <= 0 ? "danger" : "success"}>
-              {stock <= 0 ? "Out" : `${formatNumber(stock)} available`}
+            <StatusBadge
+              tone={
+                stock <= 0
+                  ? "danger"
+                  : "success"
+              }
+            >
+              {stock <= 0
+                ? "Out of stock"
+                : `${formatNumber(stock)} available`}
             </StatusBadge>
-            {trackingText ? <StatusBadge>{trackingText}</StatusBadge> : null}
           </div>
         </div>
       </div>
@@ -717,8 +723,13 @@ function ProductRow({ product, onAdd }) {
       <div className="svx-pos-product-action">
         <strong>{formatMoney(productPrice(product))}</strong>
 
-        <button type="button" onClick={handleAdd} disabled={disabled} className="svx-pos-add-button">
-          {disabled ? "Unavailable" : "Add"}
+        <button
+          type="button"
+          onClick={handleAdd}
+          disabled={disabled}
+          className="svx-pos-add-button"
+        >
+          {disabled ? "Out of stock" : "Add"}
         </button>
       </div>
     </article>
@@ -1284,9 +1295,25 @@ export default function PosSale() {
   const quickTitle = quickBest.length > 0 ? "Best sellers" : "Latest products";
   const salesDeskCategory = categoryCopy(posContext, workspaceContext);
 
-  const productSourceList = showQuickPicks
-    ? quickList.slice(0, DEFAULT_PRODUCT_DISPLAY_LIMIT)
-    : productResults;
+  const productSourceList = (
+    showQuickPicks
+      ? quickList
+      : productResults
+  )
+    .filter((product) => {
+      const stock = productStock(product);
+
+      return (
+        Number.isFinite(stock) &&
+        stock > 0
+      );
+    })
+    .slice(
+      0,
+      showQuickPicks
+        ? DEFAULT_PRODUCT_DISPLAY_LIMIT
+        : undefined,
+    );
 
   const productCategoryTabs = useMemo(() => {
     const seen = new Set();
@@ -1329,9 +1356,23 @@ export default function PosSale() {
 
   const drawerSummary = selectedMethodTouchesDrawer
     ? {
-        value: drawerLoading ? "Checking..." : drawerOpen ? "Open" : "Closed",
-        note: blockCashSales ? drawerCopy.summaryNote : "Cash can be recorded",
-        tone: drawerOpen ? "success" : "danger",
+        value: drawerLoading
+          ? "Checking..."
+          : drawerOpen
+            ? "Open"
+            : "Closed",
+        note: drawerLoading
+          ? "Checking the active branch drawer"
+          : drawerOpen
+            ? "Ready for cash sales"
+            : blockCashSales
+              ? drawerCopy.summaryNote
+              : "Cash can be recorded",
+        tone: drawerLoading
+          ? "neutral"
+          : drawerOpen
+            ? "success"
+            : "danger",
       }
     : {
         value: drawerCopy.summaryValue,
@@ -1808,7 +1849,7 @@ export default function PosSale() {
               )
             ) : visibleProducts.length === 0 && !searching ? (
               <div className="mt-5">
-                <EmptyState title="No products found" text="Try another product name, code, barcode, category, or brand." />
+                <EmptyState title="No available products found" text="Try another product name, code, barcode, category, or brand. Products with no stock are hidden." />
               </div>
             ) : (
               <div className="svx-pos-product-grid">
@@ -1953,21 +1994,39 @@ export default function PosSale() {
                 </div>
 
                 {selectedMethodTouchesDrawer ? (
-                  <div className="svx-pos-drawer-compact">
-                    <span>{drawerCopy.note}</span>
-
-                    <div>
-                      <AsyncButton loading={drawerRefreshBusy} onClick={refreshDrawerStatus} variant="secondary">
-                        Check drawer
-                      </AsyncButton>
-
-                      {!drawerOpen ? (
-                        <button type="button" onClick={() => navigate("/app/pos/drawer")} className={dangerButton()}>
-                          Open drawer
-                        </button>
-                      ) : null}
+                  drawerLoading ? (
+                    <div className="svx-pos-drawer-compact is-muted">
+                      <span>Checking the cash drawer for this branch...</span>
                     </div>
-                  </div>
+                  ) : drawerOpen ? (
+                    <div className="svx-pos-drawer-compact is-muted">
+                      <span>Cash drawer is open and ready for this sale.</span>
+                    </div>
+                  ) : (
+                    <div className="svx-pos-drawer-compact">
+                      <span>{drawerCopy.note}</span>
+
+                      <div>
+                        <AsyncButton
+                          loading={drawerRefreshBusy}
+                          onClick={refreshDrawerStatus}
+                          variant="secondary"
+                        >
+                          Refresh status
+                        </AsyncButton>
+
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate("/app/pos/drawer")
+                          }
+                          className={dangerButton()}
+                        >
+                          Open cash drawer
+                        </button>
+                      </div>
+                    </div>
+                  )
                 ) : (
                   <div className="svx-pos-drawer-compact is-muted">
                     <span>{drawerCopy.note}</span>

@@ -1074,20 +1074,134 @@ async function quickPicks(req, res) {
       take: limit,
     });
 
-    const serializedBestSellers = await Promise.all(
-      bestSellers.map((product) => serializeOwnerProduct(product)),
-    );
+    const branchId =
+      scope?.branchId || null;
 
-    const serializedLatest = await Promise.all(
-      latest.map((product) => serializeOwnerProduct(product)),
-    );
+    const quickPickProductIds = [
+      ...new Set(
+        [
+          ...bestSellers.map(
+            (product) => product?.id,
+          ),
+          ...latest.map(
+            (product) => product?.id,
+          ),
+        ].filter(Boolean),
+      ),
+    ];
+
+    let branchStockByProductId = new Map();
+
+    if (
+      branchId &&
+      quickPickProductIds.length > 0 &&
+      prisma.branchInventory
+    ) {
+      const branchRows =
+        await prisma.branchInventory.findMany({
+          where: {
+            tenantId,
+            branchId,
+            productId: {
+              in: quickPickProductIds,
+            },
+          },
+          select: {
+            productId: true,
+            qtyOnHand: true,
+            qtyReserved: true,
+          },
+        });
+
+      branchStockByProductId = new Map(
+        branchRows.map((row) => [
+          row.productId,
+          {
+            qtyOnHand: Number(
+              row.qtyOnHand || 0,
+            ),
+            qtyReserved: Number(
+              row.qtyReserved || 0,
+            ),
+          },
+        ]),
+      );
+    }
+
+    function attachQuickPickStock(product) {
+      if (!product) return product;
+
+      if (!branchId) {
+        return {
+          ...product,
+          branchId: null,
+          branchStockQty: null,
+          branchReservedQty: null,
+          effectiveStockQty: Number(
+            product.stockQty || 0,
+          ),
+        };
+      }
+
+      const branchStock =
+        branchStockByProductId.get(
+          product.id,
+        ) || null;
+
+      const branchStockQty = Number(
+        branchStock?.qtyOnHand || 0,
+      );
+
+      return {
+        ...product,
+        branchId,
+        branchStockQty,
+        branchReservedQty: Number(
+          branchStock?.qtyReserved || 0,
+        ),
+        effectiveStockQty:
+          branchStockQty,
+      };
+    }
+
+    const branchAwareBestSellers =
+      bestSellers.map(
+        attachQuickPickStock,
+      );
+
+    const branchAwareLatest =
+      latest.map(
+        attachQuickPickStock,
+      );
+
+    const serializedBestSellers =
+      await Promise.all(
+        branchAwareBestSellers.map(
+          (product) =>
+            serializeOwnerProduct(product),
+        ),
+      );
+
+    const serializedLatest =
+      await Promise.all(
+        branchAwareLatest.map(
+          (product) =>
+            serializeOwnerProduct(product),
+        ),
+      );
 
     return res.json({
       periodDays,
       limit,
       branchScope: scope,
-      bestSellers: serializedBestSellers,
-      latest: serializedLatest.map(decoratePosProduct),
+      bestSellers:
+        serializedBestSellers.map(
+          decoratePosProduct,
+        ),
+      latest:
+        serializedLatest.map(
+          decoratePosProduct,
+        ),
     });
   } catch (err) {
     if (String(err?.message || "") === "BRANCH_ACCESS_DENIED") {
