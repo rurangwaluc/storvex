@@ -1,9 +1,21 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import { cancelSale as cancelSaleApi, listSales } from "../../services/posApi";
+import { getActiveBranchId } from "../../services/apiClient";
+import {
+  salesQueryKeys,
+  unwrapSalesResponse,
+} from "../../lib/salesQueryKeys";
+import {
+  inventoryQueryKeys,
+} from "../../lib/inventoryQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./SalesList.css";
 
@@ -421,9 +433,38 @@ function SaleRow({ sale, onOpenSale, onOpenCancel, cancelBusy }) {
 
 export default function SalesList() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [loading, setLoading] = useState(true);
-  const [sales, setSales] = useState([]);
+  const [activeBranchId, setActiveBranchId] =
+    useState(
+      () => getActiveBranchId() || "default",
+    );
+
+  const salesQuery = useQuery({
+    queryKey:
+      salesQueryKeys.list(activeBranchId),
+    queryFn: async () => {
+      const response = await listSales(
+        {},
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      );
+
+      return unwrapSalesResponse(response);
+    },
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const sales = salesQuery.data || [];
+  const loading = salesQuery.isPending;
+
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [typeFilter, setTypeFilter] = useState("ALL");
@@ -435,85 +476,85 @@ export default function SalesList() {
   const [cancelSaleId, setCancelSaleId] = useState("");
   const [cancelNote, setCancelNote] = useState("");
 
-  const abortRef = useRef(null);
-  const mountedRef = useRef(true);
-
   useEffect(() => {
-    mountedRef.current = true;
+    function refreshActiveBranch() {
+      setActiveBranchId(
+        getActiveBranchId() || "default",
+      );
+      setActiveBranchLabel(
+        activeBranchNameFromStorage(),
+      );
+      setVisibleCount(PAGE_SIZE);
+    }
+
+    function handleStorage(event) {
+      if (
+        event.key === "activeBranchId" ||
+        event.key ===
+          "storvex_activeBranchId" ||
+        event.key ===
+          "storvex_active_branch_id" ||
+        event.key ===
+          "storvex_me_cache_v2"
+      ) {
+        refreshActiveBranch();
+      }
+    }
+
+    window.addEventListener(
+      "storvex:branch-changed",
+      refreshActiveBranch,
+    );
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      refreshActiveBranch,
+    );
+    window.addEventListener(
+      "storage",
+      handleStorage,
+    );
 
     return () => {
-      mountedRef.current = false;
-
-      if (abortRef.current) {
-        abortRef.current.abort();
-      }
+      window.removeEventListener(
+        "storvex:branch-changed",
+        refreshActiveBranch,
+      );
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
+        refreshActiveBranch,
+      );
+      window.removeEventListener(
+        "storage",
+        handleStorage,
+      );
     };
   }, []);
 
-  async function load() {
-    if (abortRef.current) {
-      abortRef.current.abort();
-    }
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setLoading(true);
-
-    try {
-      const data = await listSales({}, { signal: controller.signal });
-
-      if (!mountedRef.current || controller.signal.aborted) return;
-
-      const list = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.sales)
-          ? data.sales
-          : [];
-
-      setSales(list);
-      setVisibleCount(PAGE_SIZE);
-      setActiveBranchLabel(activeBranchNameFromStorage());
-    } catch (error) {
-      if (controller.signal.aborted) return;
-
-      console.error(error);
-
-      if (!handleSubscriptionBlockedError(error, { toastId: "sales-list-blocked" })) {
-        toast.error(error?.message || "Failed to load sales");
-      }
-
-      if (!mountedRef.current) return;
-
-      setSales([]);
-      setVisibleCount(PAGE_SIZE);
-    } finally {
-      if (!mountedRef.current || controller.signal.aborted) return;
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!salesQuery.error) return;
 
-  useEffect(() => {
-    function onBranchChanged() {
-      setActiveBranchLabel(activeBranchNameFromStorage());
-      setVisibleCount(PAGE_SIZE);
-      void load();
+    console.error(
+      "Sales list load failed:",
+      salesQuery.error,
+    );
+
+    if (
+      !handleSubscriptionBlockedError(
+        salesQuery.error,
+        {
+          toastId: "sales-list-blocked",
+        },
+      )
+    ) {
+      toast.error(
+        salesQuery.error?.message ||
+          "Failed to load sales",
+        {
+          id: "sales-list-load-error",
+        },
+      );
     }
-
-    window.addEventListener("storvex:branch-changed", onBranchChanged);
-    window.addEventListener("storvex:workspace-refreshed", onBranchChanged);
-
-    return () => {
-      window.removeEventListener("storvex:branch-changed", onBranchChanged);
-      window.removeEventListener("storvex:workspace-refreshed", onBranchChanged);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [salesQuery.error]);
 
   const filtered = useMemo(() => {
     const search = q.trim().toLowerCase();
@@ -591,11 +632,49 @@ export default function SalesList() {
         note: cleanString(cancelNote) || null,
       });
 
+      queryClient.setQueryData(
+        salesQueryKeys.list(
+          activeBranchId,
+        ),
+        (currentSales = []) =>
+          currentSales.map((sale) =>
+            String(sale?.id) ===
+            String(cancelSaleId)
+              ? {
+                  ...sale,
+                  isCancelled: true,
+                  status: "CANCELLED",
+                  cancellationNote:
+                    cleanString(cancelNote) ||
+                    sale?.cancellationNote ||
+                    null,
+                }
+              : sale,
+          ),
+      );
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey:
+            salesQueryKeys.detail(
+              activeBranchId,
+              cancelSaleId,
+            ),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            inventoryQueryKeys.productLists(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            inventoryQueryKeys.summaries(),
+        }),
+      ]);
+
       toast.success("Sale cancelled");
       setCancelOpen(false);
       setCancelSaleId("");
       setCancelNote("");
-      await load();
     } catch (error) {
       console.error(error);
 
@@ -634,7 +713,11 @@ export default function SalesList() {
             Sales desk
           </button>
 
-          <AsyncButton loading={loading} onClick={load} className="svx-sales-button secondary">
+          <AsyncButton
+            loading={salesQuery.isFetching}
+            onClick={() => salesQuery.refetch()}
+            className="svx-sales-button secondary"
+          >
             Refresh
           </AsyncButton>
 

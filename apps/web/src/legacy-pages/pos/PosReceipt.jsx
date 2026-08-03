@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
@@ -11,6 +15,13 @@ import {
   PAYMENT_METHOD_OPTIONS,
 } from "../../services/posApi";
 import { getReceiptPrintUrl } from "../../services/receiptsApi";
+import { getActiveBranchId } from "../../services/apiClient";
+import {
+  salesQueryKeys,
+} from "../../lib/salesQueryKeys";
+import {
+  inventoryQueryKeys,
+} from "../../lib/inventoryQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./PosReceipt.css";
 
@@ -1013,9 +1024,40 @@ function RefundModal({
 export default function PosReceipt() {
   const { id } = useParams();
   const [, setSearchParams] = useSearchParams();
+  const queryClient = useQueryClient();
 
-  const [receipt, setReceipt] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [activeBranchId, setActiveBranchId] =
+    useState(
+      () => getActiveBranchId() || "default",
+    );
+
+  const receiptQuery = useQuery({
+    queryKey: salesQueryKeys.detail(
+      activeBranchId,
+      id,
+    ),
+    queryFn: async () => {
+      const response = await getSaleReceipt(
+        id,
+        {
+          branchId:
+            activeBranchId === "default"
+              ? undefined
+              : activeBranchId,
+        },
+      );
+
+      return normalizeReceiptResponse(response);
+    },
+    enabled: Boolean(id),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const receipt = receiptQuery.data || null;
+  const loading = receiptQuery.isPending;
 
   const [payAmount, setPayAmount] = useState("");
   const [payMethod, setPayMethod] = useState("CASH");
@@ -1033,30 +1075,81 @@ export default function PosReceipt() {
   const [refundNote, setRefundNote] = useState("");
   const [refundQtyByKey, setRefundQtyByKey] = useState({});
 
-  async function load() {
-    setLoading(true);
-
-    try {
-      const data = await getSaleReceipt(id);
-      setReceipt(normalizeReceiptResponse(data));
-    } catch (error) {
-      console.error(error);
-
-      if (handleSubscriptionBlockedError(error, { toastId: "receipt-load-blocked" })) {
-        setReceipt(null);
-      } else {
-        toast.error(error?.message || "Failed to load receipt");
-        setReceipt(null);
-      }
-    } finally {
-      setLoading(false);
+  useEffect(() => {
+    function refreshActiveBranch() {
+      setActiveBranchId(
+        getActiveBranchId() || "default",
+      );
     }
-  }
+
+    function handleStorage(event) {
+      if (
+        event.key === "activeBranchId" ||
+        event.key ===
+          "storvex_activeBranchId" ||
+        event.key ===
+          "storvex_active_branch_id" ||
+        event.key ===
+          "storvex_me_cache_v2"
+      ) {
+        refreshActiveBranch();
+      }
+    }
+
+    window.addEventListener(
+      "storvex:branch-changed",
+      refreshActiveBranch,
+    );
+    window.addEventListener(
+      "storvex:workspace-refreshed",
+      refreshActiveBranch,
+    );
+    window.addEventListener(
+      "storage",
+      handleStorage,
+    );
+
+    return () => {
+      window.removeEventListener(
+        "storvex:branch-changed",
+        refreshActiveBranch,
+      );
+      window.removeEventListener(
+        "storvex:workspace-refreshed",
+        refreshActiveBranch,
+      );
+      window.removeEventListener(
+        "storage",
+        handleStorage,
+      );
+    };
+  }, []);
 
   useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    if (!receiptQuery.error) return;
+
+    console.error(
+      "Receipt load failed:",
+      receiptQuery.error,
+    );
+
+    if (
+      !handleSubscriptionBlockedError(
+        receiptQuery.error,
+        {
+          toastId: "receipt-load-blocked",
+        },
+      )
+    ) {
+      toast.error(
+        receiptQuery.error?.message ||
+          "Failed to load receipt",
+        {
+          id: "receipt-load-error",
+        },
+      );
+    }
+  }, [receiptQuery.error]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1129,6 +1222,37 @@ export default function PosReceipt() {
     return refundable > 0;
   }, [receipt]);
 
+  async function refreshSaleWorkspace({
+    inventoryChanged = false,
+  } = {}) {
+    const tasks = [
+      receiptQuery.refetch(),
+      queryClient.invalidateQueries({
+        queryKey:
+          salesQueryKeys.list(activeBranchId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey:
+          salesQueryKeys.credit(),
+      }),
+    ];
+
+    if (inventoryChanged) {
+      tasks.push(
+        queryClient.invalidateQueries({
+          queryKey:
+            inventoryQueryKeys.productLists(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey:
+            inventoryQueryKeys.summaries(),
+        }),
+      );
+    }
+
+    await Promise.all(tasks);
+  }
+
   async function submitPayment(event) {
     event.preventDefault();
 
@@ -1155,10 +1279,11 @@ export default function PosReceipt() {
         note: cleanString(payNote) || null,
       });
 
+      await refreshSaleWorkspace();
+
       toast.success("Payment recorded");
       setPayAmount("");
       setPayNote("");
-      await load();
     } catch (error) {
       if (handleSubscriptionBlockedError(error, { toastId: "sale-payment-blocked" })) {
         return;
@@ -1180,10 +1305,13 @@ export default function PosReceipt() {
     try {
       await cancelSaleApi(id, { note: cleanString(cancelNote) || null });
 
+      await refreshSaleWorkspace({
+        inventoryChanged: true,
+      });
+
       toast.success("Sale cancelled");
       setCancelOpen(false);
       setCancelNote("");
-      await load();
     } catch (error) {
       if (handleSubscriptionBlockedError(error, { toastId: "sale-cancel-blocked" })) {
         return;
@@ -1271,12 +1399,15 @@ export default function PosReceipt() {
         note: cleanString(refundNote) || null,
       });
 
+      await refreshSaleWorkspace({
+        inventoryChanged: true,
+      });
+
       toast.success("Refund saved");
       setRefundOpen(false);
       setRefundQtyByKey({});
       setRefundReason("");
       setRefundNote("");
-      await load();
     } catch (error) {
       if (handleSubscriptionBlockedError(error, { toastId: "sale-refund-blocked" })) {
         return;
