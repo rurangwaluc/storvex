@@ -518,3 +518,78 @@
     padding-top: 8px !important;
   }
 }
+
+/* INTERNAL APP HEADER NO-SHADOW AUTHORITY */
+
+/*
+ * The internal app header uses borders and flat backgrounds only.
+ * No button, active state, avatar, menu or dropdown may glow.
+ */
+.svx-app-header,
+.svx-app-header *,
+.svx-app-header *::before,
+.svx-app-header *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/*
+ * Explicit controls are listed to protect against earlier rules,
+ * Tailwind utilities and future component-level shadow additions.
+ */
+.svx-header-menu-button,
+.svx-header-date-display,
+.svx-header-add-button,
+.svx-header-theme-toggle,
+.svx-header-theme-toggle span,
+.svx-header-theme-toggle span.is-active,
+.svx-header-profile,
+.svx-header-profile:hover,
+.svx-header-action-menu,
+.svx-header-account-menu,
+.svx-header-action-item,
+.svx-header-account-head,
+.svx-header-account-avatar,
+.svx-header-account-item {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/*
+ * Preserve interaction through color and border changes, not elevation.
+ */
+.svx-header-menu-button:hover,
+.svx-header-add-button:hover,
+.svx-header-theme-toggle:hover,
+.svx-header-profile:hover,
+.svx-header-action-item:hover,
+.svx-header-account-item:hover,
+.svx-header-menu-button:focus-visible,
+.svx-header-add-button:focus-visible,
+.svx-header-theme-toggle:focus-visible,
+.svx-header-profile:focus-visible {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/* INTERNAL APP HEADER FLAT BACKGROUND AUTHORITY */
+
+/*
+ * Internal navigation must use a single flat surface.
+ * No radial, linear or decorative background gradients.
+ */
+.svx-app-header,
+:root[data-theme="dark"] .svx-app-header {
+  background: var(--color-card) !important;
+  background-color: var(--color-card) !important;
+  background-image: none !important;
+}
+
+/*
+ * Keep the header contents transparent so they inherit the same
+ * uninterrupted flat header surface.
+ */
+.svx-header-inner {
+  background: transparent !important;
+  background-image: none !important;
+}

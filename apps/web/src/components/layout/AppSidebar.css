@@ -536,3 +536,45 @@
   padding: 0 5px;
   font-size: 10px;
 }
+
+/* INTERNAL SIDEBAR NO-SHADOW AUTHORITY */
+
+/*
+ * Storvex internal navigation uses flat surfaces.
+ * Active state is communicated through color and border only.
+ */
+.svx-sidebar,
+.svx-sidebar *,
+.svx-sidebar *::before,
+.svx-sidebar *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/*
+ * Keep the active navigation state solid and clear without glow.
+ */
+.svx-sidebar nav button.border-\[var\(--color-primary\)\]\/25,
+.svx-sidebar nav button.bg-\[var\(--color-primary-soft\)\] {
+  border-color: #2563eb !important;
+  background: #2563eb !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+/*
+ * No luminous hover or focus treatment on sidebar controls.
+ * Borders, backgrounds and the browser-visible outline remain sufficient.
+ */
+.svx-sidebar button:hover,
+.svx-sidebar a:hover,
+.svx-sidebar button:focus-visible,
+.svx-sidebar a:focus-visible,
+.svx-sidebar button[aria-label="Expand sidebar"],
+.svx-sidebar button[aria-label="Expand sidebar"]:hover,
+.svx-sidebar button[aria-label="Collapse sidebar"],
+.svx-sidebar button[aria-label="Close sidebar"],
+.svx-sidebar-badge {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}

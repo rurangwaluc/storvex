@@ -1475,3 +1475,57 @@
 }
 
 /* OWNER DASHBOARD DAILY VIEW POLISH END */
+
+/* DASHBOARD NO-GLOW INTERACTION AUTHORITY */
+
+/*
+ * Interactive dashboard elements use color, borders and contrast.
+ * They must not create blue or colored luminous shadows.
+ */
+.svx-owner-dashboard button,
+.svx-owner-dashboard a,
+.svx-owner-dashboard [role="button"] {
+  text-shadow: none !important;
+}
+
+.svx-dashboard-date-chip,
+.svx-dashboard-secondary-button,
+.svx-dashboard-primary-button,
+.svx-dashboard-primary-button:hover,
+.svx-period-button,
+.svx-focus-link,
+.svx-action-center-card > strong {
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+/*
+ * Hovering may change border and background, but does not lift or glow.
+ */
+.svx-owner-metric:hover,
+.svx-action-center-card:hover {
+  box-shadow: none !important;
+  transform: none;
+}
+
+/*
+ * Status indicators remain clear solid dots without luminous rings.
+ */
+.svx-owner-status-dot,
+.svx-owner-status-dot.is-success,
+.svx-owner-status-dot.is-warning,
+.svx-owner-status-dot.is-danger,
+.svx-owner-status-dot.is-neutral {
+  box-shadow: none !important;
+}
+
+/*
+ * Prevent future blue shadows on interactive elements inside dashboard
+ * cards while preserving the neutral structural card shadow itself.
+ */
+.svx-owner-dashboard button:hover,
+.svx-owner-dashboard a:hover,
+.svx-owner-dashboard button:active,
+.svx-owner-dashboard a:active {
+  text-shadow: none !important;
+}
