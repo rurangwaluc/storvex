@@ -1,5 +1,7 @@
 import {
-  useCallback,
+  useQuery,
+} from "@tanstack/react-query";
+import {
   useEffect,
   useMemo,
   useState,
@@ -17,6 +19,7 @@ import {
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
+import marketplaceQueryKeys from "../../lib/marketplaceQueryKeys";
 import {
   getOwnerMarketplaceAnalytics,
 } from "../../services/marketplaceOwnerApi";
@@ -201,18 +204,6 @@ export default function MarketplaceAnalytics() {
   const [days, setDays] =
     useState(30);
 
-  const [analytics, setAnalytics] =
-    useState(null);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [refreshing, setRefreshing] =
-    useState(false);
-
-  const [error, setError] =
-    useState("");
-
   const [
     visibleProductCount,
     setVisibleProductCount,
@@ -228,48 +219,22 @@ export default function MarketplaceAnalytics() {
     setVisibleViewedCount,
   ] = useState(OPPORTUNITY_BATCH_SIZE);
 
-  const loadAnalytics = useCallback(
-    async ({
-      refresh = false,
-    } = {}) => {
-      try {
-        if (refresh) {
-          setRefreshing(true);
-        } else {
-          setLoading(true);
-        }
-
-        setError("");
-
-        const result =
-          await getOwnerMarketplaceAnalytics({
-            days,
-          });
-
-        setAnalytics(
-          result?.analytics || null,
-        );
-      } catch (loadError) {
-        console.error(loadError);
-
-        const message =
-          loadError?.message ||
-          "Store performance could not be loaded.";
-
-        setError(message);
-
-        if (!refresh) {
-          setAnalytics(null);
-        }
-
-        toast.error(message);
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    },
-    [days],
-  );
+  const analyticsQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.ownerAnalyticsRange({
+        days,
+      }),
+    queryFn: () =>
+      getOwnerMarketplaceAnalytics({
+        days,
+      }),
+    select: (result) =>
+      result?.analytics || null,
+    staleTime: 60_000,
+    gcTime: 15 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
   useEffect(() => {
     setVisibleProductCount(
@@ -283,9 +248,41 @@ export default function MarketplaceAnalytics() {
     setVisibleViewedCount(
       OPPORTUNITY_BATCH_SIZE,
     );
+  }, [days]);
 
-    void loadAnalytics();
-  }, [loadAnalytics]);
+  useEffect(() => {
+    if (!analyticsQuery.isError) {
+      return;
+    }
+
+    console.error(
+      analyticsQuery.error,
+    );
+
+    toast.error(
+      analyticsQuery.error?.message ||
+        "Store performance could not be loaded.",
+    );
+  }, [
+    analyticsQuery.error,
+    analyticsQuery.isError,
+  ]);
+
+  const analytics =
+    analyticsQuery.data || null;
+
+  const loading =
+    analyticsQuery.isPending;
+
+  const refreshing =
+    analyticsQuery.isFetching &&
+    !analyticsQuery.isPending;
+
+  const error =
+    analyticsQuery.isError
+      ? analyticsQuery.error?.message ||
+        "Store performance could not be loaded."
+      : "";
 
   const summary =
     analytics?.summary || {};
@@ -495,9 +492,7 @@ export default function MarketplaceAnalytics() {
               loading || refreshing
             }
             onClick={() =>
-              void loadAnalytics({
-                refresh: true,
-              })
+              void analyticsQuery.refetch()
             }
           >
             <RefreshCw
@@ -533,7 +528,7 @@ export default function MarketplaceAnalytics() {
             <button
               type="button"
               onClick={() =>
-                void loadAnalytics()
+                void analyticsQuery.refetch()
               }
             >
               Try again

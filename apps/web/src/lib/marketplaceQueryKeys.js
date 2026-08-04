@@ -89,6 +89,16 @@ export const marketplaceQueryKeys = {
     "detail",
     String(requestId || ""),
   ],
+
+  ownerAnalytics: () => [
+    ...marketplaceQueryKeys.owner(),
+    "analytics",
+  ],
+
+  ownerAnalyticsRange: (params = {}) => [
+    ...marketplaceQueryKeys.ownerAnalytics(),
+    cleanParams(params),
+  ],
 };
 
 export default marketplaceQueryKeys;

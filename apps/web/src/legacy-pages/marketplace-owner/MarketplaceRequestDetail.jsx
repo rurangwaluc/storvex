@@ -679,6 +679,11 @@ export default function MarketplaceRequestDetail() {
       queryKey:
         marketplaceQueryKeys.ownerRequestLists(),
     });
+
+    void queryClient.invalidateQueries({
+      queryKey:
+        marketplaceQueryKeys.ownerAnalytics(),
+    });
   }
 
   const itemCount = useMemo(
