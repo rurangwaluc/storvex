@@ -665,3 +665,189 @@
     justify-content: center;
   }
 }
+
+/* PUBLIC IPHONE SAFE HEADER FIX */
+
+/*
+ * Account for the iPhone status bar, notch and Dynamic Island.
+ * The visible navigation row remains 68px tall below the safe area.
+ */
+@media (max-width: 860px) {
+  .sp-header {
+    top: 0;
+    z-index: 2147483500;
+    width: 100%;
+    height:
+      calc(
+        68px +
+        env(safe-area-inset-top, 0px)
+      );
+    overflow: visible;
+  }
+
+  .sp-header__inner {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height:
+      calc(
+        68px +
+        env(safe-area-inset-top, 0px)
+      );
+    min-height:
+      calc(
+        68px +
+        env(safe-area-inset-top, 0px)
+      );
+    align-items: center;
+    padding:
+      env(safe-area-inset-top, 0px)
+      max(16px, env(safe-area-inset-right, 0px))
+      0
+      max(16px, env(safe-area-inset-left, 0px));
+    background: var(--landing-bg);
+  }
+
+  /*
+   * Keep the hamburger accessible and above decorative header layers.
+   */
+  .sp-header__menu-button {
+    position: relative;
+    z-index: 5;
+    display: inline-flex !important;
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    flex: 0 0 44px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    opacity: 1;
+    pointer-events: auto !important;
+    touch-action: manipulation;
+    isolation: isolate;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .sp-header__menu-button::before {
+    content: "";
+    position: absolute;
+    inset: -4px;
+  }
+
+  .sp-header__menu-button svg {
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /*
+   * Use the full remaining visual viewport below the safe header.
+   */
+  .sp-header__mobile {
+    position: fixed !important;
+    z-index: 2147483600 !important;
+    top:
+      calc(
+        68px +
+        env(safe-area-inset-top, 0px)
+      ) !important;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: block !important;
+    width: 100%;
+    max-width: none;
+    visibility: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: var(--landing-bg);
+    opacity: 0;
+    pointer-events: none;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /*
+   * Raising the parent stacking context is essential. A child's large
+   * z-index cannot escape a lower parent stacking context.
+   */
+  .sp-header.is-open {
+    z-index: 2147483601;
+  }
+
+  .sp-header.is-open .sp-header__mobile {
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .sp-header__mobile-panel {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 520px);
+    min-height: 100%;
+    margin: 0 auto;
+    padding:
+      20px
+      max(18px, env(safe-area-inset-right, 0px))
+      max(
+        24px,
+        calc(
+          16px +
+          env(safe-area-inset-bottom, 0px)
+        )
+      )
+      max(18px, env(safe-area-inset-left, 0px));
+    background: var(--landing-bg);
+    pointer-events: auto;
+  }
+}
+
+/*
+ * Preserve the full Apple-sized touch target on very small phones.
+ */
+@media (max-width: 360px) {
+  .sp-header__inner {
+    padding-right:
+      max(10px, env(safe-area-inset-right, 0px));
+    padding-left:
+      max(10px, env(safe-area-inset-left, 0px));
+  }
+
+  .sp-header__brand {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .sp-header__brand img {
+    max-width: calc(100vw - 86px);
+    height: 34px;
+  }
+
+  .sp-header__menu-button {
+    width: 44px;
+    min-width: 44px;
+    max-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+  }
+}
+
+@media (max-width: 339px) {
+  .sp-header__inner {
+    padding-right:
+      max(7px, env(safe-area-inset-right, 0px));
+    padding-left:
+      max(7px, env(safe-area-inset-left, 0px));
+  }
+
+  .sp-header__brand img {
+    max-width: calc(100vw - 80px);
+    height: 31px;
+  }
+}
