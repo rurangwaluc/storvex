@@ -48,6 +48,21 @@ export const marketplaceQueryKeys = {
     String(storeSlug || ""),
     String(productSlug || ""),
   ],
+
+  customer: () => [
+    ...marketplaceQueryKeys.all,
+    "customer",
+  ],
+
+  customerSession: () => [
+    ...marketplaceQueryKeys.customer(),
+    "session",
+  ],
+
+  customerOrders: () => [
+    ...marketplaceQueryKeys.customer(),
+    "orders",
+  ],
 };
 
 export default marketplaceQueryKeys;

@@ -7,12 +7,11 @@ import {
   Truck,
 } from "lucide-react";
 import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+  useQuery,
+} from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 
+import marketplaceQueryKeys from "../../lib/marketplaceQueryKeys";
 import {
   loadMarketplaceCustomerOrders,
 } from "../../services/marketplaceCustomerAuth";
@@ -187,48 +186,32 @@ function EmptyOrders() {
 }
 
 export default function MarketplaceCustomerOrders() {
-  const [orders, setOrders] =
-    useState([]);
+  const ordersQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.customerOrders(),
+    queryFn:
+      loadMarketplaceCustomerOrders,
+    staleTime: 60_000,
+    gcTime: 15 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-  const [loading, setLoading] =
-    useState(true);
+  const orders = Array.isArray(
+    ordersQuery.data?.orders,
+  )
+    ? ordersQuery.data.orders
+    : [];
 
-  const [error, setError] =
-    useState("");
+  const error =
+    ordersQuery.error?.message ||
+    "We could not load your orders.";
 
-  const loadOrders =
-    useCallback(async () => {
-      setLoading(true);
-      setError("");
-
-      try {
-        const result =
-          await loadMarketplaceCustomerOrders();
-
-        setOrders(
-          Array.isArray(result?.orders)
-            ? result.orders
-            : [],
-        );
-      } catch (requestError) {
-        setError(
-          requestError?.message ||
-            "We could not load your orders.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }, []);
-
-  useEffect(() => {
-    void loadOrders();
-  }, [loadOrders]);
-
-  if (loading) {
+  if (ordersQuery.isPending) {
     return <OrdersSkeleton />;
   }
 
-  if (error) {
+  if (ordersQuery.isError) {
     return (
       <section className="svx-customer-orders">
         <div className="svx-customer-orders-heading">
@@ -250,7 +233,9 @@ export default function MarketplaceCustomerOrders() {
 
           <button
             type="button"
-            onClick={() => void loadOrders()}
+            onClick={() =>
+              void ordersQuery.refetch()
+            }
           >
             Try again
           </button>

@@ -17,7 +17,11 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  useQueryClient,
+} from "@tanstack/react-query";
 
+import marketplaceQueryKeys from "../../lib/marketplaceQueryKeys";
 import {
   getMarketplaceStore,
   submitMarketplaceRequest,
@@ -227,6 +231,8 @@ export default function MarketplaceRequestPanel({
   onClose,
   notify,
 }) {
+  const queryClient = useQueryClient();
+
   const customerSession =
     useMarketplaceCustomerSession();
 
@@ -594,6 +600,13 @@ export default function MarketplaceRequestPanel({
           (item) => item.key,
         ),
       );
+
+      if (customerSession.signedIn) {
+        await queryClient.invalidateQueries({
+          queryKey:
+            marketplaceQueryKeys.customerOrders(),
+        });
+      }
 
       setSuccess(request);
       setClientRequestId(requestId());
