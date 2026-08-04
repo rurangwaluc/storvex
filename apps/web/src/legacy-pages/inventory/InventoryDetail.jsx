@@ -1269,6 +1269,11 @@ export default function InventoryDetail() {
       toast.success("Stock updated");
       setStockDrawerOpen(false);
       await productQuery.refetch();
+
+      void queryClient.invalidateQueries({
+        queryKey:
+          marketplaceQueryKeys.ownerSettings(),
+      });
     } catch (error) {
       console.error("Stock update failed:", error);
       toast.error(error?.message || "Failed to update stock");

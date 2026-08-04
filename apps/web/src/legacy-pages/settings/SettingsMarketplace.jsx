@@ -1,11 +1,11 @@
 import {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
 import {
+  useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
@@ -236,38 +236,49 @@ export default function SettingsMarketplace() {
   const [activeSection, setActiveSection] = useState("");
   const autoOpenedSection = useRef(false);
 
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activationBusy, setActivationBusy] = useState(false);
-  const [loadError, setLoadError] = useState("");
 
-  const loadMarketplace = useCallback(async () => {
-    setLoading(true);
-    setLoadError("");
-
-    try {
-      const data = await getMarketplaceProfile();
-      const nextProfile = data?.profile || null;
-
-      setProfile(nextProfile);
-      setStore(data?.store || null);
-      setReadiness(data?.readiness || null);
-      setForm(profileSnapshot(nextProfile));
-    } catch (error) {
-      setLoadError(
-        getErrorMessage(
-          error,
-          "Marketplace settings could not be loaded. Check your connection and try again.",
-        ),
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const marketplaceQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.ownerSettings(),
+    queryFn: getMarketplaceProfile,
+    staleTime: 60_000,
+    gcTime: 15 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
   useEffect(() => {
-    loadMarketplace();
-  }, [loadMarketplace]);
+    if (!marketplaceQuery.data) {
+      return;
+    }
+
+    const nextProfile =
+      marketplaceQuery.data?.profile || null;
+
+    setProfile(nextProfile);
+    setStore(
+      marketplaceQuery.data?.store || null,
+    );
+    setReadiness(
+      marketplaceQuery.data?.readiness || null,
+    );
+    setForm(
+      profileSnapshot(nextProfile),
+    );
+  }, [marketplaceQuery.data]);
+
+  const loading =
+    marketplaceQuery.isPending;
+
+  const loadError =
+    marketplaceQuery.isError
+      ? getErrorMessage(
+          marketplaceQuery.error,
+          "Marketplace settings could not be loaded. Check your connection and try again.",
+        )
+      : "";
 
   const dirty = useMemo(() => {
     if (!profile) return false;
@@ -382,6 +393,37 @@ export default function SettingsMarketplace() {
     openSection(details?.section || "profile");
   }
 
+  function synchronizeMarketplaceSettings(
+    data,
+  ) {
+    const nextProfile =
+      data?.profile || null;
+
+    const nextStore =
+      data?.store || store || null;
+
+    const nextReadiness =
+      data?.readiness || null;
+
+    setProfile(nextProfile);
+    setStore(nextStore);
+    setReadiness(nextReadiness);
+    setForm(
+      profileSnapshot(nextProfile),
+    );
+
+    queryClient.setQueryData(
+      marketplaceQueryKeys.ownerSettings(),
+      (current) => ({
+        ...(current || {}),
+        ...(data || {}),
+        profile: nextProfile,
+        store: nextStore,
+        readiness: nextReadiness,
+      }),
+    );
+  }
+
   function buildPayload() {
     return {
       displayName: cleanString(form.displayName),
@@ -398,11 +440,9 @@ export default function SettingsMarketplace() {
 
     try {
       const data = await updateMarketplaceProfile(buildPayload());
-      const nextProfile = data?.profile || null;
-
-      setProfile(nextProfile);
-      setReadiness(data?.readiness || null);
-      setForm(profileSnapshot(nextProfile));
+      synchronizeMarketplaceSettings(
+        data,
+      );
       setActiveSection("");
 
       void queryClient.invalidateQueries({
@@ -435,11 +475,9 @@ export default function SettingsMarketplace() {
         marketplaceEnabled: enable,
       });
 
-      const nextProfile = data?.profile || null;
-
-      setProfile(nextProfile);
-      setReadiness(data?.readiness || null);
-      setForm(profileSnapshot(nextProfile));
+      synchronizeMarketplaceSettings(
+        data,
+      );
 
       void queryClient.invalidateQueries({
         queryKey: marketplaceQueryKeys.all,
@@ -483,7 +521,12 @@ export default function SettingsMarketplace() {
           <h2>Marketplace is unavailable</h2>
           <p>{loadError}</p>
 
-          <button type="button" onClick={loadMarketplace}>
+          <button
+            type="button"
+            onClick={() =>
+              void marketplaceQuery.refetch()
+            }
+          >
             <RefreshCw size={16} />
             Try again
           </button>

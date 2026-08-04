@@ -99,6 +99,11 @@ export const marketplaceQueryKeys = {
     ...marketplaceQueryKeys.ownerAnalytics(),
     cleanParams(params),
   ],
+
+  ownerSettings: () => [
+    ...marketplaceQueryKeys.owner(),
+    "settings",
+  ],
 };
 
 export default marketplaceQueryKeys;

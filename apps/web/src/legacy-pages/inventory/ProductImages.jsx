@@ -51,6 +51,9 @@ import {
   inventoryQueryKeys,
   unwrapProductResponse,
 } from "../../lib/inventoryQueryKeys";
+import {
+  marketplaceQueryKeys,
+} from "../../lib/marketplaceQueryKeys";
 import ConfirmDialog from "../../components/feedback/ConfirmDialog";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import "./ProductImages.css";
@@ -550,6 +553,11 @@ export default function ProductImages() {
         );
       }
 
+      void queryClient.invalidateQueries({
+        queryKey:
+          marketplaceQueryKeys.ownerSettings(),
+      });
+
       return {
         images: nextImages,
         studio: nextStudio,
@@ -557,6 +565,7 @@ export default function ProductImages() {
     }, [
       imagesQuery,
       previewImage?.id,
+      queryClient,
       studioQuery,
     ]);
 
