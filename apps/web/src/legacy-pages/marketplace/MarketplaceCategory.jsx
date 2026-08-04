@@ -351,11 +351,6 @@ export default function MarketplaceCategory() {
         range.maximum === maximumPrice,
     ) || null;
 
-  const resultsLabel =
-    pagination.total === 1
-      ? "1 product"
-      : `${pagination.total.toLocaleString()} products`;
-
   const activeFilterCount = [
     fulfilment,
     minimumPrice,
@@ -363,11 +358,6 @@ export default function MarketplaceCategory() {
     onSaleOnly,
     storeSlug,
   ].filter(Boolean).length;
-
-  const pageNumbers = useMemo(
-    () => pageNumbersFor(pagination),
-    [pagination],
-  );
 
   const priceSummary =
     minimumPrice || maximumPrice
@@ -504,6 +494,19 @@ export default function MarketplaceCategory() {
         ?.hasNextPage,
     ),
   };
+
+  const resultsLabel =
+    pagination.total === 1
+      ? "1 product"
+      : `${pagination.total.toLocaleString()} products`;
+
+  const pageNumbers = useMemo(
+    () => pageNumbersFor(pagination),
+    [
+      pagination.page,
+      pagination.pages,
+    ],
+  );
 
   const loading =
     productsQuery.isPending &&
