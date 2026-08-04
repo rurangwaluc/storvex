@@ -1,4 +1,8 @@
 import {
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
   useEffect,
   useMemo,
   useState,
@@ -24,6 +28,7 @@ import {
 import {
   listBranches,
 } from "../../services/branchApi";
+import marketplaceQueryKeys from "../../lib/marketplaceQueryKeys";
 import MarketplaceOwnerHeader from "./MarketplaceOwnerHeader";
 import "./MarketplaceOwner.css";
 
@@ -529,11 +534,10 @@ function DetailSkeleton() {
 
 export default function MarketplaceRequestDetail() {
   const { requestId } = useParams();
+  const queryClient = useQueryClient();
 
   const [request, setRequest] =
     useState(null);
-  const [loading, setLoading] =
-    useState(true);
 
   const [actionBusy, setActionBusy] =
     useState(false);
@@ -567,76 +571,115 @@ export default function MarketplaceRequestDetail() {
     setFulfilmentBranchId,
   ] = useState("");
 
-  useEffect(() => {
-    let alive = true;
+  const requestQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.ownerRequestDetail(
+        requestId,
+      ),
+    queryFn: async () => {
+      const [
+        result,
+        branchResult,
+      ] = await Promise.all([
+        getOwnerMarketplaceRequest(
+          requestId,
+        ),
+        listBranches(),
+      ]);
 
-    async function loadRequest() {
-      try {
-        setLoading(true);
-
-        const [
-          result,
-          branchResult,
-        ] = await Promise.all([
-          getOwnerMarketplaceRequest(
-            requestId,
-          ),
-          listBranches(),
-        ]);
-
-        if (alive) {
-          const nextRequest =
-            result?.request || null;
-
-          const activeBranches =
-            Array.isArray(
-              branchResult?.branches,
-            )
-              ? branchResult.branches.filter(
-                  (branch) =>
-                    branch?.status ===
-                    "ACTIVE",
-                )
-              : [];
-
-          setRequest(nextRequest);
-          setBranches(activeBranches);
-
-          setFulfilmentBranchId(
-            nextRequest
-              ?.fulfilmentBranchId ||
-              activeBranches.find(
+      return {
+        request:
+          result?.request || null,
+        branches:
+          Array.isArray(
+            branchResult?.branches,
+          )
+            ? branchResult.branches.filter(
                 (branch) =>
-                  branch?.isMain,
-              )?.id ||
-              activeBranches[0]?.id ||
-              "",
-          );
-        }
-      } catch (error) {
-        console.error(error);
+                  branch?.status ===
+                  "ACTIVE",
+              )
+            : [],
+      };
+    },
+    enabled: Boolean(requestId),
+    staleTime: 30_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-        toast.error(
-          error?.message ||
-            "Failed to load customer order",
-        );
-
-        if (alive) {
-          setRequest(null);
-        }
-      } finally {
-        if (alive) {
-          setLoading(false);
-        }
-      }
+  useEffect(() => {
+    if (!requestQuery.data) {
+      return;
     }
 
-    void loadRequest();
+    const nextRequest =
+      requestQuery.data.request || null;
 
-    return () => {
-      alive = false;
-    };
-  }, [requestId]);
+    const activeBranches =
+      requestQuery.data.branches || [];
+
+    setRequest(nextRequest);
+    setBranches(activeBranches);
+
+    setFulfilmentBranchId(
+      nextRequest?.fulfilmentBranchId ||
+        activeBranches.find(
+          (branch) =>
+            branch?.isMain,
+        )?.id ||
+        activeBranches[0]?.id ||
+        "",
+    );
+  }, [requestQuery.data]);
+
+  useEffect(() => {
+    if (!requestQuery.isError) {
+      return;
+    }
+
+    console.error(requestQuery.error);
+
+    toast.error(
+      requestQuery.error?.message ||
+        "Failed to load customer order",
+    );
+
+    setRequest(null);
+  }, [
+    requestQuery.error,
+    requestQuery.isError,
+  ]);
+
+  const loading =
+    requestQuery.isPending;
+
+  function synchronizeRequest(
+    nextRequest,
+  ) {
+    if (!nextRequest?.id) {
+      return;
+    }
+
+    setRequest(nextRequest);
+
+    queryClient.setQueryData(
+      marketplaceQueryKeys.ownerRequestDetail(
+        nextRequest.id,
+      ),
+      (current) => ({
+        request: nextRequest,
+        branches:
+          current?.branches || branches,
+      }),
+    );
+
+    void queryClient.invalidateQueries({
+      queryKey:
+        marketplaceQueryKeys.ownerRequestLists(),
+    });
+  }
 
   const itemCount = useMemo(
     () =>
@@ -702,7 +745,7 @@ export default function MarketplaceRequestDetail() {
           payload,
         );
 
-      setRequest(
+      synchronizeRequest(
         result?.request || request,
       );
 
@@ -779,7 +822,7 @@ export default function MarketplaceRequestDetail() {
           request.id,
         );
 
-      setRequest(
+      synchronizeRequest(
         result?.request || request,
       );
 
@@ -841,7 +884,7 @@ export default function MarketplaceRequestDetail() {
           },
         );
 
-      setRequest(
+      synchronizeRequest(
         result?.request || request,
       );
 
@@ -909,7 +952,7 @@ export default function MarketplaceRequestDetail() {
           },
         );
 
-      setRequest(
+      synchronizeRequest(
         result?.request || request,
       );
 
@@ -977,7 +1020,7 @@ export default function MarketplaceRequestDetail() {
           },
         );
 
-      setRequest(
+      synchronizeRequest(
         result?.request || request,
       );
 
@@ -1014,7 +1057,7 @@ export default function MarketplaceRequestDetail() {
           request.id,
         );
 
-      setRequest(
+      synchronizeRequest(
         result?.request || request,
       );
 

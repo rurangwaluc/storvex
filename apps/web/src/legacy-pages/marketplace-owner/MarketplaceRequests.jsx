@@ -1,4 +1,7 @@
 import {
+  useInfiniteQuery,
+} from "@tanstack/react-query";
+import {
   useEffect,
   useMemo,
   useState,
@@ -6,6 +9,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
+import marketplaceQueryKeys from "../../lib/marketplaceQueryKeys";
 import {
   listOwnerMarketplaceRequests,
 } from "../../services/marketplaceOwnerApi";
@@ -181,92 +185,116 @@ function EmptyState({ query, status }) {
 export default function MarketplaceRequests() {
   const navigate = useNavigate();
 
-  const [requests, setRequests] = useState([]);
-  const [summary, setSummary] = useState({
-    newRequests: 0,
-    activeRequests: 0,
-    completedRequests: 0,
-    totalRequests: 0,
-  });
-  const [page, setPage] = useState(null);
-
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] =
+    useState("");
   const [status, setStatus] =
     useState("ALL");
-  const [loading, setLoading] =
-    useState(true);
-  const [loadingMore, setLoadingMore] =
-    useState(false);
 
-  async function loadRequests({
-    append = false,
-    nextSkip = 0,
-  } = {}) {
-    try {
-      if (append) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
-
-      const result =
-        await listOwnerMarketplaceRequests({
-          q: cleanString(query) || undefined,
-          status:
-            status === "ALL"
-              ? undefined
-              : status,
-          take: requestPageSize(),
-          skip: nextSkip,
-        });
-
-      const incoming = Array.isArray(
-        result?.requests,
-      )
-        ? result.requests
-        : [];
-
-      setRequests((current) =>
-        append
-          ? [...current, ...incoming]
-          : incoming,
-      );
-
-      setSummary(
-        result?.summary || {
-          newRequests: 0,
-          activeRequests: 0,
-          completedRequests: 0,
-          totalRequests: 0,
-        },
-      );
-
-      setPage(result?.page || null);
-    } catch (error) {
-      console.error(error);
-
-      toast.error(
-        error?.message ||
-          "Failed to load customer orders",
-      );
-
-      if (!append) {
-        setRequests([]);
-      }
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }
+  const pageSize = useMemo(
+    () => requestPageSize(),
+    [],
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
-      void loadRequests();
+      setDebouncedQuery(
+        cleanString(query),
+      );
     }, 250);
 
     return () =>
       window.clearTimeout(timer);
-  }, [query, status]);
+  }, [query]);
+
+  const requestParams = useMemo(
+    () => ({
+      q:
+        debouncedQuery || undefined,
+      status:
+        status === "ALL"
+          ? undefined
+          : status,
+      take: pageSize,
+    }),
+    [
+      debouncedQuery,
+      pageSize,
+      status,
+    ],
+  );
+
+  const requestsQuery = useInfiniteQuery({
+    queryKey:
+      marketplaceQueryKeys.ownerRequestList(
+        requestParams,
+      ),
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) =>
+      listOwnerMarketplaceRequests({
+        ...requestParams,
+        skip: Number(pageParam || 0),
+      }),
+    getNextPageParam: (lastPage) =>
+      lastPage?.page?.hasMore
+        ? Number(
+            lastPage.page.nextSkip || 0,
+          )
+        : undefined,
+    staleTime: 30_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  useEffect(() => {
+    if (!requestsQuery.isError) {
+      return;
+    }
+
+    console.error(requestsQuery.error);
+
+    toast.error(
+      requestsQuery.error?.message ||
+        "Failed to load customer orders",
+    );
+  }, [
+    requestsQuery.error,
+    requestsQuery.isError,
+  ]);
+
+  const pages =
+    requestsQuery.data?.pages || [];
+
+  const requests = useMemo(
+    () =>
+      pages.flatMap((result) =>
+        Array.isArray(result?.requests)
+          ? result.requests
+          : [],
+      ),
+    [pages],
+  );
+
+  const latestResult =
+    pages[pages.length - 1] || null;
+
+  const summary =
+    latestResult?.summary || {
+      newRequests: 0,
+      activeRequests: 0,
+      completedRequests: 0,
+      totalRequests: 0,
+    };
+
+  const page =
+    latestResult?.page || null;
+
+  const loading =
+    requestsQuery.isPending;
+
+  const loadingMore =
+    requestsQuery.isFetchingNextPage;
 
   const shownLabel = useMemo(() => {
     const count = requests.length;
@@ -541,11 +569,7 @@ export default function MarketplaceRequests() {
                     type="button"
                     disabled={loadingMore}
                     onClick={() =>
-                      void loadRequests({
-                        append: true,
-                        nextSkip:
-                          page.nextSkip || 0,
-                      })
+                      void requestsQuery.fetchNextPage()
                     }
                   >
                     {loadingMore

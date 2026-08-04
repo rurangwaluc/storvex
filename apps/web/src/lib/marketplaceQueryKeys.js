@@ -63,6 +63,32 @@ export const marketplaceQueryKeys = {
     ...marketplaceQueryKeys.customer(),
     "orders",
   ],
+
+  owner: () => [
+    ...marketplaceQueryKeys.all,
+    "owner",
+  ],
+
+  ownerRequests: () => [
+    ...marketplaceQueryKeys.owner(),
+    "requests",
+  ],
+
+  ownerRequestLists: () => [
+    ...marketplaceQueryKeys.ownerRequests(),
+    "list",
+  ],
+
+  ownerRequestList: (params = {}) => [
+    ...marketplaceQueryKeys.ownerRequestLists(),
+    cleanParams(params),
+  ],
+
+  ownerRequestDetail: (requestId) => [
+    ...marketplaceQueryKeys.ownerRequests(),
+    "detail",
+    String(requestId || ""),
+  ],
 };
 
 export default marketplaceQueryKeys;
