@@ -2234,3 +2234,67 @@
     pointer-events: auto !important;
   }
 }
+
+/* MARKETPLACE MOBILE MENU SAFARI VISIBILITY FIX */
+
+@media (max-width: 820px) {
+  /*
+   * Remove rendering layers that can trap the fixed drawer inside
+   * the sticky header on Mobile Safari.
+   */
+  .smh.is-menu-open {
+    isolation: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .smh.is-menu-open .smh__primary,
+  .smh.is-menu-open .smh__primary-inner {
+    transform: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .smh.is-menu-open .smh__drawer {
+    position: fixed !important;
+    z-index: 2147483646 !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100vw !important;
+    max-width: none !important;
+    height: 100vh !important;
+    min-height: 100vh !important;
+    visibility: visible !important;
+    overflow: hidden !important;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+
+  @supports (height: 100dvh) {
+    .smh.is-menu-open .smh__drawer {
+      height: 100dvh !important;
+      min-height: 100dvh !important;
+    }
+  }
+
+  .smh.is-menu-open .smh__drawer-backdrop {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  .smh.is-menu-open
+    .smh-menu.smh__drawer-panel {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: translateX(0) !important;
+    pointer-events: auto !important;
+  }
+}

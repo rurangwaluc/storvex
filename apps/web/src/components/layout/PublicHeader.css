@@ -851,3 +851,77 @@
     height: 31px;
   }
 }
+
+/* PUBLIC MOBILE MENU SAFARI VISIBILITY FIX */
+
+@media (max-width: 860px) {
+  /*
+   * backdrop-filter can trap fixed descendants inside the header
+   * rendering layer on Mobile Safari.
+   */
+  .sp-header.is-open {
+    isolation: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .sp-header.is-open .sp-header__inner {
+    transform: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .sp-header.is-open .sp-header__mobile {
+    position: fixed !important;
+    z-index: 2147483646 !important;
+    inset:
+      calc(
+        68px +
+        env(safe-area-inset-top, 0px)
+      )
+      0
+      0
+      0 !important;
+    display: block !important;
+    width: 100vw !important;
+    max-width: none !important;
+    height:
+      calc(
+        100vh -
+        68px -
+        env(safe-area-inset-top, 0px)
+      ) !important;
+    min-height: 0 !important;
+    visibility: visible !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    background: var(--landing-bg) !important;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @supports (height: 100dvh) {
+    .sp-header.is-open .sp-header__mobile {
+      height:
+        calc(
+          100dvh -
+          68px -
+          env(safe-area-inset-top, 0px)
+        ) !important;
+    }
+  }
+
+  .sp-header.is-open .sp-header__mobile-panel {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+}
