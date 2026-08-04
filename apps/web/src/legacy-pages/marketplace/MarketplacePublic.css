@@ -13625,3 +13625,112 @@ body:has(.storvex-marketplace) #root {
     margin-bottom: 8px;
   }
 }
+
+/* SHOP VISIBLE CATEGORY SWITCHER AUTHORITY */
+
+.svx-shop-category-switcher {
+  display: grid;
+  min-width: 190px;
+  gap: 6px;
+  color: var(--landing-text);
+  font: inherit;
+}
+
+.svx-shop-category-switcher > span:first-child {
+  color: var(--landing-muted);
+  font-size: 10px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.svx-shop-category-switcher__control {
+  position: relative;
+  display: grid;
+  min-height: 42px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--landing-border);
+  border-radius: 8px;
+  background: var(--landing-card);
+  padding: 0 11px 0 12px;
+  box-shadow: none;
+}
+
+.svx-shop-category-switcher__control select {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  border: 0;
+  outline: 0;
+  appearance: none;
+  background: transparent;
+  color: var(--landing-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.svx-shop-category-switcher__control option {
+  background: var(--landing-card);
+  color: var(--landing-text);
+}
+
+.svx-shop-category-switcher__control > svg {
+  pointer-events: none;
+  color: var(--landing-muted);
+}
+
+.svx-shop-category-switcher__control:focus-within {
+  border-color: var(--landing-primary);
+}
+
+@media (max-width: 900px) {
+  .svx-shop-category-switcher {
+    min-width: 160px;
+  }
+}
+
+@media (max-width: 620px) {
+  .svx-shop-catalogue-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto
+      minmax(108px, auto);
+    align-items: end;
+    gap: 7px;
+  }
+
+  .svx-shop-category-switcher {
+    min-width: 0;
+  }
+
+  .svx-shop-category-switcher__control {
+    min-height: 42px;
+  }
+
+  .svx-shop-category-switcher__control select {
+    height: 40px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-shop-catalogue-actions {
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+  }
+
+  .svx-shop-category-switcher {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .svx-shop-category-switcher__control {
+    width: 100%;
+  }
+}

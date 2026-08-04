@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  useLocation,
   useSearchParams,
 } from "react-router-dom";
 
@@ -184,6 +185,8 @@ function releasePageScrollLock() {
 }
 
 export default function MarketplaceShop() {
+  const location = useLocation();
+
   const [searchParams, setSearchParams] =
     useSearchParams();
 
@@ -248,6 +251,8 @@ export default function MarketplaceShop() {
     useState(false);
 
   const sortRef = useRef(null);
+  const syncingFromUrlRef = useRef(false);
+
   const [
     expandedCategory,
     setExpandedCategory,
@@ -357,7 +362,62 @@ export default function MarketplaceShop() {
     );
   }, [products]);
 
+  /*
+   * The header changes categories while staying on /marketplace/shop.
+   * Keep this mounted page synchronized with those URL changes.
+   */
   useEffect(() => {
+    syncingFromUrlRef.current = true;
+
+    const params = new URLSearchParams(
+      location.search,
+    );
+
+    const nextCategory = cleanString(
+      params.get("category"),
+    );
+    const nextSubcategory = cleanString(
+      params.get("subcategory"),
+    );
+    const nextPage = Math.max(
+      1,
+      Number.parseInt(
+        params.get("page") || "1",
+        10,
+      ) || 1,
+    );
+
+    setCategory((current) =>
+      current === nextCategory
+        ? current
+        : nextCategory,
+    );
+
+    setSubcategory((current) =>
+      current === nextSubcategory
+        ? current
+        : nextSubcategory,
+    );
+
+    setExpandedCategory((current) =>
+      current === nextCategory
+        ? current
+        : nextCategory,
+    );
+
+    setPage((current) =>
+      current === nextPage
+        ? current
+        : nextPage,
+    );
+  }, [location.search]);
+
+  useEffect(() => {
+    if (syncingFromUrlRef.current) {
+      syncingFromUrlRef.current = false;
+      return;
+    }
+
     const next = {};
 
     if (search) next.search = search;
@@ -576,6 +636,18 @@ export default function MarketplaceShop() {
     setExpandedCategory("");
   }
 
+  function changeVisibleCategory(event) {
+    const nextCategory = cleanString(
+      event.target.value,
+    );
+
+    setPage(1);
+    setCategory(nextCategory);
+    setSubcategory("");
+    setExpandedCategory(nextCategory);
+    setFiltersOpen(false);
+  }
+
   function chooseCategory(item) {
     const usesMobileFilters =
       window.matchMedia(
@@ -678,6 +750,36 @@ export default function MarketplaceShop() {
             </div>
 
             <div className="svx-shop-catalogue-actions">
+              <label className="svx-shop-category-switcher">
+                <span>Category</span>
+
+                <span className="svx-shop-category-switcher__control">
+                  <select
+                    value={category}
+                    onChange={changeVisibleCategory}
+                    aria-label="Choose a product category"
+                  >
+                    <option value="">
+                      All products
+                    </option>
+
+                    {shopCategories.map((item) => (
+                      <option
+                        key={item.value}
+                        value={item.value}
+                      >
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <ChevronDown
+                    size={16}
+                    aria-hidden="true"
+                  />
+                </span>
+              </label>
+
               <button
                 type="button"
                 className="svx-shop-filter-trigger"
