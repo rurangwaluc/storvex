@@ -10,6 +10,9 @@ const {
 const {
   failMarketplaceDelivery,
 } = require("./marketplaceDeliveryFailure.service");
+const {
+  invalidatePublicProductsCache,
+} = require("../marketplace/marketplace.public.cache");
 
 function cleanString(value) {
   const text = String(value || "").trim();
@@ -1225,6 +1228,8 @@ async function confirmMarketplaceRequest(
         },
       );
 
+    await invalidatePublicProductsCache();
+
     return res.json({
       message:
         "Order confirmed and stock reserved.",
@@ -1524,6 +1529,8 @@ async function cancelMarketplaceRequest(
         },
       );
 
+    await invalidatePublicProductsCache();
+
     return res.json({
       message:
         "Order cancelled and reserved stock released.",
@@ -1575,6 +1582,10 @@ async function completeMarketplacePickupRequest(
         paymentReference:
           req.body?.paymentReference,
       });
+
+    if (!result.alreadyCompleted) {
+      await invalidatePublicProductsCache();
+    }
 
     return res.json({
       message: result.alreadyCompleted
@@ -1628,6 +1639,10 @@ async function completeMarketplaceDeliveryRequest(
         paymentReference:
           req.body?.paymentReference,
       });
+
+    if (!result.alreadyCompleted) {
+      await invalidatePublicProductsCache();
+    }
 
     return res.json({
       message:
@@ -1684,6 +1699,10 @@ async function failMarketplaceDeliveryRequest(
           req.body
             ?.deliveryFailureNote,
       });
+
+    if (!result.alreadyFailed) {
+      await invalidatePublicProductsCache();
+    }
 
     return res.json({
       message:

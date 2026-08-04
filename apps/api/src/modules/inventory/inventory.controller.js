@@ -1,5 +1,8 @@
 const prisma = require("../../config/database");
 const {
+  invalidatePublicProductsCache,
+} = require("../marketplace/marketplace.public.cache");
+const {
   STORAGE_VISIBILITY,
   deleteObject,
 } = require("../../lib/storage/objectStorage");
@@ -1761,6 +1764,12 @@ async function updateProduct(req, res) {
       scope.mode === "SINGLE_BRANCH" ? scope.branchId : null,
     );
 
+    if (
+      existing.marketplaceStatus === "PUBLISHED"
+    ) {
+      await invalidatePublicProductsCache();
+    }
+
     return res.json({ ...withListingAliases(enriched), branchScope: scope });
   } catch (err) {
     const code = err?.code;
@@ -1849,6 +1858,8 @@ async function deleteProduct(req, res) {
       return res.json({ message: "Product already inactive" });
     }
 
+    await invalidatePublicProductsCache();
+
     return res.json({ message: "Product deactivated" });
   } catch (err) {
     const code = err?.code;
@@ -1909,6 +1920,8 @@ async function activateProduct(req, res) {
     if (result.alreadyActive) {
       return res.json({ message: "Product already active" });
     }
+
+    await invalidatePublicProductsCache();
 
     return res.json({ message: "Product activated" });
   } catch (err) {
@@ -2156,6 +2169,8 @@ async function adjustStock(req, res) {
         timeout: 20000,
       },
     );
+
+    await invalidatePublicProductsCache();
 
     return res.status(201).json({
       message: "Stock updated",
@@ -3293,6 +3308,8 @@ async function deleteProductImage(req, res) {
       }
     }
 
+    await invalidatePublicProductsCache();
+
     return res.json({
       message: "Image removed",
     });
@@ -3379,6 +3396,8 @@ async function setPrimaryProductImage(req, res) {
 
       return image;
     });
+
+    await invalidatePublicProductsCache();
 
     return res.json({
       image:
@@ -3491,6 +3510,12 @@ async function updateProductListingDraft(req, res) {
 
       return row;
     });
+
+    if (
+      product.marketplaceStatus === "PUBLISHED"
+    ) {
+      await invalidatePublicProductsCache();
+    }
 
     return res.json({ product: updated });
   } catch (err) {
@@ -3618,6 +3643,8 @@ async function publishProductListing(req, res) {
       return row;
     });
 
+    await invalidatePublicProductsCache();
+
     return res.json({
       message: "Product listing published",
       product: updated,
@@ -3679,6 +3706,8 @@ async function unpublishProductListing(req, res) {
 
       return row;
     });
+
+    await invalidatePublicProductsCache();
 
     return res.json({
       message: "Product listing removed",

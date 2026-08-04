@@ -1,4 +1,7 @@
 const prisma = require("../../config/database");
+const {
+  invalidatePublicProductsCache,
+} = require("../marketplace/marketplace.public.cache");
 
 const DEFAULT_PAYMENT_METHODS = Object.freeze([
   "CASH_ON_DELIVERY",
@@ -578,13 +581,20 @@ async function updateMarketplaceSellerProfile(tenantId, payload = {}) {
       }
     }
 
-    return prisma.marketplaceSellerProfile.update({
-      where: { tenantId },
-      data: {
-        marketplaceEnabled: enable,
-      },
-    });
+    const visibilityUpdated =
+      await prisma.marketplaceSellerProfile.update({
+        where: { tenantId },
+        data: {
+          marketplaceEnabled: enable,
+        },
+      });
+
+    await invalidatePublicProductsCache();
+
+    return visibilityUpdated;
   }
+
+  await invalidatePublicProductsCache();
 
   return updated;
 }

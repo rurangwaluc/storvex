@@ -4,6 +4,9 @@ const express = require("express");
 const cors = require("cors");
 
 const requestMetrics = require("./middlewares/requestMetrics");
+const {
+  redisStatus,
+} = require("./lib/cache/redisClient");
 
 const authenticate = require("./middlewares/authenticate");
 const requireTenant = require("./middlewares/requireTenant");
@@ -79,7 +82,17 @@ app.use("/api/whatsapp/webhook", express.raw({ type: "*/*" }));
 app.use(express.json());
 
 app.get("/health", (req, res) => {
-  res.json({ status: "OK", service: "Storvex API" });
+  const cache = redisStatus();
+
+  res.json({
+    status: "OK",
+    service: "Storvex API",
+    cache: {
+      configured: cache.configured,
+      connected: cache.connected,
+      ready: cache.ready,
+    },
+  });
 });
 
 app.get("/api", authenticate, requireActiveSubscription, (req, res) => {

@@ -17,6 +17,71 @@ const {
   listPublicProducts,
   getPublicMarketplaceCatalogue,
 } = require("./marketplace.public.service");
+const crypto = require("crypto");
+const {
+  cacheKey,
+  cacheRemember,
+} = require("../../lib/cache/cache");
+const {
+  getPublicProductsGeneration,
+} = require("./marketplace.public.cache");
+
+function positiveInteger(value, fallback) {
+  const number = Number(value);
+
+  return Number.isFinite(number) &&
+    number > 0
+    ? Math.floor(number)
+    : fallback;
+}
+
+const PUBLIC_PRODUCTS_CACHE_TTL_SECONDS =
+  positiveInteger(
+    process.env
+      .MARKETPLACE_PUBLIC_PRODUCTS_CACHE_TTL_SECONDS,
+    30,
+  );
+
+function normalizedPublicQuery(query = {}) {
+  return Object.entries(query || {})
+    .filter(([, value]) =>
+      value !== undefined &&
+      value !== null,
+    )
+    .map(([key, value]) => [
+      String(key),
+      Array.isArray(value)
+        ? value.map(String)
+        : String(value),
+    ])
+    .sort(([left], [right]) =>
+      left.localeCompare(right),
+    );
+}
+
+async function publicProductsCacheKey(query) {
+  const generation =
+    await getPublicProductsGeneration();
+
+  const digest = crypto
+    .createHash("sha256")
+    .update(
+      JSON.stringify(
+        normalizedPublicQuery(query),
+      ),
+    )
+    .digest("hex")
+    .slice(0, 32);
+
+  return cacheKey(
+    "marketplace",
+    "public",
+    "products",
+    "v1",
+    generation,
+    digest,
+  );
+}
 
 function sendError(res, error, fallback) {
   console.error(fallback, error);
@@ -91,11 +156,21 @@ async function getProduct(req, res) {
 
 async function listProducts(req, res) {
   try {
-    const result = await listPublicProducts(
-      req.query || {},
+    const query = req.query || {};
+
+    const { value, cache } =
+      await cacheRemember(
+        await publicProductsCacheKey(query),
+        PUBLIC_PRODUCTS_CACHE_TTL_SECONDS,
+        () => listPublicProducts(query),
+      );
+
+    res.set(
+      "X-Storvex-Cache",
+      cache,
     );
 
-    return res.json(result);
+    return res.json(value);
   } catch (error) {
     return sendError(
       res,

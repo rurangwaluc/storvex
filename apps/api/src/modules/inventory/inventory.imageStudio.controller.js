@@ -1,4 +1,7 @@
 const imageStudioService = require("./inventory.imageStudio.service");
+const {
+  invalidatePublicProductsCache,
+} = require("../marketplace/marketplace.public.cache");
 
 function cleanString(value) {
   const result = String(value || "").trim();
@@ -107,6 +110,8 @@ async function approveProductImage(req, res) {
         context,
       );
 
+    await invalidatePublicProductsCache();
+
     return res.json({
       message: "Image approved for marketplace use",
       image,
@@ -135,6 +140,8 @@ async function removeProductImageApproval(req, res) {
         context,
       );
 
+    await invalidatePublicProductsCache();
+
     return res.json({
       message: "Marketplace approval removed",
       image,
@@ -162,6 +169,8 @@ async function useProductImageAsMain(req, res) {
       await imageStudioService.useProductImageAsMain(
         context,
       );
+
+    await invalidatePublicProductsCache();
 
     return res.json({
       message: "Main product image updated",
