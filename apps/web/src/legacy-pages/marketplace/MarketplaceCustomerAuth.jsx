@@ -15,6 +15,9 @@ import {
   useState,
 } from "react";
 import {
+  useQueryClient,
+} from "@tanstack/react-query";
+import {
   Link,
   useLocation,
   useNavigate,
@@ -26,6 +29,7 @@ import {
   OnboardingIconBadge,
 } from "../../components/onboarding/OnboardingShell";
 import AsyncButton from "../../components/ui/AsyncButton";
+import marketplaceQueryKeys from "../../lib/marketplaceQueryKeys";
 import {
   loginMarketplaceCustomer,
   logoutMarketplaceCustomer,
@@ -252,6 +256,7 @@ export default function MarketplaceCustomerAuth({
   const accountPage =
     mode === "account";
 
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -419,10 +424,23 @@ export default function MarketplaceCustomerAuth({
         return;
       }
 
-      await loginMarketplaceCustomer({
-        email,
-        password:
-          String(form.password || ""),
+      const loginResult =
+        await loginMarketplaceCustomer({
+          email,
+          password:
+            String(form.password || ""),
+        });
+
+      if (loginResult?.customer?.id) {
+        queryClient.setQueryData(
+          marketplaceQueryKeys.customerSession(),
+          loginResult.customer,
+        );
+      }
+
+      queryClient.removeQueries({
+        queryKey:
+          marketplaceQueryKeys.customerOrders(),
       });
 
       navigate(
@@ -454,6 +472,11 @@ export default function MarketplaceCustomerAuth({
 
     try {
       await logoutMarketplaceCustomer();
+
+      queryClient.removeQueries({
+        queryKey:
+          marketplaceQueryKeys.customer(),
+      });
 
       navigate(
         "/marketplace/account/sign-in",

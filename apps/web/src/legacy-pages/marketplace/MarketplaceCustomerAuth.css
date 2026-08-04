@@ -2104,3 +2104,50 @@
     width: 100%;
   }
 }
+
+/* Match Marketplace sign-in and sign-up cards to the main Storvex auth surface. */
+:root[data-theme="dark"]
+  .svx-marketplace-auth-page
+  .svx-marketplace-auth-card {
+  background: #202020;
+  border-color: #353535;
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-auth-page
+  .svx-marketplace-auth-card
+  .svx-onboard-input {
+  background: #171717;
+  border-color: #3a3a3a;
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-auth-page
+  .svx-marketplace-auth-card
+  .svx-onboard-input:hover {
+  border-color: #4a4a4a;
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-auth-page
+  .svx-marketplace-auth-card
+  .svx-onboard-input:focus {
+  background: #171717;
+  border-color: var(--onboard-primary);
+}
+
+:root[data-theme="dark"]
+  .svx-marketplace-auth-page
+  .svx-marketplace-auth-card
+  input:-webkit-autofill,
+:root[data-theme="dark"]
+  .svx-marketplace-auth-page
+  .svx-marketplace-auth-card
+  input:-webkit-autofill:hover,
+:root[data-theme="dark"]
+  .svx-marketplace-auth-page
+  .svx-marketplace-auth-card
+  input:-webkit-autofill:focus {
+  box-shadow:
+    0 0 0 1000px #171717 inset !important;
+}

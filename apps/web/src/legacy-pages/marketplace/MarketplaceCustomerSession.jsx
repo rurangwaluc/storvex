@@ -1,8 +1,12 @@
 import {
+  useQuery,
+} from "@tanstack/react-query";
+import {
   useEffect,
   useState,
 } from "react";
 
+import marketplaceQueryKeys from "../../lib/marketplaceQueryKeys";
 import {
   getMarketplaceCustomerSession,
   loadMarketplaceCustomer,
@@ -27,14 +31,6 @@ export function useMarketplaceCustomerSession({
 } = {}) {
   const [session, setSession] =
     useState(readSession);
-
-  const [checking, setChecking] =
-    useState(
-      Boolean(
-        verify &&
-          session.token,
-      ),
-    );
 
   useEffect(() => {
     function refreshSession() {
@@ -64,42 +60,43 @@ export function useMarketplaceCustomerSession({
     };
   }, []);
 
-  useEffect(() => {
-    if (
-      !verify ||
-      !session.token
-    ) {
-      setChecking(false);
-      return undefined;
-    }
+  const customerQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.customerSession(),
+    queryFn:
+      loadMarketplaceCustomer,
+    enabled:
+      Boolean(
+        verify &&
+          session.token,
+      ),
+    initialData:
+      session.customer || undefined,
+    initialDataUpdatedAt: 0,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
 
-    let active = true;
-
-    setChecking(true);
-
-    loadMarketplaceCustomer()
-      .catch(() => null)
-      .finally(() => {
-        if (active) {
-          setSession(readSession());
-          setChecking(false);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [
-    verify,
-    session.token,
-  ]);
+  const verifiedCustomer =
+    verify &&
+    customerQuery.data?.id
+      ? customerQuery.data
+      : session.customer;
 
   return {
     ...session,
-    checking,
+    customer: verifiedCustomer || null,
+    checking: Boolean(
+      verify &&
+        session.token &&
+        customerQuery.isFetching &&
+        customerQuery.dataUpdatedAt === 0,
+    ),
     signedIn: Boolean(
       session.token &&
-        session.customer?.id,
+        verifiedCustomer?.id,
     ),
   };
 }

@@ -12,7 +12,11 @@ import {
   useEffect,
   useState,
 } from "react";
+import {
+  useQueryClient,
+} from "@tanstack/react-query";
 
+import marketplaceQueryKeys from "../../lib/marketplaceQueryKeys";
 import {
   changeMarketplaceCustomerPassword,
   updateMarketplaceCustomerDetails,
@@ -126,6 +130,8 @@ export default function MarketplaceCustomerAccountDetails({
   onSignOut,
   signOutError,
 }) {
+  const queryClient = useQueryClient();
+
   const [mode, setMode] =
     useState("view");
 
@@ -202,11 +208,19 @@ export default function MarketplaceCustomerAccountDetails({
     setMessage(null);
 
     try {
-      await updateMarketplaceCustomerDetails({
-        name,
-        phone:
-          cleanString(details.phone),
-      });
+      const result =
+        await updateMarketplaceCustomerDetails({
+          name,
+          phone:
+            cleanString(details.phone),
+        });
+
+      if (result?.customer?.id) {
+        queryClient.setQueryData(
+          marketplaceQueryKeys.customerSession(),
+          result.customer,
+        );
+      }
 
       setMessage({
         type: "success",
