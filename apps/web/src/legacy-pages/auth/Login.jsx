@@ -178,29 +178,42 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
 
   const trimmedEmail = useMemo(() => normalizeEmail(email), [email]);
 
   async function submit(event) {
     event.preventDefault();
 
+    setLoginError("");
+
     if (!trimmedEmail) {
-      toast.error("Enter your email");
+      const message = "Enter your email address.";
+      setLoginError(message);
+      toast.error(message);
       return;
     }
 
     if (!password) {
-      toast.error("Enter your password");
+      const message = "Enter your password.";
+      setLoginError(message);
+      toast.error(message);
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await apiClient.post("/auth/login", {
-        email: trimmedEmail,
-        password,
-      });
+      const response = await apiClient.post(
+        "/auth/login",
+        {
+          email: trimmedEmail,
+          password,
+        },
+        {
+          timeout: 15000,
+        },
+      );
 
       persistAuthSession(response?.data || {});
       clearOnboardingState();
@@ -208,7 +221,43 @@ export default function Login() {
       toast.success("Welcome back");
       nav("/app", { replace: true });
     } catch (error) {
-      toast.error(error?.response?.data?.message || error?.message || "Login failed");
+      const status = Number(error?.response?.status || 0);
+      const providerMessage = String(
+        error?.response?.data?.message || "",
+      ).trim();
+
+      let message = "Login failed. Please try again.";
+
+      if (status === 400 || status === 401) {
+        message =
+          providerMessage ||
+          "The email or password is incorrect.";
+      } else if (status === 403) {
+        message =
+          providerMessage ||
+          "This account cannot access Storvex right now.";
+      } else if (status >= 500) {
+        message =
+          "Storvex could not complete the login. Please try again shortly.";
+      } else if (
+        error?.code === "ECONNABORTED" ||
+        String(error?.message || "")
+          .toLowerCase()
+          .includes("timeout")
+      ) {
+        message =
+          "Login took too long. Check your connection and try again.";
+      } else if (!error?.response) {
+        message =
+          "Could not connect to Storvex. Check your internet connection and try again.";
+      } else if (providerMessage) {
+        message = providerMessage;
+      }
+
+      setLoginError(message);
+      toast.error(message, {
+        id: "login-error",
+      });
     } finally {
       setLoading(false);
     }
@@ -250,6 +299,21 @@ export default function Login() {
                   Protected access
                 </span>
               </div>
+
+              {loginError ? (
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="mb-5 rounded-[14px] border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm font-bold leading-6 text-red-700 dark:text-red-300"
+                >
+                  <strong className="block font-black">
+                    We could not log you in
+                  </strong>
+                  <span className="mt-1 block">
+                    {loginError}
+                  </span>
+                </div>
+              ) : null}
 
               <div className="svx-onboard-form-grid">
                 <OnboardingCard className="order-2 lg:order-1">
@@ -315,7 +379,10 @@ export default function Login() {
                         type="email"
                         className="svx-onboard-input"
                         value={email}
-                        onChange={(event) => setEmail(event.target.value)}
+                        onChange={(event) => {
+                          setEmail(event.target.value);
+                          if (loginError) setLoginError("");
+                        }}
                         autoComplete="email"
                         placeholder="you@store.com"
                         autoFocus
@@ -328,7 +395,10 @@ export default function Login() {
                       id="login-password"
                       label="Password"
                       value={password}
-                      onChange={(event) => setPassword(event.target.value)}
+                      onChange={(event) => {
+                          setPassword(event.target.value);
+                          if (loginError) setLoginError("");
+                        }}
                       autoComplete="current-password"
                       placeholder="Enter your password"
                       disabled={loading}
