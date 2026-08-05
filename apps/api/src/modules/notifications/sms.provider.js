@@ -1,9 +1,12 @@
 // src/modules/notifications/sms.provider.js
 
-function isDevEchoEnabled() {
+function isPhoneOtpEchoEnabled() {
   return (
-    process.env.NODE_ENV !== "production" &&
-    String(process.env.DEV_OTP_ECHO || "false").toLowerCase() === "true"
+    String(
+      process.env.DEV_PHONE_OTP_ECHO ??
+        process.env.DEV_OTP_ECHO ??
+        "false",
+    ).toLowerCase() === "true"
   );
 }
 
@@ -319,7 +322,7 @@ async function sendSmsOtp({
   to,
   code,
 }) {
-  if (isDevEchoEnabled()) {
+  if (isPhoneOtpEchoEnabled()) {
     console.log(
       "DEV SMS OTP:",
       {
@@ -439,7 +442,7 @@ module.exports = {
   sendSmsOtp,
   checkSmsOtp,
   __private: {
-    isDevEchoEnabled,
+    isDevEchoEnabled: isPhoneOtpEchoEnabled,
     normalizeRwToE164,
     mapVerificationSendResult,
     mapVerificationCheckResult,

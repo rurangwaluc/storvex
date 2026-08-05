@@ -27,10 +27,9 @@ const OTP_MAX_ATTEMPTS =
 
 function usesDevelopmentPhoneOtp() {
   return (
-    process.env.NODE_ENV !==
-      "production" &&
     String(
-      process.env.DEV_OTP_ECHO ||
+      process.env.DEV_PHONE_OTP_ECHO ??
+        process.env.DEV_OTP_ECHO ??
         "false",
     ).toLowerCase() === "true"
   );

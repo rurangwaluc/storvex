@@ -8,8 +8,14 @@ try {
   ResendCtor = null;
 }
 
-function isDevEchoEnabled() {
-  return String(process.env.DEV_OTP_ECHO || "false").toLowerCase() === "true";
+function isEmailOtpEchoEnabled() {
+  return (
+    String(
+      process.env.DEV_EMAIL_OTP_ECHO ??
+        process.env.DEV_OTP_ECHO ??
+        "false",
+    ).toLowerCase() === "true"
+  );
 }
 
 function cleanString(value) {
@@ -115,7 +121,7 @@ async function sendEmailOtp({ to, code, ttlMinutes }) {
     };
   }
 
-  if (process.env.NODE_ENV !== "production" && isDevEchoEnabled()) {
+  if (isEmailOtpEchoEnabled()) {
     console.log("DEV EMAIL OTP:", { to: maskEmail(target), code });
 
     return {

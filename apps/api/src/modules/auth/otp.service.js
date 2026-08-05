@@ -7,8 +7,25 @@ const OTP_TTL_MINUTES = Number(process.env.OTP_TTL_MINUTES || 10);
 const OTP_SEND_COOLDOWN_SECONDS = Number(process.env.OTP_SEND_COOLDOWN_SECONDS || 60);
 const OTP_PEPPER = String(process.env.OTP_PEPPER || "");
 
-const DEV_OTP_ECHO =
-  String(process.env.DEV_OTP_ECHO || "false").toLowerCase() === "true";
+const DEV_EMAIL_OTP_ECHO =
+  String(
+    process.env.DEV_EMAIL_OTP_ECHO ??
+      process.env.DEV_OTP_ECHO ??
+      "false",
+  ).toLowerCase() === "true";
+
+const DEV_PHONE_OTP_ECHO =
+  String(
+    process.env.DEV_PHONE_OTP_ECHO ??
+      process.env.DEV_OTP_ECHO ??
+      "false",
+  ).toLowerCase() === "true";
+
+function usesOtpEcho(channel) {
+  return channel === "EMAIL"
+    ? DEV_EMAIL_OTP_ECHO
+    : DEV_PHONE_OTP_ECHO;
+}
 
 const OTP_REQUIRE_DELIVERY =
   String(process.env.OTP_REQUIRE_DELIVERY || "false").toLowerCase() === "true";
@@ -251,7 +268,9 @@ async function createAndSendOtp({ intent, intentId, channel }) {
       environment: process.env.NODE_ENV || "development",
       channel,
       requireDelivery: OTP_REQUIRE_DELIVERY,
-      devOtpEcho: DEV_OTP_ECHO,
+      devOtpEcho: usesOtpEcho(channel),
+      emailOtpEcho: DEV_EMAIL_OTP_ECHO,
+      phoneOtpEcho: DEV_PHONE_OTP_ECHO,
     },
     deliveredAt: delivery?.sent ? new Date() : null,
   });
@@ -283,7 +302,9 @@ async function createAndSendOtp({ intent, intentId, channel }) {
     provider: delivery?.provider || null,
     messageId: delivery?.messageId || null,
     reason: delivery?.sent ? null : delivery?.reason || "SEND_FAILED",
-    devOtp: DEV_OTP_ECHO ? code : undefined,
+    devOtp: usesOtpEcho(channel)
+      ? code
+      : undefined,
   };
 }
 
