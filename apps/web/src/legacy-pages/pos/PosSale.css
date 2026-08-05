@@ -2951,3 +2951,451 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================
+   SALES DESK PREMIUM PRODUCT RESPONSIVE AUTHORITY
+   Final authority for the product catalogue and terminal split.
+   ========================================================= */
+
+/*
+ * Preserve a useful product width.
+ * Checkout remains beside products only when the viewport
+ * genuinely has enough room for both working areas.
+ */
+.svx-pos-terminal-layout {
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(360px, 420px) !important;
+  gap: 20px !important;
+  align-items: start;
+}
+
+.svx-pos-terminal-main {
+  min-width: 0;
+}
+
+.svx-pos-catalog {
+  min-width: 0;
+  min-height: 0 !important;
+  padding: 22px !important;
+}
+
+/* Product list remains one efficient selling row per product. */
+
+.svx-pos-product-grid {
+  display: grid !important;
+  width: 100%;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 10px !important;
+  margin-top: 12px;
+}
+
+.svx-pos-product-grid .svx-pos-product-row {
+  display: grid !important;
+  min-width: 0;
+  min-height: 126px !important;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(132px, auto) !important;
+  align-items: center !important;
+  gap: 20px !important;
+  overflow: hidden;
+  border: 1px solid var(--pos-line-soft);
+  border-radius: 16px !important;
+  background: var(--pos-surface) !important;
+  background-image: none !important;
+  padding: 14px 16px !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.svx-pos-product-grid
+  .svx-pos-product-row:not(.is-disabled):hover {
+  border-color: var(--pos-line) !important;
+  background: var(--pos-surface) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Image and product information form one clear scanning group. */
+
+.svx-pos-product-grid .svx-pos-product-main {
+  display: grid !important;
+  min-width: 0;
+  grid-template-columns:
+    96px
+    minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: 16px !important;
+}
+
+.svx-pos-product-grid .svx-pos-product-thumb,
+.svx-pos-product-grid
+  .svx-pos-product-thumb.has-image {
+  display: grid;
+  width: 96px !important;
+  height: 96px !important;
+  flex: 0 0 96px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--pos-line-soft);
+  border-radius: 12px !important;
+  background: #ffffff;
+  color: var(--pos-muted);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.svx-pos-product-grid
+  .svx-pos-product-thumb.has-image
+  img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain !important;
+  object-position: center;
+  background: #ffffff;
+}
+
+.svx-pos-product-grid .svx-pos-product-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.svx-pos-product-grid
+  .svx-pos-product-copy
+  > strong {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--pos-text);
+  font-size: 16px !important;
+  font-weight: 900;
+  line-height: 1.2 !important;
+  letter-spacing: -0.02em;
+  white-space: normal !important;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/*
+ * Product metadata stays compact and horizontally scannable.
+ * Labels remain visible without creating tall stacked columns.
+ */
+.svx-pos-product-grid
+  .svx-pos-product-meta-stack {
+  display: flex !important;
+  max-width: 100%;
+  flex-wrap: wrap;
+  gap: 6px !important;
+  margin-top: 8px !important;
+}
+
+.svx-pos-product-grid
+  .svx-pos-product-meta-stack
+  span {
+  display: inline-flex !important;
+  width: auto;
+  max-width: 190px;
+  min-height: 28px;
+  grid-template-columns: none !important;
+  align-items: center;
+  gap: 5px !important;
+  border: 1px solid var(--pos-line-soft);
+  border-radius: 7px !important;
+  background: var(--pos-soft);
+  padding: 5px 7px !important;
+}
+
+.svx-pos-product-grid
+  .svx-pos-product-meta-stack
+  small {
+  flex: 0 0 auto;
+  color: var(--pos-muted);
+  font-size: 8px !important;
+  font-weight: 900;
+  letter-spacing: 0.08em !important;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.svx-pos-product-grid
+  .svx-pos-product-meta-stack
+  b {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--pos-text);
+  font-size: 10px !important;
+  font-weight: 850;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Secondary specifications remain readable without pill overload. */
+
+.svx-pos-product-grid
+  .svx-pos-product-facts {
+  display: flex !important;
+  max-width: 100%;
+  flex-wrap: wrap;
+  gap: 5px 12px !important;
+  margin-top: 8px !important;
+}
+
+.svx-pos-product-grid
+  .svx-pos-product-facts
+  em {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  color: var(--pos-muted);
+  font-size: 10px !important;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.svx-pos-product-grid
+  .svx-pos-product-facts
+  em
+  b {
+  color: var(--pos-text);
+  font-weight: 850;
+}
+
+/* Stock status is a small supporting signal, not a large block. */
+
+.svx-pos-product-grid
+  .svx-pos-product-badges {
+  display: flex;
+  margin-top: 9px !important;
+}
+
+.svx-pos-product-grid
+  .svx-pos-product-badges
+  > * {
+  min-height: 26px;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 9px;
+  line-height: 1;
+}
+
+/* Price and Add form one stable, easy-to-use action area. */
+
+.svx-pos-product-grid
+  .svx-pos-product-action {
+  display: grid !important;
+  min-width: 132px !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  align-items: center !important;
+  justify-items: end !important;
+  gap: 10px !important;
+}
+
+.svx-pos-product-grid
+  .svx-pos-product-action
+  > strong {
+  color: var(--pos-text);
+  font-size: 18px !important;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.svx-pos-product-grid
+  .svx-pos-add-button {
+  min-width: 92px !important;
+  min-height: 42px !important;
+  border-radius: 9px !important;
+  padding-inline: 16px !important;
+  box-shadow: none !important;
+}
+
+/*
+ * At medium desktop and tablet widths, stacking the checkout
+ * gives sellers a substantially better product-scanning area.
+ */
+@media (max-width: 1320px) {
+  .svx-pos-terminal-layout {
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+  }
+
+  .svx-pos-terminal-side {
+    position: static !important;
+    width: 100%;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .svx-pos-checkout-card {
+    width: 100%;
+  }
+}
+
+/* Tablet product row. */
+
+@media (max-width: 820px) {
+  .svx-pos-catalog {
+    padding: 16px !important;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-row {
+    min-height: 118px !important;
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(120px, auto) !important;
+    gap: 14px !important;
+    padding: 13px !important;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-main {
+    grid-template-columns:
+      82px
+      minmax(0, 1fr) !important;
+    gap: 13px !important;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-thumb,
+  .svx-pos-product-grid
+    .svx-pos-product-thumb.has-image {
+    width: 82px !important;
+    height: 82px !important;
+    flex-basis: 82px;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-action {
+    min-width: 120px !important;
+  }
+}
+
+/* Mobile/PWA product card. */
+
+@media (max-width: 620px) {
+  .svx-pos-product-grid
+    .svx-pos-product-row {
+    min-height: 0 !important;
+    grid-template-columns:
+      minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    border-radius: 14px !important;
+    padding: 12px !important;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-main {
+    grid-template-columns:
+      76px
+      minmax(0, 1fr) !important;
+    align-items: start !important;
+    gap: 12px !important;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-thumb,
+  .svx-pos-product-grid
+    .svx-pos-product-thumb.has-image {
+    width: 76px !important;
+    height: 76px !important;
+    flex-basis: 76px;
+    border-radius: 10px !important;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-copy
+    > strong {
+    font-size: 15px !important;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-meta-stack {
+    display: grid !important;
+    width: 100%;
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-meta-stack
+    span {
+    width: 100%;
+    max-width: none;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-action {
+    display: grid !important;
+    width: 100%;
+    min-width: 0 !important;
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto !important;
+    align-items: center !important;
+    justify-items: stretch !important;
+    gap: 10px !important;
+    border-top: 1px solid var(--pos-line-soft);
+    padding-top: 11px;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-action
+    > strong {
+    align-self: center;
+    font-size: 17px !important;
+    text-align: left;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-add-button {
+    width: auto !important;
+    min-width: 92px !important;
+    min-height: 44px !important;
+  }
+}
+
+/* Very narrow phones remain usable without horizontal overflow. */
+
+@media (max-width: 390px) {
+  .svx-pos-product-grid
+    .svx-pos-product-main {
+    grid-template-columns:
+      64px
+      minmax(0, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-thumb,
+  .svx-pos-product-grid
+    .svx-pos-product-thumb.has-image {
+    width: 64px !important;
+    height: 64px !important;
+    flex-basis: 64px;
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-meta-stack {
+    grid-template-columns:
+      minmax(0, 1fr);
+  }
+
+  .svx-pos-product-grid
+    .svx-pos-product-action {
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto !important;
+  }
+}
