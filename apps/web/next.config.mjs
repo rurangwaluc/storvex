@@ -97,13 +97,22 @@ const nextConfig = {
 };
 
 function securityHeaders() {
+  const isDevelopment =
+    process.env.NODE_ENV === "development";
+
+  const scriptSources = [
+    "'self'",
+    "'unsafe-inline'",
+    ...(isDevelopment ? ["'unsafe-eval'"] : []),
+  ].join(" ");
+
   const contentSecurityPolicy = [
     "default-src 'self'",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'",
     "object-src 'none'",
-    "script-src 'self' 'unsafe-inline'",
+    `script-src ${scriptSources}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
     "img-src 'self' data: blob: https:",
