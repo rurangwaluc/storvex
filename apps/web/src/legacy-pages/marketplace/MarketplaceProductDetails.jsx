@@ -13,7 +13,6 @@ import {
   ChevronRight,
   GitCompareArrows,
   Heart,
-  MapPin,
   Minus,
   PackageCheck,
   Plus,
@@ -45,6 +44,8 @@ import {
 } from "./MarketplaceHome";
 import {
   marketplaceProductKey,
+  marketplaceProductAvailable,
+  marketplaceAvailability,
   openMarketplaceCustomerPanel,
   syncMarketplaceProductSnapshots,
   useMarketplaceCustomerStore,
@@ -102,17 +103,6 @@ function imageDimension(
     value > 0
     ? value
     : fallback;
-}
-
-function storeLocation(store) {
-  return [
-    store?.location?.address,
-    store?.location?.sector,
-    store?.location?.district,
-  ]
-    .map(cleanString)
-    .filter(Boolean)
-    .join(", ");
 }
 
 function whatsappUrl(phone) {
@@ -498,10 +488,7 @@ export default function MarketplaceProductDetails() {
     ? customerStore.isInCompare(key)
     : false;
 
-  const availableQuantity = Math.max(
-    0,
-    Number(product?.availableQuantity || 0),
-  );
+  const availability = marketplaceAvailability(product);
 
   const storeClosed = Boolean(
     store?.temporarilyClosed ||
@@ -510,8 +497,7 @@ export default function MarketplaceProductDetails() {
 
   const canAddToCart =
     Boolean(product) &&
-    !storeClosed &&
-    availableQuantity > 0;
+    marketplaceProductAvailable(product);
 
   const discountPercent = product
     ? marketplaceDiscountPercent(product)
@@ -529,9 +515,8 @@ export default function MarketplaceProductDetails() {
     ? marketplaceComparisonFields([product])
     : [];
 
-  const location = storeLocation(store);
   const whatsapp = whatsappUrl(
-    store?.customerPhone,
+    store?.whatsappPhone,
   );
 
   const storeSearchUrl = `/marketplace?search=${encodeURIComponent(
@@ -546,10 +531,7 @@ export default function MarketplaceProductDetails() {
 
   function increaseQuantity() {
     setQuantity((current) =>
-      Math.min(
-        Math.max(1, availableQuantity),
-        current + 1,
-      ),
+      Math.min(99, current + 1),
     );
   }
 
@@ -566,15 +548,6 @@ export default function MarketplaceProductDetails() {
         toast.error(
           "This store is temporarily closed.",
         );
-        return;
-      }
-
-      if (result.reason === "STOCK_LIMIT") {
-        toast.error(
-          `All ${result.availableQuantity} available items are already in your cart.`,
-        );
-
-        openMarketplaceCustomerPanel("cart");
         return;
       }
 
@@ -945,9 +918,11 @@ export default function MarketplaceProductDetails() {
                       <strong>
                         {storeClosed
                           ? "Store temporarily closed"
-                          : availableQuantity <= 3
-                            ? "Few remaining"
-                            : "In stock"}
+                          : availability === "in_stock"
+                            ? "In stock"
+                            : availability === "out_of_stock"
+                              ? "Out of stock"
+                              : "Unavailable"}
                       </strong>
 
                       <small>
@@ -977,7 +952,7 @@ export default function MarketplaceProductDetails() {
                         type="button"
                         onClick={increaseQuantity}
                         disabled={
-                          quantity >= availableQuantity
+                          quantity >= 99 || !canAddToCart
                         }
                         aria-label="Increase quantity"
                       >
@@ -1167,12 +1142,6 @@ export default function MarketplaceProductDetails() {
                     <small>Available from</small>
                     <strong>{store.name}</strong>
 
-                    {location ? (
-                      <em>
-                        <MapPin size={13} />
-                        {location}
-                      </em>
-                    ) : null}
                   </span>
                 </header>
 
@@ -1192,14 +1161,6 @@ export default function MarketplaceProductDetails() {
                     </div>
                   ) : null}
 
-                  {store.deliveryAreas?.length ? (
-                    <div>
-                      <dt>Delivery areas</dt>
-                      <dd>
-                        {store.deliveryAreas.join(", ")}
-                      </dd>
-                    </div>
-                  ) : null}
                 </dl>
 
                 <div className="svx-product-store-actions">

@@ -16,6 +16,11 @@ export const metadata: Metadata = {
     template: "%s | Storvex Platform",
   },
   description: "Internal platform control room for Storvex.",
+  robots: {
+    index: false,
+    follow: false,
+    noarchive: true,
+  },
   icons: {
     icon: [{ url: "/storvex_icon.webp", type: "image/webp" }],
     shortcut: [{ url: "/storvex_icon.webp", type: "image/webp" }],

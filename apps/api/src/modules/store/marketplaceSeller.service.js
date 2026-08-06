@@ -113,8 +113,9 @@ function buildMarketplaceReadiness({
     readinessCheck(
       "customer_contact",
       "Customer contact",
-      tenant?.phone,
-      "Add the business phone in Business settings.",
+      profile?.customerPhone || profile?.whatsappPhone,
+      "Add a public Marketplace phone or use Storvex order requests.",
+      false,
     ),
     readinessCheck(
       "public_link",

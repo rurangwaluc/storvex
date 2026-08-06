@@ -14,6 +14,9 @@ const {
 const {
   resolveMarketplaceCategoryPath,
 } = require("../marketplace/marketplace.catalogue");
+const {
+  sanitizePublicMarketplaceAttributes,
+} = require("../marketplace/marketplace.public.attributes");
 const PDFDocument = require("pdfkit");
 const ExcelJS = require("exceljs");
 
@@ -546,7 +549,7 @@ function normalizeListingInput(body = {}, product = null, businessCategory = nul
       null,
     marketplaceCategoryPath:
       categoryPath,
-    marketplaceAttributes: {
+    marketplaceAttributes: sanitizePublicMarketplaceAttributes({
       ...attributes,
       businessCategory,
       category:
@@ -570,7 +573,7 @@ function normalizeListingInput(body = {}, product = null, businessCategory = nul
       subSubcategory:
         categoryPath?.leafCategoryLabel ||
         leafCategoryInput,
-    },
+    }),
   };
 }
 

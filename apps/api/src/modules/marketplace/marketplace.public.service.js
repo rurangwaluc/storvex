@@ -9,6 +9,9 @@ const {
   publicMarketplaceCatalogue,
   resolveMarketplaceCategoryPath,
 } = require("./marketplace.catalogue");
+const {
+  sanitizePublicMarketplaceAttributes,
+} = require("./marketplace.public.attributes");
 
 const DEFAULT_PAGE_SIZE = 24;
 const MAX_PAGE_SIZE = 60;
@@ -290,15 +293,6 @@ function activeMarketplacePricing(
   };
 }
 
-function publicStoreLocation(tenant) {
-  return {
-    countryCode: tenant?.countryCode || "RW",
-    district: tenant?.district || null,
-    sector: tenant?.sector || null,
-    address: tenant?.address || null,
-  };
-}
-
 function marketplaceSubscriptionDate(value) {
   if (!value) return null;
 
@@ -379,10 +373,9 @@ function serializePublicSeller(profile, tenant, counts = {}) {
     name: profile.displayName || tenant.name,
     description: profile.description || null,
     logoUrl: tenant.logoUrl || null,
-    customerPhone: tenant.phone || null,
-    whatsappPhone: tenant.phone || null,
-    whatsappAvailable: Boolean(tenant.phone),
-    emailAvailable: Boolean(tenant.email),
+    customerPhone: cleanString(profile.customerPhone, 80),
+    whatsappPhone: cleanString(profile.whatsappPhone, 80),
+    whatsappAvailable: Boolean(cleanString(profile.whatsappPhone, 80)),
     temporarilyClosed: Boolean(profile.temporarilyClosed),
     pickupEnabled: Boolean(profile.pickupEnabled),
     deliveryEnabled: Boolean(profile.deliveryEnabled),
@@ -393,7 +386,6 @@ function serializePublicSeller(profile, tenant, counts = {}) {
         }
       : null,
     paymentMethods: normalizeList(profile.paymentMethods),
-    location: publicStoreLocation(tenant),
     productCount: Math.max(0, Number(counts.productCount || 0)),
     availableProductCount: Math.max(
       0,
@@ -598,7 +590,7 @@ function serializePublicProduct(product, seller) {
         product.marketplaceAttributes,
     });
 
-  if (availableQuantity <= 0 || !image) return null;
+  if (!image) return null;
 
   return {
     slug: product.marketplaceSlug,
@@ -643,14 +635,16 @@ function serializePublicProduct(product, seller) {
       null,
     categoryBreadcrumbs:
       categoryPath?.breadcrumbs || [],
-    attributes:
-      product.marketplaceAttributes &&
-      typeof product.marketplaceAttributes === "object"
-        ? product.marketplaceAttributes
-        : {},
+    attributes: sanitizePublicMarketplaceAttributes(
+      product.marketplaceAttributes,
+    ),
     image,
     images: images.slice(0, 4),
-    availableQuantity,
+    availability: seller.temporarilyClosed
+      ? "unavailable"
+      : availableQuantity > 0
+        ? "in_stock"
+        : "out_of_stock",
     pickupEnabled: Boolean(seller.pickupEnabled),
     deliveryEnabled: Boolean(seller.deliveryEnabled),
   };
@@ -665,11 +659,6 @@ function publishedProductWhere(extra = {}) {
       some: {
         isMarketplaceApproved: true,
         imageType: "CLEANED",
-      },
-    },
-    branchInventory: {
-      some: {
-        qtyOnHand: { gt: 0 },
       },
     },
     ...extra,
@@ -733,15 +722,9 @@ const publicSellerInclude = {
     select: {
       id: true,
       name: true,
-      phone: true,
-      email: true,
       logoUrl: true,
       logoKey: true,
-      countryCode: true,
       currencyCode: true,
-      district: true,
-      sector: true,
-      address: true,
       status: true,
       subscription: {
         select: {

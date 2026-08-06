@@ -20,6 +20,8 @@ test(
         defaultDeliveryFee: 2000,
         deliveryAreas: [],
         paymentMethods: [],
+        customerPhone: "0788000000",
+        whatsappPhone: "0788111111",
       },
       {
         name: "RURAXIS LTD",
@@ -34,8 +36,18 @@ test(
     );
 
     assert.equal(
-      result.emailAvailable,
-      true,
+      result.customerPhone,
+      "0788000000",
+    );
+
+    assert.equal(
+      result.whatsappPhone,
+      "0788111111",
+    );
+
+    assert.equal(
+      Object.hasOwn(result, "emailAvailable"),
+      false,
     );
 
     assert.equal(
@@ -45,5 +57,8 @@ test(
       ),
       false,
     );
+
+    assert.equal(Object.hasOwn(result, "location"), false);
+    assert.equal(Object.hasOwn(result, "deliveryAreas"), false);
   },
 );

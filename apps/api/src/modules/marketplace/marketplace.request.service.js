@@ -1277,8 +1277,6 @@ async function submitMarketplaceRequest(
           select: {
             id: true,
             name: true,
-            phone: true,
-            email: true,
             currencyCode: true,
             status: true,
           },
@@ -1326,7 +1324,7 @@ async function submitMarketplaceRequest(
 
   if (
     input.preferredContact === "WHATSAPP" &&
-    !normalizePhone(seller.tenant.phone)
+    !normalizePhone(seller.whatsappPhone)
   ) {
     throw appError(
       409,
@@ -1335,10 +1333,7 @@ async function submitMarketplaceRequest(
     );
   }
 
-  if (
-    input.preferredContact === "EMAIL" &&
-    !normalizeEmail(seller.tenant.email)
-  ) {
+  if (input.preferredContact === "EMAIL") {
     throw appError(
       409,
       "SELLER_EMAIL_NOT_AVAILABLE",
@@ -1433,9 +1428,10 @@ async function submitMarketplaceRequest(
         {
           productSlug:
             requestedItem.productSlug,
-          requestedQuantity:
-            requestedItem.quantity,
-          availableQuantity,
+          availability:
+            availableQuantity > 0
+              ? "in_stock"
+              : "out_of_stock",
         },
       );
     }
@@ -1532,12 +1528,10 @@ async function submitMarketplaceRequest(
             seller.tenant.name,
           sellerPhoneSnapshot:
             normalizePhone(
-              seller.tenant.phone,
+              seller.customerPhone ||
+                seller.whatsappPhone,
             ),
-          sellerEmailSnapshot:
-            normalizeEmail(
-              seller.tenant.email,
-            ),
+          sellerEmailSnapshot: null,
           items: {
             create: requestItems,
           },

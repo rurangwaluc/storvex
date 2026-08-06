@@ -196,6 +196,11 @@ test(
       ),
       false,
     );
+
+    assert.equal(
+      Object.hasOwn(order.items[0], "id"),
+      false,
+    );
   },
 );
 

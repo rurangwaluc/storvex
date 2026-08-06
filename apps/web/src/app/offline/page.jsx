@@ -2,6 +2,11 @@ import Link from "next/link";
 
 export const metadata = {
   title: "Offline — Storvex",
+  robots: {
+    index: false,
+    follow: false,
+    noarchive: true,
+  },
 };
 
 export default function OfflinePage() {

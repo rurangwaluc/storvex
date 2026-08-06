@@ -510,21 +510,17 @@ export default function MarketplaceSearchBox({
                           className={
                             unavailable
                               ? "is-closed"
-                              : Number(
-                                    product.availableQuantity ||
-                                      0,
-                                  ) <= 3
+                              : product.availability !== "in_stock"
                                 ? "is-low"
                                 : "is-available"
                           }
                         >
                           {unavailable
                             ? "Store closed"
-                            : Number(
-                                  product.availableQuantity ||
-                                    0,
-                                ) <= 3
-                              ? "Few remaining"
+                            : product.availability === "out_of_stock"
+                              ? "Out of stock"
+                              : product.availability === "unavailable"
+                                ? "Unavailable"
                               : "In stock"}
                         </small>
                       </span>

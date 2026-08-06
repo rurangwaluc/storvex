@@ -483,10 +483,10 @@ export function ProductCard({ product }) {
             <span className="is-closed">
               Store closed
             </span>
-          ) : product.availableQuantity <= 3 ? (
-            <span className="is-low-stock">
-              Few remaining
-            </span>
+          ) : product.availability === "out_of_stock" ? (
+            <span className="is-low-stock">Out of stock</span>
+          ) : product.availability === "unavailable" ? (
+            <span className="is-low-stock">Unavailable</span>
           ) : (
             <span className="is-available">
               In stock

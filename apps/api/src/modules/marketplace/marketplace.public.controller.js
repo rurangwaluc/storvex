@@ -219,6 +219,12 @@ async function recordAnalyticsEvent(req, res) {
 }
 
 async function trackRequest(req, res) {
+  res.set({
+    "Cache-Control": "private, no-store",
+    "Referrer-Policy": "no-referrer",
+    "X-Robots-Tag": "noindex, nofollow, noarchive",
+  });
+
   try {
     const order =
       await getTrackedMarketplaceOrder(

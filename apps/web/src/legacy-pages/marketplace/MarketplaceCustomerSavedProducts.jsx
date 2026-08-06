@@ -92,7 +92,7 @@ function SavedProductCard({
 }) {
   const unavailable =
     item.seller.temporarilyClosed ||
-    Number(item.availableQuantity || 0) <= 0;
+    item.availability !== "in_stock";
 
   const inCart =
     store.isInCart(item.key);

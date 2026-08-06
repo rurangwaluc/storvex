@@ -155,8 +155,7 @@ function groupCartBySeller(cart) {
       !sellerSlug ||
       !cleanString(item?.slug) ||
       Number(item?.quantity || 0) <= 0 ||
-      Number(item?.availableQuantity || 0) <=
-        0 ||
+      item?.availability !== "in_stock" ||
       item?.seller?.temporarilyClosed
     ) {
       continue;
@@ -621,15 +620,13 @@ export default function MarketplaceRequestPanel({
 
       if (
         error?.code ===
-          "MARKETPLACE_STOCK_CHANGED" &&
-        details?.availableQuantity !==
-          undefined
+          "MARKETPLACE_STOCK_CHANGED"
       ) {
         setSubmitError(
           `${fieldError(
             error,
             "Available stock changed.",
-          )} ${details.availableQuantity} now available.`,
+          )} Review the product availability and try again.`,
         );
       } else {
         setSubmitError(

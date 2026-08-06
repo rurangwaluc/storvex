@@ -402,7 +402,6 @@ function serializeTrackedOrder(
     items:
       request.items.map(
         (item) => ({
-          id: item.id,
           title:
             item
               .productTitleSnapshot,

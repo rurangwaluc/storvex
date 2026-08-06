@@ -17,6 +17,9 @@ import {
 import { Link } from "react-router-dom";
 
 import MarketplaceRequestPanel from "./MarketplaceRequestPanel";
+import {
+  marketplaceProductAvailable,
+} from "./marketplaceCustomerStore";
 
 
 import {
@@ -73,7 +76,7 @@ function ProductIdentity({ item, onClose }) {
 
   const unavailable =
     item.seller.temporarilyClosed ||
-    Number(item.availableQuantity || 0) <= 0;
+    !marketplaceProductAvailable(item);
 
   const imageUrl =
     item.image?.thumbnailUrl ||
@@ -148,10 +151,7 @@ function ProductIdentity({ item, onClose }) {
             ? "Store temporarily closed"
             : unavailable
               ? "Currently unavailable"
-              : `${Math.max(
-                  0,
-                  Number(item.availableQuantity || 0),
-                )} available`}
+              : "In stock"}
         </span>
 
         <strong className="svx-marketplace-customer-product-price">
@@ -177,7 +177,7 @@ function CartPanel({
           item?.seller?.slug &&
           item?.slug &&
           !item?.seller?.temporarilyClosed &&
-          Number(item?.availableQuantity || 0) > 0 &&
+          marketplaceProductAvailable(item) &&
           Number(item?.quantity || 0) > 0,
       )
       .map((item) => item.seller.slug),
@@ -241,10 +241,7 @@ function CartPanel({
         ) : (
           <div className="svx-marketplace-cart-list">
             {store.cart.map((item) => {
-              const maximum = Math.max(
-                1,
-                Number(item.availableQuantity || 1),
-              );
+              const maximum = 99;
 
               return (
                 <article
@@ -441,7 +438,7 @@ function WishlistPanel({
             {store.wishlist.map((item) => {
               const unavailable =
                 item.seller.temporarilyClosed ||
-                item.availableQuantity <= 0;
+                !marketplaceProductAvailable(item);
 
               const category =
                 cleanString(
@@ -513,7 +510,7 @@ function WishlistPanel({
                     >
                       {item.seller.temporarilyClosed
                         ? "Store temporarily closed"
-                        : item.availableQuantity <= 0
+                        : !marketplaceProductAvailable(item)
                           ? "Currently unavailable"
                           : "Available"}
                     </span>
@@ -588,17 +585,6 @@ function ComparePanel({
     ? Math.min(
         ...products.map((item) =>
           Math.max(0, Number(item.price || 0)),
-        ),
-      )
-    : null;
-
-  const highestStock = canRank
-    ? Math.max(
-        ...products.map((item) =>
-          Math.max(
-            0,
-            Number(item.availableQuantity || 0),
-          ),
         ),
       )
     : null;
@@ -738,16 +724,11 @@ function ComparePanel({
               {products.map((item, index) => {
                 const unavailable =
                   item.seller.temporarilyClosed ||
-                  Number(item.availableQuantity || 0) <= 0;
+                  !marketplaceProductAvailable(item);
 
                 const isLowestPrice =
                   canRank &&
                   Number(item.price) === lowestPrice;
-
-                const isHighestStock =
-                  canRank &&
-                  Number(item.availableQuantity || 0) ===
-                    highestStock;
 
                 return (
                   <article
@@ -853,26 +834,11 @@ function ComparePanel({
                         ) : null}
                       </div>
 
-                      <div
-                        className={
-                          isHighestStock ? "is-best" : ""
-                        }
-                      >
-                        <span>Available stock</span>
-
+                      <div>
+                        <span>Availability</span>
                         <strong>
-                          {Math.max(
-                            0,
-                            Number(
-                              item.availableQuantity || 0,
-                            ),
-                          )}{" "}
-                          available
+                          {unavailable ? "Unavailable" : "In stock"}
                         </strong>
-
-                        {isHighestStock ? (
-                          <small>Highest stock</small>
-                        ) : null}
                       </div>
 
                       <div>
@@ -1020,7 +986,7 @@ function ComparePanel({
                         className="svx-marketplace-compare-cart-button"
                         disabled={
                           item.seller.temporarilyClosed ||
-                          item.availableQuantity <= 0
+                          !marketplaceProductAvailable(item)
                         }
                         onClick={() => addToCart(item)}
                       >
@@ -1064,13 +1030,11 @@ function ComparePanel({
 
                 {renderValueRow({
                   key: "stock",
-                  label: "Available stock",
+                  label: "Availability",
                   value: (item) =>
-                    `${item.availableQuantity} available`,
-                  best: (item) =>
-                    Number(item.availableQuantity) ===
-                    highestStock,
-                  bestLabel: "Highest",
+                    marketplaceProductAvailable(item)
+                      ? "In stock"
+                      : "Unavailable",
                 })}
 
                 {renderValueRow({

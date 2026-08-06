@@ -1,8 +1,39 @@
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
 
   async headers() {
     return [
+      {
+        source: "/:path*",
+        headers: securityHeaders(),
+      },
+      {
+        source: "/app/:path*",
+        headers: privateRouteHeaders(),
+      },
+      ...[
+        "/login",
+        "/signup",
+        "/verify-otp",
+        "/confirm-signup",
+        "/owner-payment",
+        "/forgot-password",
+        "/reset-password",
+        "/renew",
+        "/offline",
+      ].map((source) => ({
+        source,
+        headers: privateRouteHeaders(),
+      })),
+      {
+        source: "/marketplace/account/:path*",
+        headers: privateRouteHeaders(),
+      },
+      {
+        source: "/marketplace/orders/:path*",
+        headers: trackingRouteHeaders(),
+      },
       {
         source: "/manifest.webmanifest",
         headers: [
@@ -64,5 +95,78 @@ const nextConfig = {
     ];
   },
 };
+
+function securityHeaders() {
+  const contentSecurityPolicy = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+    "object-src 'none'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https:",
+    "connect-src 'self' https: wss:",
+    "worker-src 'self' blob:",
+    "manifest-src 'self'",
+    "media-src 'self' blob: https:",
+    "frame-src 'self'",
+    "upgrade-insecure-requests",
+  ].join("; ");
+
+  return [
+    {
+      key: "Content-Security-Policy",
+      value: contentSecurityPolicy,
+    },
+    {
+      key: "X-Frame-Options",
+      value: "DENY",
+    },
+    {
+      key: "X-Content-Type-Options",
+      value: "nosniff",
+    },
+    {
+      key: "Referrer-Policy",
+      value: "strict-origin-when-cross-origin",
+    },
+    {
+      key: "Permissions-Policy",
+      value: [
+        "camera=()",
+        "microphone=()",
+        "geolocation=()",
+        "payment=()",
+        "usb=()",
+        "browsing-topics=()",
+      ].join(", "),
+    },
+  ];
+}
+
+function privateRouteHeaders() {
+  return [
+    {
+      key: "X-Robots-Tag",
+      value: "noindex, nofollow, noarchive",
+    },
+  ];
+}
+
+function trackingRouteHeaders() {
+  return [
+    ...privateRouteHeaders(),
+    {
+      key: "Referrer-Policy",
+      value: "no-referrer",
+    },
+    {
+      key: "Cache-Control",
+      value: "private, no-store",
+    },
+  ];
+}
 
 export default nextConfig;

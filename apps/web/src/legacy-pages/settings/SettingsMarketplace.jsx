@@ -91,6 +91,8 @@ function profileSnapshot(profile) {
     displayName: profile?.displayName || "",
     description: profile?.description || "",
     publicSlug: profile?.publicSlug || "",
+    customerPhone: profile?.customerPhone || "",
+    whatsappPhone: profile?.whatsappPhone || "",
     pickupEnabled: Boolean(profile?.pickupEnabled),
     deliveryEnabled: Boolean(profile?.deliveryEnabled),
     temporarilyClosed: Boolean(profile?.temporarilyClosed),
@@ -429,6 +431,8 @@ export default function SettingsMarketplace() {
       displayName: cleanString(form.displayName),
       description: cleanString(form.description),
       publicSlug: cleanString(form.publicSlug),
+      customerPhone: cleanString(form.customerPhone),
+      whatsappPhone: cleanString(form.whatsappPhone),
       pickupEnabled: Boolean(form.pickupEnabled),
       deliveryEnabled: Boolean(form.deliveryEnabled),
       temporarilyClosed: Boolean(form.temporarilyClosed),
@@ -652,17 +656,35 @@ export default function SettingsMarketplace() {
             />
           </label>
 
-          <label className="svx-marketplace-field is-wide">
-            <span>Customer contact</span>
+          <label className="svx-marketplace-field">
+            <span>Public customer phone</span>
             <input
               type="tel"
-              value={store?.phone || ""}
-              placeholder="Add the business phone in Business settings"
-              readOnly
+              value={form.customerPhone}
+              onChange={(event) =>
+                updateField("customerPhone", event.target.value)
+              }
+              placeholder="Phone shown to Marketplace customers"
             />
             <small>
-              Customers contact this business phone from Marketplace.
-              Change it from Business settings.
+              If saved, this number is visible to Marketplace customers.
+              Leave it empty to use order requests only.
+            </small>
+          </label>
+
+          <label className="svx-marketplace-field">
+            <span>Public WhatsApp number</span>
+            <input
+              type="tel"
+              value={form.whatsappPhone}
+              onChange={(event) =>
+                updateField("whatsappPhone", event.target.value)
+              }
+              placeholder="WhatsApp number shown publicly"
+            />
+            <small>
+              If saved, this number is visible and may be used for a
+              WhatsApp contact action.
             </small>
           </label>
         </div>

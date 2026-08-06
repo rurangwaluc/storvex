@@ -32,6 +32,25 @@ const EMPTY_STATE = {
   compare: [],
 };
 
+const MAX_REQUEST_QUANTITY = 99;
+const PUBLIC_AVAILABILITY = new Set([
+  "in_stock",
+  "out_of_stock",
+  "unavailable",
+]);
+
+export function marketplaceAvailability(product) {
+  const value = cleanString(product?.availability).toLowerCase();
+  return PUBLIC_AVAILABILITY.has(value) ? value : "unavailable";
+}
+
+export function marketplaceProductAvailable(product) {
+  return (
+    marketplaceAvailability(product) === "in_stock" &&
+    !product?.seller?.temporarilyClosed
+  );
+}
+
 function cleanString(value) {
   return String(value || "").trim();
 }
@@ -91,10 +110,7 @@ export function marketplaceProductSnapshot(product) {
         ? null
         : Math.max(0, Number(product.salePrice || 0)),
     onSale: Boolean(product?.onSale),
-    availableQuantity: Math.max(
-      0,
-      Number(product?.availableQuantity || 0),
-    ),
+    availability: marketplaceAvailability(product),
     pickupEnabled: Boolean(product?.pickupEnabled),
     deliveryEnabled: Boolean(product?.deliveryEnabled),
     seller: {
@@ -117,14 +133,18 @@ function normalizeItem(item) {
 
   if (!key) return null;
 
+  const { availableQuantity: legacyQuantity, ...safeItem } = item;
+  const availability = PUBLIC_AVAILABILITY.has(item.availability)
+    ? item.availability
+    : Number(legacyQuantity || 0) > 0
+      ? "in_stock"
+      : "unavailable";
+
   return {
-    ...item,
+    ...safeItem,
     key,
     quantity: positiveInteger(item.quantity, 1),
-    availableQuantity: Math.max(
-      0,
-      Number(item.availableQuantity || 0),
-    ),
+    availability,
   };
 }
 
@@ -251,7 +271,7 @@ export function syncMarketplaceProductSnapshots(products) {
         ...snapshot,
         quantity: Math.min(
           positiveInteger(item.quantity, 1),
-          Math.max(1, snapshot.availableQuantity),
+          MAX_REQUEST_QUANTITY,
         ),
       };
     });
@@ -321,8 +341,7 @@ export function useMarketplaceCustomerStore() {
 
       if (
         !snapshot.key ||
-        snapshot.availableQuantity <= 0 ||
-        snapshot.seller.temporarilyClosed
+        !marketplaceProductAvailable(snapshot)
       ) {
         return {
           ok: false,
@@ -346,25 +365,11 @@ export function useMarketplaceCustomerStore() {
         Number(existing?.quantity || 0),
       );
 
-      if (
-        currentQuantity >=
-        snapshot.availableQuantity
-      ) {
-        return {
-          ok: false,
-          reason: "STOCK_LIMIT",
-          quantity: currentQuantity,
-          addedQuantity: 0,
-          availableQuantity:
-            snapshot.availableQuantity,
-        };
-      }
-
       const requestedQuantity =
         positiveInteger(quantity, 1);
 
       const nextQuantity = Math.min(
-        snapshot.availableQuantity,
+        MAX_REQUEST_QUANTITY,
         currentQuantity + requestedQuantity,
       );
 
@@ -384,8 +389,6 @@ export function useMarketplaceCustomerStore() {
         reason: null,
         quantity: nextQuantity,
         addedQuantity,
-        availableQuantity:
-          snapshot.availableQuantity,
         limited:
           addedQuantity < requestedQuantity,
       };
@@ -413,15 +416,10 @@ export function useMarketplaceCustomerStore() {
           .map((item) => {
             if (item.key !== key) return item;
 
-            const maximum = Math.max(
-              1,
-              Number(item.availableQuantity || 1),
-            );
-
             return {
               ...item,
               quantity: Math.min(
-                maximum,
+                MAX_REQUEST_QUANTITY,
                 positiveInteger(quantity, 1),
               ),
             };

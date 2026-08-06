@@ -57,7 +57,7 @@ test("chooses the primary approved cleaned image first", () => {
   });
 });
 
-test("hides a product without genuinely available branch stock", () => {
+test("keeps a published out-of-stock product without exposing a quantity", () => {
   const product = serializePublicProduct(
     {
       name: "Phone",
@@ -94,7 +94,8 @@ test("hides a product without genuinely available branch stock", () => {
     },
   );
 
-  assert.equal(product, null);
+  assert.equal(product.availability, "out_of_stock");
+  assert.equal(product.availableQuantity, undefined);
 });
 
 test("public product contains only customer-facing values", () => {
@@ -112,7 +113,9 @@ test("public product contains only customer-facing values", () => {
       marketplacePrice: 110000,
       marketplaceCategory: "Phones",
       marketplaceAttributes: {
-        storage: "128GB",
+        brand: "Storvex",
+        costPrice: 50000,
+        supplierName: "Private supplier",
       },
       branchInventory: [
         { qtyOnHand: 4, qtyReserved: 1 },
@@ -142,7 +145,9 @@ test("public product contains only customer-facing values", () => {
     },
   );
 
-  assert.equal(product.availableQuantity, 3);
+  assert.equal(product.availability, "in_stock");
+  assert.equal(product.availableQuantity, undefined);
+  assert.deepEqual(product.attributes, { brand: "Storvex" });
   assert.equal(product.price, 110000);
   assert.equal(product.costPrice, undefined);
   assert.equal(product.supplierId, undefined);
@@ -188,6 +193,7 @@ test("temporarily closed stores remain visible for discovery", () => {
   );
 
   assert.equal(product.seller.temporarilyClosed, true);
+  assert.equal(product.availability, "unavailable");
 });
 
 
