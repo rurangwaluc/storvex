@@ -5,6 +5,10 @@ const LIGHT = "light";
 const DARK = "dark";
 
 function getInitialTheme() {
+  if (typeof window === "undefined") {
+    return LIGHT;
+  }
+
   const saved = storage.getTheme();
 
   if (saved === LIGHT || saved === DARK) {

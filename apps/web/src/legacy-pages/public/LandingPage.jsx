@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import {
   BarChart3,
   Building2,
@@ -16,10 +15,10 @@ import {
   WalletCards,
   Warehouse,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 
 import PublicHeader from "../../components/layout/PublicHeader";
-import { useTheme } from "../../hooks/useTheme";
+import LandingRevealAnimations from "../../app/landing-reveal-animations";
 import "./LandingPage.css";
 
 const logoSrc = "/storvex_dark.webp";
@@ -149,32 +148,6 @@ function cx(...items) {
   return items.filter(Boolean).join(" ");
 }
 
-function useLandingAnimations() {
-  useEffect(() => {
-    const elements = Array.from(document.querySelectorAll(".svx-reveal"));
-
-    if (!elements.length) return undefined;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add("is-visible");
-          observer.unobserve(entry.target);
-        });
-      },
-      { threshold: 0.18 },
-    );
-
-    elements.forEach((element, index) => {
-      element.style.setProperty("--svx-reveal-delay", `${Math.min(index * 45, 240)}ms`);
-      observer.observe(element);
-    });
-
-    return () => observer.disconnect();
-  }, []);
-}
-
 function SmartLink({ href, className, children, ...props }) {
   if (href?.startsWith("http")) {
     return (
@@ -193,7 +166,7 @@ function SmartLink({ href, className, children, ...props }) {
   }
 
   return (
-    <Link to={href || "/signup"} className={className} {...props}>
+    <Link href={href || "/signup"} className={className} {...props}>
       {children}
     </Link>
   );
@@ -205,7 +178,7 @@ function Badge({ children }) {
 
 function PrimaryLink({ to = "/signup", children, className = "" }) {
   return (
-    <Link to={to} className={cx("svx-btn svx-btn-primary", className)}>
+    <Link href={to} className={cx("svx-btn svx-btn-primary", className)}>
       {children}
     </Link>
   );
@@ -453,7 +426,7 @@ function MobileReadySection() {
 
           <div className="svx-store-badges">
             <Link
-              to="/marketplace"
+              href="/marketplace"
               aria-label="Open Storvex Marketplace"
               className="svx-app-badge"
             >
@@ -465,7 +438,7 @@ function MobileReadySection() {
             </Link>
 
             <Link
-              to="/signup"
+              href="/signup"
               aria-label="Start using the Storvex web app"
               className="svx-app-badge"
             >
@@ -551,9 +524,6 @@ function FooterLink({ href, children }) {
 function Footer() {
   const currentYear = new Date().getFullYear();
 
-  function handleNewsletterSubmit(event) {
-    event.preventDefault();
-  }
 
   return (
     <section id="resources" className="svx-footer-section">
@@ -566,7 +536,7 @@ function Footer() {
           </div>
 
           <div className="svx-footer-cta-actions">
-            <Link to="/signup" className="svx-footer-primary">
+            <Link href="/signup" className="svx-footer-primary">
               Get started
             </Link>
 
@@ -620,8 +590,13 @@ function Footer() {
 
               <p>Get practical updates that help you run a better store.</p>
 
-              <form className="svx-footer-email" onSubmit={handleNewsletterSubmit}>
-                <input placeholder="Enter your email" type="email" aria-label="Email address" />
+              <form className="svx-footer-email" action="/signup" method="get">
+                <input
+                  name="email"
+                  placeholder="Enter your email"
+                  type="email"
+                  aria-label="Email address"
+                />
                 <button type="submit" aria-label="Submit email">
                   →
                 </button>
@@ -633,12 +608,12 @@ function Footer() {
             <p>© {currentYear} Storvex. All rights reserved.</p>
 
             <div>
-              <Link to="/signup">Privacy Policy</Link>
-              <Link to="/signup">Terms of Service</Link>
+              <Link href="/signup">Privacy Policy</Link>
+              <Link href="/signup">Terms of Service</Link>
             </div>
 
             <div>
-              <Link to="/signup">Security</Link>
+              <Link href="/signup">Security</Link>
               <span>🌐 English</span>
             </div>
           </div>
@@ -691,10 +666,9 @@ function HeroSection() {
 }
 
 export default function LandingPage() {
-  useLandingAnimations();
-
   return (
     <div className="storvex-landing min-h-screen">
+      <LandingRevealAnimations />
       <PublicHeader />
 
       <main>

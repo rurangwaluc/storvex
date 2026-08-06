@@ -1,6 +1,9 @@
+"use client";
+
 import { useEffect, useRef, useState } from "react";
 import { Menu, Moon, Sun, X } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { ROUTES } from "../../constants/routes";
 import { useTheme } from "../../hooks/useTheme";
@@ -66,7 +69,7 @@ function NavigationLink({
 
   return (
     <Link
-      to={item.href}
+      href={item.href}
       className={cx(className, active && "is-active")}
       aria-current={active ? "page" : undefined}
       onClick={onClick}
@@ -78,12 +81,11 @@ function NavigationLink({
 
 export default function PublicHeader() {
   const { isDark, toggleTheme } = useTheme();
-  const location = useLocation();
+  const pathname = usePathname() || "/";
 
   const [menuOpen, setMenuOpen] = useState(false);
   const headerRef = useRef(null);
 
-  const pathname = location.pathname || "/";
 
   function closeMenu() {
     setMenuOpen(false);
@@ -152,7 +154,7 @@ export default function PublicHeader() {
     >
       <div className="sp-header__inner">
         <Link
-          to="/"
+          href="/"
           className="sp-header__brand"
           aria-label="Storvex home"
           onClick={closeMenu}
@@ -205,14 +207,14 @@ export default function PublicHeader() {
           </button>
 
           <Link
-            to={ROUTES.login}
+            href={ROUTES.login}
             className="sp-header__login"
           >
             Log in
           </Link>
 
           <Link
-            to="/signup"
+            href="/signup"
             className="sp-header__trial"
           >
             Start free trial
@@ -270,7 +272,7 @@ export default function PublicHeader() {
 
           <div className="sp-header__mobile-actions">
             <Link
-              to={ROUTES.login}
+              href={ROUTES.login}
               className="sp-header__mobile-login"
               onClick={closeMenu}
             >
@@ -278,7 +280,7 @@ export default function PublicHeader() {
             </Link>
 
             <Link
-              to="/signup"
+              href="/signup"
               className="sp-header__mobile-trial"
               onClick={closeMenu}
             >
