@@ -106,6 +106,20 @@ function securityHeaders() {
     ...(isDevelopment ? ["'unsafe-eval'"] : []),
   ].join(" ");
 
+  const connectSources = [
+    "'self'",
+    "https:",
+    "wss:",
+    ...(isDevelopment
+      ? [
+          "http://localhost:5000",
+          "http://127.0.0.1:5000",
+          "ws://localhost:5000",
+          "ws://127.0.0.1:5000",
+        ]
+      : []),
+  ].join(" ");
+
   const contentSecurityPolicy = [
     "default-src 'self'",
     "base-uri 'self'",
@@ -116,12 +130,14 @@ function securityHeaders() {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
     "img-src 'self' data: blob: https:",
-    "connect-src 'self' https: wss:",
+    `connect-src ${connectSources}`,
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "media-src 'self' blob: https:",
     "frame-src 'self'",
-    "upgrade-insecure-requests",
+    ...(!isDevelopment
+      ? ["upgrade-insecure-requests"]
+      : []),
   ].join("; ");
 
   return [

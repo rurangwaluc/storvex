@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
-import apiClient, {
+import {
   clearActiveBranchId,
   getActiveBranchId,
   setActiveBranchId,
 } from "../services/apiClient";
+import {
+  internalWorkspaceQueryOptions,
+} from "../lib/internalWorkspaceQuery";
 
 const CACHE_KEY = "storvex_me_cache_v2";
 const ACTIVE_BRANCH_KEY = "storvex_active_branch_id";
@@ -239,67 +243,119 @@ function handleSubscriptionState({ data, pathname, nav }) {
 export default function SubscriptionGate({ children }) {
   const nav = useNavigate();
   const loc = useLocation();
+  const queryClient = useQueryClient();
 
-  const [me, setMe] = useState(() => readCachedWorkspace());
+  /*
+   * Keep the existing fast workspace bootstrap but treat browser
+   * storage only as placeholder data. Access decisions always use
+   * the verified /auth/me response.
+   */
+  const [cachedWorkspace] =
+    useState(() => readCachedWorkspace());
+
+  const token = getToken();
+
+  const workspaceQuery = useQuery({
+    ...internalWorkspaceQueryOptions,
+    enabled: Boolean(token),
+    placeholderData:
+      cachedWorkspace || undefined,
+  });
 
   useEffect(() => {
-    let cancelled = false;
+    if (!token) {
+      clearWorkspaceStorage();
+      queryClient.clear();
 
-    async function loadWorkspaceInBackground() {
-      const token = getToken();
+      nav("/login", {
+        replace: true,
+        state: {
+          from: loc.pathname,
+        },
+      });
 
-      if (!token) {
-        clearWorkspaceStorage();
-        nav("/login", { replace: true, state: { from: loc.pathname } });
+      return;
+    }
+
+    const data =
+      workspaceQuery.data || null;
+
+    if (
+      data &&
+      !workspaceQuery.isPlaceholderData
+    ) {
+      persistWorkspace(data);
+
+      const ownerCanRenew =
+        canAccessRenewPage(data);
+
+      if (
+        isRenewPath(loc.pathname) &&
+        !ownerCanRenew
+      ) {
+        toast.error(
+          "Only the store owner can renew the subscription.",
+        );
+
+        nav("/app", {
+          replace: true,
+        });
+
         return;
       }
 
-      try {
-        const { data } = await apiClient.get("/auth/me");
-
-        if (cancelled) return;
-
-        setMe(data);
-        persistWorkspace(data);
-
-        const ownerCanRenew = canAccessRenewPage(data);
-
-        if (isRenewPath(loc.pathname) && !ownerCanRenew) {
-          toast.error("Only the store owner can renew the subscription.");
-          nav("/app", { replace: true });
-          return;
-        }
-
-        handleSubscriptionState({
-          data,
-          pathname: loc.pathname,
-          nav,
-        });
-      } catch (err) {
-        if (cancelled) return;
-
-        if (err?.response?.status === 401) {
-          clearWorkspaceStorage();
-          nav("/login", { replace: true, state: { from: loc.pathname } });
-          return;
-        }
-
-        if (!me) {
-          toast.error(
-            err?.response?.data?.message ||
-              err?.message ||
-              "Workspace is still loading. You can continue while Storvex refreshes access."
-          );
-        }
-      }
+      handleSubscriptionState({
+        data,
+        pathname: loc.pathname,
+        nav,
+      });
     }
 
-    loadWorkspaceInBackground();
+    const error =
+      workspaceQuery.error;
 
-    return () => {
-      cancelled = true;
-    };
-  }, [nav, loc.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!error) return;
+
+    const status = Number(
+      error?.response?.status ||
+        error?.status ||
+        0,
+    );
+
+    if (status === 401) {
+      clearWorkspaceStorage();
+      queryClient.clear();
+
+      nav("/login", {
+        replace: true,
+        state: {
+          from: loc.pathname,
+        },
+      });
+
+      return;
+    }
+
+    if (
+      !data &&
+      !cachedWorkspace
+    ) {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Workspace is still loading. You can continue while Storvex refreshes access.",
+      );
+    }
+  }, [
+    cachedWorkspace,
+    loc.pathname,
+    nav,
+    queryClient,
+    token,
+    workspaceQuery.data,
+    workspaceQuery.error,
+    workspaceQuery.isPlaceholderData,
+  ]);
 
   return <>{children}</>;
 }

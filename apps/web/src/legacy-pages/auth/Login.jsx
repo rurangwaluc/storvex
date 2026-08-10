@@ -18,6 +18,7 @@ import {
 import PasswordField from "../../components/auth/PasswordField";
 import AsyncButton from "../../components/ui/AsyncButton";
 import apiClient from "../../services/apiClient";
+import { queryClient } from "../../lib/queryClient";
 
 function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
@@ -214,6 +215,12 @@ export default function Login() {
           timeout: 15000,
         },
       );
+
+      /*
+       * A successful internal login starts a new private server-state
+       * session. Remove anything cached by the previous account first.
+       */
+      queryClient.clear();
 
       persistAuthSession(response?.data || {});
       clearOnboardingState();

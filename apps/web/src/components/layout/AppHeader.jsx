@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 
@@ -256,9 +256,9 @@ export default function AppHeader({
   isDark,
   onToggleTheme,
   onToggleMobileSidebar,
+  onLogout,
 }) {
   const location = useLocation();
-  const navigate = useNavigate();
   const actionMenuRef = useRef(null);
   const accountMenuRef = useRef(null);
 
@@ -310,10 +310,13 @@ export default function AppHeader({
   }, []);
 
   function handleLogout() {
-    localStorage.removeItem("tenantToken");
-    localStorage.removeItem("token");
     setAccountMenuOpen(false);
-    navigate("/login", { replace: true });
+
+    /*
+     * AppShell owns the internal-session boundary so every sign-out
+     * path clears auth storage and TanStack server state consistently.
+     */
+    onLogout?.();
   }
 
   const finalUserName = pickFirstNonEmpty(user.name, user.email, "Store owner");

@@ -1,14 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useTheme } from "../../hooks/useTheme";
 import AppHeader from "./AppHeader";
 import AppSidebar from "./AppSidebar";
-import apiClient, {
+import {
   clearActiveBranchId,
   getActiveBranchId,
   setActiveBranchId,
 } from "../../services/apiClient";
+import {
+  internalWorkspaceQueryOptions,
+} from "../../lib/internalWorkspaceQuery";
 
 const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
 
@@ -364,10 +368,16 @@ export default function AppShell({ children }) {
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
 
   const cachedWorkspace = useMemo(() => {
     return normalizeWorkspacePayload(readCachedWorkspace());
   }, []);
+
+  const workspaceQuery = useQuery({
+    ...internalWorkspaceQueryOptions,
+    placeholderData: cachedWorkspace || undefined,
+  });
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -379,52 +389,71 @@ export default function AppShell({ children }) {
 
   const headerTitle = pageTitle || workspaceName || "Workspace";
 
-  const refreshWorkspace = useCallback(async () => {
-    try {
-      const res = await apiClient.get("/auth/me");
-      const payload = res?.data || null;
+  useEffect(() => {
+    const payload = workspaceQuery.data || null;
 
-      if (!payload) return null;
+    /*
+     * The cached workspace is placeholder data only. It gives an
+     * instant shell while the shared /auth/me request verifies the
+     * current session in the background.
+     */
+    if (
+      !payload ||
+      workspaceQuery.isPlaceholderData
+    ) {
+      return;
+    }
 
-      const nextWorkspace = persistWorkspace(payload);
-      setWorkspace(nextWorkspace);
+    const nextWorkspace =
+      persistWorkspace(payload);
 
-      window.dispatchEvent(
-        new CustomEvent("storvex:workspace-refreshed", {
+    if (!nextWorkspace) return;
+
+    setWorkspace(nextWorkspace);
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "storvex:workspace-refreshed",
+        {
           detail: {
             workspace: nextWorkspace,
-            branchId: pickBranchIdFromWorkspace(nextWorkspace),
+            branchId:
+              pickBranchIdFromWorkspace(
+                nextWorkspace,
+              ),
           },
-        }),
-      );
-
-      return nextWorkspace;
-    } catch (err) {
-      if (err?.response?.status === 401) {
-        clearWorkspaceStorage();
-        navigate("/login", { replace: true });
-      }
-
-      return null;
-    }
-  }, [navigate]);
+        },
+      ),
+    );
+  }, [
+    workspaceQuery.data,
+    workspaceQuery.isPlaceholderData,
+  ]);
 
   useEffect(() => {
-    let alive = true;
+    const error = workspaceQuery.error;
 
-    async function bootWorkspace() {
-      const payload = await refreshWorkspace();
-      if (!alive || !payload) return;
+    if (!error) return;
 
-      setWorkspace(payload);
-    }
+    const status = Number(
+      error?.response?.status ||
+        error?.status ||
+        0,
+    );
 
-    bootWorkspace();
+    if (status !== 401) return;
 
-    return () => {
-      alive = false;
-    };
-  }, [refreshWorkspace]);
+    clearWorkspaceStorage();
+    queryClient.clear();
+
+    navigate("/login", {
+      replace: true,
+    });
+  }, [
+    navigate,
+    queryClient,
+    workspaceQuery.error,
+  ]);
 
   useEffect(() => {
     function handleResize() {
@@ -510,6 +539,13 @@ export default function AppShell({ children }) {
 
   function handleLogout() {
     clearWorkspaceStorage();
+
+    /*
+     * Internal query keys are compact and mostly branch-scoped.
+     * Logout is therefore a hard browser server-state boundary.
+     */
+    queryClient.clear();
+
     navigate("/login", { replace: true });
   }
 
@@ -529,6 +565,7 @@ export default function AppShell({ children }) {
           onToggleTheme={toggleTheme}
           onToggleSidebar={() => setCollapsed((prev) => !prev)}
           onToggleMobileSidebar={() => setMobileOpen(true)}
+          onLogout={handleLogout}
           collapsed={collapsed}
           workspaceName={headerTitle}
         />
