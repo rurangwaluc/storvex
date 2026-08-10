@@ -17,13 +17,11 @@ const {
   listPublicProducts,
   getPublicMarketplaceCatalogue,
 } = require("./marketplace.public.service");
-const crypto = require("crypto");
 const {
-  cacheKey,
   cacheRemember,
 } = require("../../lib/cache/cache");
 const {
-  getPublicProductsGeneration,
+  publicMarketplaceCacheKey,
 } = require("./marketplace.public.cache");
 
 function positiveInteger(value, fallback) {
@@ -35,51 +33,38 @@ function positiveInteger(value, fallback) {
     : fallback;
 }
 
-const PUBLIC_PRODUCTS_CACHE_TTL_SECONDS =
+const PUBLIC_MARKETPLACE_CACHE_TTL_SECONDS =
   positiveInteger(
     process.env
-      .MARKETPLACE_PUBLIC_PRODUCTS_CACHE_TTL_SECONDS,
+      .MARKETPLACE_PUBLIC_CACHE_TTL_SECONDS ||
+      process.env
+        .MARKETPLACE_PUBLIC_PRODUCTS_CACHE_TTL_SECONDS,
     30,
   );
 
-function normalizedPublicQuery(query = {}) {
-  return Object.entries(query || {})
-    .filter(([, value]) =>
-      value !== undefined &&
-      value !== null,
-    )
-    .map(([key, value]) => [
-      String(key),
-      Array.isArray(value)
-        ? value.map(String)
-        : String(value),
-    ])
-    .sort(([left], [right]) =>
-      left.localeCompare(right),
-    );
+async function rememberPublicMarketplace({
+  resource,
+  identity = [],
+  query = {},
+  loader,
+}) {
+  return cacheRemember(
+    await publicMarketplaceCacheKey(
+      resource,
+      {
+        identity,
+        query,
+      },
+    ),
+    PUBLIC_MARKETPLACE_CACHE_TTL_SECONDS,
+    loader,
+  );
 }
 
-async function publicProductsCacheKey(query) {
-  const generation =
-    await getPublicProductsGeneration();
-
-  const digest = crypto
-    .createHash("sha256")
-    .update(
-      JSON.stringify(
-        normalizedPublicQuery(query),
-      ),
-    )
-    .digest("hex")
-    .slice(0, 32);
-
-  return cacheKey(
-    "marketplace",
-    "public",
-    "products",
-    "v1",
-    generation,
-    digest,
+function setPublicCacheHeader(res, cache) {
+  res.set(
+    "X-Storvex-Cache",
+    cache,
   );
 }
 
@@ -95,8 +80,22 @@ function sendError(res, error, fallback) {
 
 async function listStores(req, res) {
   try {
-    const result = await listPublicStores(req.query || {});
-    return res.json(result);
+    const query = req.query || {};
+
+    const { value, cache } =
+      await rememberPublicMarketplace({
+        resource: "stores",
+        query,
+        loader: () =>
+          listPublicStores(query),
+      });
+
+    setPublicCacheHeader(
+      res,
+      cache,
+    );
+
+    return res.json(value);
   } catch (error) {
     return sendError(
       res,
@@ -108,19 +107,39 @@ async function listStores(req, res) {
 
 async function getStore(req, res) {
   try {
-    const result = await getPublicStore(
-      req.params.storeSlug,
-      req.query || {},
+    const storeSlug =
+      req.params.storeSlug;
+
+    const query =
+      req.query || {};
+
+    const { value, cache } =
+      await rememberPublicMarketplace({
+        resource: "store",
+        identity: [
+          storeSlug,
+        ],
+        query,
+        loader: () =>
+          getPublicStore(
+            storeSlug,
+            query,
+          ),
+      });
+
+    setPublicCacheHeader(
+      res,
+      cache,
     );
 
-    if (!result) {
+    if (!value) {
       return res.status(404).json({
         message: "Marketplace store not found",
         code: "MARKETPLACE_STORE_NOT_FOUND",
       });
     }
 
-    return res.json(result);
+    return res.json(value);
   } catch (error) {
     return sendError(
       res,
@@ -132,19 +151,39 @@ async function getStore(req, res) {
 
 async function getProduct(req, res) {
   try {
-    const result = await getPublicProduct(
-      req.params.storeSlug,
-      req.params.productSlug,
+    const storeSlug =
+      req.params.storeSlug;
+
+    const productSlug =
+      req.params.productSlug;
+
+    const { value, cache } =
+      await rememberPublicMarketplace({
+        resource: "product",
+        identity: [
+          storeSlug,
+          productSlug,
+        ],
+        loader: () =>
+          getPublicProduct(
+            storeSlug,
+            productSlug,
+          ),
+      });
+
+    setPublicCacheHeader(
+      res,
+      cache,
     );
 
-    if (!result) {
+    if (!value) {
       return res.status(404).json({
         message: "Marketplace product not found",
         code: "MARKETPLACE_PRODUCT_NOT_FOUND",
       });
     }
 
-    return res.json(result);
+    return res.json(value);
   } catch (error) {
     return sendError(
       res,
@@ -159,14 +198,15 @@ async function listProducts(req, res) {
     const query = req.query || {};
 
     const { value, cache } =
-      await cacheRemember(
-        await publicProductsCacheKey(query),
-        PUBLIC_PRODUCTS_CACHE_TTL_SECONDS,
-        () => listPublicProducts(query),
-      );
+      await rememberPublicMarketplace({
+        resource: "products",
+        query,
+        loader: () =>
+          listPublicProducts(query),
+      });
 
-    res.set(
-      "X-Storvex-Cache",
+    setPublicCacheHeader(
+      res,
       cache,
     );
 
