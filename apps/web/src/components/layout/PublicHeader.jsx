@@ -15,9 +15,8 @@ const LIGHT_LOGO = "/storvex_white.webp";
 
 const NAVIGATION = [
   {
-    label: "Features",
-    href: "/#features",
-    anchor: true,
+    label: "Solutions",
+    href: "/solutions/inventory-management",
   },
   {
     label: "Pricing",
@@ -34,6 +33,10 @@ function cx(...values) {
 }
 
 function routeIsActive(pathname, href) {
+  if (href.startsWith("/solutions/")) {
+    return pathname.startsWith("/solutions/");
+  }
+
   if (href === "/pricing") {
     return pathname === "/pricing";
   }

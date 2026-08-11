@@ -1,3 +1,5 @@
+import { solutionPageSlugs } from "../lib/seo/solutionPages";
+
 const baseUrl = "https://www.storvex.rw";
 
 export default function sitemap() {
@@ -28,5 +30,11 @@ export default function sitemap() {
       changeFrequency: "daily",
       priority: 0.8,
     },
+    ...solutionPageSlugs.map((slug) => ({
+      url: `${baseUrl}/solutions/${slug}`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    })),
   ];
 }

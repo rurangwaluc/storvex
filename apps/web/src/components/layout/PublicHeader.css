@@ -222,11 +222,7 @@
 .sp-header__mobile-link:focus-visible,
 .sp-header__mobile-login:focus-visible,
 .sp-header__mobile-trial:focus-visible {
-  outline: 3px solid color-mix(
-    in srgb,
-    var(--landing-primary) 24%,
-    transparent
-  );
+  outline: 2px solid var(--landing-primary);
   outline-offset: 3px;
 }
 
