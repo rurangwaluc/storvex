@@ -3,7 +3,7 @@ import "../index.css";
 import PwaBoot from "../components/pwa/PwaBoot";
 
 export const metadata = {
-  title: "Storvex — Store control system",
+  title: "Storvex: Store control system",
   description:
     "Storvex helps store owners track sales, stock, cash, staff activity, and branch performance with real-time clarity.",
   applicationName: "Storvex",
