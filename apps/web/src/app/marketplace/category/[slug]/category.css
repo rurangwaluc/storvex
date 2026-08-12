@@ -1,0 +1,40 @@
+.svx-category-seo-intro {
+  grid-template-columns: 270px minmax(0, 1fr) !important;
+}
+
+.svx-category-seo-intro .svx-category-page__intro-copy {
+  max-width: 850px;
+}
+
+.svx-category-seo-intro ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 0;
+  margin: 14px 0 0;
+  list-style: none;
+}
+
+.svx-category-seo-intro li {
+  border: 1px solid var(--svx-category-border);
+  padding: 6px 9px;
+  color: var(--svx-category-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.svx-category-seo-intro__guidance {
+  margin-top: 13px !important;
+  font-size: 14px !important;
+}
+
+.svx-category-route .svx-category-seo-search {
+  max-width: 620px;
+  margin-top: 18px;
+}
+
+@media (max-width: 800px) {
+  .svx-category-seo-intro {
+    grid-template-columns: 1fr !important;
+  }
+}

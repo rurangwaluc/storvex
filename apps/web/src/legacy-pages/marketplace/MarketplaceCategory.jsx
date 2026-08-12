@@ -38,6 +38,9 @@ import {
   marketplaceQueryKeys,
 } from "../../lib/marketplaceQueryKeys";
 import {
+  normalizeMarketplaceCategoryQuery,
+} from "../../lib/marketplaceCategoryQuery";
+import {
   syncMarketplaceProductSnapshots,
 } from "./marketplaceCustomerStore";
 import {
@@ -209,50 +212,29 @@ function pageNumbersFor(pagination) {
     .sort((left, right) => left - right);
 }
 
-export default function MarketplaceCategory() {
-  const { categorySlug = "" } = useParams();
+export default function MarketplaceCategory({
+  categorySlugOverride = "",
+  initialCatalogueData,
+  initialProductData,
+  initialStoresData,
+  serverIntro = null,
+} = {}) {
+  const { categorySlug: routeCategorySlug = "" } = useParams();
+  const categorySlug = categorySlugOverride || routeCategorySlug;
 
   const [searchParams, setSearchParams] =
     useSearchParams();
 
-  const initialSearch = cleanString(
-    searchParams.get("search"),
-  );
-  const initialSort =
-    cleanString(searchParams.get("sort")) ||
-    "newest";
-  const initialFulfilment = cleanString(
-    searchParams.get("fulfilment"),
-  );
-  const initialMinimumPrice = cleanString(
-    searchParams.get("minPrice"),
-  );
-  const initialMaximumPrice = cleanString(
-    searchParams.get("maxPrice"),
-  );
-  const initialOnSale =
-    searchParams.get("onSale") === "true";
-  const initialStore = cleanString(
-    searchParams.get("store"),
-  );
-  const initialPageSize = categoryPageSizes.includes(
-    Number.parseInt(
-      searchParams.get("limit") || "",
-      10,
-    ),
-  )
-    ? Number.parseInt(
-        searchParams.get("limit"),
-        10,
-      )
-    : DEFAULT_CATEGORY_PAGE_SIZE;
-  const initialPage = Math.max(
-    1,
-    Number.parseInt(
-      searchParams.get("page") || "1",
-      10,
-    ) || 1,
-  );
+  const initialQuery = normalizeMarketplaceCategoryQuery(searchParams);
+  const initialSearch = initialQuery.search;
+  const initialSort = initialQuery.sort;
+  const initialFulfilment = initialQuery.fulfilment;
+  const initialMinimumPrice = initialQuery.minPrice;
+  const initialMaximumPrice = initialQuery.maxPrice;
+  const initialOnSale = initialQuery.onSale;
+  const initialStore = initialQuery.store;
+  const initialPageSize = initialQuery.limit;
+  const initialPage = initialQuery.page;
 
   const [subcategoryOpen, setSubcategoryOpen] =
     useState(false);
@@ -288,6 +270,7 @@ export default function MarketplaceCategory() {
     queryKey:
       marketplaceQueryKeys.catalogue(),
     queryFn: getMarketplaceCatalogue,
+    initialData: initialCatalogueData,
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
     retry: 1,
@@ -393,6 +376,7 @@ export default function MarketplaceCategory() {
       listMarketplaceStores(
         storeParams,
       ),
+    initialData: initialStoresData,
     staleTime: 5 * 60_000,
     gcTime: 30 * 60_000,
     retry: 1,
@@ -451,6 +435,7 @@ export default function MarketplaceCategory() {
       listMarketplaceProducts(
         productParams,
       ),
+    initialData: initialProductData,
     enabled:
       !catalogueLoading &&
       Boolean(categoryPath),
@@ -861,6 +846,7 @@ export default function MarketplaceCategory() {
               )}
             </nav>
 
+            {serverIntro || (
             <div className="svx-category-page__intro">
               {categoryHeroImage ? (
                 <div className="svx-category-page__hero-media">
@@ -908,6 +894,23 @@ export default function MarketplaceCategory() {
                 </button>
               </form>
             </div>
+            )}
+
+            {serverIntro ? (
+              <form
+                className="svx-shop-search svx-category-seo-search"
+                onSubmit={submitSearch}
+              >
+                <Search size={18} />
+                <input
+                  value={searchInput}
+                  onChange={(event) => setSearchInput(event.target.value)}
+                  placeholder={`Search ${selectedNode.label.toLowerCase()}`}
+                  aria-label={`Search ${selectedNode.label}`}
+                />
+                <button type="submit">Search</button>
+              </form>
+            ) : null}
 
             {categoryPath.category.children
               ?.length ? (
@@ -1486,19 +1489,23 @@ export default function MarketplaceCategory() {
                 <div className="svx-commerce-state">
                   <PackageSearch size={34} />
                   <h2>
-                    No products found
+                    {search || activeFilterCount > 0
+                      ? "No matching products found"
+                      : "No products are listed in this category yet"}
                   </h2>
                   <p>
-                    Try another filter or search
-                    inside this category.
+                    {search || activeFilterCount > 0
+                      ? "Try another search or clear the filters."
+                      : "Browse Marketplace or check another category."}
                   </p>
 
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                  >
-                    Clear filters
-                  </button>
+                  {search || activeFilterCount > 0 ? (
+                    <button type="button" onClick={clearFilters}>
+                      Clear filters
+                    </button>
+                  ) : (
+                    <Link to="/marketplace">Browse Marketplace</Link>
+                  )}
                 </div>
               ) : null}
 

@@ -1,5 +1,7 @@
 import { solutionPageSlugs } from "../lib/seo/solutionPages";
 import { industryPageSlugs } from "../lib/seo/industryPages";
+import { marketplaceCategoryPages } from "../lib/seo/marketplaceCategoryPages";
+import { approvedMarketplaceCategorySlugs } from "../lib/seo/marketplaceSeoApprovals";
 
 const baseUrl = "https://www.storvex.rw";
 
@@ -43,5 +45,13 @@ export default function sitemap() {
       changeFrequency: "monthly",
       priority: 0.8,
     })),
+    ...marketplaceCategoryPages
+      .filter((page) => approvedMarketplaceCategorySlugs.has(page.slug))
+      .map((page) => ({
+        url: page.canonical,
+        lastModified,
+        changeFrequency: "daily",
+        priority: 0.7,
+      })),
   ];
 }

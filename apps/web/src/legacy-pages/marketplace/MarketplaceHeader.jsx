@@ -47,30 +47,35 @@ import "./MarketplaceHeader.css";
 const MARKETPLACE_CATEGORIES = [
   {
     label: "Electronics",
+    slug: "electronics",
     value: "Electronics",
     description: "Phones, laptops, TVs and accessories",
     icon: Monitor,
   },
   {
     label: "Hardware",
+    slug: "hardware",
     value: "Hardware / Quincaillerie",
     description: "Tools, building materials and fittings",
     icon: Wrench,
   },
   {
     label: "Home & kitchen",
+    slug: "home-and-kitchen",
     value: "Home & kitchen materials",
     description: "Cookware, sinks, tiles and home materials",
     icon: House,
   },
   {
     label: "Lighting",
+    slug: "lighting",
     value: "Lighting",
     description: "Bulbs, ceiling lights and flood lights",
     icon: Lamp,
   },
   {
     label: "Spare parts",
+    slug: "spare-parts",
     value: "Spare parts",
     description: "Screens, batteries, filters and parts",
     icon: Package,
@@ -140,10 +145,8 @@ export default function MarketplaceHeader() {
     closeNavigation();
   }
 
-  function chooseCategory(value) {
-    navigate(
-      `/marketplace/shop?category=${encodeURIComponent(value)}`,
-    );
+  function chooseCategory(slug) {
+    navigate(`/marketplace/category/${encodeURIComponent(slug)}`);
 
     closeNavigation();
   }
@@ -331,7 +334,7 @@ export default function MarketplaceHeader() {
                       type="button"
                       onClick={() =>
                         chooseCategory(
-                          category.value,
+                          category.slug,
                         )
                       }
                     >
@@ -888,7 +891,7 @@ export default function MarketplaceHeader() {
                           type="button"
                           className="smh-menu__category-row"
                           onClick={() =>
-                            chooseCategory(category.value)
+                            chooseCategory(category.slug)
                           }
                         >
                           <span className="smh-menu__category-icon">

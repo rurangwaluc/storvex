@@ -27,7 +27,13 @@ export function proxy(request) {
     isSolutionPage ||
     isKnownLegacyRoute(segments)
   ) {
-    return NextResponse.next();
+    const response = NextResponse.next();
+
+    if (segments.join("/") === "marketplace/shop") {
+      response.headers.set("X-Robots-Tag", "noindex, follow");
+    }
+
+    return response;
   }
 
   return new NextResponse(
