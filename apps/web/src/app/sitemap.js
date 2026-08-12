@@ -1,4 +1,5 @@
 import { solutionPageSlugs } from "../lib/seo/solutionPages";
+import { industryPageSlugs } from "../lib/seo/industryPages";
 
 const baseUrl = "https://www.storvex.rw";
 
@@ -32,6 +33,12 @@ export default function sitemap() {
     },
     ...solutionPageSlugs.map((slug) => ({
       url: `${baseUrl}/solutions/${slug}`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    })),
+    ...industryPageSlugs.map((slug) => ({
+      url: `${baseUrl}/industries/${slug}`,
       lastModified,
       changeFrequency: "monthly",
       priority: 0.8,

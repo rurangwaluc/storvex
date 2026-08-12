@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isKnownLegacyRoute } from "./lib/knownLegacyRoutes";
 import { isSolutionPageSlug } from "./lib/seo/solutionPages";
+import { isIndustryPageSlug } from "./lib/seo/industryPages";
 
 const EXPLICIT_APP_ROUTES = new Set(["offline"]);
 
@@ -15,8 +16,14 @@ export function proxy(request) {
     segments[0] === "solutions" &&
     isSolutionPageSlug(segments[1]);
 
+  const isIndustryPage =
+    segments.length === 2 &&
+    segments[0] === "industries" &&
+    isIndustryPageSlug(segments[1]);
+
   if (
     EXPLICIT_APP_ROUTES.has(segments.join("/")) ||
+    isIndustryPage ||
     isSolutionPage ||
     isKnownLegacyRoute(segments)
   ) {

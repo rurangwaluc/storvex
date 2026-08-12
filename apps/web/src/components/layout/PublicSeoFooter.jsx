@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import "./PublicSeoFooter.css";
+
 const solutionLinks = [
   ["Inventory management", "/solutions/inventory-management"],
   ["Sales tracking", "/solutions/sales-tracking"],
@@ -7,6 +9,14 @@ const solutionLinks = [
   ["Multi-branch shops", "/solutions/multi-branch-management"],
   ["Stock reordering", "/solutions/stock-reordering"],
   ["Staff management", "/solutions/staff-management"],
+];
+
+const industryLinks = [
+  ["Electronics shops", "/industries/electronics"],
+  ["Hardware shops", "/industries/hardware"],
+  ["Home and kitchen shops", "/industries/home-and-kitchen"],
+  ["Lighting shops", "/industries/lighting"],
+  ["Spare parts shops", "/industries/spare-parts"],
 ];
 
 export default function PublicSeoFooter() {
@@ -24,6 +34,17 @@ export default function PublicSeoFooter() {
           <h2>Solutions</h2>
           <ul>
             {solutionLinks.map(([label, href]) => (
+              <li key={href}>
+                <Link href={href}>{label}</Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <nav aria-label="Storvex industries">
+          <h2>Industries</h2>
+          <ul>
+            {industryLinks.map(([label, href]) => (
               <li key={href}>
                 <Link href={href}>{label}</Link>
               </li>

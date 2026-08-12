@@ -9,6 +9,7 @@ export default function robots() {
           "/marketplace",
           "/marketplace/",
           "/solutions/",
+          "/industries/",
         ],
         disallow: [
           "/app/",
