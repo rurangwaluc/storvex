@@ -46,6 +46,9 @@ import {
   marketplaceQueryKeys,
 } from "../../lib/marketplaceQueryKeys";
 import {
+  getMarketplaceCatalogue,
+} from "../../services/marketplaceApi";
+import {
   getApprovedProductImages,
   getProductImageUrl,
 } from "../../utils/productImages";
@@ -60,6 +63,41 @@ function cx(...items) {
 function cleanString(value) {
   const s = String(value || "").trim();
   return s || "";
+}
+
+function normalizeMarketplaceNodeValue(value) {
+  return cleanString(value).toLowerCase();
+}
+
+function marketplaceNodeValue(node) {
+  return cleanString(
+    node?.slug ||
+    node?.key ||
+    node?.label,
+  );
+}
+
+function findMarketplaceNode(nodes, value) {
+  const wanted =
+    normalizeMarketplaceNodeValue(value);
+
+  if (!wanted || !Array.isArray(nodes)) {
+    return null;
+  }
+
+  return (
+    nodes.find((node) => {
+      const values = [
+        node?.slug,
+        node?.key,
+        node?.label,
+      ]
+        .map(normalizeMarketplaceNodeValue)
+        .filter(Boolean);
+
+      return values.includes(wanted);
+    }) || null
+  );
 }
 
 function formatRwf(value) {
@@ -238,8 +276,15 @@ function listingFormFromProduct(
     ),
     category: cleanString(
       product?.listingCategory ||
-      product?.marketplaceCategory ||
-      fallbackCategory,
+      product?.marketplaceCategory,
+    ),
+    subcategory: cleanString(
+      product?.listingSubcategory ||
+      product?.marketplaceSubcategory,
+    ),
+    leafCategory: cleanString(
+      product?.listingLeafCategory ||
+      product?.marketplaceLeafCategory,
     ),
   };
 }
@@ -269,6 +314,16 @@ function mergeListingPayloadIntoProduct(
     listingCategory: payload.listingCategory,
     marketplaceCategory: payload.listingCategory,
 
+    listingSubcategory:
+      payload.listingSubcategory,
+    marketplaceSubcategory:
+      payload.listingSubcategory,
+
+    listingLeafCategory:
+      payload.listingLeafCategory,
+    marketplaceLeafCategory:
+      payload.listingLeafCategory,
+
     listingSalePrice:
       payload.listingSalePrice,
     marketplaceSalePrice:
@@ -297,6 +352,10 @@ function listingPayloadFromForm(
     ),
     listingPrice: Number(form.price || 0),
     listingCategory: cleanString(form.category),
+    listingSubcategory:
+      cleanString(form.subcategory),
+    listingLeafCategory:
+      cleanString(form.leafCategory),
   };
 
   if (!includeSale) {
@@ -799,6 +858,109 @@ export default function InventoryDetail() {
   const product = productQuery.data || null;
   const loading = productQuery.isPending;
 
+  const [listingForm, setListingForm] = useState({
+    title: "",
+    description: "",
+    price: "",
+    salePrice: "",
+    saleStartsAt: "",
+    saleEndsAt: "",
+    category: "",
+    subcategory: "",
+    leafCategory: "",
+  });
+
+  const marketplaceCatalogueQuery = useQuery({
+    queryKey:
+      marketplaceQueryKeys.catalogue(),
+    queryFn: getMarketplaceCatalogue,
+    staleTime: 30 * 60_000,
+    gcTime: 60 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  const marketplaceCategories =
+    Array.isArray(
+      marketplaceCatalogueQuery
+        .data?.categories,
+    )
+      ? marketplaceCatalogueQuery
+          .data.categories
+      : [];
+
+  const selectedMarketplaceCategory =
+    useMemo(
+      () =>
+        findMarketplaceNode(
+          marketplaceCategories,
+          listingForm.category,
+        ),
+      [
+        marketplaceCategories,
+        listingForm.category,
+      ],
+    );
+
+  const marketplaceSubcategories =
+    Array.isArray(
+      selectedMarketplaceCategory
+        ?.children,
+    )
+      ? selectedMarketplaceCategory
+          .children
+      : [];
+
+  const selectedMarketplaceSubcategory =
+    useMemo(
+      () =>
+        findMarketplaceNode(
+          marketplaceSubcategories,
+          listingForm.subcategory,
+        ),
+      [
+        marketplaceSubcategories,
+        listingForm.subcategory,
+      ],
+    );
+
+  const marketplaceLeafCategories =
+    Array.isArray(
+      selectedMarketplaceSubcategory
+        ?.children,
+    )
+      ? selectedMarketplaceSubcategory
+          .children
+      : [];
+
+  const selectedMarketplaceLeafCategory =
+    useMemo(
+      () =>
+        findMarketplaceNode(
+          marketplaceLeafCategories,
+          listingForm.leafCategory,
+        ),
+      [
+        marketplaceLeafCategories,
+        listingForm.leafCategory,
+      ],
+    );
+
+  const marketplaceCategoryPathComplete =
+    Boolean(
+      selectedMarketplaceCategory &&
+      (
+        marketplaceSubcategories.length === 0 ||
+        (
+          selectedMarketplaceSubcategory &&
+          (
+            marketplaceLeafCategories.length === 0 ||
+            selectedMarketplaceLeafCategory
+          )
+        )
+      ),
+    );
+
   function setProduct(updater) {
     queryClient.setQueryData(
       productQueryKey,
@@ -812,15 +974,6 @@ export default function InventoryDetail() {
   const [imagePreview, setImagePreview] = useState(null);
   const [listingSaving, setListingSaving] = useState("");
   const [listingEditorOpen, setListingEditorOpen] = useState(false);
-  const [listingForm, setListingForm] = useState({
-    title: "",
-    description: "",
-    price: "",
-    salePrice: "",
-    saleStartsAt: "",
-    saleEndsAt: "",
-    category: "",
-  });
   const [stockSaving, setStockSaving] = useState(false);
   const [stockForm, setStockForm] = useState({
     type: "RESTOCK",
@@ -909,13 +1062,39 @@ export default function InventoryDetail() {
   useEffect(() => {
     if (!product) return;
 
-    setListingForm(listingFormFromProduct(product, categoryText(product)));
+    setListingForm(
+      listingFormFromProduct(product),
+    );
   }, [product]);
 
   function updateListingField(name, value) {
     setListingForm((current) => ({
       ...current,
       [name]: value,
+    }));
+  }
+
+  function updateMarketplaceCategory(value) {
+    setListingForm((current) => ({
+      ...current,
+      category: value,
+      subcategory: "",
+      leafCategory: "",
+    }));
+  }
+
+  function updateMarketplaceSubcategory(value) {
+    setListingForm((current) => ({
+      ...current,
+      subcategory: value,
+      leafCategory: "",
+    }));
+  }
+
+  function updateMarketplaceLeafCategory(value) {
+    setListingForm((current) => ({
+      ...current,
+      leafCategory: value,
     }));
   }
 
@@ -966,10 +1145,67 @@ export default function InventoryDetail() {
       return null;
     }
 
-    if (!payload.listingCategory) {
-      toast.error("Listing category is required");
+    if (marketplaceCatalogueQuery.isPending) {
+      toast.error(
+        "Marketplace categories are still loading",
+      );
       return null;
     }
+
+    if (marketplaceCatalogueQuery.isError) {
+      toast.error(
+        "Marketplace categories could not be loaded. Try again.",
+      );
+      return null;
+    }
+
+    if (!selectedMarketplaceCategory) {
+      toast.error(
+        "Choose a Marketplace category",
+      );
+      return null;
+    }
+
+    if (
+      publishing &&
+      marketplaceSubcategories.length > 0 &&
+      !selectedMarketplaceSubcategory
+    ) {
+      toast.error(
+        "Choose a Marketplace subcategory",
+      );
+      return null;
+    }
+
+    if (
+      publishing &&
+      marketplaceLeafCategories.length > 0 &&
+      !selectedMarketplaceLeafCategory
+    ) {
+      toast.error(
+        "Choose the product type",
+      );
+      return null;
+    }
+
+    payload.listingCategory =
+      marketplaceNodeValue(
+        selectedMarketplaceCategory,
+      );
+
+    payload.listingSubcategory =
+      selectedMarketplaceSubcategory
+        ? marketplaceNodeValue(
+            selectedMarketplaceSubcategory,
+          )
+        : "";
+
+    payload.listingLeafCategory =
+      selectedMarketplaceLeafCategory
+        ? marketplaceNodeValue(
+            selectedMarketplaceLeafCategory,
+          )
+        : "";
 
     if (!Number.isFinite(payload.listingPrice) || payload.listingPrice < 0) {
       toast.error("Listing price must be 0 or more");
@@ -1104,6 +1340,14 @@ export default function InventoryDetail() {
         marketplacePrice: payload.listingPrice,
         listingCategory: payload.listingCategory,
         marketplaceCategory: payload.listingCategory,
+        listingSubcategory:
+          payload.listingSubcategory,
+        marketplaceSubcategory:
+          payload.listingSubcategory,
+        listingLeafCategory:
+          payload.listingLeafCategory,
+        marketplaceLeafCategory:
+          payload.listingLeafCategory,
         listingSalePrice:
           payload.listingSalePrice ?? null,
         marketplaceSalePrice:
@@ -1562,7 +1806,8 @@ export default function InventoryDetail() {
                         ? "Close marketplace details"
                         : isPublished
                           ? "Edit marketplace details"
-                          : listingDetailsComplete
+                          : listingDetailsComplete &&
+                              marketplaceCategoryPathComplete
                             ? "Edit marketplace details"
                             : "Complete marketplace details"}
                     </span>
@@ -1570,7 +1815,8 @@ export default function InventoryDetail() {
 
                   {!isPublished &&
                   hasApprovedPhoto &&
-                  listingDetailsComplete ? (
+                  listingDetailsComplete &&
+                  marketplaceCategoryPathComplete ? (
                     <AsyncButton
                       type="button"
                       loading={listingSaving === "publish"}
@@ -1653,19 +1899,141 @@ export default function InventoryDetail() {
 
                         <label className="svx-detail-listing-field">
                           <span>Marketplace category</span>
-                          <input
-                            value={listingForm.category}
+                          <select
+                            value={
+                              selectedMarketplaceCategory
+                                ? marketplaceNodeValue(
+                                    selectedMarketplaceCategory,
+                                  )
+                                : ""
+                            }
                             onChange={(event) =>
-                              updateListingField(
-                                "category",
-                                event.target.value
+                              updateMarketplaceCategory(
+                                event.target.value,
                               )
                             }
-                            placeholder="Product category"
-                            disabled={Boolean(listingSaving)}
-                          />
+                            disabled={
+                              Boolean(listingSaving) ||
+                              marketplaceCatalogueQuery.isPending ||
+                              marketplaceCatalogueQuery.isError
+                            }
+                          >
+                            <option value="">
+                              {marketplaceCatalogueQuery.isPending
+                                ? "Loading categories..."
+                                : marketplaceCatalogueQuery.isError
+                                  ? "Categories unavailable"
+                                  : "Choose category"}
+                            </option>
+
+                            {marketplaceCategories.map(
+                              (category) => (
+                                <option
+                                  key={
+                                    category.key ||
+                                    category.slug
+                                  }
+                                  value={marketplaceNodeValue(
+                                    category,
+                                  )}
+                                >
+                                  {category.label}
+                                </option>
+                              ),
+                            )}
+                          </select>
                         </label>
                       </div>
+
+                      {marketplaceSubcategories.length ? (
+                        <div className="svx-detail-listing-field-grid">
+                          <label className="svx-detail-listing-field">
+                            <span>Subcategory</span>
+                            <select
+                              value={
+                                selectedMarketplaceSubcategory
+                                  ? marketplaceNodeValue(
+                                      selectedMarketplaceSubcategory,
+                                    )
+                                  : ""
+                              }
+                              onChange={(event) =>
+                                updateMarketplaceSubcategory(
+                                  event.target.value,
+                                )
+                              }
+                              disabled={Boolean(listingSaving)}
+                            >
+                              <option value="">
+                                Choose subcategory
+                              </option>
+
+                              {marketplaceSubcategories.map(
+                                (subcategory) => (
+                                  <option
+                                    key={
+                                      subcategory.key ||
+                                      subcategory.slug
+                                    }
+                                    value={marketplaceNodeValue(
+                                      subcategory,
+                                    )}
+                                  >
+                                    {subcategory.label}
+                                  </option>
+                                ),
+                              )}
+                            </select>
+                          </label>
+
+                          <label className="svx-detail-listing-field">
+                            <span>Product type</span>
+                            <select
+                              value={
+                                selectedMarketplaceLeafCategory
+                                  ? marketplaceNodeValue(
+                                      selectedMarketplaceLeafCategory,
+                                    )
+                                  : ""
+                              }
+                              onChange={(event) =>
+                                updateMarketplaceLeafCategory(
+                                  event.target.value,
+                                )
+                              }
+                              disabled={
+                                Boolean(listingSaving) ||
+                                !selectedMarketplaceSubcategory ||
+                                marketplaceLeafCategories.length === 0
+                              }
+                            >
+                              <option value="">
+                                {!selectedMarketplaceSubcategory
+                                  ? "Choose subcategory first"
+                                  : marketplaceLeafCategories.length
+                                    ? "Choose product type"
+                                    : "No product type needed"}
+                              </option>
+
+                              {marketplaceLeafCategories.map(
+                                (leafCategory) => (
+                                  <option
+                                    key={
+                                      leafCategory.key ||
+                                      leafCategory.slug
+                                    }
+                                    value={marketplaceNodeValue(
+                                      leafCategory,
+                                    )}
+                                  >
+                                    {leafCategory.label}
+                                  </option>
+                                ),
+                              )}
+                            </select>
+                          </label>
+                        </div>
+                      ) : null}
 
                       {isOwner ? (
                         <div className="svx-detail-listing-sale-box">

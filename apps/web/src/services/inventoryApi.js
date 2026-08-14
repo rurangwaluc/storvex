@@ -120,6 +120,17 @@ function normalizeListingPayload(payload = {}) {
       payload.marketplaceCategory ||
       payload.publicCategory,
     ),
+    listingSubcategory: cleanString(
+      payload.listingSubcategory ||
+      payload.marketplaceSubcategory ||
+      payload.publicSubcategory,
+    ),
+    listingLeafCategory: cleanString(
+      payload.listingLeafCategory ||
+      payload.marketplaceLeafCategory ||
+      payload.publicLeafCategory ||
+      payload.subSubcategory,
+    ),
     listingAttributes: cleanPlainObject(
       payload.listingAttributes ||
       payload.marketplaceAttributes ||
