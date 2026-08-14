@@ -46,8 +46,14 @@ import {
   marketplaceQueryKeys,
 } from "../../lib/marketplaceQueryKeys";
 import {
+  internalWorkspaceQueryOptions,
+} from "../../lib/internalWorkspaceQuery";
+import {
   getMarketplaceCatalogue,
 } from "../../services/marketplaceApi";
+import {
+  normalizeBusinessCategory,
+} from "../../utils/productFormConfig";
 import {
   getApprovedProductImages,
   getProductImageUrl,
@@ -55,6 +61,13 @@ import {
 import "./InventoryDetail.css";
 
 const PAGE_SIZE = 6;
+const MARKETPLACE_DEPARTMENT_BY_BUSINESS_CATEGORY = {
+  ELECTRONICS: "electronics",
+  HARDWARE: "hardware",
+  HOME_KITCHEN: "home-and-kitchen",
+  LIGHTING: "lighting",
+  SPARE_PARTS: "spare-parts",
+};
 
 function cx(...items) {
   return items.filter(Boolean).join(" ");
@@ -67,6 +80,20 @@ function cleanString(value) {
 
 function normalizeMarketplaceNodeValue(value) {
   return cleanString(value).toLowerCase();
+}
+
+function workspaceBusinessCategory(workspace) {
+  return normalizeBusinessCategory(
+    workspace?.tenant?.shopType ||
+    workspace?.tenant?.businessCategory ||
+    workspace?.tenant?.category ||
+    workspace?.business?.shopType ||
+    workspace?.business?.businessCategory ||
+    workspace?.business?.category ||
+    workspace?.shopType ||
+    workspace?.businessCategory ||
+    workspace?.category,
+  );
 }
 
 function marketplaceNodeValue(node) {
@@ -97,6 +124,16 @@ function findMarketplaceNode(nodes, value) {
 
       return values.includes(wanted);
     }) || null
+  );
+}
+
+function marketplaceDepartmentForBusiness(
+  businessCategory,
+) {
+  return (
+    MARKETPLACE_DEPARTMENT_BY_BUSINESS_CATEGORY[
+      businessCategory
+    ] || ""
   );
 }
 
@@ -870,6 +907,15 @@ export default function InventoryDetail() {
     leafCategory: "",
   });
 
+  const workspaceQuery = useQuery({
+    ...internalWorkspaceQueryOptions,
+  });
+
+  const registeredBusinessCategory =
+    workspaceBusinessCategory(
+      workspaceQuery.data,
+    );
+
   const marketplaceCatalogueQuery = useQuery({
     queryKey:
       marketplaceQueryKeys.catalogue(),
@@ -889,15 +935,45 @@ export default function InventoryDetail() {
           .data.categories
       : [];
 
-  const selectedMarketplaceCategory =
+  const registeredMarketplaceDepartment =
+    marketplaceDepartmentForBusiness(
+      registeredBusinessCategory,
+    );
+
+  const registeredMarketplaceCategory =
     useMemo(
       () =>
         findMarketplaceNode(
           marketplaceCategories,
-          listingForm.category,
+          registeredMarketplaceDepartment,
         ),
       [
         marketplaceCategories,
+        registeredMarketplaceDepartment,
+      ],
+    );
+
+  const marketplaceCategoryOptions =
+    useMemo(
+      () =>
+        registeredMarketplaceCategory
+          ? [registeredMarketplaceCategory]
+          : marketplaceCategories,
+      [
+        registeredMarketplaceCategory,
+        marketplaceCategories,
+      ],
+    );
+
+  const selectedMarketplaceCategory =
+    useMemo(
+      () =>
+        findMarketplaceNode(
+          marketplaceCategoryOptions,
+          listingForm.category,
+        ),
+      [
+        marketplaceCategoryOptions,
         listingForm.category,
       ],
     );
@@ -1062,10 +1138,37 @@ export default function InventoryDetail() {
   useEffect(() => {
     if (!product) return;
 
-    setListingForm(
-      listingFormFromProduct(product),
-    );
-  }, [product]);
+    const nextForm =
+      listingFormFromProduct(product);
+
+    if (registeredMarketplaceCategory) {
+      const registeredCategoryValue =
+        marketplaceNodeValue(
+          registeredMarketplaceCategory,
+        );
+
+      const sameDepartment =
+        normalizeMarketplaceNodeValue(
+          nextForm.category,
+        ) ===
+        normalizeMarketplaceNodeValue(
+          registeredCategoryValue,
+        );
+
+      nextForm.category =
+        registeredCategoryValue;
+
+      if (!sameDepartment) {
+        nextForm.subcategory = "";
+        nextForm.leafCategory = "";
+      }
+    }
+
+    setListingForm(nextForm);
+  }, [
+    product,
+    registeredMarketplaceCategory,
+  ]);
 
   function updateListingField(name, value) {
     setListingForm((current) => ({
@@ -1914,8 +2017,12 @@ export default function InventoryDetail() {
                             }
                             disabled={
                               Boolean(listingSaving) ||
+                              workspaceQuery.isPending ||
                               marketplaceCatalogueQuery.isPending ||
-                              marketplaceCatalogueQuery.isError
+                              marketplaceCatalogueQuery.isError ||
+                              Boolean(
+                                registeredMarketplaceCategory,
+                              )
                             }
                           >
                             <option value="">
@@ -1926,7 +2033,7 @@ export default function InventoryDetail() {
                                   : "Choose category"}
                             </option>
 
-                            {marketplaceCategories.map(
+                            {marketplaceCategoryOptions.map(
                               (category) => (
                                 <option
                                   key={
