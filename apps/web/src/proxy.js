@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { isKnownLegacyRoute } from "./lib/knownLegacyRoutes";
+import {
+  isKnownLegacyRoute,
+  isMarketplaceProductRoute,
+} from "./lib/knownLegacyRoutes";
 import { isSolutionPageSlug } from "./lib/seo/solutionPages";
 import { isIndustryPageSlug } from "./lib/seo/industryPages";
 
@@ -29,7 +32,10 @@ export function proxy(request) {
   ) {
     const response = NextResponse.next();
 
-    if (segments.join("/") === "marketplace/shop") {
+    if (
+      segments.join("/") === "marketplace/shop" ||
+      isMarketplaceProductRoute(segments)
+    ) {
       response.headers.set("X-Robots-Tag", "noindex, follow");
     }
 
