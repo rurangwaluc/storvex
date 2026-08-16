@@ -1409,6 +1409,7 @@
 }
 
 .svx-detail-listing-field input,
+.svx-detail-listing-field select,
 .svx-detail-listing-field textarea {
   width: 100%;
   border: 1px solid var(--detail-border);
@@ -1421,8 +1422,19 @@
   font-weight: 800;
 }
 
-.svx-detail-listing-field input {
+.svx-detail-listing-field input,
+.svx-detail-listing-field select {
   height: 48px;
+}
+
+.svx-detail-listing-field select {
+  cursor: pointer;
+  appearance: auto;
+}
+
+.svx-detail-listing-field select:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
 }
 
 .svx-detail-listing-field textarea {
@@ -1439,6 +1451,7 @@
 }
 
 .svx-detail-listing-field input:focus,
+.svx-detail-listing-field select:focus,
 .svx-detail-listing-field textarea:focus {
   border-color: rgba(21, 156, 255, 0.72);
   box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.12);
@@ -2188,7 +2201,9 @@
 }
 
 .svx-detail-setup-simple-grid
-  .svx-detail-listing-field input {
+  .svx-detail-listing-field input,
+.svx-detail-setup-simple-grid
+  .svx-detail-listing-field select {
   height: 48px;
   border-radius: 12px;
   padding-inline: 14px;
@@ -3555,42 +3570,4 @@ body[data-theme="light"]
   filter: none !important;
   text-shadow: none !important;
   transform: none !important;
-}
-
-
-/* Marketplace catalogue selectors */
-.svx-detail-listing-field select {
-  width: 100%;
-  height: 48px;
-  min-width: 0;
-  border: 1px solid var(--detail-border);
-  border-radius: 12px;
-  background: var(--detail-soft);
-  color: var(--detail-text);
-  outline: none;
-  padding: 0 40px 0 14px;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.svx-detail-listing-field select:focus {
-  border-color: rgba(21, 156, 255, 0.72);
-  box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.12);
-}
-
-.svx-detail-listing-field select:disabled {
-  cursor: not-allowed;
-  opacity: 0.68;
-}
-
-.svx-detail-listing-field select option {
-  background: var(--detail-soft);
-  color: var(--detail-text);
-}
-
-@media (max-width: 520px) {
-  .svx-detail-listing-field select {
-    height: 46px;
-  }
 }
