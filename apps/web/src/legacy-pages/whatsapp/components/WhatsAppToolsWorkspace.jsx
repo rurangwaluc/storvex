@@ -15,6 +15,10 @@ import {
   loadMetaSdk,
   parseEmbeddedSignupMessage,
 } from "../../../services/metaEmbeddedSignup";
+import {
+  isEmbeddedSignupHandoffReady,
+  stopEmbeddedSignupPopupWatcher,
+} from "../../../services/embeddedSignupPopupWatcher";
 import { cleanText, customerName, cx, formatDay, latestPreview, money, normalizeProductList, safeError, statusLabel, toneForStatus } from "../lib/whatsappInbox.utils";
 import { Badge, EmptyState, MetricCard, SettingsIcon } from "./WhatsAppInboxPanels";
 
@@ -129,18 +133,29 @@ export function SetupWorkspace({ accounts, onRefresh }) {
   const isConnected = account?.connectionState === "connected";
   const isPaused = account?.connectionState === "paused";
 
+  function stopPopupWatcher() {
+    stopEmbeddedSignupPopupWatcher({
+      timerRef: popupTimerRef,
+      popupRef,
+      clearInterval: window.clearInterval.bind(window),
+    });
+  }
+
   function clearAttempt() {
     activeAttemptRef.current = false;
     codeRef.current = "";
     sessionRef.current = null;
     completingRef.current = false;
-    popupRef.current = null;
-    if (popupTimerRef.current) window.clearInterval(popupTimerRef.current);
-    popupTimerRef.current = null;
+    stopPopupWatcher();
   }
 
   async function finishWhenReady() {
-    if (!activeAttemptRef.current || completingRef.current || !codeRef.current || !sessionRef.current) return;
+    if (!isEmbeddedSignupHandoffReady({
+      active: activeAttemptRef.current,
+      completing: completingRef.current,
+      code: codeRef.current,
+      session: sessionRef.current,
+    })) return;
     completingRef.current = true;
     setFlowState("connecting");
     setFlowMessage("Finishing your WhatsApp connection…");
@@ -235,6 +250,7 @@ export function SetupWorkspace({ accounts, onRefresh }) {
     try {
       launchEmbeddedSignup(sdk, configId, (response) => {
         window.open = originalOpen;
+        stopPopupWatcher();
         const code = String(response?.authResponse?.code || "").trim();
         if (!code) {
           clearAttempt();
