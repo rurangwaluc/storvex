@@ -844,8 +844,6 @@ function buildBuyCreatedReply({ businessName, product, quantity, draftId }) {
   lines.push(`Estimated total: *${formatMoneyRwf(total)}*`);
   lines.push("");
   lines.push(`Our staff will review and finalize your order.`);
-  lines.push(`To record payment later, send:`);
-  lines.push(`*PAY ${Math.round(total)} MOMO YOUR_REF #${code}*`);
 
   return lines.join("\n");
 }

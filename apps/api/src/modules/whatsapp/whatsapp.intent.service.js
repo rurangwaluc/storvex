@@ -16,7 +16,6 @@ const INTENTS = Object.freeze({
   REPAIR: "REPAIR",
   PROMOTION: "PROMOTION",
   HUMAN_HELP: "HUMAN_HELP",
-  PAY: "PAY",
   UNKNOWN: "UNKNOWN",
 
   // Backward-compatible aliases used by older WhatsApp services.
@@ -48,46 +47,6 @@ function cleanSearchText(value) {
       .replace(/[^\p{L}\p{N}\s#@+./_-]/gu, " ")
       .replace(/\s+/g, " ")
   );
-}
-
-function normalizeMoneyAmount(rawValue, unit = "") {
-  if (rawValue === undefined || rawValue === null) return null;
-
-  const clean = String(rawValue).replace(/[,\s]/g, "");
-  let amount = Number(clean);
-
-  if (!Number.isFinite(amount) || amount <= 0) return null;
-
-  const normalizedUnit = String(unit || "").trim().toLowerCase();
-
-  if (normalizedUnit === "k") amount *= 1000;
-  if (normalizedUnit === "m") amount *= 1000000;
-
-  return Math.round(amount);
-}
-
-function normalizePaymentMethod(value) {
-  const raw = normalizeLower(value);
-
-  if (!raw) return "MOMO";
-
-  if (/\b(cash|amafaranga|frw|rwf)\b/i.test(raw)) return "CASH";
-
-  if (/\b(momo|mobile money|mobilemoney|mtn|mtn momo|mo mo)\b/i.test(raw)) {
-    return "MOMO";
-  }
-
-  if (/\b(bank|transfer|bank transfer|bk|equity|i&m|imbank|cogebanque)\b/i.test(raw)) {
-    return "BANK";
-  }
-
-  if (/\b(card|visa|mastercard|debit|credit card)\b/i.test(raw)) {
-    return "CARD";
-  }
-
-  if (/\b(other)\b/i.test(raw)) return "OTHER";
-
-  return "MOMO";
 }
 
 const GREETING_WORDS = [
@@ -323,111 +282,6 @@ function extractProductQuery(text) {
   return t && t.length >= 2 ? t : null;
 }
 
-function extractSaleCode(text) {
-  const raw = String(text || "");
-
-  const hash = raw.match(/#\s*([a-zA-Z0-9-]{3,40})/);
-  if (hash?.[1]) return String(hash[1]).trim().toUpperCase();
-
-  const codeWords = raw.match(
-    /\b(?:code|order|order code|draft|draft code|receipt|invoice|sale)\s*[:#-]?\s*([a-zA-Z0-9-]{3,40})\b/i
-  );
-
-  if (codeWords?.[1]) return String(codeWords[1]).trim().toUpperCase();
-
-  return null;
-}
-
-function extractPaymentReference(text) {
-  const raw = String(text || "").trim();
-
-  const explicit = raw.match(
-    /\b(?:ref|reference|tx|transaction|txn|code|momo code|payment code)\s*[:#-]?\s*([a-zA-Z0-9._/-]{3,80})\b/i
-  );
-
-  if (explicit?.[1]) {
-    const candidate = explicit[1].trim();
-
-    if (!/^(cash|momo|mobile|money|bank|card|rwf|frw|pay|paid)$/i.test(candidate)) {
-      return candidate;
-    }
-  }
-
-  const longTokenCandidates = raw
-    .split(/\s+/)
-    .map((x) => x.trim())
-    .filter(Boolean)
-    .filter((x) => /^[a-zA-Z0-9._/-]{4,80}$/.test(x))
-    .filter((x) => !/^\d+$/.test(x))
-    .filter((x) => !/^#?[a-zA-Z0-9-]{3,40}$/i.test(x) || !raw.includes(`#${x}`))
-    .filter((x) => !/^(pay|paid|momo|cash|bank|card|rwf|frw|payment|ref|tx|code)$/i.test(x));
-
-  return longTokenCandidates[longTokenCandidates.length - 1] || null;
-}
-
-function extractPaymentAmount(text) {
-  const raw = normalizeLower(text);
-
-  const patterns = [
-    /\b(?:pay|paid|payment|deposit|advance|sent|transfer|nishyuye|nishyuyeho|nohereje|mboherereje|kwishyura|yishyuye)\s+(\d[\d,.\s]*)(k|m|rwf|frw)?\b/i,
-    /\b(\d[\d,.\s]*)(k|m)?\s*(?:rwf|frw)\b/i,
-    /\b(?:rwf|frw)\s*(\d[\d,.\s]*)(k|m)?\b/i,
-    /\b(\d+(?:[.,]\d+)?)\s*(k|m)\b/i,
-    /\b(\d{3,9})\b/i,
-  ];
-
-  for (const pattern of patterns) {
-    const match = raw.match(pattern);
-    if (!match) continue;
-
-    const amount = normalizeMoneyAmount(match[1], match[2]);
-    if (amount && amount > 0) return amount;
-  }
-
-  return null;
-}
-
-function parsePayCommand(text) {
-  const t = collapseSpaces(normalizeText(text));
-  if (!t) return null;
-
-  const strict = t.match(
-    /^PAY\s+(\d+(?:[.,]\d+)?)\s+(CASH|MOMO|BANK|CARD|OTHER)\s+([A-Za-z0-9._/-]{3,80})(?:\s+#([A-Za-z0-9-]{3,40}))?$/i
-  );
-
-  if (strict) {
-    const amount = normalizeMoneyAmount(strict[1]);
-    if (!amount) return null;
-
-    return {
-      amount,
-      method: normalizePaymentMethod(strict[2]),
-      reference: String(strict[3]),
-      saleCode: strict[4] ? String(strict[4]).toUpperCase() : null,
-    };
-  }
-
-  const raw = normalizeLower(t);
-
-  const hasPaymentVerb =
-    /\b(pay|paid|payment|deposit|advance|sent|transfer|momo|mobile money|bank|cash|card)\b/i.test(
-      raw
-    ) ||
-    /\b(nishyuye|nishyuyeho|nohereje|mboherereje|kwishyura|yishyuye)\b/i.test(raw);
-
-  if (!hasPaymentVerb) return null;
-
-  const amount = extractPaymentAmount(t);
-  if (!amount) return null;
-
-  return {
-    amount,
-    method: normalizePaymentMethod(t),
-    reference: extractPaymentReference(t) || `WA-${Date.now()}`,
-    saleCode: extractSaleCode(t),
-  };
-}
-
 function extractQuantityFromText(text) {
   const raw = normalizeLower(text);
 
@@ -647,11 +501,6 @@ function detectIntent(text) {
     return { type: INTENTS.EMPTY, raw, payload: {} };
   }
 
-  const pay = parsePayCommand(raw);
-  if (pay) {
-    return { type: INTENTS.PAY, raw, payload: pay };
-  }
-
   const explicitBuy = parseBuyCommand(raw);
   if (explicitBuy) {
     return withLegacyShape({
@@ -756,7 +605,6 @@ module.exports = {
   INTENTS,
 
   extractProductQuery,
-  parsePayCommand,
   parseBuyCommand,
   parseImplicitBuyIntent,
   parseSimpleQuantityFirstBuy,
@@ -764,9 +612,6 @@ module.exports = {
   toLegacyIntent,
 
   // helpful for Postman/manual testing
-  extractPaymentAmount,
-  extractPaymentReference,
-  extractSaleCode,
   extractQuantityFromText,
   digitsOnly,
 };

@@ -8,7 +8,6 @@ const {
   searchProducts,
   searchProductsByBudgetIntent,
   findBestProductMatch,
-  formatMoneyRwf,
   buildProductsReply,
   buildBudgetProductsReply,
   buildBuyCreatedReply,
@@ -59,18 +58,6 @@ function normalizePhone(value) {
 function normalizeSaleType(value) {
   const v = String(value || "CREDIT").toUpperCase();
   return v === "CASH" ? "CASH" : "CREDIT";
-}
-
-function normalizePaymentMethod(value) {
-  const v = String(value || "MOMO").toUpperCase();
-
-  if (v === "MOMO" || v === "MOBILE_MONEY" || v === "MTN_MOMO") return "MOMO";
-  if (v === "BANK" || v === "BANK_TRANSFER" || v === "TRANSFER") return "BANK";
-  if (v === "CARD" || v === "VISA" || v === "MASTERCARD") return "CARD";
-  if (v === "CASH") return "CASH";
-  if (v === "OTHER") return "OTHER";
-
-  return "MOMO";
 }
 
 function getModelFields(delegate) {
@@ -290,10 +277,6 @@ function computeSaleStatus({ saleType, total, amountPaid, dueDate }) {
   return { status: overdue ? "OVERDUE" : "UNPAID", balanceDue };
 }
 
-function saleCodeFromId(saleId) {
-  return String(saleId || "").slice(-6).toUpperCase();
-}
-
 async function createAuditLogSafe({
   tenantId,
   userId = null,
@@ -489,36 +472,6 @@ function buildWelcomeReply({ businessName }) {
   ].join("\n");
 }
 
-function buildPayReply({ businessName, amount, method, reference, updatedSale }) {
-  const due = updatedSale?.dueDate
-    ? new Date(updatedSale.dueDate).toISOString().slice(0, 10)
-    : "N/A";
-
-  const bal = updatedSale?.balanceDue ?? 0;
-  const code = saleCodeFromId(updatedSale?.id);
-
-  const lines = [];
-  lines.push(`✅ *${businessName}*`);
-  lines.push(`Payment received.`);
-  lines.push(`Amount: ${formatMoneyRwf(amount)} (${method})`);
-  lines.push(`Ref: ${reference}`);
-  lines.push(`Order code: *${code}*`);
-  lines.push("");
-  lines.push(`Order status: *${updatedSale.status}*`);
-  lines.push(`Balance remaining: *${formatMoneyRwf(bal)}*`);
-  lines.push(`Due date: ${due}`);
-
-  if (bal > 0) {
-    lines.push("");
-    lines.push(`To finish: PAY ${Math.round(bal)} MOMO <TX_REF> #${code}`);
-  } else {
-    lines.push("");
-    lines.push(`🎉 Fully paid. Thank you!`);
-  }
-
-  return lines.join("\n");
-}
-
 function buildBranchPendingReply({ businessName, query }) {
   const lines = [];
   lines.push(`✅ *${businessName}*`);
@@ -621,215 +574,6 @@ async function assertProductAvailableForBranch(tx, { tenantId, branchId, product
   }
 
   return { available, usingBranchInventory: stockMap instanceof Map };
-}
-
-async function findOutstandingSaleForPay({ tenantId, customerPhone, saleCode }) {
-  const phone = String(customerPhone || "").replace(/[^\d]/g, "");
-
-  if (!tenantId || !phone) {
-    return { ok: false, code: "INVALID_ARGS" };
-  }
-
-  const now = new Date();
-  const saleFields = getModelFields(prisma.sale);
-
-  const outstanding = await prisma.sale.findMany({
-    where: {
-      tenantId,
-      saleType: "CREDIT",
-      balanceDue: { gt: 0 },
-      isDraft: false,
-      isCancelled: false,
-      customer: { phone },
-    },
-    orderBy: [{ createdAt: "asc" }],
-    select: {
-      id: true,
-      ...(typeof saleFields.branchId !== "undefined" ? { branchId: true } : {}),
-      total: true,
-      amountPaid: true,
-      balanceDue: true,
-      dueDate: true,
-      status: true,
-      createdAt: true,
-    },
-    take: 25,
-  });
-
-  if (!outstanding || outstanding.length === 0) {
-    return { ok: false, code: "NO_OUTSTANDING_SALE" };
-  }
-
-  if (saleCode) {
-    const code = String(saleCode).trim().toUpperCase();
-
-    const matched = outstanding.find((s) => {
-      const id = String(s.id || "");
-      const last6 = id.slice(-6).toUpperCase();
-      return last6 === code || id.toUpperCase().endsWith(code);
-    });
-
-    if (!matched) {
-      return {
-        ok: false,
-        code: "SALE_CODE_NOT_FOUND",
-        outstandingCount: outstanding.length,
-      };
-    }
-
-    return { ok: true, sale: matched, outstandingCount: outstanding.length };
-  }
-
-  const overdue = outstanding
-    .filter((s) => s.dueDate && new Date(s.dueDate).getTime() < now.getTime())
-    .sort((a, b) => {
-      const ad = a.dueDate ? new Date(a.dueDate).getTime() : Number.POSITIVE_INFINITY;
-      const bd = b.dueDate ? new Date(b.dueDate).getTime() : Number.POSITIVE_INFINITY;
-      if (ad !== bd) return ad - bd;
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-    });
-
-  if (overdue.length > 0) {
-    return { ok: true, sale: overdue[0], outstandingCount: outstanding.length };
-  }
-
-  return { ok: true, sale: outstanding[0], outstandingCount: outstanding.length };
-}
-
-async function isDuplicatePayReference({ tenantId, reference }) {
-  const note = `WA_PAY:${reference}`;
-
-  const dup = await prisma.salePayment.findFirst({
-    where: { tenantId, note },
-    select: { id: true, saleId: true },
-  });
-
-  return dup || null;
-}
-
-async function applyPaymentToSale({
-  tenantId,
-  saleId,
-  amount,
-  method,
-  reference,
-  receivedByUserId,
-}) {
-  const note = `WA_PAY:${reference}`;
-  const normalizedMethod = normalizePaymentMethod(method);
-
-  try {
-    return await prisma.$transaction(async (tx) => {
-      const saleFields = getModelFields(tx.sale);
-      const paymentFields = getModelFields(tx.salePayment);
-
-      const sale = await tx.sale.findFirst({
-        where: {
-          id: saleId,
-          tenantId,
-          isDraft: false,
-          isCancelled: false,
-        },
-        select: {
-          id: true,
-          ...(typeof saleFields.branchId !== "undefined" ? { branchId: true } : {}),
-          total: true,
-          amountPaid: true,
-          balanceDue: true,
-          dueDate: true,
-          saleType: true,
-        },
-      });
-
-      if (!sale) return { ok: false, code: "SALE_NOT_FOUND" };
-      if (sale.saleType !== "CREDIT") return { ok: false, code: "NOT_CREDIT_SALE" };
-
-      const payAmount = Number(amount);
-      if (!Number.isFinite(payAmount) || payAmount <= 0) {
-        return { ok: false, code: "INVALID_AMOUNT" };
-      }
-
-      if (payAmount > Number(sale.balanceDue) + 0.000001) {
-        return { ok: false, code: "OVERPAY", sale };
-      }
-
-      const payment = await tx.salePayment.create({
-        data: {
-          saleId: sale.id,
-          tenantId,
-          ...(typeof paymentFields.branchId !== "undefined" && sale.branchId
-            ? { branchId: sale.branchId }
-            : {}),
-          receivedById: receivedByUserId || null,
-          amount: payAmount,
-          method: normalizedMethod,
-          note,
-        },
-        select: {
-          id: true,
-          amount: true,
-          method: true,
-          createdAt: true,
-          note: true,
-          ...(typeof paymentFields.branchId !== "undefined" ? { branchId: true } : {}),
-        },
-      });
-
-      const newPaid = Number(sale.amountPaid) + payAmount;
-      const total = Number(sale.total) || 0;
-      const newBalance = Math.max(0, total - newPaid);
-
-      let newStatus = "UNPAID";
-      if (newBalance <= 0) newStatus = "PAID";
-      else if (newPaid > 0) newStatus = "PARTIAL";
-
-      if (sale.dueDate && newBalance > 0 && new Date(sale.dueDate) < new Date()) {
-        newStatus = "OVERDUE";
-      }
-
-      const updatedSale = await tx.sale.update({
-        where: { id: sale.id },
-        data: {
-          amountPaid: newPaid,
-          balanceDue: newBalance,
-          status: newStatus,
-        },
-        select: {
-          id: true,
-          ...(typeof saleFields.branchId !== "undefined" ? { branchId: true } : {}),
-          total: true,
-          amountPaid: true,
-          balanceDue: true,
-          status: true,
-          dueDate: true,
-        },
-      });
-
-      await createAuditLogSafe({
-        tenantId,
-        userId: receivedByUserId || null,
-        entity: "PAYMENT",
-        entityId: payment.id,
-        action: "WHATSAPP_PAYMENT_RECORDED",
-        metadata: {
-          saleId: sale.id,
-          branchId: sale.branchId || null,
-          amount: payAmount,
-          method: normalizedMethod,
-          reference,
-          source: "WHATSAPP",
-        },
-      });
-
-      return { ok: true, payment, updatedSale };
-    });
-  } catch (err) {
-    if (err && err.code === "P2002") {
-      return { ok: false, code: "DUP_REFERENCE" };
-    }
-
-    throw err;
-  }
 }
 
 async function resolveDraftCashierId({ tenantId, assignedToId }) {
@@ -1335,142 +1079,6 @@ async function saveInboundMessage({ tenantId, accountId, convoId, message }) {
   }
 }
 
-async function handlePayIntent({ tenantId, account, convo, from, businessName, payload }) {
-  const { amount, method, reference, saleCode } = payload;
-
-  const dup = await isDuplicatePayReference({ tenantId, reference });
-
-  if (dup) {
-    const reply = `⚠️ *${businessName}*\nThat payment reference was already recorded.\nRef: ${reference}`;
-
-    await safeSendAndLog({
-      account,
-      tenantId,
-      convoId: convo.id,
-      to: from,
-      text: reply,
-      auditAction: "WHATSAPP_AUTO_REPLY_SENT",
-    });
-
-    await bumpConvo(convo.id);
-    return;
-  }
-
-  const target = await findOutstandingSaleForPay({
-    tenantId,
-    customerPhone: from,
-    saleCode,
-  });
-
-  if (!target.ok) {
-    let reply = `❌ *${businessName}*\nPayment failed. Please try again.`;
-
-    if (target.code === "NO_OUTSTANDING_SALE") {
-      reply =
-        `❌ *${businessName}*\n` +
-        `I cannot find an unpaid order for this number.\n` +
-        `Ask for a product first, then staff can prepare the order.`;
-    } else if (target.code === "SALE_CODE_NOT_FOUND") {
-      reply =
-        `❌ *${businessName}*\n` +
-        `I cannot find that order code.\n` +
-        `Please send PAY again with the correct #CODE.`;
-    }
-
-    await safeSendAndLog({
-      account,
-      tenantId,
-      convoId: convo.id,
-      to: from,
-      text: reply,
-      auditAction: "WHATSAPP_AUTO_REPLY_SENT",
-    });
-
-    await bumpConvo(convo.id);
-    return;
-  }
-
-  try {
-    const applied = await applyPaymentToSale({
-      tenantId,
-      saleId: target.sale.id,
-      amount,
-      method,
-      reference,
-      receivedByUserId: null,
-    });
-
-    if (!applied.ok) {
-      const reply = `❌ *${businessName}*\nPayment failed. Please try again.`;
-
-      await safeSendAndLog({
-        account,
-        tenantId,
-        convoId: convo.id,
-        to: from,
-        text: reply,
-        auditAction: "WHATSAPP_AUTO_REPLY_SENT",
-      });
-
-      await bumpConvo(convo.id);
-      return;
-    }
-
-    const reply = buildPayReply({
-      businessName,
-      amount,
-      method,
-      reference,
-      updatedSale: { ...applied.updatedSale, id: target.sale.id },
-    });
-
-    await safeSendAndLog({
-      account,
-      tenantId,
-      convoId: convo.id,
-      to: from,
-      text: reply,
-      auditAction: "WHATSAPP_AUTO_REPLY_SENT",
-    });
-
-    if (Number(applied.updatedSale.balanceDue) <= 0) {
-      await prisma.whatsAppConversation.update({
-        where: { id: convo.id },
-        data: { status: "CLOSED" },
-      });
-
-      await createAuditLogSafe({
-        tenantId,
-        entity: "WHATSAPP_CONVERSATION",
-        entityId: convo.id,
-        action: "WHATSAPP_CONVERSATION_AUTO_CLOSED",
-        metadata: {
-          reason: "SALE_FULLY_PAID",
-          saleId: target.sale.id,
-          branchId: applied.updatedSale.branchId || target.sale.branchId || null,
-        },
-      });
-    }
-
-    await bumpConvo(convo.id);
-  } catch (err) {
-    console.error("WHATSAPP: applyPaymentToSale error:", err);
-
-    const reply = `❌ *${businessName}*\nPayment failed. Please try again.`;
-
-    await safeSendAndLog({
-      account,
-      tenantId,
-      convoId: convo.id,
-      to: from,
-      text: reply,
-      auditAction: "WHATSAPP_AUTO_REPLY_SENT",
-    });
-
-    await bumpConvo(convo.id);
-  }
-}
-
 async function handleBuyIntent({
   tenantId,
   account,
@@ -1900,18 +1508,6 @@ async function handleInboundWebhook({ account, payload, inbound }) {
       const intent = detectIntent(text);
       const modernType = intent.modernType || intent.type;
       const category = intent.payload?.category || inferCategoryFromText(text);
-
-      if (intent.type === "PAY" || modernType === "PAY") {
-        await handlePayIntent({
-          tenantId,
-          account,
-          convo,
-          from,
-          businessName,
-          payload: intent.payload,
-        });
-        continue;
-      }
 
       if (
         intent.type === "BUY" ||
