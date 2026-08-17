@@ -103,6 +103,7 @@ function securityHeaders() {
   const scriptSources = [
     "'self'",
     "'unsafe-inline'",
+    "https://connect.facebook.net",
     ...(isDevelopment ? ["'unsafe-eval'"] : []),
   ].join(" ");
 

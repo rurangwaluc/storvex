@@ -7449,6 +7449,88 @@ background: var(--wa-soft);
   gap: 16px;
 }
 
+.svx-wa-connect-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+  border: 1px solid var(--wa-border-soft);
+  border-radius: 18px;
+  background: var(--wa-card);
+  padding: clamp(18px, 3vw, 28px);
+  box-shadow: var(--wa-shadow);
+}
+
+.svx-wa-connect-icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: var(--wa-success-soft);
+  color: var(--wa-success);
+}
+
+.svx-wa-connect-icon svg { width: 26px; height: 26px; }
+.svx-wa-connect-copy { min-width: 0; }
+.svx-wa-connect-copy h3 {
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+  color: var(--wa-text);
+  font-size: clamp(20px, 3vw, 27px);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+.svx-wa-connect-copy p {
+  max-width: 680px;
+  margin-top: 7px;
+  color: var(--wa-muted);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.55;
+}
+.svx-wa-connected-number {
+  display: block;
+  margin-top: 11px;
+  color: var(--wa-text);
+  font-size: 17px;
+}
+.svx-wa-connect-message {
+  margin-top: 14px;
+  border-radius: 12px;
+  background: var(--wa-soft);
+  color: var(--wa-muted);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+.svx-wa-connect-message.is-error { background: var(--wa-danger-soft); color: var(--wa-danger); }
+.svx-wa-connect-message.is-success { background: var(--wa-success-soft); color: var(--wa-success); }
+.svx-wa-connect-message.is-cancelled { background: var(--wa-warning-soft); color: var(--wa-warning); }
+.svx-wa-connect-actions {
+  display: flex;
+  min-width: 180px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+.svx-wa-connect-actions button { min-height: 48px; white-space: nowrap; }
+
+@media (max-width: 760px) {
+  .svx-wa-connect-card { grid-template-columns: auto minmax(0, 1fr); }
+  .svx-wa-connect-actions { grid-column: 1 / -1; min-width: 0; width: 100%; }
+  .svx-wa-connect-actions button { width: 100%; min-height: 50px; }
+}
+
+@media (max-width: 390px) {
+  .svx-wa-connect-card { grid-template-columns: 1fr; gap: 14px; padding: 16px; }
+  .svx-wa-connect-icon { width: 50px; height: 50px; border-radius: 15px; }
+  .svx-wa-connect-actions { grid-column: auto; }
+  .svx-wa-connect-copy h3 { font-size: 20px; }
+}
+
 .svx-wa-account-hero {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(190px, 0.28fr);

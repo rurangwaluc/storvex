@@ -89,6 +89,42 @@ function mapAccountError(err, res, fallbackMessage) {
     });
   }
 
+  const metaClientErrors = new Set([
+    "WHATSAPP_META_CODE_REQUIRED",
+    "WHATSAPP_META_NOT_CONFIGURED",
+    "WHATSAPP_META_SESSION_INVALID",
+    "WHATSAPP_META_EXCHANGE_FAILED",
+    "WHATSAPP_META_ASSET_RESOLUTION_FAILED",
+    "WHATSAPP_META_WABA_MISMATCH",
+    "WHATSAPP_META_PHONE_NOT_FOUND",
+    "WHATSAPP_META_PHONE_MISMATCH",
+    "WHATSAPP_META_REGISTRATION_FAILED",
+    "WHATSAPP_META_SUBSCRIPTION_FAILED",
+  ]);
+  if (metaClientErrors.has(code)) {
+    return res.status(Number(err?.status) === 503 || code === "WHATSAPP_META_NOT_CONFIGURED" ? 503 : 400).json({
+      ok: false,
+      message: "Unable to connect WhatsApp. Please try again.",
+      code,
+    });
+  }
+
+  if (code === "WHATSAPP_PHONE_OWNED_BY_ANOTHER_TENANT") {
+    return res.status(409).json({
+      ok: false,
+      message: "This WhatsApp number is already connected to another Storvex business.",
+      code,
+    });
+  }
+
+  if (code === "WHATSAPP_CREDENTIAL_KEY_INVALID") {
+    return res.status(503).json({
+      ok: false,
+      message: "WhatsApp connection is temporarily unavailable.",
+      code: "WHATSAPP_CONNECTION_NOT_CONFIGURED",
+    });
+  }
+
   console.error("WhatsApp account unhandled error:", err);
 
   return res.status(500).json({
@@ -196,10 +232,23 @@ async function setAccountActive(req, res) {
   }
 }
 
+async function completeEmbeddedSignup(req, res) {
+  try {
+    const account = await service.completeEmbeddedSignup(getTenantId(req), req.body || {});
+    return res.json({ ok: true, message: "WhatsApp connected", account });
+  } catch (err) {
+    // Deliberately do not log the request body or provider credential material.
+    console.error("WhatsApp Embedded Signup failed:", err?.code || "WHATSAPP_CONNECTION_FAILED");
+    return mapAccountError(err, res, "Failed to connect WhatsApp");
+  }
+}
+
 module.exports = {
   createAccount,
   listAccounts,
   getAccount,
   updateAccount,
   setAccountActive,
+  completeEmbeddedSignup,
+  __private: { getTenantId, mapAccountError },
 };

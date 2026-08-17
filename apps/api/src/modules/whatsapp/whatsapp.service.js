@@ -1,6 +1,7 @@
 const axios = require("axios");
 const crypto = require("crypto");
 const prisma = require("../../config/database");
+const { decryptCredential } = require("./whatsapp.credentials");
 
 const { detectIntent } = require("./whatsapp.intent.service");
 const {
@@ -331,9 +332,10 @@ async function sendText({ account, to, text }) {
   if (!account?.phoneNumberId) throw appError("ACCOUNT_MISSING_PHONE_NUMBER_ID");
   if (!account?.accessToken) throw appError("ACCOUNT_MISSING_ACCESS_TOKEN");
 
+  const accessToken = decryptCredential(account.accessToken);
   const isDevToken =
     process.env.NODE_ENV !== "production" &&
-    String(account.accessToken || "").startsWith("DEV_");
+    String(accessToken || "").startsWith("DEV_");
 
   const cleanText = normalizeText(text);
   if (!cleanText) throw appError("TEXT_REQUIRED");
@@ -360,7 +362,7 @@ async function sendText({ account, to, text }) {
   try {
     const resp = await axios.post(`${graphBase()}/${account.phoneNumberId}/messages`, payload, {
       headers: {
-        Authorization: `Bearer ${account.accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
     });
@@ -376,6 +378,7 @@ async function sendTemplate({ account, to, templateName, languageCode, bodyParam
   if (!account?.phoneNumberId) throw appError("ACCOUNT_MISSING_PHONE_NUMBER_ID");
   if (!account?.accessToken) throw appError("ACCOUNT_MISSING_ACCESS_TOKEN");
 
+  const accessToken = decryptCredential(account.accessToken);
   const payload = {
     messaging_product: "whatsapp",
     to: String(to),
@@ -397,7 +400,7 @@ async function sendTemplate({ account, to, templateName, languageCode, bodyParam
   try {
     const resp = await axios.post(`${graphBase()}/${account.phoneNumberId}/messages`, payload, {
       headers: {
-        Authorization: `Bearer ${account.accessToken}`,
+        Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
     });

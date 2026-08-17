@@ -1,5 +1,7 @@
 const crypto = require("crypto");
 const prisma = require("../../config/database");
+const metaOnboarding = require("./whatsapp.meta.onboarding");
+const { encryptCredential } = require("./whatsapp.credentials");
 
 function appError(code, extra = {}) {
   const err = new Error(code);
@@ -82,6 +84,13 @@ function buildSetupStatus(account) {
   };
 }
 
+function buildConnectionState(account) {
+  if (!account) return "not_connected";
+  const configured = hasValue(account.phoneNumber) && hasValue(account.phoneNumberId) && hasValue(account.accessToken);
+  if (!configured) return "not_connected";
+  return account.isActive ? "connected" : "paused";
+}
+
 function buildPublicAccount(account) {
   if (!account) return null;
 
@@ -102,6 +111,7 @@ function buildPublicAccount(account) {
     hasAccessToken: Boolean(account.accessToken),
 
     isActive: Boolean(account.isActive),
+    connectionState: buildConnectionState(account),
     setupStatus,
 
     channelStrategy: {
@@ -139,12 +149,12 @@ function validateActiveCredentials({ phoneNumberId, accessToken, isActive }) {
   }
 }
 
-async function ensureTenantExists(tenantId) {
+async function ensureTenantExists(tenantId, db = prisma) {
   if (!tenantId) {
     throw appError("TENANT_REQUIRED");
   }
 
-  const tenant = await prisma.tenant.findUnique({
+  const tenant = await db.tenant.findUnique({
     where: { id: tenantId },
     select: {
       id: true,
@@ -418,10 +428,102 @@ async function setAccountActive(tenantId, id, isActive) {
   return buildPublicAccount(updated);
 }
 
+function normalizeSessionInfo(value = {}) {
+  const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+  return {
+    wabaId: normalizeStr(source.wabaId || source.waba_id),
+    phoneNumberId: normalizeStr(source.phoneNumberId || source.phone_number_id),
+    businessId: normalizeStr(source.businessId || source.business_id),
+  };
+}
+
+async function completeEmbeddedSignup(tenantId, data = {}, dependencies = {}) {
+  const db = dependencies.prisma || prisma;
+  const meta = dependencies.meta || metaOnboarding;
+  const encrypt = dependencies.encryptCredential || encryptCredential;
+  const code = normalizeStr(data.code);
+  if (!code) throw appError("WHATSAPP_META_CODE_REQUIRED");
+
+  await ensureTenantExists(tenantId, db);
+  const sessionInfo = normalizeSessionInfo(data.sessionInfo);
+  const accessToken = await meta.exchangeCode(code);
+  const assets = await meta.resolveAuthorizedAssets({
+    accessToken,
+    wabaHint: sessionInfo.wabaId,
+    phoneHint: sessionInfo.phoneNumberId,
+  });
+
+  if (sessionInfo.wabaId && sessionInfo.wabaId !== assets.wabaId) {
+    throw appError("WHATSAPP_META_WABA_MISMATCH");
+  }
+  if (sessionInfo.phoneNumberId && sessionInfo.phoneNumberId !== assets.phoneNumberId) {
+    throw appError("WHATSAPP_META_PHONE_MISMATCH");
+  }
+
+  const foreignOwner = await db.whatsAppAccount.findFirst({
+    where: { phoneNumberId: assets.phoneNumberId, tenantId: { not: tenantId } },
+    select: { id: true },
+  });
+  if (foreignOwner) throw appError("WHATSAPP_PHONE_OWNED_BY_ANOTHER_TENANT");
+
+  const encryptedToken = encrypt(accessToken);
+  const existing = await db.whatsAppAccount.findFirst({ where: { tenantId } });
+  const accountData = {
+    phoneNumber: assets.phoneNumber,
+    businessName: assets.businessName || assets.wabaName || null,
+    phoneNumberId: assets.phoneNumberId,
+    wabaId: assets.wabaId,
+    accessToken: encryptedToken,
+    isActive: false,
+  };
+
+  let pending;
+  try {
+    pending = existing
+      ? await db.whatsAppAccount.update({ where: { id: existing.id }, data: accountData })
+      : await db.whatsAppAccount.create({ data: { tenantId, ...accountData } });
+  } catch (error) {
+    if (error?.code === "P2002") throw appError("WHATSAPP_ACCOUNT_CONFLICT");
+    throw error;
+  }
+
+  try {
+    await meta.registerPhone({ accessToken, phoneNumberId: assets.phoneNumberId });
+    await meta.subscribeWaba({ accessToken, wabaId: assets.wabaId });
+  } catch (error) {
+    // A failed first connection keeps only the tenant/phone claim for retry.
+    // A failed reconnect restores the previously working connection instead
+    // of destroying it with the unverified replacement credential.
+    const rollbackData = existing
+      ? {
+          phoneNumber: existing.phoneNumber,
+          businessName: existing.businessName,
+          phoneNumberId: existing.phoneNumberId,
+          wabaId: existing.wabaId,
+          accessToken: existing.accessToken,
+          isActive: existing.isActive,
+        }
+      : { accessToken: null, isActive: false };
+    await db.whatsAppAccount.update({
+      where: { id: pending.id },
+      data: rollbackData,
+    });
+    throw error;
+  }
+
+  const connected = await db.whatsAppAccount.update({
+    where: { id: pending.id },
+    data: { isActive: true },
+  });
+  return buildPublicAccount(connected);
+}
+
 module.exports = {
   createAccount,
   listAccounts,
   getAccount,
   updateAccount,
   setAccountActive,
+  completeEmbeddedSignup,
+  __private: { buildConnectionState, normalizeSessionInfo },
 };

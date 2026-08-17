@@ -37,6 +37,8 @@ router.get("/accounts", controller.listAccounts);
  */
 router.post("/accounts", controller.createAccount);
 
+router.post("/accounts/embedded-signup/complete", controller.completeEmbeddedSignup);
+
 /**
  * GET /api/whatsapp/accounts/:id
  * Fetch one WhatsApp account.

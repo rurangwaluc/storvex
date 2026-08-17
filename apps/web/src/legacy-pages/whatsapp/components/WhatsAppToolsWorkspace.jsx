@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../../components/ui/AsyncButton";
@@ -6,11 +6,15 @@ import { searchProducts } from "../../../services/inventoryApi";
 import {
   assignWhatsAppConversationOwner,
   clearWhatsAppConversationOwner,
-  createWhatsAppAccount,
+  completeWhatsAppEmbeddedSignup,
   createWhatsAppSaleDraft,
   setWhatsAppAccountActive,
-  updateWhatsAppAccount,
 } from "../../../services/whatsappApi";
+import {
+  launchEmbeddedSignup,
+  loadMetaSdk,
+  parseEmbeddedSignupMessage,
+} from "../../../services/metaEmbeddedSignup";
 import { cleanText, customerName, cx, formatDay, latestPreview, money, normalizeProductList, safeError, statusLabel, toneForStatus } from "../lib/whatsappInbox.utils";
 import { Badge, EmptyState, MetricCard, SettingsIcon } from "./WhatsAppInboxPanels";
 
@@ -109,91 +113,163 @@ function SecureKeyIcon() {
 
 export function SetupWorkspace({ accounts, onRefresh }) {
   const account = accounts[0] || null;
-
-  const [businessName, setBusinessName] = useState(account?.businessName || "");
-  const [phoneNumber, setPhoneNumber] = useState(account?.phoneNumber || "");
-  const [phoneNumberId, setPhoneNumberId] = useState(account?.phoneNumberId || "");
-  const [wabaId, setWabaId] = useState(account?.wabaId || "");
-  const [accessToken, setAccessToken] = useState("");
-  const [saving, setSaving] = useState(false);
+  const appId = process.env.NEXT_PUBLIC_STORVEX_META_APP_ID || "";
+  const configId = process.env.NEXT_PUBLIC_STORVEX_WHATSAPP_EMBEDDED_SIGNUP_CONFIG_ID || "";
+  const [sdk, setSdk] = useState(null);
+  const [sdkState, setSdkState] = useState("loading");
+  const [flowState, setFlowState] = useState("idle");
+  const [flowMessage, setFlowMessage] = useState("");
   const [toggling, setToggling] = useState(false);
+  const activeAttemptRef = useRef(false);
+  const codeRef = useRef("");
+  const sessionRef = useRef(null);
+  const completingRef = useRef(false);
+  const popupRef = useRef(null);
+  const popupTimerRef = useRef(null);
+  const isConnected = account?.connectionState === "connected";
+  const isPaused = account?.connectionState === "paused";
 
-  const hasPhone = Boolean(phoneNumber.trim() || account?.phoneNumber);
-  const hasPhoneNumberId = Boolean(phoneNumberId.trim() || account?.phoneNumberId);
-  const hasWabaId = Boolean(wabaId.trim() || account?.wabaId);
-  const hasToken = Boolean(accessToken.trim() || account?.hasAccessToken);
-  const hasSavedAccount = Boolean(account?.id);
-  const isConnected = hasSavedAccount && hasPhone && hasPhoneNumberId && hasWabaId && hasToken;
-  const isLive = isConnected && Boolean(account?.isActive);
+  function clearAttempt() {
+    activeAttemptRef.current = false;
+    codeRef.current = "";
+    sessionRef.current = null;
+    completingRef.current = false;
+    popupRef.current = null;
+    if (popupTimerRef.current) window.clearInterval(popupTimerRef.current);
+    popupTimerRef.current = null;
+  }
 
-  const checklist = [
-    {
-      id: "business",
-      label: "Business profile",
-      text: hasPhone ? "Store number is saved for customers." : "Add the store WhatsApp number customers will use.",
-      done: hasPhone,
-    },
-    {
-      id: "meta",
-      label: "Meta IDs",
-      text:
-        hasPhoneNumberId && hasWabaId
-          ? "Phone number ID and WABA ID are ready."
-          : "Add the Meta phone number ID and WhatsApp Business Account ID.",
-      done: hasPhoneNumberId && hasWabaId,
-    },
-    {
-      id: "token",
-      label: "Access token",
-      text: hasToken ? "Sending token is saved." : "Add the access token before sending messages.",
-      done: hasToken,
-    },
-    {
-      id: "active",
-      label: "Account status",
-      text: account?.isActive ? "Customer messaging is active." : "Activate only when credentials are correct.",
-      done: Boolean(account?.isActive),
-    },
-  ];
+  async function finishWhenReady() {
+    if (!activeAttemptRef.current || completingRef.current || !codeRef.current || !sessionRef.current) return;
+    completingRef.current = true;
+    setFlowState("connecting");
+    setFlowMessage("Finishing your WhatsApp connection…");
+    try {
+      await completeWhatsAppEmbeddedSignup({ code: codeRef.current, sessionInfo: sessionRef.current });
+      clearAttempt();
+      setFlowState("success");
+      setFlowMessage("WhatsApp connected successfully.");
+      toast.success("WhatsApp connected");
+      await onRefresh?.();
+    } catch (error) {
+      clearAttempt();
+      setFlowState("error");
+      setFlowMessage("Unable to connect WhatsApp. Please try again.");
+      toast.error(safeError(error, "Unable to connect WhatsApp"));
+    }
+  }
 
-  const completedSteps = checklist.filter((item) => item.done).length;
-  const healthTone = isLive ? "success" : isConnected ? "warning" : hasSavedAccount ? "neutral" : "danger";
-  const healthLabel = isLive ? "Connected" : isConnected ? "Ready to activate" : hasSavedAccount ? "Needs setup" : "Not connected";
+  function prepareSdk() {
+    if (!appId) {
+      setSdkState("error");
+      setFlowMessage("WhatsApp connection is not configured yet.");
+      return;
+    }
+    setSdkState("loading");
+    loadMetaSdk(appId)
+      .then((nextSdk) => {
+        setSdk(nextSdk);
+        setSdkState("ready");
+      })
+      .catch(() => {
+        setSdkState("error");
+        setFlowMessage("Unable to prepare WhatsApp connection. Please retry.");
+      });
+  }
 
   useEffect(() => {
-    setBusinessName(account?.businessName || "");
-    setPhoneNumber(account?.phoneNumber || "");
-    setPhoneNumberId(account?.phoneNumberId || "");
-    setWabaId(account?.wabaId || "");
-    setAccessToken("");
-  }, [account?.id]);
+    prepareSdk();
+    return () => {
+      if (popupTimerRef.current) window.clearInterval(popupTimerRef.current);
+    };
+    // Public configuration is fixed for the deployed bundle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  async function save(event) {
-    event.preventDefault();
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (!activeAttemptRef.current) return;
+      const message = parseEmbeddedSignupMessage(event);
+      if (!message) return;
 
-    if (!phoneNumber.trim()) return toast.error("Store WhatsApp number is required");
+      if (message.event === "CANCEL") {
+        clearAttempt();
+        setFlowState("cancelled");
+        setFlowMessage("Connection cancelled. You can try again when ready.");
+        return;
+      }
+      if (message.event === "ERROR") {
+        clearAttempt();
+        setFlowState("error");
+        setFlowMessage("Unable to connect WhatsApp. Please try again.");
+        return;
+      }
 
-    setSaving(true);
+      sessionRef.current = message.data;
+      finishWhenReady();
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  });
+
+  function startConnection() {
+    if (!sdk || sdkState !== "ready" || !configId) {
+      setFlowState("error");
+      setFlowMessage(configId ? "WhatsApp connection is still preparing. Please retry." : "WhatsApp connection is not configured yet.");
+      return;
+    }
+
+    clearAttempt();
+    activeAttemptRef.current = true;
+    setFlowState("connecting");
+    setFlowMessage("Complete the secure Meta signup window to continue.");
+
+    const originalOpen = window.open;
+    window.open = function (...args) {
+      const popup = originalOpen.apply(window, args);
+      popupRef.current = popup;
+      window.open = originalOpen;
+      return popup;
+    };
 
     try {
-      const payload = {
-        businessName: businessName.trim(),
-        phoneNumber: phoneNumber.trim(),
-        phoneNumberId: phoneNumberId.trim() || null,
-        wabaId: wabaId.trim() || null,
-        ...(accessToken.trim() ? { accessToken: accessToken.trim() } : {}),
-      };
-
-      if (account?.id) await updateWhatsAppAccount(account.id, payload);
-      else await createWhatsAppAccount(payload);
-
-      toast.success("WhatsApp connection saved");
-      await onRefresh?.();
-    } catch (err) {
-      toast.error(safeError(err, "WhatsApp connection failed"));
-    } finally {
-      setSaving(false);
+      launchEmbeddedSignup(sdk, configId, (response) => {
+        window.open = originalOpen;
+        const code = String(response?.authResponse?.code || "").trim();
+        if (!code) {
+          clearAttempt();
+          setFlowState("cancelled");
+          setFlowMessage("Connection cancelled. You can try again when ready.");
+          return;
+        }
+        codeRef.current = code;
+        finishWhenReady();
+      });
+      // FB.login opens the signup window synchronously. Never leave the
+      // temporary capture hook installed if the SDK chooses another path.
+      window.open = originalOpen;
+    } catch {
+      window.open = originalOpen;
+      clearAttempt();
+      setFlowState("error");
+      setFlowMessage("Unable to open Meta signup. Check popup permissions and retry.");
+      return;
     }
+
+    window.setTimeout(() => {
+      if (activeAttemptRef.current && popupRef.current === null) {
+        clearAttempt();
+        setFlowState("error");
+        setFlowMessage("The Meta signup window was blocked. Allow popups and retry.");
+      }
+    }, 500);
+    popupTimerRef.current = window.setInterval(() => {
+      if (activeAttemptRef.current && popupRef.current?.closed) {
+        clearAttempt();
+        setFlowState("cancelled");
+        setFlowMessage("Connection window closed. You can try again.");
+      }
+    }, 500);
   }
 
   async function toggleActive() {
@@ -215,171 +291,46 @@ export function SetupWorkspace({ accounts, onRefresh }) {
   return (
     <section className="svx-wa-page-panel svx-wa-setup-workspace">
       <div className="svx-wa-section-title">
-        <p>Connection</p>
-        <h2>WhatsApp account setup</h2>
-        <span>
-          Connect the store WhatsApp number safely. Customers only see the business number; staff
-          manage conversations, draft sales, follow-ups and campaign reports inside Storvex.
-        </span>
+        <p>WhatsApp</p>
+        <h2>Connect your business WhatsApp</h2>
+        <span>Connect your business WhatsApp to manage customer conversations from Storvex.</span>
       </div>
-
-      <div className="svx-wa-account-hero">
-        <div className="svx-wa-account-hero-main">
-          <Badge tone={healthTone}>{healthLabel}</Badge>
-          <h3>{account?.businessName || businessName || "No WhatsApp account connected"}</h3>
+      <div className="svx-wa-connect-card" aria-live="polite">
+        <div className="svx-wa-connect-icon"><LinkSignalIcon /></div>
+        <div className="svx-wa-connect-copy">
+          <Badge tone={isConnected ? "success" : isPaused ? "warning" : "neutral"}>
+            {isConnected ? "Connected" : isPaused ? "Paused" : "Not connected"}
+          </Badge>
+          <h3>{account?.businessName || "Your business WhatsApp"}</h3>
           <p>
-            {isLive
-              ? "This workspace is ready to receive customer messages and send approved broadcasts."
-              : isConnected
-                ? "Credentials are saved. Activate the account when you are ready to send and receive customer messages."
-                : "Finish the checklist below before turning on customer messaging."}
+            {isConnected
+              ? "Your business WhatsApp is connected to Storvex."
+              : isPaused
+                ? "Your WhatsApp connection is paused."
+                : "Meta will guide you through securely choosing your business and WhatsApp number."}
           </p>
+          {account?.phoneNumber ? <strong className="svx-wa-connected-number">+{account.phoneNumber}</strong> : null}
+          {flowMessage ? <div className={cx("svx-wa-connect-message", `is-${flowState}`)}>{flowMessage}</div> : null}
         </div>
-
-        <div className="svx-wa-account-hero-side">
-          <span>Setup progress</span>
-          <strong>{completedSteps}/4</strong>
-          <small>{phoneNumber || "Store number not added"}</small>
-        </div>
-      </div>
-
-      <div className="svx-wa-account-health-grid">
-        <MetricCard
-          label="Connection"
-          value={isLive ? "Live" : isConnected ? "Ready" : hasSavedAccount ? "Review" : "Not set"}
-          note={isLive ? "Live for customers" : isConnected ? "Ready to activate" : "Finish setup"}
-          tone={healthTone}
-          icon={<LinkSignalIcon />}
-        />
-        <MetricCard
-          label="Store number"
-          value={hasPhone ? "Saved" : "Add number"}
-          note={phoneNumber || account?.phoneNumber || "Required"}
-          tone={hasPhone ? "success" : "warning"}
-          icon={<StoreNumberIcon />}
-        />
-        <MetricCard
-          label="Meta IDs"
-          value={hasPhoneNumberId && hasWabaId ? "Ready" : "Add IDs"}
-          note="Phone ID + WABA"
-          tone={hasPhoneNumberId && hasWabaId ? "success" : "warning"}
-          icon={<MetaIdsIcon />}
-        />
-        <MetricCard
-          label="Access token"
-          value={hasToken ? "Saved" : "Add token"}
-          note={account?.hasAccessToken ? "Stored securely" : "Required for sending"}
-          tone={hasToken ? "success" : "warning"}
-          icon={<SecureKeyIcon />}
-        />
-      </div>
-
-      <div className="svx-wa-setup-layout">
-        <div className="svx-wa-setup-checklist">
-          <div className="svx-wa-setup-card-title">
-            <span>Owner checklist</span>
-            <strong>Ready before sending</strong>
-          </div>
-
-          {checklist.map((item) => (
-            <div key={item.id} className={cx("svx-wa-setup-step", item.done && "is-done")}>
-              <span className="svx-wa-setup-step-mark">{item.done ? "✓" : ""}</span>
-              <div>
-                <strong>{item.label}</strong>
-                <p>{item.text}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <form onSubmit={save} className="svx-wa-setup-form">
-          <div className="svx-wa-setup-head">
-            <div>
-              <Badge tone={account?.isActive ? "success" : "neutral"}>
-                {account?.isActive ? "Active" : "Paused"}
-              </Badge>
-              <h3>Connection details</h3>
-              <p>Use the official Meta WhatsApp Business details for this store.</p>
-            </div>
-
-            {account?.id ? (
-              <AsyncButton
-                type="button"
-                onClick={toggleActive}
-                loading={toggling}
-                loadingText="Updating..."
-                variant="secondary"
-              >
-                {account.isActive ? "Pause" : "Activate"}
-              </AsyncButton>
-            ) : null}
-          </div>
-
-          <div className="svx-wa-form-grid">
-            <label>
-              <span>Business name</span>
-              <input
-                value={businessName}
-                onChange={(event) => setBusinessName(event.target.value)}
-                placeholder="Business name shown to customers"
-              />
-            </label>
-
-            <label>
-              <span>Store WhatsApp number</span>
-              <input
-                value={phoneNumber}
-                onChange={(event) => setPhoneNumber(event.target.value)}
-                placeholder="2507XXXXXXXX"
-              />
-            </label>
-
-            <label>
-              <span>Meta phone number ID</span>
-              <input
-                value={phoneNumberId}
-                onChange={(event) => setPhoneNumberId(event.target.value)}
-                placeholder="Phone number ID from Meta"
-              />
-            </label>
-
-            <label>
-              <span>WhatsApp Business Account ID</span>
-              <input
-                value={wabaId}
-                onChange={(event) => setWabaId(event.target.value)}
-                placeholder="WABA ID from Meta"
-              />
-            </label>
-
-            <label className="is-wide">
-              <span>Access token</span>
-              <input
-                value={accessToken}
-                onChange={(event) => setAccessToken(event.target.value)}
-                placeholder={
-                  account?.hasAccessToken
-                    ? "Already saved. Enter only if replacing."
-                    : "Paste WhatsApp access token"
-                }
-              />
-              <small>
-                Storvex does not show saved tokens again. Paste a new token only when replacing the
-                current one.
-              </small>
-            </label>
-          </div>
-
-          <div className="svx-wa-setup-actions">
-            <AsyncButton type="submit" loading={saving} loadingText="Saving...">
-              Save connection
+        <div className="svx-wa-connect-actions">
+          <AsyncButton
+            type="button"
+            onClick={startConnection}
+            loading={flowState === "connecting"}
+            loadingText="Connecting..."
+            disabled={sdkState === "loading"}
+          >
+            {isConnected || isPaused ? "Reconnect" : sdkState === "loading" ? "Preparing..." : "Connect WhatsApp"}
+          </AsyncButton>
+          {sdkState === "error" ? (
+            <button type="button" className="svx-wa-secondary-action" onClick={prepareSdk}>Retry setup</button>
+          ) : null}
+          {account?.id ? (
+            <AsyncButton type="button" onClick={toggleActive} loading={toggling} loadingText="Updating..." variant="secondary">
+              {account.isActive ? "Pause" : "Resume"}
             </AsyncButton>
-            <p>
-              Keep the account paused until the number, Meta IDs and token have been checked. This
-              prevents customers from hitting an unfinished setup.
-            </p>
-          </div>
-        </form>
+          ) : null}
+        </div>
       </div>
     </section>
   );
@@ -1028,4 +979,3 @@ export function AssignModal({ open, staff, conversation, onClose, onAssigned }) 
     </div>
   );
 }
-

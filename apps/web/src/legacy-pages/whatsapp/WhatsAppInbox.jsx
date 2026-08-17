@@ -708,8 +708,12 @@ export default function WhatsAppInbox() {
         </div>
 
         <div className="svx-wa-hero-actions">
-          <Badge tone={activeAccount?.isActive ? "success" : "warning"}>
-            {activeAccount?.isActive ? "Connected" : "Setup needed"}
+          <Badge tone={activeAccount?.connectionState === "connected" ? "success" : "warning"}>
+            {activeAccount?.connectionState === "connected"
+              ? "Connected"
+              : activeAccount?.connectionState === "paused"
+                ? "Paused"
+                : "Not connected"}
           </Badge>
 
 

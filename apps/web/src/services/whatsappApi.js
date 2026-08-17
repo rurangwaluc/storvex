@@ -181,6 +181,7 @@ function sanitizeAccount(value) {
     appSecret: trimString(item.appSecret),
     hasAccessToken: toBoolean(item.hasAccessToken),
     isActive: typeof item.isActive === "boolean" ? item.isActive : false,
+    connectionState: trimString(item.connectionState || "not_connected"),
     setupStatus: sanitizeSetupStatus(item.setupStatus),
     channelStrategy: sanitizeChannelStrategy(item.channelStrategy),
     createdAt: item.createdAt || null,
@@ -807,6 +808,23 @@ export async function setWhatsAppAccountActive(accountId, isActive) {
   const data = await apiFetch(`/whatsapp/accounts/${id}/active`, {
     method: "PATCH",
     body: { isActive: Boolean(isActive) },
+  });
+
+  return {
+    ok: toBoolean(data?.ok),
+    message: trimString(data?.message),
+    account: sanitizeAccount(data?.account),
+  };
+}
+
+export async function completeWhatsAppEmbeddedSignup(payload) {
+  const source = ensureObject(payload);
+  const data = await apiFetch("/whatsapp/accounts/embedded-signup/complete", {
+    method: "POST",
+    body: {
+      code: trimString(source.code),
+      sessionInfo: ensureObject(source.sessionInfo),
+    },
   });
 
   return {
