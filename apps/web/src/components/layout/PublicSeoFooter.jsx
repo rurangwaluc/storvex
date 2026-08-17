@@ -6,66 +6,58 @@ const solutionLinks = [
   ["Inventory management", "/solutions/inventory-management"],
   ["Sales tracking", "/solutions/sales-tracking"],
   ["Cash control", "/solutions/cash-control"],
-  ["Multi-branch shops", "/solutions/multi-branch-management"],
-  ["Stock reordering", "/solutions/stock-reordering"],
-  ["Staff management", "/solutions/staff-management"],
 ];
 
-const industryLinks = [
-  ["Electronics shops", "/industries/electronics"],
-  ["Hardware shops", "/industries/hardware"],
-  ["Home and kitchen shops", "/industries/home-and-kitchen"],
-  ["Lighting shops", "/industries/lighting"],
-  ["Spare parts shops", "/industries/spare-parts"],
+const productLinks = [
+  ["Pricing", "/pricing"],
+  ["Marketplace", "/marketplace"],
+  ["Log in", "/login"],
+  ["Start free trial", "/signup"],
+];
+
+const legalLinks = [
+  ["Privacy", "/privacy"],
+  ["Terms", "/terms"],
+  ["Data deletion", "/data-deletion"],
 ];
 
 export default function PublicSeoFooter() {
   return (
     <footer className="seo-footer">
-      <div className="seo-shell seo-footer__grid">
+      <div className="seo-shell seo-footer__main">
         <div className="seo-footer__brand">
-          <Link href="/" aria-label="Storvex home">
+          <Link className="seo-footer__logo" href="/" aria-label="Storvex home">
             <img src="/storvex_white.webp" alt="Storvex" />
           </Link>
-          <p>Simple tools for sales, stock, cash, workers and shop branches.</p>
+          <p>Clear business tools for sales, stock, cash, staff and every shop branch.</p>
+          <a className="seo-footer__contact" href="mailto:support@storvex.rw">
+            support@storvex.rw
+          </a>
         </div>
 
-        <nav aria-label="Storvex solutions">
-          <h2>Solutions</h2>
-          <ul>
-            {solutionLinks.map(([label, href]) => (
-              <li key={href}>
-                <Link href={href}>{label}</Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <nav aria-label="Storvex industries">
-          <h2>Industries</h2>
-          <ul>
-            {industryLinks.map(([label, href]) => (
-              <li key={href}>
-                <Link href={href}>{label}</Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <nav aria-label="Storvex links">
-          <h2>Storvex</h2>
-          <ul>
-            <li><Link href="/pricing">Pricing</Link></li>
-            <li><Link href="/marketplace">Marketplace</Link></li>
-            <li><Link href="/login">Log in</Link></li>
-            <li><Link href="/signup">Start free trial</Link></li>
-          </ul>
-        </nav>
+        <div className="seo-footer__navigation">
+          <FooterGroup label="Product" links={productLinks} />
+          <FooterGroup label="Solutions" links={solutionLinks} />
+        </div>
       </div>
 
       <div className="seo-shell seo-footer__bottom">
         <p>© {new Date().getFullYear()} Storvex. All rights reserved.</p>
+        <nav aria-label="Legal">
+          {legalLinks.map(([label, href]) => <Link href={href} key={href}>{label}</Link>)}
+        </nav>
       </div>
     </footer>
+  );
+}
+
+function FooterGroup({ label, links }) {
+  return (
+    <nav className="seo-footer__group" aria-label={`Storvex ${label.toLowerCase()}`}>
+      <h2>{label}</h2>
+      <ul>
+        {links.map(([text, href]) => <li key={href}><Link href={href}>{text}</Link></li>)}
+      </ul>
+    </nav>
   );
 }

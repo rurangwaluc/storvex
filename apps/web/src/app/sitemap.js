@@ -33,6 +33,12 @@ export default function sitemap() {
       changeFrequency: "daily",
       priority: 0.8,
     },
+    ...["privacy", "terms", "data-deletion"].map((path) => ({
+      url: `${baseUrl}/${path}`,
+      lastModified,
+      changeFrequency: "yearly",
+      priority: 0.4,
+    })),
     ...solutionPageSlugs.map((slug) => ({
       url: `${baseUrl}/solutions/${slug}`,
       lastModified,

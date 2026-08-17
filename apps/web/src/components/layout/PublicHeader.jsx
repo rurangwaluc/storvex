@@ -163,8 +163,16 @@ export default function PublicHeader() {
           onClick={closeMenu}
         >
           <img
-            src={isDark ? LIGHT_LOGO : DARK_LOGO}
+            className="sp-header__logo sp-header__logo--light"
+            src={DARK_LOGO}
             alt="Storvex"
+            draggable="false"
+          />
+          <img
+            className="sp-header__logo sp-header__logo--dark"
+            src={LIGHT_LOGO}
+            alt=""
+            aria-hidden="true"
             draggable="false"
           />
         </Link>
@@ -194,19 +202,8 @@ export default function PublicHeader() {
                 : "Switch to dark mode"
             }
           >
-            {isDark ? (
-              <Sun
-                size={17}
-                strokeWidth={2}
-                aria-hidden="true"
-              />
-            ) : (
-              <Moon
-                size={17}
-                strokeWidth={2}
-                aria-hidden="true"
-              />
-            )}
+            <Moon className="sp-header__theme-icon sp-header__theme-icon--light" size={17} strokeWidth={2} aria-hidden="true" />
+            <Sun className="sp-header__theme-icon sp-header__theme-icon--dark" size={17} strokeWidth={2} aria-hidden="true" />
           </button>
 
           <Link

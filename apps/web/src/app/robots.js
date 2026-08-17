@@ -10,6 +10,9 @@ export default function robots() {
           "/marketplace/",
           "/solutions/",
           "/industries/",
+          "/privacy",
+          "/terms",
+          "/data-deletion",
         ],
         disallow: [
           "/app/",

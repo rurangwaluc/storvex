@@ -7,7 +7,12 @@ import {
 import { isSolutionPageSlug } from "./lib/seo/solutionPages";
 import { isIndustryPageSlug } from "./lib/seo/industryPages";
 
-const EXPLICIT_APP_ROUTES = new Set(["offline"]);
+const EXPLICIT_APP_ROUTES = new Set([
+  "offline",
+  "privacy",
+  "terms",
+  "data-deletion",
+]);
 
 export function proxy(request) {
   const segments = request.nextUrl.pathname
@@ -56,6 +61,6 @@ export function proxy(request) {
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)",
+    "/((?!api|_next|favicon.ico|.*\\..*).*)",
   ],
 };

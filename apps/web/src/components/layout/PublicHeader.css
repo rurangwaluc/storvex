@@ -60,6 +60,21 @@
   object-fit: contain;
 }
 
+.sp-header__brand .sp-header__logo--dark,
+.sp-header__theme-icon--dark {
+  display: none;
+}
+
+:root[data-theme="dark"] .sp-header__logo--light,
+:root[data-theme="dark"] .sp-header__theme-icon--light {
+  display: none;
+}
+
+:root[data-theme="dark"] .sp-header__logo--dark,
+:root[data-theme="dark"] .sp-header__theme-icon--dark {
+  display: block;
+}
+
 .sp-header__nav {
   display: flex;
   align-items: center;

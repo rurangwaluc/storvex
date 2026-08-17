@@ -608,12 +608,12 @@ function Footer() {
             <p>© {currentYear} Storvex. All rights reserved.</p>
 
             <div>
-              <Link href="/signup">Privacy Policy</Link>
-              <Link href="/signup">Terms of Service</Link>
+              <Link href="/privacy">Privacy Policy</Link>
+              <Link href="/terms">Terms of Service</Link>
+              <Link href="/data-deletion">Data Deletion</Link>
             </div>
 
             <div>
-              <Link href="/signup">Security</Link>
               <span>🌐 English</span>
             </div>
           </div>

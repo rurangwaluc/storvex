@@ -2,6 +2,17 @@ import "../index.css";
 
 import PwaBoot from "../components/pwa/PwaBoot";
 
+const themeInitializationScript = `
+try {
+  var savedTheme = localStorage.getItem("storvex-theme");
+  var theme = savedTheme === "light" || savedTheme === "dark"
+    ? savedTheme
+    : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  document.documentElement.setAttribute("data-theme", theme);
+  document.documentElement.style.colorScheme = theme;
+} catch (error) {}
+`;
+
 export const metadata = {
   title: "Storvex: Store control system",
   description:
@@ -33,7 +44,10 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitializationScript }} />
+      </head>
       <body>
         <PwaBoot />
         {children}

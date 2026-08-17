@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { storage } from "../lib/storage";
 
 const LIGHT = "light";
@@ -23,12 +23,21 @@ function getInitialTheme() {
 }
 
 export function useTheme() {
-  const [theme, setTheme] = useState(getInitialTheme);
+  const [theme, setTheme] = useState(LIGHT);
+  const initialized = useRef(false);
 
   useEffect(() => {
+    if (!initialized.current) return;
+
     document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.style.colorScheme = theme;
     storage.setTheme(theme);
   }, [theme]);
+
+  useEffect(() => {
+    initialized.current = true;
+    setTheme(getInitialTheme());
+  }, []);
 
   return useMemo(
     () => ({
