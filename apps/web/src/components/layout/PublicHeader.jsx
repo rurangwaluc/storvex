@@ -206,19 +206,19 @@ export default function PublicHeader() {
             <Sun className="sp-header__theme-icon sp-header__theme-icon--dark" size={17} strokeWidth={2} aria-hidden="true" />
           </button>
 
-          <Link
+          <a
             href={ROUTES.login}
             className="sp-header__login"
           >
             Log in
-          </Link>
+          </a>
 
-          <Link
+          <a
             href="/signup"
             className="sp-header__trial"
           >
             Start free trial
-          </Link>
+          </a>
 
           <button
             type="button"
@@ -271,21 +271,21 @@ export default function PublicHeader() {
           </div>
 
           <div className="sp-header__mobile-actions">
-            <Link
+            <a
               href={ROUTES.login}
               className="sp-header__mobile-login"
               onClick={closeMenu}
             >
               Log in
-            </Link>
+            </a>
 
-            <Link
+            <a
               href="/signup"
               className="sp-header__mobile-trial"
               onClick={closeMenu}
             >
               Start free trial
-            </Link>
+            </a>
           </div>
 
           <div className="sp-header__mobile-footer">
