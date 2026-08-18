@@ -48,11 +48,25 @@ test("defines exactly five complete Marketplace category SEO records", () => {
   }
 });
 
-test("keeps every Marketplace category outside the SEO approval gate", () => {
-  assert.equal(approvedMarketplaceCategorySlugs.size, 0);
-  assert.equal(expectedSlugs.every((slug) => !isMarketplaceCategorySeoApproved(slug)), true);
+test("approves only Electronics for Marketplace category SEO", () => {
+  assert.deepEqual([...approvedMarketplaceCategorySlugs], ["electronics"]);
+  assert.equal(isMarketplaceCategorySeoApproved("electronics"), true);
+  for (const slug of ["hardware", "home-and-kitchen", "lighting", "spare-parts"]) {
+    assert.equal(isMarketplaceCategorySeoApproved(slug), false, slug);
+  }
+
   const sitemapSource = readFileSync(new URL("../src/app/sitemap.js", import.meta.url), "utf8");
   assert.match(sitemapSource, /approvedMarketplaceCategorySlugs\.has\(page\.slug\)/);
+
+  const marketplaceSitemapUrls = marketplaceCategoryPages
+    .filter((page) => approvedMarketplaceCategorySlugs.has(page.slug))
+    .map((page) => page.canonical);
+
+  assert.deepEqual(marketplaceSitemapUrls, [
+    "https://www.storvex.rw/marketplace/category/electronics",
+  ]);
+  assert.equal(new Set(marketplaceSitemapUrls).size, marketplaceSitemapUrls.length);
+  assert.equal(marketplaceSitemapUrls.some((url) => !url.includes("/marketplace/category/")), false);
 });
 
 test("distinguishes top-level, subcategory, leaf and invalid catalogue slugs", () => {
@@ -123,13 +137,18 @@ test("normalizes clean and query-variant product keys consistently", () => {
   }
 });
 
-test("only a future-approved clean curated URL can be indexable", () => {
-  const approvedSlugs = new Set(["electronics"]);
-  const base = { slug: "electronics", curated: getMarketplaceCategoryPage("electronics"), approvedSlugs };
+test("only the approved clean Electronics URL can be indexable", () => {
+  const base = { slug: "electronics", curated: getMarketplaceCategoryPage("electronics") };
 
   assert.equal(isMarketplaceCategoryIndexable({ ...base, hasQueryVariant: false }), true);
   assert.equal(isMarketplaceCategoryIndexable({ ...base, hasQueryVariant: true }), false);
-  assert.equal(isMarketplaceCategoryIndexable({ ...base, slug: "hardware", hasQueryVariant: false }), false);
+  for (const slug of ["hardware", "home-and-kitchen", "lighting", "spare-parts"]) {
+    assert.equal(isMarketplaceCategoryIndexable({
+      slug,
+      curated: getMarketplaceCategoryPage(slug),
+      hasQueryVariant: false,
+    }), false, slug);
+  }
 });
 
 test("catalogue upstream failures remain errors while a real unknown slug remains null", async () => {

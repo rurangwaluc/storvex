@@ -1,4 +1,6 @@
-export const approvedMarketplaceCategorySlugs = new Set([]);
+export const approvedMarketplaceCategorySlugs = new Set([
+  "electronics",
+]);
 
 export function isMarketplaceCategorySeoApproved(slug) {
   return approvedMarketplaceCategorySlugs.has(String(slug || ""));
