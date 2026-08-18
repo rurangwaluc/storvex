@@ -14,10 +14,10 @@ const App = dynamic(() => import("../App"), {
   loading: () => <StorvexAppLoader />,
 });
 
-export default function LegacyClientApp() {
+export default function LegacyClientApp({ queryClientInstance = queryClient }) {
   return (
     <React.StrictMode>
-      <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClientInstance}>
         <ThemeProvider>
           <App />
 

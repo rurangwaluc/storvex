@@ -65,6 +65,73 @@ export function validateMarketplaceCatalogue(catalogue) {
   return catalogue;
 }
 
+const PRIVATE_MARKETPLACE_PRODUCT_FIELDS = new Set([
+  "id",
+  "tenantId",
+  "qtyOnHand",
+  "qtyReserved",
+  "costPrice",
+  "margin",
+  "sku",
+  "supplier",
+  "staff",
+  "branchInventory",
+  "location",
+  "address",
+  "internalNotes",
+]);
+
+function assertPublicMarketplaceProductPayload(value) {
+  if (!value || typeof value !== "object") return;
+
+  if (Array.isArray(value)) {
+    value.forEach(assertPublicMarketplaceProductPayload);
+    return;
+  }
+
+  for (const [key, child] of Object.entries(value)) {
+    if (PRIVATE_MARKETPLACE_PRODUCT_FIELDS.has(key)) {
+      throw new MarketplaceServerApiError("Marketplace product response contains private fields", {
+        code: "MARKETPLACE_UPSTREAM_INVALID_DATA",
+      });
+    }
+
+    assertPublicMarketplaceProductPayload(child);
+  }
+}
+
+export function validateMarketplaceProduct(data, { storeSlug, productSlug } = {}) {
+  const store = data?.store;
+  const product = data?.product;
+  const expectedStoreSlug = String(storeSlug || "").trim();
+  const expectedProductSlug = String(productSlug || "").trim();
+
+  if (
+    !store ||
+    typeof store !== "object" ||
+    Array.isArray(store) ||
+    !product ||
+    typeof product !== "object" ||
+    Array.isArray(product) ||
+    !String(store.slug || "").trim() ||
+    !String(store.name || "").trim() ||
+    !String(product.slug || "").trim() ||
+    !String(product.title || "").trim() ||
+    !String(product.seller?.slug || "").trim() ||
+    (expectedStoreSlug && store.slug !== expectedStoreSlug) ||
+    (expectedStoreSlug && product.seller.slug !== expectedStoreSlug) ||
+    (expectedProductSlug && product.slug !== expectedProductSlug)
+  ) {
+    throw new MarketplaceServerApiError("Marketplace product response is malformed", {
+      code: "MARKETPLACE_UPSTREAM_INVALID_DATA",
+    });
+  }
+
+  const publicData = { store, product };
+  assertPublicMarketplaceProductPayload(publicData);
+  return publicData;
+}
+
 export const getServerMarketplaceCatalogue = cache(async () => {
   const catalogue = await marketplaceFetch("/marketplace/catalogue", { revalidate: 300 });
   return validateMarketplaceCatalogue(catalogue);
@@ -80,6 +147,30 @@ export function getServerMarketplaceProducts(params = {}) {
 
 export function getServerMarketplaceStores() {
   return marketplaceFetch("/marketplace/stores?sort=name&limit=100", { revalidate: 60 });
+}
+
+export async function getServerMarketplaceProduct(storeSlug, productSlug) {
+  const cleanStoreSlug = String(storeSlug || "").trim();
+  const cleanProductSlug = String(productSlug || "").trim();
+
+  if (!cleanStoreSlug || !cleanProductSlug) return null;
+
+  try {
+    const data = await marketplaceFetch(
+      `/marketplace/stores/${encodeURIComponent(cleanStoreSlug)}/products/${encodeURIComponent(cleanProductSlug)}`,
+    );
+
+    return validateMarketplaceProduct(data, {
+      storeSlug: cleanStoreSlug,
+      productSlug: cleanProductSlug,
+    });
+  } catch (error) {
+    if (error instanceof MarketplaceServerApiError && error.status === 404) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 export function findMarketplaceCataloguePath(categories, slug) {
