@@ -14,7 +14,7 @@ try {
 `;
 
 export const metadata = {
-  title: "Storvex: Store control system",
+  title: "Storvex | Control your business. Save time. Sell more.",
   description:
     "Storvex helps store owners track sales, stock, cash, staff activity, and branch performance with real-time clarity.",
   applicationName: "Storvex",
