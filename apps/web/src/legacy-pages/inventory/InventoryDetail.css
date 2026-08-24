@@ -3419,6 +3419,9 @@ body[data-theme="light"]
 }
 
 .svx-detail-listing-quality {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
   border: 1px solid var(--detail-border);
   border-left: 4px solid var(--detail-warning);
   border-radius: 16px;
