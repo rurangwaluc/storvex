@@ -173,6 +173,8 @@ export async function getServerMarketplaceProduct(storeSlug, productSlug) {
   }
 }
 
+export const getCachedServerMarketplaceProduct = cache(getServerMarketplaceProduct);
+
 export function findMarketplaceCataloguePath(categories, slug) {
   for (const category of Array.isArray(categories) ? categories : []) {
     if (category.slug === slug) return { category, subcategory: null, leafCategory: null };

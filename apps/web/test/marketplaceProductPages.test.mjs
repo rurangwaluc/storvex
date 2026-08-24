@@ -16,6 +16,16 @@ import {
 import {
   getMarketplaceCategoryPage,
 } from "../src/lib/seo/marketplaceCategoryPages.js";
+import {
+  marketplaceProductBreadcrumbJsonLd,
+  marketplaceProductBreadcrumbs,
+  marketplaceProductCanonical,
+  marketplaceProductDescription,
+  marketplaceProductJsonLd,
+  marketplaceProductLeadImage,
+  marketplaceProductSeo,
+  serializeMarketplaceJsonLd,
+} from "../src/lib/seo/marketplaceProductSeo.js";
 
 const storeSlug = "dunamis-electronics-ltd";
 const productSlug = "iphone-11-pro-ae750b";
@@ -40,15 +50,29 @@ const publicProductData = {
     title: "IPHONE 11 PRO",
     description: "Public product description",
     price: 370000,
+    regularPrice: 370000,
+    salePrice: null,
+    onSale: false,
     currency: "RWF",
     availability: "in_stock",
+    categoryBreadcrumbs: [
+      { slug: "electronics", label: "Electronics" },
+      { slug: "phones", label: "Phones" },
+      { slug: "smartphones", label: "Smartphones" },
+    ],
+    attributes: {},
     image: {
       url: "https://images.example/product.webp",
       altText: "IPHONE 11 PRO",
+      width: 1600,
+      height: 1600,
     },
     images: [{
       url: "https://images.example/product.webp",
       altText: "IPHONE 11 PRO",
+      isPrimary: true,
+      width: 1600,
+      height: 1600,
     }],
   },
 };
@@ -117,7 +141,7 @@ test("the explicit route delegates reserved families and 404s only confirmed abs
 
   assert.match(routeSource, /isMarketplaceProductRoute\(segments\)/);
   assert.match(routeSource, /return <LegacyClientApp \/>/);
-  assert.match(routeSource, /await getServerMarketplaceProduct\(storeSlug, productSlug\)/);
+  assert.match(routeSource, /await getCachedServerMarketplaceProduct\(storeSlug, productSlug\)/);
   assert.match(routeSource, /if \(data === null\)/);
   assert.match(routeSource, /notFound\(\)/);
   assert.doesNotMatch(routeSource, /catch\s*\(/);
@@ -146,6 +170,200 @@ test("returns and seeds a valid public product response", async () => {
   assert.match(bridgeSource, /createQueryClient\(\)/);
   assert.match(bridgeSource, /marketplaceQueryKeys\.product\(\{ storeSlug, productSlug \}\)/);
   assert.match(bridgeSource, /client\.setQueryData\(/);
+  assert.match(bridgeSource, /<MarketplaceProductDetails \/>/);
+  assert.match(bridgeSource, /<StaticRouter/);
+  assert.doesNotMatch(bridgeSource, /LegacyClientApp/);
+});
+
+test("builds unique product metadata with a clean query-independent canonical", () => {
+  const seo = marketplaceProductSeo(publicProductData, storeSlug, productSlug);
+
+  assert.equal(
+    seo.title,
+    "IPHONE 11 PRO from DUNAMIS ELECTRONICS LTD | Storvex Marketplace",
+  );
+  assert.equal(seo.description, "Public product description");
+  assert.equal(
+    seo.canonical,
+    "https://www.storvex.rw/marketplace/dunamis-electronics-ltd/iphone-11-pro-ae750b",
+  );
+  assert.equal(
+    marketplaceProductCanonical(storeSlug, productSlug),
+    marketplaceProductCanonical(storeSlug, productSlug, { anything: "ignored" }),
+  );
+  assert.deepEqual(seo.leadImage, {
+    url: "https://images.example/product.webp",
+    alt: "IPHONE 11 PRO",
+    width: 1600,
+    height: 1600,
+  });
+
+  const routeSource = readFileSync(
+    new URL("../src/app/marketplace/[storeSlug]/[productSlug]/page.jsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(routeSource, /export async function generateMetadata/);
+  assert.match(routeSource, /robots: \{ index: false, follow: true \}/);
+  assert.match(routeSource, /type: "website"/);
+  assert.match(routeSource, /siteName: "Storvex Marketplace"/);
+  assert.match(routeSource, /card: "summary_large_image"/);
+  assert.doesNotMatch(routeSource, /searchParams/);
+});
+
+test("normalizes and safely limits product descriptions", () => {
+  assert.equal(
+    marketplaceProductDescription(
+      { title: "Phone", description: "  A useful\n product   description.  " },
+      { name: "Store" },
+    ),
+    "A useful product description.",
+  );
+  assert.equal(
+    marketplaceProductDescription({ title: "Phone", description: "" }, { name: "Store" }),
+    "Phone is available from Store on Storvex Marketplace.",
+  );
+  assert.equal(
+    marketplaceProductDescription(
+      { title: "Phone", description: "word ".repeat(100) },
+      { name: "Store" },
+    ).length <= 160,
+    true,
+  );
+});
+
+test("uses only real breadcrumb links and keeps JSON-LD aligned", () => {
+  const canonical = marketplaceProductCanonical(storeSlug, productSlug);
+  const breadcrumbs = marketplaceProductBreadcrumbs({
+    ...publicProductData,
+    canonical,
+  });
+
+  assert.deepEqual(breadcrumbs, [
+    { name: "Marketplace", url: "https://www.storvex.rw/marketplace" },
+    { name: "Electronics", url: "https://www.storvex.rw/marketplace/category/electronics" },
+    { name: "Phones" },
+    { name: "Smartphones" },
+    { name: "IPHONE 11 PRO", url: canonical },
+  ]);
+  assert.equal(breadcrumbs.some((item) => item.url?.includes("/category/phones")), false);
+  assert.equal(breadcrumbs.some((item) => item.url?.includes("/category/smartphones")), false);
+
+  const jsonLd = marketplaceProductBreadcrumbJsonLd(breadcrumbs);
+  assert.deepEqual(
+    jsonLd.itemListElement.map(({ position, name, item }) => ({ position, name, item })),
+    breadcrumbs.map((item, index) => ({
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  );
+});
+
+test("falls back to the real public store breadcrumb when taxonomy is absent", () => {
+  const product = { ...publicProductData.product, categoryBreadcrumbs: [] };
+  const canonical = marketplaceProductCanonical(storeSlug, productSlug);
+  assert.deepEqual(
+    marketplaceProductBreadcrumbs({ product, store: publicProductData.store, canonical }),
+    [
+      { name: "Marketplace", url: "https://www.storvex.rw/marketplace" },
+      {
+        name: "DUNAMIS ELECTRONICS LTD",
+        url: "https://www.storvex.rw/marketplace/stores/dunamis-electronics-ltd",
+      },
+      { name: "IPHONE 11 PRO", url: canonical },
+    ],
+  );
+});
+
+test("builds safe Product and Offer JSON-LD from the active public price", () => {
+  const canonical = marketplaceProductCanonical(storeSlug, productSlug);
+  const description = marketplaceProductDescription(
+    publicProductData.product,
+    publicProductData.store,
+  );
+  const data = marketplaceProductJsonLd({
+    ...publicProductData,
+    canonical,
+    description,
+  });
+
+  assert.equal(data["@type"], "Product");
+  assert.equal(data.name, "IPHONE 11 PRO");
+  assert.equal(data.description, description);
+  assert.deepEqual(data.image, ["https://images.example/product.webp"]);
+  assert.equal(data.url, canonical);
+  assert.equal(data.offers.price, 370000);
+  assert.equal(data.offers.priceCurrency, "RWF");
+  assert.equal(data.offers.availability, "https://schema.org/InStock");
+  assert.deepEqual(data.offers.seller, {
+    "@type": "Organization",
+    name: "DUNAMIS ELECTRONICS LTD",
+    url: "https://www.storvex.rw/marketplace/stores/dunamis-electronics-ltd",
+  });
+
+  for (const forbidden of ["aggregateRating", "review", "gtin", "mpn", "sku"]) {
+    assert.equal(JSON.stringify(data).includes(`"${forbidden}"`), false, forbidden);
+  }
+});
+
+test("uses sale price, maps OutOfStock and omits unsafe Offers", () => {
+  const canonical = marketplaceProductCanonical(storeSlug, productSlug);
+  const build = (product, store = publicProductData.store) => marketplaceProductJsonLd({
+    product,
+    store,
+    canonical,
+    description: "Description",
+  });
+
+  assert.equal(build({
+    ...publicProductData.product,
+    price: 320000,
+    regularPrice: 370000,
+    salePrice: 320000,
+    onSale: true,
+  }).offers.price, 320000);
+  assert.equal(build({
+    ...publicProductData.product,
+    availability: "out_of_stock",
+  }).offers.availability, "https://schema.org/OutOfStock");
+
+  for (const product of [
+    { ...publicProductData.product, availability: "unavailable" },
+    { ...publicProductData.product, price: 0 },
+    { ...publicProductData.product, price: null },
+    { ...publicProductData.product, currency: "" },
+  ]) {
+    assert.equal("offers" in build(product), false);
+  }
+  assert.equal(
+    "offers" in build(publicProductData.product, {
+      ...publicProductData.store,
+      temporarilyClosed: true,
+    }),
+    false,
+  );
+});
+
+test("selects a deterministic public lead image and safely escapes JSON-LD", () => {
+  const product = {
+    ...publicProductData.product,
+    title: "Unsafe </script> title",
+    image: { url: "https://images.example/fallback.webp" },
+    images: [
+      { url: "https://images.example/first.webp" },
+      { url: "https://images.example/primary.webp", isPrimary: true, altText: "Primary" },
+    ],
+  };
+
+  assert.deepEqual(marketplaceProductLeadImage(product), {
+    url: "https://images.example/primary.webp",
+    alt: "Primary",
+    width: undefined,
+    height: undefined,
+  });
+  const serialized = serializeMarketplaceJsonLd({ name: product.title });
+  assert.equal(serialized.includes("</script>"), false);
+  assert.match(serialized, /\\u003c\/script>/);
 });
 
 test("returns null only for a confirmed product API 404", async () => {

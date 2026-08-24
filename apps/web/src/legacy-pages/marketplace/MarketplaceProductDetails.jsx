@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useEffect,
   useMemo,
   useState,
@@ -58,6 +59,10 @@ import {
   marketplaceDiscountPercent,
   marketplaceFieldValue,
 } from "./marketplaceCategoryDefinitions";
+import {
+  marketplaceProductBreadcrumbs,
+  marketplaceProductCanonical,
+} from "../../lib/seo/marketplaceProductSeo";
 
 import "../public/LandingPage.css";
 import "./MarketplacePublic.css";
@@ -422,12 +427,12 @@ export default function MarketplaceProductDetails() {
     if (!product?.title) return undefined;
 
     const previousTitle = document.title;
-    document.title = `${product.title} | Storvex`;
+    document.title = `${product.title} from ${store?.name || product.seller?.name} | Storvex Marketplace`;
 
     return () => {
       document.title = previousTitle;
     };
-  }, [product?.title]);
+  }, [product?.seller?.name, product?.title, store?.name]);
 
   const images = useMemo(() => {
     if (!product) return [];
@@ -522,6 +527,12 @@ export default function MarketplaceProductDetails() {
   const storeSearchUrl = `/marketplace?search=${encodeURIComponent(
     store?.name || "",
   )}`;
+  const canonical = product
+    ? marketplaceProductCanonical(storeSlug, productSlug)
+    : "";
+  const breadcrumbs = product && store
+    ? marketplaceProductBreadcrumbs({ product, store, canonical })
+    : [];
 
   function decreaseQuantity() {
     setQuantity((current) =>
@@ -675,27 +686,18 @@ export default function MarketplaceProductDetails() {
               className="svx-product-breadcrumb"
               aria-label="Breadcrumb"
             >
-              <Link to="/marketplace">
-                Marketplace
-              </Link>
-
-              <ChevronRight size={14} />
-
-              {product.category ? (
-                <>
-                  <Link
-                    to={`/marketplace?category=${encodeURIComponent(
-                      product.category,
-                    )}`}
-                  >
-                    {product.category}
-                  </Link>
-
-                  <ChevronRight size={14} />
-                </>
-              ) : null}
-
-              <span>{product.title}</span>
+              {breadcrumbs.map((item, index) => (
+                <Fragment key={`${item.name}-${index}`}>
+                  {index > 0 ? <ChevronRight size={14} aria-hidden="true" /> : null}
+                  {item.url && index < breadcrumbs.length - 1 ? (
+                    <Link to={item.url}>{item.name}</Link>
+                  ) : (
+                    <span aria-current={index === breadcrumbs.length - 1 ? "page" : undefined}>
+                      {item.name}
+                    </span>
+                  )}
+                </Fragment>
+              ))}
             </nav>
 
             <button
