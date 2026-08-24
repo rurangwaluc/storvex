@@ -49,6 +49,9 @@ import {
   internalWorkspaceQueryOptions,
 } from "../../lib/internalWorkspaceQuery";
 import {
+  evaluateMarketplaceListingQuality,
+} from "../../lib/marketplaceListingQuality";
+import {
   getMarketplaceCatalogue,
 } from "../../services/marketplaceApi";
 import {
@@ -1635,6 +1638,39 @@ export default function InventoryDetail() {
   const attributes = useMemo(() => normalizedCategoryAttributes(product), [product]);
   const images = productImages(product);
   const hasApprovedPhoto = images.length > 0;
+  const listingQuality = useMemo(
+    () => evaluateMarketplaceListingQuality({
+      title: listingForm.title,
+      description: listingForm.description,
+      price: listingForm.price,
+      category:
+        marketplaceNodeValue(
+          selectedMarketplaceCategory,
+        ) || listingForm.category,
+      subcategory:
+        marketplaceNodeValue(
+          selectedMarketplaceSubcategory,
+        ) || listingForm.subcategory,
+      leafCategory:
+        marketplaceNodeValue(
+          selectedMarketplaceLeafCategory,
+        ) || listingForm.leafCategory,
+      attributes:
+        product?.listingAttributes ||
+        product?.marketplaceAttributes ||
+        {},
+      approvedImageCount: images.length,
+    }),
+    [
+      images.length,
+      listingForm,
+      product?.listingAttributes,
+      product?.marketplaceAttributes,
+      selectedMarketplaceCategory,
+      selectedMarketplaceLeafCategory,
+      selectedMarketplaceSubcategory,
+    ],
+  );
   const listingPrice = Number(listingForm.price || 0);
   const listingDetailsComplete = Boolean(
     cleanString(listingForm.title) &&
@@ -2238,6 +2274,40 @@ export default function InventoryDetail() {
                           disabled={Boolean(listingSaving)}
                         />
                       </label>
+
+                      <section
+                        className={cx(
+                          "svx-detail-listing-quality",
+                          `is-${listingQuality.level.toLowerCase().replace(/\s+/g, "-")}`,
+                        )}
+                        aria-labelledby="marketplace-listing-quality-title"
+                        aria-live="polite"
+                      >
+                        <div className="svx-detail-listing-quality-head">
+                          <div>
+                            <span>Listing quality</span>
+                            <strong id="marketplace-listing-quality-title">
+                              {listingQuality.level}
+                            </strong>
+                          </div>
+                          <p>
+                            {listingQuality.recommendations.length
+                              ? `${listingQuality.recommendations.length} ${listingQuality.recommendations.length === 1 ? "thing can" : "things can"} make this listing stronger.`
+                              : "This listing gives customers strong product information."}
+                          </p>
+                        </div>
+
+                        {listingQuality.recommendations.length ? (
+                          <div>
+                            <h4>Make this listing stronger</h4>
+                            <ul>
+                              {listingQuality.recommendations.map((recommendation) => (
+                                <li key={recommendation}>{recommendation}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
+                      </section>
                     </div>
 
                     <div className="svx-detail-listing-editor-actions">
