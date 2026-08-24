@@ -26,6 +26,17 @@ import {
   marketplaceProductSeo,
   serializeMarketplaceJsonLd,
 } from "../src/lib/seo/marketplaceProductSeo.js";
+import {
+  approvedMarketplaceProductKeys,
+  hasMarketplaceProductQueryVariant,
+  isMarketplaceProductIndexable,
+  isMarketplaceProductSeoApproved,
+  marketplaceProductSeoKey,
+  marketplaceProductSeoPair,
+} from "../src/lib/seo/marketplaceProductSeoApprovals.js";
+import sitemap, {
+  approvedMarketplaceProductSitemapEntries,
+} from "../src/app/sitemap.js";
 
 const storeSlug = "dunamis-electronics-ltd";
 const productSlug = "iphone-11-pro-ae750b";
@@ -203,11 +214,142 @@ test("builds unique product metadata with a clean query-independent canonical", 
     "utf8",
   );
   assert.match(routeSource, /export async function generateMetadata/);
-  assert.match(routeSource, /robots: \{ index: false, follow: true \}/);
+  assert.match(routeSource, /robots: \{ index: indexable, follow: true \}/);
   assert.match(routeSource, /type: "website"/);
   assert.match(routeSource, /siteName: "Storvex Marketplace"/);
   assert.match(routeSource, /card: "summary_large_image"/);
-  assert.doesNotMatch(routeSource, /searchParams/);
+  assert.match(routeSource, /searchParams: await searchParams/);
+});
+
+test("normalizes strict exact seller/product approval keys", () => {
+  assert.equal(marketplaceProductSeoKey("Store-One", "Product-One"), "store-one/product-one");
+  assert.equal(marketplaceProductSeoKey(" store-one ", " product-one "), "store-one/product-one");
+  assert.deepEqual(marketplaceProductSeoPair("store-one/product-one"), {
+    storeSlug: "store-one",
+    productSlug: "product-one",
+    key: "store-one/product-one",
+  });
+
+  for (const [store, product] of [
+    ["", "product-one"],
+    ["store one", "product-one"],
+    ["store/one", "product-one"],
+    ["store-one", "product/one"],
+    ["store-one?x=1", "product-one"],
+    ["store-one", "product-one#fragment"],
+    ["støre-one", "product-one"],
+    ["store-one", ""],
+  ]) {
+    assert.equal(marketplaceProductSeoKey(store, product), null, `${store}/${product}`);
+  }
+
+  assert.equal(marketplaceProductSeoPair("product-one"), null);
+  assert.equal(marketplaceProductSeoPair("store/one/product"), null);
+  assert.equal(marketplaceProductSeoKey("123456", "987654"), "123456/987654");
+});
+
+test("keeps the production approval set empty and applies clean-query robots policy", () => {
+  const isolatedApproval = new Set([`${storeSlug}/${productSlug}`]);
+
+  assert.equal(approvedMarketplaceProductKeys.size, 0);
+  assert.equal(isMarketplaceProductSeoApproved({ storeSlug, productSlug }), false);
+  assert.equal(isMarketplaceProductIndexable({ storeSlug, productSlug }), false);
+  assert.equal(isMarketplaceProductIndexable({
+    storeSlug,
+    productSlug,
+    approvedKeys: isolatedApproval,
+  }), true);
+
+  for (const searchParams of [
+    { utm_source: "" },
+    { anything: "test" },
+    new URLSearchParams("page=2"),
+  ]) {
+    assert.equal(hasMarketplaceProductQueryVariant(searchParams), true);
+    assert.equal(isMarketplaceProductIndexable({
+      storeSlug,
+      productSlug,
+      searchParams,
+      approvedKeys: isolatedApproval,
+    }), false);
+  }
+
+  assert.equal(isMarketplaceProductIndexable({
+    storeSlug: "another-store",
+    productSlug,
+    approvedKeys: isolatedApproval,
+  }), false);
+});
+
+test("proxy shares the product approval policy and preserves reserved routes", () => {
+  const proxySource = readFileSync(new URL("../src/proxy.js", import.meta.url), "utf8");
+
+  assert.match(proxySource, /isMarketplaceProductIndexable/);
+  assert.match(proxySource, /searchParams: request\.nextUrl\.searchParams/);
+  assert.match(proxySource, /isProductRoute && !productIndexable/);
+
+  for (const family of ["category", "categories", "stores", "orders", "account", "shop"] ) {
+    assert.equal(isMarketplaceProductRoute(["marketplace", family, "example"]), false);
+  }
+});
+
+test("sitemap uses only validated approved exact pairs", async () => {
+  const isolatedApproval = new Set([
+    `${storeSlug}/${productSlug}`,
+    `${storeSlug.toUpperCase()}/${productSlug.toUpperCase()}`,
+    "missing-store/missing-product",
+    "malformed/query?value",
+  ]);
+  const requested = [];
+  const entries = await approvedMarketplaceProductSitemapEntries({
+    approvedKeys: isolatedApproval,
+    getProduct: async (candidateStore, candidateProduct) => {
+      requested.push(`${candidateStore}/${candidateProduct}`);
+      return candidateStore === storeSlug && candidateProduct === productSlug
+        ? publicProductData
+        : null;
+    },
+    lastModified: new Date("2026-08-24T00:00:00.000Z"),
+  });
+
+  assert.deepEqual(requested, [
+    `${storeSlug}/${productSlug}`,
+    "missing-store/missing-product",
+  ]);
+  assert.deepEqual(entries.map((entry) => entry.url), [
+    `https://www.storvex.rw/marketplace/${storeSlug}/${productSlug}`,
+  ]);
+  assert.equal(entries.some((entry) => entry.url.includes("?")), false);
+  assert.deepEqual(await approvedMarketplaceProductSitemapEntries(), []);
+});
+
+test("default sitemap keeps Electronics once and contains no Marketplace products", async () => {
+  const entries = await sitemap();
+  const urls = entries.map((entry) => entry.url);
+  const electronicsUrl = "https://www.storvex.rw/marketplace/category/electronics";
+  const marketplaceProductUrls = urls.filter((url) => (
+    /^https:\/\/www\.storvex\.rw\/marketplace\/[^/]+\/[^/]+$/.test(url) &&
+    !url.includes("/marketplace/category/")
+  ));
+
+  assert.equal(urls.filter((url) => url === electronicsUrl).length, 1);
+  assert.deepEqual(
+    urls.filter((url) => url.includes("/marketplace/category/")),
+    [electronicsUrl],
+  );
+  assert.deepEqual(marketplaceProductUrls, []);
+});
+
+test("sitemap propagates temporary approved-product validation failures", async () => {
+  await assert.rejects(
+    approvedMarketplaceProductSitemapEntries({
+      approvedKeys: new Set([`${storeSlug}/${productSlug}`]),
+      getProduct: async () => {
+        throw new MarketplaceServerApiError("upstream failed", { status: 500 });
+      },
+    }),
+    (error) => error instanceof MarketplaceServerApiError && error.status === 500,
+  );
 });
 
 test("normalizes and safely limits product descriptions", () => {

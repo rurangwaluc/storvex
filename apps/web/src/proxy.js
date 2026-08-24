@@ -6,6 +6,7 @@ import {
 } from "./lib/knownLegacyRoutes";
 import { isSolutionPageSlug } from "./lib/seo/solutionPages";
 import { isIndustryPageSlug } from "./lib/seo/industryPages";
+import { isMarketplaceProductIndexable } from "./lib/seo/marketplaceProductSeoApprovals";
 
 const EXPLICIT_APP_ROUTES = new Set([
   "offline",
@@ -37,10 +38,14 @@ export function proxy(request) {
   ) {
     const response = NextResponse.next();
 
-    if (
-      segments.join("/") === "marketplace/shop" ||
-      isMarketplaceProductRoute(segments)
-    ) {
+    const isProductRoute = isMarketplaceProductRoute(segments);
+    const productIndexable = isProductRoute && isMarketplaceProductIndexable({
+      storeSlug: segments[1],
+      productSlug: segments[2],
+      searchParams: request.nextUrl.searchParams,
+    });
+
+    if (segments.join("/") === "marketplace/shop" || (isProductRoute && !productIndexable)) {
       response.headers.set("X-Robots-Tag", "noindex, follow");
     }
 

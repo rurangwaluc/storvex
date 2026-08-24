@@ -8,6 +8,7 @@ import {
   marketplaceProductSeo,
   serializeMarketplaceJsonLd,
 } from "../../../../lib/seo/marketplaceProductSeo";
+import { isMarketplaceProductIndexable } from "../../../../lib/seo/marketplaceProductSeoApprovals";
 
 async function productContext(params) {
   const { storeSlug, productSlug } = await params;
@@ -21,7 +22,7 @@ async function productContext(params) {
   return { storeSlug, productSlug, reserved: false, data };
 }
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
   const { storeSlug, productSlug, reserved, data } = await productContext(params);
 
   if (reserved || data === null) {
@@ -29,6 +30,11 @@ export async function generateMetadata({ params }) {
   }
 
   const seo = marketplaceProductSeo(data, storeSlug, productSlug);
+  const indexable = isMarketplaceProductIndexable({
+    storeSlug,
+    productSlug,
+    searchParams: await searchParams,
+  });
   const image = seo.leadImage
     ? [{
         url: seo.leadImage.url,
@@ -42,7 +48,7 @@ export async function generateMetadata({ params }) {
     title: seo.title,
     description: seo.description,
     alternates: { canonical: seo.canonical },
-    robots: { index: false, follow: true },
+    robots: { index: indexable, follow: true },
     openGraph: {
       type: "website",
       url: seo.canonical,
