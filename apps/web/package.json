@@ -4,6 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "audit:marketplace-seo-candidates": "node --env-file-if-exists=.env.local scripts/auditMarketplaceProductSeoCandidates.mjs",
+    "audit:marketplace-seo-candidates:json": "node --env-file-if-exists=.env.local scripts/auditMarketplaceProductSeoCandidates.mjs --json",
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start"
