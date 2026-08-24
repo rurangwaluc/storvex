@@ -109,6 +109,7 @@ export function evaluateMarketplaceProductSeoCandidate(
     qualityLevel: quality.level,
     candidate,
     alreadyApproved: Boolean(key && approvedKeys?.has(key)),
+    publiclyAccessible: Boolean(publiclyAccessible),
     reasons: [...quality.strengths],
     concerns: [...new Set(concerns)],
   };

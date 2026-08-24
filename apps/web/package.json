@@ -6,6 +6,7 @@
   "scripts": {
     "audit:marketplace-seo-candidates": "node --env-file-if-exists=.env.local scripts/auditMarketplaceProductSeoCandidates.mjs",
     "audit:marketplace-seo-candidates:json": "node --env-file-if-exists=.env.local scripts/auditMarketplaceProductSeoCandidates.mjs --json",
+    "compare:marketplace-seo": "node scripts/compareMarketplaceSeoAudit.mjs",
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start"
