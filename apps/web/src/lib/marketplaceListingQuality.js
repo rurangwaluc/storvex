@@ -31,6 +31,10 @@ const GENERIC_TITLES = new Set([
   "wireless mouse",
 ]);
 
+const INVISIBLE_TITLE_CHARACTERS = /[\u200B-\u200D\u2060\uFEFF]/u;
+const OBVIOUS_BRAND_MISSPELLINGS = new Set(["sumsung"]);
+const EXACT_MODEL_RECOMMENDATION = "Use the exact product model in the title.";
+
 function cleanText(value) {
   return String(value ?? "").replace(/\s+/g, " ").trim();
 }
@@ -63,6 +67,58 @@ function includesAny(corpus, signals) {
 
 function addUnique(items, value) {
   if (value && !items.includes(value)) items.push(value);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasMoreSpecificModel(title, description, entries) {
+  const normalizedTitle = normalizedText(title);
+
+  if (!normalizedTitle) return false;
+
+  const explicitModel = entries.some(([key, value]) => (
+    normalizedText(key).includes("model") &&
+    normalizedText(Array.isArray(value) ? value.join(" ") : value) &&
+    !normalizedTitle.includes(
+      normalizedText(Array.isArray(value) ? value.join(" ") : value),
+    )
+  ));
+
+  if (explicitModel) return true;
+
+  const evidence = normalizedText([
+    description,
+    ...entries.map(([, value]) => Array.isArray(value) ? value.join(" ") : value),
+  ].join(" "));
+  const titleWithModel = new RegExp(
+    `(?:^|\\s)${escapeRegExp(normalizedTitle)}(?:\\s+[a-z]+){0,2}\\s+[a-z]*\\d[a-z0-9-]*(?:\\s|$)`,
+  );
+
+  return titleWithModel.test(evidence);
+}
+
+function searchVisibilityGuidance({ title, description, entries }) {
+  const recommendations = [];
+  const titleTokens = normalizedText(title).split(" ").filter(Boolean);
+
+  if (INVISIBLE_TITLE_CHARACTERS.test(title)) {
+    addUnique(
+      recommendations,
+      "Retype the product title using normal visible characters.",
+    );
+  }
+
+  if (titleTokens.some((token) => OBVIOUS_BRAND_MISSPELLINGS.has(token))) {
+    addUnique(recommendations, "Check the brand spelling in the title.");
+  }
+
+  if (hasMoreSpecificModel(title, description, entries)) {
+    addUnique(recommendations, EXACT_MODEL_RECOMMENDATION);
+  }
+
+  return recommendations.slice(0, 3);
 }
 
 function categoryGuidance(category, corpus, title, recommendations) {
@@ -211,6 +267,11 @@ export function evaluateMarketplaceListingQuality(input = {}) {
 
   const categorySignals = categoryGuidance(category, corpus, title, recommendations);
   const detailCount = Math.max(categorySignals, entries.length);
+  const searchVisibilityRecommendations = searchVisibilityGuidance({
+    title,
+    description,
+    entries,
+  });
 
   if (detailCount > 0) addUnique(strengths, "Useful product details added");
 
@@ -223,7 +284,13 @@ export function evaluateMarketplaceListingQuality(input = {}) {
 
   return {
     level,
-    recommendations: recommendations.slice(0, 4),
+    recommendations: recommendations
+      .filter((recommendation) => !(
+        recommendation.includes("exact model") &&
+        searchVisibilityRecommendations.includes(EXACT_MODEL_RECOMMENDATION)
+      ))
+      .slice(0, 4),
     strengths: strengths.slice(0, 5),
+    searchVisibilityRecommendations,
   };
 }

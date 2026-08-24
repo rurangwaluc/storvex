@@ -3510,6 +3510,12 @@ body[data-theme="light"]
   opacity: 0.55;
 }
 
+.svx-detail-listing-quality-search {
+  min-width: 0;
+  border-top: 1px solid var(--detail-border);
+  padding-top: 12px;
+}
+
 @media (max-width: 560px) {
   .svx-detail-listing-quality {
     padding: 14px;

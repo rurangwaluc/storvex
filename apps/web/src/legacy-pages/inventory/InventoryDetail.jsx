@@ -2307,6 +2307,17 @@ export default function InventoryDetail() {
                             </ul>
                           </div>
                         ) : null}
+
+                        {listingQuality.searchVisibilityRecommendations.length ? (
+                          <div className="svx-detail-listing-quality-search">
+                            <h4>Improve search visibility</h4>
+                            <ul>
+                              {listingQuality.searchVisibilityRecommendations.map((recommendation) => (
+                                <li key={recommendation}>{recommendation}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : null}
                       </section>
                     </div>
 
