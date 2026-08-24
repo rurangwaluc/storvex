@@ -250,6 +250,74 @@ function slugify(value) {
   return base || null;
 }
 
+const MARKETPLACE_SLUG_FIELDS = [
+  "listingSlug",
+  "marketplaceSlug",
+  "slug",
+];
+
+function explicitMarketplaceSlugValue(body = {}) {
+  for (const field of MARKETPLACE_SLUG_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(body, field)) {
+      return { explicit: true, value: body[field] };
+    }
+  }
+
+  return { explicit: false, value: null };
+}
+
+function resolveMarketplaceListingSlug({ body = {}, product, title }) {
+  const suffix = String(product?.id || "").slice(0, 6).toLowerCase();
+
+  if (!suffix) {
+    const error = new Error("Product ID is required to generate a Marketplace slug");
+    error.code = "INVALID_MARKETPLACE_SLUG";
+    throw error;
+  }
+
+  const requested = explicitMarketplaceSlugValue(body);
+
+  if (!requested.explicit && product?.marketplaceSlug) {
+    return product.marketplaceSlug;
+  }
+
+  const base = slugify(requested.explicit ? requested.value : title);
+
+  if (!base) {
+    const error = new Error(
+      requested.explicit
+        ? "Listing slug must contain letters or numbers"
+        : "Listing title must contain letters or numbers",
+    );
+    error.code = "INVALID_MARKETPLACE_SLUG";
+    throw error;
+  }
+
+  const ownSuffix = `-${suffix}`;
+  return base.endsWith(ownSuffix) ? base : `${base}${ownSuffix}`;
+}
+
+function isMarketplaceSlugUniqueConflict(error) {
+  if (error?.code !== "P2002") return false;
+
+  const rawTarget = error?.meta?.target;
+  const targets = (Array.isArray(rawTarget) ? rawTarget : [rawTarget])
+    .filter((target) => target != null)
+    .map((target) => String(target).toLowerCase());
+
+  if (targets.length === 2) {
+    const fields = new Set(targets);
+    return fields.size === 2 &&
+      fields.has("tenantid") &&
+      fields.has("marketplaceslug");
+  }
+
+  if (targets.length !== 1) return false;
+
+  return targets[0].includes("tenantid") &&
+    targets[0].includes("marketplaceslug");
+}
+
 function skuToken(value) {
   return String(value || "")
     .trim()
@@ -3447,6 +3515,7 @@ async function updateProductListingDraft(req, res) {
       marketplaceSubcategory: true,
       marketplaceLeafCategory: true,
       marketplaceAttributes: true,
+      marketplaceSlug: true,
     });
 
     const listing = normalizeListingInput(
@@ -3454,7 +3523,11 @@ async function updateProductListingDraft(req, res) {
       product,
       businessCategory,
     );
-    const nextSlug = slugify(req.body?.listingSlug || req.body?.marketplaceSlug || req.body?.slug || listing.marketplaceTitle);
+    const nextSlug = resolveMarketplaceListingSlug({
+      body: req.body || {},
+      product,
+      title: listing.marketplaceTitle,
+    });
 
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.product.update({
@@ -3482,9 +3555,7 @@ async function updateProductListingDraft(req, res) {
             listing.marketplaceLeafCategory,
           marketplaceAttributes:
             listing.marketplaceAttributes,
-          marketplaceSlug: nextSlug
-            ? `${nextSlug}-${product.id.slice(0, 6)}`
-            : null,
+          marketplaceSlug: nextSlug,
           marketplaceStatus:
             product.marketplaceStatus === "PUBLISHED"
               ? "PUBLISHED"
@@ -3523,6 +3594,17 @@ async function updateProductListingDraft(req, res) {
       return res.status(404).json({ message: "Product not found" });
     }
 
+    if (err?.code === "INVALID_MARKETPLACE_SLUG") {
+      return res.status(400).json({ message: err.message, code: err.code });
+    }
+
+    if (isMarketplaceSlugUniqueConflict(err)) {
+      return res.status(409).json({
+        message: "Listing link already exists. Choose a different listing slug.",
+        code: "MARKETPLACE_SLUG_CONFLICT",
+      });
+    }
+
     console.error("updateProductListingDraft error:", err);
     return res.status(500).json({ message: "Failed to update listing details" });
   }
@@ -3559,6 +3641,7 @@ async function publishProductListing(req, res) {
       marketplaceSubcategory: true,
       marketplaceLeafCategory: true,
       marketplaceAttributes: true,
+      marketplaceSlug: true,
     });
 
     const approvedImageCount =
@@ -3591,8 +3674,11 @@ async function publishProductListing(req, res) {
       });
     }
 
-    const nextSlugBase = slugify(req.body?.listingSlug || req.body?.marketplaceSlug || req.body?.slug || listing.marketplaceTitle);
-    const nextSlug = `${nextSlugBase || "product"}-${product.id.slice(0, 6)}`;
+    const nextSlug = resolveMarketplaceListingSlug({
+      body: req.body || {},
+      product,
+      title: listing.marketplaceTitle,
+    });
 
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.product.update({
@@ -3654,9 +3740,14 @@ async function publishProductListing(req, res) {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    if (err?.code === "P2002") {
+    if (err?.code === "INVALID_MARKETPLACE_SLUG") {
+      return res.status(400).json({ message: err.message, code: err.code });
+    }
+
+    if (isMarketplaceSlugUniqueConflict(err)) {
       return res.status(409).json({
-        message: "Listing link already exists. Change the listing name and try again.",
+        message: "Listing link already exists. Choose a different listing slug.",
+        code: "MARKETPLACE_SLUG_CONFLICT",
       });
     }
 
@@ -3749,4 +3840,6 @@ module.exports = {
   reorderPdf,
   exportInventoryExcel,
   exportStockAdjustmentsExcel,
+  resolveMarketplaceListingSlug,
+  isMarketplaceSlugUniqueConflict,
 };
