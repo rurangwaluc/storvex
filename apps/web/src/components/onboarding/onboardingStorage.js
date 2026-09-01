@@ -9,6 +9,7 @@ export const ONBOARDING_STORAGE_KEYS = [
   "storvex_storeName",
   "storvex_ownerName",
   "storvex_shopType",
+  "storvex_countryCode",
   "storvex_district",
   "storvex_sector",
   "storvex_address",
@@ -54,6 +55,7 @@ export function readOnboardingState() {
       email: cleanString(storage.getItem("storvex_ownerEmail")),
       phone: cleanString(storage.getItem("storvex_ownerPhone")),
       shopType: cleanString(storage.getItem("storvex_shopType")),
+      countryCode: cleanString(storage.getItem("storvex_countryCode")) || "RW",
       district: cleanString(storage.getItem("storvex_district")),
       sector: cleanString(storage.getItem("storvex_sector")),
       address: cleanString(storage.getItem("storvex_address")),
@@ -99,6 +101,7 @@ export function saveOnboardingState(nextState = {}) {
   storage.setItem("storvex_storeName", cleanString(next.storeName));
   storage.setItem("storvex_ownerName", cleanString(next.ownerName));
   storage.setItem("storvex_shopType", cleanString(next.shopType));
+  storage.setItem("storvex_countryCode", cleanString(next.countryCode) || "RW");
   storage.setItem("storvex_district", cleanString(next.district));
   storage.setItem("storvex_sector", cleanString(next.sector));
   storage.setItem("storvex_address", cleanString(next.address));

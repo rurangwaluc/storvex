@@ -34,6 +34,20 @@ import {
 import AsyncButton from "../../components/ui/AsyncButton";
 import { apiFetch } from "../../services/apiClient";
 import { getDeviceIdentity } from "../../utils/deviceId";
+import {
+  displayMarketPhone,
+  normalizeMarketPhone,
+} from "../../lib/marketPhone";
+
+const RWANDA_MARKET_FALLBACK = {
+  countryCode: "RW",
+  countryName: "Rwanda",
+  currencyCode: "RWF",
+  timezone: "Africa/Kigali",
+  callingCode: "+250",
+  phoneNationalPrefixes: ["07"],
+  phoneNationalLength: 10,
+};
 
 const BUSINESS_CATEGORIES = [
   {
@@ -72,36 +86,12 @@ function cleanString(value) {
   return String(value || "").trim();
 }
 
-function normalizePhone(value) {
-  const digits = String(value || "").trim().replace(/[^\d]/g, "");
-
-  if (!digits) return "";
-  if (digits.startsWith("07") && digits.length === 10) return `250${digits.slice(1)}`;
-  if (digits.startsWith("2507") && digits.length === 12) return digits;
-
-  return digits;
-}
-
-function displayPhone(value) {
-  const digits = String(value || "").replace(/[^\d]/g, "");
-
-  if (digits.startsWith("2507") && digits.length === 12) {
-    return `0${digits.slice(3)}`;
-  }
-
-  return value || "";
-}
-
 function normalizeEmail(value) {
   return String(value || "").trim().toLowerCase();
 }
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(value));
-}
-
-function isValidRwandaPhone(value) {
-  return /^2507\d{8}$/.test(normalizePhone(value));
 }
 
 function RequiredMark() {
@@ -306,20 +296,47 @@ export default function TenantIntent() {
   );
 
   const [loading, setLoading] = useState(false);
+  const [markets, setMarkets] = useState([RWANDA_MARKET_FALLBACK]);
   const [form, setForm] = useState({
     storeName: previous?.storeName || "",
     ownerName: previous?.ownerName || "",
     email: previous?.email || "",
-    phone: displayPhone(previous?.phone || ""),
+    phone: previous?.phone || "",
     shopType: previous?.shopType || "",
-    country: previous?.country || "Rwanda",
+    countryCode: previous?.countryCode || "RW",
     district: previous?.district || "",
     sector: previous?.sector || "",
     address: previous?.address || "",
   });
 
-  const normalizedPhone = normalizePhone(form.phone);
+  const selectedMarket =
+    markets.find((market) => market.countryCode === form.countryCode) ||
+    markets[0] ||
+    RWANDA_MARKET_FALLBACK;
+  const normalizedPhone = normalizeMarketPhone(form.phone, selectedMarket);
   const normalizedEmail = normalizeEmail(form.email);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    apiFetch("/auth/markets")
+      .then((data) => {
+        const available = Array.isArray(data?.markets) ? data.markets : [];
+        if (!cancelled && available.length) setMarkets(available);
+      })
+      .catch(() => null);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    setForm((current) => ({
+      ...current,
+      phone: displayMarketPhone(current.phone, selectedMarket),
+    }));
+  }, [selectedMarket.countryCode]);
 
   function setField(key, value) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -356,7 +373,7 @@ export default function TenantIntent() {
       email: "",
       phone: "",
       shopType: "",
-      country: "Rwanda",
+      countryCode: "RW",
       district: "",
       sector: "",
       address: "",
@@ -369,7 +386,7 @@ export default function TenantIntent() {
     const storeName = cleanString(form.storeName);
     const ownerName = cleanString(form.ownerName);
     const shopType = cleanString(form.shopType);
-    const phone = normalizePhone(form.phone);
+    const phone = normalizeMarketPhone(form.phone, selectedMarket);
 
     if (!storeName) {
       toast.error("Enter the store name");
@@ -406,18 +423,18 @@ export default function TenantIntent() {
       return false;
     }
 
-    if (!phone) {
+    if (!cleanString(form.phone)) {
       toast.error("Enter the owner phone number");
       return false;
     }
 
-    if (!isValidRwandaPhone(phone)) {
-      toast.error("Use a Rwanda mobile number like 07XXXXXXXX or +2507XXXXXXXX");
+    if (!phone) {
+      toast.error(`Use a valid ${selectedMarket.countryName} mobile number (${selectedMarket.callingCode})`);
       return false;
     }
 
-    if (!cleanString(form.country)) {
-      toast.error("Enter the country");
+    if (!cleanString(form.countryCode)) {
+      toast.error("Choose the country");
       return false;
     }
 
@@ -453,6 +470,7 @@ export default function TenantIntent() {
         ownerName: cleanString(form.ownerName),
         email: normalizedEmail,
         phone: normalizedPhone,
+        countryCode: selectedMarket.countryCode,
         shopType: cleanString(form.shopType),
         district: cleanString(form.district),
         sector: cleanString(form.sector),
@@ -481,7 +499,8 @@ export default function TenantIntent() {
         email: payload.email,
         phone: payload.phone,
         shopType: payload.shopType,
-        country: cleanString(form.country),
+        countryCode: selectedMarket.countryCode,
+        country: selectedMarket.countryName,
         district: payload.district,
         sector: payload.sector,
         address: payload.address,
@@ -630,13 +649,13 @@ export default function TenantIntent() {
                 <Field
                   label="Phone"
                   required
-                  help="Use a Rwanda number that can receive verification."
+                  help={`Use a ${selectedMarket.countryName} number that can receive verification (${selectedMarket.callingCode}).`}
                 >
                   <input
                     className="svx-onboard-input"
                     value={form.phone}
                     onChange={(event) => setField("phone", event.target.value)}
-                    placeholder="07XX XXX XXX"
+                    placeholder={`${selectedMarket.callingCode} mobile number`}
                     autoComplete="tel"
                     required
                   />
@@ -660,13 +679,18 @@ export default function TenantIntent() {
 
           <div className="svx-onboard-location-grid">
             <Field label="Country" required>
-              <input
+              <select
                 className="svx-onboard-input"
-                value={form.country}
-                onChange={(event) => setField("country", event.target.value)}
-                placeholder="Example: Rwanda"
+                value={form.countryCode}
+                onChange={(event) => setField("countryCode", event.target.value)}
                 required
-              />
+              >
+                {markets.map((market) => (
+                  <option key={market.countryCode} value={market.countryCode}>
+                    {market.countryName}
+                  </option>
+                ))}
+              </select>
             </Field>
 
             <Field label="District / city" required>

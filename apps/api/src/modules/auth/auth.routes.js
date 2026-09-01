@@ -17,20 +17,9 @@ const passwordResetController = require("./passwordReset.controller");
 
 const authenticate = require("../../middlewares/authenticate");
 const { getPaidPlans, getTrialDays } = require("../../config/plans");
+const { listPublicOnboardingMarkets } = require("../../config/markets");
 
 // ---------- helpers ----------
-function normalizePhoneTo250(phone) {
-  const raw = String(phone || "").trim().replace(/[^\d]/g, "");
-  if (!raw) return null;
-  if (raw.startsWith("07") && raw.length === 10) return `250${raw.slice(1)}`;
-  if (raw.startsWith("2507") && raw.length === 12) return raw;
-  return raw;
-}
-
-function isRwandaMsisdn250(phone) {
-  return /^2507\d{8}$/.test(String(phone || ""));
-}
-
 function cleanString(value) {
   const s = String(value || "").trim();
   return s || "";
@@ -178,14 +167,6 @@ async function createOwnerPayment(req, res) {
     });
   }
 
-  const phoneNorm = normalizePhoneTo250(phone);
-
-  if (!phoneNorm || !isRwandaMsisdn250(phoneNorm)) {
-    return res.status(400).json({
-      message: "Invalid MSISDN format. Use 07XXXXXXXX or 2507XXXXXXXX",
-    });
-  }
-
   try {
     const intent = await prisma.ownerIntent.findUnique({
       where: {
@@ -224,7 +205,7 @@ async function createOwnerPayment(req, res) {
     const result = await momoService.createPaymentFromPlan(
       cleanString(intentId),
       cleanString(planKey),
-      phoneNorm
+      phone
     );
 
     const testingMode = isMockPaymentResult(result);
@@ -235,7 +216,7 @@ async function createOwnerPayment(req, res) {
       paymentReference: result.paymentReference,
       intentId: result.intentId,
       plan: result.plan,
-      phone: phoneNorm,
+      phone: result.phone,
       payment: result.payment || null,
       provider: result.provider || null,
     });
@@ -278,6 +259,10 @@ router.get("/plans", (req, res) => {
     trialDays: getTrialDays(),
     plans: getPaidPlans(),
   });
+});
+
+router.get("/markets", (req, res) => {
+  return res.json({ markets: listPublicOnboardingMarkets() });
 });
 
 router.post("/owner-payment", createOwnerPayment);

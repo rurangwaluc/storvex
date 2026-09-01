@@ -99,3 +99,4 @@ apps/api/.local/
 
 # Vercel local project metadata
 .vercel/
+backups/

@@ -2,6 +2,10 @@
 const crypto = require("crypto");
 const prisma = require("../../config/database");
 const { sendEmailOtp, sendSmsOtp } = require("../notifications");
+const {
+  normalizePhone: normalizeMarketPhone,
+  phoneExample,
+} = require("../../lib/phone/marketPhone");
 
 const OTP_TTL_MINUTES = Number(process.env.OTP_TTL_MINUTES || 10);
 const OTP_SEND_COOLDOWN_SECONDS = Number(process.env.OTP_SEND_COOLDOWN_SECONDS || 60);
@@ -45,18 +49,8 @@ function normalizeEmail(x) {
 /**
  * Accepts "2507XXXXXXXX" or "07XXXXXXXX" and normalizes to "2507XXXXXXXX".
  */
-function normalizePhone(x) {
-  const raw = String(x || "").trim().replace(/[^\d]/g, "");
-
-  if (!raw) return null;
-  if (raw.startsWith("07") && raw.length === 10) return `250${raw.slice(1)}`;
-  if (raw.startsWith("2507") && raw.length === 12) return raw;
-
-  return raw;
-}
-
-function isRwandaMsisdn250(phone) {
-  return /^2507\d{8}$/.test(String(phone || ""));
+function normalizePhone(x, countryCode = "RW") {
+  return normalizeMarketPhone({ countryCode, input: x });
 }
 
 function hashOtp({ intentId, channel, target, code }) {
@@ -74,7 +68,7 @@ function resolveTargetFromIntent(intent, channel) {
 
   return channel === "EMAIL"
     ? normalizeEmail(intent.email)
-    : normalizePhone(intent.phone);
+    : normalizePhone(intent.phone, intent.countryCode || "RW");
 }
 
 async function isTrialAlreadyBurned({ email, phone }) {
@@ -203,8 +197,10 @@ async function createAndSendOtp({ intent, intentId, channel }) {
     throw err;
   }
 
-  if (channel === "PHONE" && !isRwandaMsisdn250(target)) {
-    const err = new Error("Invalid phone format on intent. Use 2507XXXXXXXX or 07XXXXXXXX");
+  if (channel === "PHONE" && !normalizePhone(target, intent.countryCode || "RW")) {
+    const err = new Error(
+      `Invalid phone format on intent. Use ${phoneExample(intent.countryCode || "RW")}`,
+    );
     err.status = 400;
     err.reason = "INVALID_PHONE_FORMAT";
     throw err;
@@ -212,7 +208,7 @@ async function createAndSendOtp({ intent, intentId, channel }) {
 
   const burned = await isTrialAlreadyBurned({
     email: normalizeEmail(intent.email),
-    phone: normalizePhone(intent.phone),
+    phone: normalizePhone(intent.phone, intent.countryCode || "RW"),
   });
 
   if (burned) {
@@ -314,7 +310,6 @@ module.exports = {
   cleanString,
   normalizeEmail,
   normalizePhone,
-  isRwandaMsisdn250,
   hashOtp,
   resolveTargetFromIntent,
   createAndSendOtp,

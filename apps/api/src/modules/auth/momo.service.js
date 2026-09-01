@@ -8,6 +8,14 @@ const {
   isTrialPlanKey,
   isEnterprisePlanKey,
 } = require("../../config/plans");
+const {
+  requireMarket,
+  isSubscriptionPaymentsEnabled,
+} = require("../../config/markets");
+const {
+  normalizePhone: normalizeMarketPhone,
+  phoneExample,
+} = require("../../lib/phone/marketPhone");
 
 function cleanString(value) {
   const s = String(value || "").trim();
@@ -15,22 +23,7 @@ function cleanString(value) {
 }
 
 function normalizePhoneTo250(phone) {
-  const raw = String(phone || "").trim().replace(/[^\d]/g, "");
-  if (!raw) return null;
-
-  if (raw.startsWith("07") && raw.length === 10) {
-    return `250${raw.slice(1)}`;
-  }
-
-  if (raw.startsWith("2507") && raw.length === 12) {
-    return raw;
-  }
-
-  return raw;
-}
-
-function isRwandaMsisdn250(phone) {
-  return /^2507\d{8}$/.test(String(phone || ""));
+  return normalizeMarketPhone({ countryCode: "RW", input: phone });
 }
 
 function getNow() {
@@ -150,6 +143,7 @@ async function getOwnerIntentOrThrow(intentId) {
       id: true,
       email: true,
       phone: true,
+      countryCode: true,
       ownerName: true,
       storeName: true,
       status: true,
@@ -480,10 +474,19 @@ async function createOrUpdateRenewalPayment({
 
 async function createPaymentFromPlan(intentId, planKey, phone) {
   const intent = await getOwnerIntentOrThrow(cleanString(intentId));
-  const normalizedPhone = normalizePhoneTo250(phone);
+  const countryCode = intent.countryCode || "RW";
+  requireMarket(countryCode);
+  const normalizedPhone = normalizeMarketPhone({ countryCode, input: phone });
 
-  if (!normalizedPhone || !isRwandaMsisdn250(normalizedPhone)) {
-    const err = new Error("Invalid MSISDN format. Use 07XXXXXXXX or 2507XXXXXXXX");
+  if (!isSubscriptionPaymentsEnabled(countryCode)) {
+    const err = new Error("Subscription payments are not available in this country");
+    err.status = 400;
+    err.code = "MARKET_SUBSCRIPTION_PAYMENTS_DISABLED";
+    throw err;
+  }
+
+  if (!normalizedPhone) {
+    const err = new Error(`Invalid MSISDN format. Use ${phoneExample(countryCode)}`);
     err.status = 400;
     throw err;
   }
@@ -569,7 +572,6 @@ async function createPaymentFromPlan(intentId, planKey, phone) {
 
 async function createRenewalPaymentFromPlan(tenantId, planKey, phone) {
   const cleanTenantId = cleanString(tenantId);
-  const normalizedPhone = normalizePhoneTo250(phone);
 
   if (!cleanTenantId) {
     const err = new Error("tenantId is required");
@@ -577,8 +579,23 @@ async function createRenewalPaymentFromPlan(tenantId, planKey, phone) {
     throw err;
   }
 
-  if (!normalizedPhone || !isRwandaMsisdn250(normalizedPhone)) {
-    const err = new Error("Invalid MSISDN format. Use 07XXXXXXXX or 2507XXXXXXXX");
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: cleanTenantId },
+    select: { countryCode: true },
+  });
+  const countryCode = tenant?.countryCode || "RW";
+  requireMarket(countryCode);
+  const normalizedPhone = normalizeMarketPhone({ countryCode, input: phone });
+
+  if (!isSubscriptionPaymentsEnabled(countryCode)) {
+    const err = new Error("Subscription payments are not available in this country");
+    err.status = 400;
+    err.code = "MARKET_SUBSCRIPTION_PAYMENTS_DISABLED";
+    throw err;
+  }
+
+  if (!normalizedPhone) {
+    const err = new Error(`Invalid MSISDN format. Use ${phoneExample(countryCode)}`);
     err.status = 400;
     throw err;
   }
@@ -688,7 +705,6 @@ async function getPaymentStatus(reference) {
 
 module.exports = {
   normalizePhoneTo250,
-  isRwandaMsisdn250,
   getMoMoConfig,
   ensureCollectionToken,
   requestCollectionToPay,

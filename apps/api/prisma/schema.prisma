@@ -74,6 +74,7 @@ model OwnerIntent {
   email     String            @db.Text
   phone     String            @db.Text
   storeName String            @db.Text
+  countryCode String          @default("RW") @db.Text
   status    OwnerIntentStatus @default(PENDING)
   expiresAt DateTime
   createdAt DateTime          @default(now())

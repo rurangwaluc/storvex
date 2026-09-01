@@ -1,5 +1,6 @@
 // backend/src/modules/branches/branches.service.js
 const prisma = require("../../config/database");
+const { normalizePhone: normalizeMarketPhone } = require("../../lib/phone/marketPhone");
 
 const STORE_ROLES = new Set([
   "OWNER",
@@ -20,6 +21,10 @@ function cleanString(value) {
 
 function normalizeUpper(value) {
   return String(value || "").trim().toUpperCase();
+}
+
+function authoritativeBranchCountry(tenantCountryCode) {
+  return normalizeUpper(tenantCountryCode) || "RW";
 }
 
 function normalizeBranchCode(value) {
@@ -49,22 +54,11 @@ function normalizeOptionalEmail(value) {
   return s ? s.toLowerCase() : null;
 }
 
-function normalizeOptionalPhone(value) {
+function normalizeOptionalPhone(value, countryCode = "RW") {
   const raw = String(value || "").trim();
   if (!raw) return null;
 
-  const digits = raw.replace(/[^\d]/g, "");
-  if (!digits) return null;
-
-  if (digits.startsWith("07") && digits.length === 10) {
-    return `250${digits.slice(1)}`;
-  }
-
-  if (digits.startsWith("2507") && digits.length === 12) {
-    return digits;
-  }
-
-  return digits;
+  return normalizeMarketPhone({ countryCode, input: raw });
 }
 
 function toPositiveIntOrNull(value) {
@@ -283,6 +277,7 @@ async function getTenantOrThrow(tenantId) {
       name: true,
       status: true,
       mainBranchId: true,
+      countryCode: true,
     },
   });
 
@@ -358,6 +353,7 @@ async function getTenantBranchUsage(tenantId) {
       name: tenant.name,
       status: tenant.status,
       mainBranchId: tenant.mainBranchId || null,
+      countryCode: tenant.countryCode || "RW",
     },
     subscription: {
       id: subscription.id,
@@ -740,13 +736,14 @@ async function createBranch({
     tenantId: safeTenantId,
   });
 
-  const [branchUsage, normalized] = await Promise.all([
+  const [branchUsage, normalized, tenant] = await Promise.all([
     assertBranchCreationAllowed(safeTenantId),
     ensureUniqueBranchNameAndCode({
       tenantId: safeTenantId,
       name,
       code,
     }),
+    getTenantOrThrow(safeTenantId),
   ]);
 
   const result = await prisma.$transaction(async (tx) => {
@@ -757,9 +754,9 @@ async function createBranch({
         code: normalized.normalizedCode,
         type: "STANDARD",
         status: "ACTIVE",
-        phone: normalizeOptionalPhone(phone),
+        phone: normalizeOptionalPhone(phone, authoritativeBranchCountry(tenant.countryCode)),
         email: normalizeOptionalEmail(email),
-        countryCode: normalizeUpper(countryCode) || "RW",
+        countryCode: authoritativeBranchCountry(tenant.countryCode),
         district: normalizeOptionalText(district, 120),
         sector: normalizeOptionalText(sector, 120),
         address: normalizeOptionalText(address, 255),
@@ -836,6 +833,7 @@ async function updateBranch({
   });
 
   const existing = await assertBranchBelongsToTenant(safeTenantId, safeBranchId);
+  const tenant = await getTenantOrThrow(safeTenantId);
 
   if (existing.status === "ARCHIVED") {
     const err = new Error("Archived branch cannot be edited. Reactivate it first.");
@@ -857,11 +855,11 @@ async function updateBranch({
   const data = {
     name: normalized.normalizedName,
     code: normalized.normalizedCode,
+    countryCode: authoritativeBranchCountry(tenant.countryCode),
   };
 
-  if ("phone" in arguments[0]) data.phone = normalizeOptionalPhone(phone);
+  if ("phone" in arguments[0]) data.phone = normalizeOptionalPhone(phone, authoritativeBranchCountry(tenant.countryCode));
   if ("email" in arguments[0]) data.email = normalizeOptionalEmail(email);
-  if ("countryCode" in arguments[0]) data.countryCode = normalizeUpper(countryCode) || "RW";
   if ("district" in arguments[0]) data.district = normalizeOptionalText(district, 120);
   if ("sector" in arguments[0]) data.sector = normalizeOptionalText(sector, 120);
   if ("address" in arguments[0]) data.address = normalizeOptionalText(address, 255);
@@ -1380,6 +1378,7 @@ async function updateBranchStaff({
 }
 
 module.exports = {
+  authoritativeBranchCountry,
   computeBranchUsage,
   getTenantBranchUsage,
   listBranches,

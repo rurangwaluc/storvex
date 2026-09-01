@@ -19,6 +19,15 @@ const {
 } = require("../../config/plans");
 
 const { normalizeBusinessCategory } = require("../../config/businessCategories");
+const {
+  requireMarket,
+  requireOnboardingMarket,
+  tenantMarketDefaults,
+} = require("../../config/markets");
+const {
+  normalizePhone: normalizeMarketPhone,
+  phoneExample,
+} = require("../../lib/phone/marketPhone");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -27,15 +36,8 @@ function normalizeEmail(x) {
   return s || null;
 }
 
-function normalizePhone(x) {
-  const raw = String(x || "").trim().replace(/[^\d]/g, "");
-  if (!raw) return null;
-  if (raw.startsWith("07") && raw.length === 10) return `250${raw.slice(1)}`;
-  return raw;
-}
-
-function isRwandaMsisdn250(phone) {
-  return /^2507\d{8}$/.test(String(phone || ""));
+function normalizePhone(x, countryCode = "RW") {
+  return normalizeMarketPhone({ countryCode, input: x });
 }
 
 function cleanString(x) {
@@ -221,7 +223,8 @@ function createForbiddenTrialError(reason = "Free trial already used. Please cho
   return err;
 }
 
-function buildTenantCreateData(intent, ownerEmail, ownerPhone) {
+function buildTenantCreateData(intent, ownerEmail, ownerPhone, market = requireMarket("RW")) {
+  const defaults = tenantMarketDefaults(market.countryCode);
   const data = {
     name: String(intent.storeName || "").trim(),
     email: ownerEmail,
@@ -233,9 +236,9 @@ function buildTenantCreateData(intent, ownerEmail, ownerPhone) {
   if (fieldExists(prisma.tenant, "district")) data.district = cleanString(intent.district);
   if (fieldExists(prisma.tenant, "sector")) data.sector = cleanString(intent.sector);
   if (fieldExists(prisma.tenant, "address")) data.address = cleanString(intent.address);
-  if (fieldExists(prisma.tenant, "countryCode")) data.countryCode = "RW";
-  if (fieldExists(prisma.tenant, "currencyCode")) data.currencyCode = "RWF";
-  if (fieldExists(prisma.tenant, "timezone")) data.timezone = "Africa/Kigali";
+  if (fieldExists(prisma.tenant, "countryCode")) data.countryCode = defaults.countryCode;
+  if (fieldExists(prisma.tenant, "currencyCode")) data.currencyCode = defaults.currencyCode;
+  if (fieldExists(prisma.tenant, "timezone")) data.timezone = defaults.timezone;
 
   return data;
 }
@@ -519,6 +522,7 @@ async function ownerIntent(req, res) {
       ownerName,
       email,
       phone,
+      countryCode,
       shopType,
       district,
       sector,
@@ -535,17 +539,21 @@ async function ownerIntent(req, res) {
       });
     }
 
+    const selectedMarket = requireOnboardingMarket(countryCode || "RW");
     const emailNorm = normalizeEmail(email);
-    const phoneNorm = normalizePhone(phone);
+    const phoneNorm = normalizePhone(phone, selectedMarket.countryCode);
 
     if (!emailNorm) {
       return res.status(400).json({ message: "Invalid email format" });
     }
 
-    if (!phoneNorm || !isRwandaMsisdn250(phoneNorm)) {
+    if (!phoneNorm) {
       return res
         .status(400)
-        .json({ message: "Invalid phone format. Use 2507XXXXXXXX or 07XXXXXXXX" });
+        .json({
+          message: `Invalid phone format for ${selectedMarket.countryName}. Use ${phoneExample(selectedMarket.countryCode)}`,
+          code: "INVALID_PHONE_FORMAT",
+        });
     }
 
     const normalizedShopType = normalizeBusinessCategory(shopType);
@@ -582,6 +590,7 @@ async function ownerIntent(req, res) {
         ownerName: String(ownerName).trim(),
         email: emailNorm,
         phone: phoneNorm,
+        countryCode: selectedMarket.countryCode,
         shopType: normalizedShopType,
         district: cleanString(district),
         sector: cleanString(sector),
@@ -610,6 +619,7 @@ async function ownerIntent(req, res) {
         phoneVerified: true,
         status: true,
         expiresAt: true,
+        countryCode: true,
       },
     });
 
@@ -620,6 +630,13 @@ async function ownerIntent(req, res) {
       emailVerified: !!intent.emailVerified,
       phoneVerified: !!intent.phoneVerified,
       nextStep: "VERIFY_CONTACTS",
+      market: {
+        countryCode: selectedMarket.countryCode,
+        countryName: selectedMarket.countryName,
+        currencyCode: selectedMarket.defaultCurrencyCode,
+        timezone: selectedMarket.defaultTimezone,
+        callingCode: selectedMarket.callingCode,
+      },
       message: "Store setup started.",
     });
   } catch (err) {
@@ -652,6 +669,7 @@ async function getOwnerIntentStatus(req, res) {
         storeName: true,
         email: true,
         phone: true,
+        countryCode: true,
         status: true,
         expiresAt: true,
         emailVerified: true,
@@ -718,6 +736,7 @@ async function getOwnerIntentStatus(req, res) {
       intentId: intent.id,
       status: intent.status,
       storeName: intent.storeName,
+      countryCode: intent.countryCode || "RW",
       maskedEmail: maskEmail(intent.email),
       maskedPhone: maskPhone(intent.phone),
       emailVerified: !!intent.emailVerified,
@@ -886,6 +905,7 @@ async function confirmSignup(req, res) {
         ownerName: true,
         email: true,
         phone: true,
+        countryCode: true,
         shopType: true,
         district: true,
         sector: true,
@@ -944,7 +964,8 @@ async function confirmSignup(req, res) {
     const tenantName = String(intent.storeName || "").trim();
     const ownerName = String(intent.ownerName || "").trim();
     const ownerEmail = normalizeEmail(intent.email);
-    const ownerPhone = normalizePhone(intent.phone);
+    const selectedMarket = requireMarket(intent.countryCode || "RW");
+    const ownerPhone = normalizePhone(intent.phone, selectedMarket.countryCode);
 
     if (!tenantName || !ownerName || !ownerEmail || !ownerPhone) {
       return res.status(400).json({ message: "Owner intent is missing required info" });
@@ -1152,7 +1173,7 @@ async function confirmSignup(req, res) {
         }
 
         const tenant = await tx.tenant.create({
-          data: buildTenantCreateData(intent, ownerEmail, ownerPhone),
+          data: buildTenantCreateData(intent, ownerEmail, ownerPhone, selectedMarket),
           select: buildTenantSelect(),
         });
 
@@ -1183,7 +1204,7 @@ async function confirmSignup(req, res) {
             type: "MAIN",
             status: "ACTIVE",
             phone: ownerPhone,
-            countryCode: "RW",
+            countryCode: selectedMarket.countryCode,
             isMain: true,
           },
           select: {

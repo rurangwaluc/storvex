@@ -113,6 +113,7 @@ async function sendOtp(
           id: true,
           email: true,
           phone: true,
+          countryCode: true,
           deviceId: true,
           browserFingerprint:
             true,
@@ -333,6 +334,7 @@ async function verifyOtp(
           id: true,
           email: true,
           phone: true,
+          countryCode: true,
           status: true,
           expiresAt: true,
           onboardingTokenHash: true,
