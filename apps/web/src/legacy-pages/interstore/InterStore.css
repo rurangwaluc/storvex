@@ -6213,3 +6213,106 @@
 .svx-transfer-list-page .svx-transfer-register-card {
   min-height: 72px !important;
 }
+
+/* -------------------------------------------------------------------------- */
+/* STORE TRANSFER DETAIL — OWNER-FIRST FINAL PASS                              */
+/* -------------------------------------------------------------------------- */
+
+.svx-transfer-detail-page .svx-transfer-detail-status-text,
+.svx-transfer-detail-page .svx-transfer-detail-payment-status {
+  display: inline;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.svx-transfer-detail-status-text.borrowed {
+  color: var(--transfer-warning);
+}
+
+.svx-transfer-detail-status-text.received,
+.svx-transfer-detail-status-text.sold {
+  color: var(--transfer-primary);
+}
+
+.svx-transfer-detail-status-text.paid,
+.svx-transfer-detail-payment-status {
+  color: var(--transfer-success);
+}
+
+.svx-transfer-detail-status-text.returned {
+  color: var(--transfer-muted);
+}
+
+.svx-transfer-detail-page .svx-transfer-detail-mainline {
+  align-items: center !important;
+}
+
+.svx-transfer-detail-branch {
+  margin: 6px 0 0 !important;
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.svx-transfer-detail-money-focus {
+  display: grid;
+  min-width: 210px;
+  gap: 3px;
+  text-align: right;
+}
+
+.svx-transfer-detail-money-focus strong {
+  color: var(--transfer-text);
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+}
+
+.svx-transfer-detail-money-focus span {
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.svx-transfer-detail-money-focus em {
+  color: var(--transfer-muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.svx-transfer-owner-summary-simple {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+.svx-transfer-detail-page .svx-transfer-info-card {
+  min-height: 0 !important;
+}
+
+.svx-transfer-detail-page .svx-transfer-info-card .svx-transfer-field-hint {
+  display: none !important;
+}
+
+.svx-transfer-detail-page .svx-transfer-panel > h2 {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 900px) {
+  .svx-transfer-owner-summary-simple {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .svx-transfer-detail-money-focus {
+    min-width: 0;
+    text-align: left;
+  }
+}
+
+@media (max-width: 520px) {
+  .svx-transfer-owner-summary-simple {
+    grid-template-columns: 1fr !important;
+  }
+}

@@ -268,24 +268,6 @@ function StepSection({ number, title, text, children }) {
   );
 }
 
-function SummaryItem({ label, value }) {
-  return (
-    <div className="svx-transfer-create-summary-item">
-      <span>{label}</span>
-      <strong>{value || "—"}</strong>
-    </div>
-  );
-}
-
-function ReadyCheck({ ready, text }) {
-  return (
-    <div className={`svx-transfer-create-check ${ready ? "is-ready" : ""}`}>
-      <span aria-hidden="true">{ready ? "✓" : "•"}</span>
-      <strong>{text}</strong>
-    </div>
-  );
-}
-
 
 export default function InterStoreCreatePage() {
   const navigate = useNavigate();
@@ -813,30 +795,6 @@ export default function InterStoreCreatePage() {
             </StepSection>
           </main>
 
-          <aside className="svx-transfer-create-side" aria-label="Ready to save">
-            <div className="svx-transfer-create-side-card svx-transfer-create-side-card-simple">
-              <h2>Ready to save?</h2>
-              <p>Save only when these four things are clear.</p>
-
-              <div className="svx-transfer-create-checks">
-                <ReadyCheck ready={summary.sourceReady} text="Who took it" />
-                <ReadyCheck ready={summary.itemReady} text="What they took" />
-                <ReadyCheck ready={summary.valueReady} text="Amount to collect" />
-                <ReadyCheck ready={Boolean(cleanString(form.resellerName || form.externalSupplierName)) && summary.phoneReady} text="Phone for follow-up" />
-              </div>
-
-              <div className="svx-transfer-create-side-summary svx-transfer-create-side-summary-simple">
-                <SummaryItem label="Taker" value={summary.source} />
-                {summary.sourcePhone ? <SummaryItem label="Phone" value={summary.sourcePhone} /> : null}
-                <SummaryItem label="Product" value={summary.item} />
-                <SummaryItem label="Amount" value={formatMoney(summary.value)} />
-              </div>
-
-              <button type="submit" className="svx-transfer-primary" disabled={loading || !form.productId}>
-                {loading ? "Saving..." : "Save transfer"}
-              </button>
-            </div>
-          </aside>
         </div>
 
         <footer className="svx-transfer-create-footer">

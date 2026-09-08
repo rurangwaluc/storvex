@@ -83,17 +83,7 @@ function branchParts(deal) {
 
 function BranchValue({ deal }) {
   const branch = branchParts(deal);
-
-  if (branch.code || branch.name) {
-    return (
-      <span className="svx-transfer-branch-value">
-        {branch.code ? <strong>{branch.code}</strong> : null}
-        {branch.name ? <span>{branch.name}</span> : null}
-      </span>
-    );
-  }
-
-  return branch.fallback;
+  return branch.name || branch.fallback;
 }
 
 function payableQuantity(deal) {
@@ -110,9 +100,13 @@ function paymentRisk(deal) {
   return Math.max(0, unitPrice * payableQuantity(deal) - paid);
 }
 
-function StatusPill({ status }) {
+function StatusText({ status }) {
   const meta = statusMeta(status);
-  return <span className={`svx-transfer-status ${meta.className}`}>{meta.label}</span>;
+  return (
+    <span className={`svx-transfer-detail-status-text ${meta.className}`}>
+      {meta.label}
+    </span>
+  );
 }
 
 function InfoCard({ label, value, note, strong = false }) {
@@ -166,7 +160,6 @@ function ActionModal({
         <div className="svx-transfer-modal-card" style={{ maxWidth: 720 }}>
           <div className="svx-transfer-modal-head">
             <div>
-              <span className="svx-transfer-eyebrow">Store transfer</span>
               <h2>{title}</h2>
               {text ? <p>{text}</p> : null}
             </div>
@@ -387,19 +380,25 @@ export default function InterStoreDetail() {
             <Link className="svx-transfer-secondary" to="/app/interstore">
               Back
             </Link>
-            <StatusPill status={deal.status} />
+            <StatusText status={deal.status} />
           </div>
 
           <div className="svx-transfer-detail-mainline">
             <div>
-              <span className="svx-transfer-eyebrow">Store transfer</span>
               <h1>{deal.productName || "Unnamed item"}</h1>
-              <p className="svx-transfer-subtitle">{meta.next}</p>
+              <p className="svx-transfer-subtitle">
+                {sourceLabel(deal)}
+                {deal.resellerPhone ? ` / ${deal.resellerPhone}` : ""}
+              </p>
+              <p className="svx-transfer-detail-branch">
+                <BranchValue deal={deal} />
+              </p>
             </div>
-            <div className="svx-transfer-next-card">
-              <div className="svx-transfer-label">Next action</div>
-              <strong>{meta.actionLabel}</strong>
-              <span>{closed ? "Nothing else is required." : "Keep the owner view focused on this step."}</span>
+
+            <div className="svx-transfer-detail-money-focus">
+              <strong>{formatMoney(balanceDue)}</strong>
+              <span>{closed ? "Nothing left to collect" : "Still to collect"}</span>
+              {deal.dueDate ? <em>Due {formatDate(deal.dueDate)}</em> : null}
             </div>
           </div>
 
@@ -411,66 +410,25 @@ export default function InterStoreDetail() {
             ) : null}
           </div>
 
-          <div className="svx-transfer-owner-summary">
-            <InfoCard label="Money at risk" value={formatMoney(risk)} note={closed ? "Closed transfer" : "Amount owner should keep watching"} strong />
-            <InfoCard label="Shop branch" value={<BranchValue deal={deal} />} note="Current shop branch" />
-            <InfoCard label="Taking stock" value={sourceLabel(deal)} note={deal.externalSupplierPhone || "Person or store taking the stock"} />
-            <InfoCard label="Responsible person" value={deal.resellerName} note={deal.resellerPhone || "Person or place accountable"} />
-            <InfoCard label="Tracking" value={deal.serial} note={deal.productCategory || deal.productColor || "Serial, SKU, batch or code"} />
-            <InfoCard label="Quantity" value={`${quantity} moved`} note={`Payable: ${payableQty}  Returned: ${returnedQuantity}`} />
-          </div>
         </section>
 
         <section className="svx-transfer-detail-grid svx-transfer-detail-grid-clean">
           <main className="svx-transfer-detail-main">
-            <div className="svx-transfer-panel svx-transfer-movement-panel">
-              <div className="svx-transfer-panel-headline">
-                <div>
-                  <span className="svx-transfer-kicker">Movement</span>
-                  <h2>What happened</h2>
-                </div>
-                <span className={`svx-transfer-status ${meta.className}`}>{meta.label}</span>
-              </div>
-              <div className="svx-transfer-timeline-clean">
-                {steps.map((step, index) => (
-                  <TimelineStep key={step.title} index={index + 1} {...step} />
-                ))}
-              </div>
-            </div>
-
             <div className="svx-transfer-panel">
-              <span className="svx-transfer-kicker">Owner notes</span>
-              <h2>Dates and values</h2>
+              <h2>Details</h2>
+
               <div className="svx-transfer-info-grid svx-transfer-owner-grid">
-                <InfoCard label="Agreed value" value={formatMoney(deal.agreedPrice)} note="Original value recorded" />
-                <InfoCard label="Payable value" value={formatMoney(deal.soldPrice || deal.agreedPrice)} note="Amount expected from the receiver" />
-                <InfoCard label="Paid so far" value={formatMoney(paymentSummary?.totalPaid ?? deal.paidAmount)} note="Collected against this transfer" />
-                <InfoCard label="Due date" value={formatDate(deal.dueDate)} note="When payment or return is expected" />
-                <InfoCard label="Taken date" value={formatDate(deal.takenAt)} note="When stock left the source" />
-                <InfoCard label="Notes" value={deal.notes || "No notes"} note="Internal owner note" />
+                <InfoCard label="Quantity" value={quantity} />
+                <InfoCard label="Item code" value={deal.serial || "—"} />
+                <InfoCard label="Taken on" value={formatDate(deal.takenAt)} />
+                <InfoCard label="Note" value={deal.notes || "No note"} />
               </div>
             </div>
           </main>
 
           <aside className="svx-transfer-detail-side">
             <div className="svx-transfer-panel svx-transfer-settlement-panel">
-              <span className="svx-transfer-kicker">Settlement</span>
-              <h2>Money position</h2>
-              <div className="svx-transfer-side-list">
-                <div className="svx-transfer-side-item">
-                  <strong>{formatMoney(expectedAmount)}</strong>
-                  <span>Expected amount</span>
-                </div>
-                <div className="svx-transfer-side-item">
-                  <strong>{formatMoney(paymentSummary?.totalPaid ?? deal.paidAmount)}</strong>
-                  <span>Paid so far</span>
-                </div>
-                <div className="svx-transfer-side-item">
-                  <strong>{formatMoney(balanceDue)}</strong>
-                  <span>Balance due</span>
-                </div>
-              </div>
-
+              <h2>Payments</h2>
               {canAddPayment ? (
                 <form className="svx-transfer-form-grid svx-transfer-payment-form" onSubmit={submitPayment}>
                   <div className="svx-transfer-form-field">
@@ -514,7 +472,7 @@ export default function InterStoreDetail() {
                   ) : null}
 
                   <button type="submit" className="svx-transfer-primary" disabled={paymentButtonDisabled}>
-                    {cashPaymentBlocked ? "Open cash drawer first" : actionLoading ? "Saving..." : "Add payment"}
+                    {cashPaymentBlocked ? "Open cash drawer first" : actionLoading ? "Saving..." : "Record payment"}
                   </button>
                 </form>
               ) : (
@@ -523,7 +481,7 @@ export default function InterStoreDetail() {
                     ? "No payment action is needed because this transfer was returned."
                     : statusKey === "PAID"
                       ? "This transfer is fully paid."
-                      : "Add payment when the receiver brings money back."}
+                      : "Record payment when money comes in."}
                 </div>
               )}
 
@@ -536,11 +494,11 @@ export default function InterStoreDetail() {
                         <span>{payment.method}</span>
                         <span>{formatDateTime(payment.createdAt)}</span>
                       </div>
-                      <span className="svx-transfer-status paid">Paid</span>
+                      <span className="svx-transfer-detail-payment-status">Paid</span>
                     </div>
                   ))
                 ) : (
-                  <p className="svx-transfer-field-hint">No payments recorded yet.</p>
+                  <p className="svx-transfer-field-hint">No payments yet.</p>
                 )}
               </div>
             </div>

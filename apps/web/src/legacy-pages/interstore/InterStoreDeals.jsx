@@ -181,7 +181,7 @@ function TransferCard({
       </span>
 
       <span className="svx-transfer-register-cell">
-        <small>Shop branch</small>
+        <small>Branch</small>
         <strong><BranchStack deal={deal} /></strong>
       </span>
 
