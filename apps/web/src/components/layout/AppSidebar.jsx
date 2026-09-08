@@ -306,7 +306,7 @@ const WHATSAPP_ROLES = ["OWNER", "MANAGER", "CASHIER", "SELLER", "STOREKEEPER", 
 
 const NAV_ITEMS = [
   {
-    section: "Core",
+    section: "Overview",
     items: [
       {
         to: "/app",
@@ -315,9 +315,14 @@ const NAV_ITEMS = [
         roles: ["OWNER", "MANAGER", "CASHIER", "SELLER", "STOREKEEPER", "TECHNICIAN"],
         end: true,
       },
+    ],
+  },
+  {
+    section: "Sales",
+    items: [
       {
         to: "/app/pos",
-        label: "Sales desk",
+        label: "Sales",
         icon: "pos",
         roles: ["OWNER", "MANAGER", "CASHIER", "SELLER"],
       },
@@ -330,24 +335,18 @@ const NAV_ITEMS = [
     ],
   },
   {
-    section: "Stock control",
+    section: "Stock",
     items: [
       {
         to: "/app/inventory",
-        label: "Stock overview",
+        label: "Products",
         icon: "inventory",
         roles: ["OWNER", "MANAGER", "STOREKEEPER"],
       },
       {
         to: "/app/inventory/reorder",
-        label: "Restock list",
+        label: "Restock",
         icon: "reorder",
-        roles: ["OWNER", "MANAGER", "STOREKEEPER"],
-      },
-      {
-        to: "/app/inventory/stock-history",
-        label: "Stock activity",
-        icon: "stock-history",
         roles: ["OWNER", "MANAGER", "STOREKEEPER"],
       },
       {
@@ -369,10 +368,15 @@ const NAV_ITEMS = [
       },
       {
         to: "/app/whatsapp",
-        label: "WhatsApp sales",
+        label: "WhatsApp",
         icon: "whatsapp",
         roles: WHATSAPP_ROLES,
       },
+    ],
+  },
+  {
+    section: "Online",
+    items: [
       {
         to: "/app/marketplace",
         label: "Marketplace",
@@ -382,23 +386,23 @@ const NAV_ITEMS = [
     ],
   },
   {
-    section: "Operations",
+    section: "Business",
     items: [
       {
         to: "/app/documents",
-        label: "Document center",
+        label: "Documents",
         icon: "documents",
         roles: ["OWNER", "MANAGER", "STOREKEEPER", "SELLER", "CASHIER", "TECHNICIAN"],
       },
       {
         to: "/app/repairs",
-        label: "Repair jobs",
+        label: "Repairs",
         icon: "repairs",
         roles: ["OWNER", "CASHIER", "TECHNICIAN"],
       },
       {
         to: "/app/reports",
-        label: "Business reports",
+        label: "Reports",
         icon: "reports",
         roles: ["OWNER", "MANAGER"],
       },
@@ -410,33 +414,14 @@ const NAV_ITEMS = [
       },
       {
         to: "/app/expenses",
-        label: "Business expenses",
+        label: "Expenses",
         icon: "expenses",
         roles: ["OWNER"],
       },
-      { 
-        to: "/app/support",
-        label: "Support",
-        icon: "support",
-        roles: ["OWNER","MANAGER","CASHIER","SELLER","STOREKEEPER","TECHNICIAN"],
-      },
-    ],
-  },
-  {
-    section: "Control",
-    items: [
       {
         to: "/app/employees",
         label: "Team",
         icon: "employees",
-        roles: ["OWNER", "MANAGER"],
-      },
- 
-   
-      {
-        to: "/app/settings",
-        label: "Business settings",
-        icon: "settings",
         roles: ["OWNER", "MANAGER"],
       },
     ],
@@ -746,18 +731,28 @@ export default function AppSidebar({
   const roles = useMemo(() => getDecodedRoles(token), [token]);
   const primaryRole = roles[0] || null;
   const filteredNav = useMemo(() => {
-    return filterNavByRoles(NAV_ITEMS, roles).map((group) => ({
-      ...group,
-      items: group.items.map((item) =>
-        item.to === "/app/support"
-          ? {
-              ...item,
-              badge: supportBadgeCount > 0 ? supportBadgeCount : null,
-            }
-          : item
-      ),
-    }));
-  }, [roles, supportBadgeCount]);
+    return filterNavByRoles(NAV_ITEMS, roles);
+  }, [roles]);
+
+  const bottomItems = useMemo(
+    () =>
+      [
+        {
+          to: "/app/support",
+          label: "Support",
+          icon: "support",
+          roles: ["OWNER", "MANAGER", "CASHIER", "SELLER", "STOREKEEPER", "TECHNICIAN"],
+          badge: supportBadgeCount > 0 ? supportBadgeCount : null,
+        },
+        {
+          to: "/app/settings",
+          label: "Settings",
+          icon: "settings",
+          roles: ["OWNER", "MANAGER"],
+        },
+      ].filter((item) => item.roles.some((role) => roles.includes(role))),
+    [roles, supportBadgeCount],
+  );
 
   const effectiveCollapsed = collapsed && !hoverOpen;
 
@@ -861,12 +856,28 @@ export default function AppSidebar({
           ))}
         </nav>
 
-        <div className="relative border-t border-[var(--color-border)]/70 p-4">
+        <div className="svx-sidebar-bottom relative border-t border-[var(--color-border)]/70 p-4">
+          <div className="svx-sidebar-bottom-links">
+            {bottomItems.map((item) => {
+              const active = isItemActive(location.pathname, item.to);
+
+              return (
+                <NavItemButton
+                  key={item.to}
+                  item={item}
+                  active={active}
+                  collapsed={effectiveCollapsed}
+                  onClick={() => handleNavigate(item.to)}
+                />
+              );
+            })}
+          </div>
+
           <button
             type="button"
             onClick={handleLogout}
             className={cn(
-              "group flex w-full items-center gap-3 rounded-[22px] border border-transparent bg-[var(--color-surface-2)] text-[var(--color-danger)] transition hover:-translate-y-0.5 hover:border-red-500/30 hover:bg-red-500/10",
+              "svx-sidebar-signout group flex w-full items-center gap-3 rounded-[22px] border border-transparent bg-[var(--color-surface-2)] text-[var(--color-danger)] transition hover:-translate-y-0.5 hover:border-red-500/30 hover:bg-red-500/10",
               effectiveCollapsed ? "justify-center px-0 py-3.5" : "px-4 py-3.5"
             )}
             title={effectiveCollapsed ? "Sign out" : undefined}
