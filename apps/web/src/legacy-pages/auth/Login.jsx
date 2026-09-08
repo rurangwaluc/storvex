@@ -5,7 +5,6 @@ import { jwtDecode } from "jwt-decode";
 import {
   BadgeCheck,
   LockKeyhole,
-  ShieldCheck,
   Store,
   UserRoundCheck,
 } from "lucide-react";
@@ -155,7 +154,7 @@ function LoginActionCard({ loading }) {
   return (
     <OnboardingCard className="svx-onboard-next-card">
       <div className="svx-onboard-next-copy">
-        <div className="svx-onboard-lock-icon">
+        <div className="svx-onboard-lock-icon svx-onboard-lock-icon--neutral">
           <LockKeyhole size={31} strokeWidth={2.3} />
         </div>
 
@@ -291,8 +290,6 @@ export default function Login() {
             <form onSubmit={submit} className="svx-onboard-form">
               <div className="svx-onboard-form-heading">
                 <div>
-                  <span className="svx-onboard-step-pill">Store access</span>
-
                   <h2>Welcome back.</h2>
 
                   <p>
@@ -301,10 +298,6 @@ export default function Login() {
                   </p>
                 </div>
 
-                <span className="svx-onboard-safe-pill">
-                  <ShieldCheck size={15} strokeWidth={2.8} />
-                  Protected access
-                </span>
               </div>
 
               {loginError ? (
@@ -325,7 +318,7 @@ export default function Login() {
               <div className="svx-onboard-form-grid">
                 <OnboardingCard className="order-2 lg:order-1">
                   <div className="svx-onboard-card-title-row">
-                    <OnboardingIconBadge>
+                    <OnboardingIconBadge tone="warning">
                       <Store size={23} strokeWidth={2.2} />
                     </OnboardingIconBadge>
 
@@ -337,7 +330,7 @@ export default function Login() {
 
                   <div className="svx-onboard-field-group">
                     <div className="svx-onboard-card-title-row">
-                      <OnboardingIconBadge>
+                      <OnboardingIconBadge tone="neutral">
                         <UserRoundCheck size={23} strokeWidth={2.2} />
                       </OnboardingIconBadge>
 
@@ -351,7 +344,7 @@ export default function Login() {
                     </div>
 
                     <div className="svx-onboard-card-title-row">
-                      <OnboardingIconBadge>
+                      <OnboardingIconBadge tone="neutral">
                         <LockKeyhole size={23} strokeWidth={2.2} />
                       </OnboardingIconBadge>
 

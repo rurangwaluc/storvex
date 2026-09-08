@@ -30,6 +30,8 @@ import {
   PAYMENT_METHOD_OPTIONS,
 } from "../../services/posApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import "./CreditDashboard.css";
 
 const PAGE_SIZE = 10;
@@ -43,15 +45,6 @@ function cleanString(value) {
   return s || "";
 }
 
-function formatMoney(value) {
-  const n = Number(value || 0);
-  const safe = Number.isFinite(n) ? n : 0;
-
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(safe)}`;
-}
-
 function formatNumber(value) {
   const n = Number(value || 0);
 
@@ -60,33 +53,7 @@ function formatNumber(value) {
   }).format(Number.isFinite(n) ? n : 0);
 }
 
-function formatDate(value) {
-  if (!value) return "No date";
-
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "No date";
-
-  return d.toLocaleDateString("en-RW", {
-    dateStyle: "medium",
-  });
-}
-
-function daysUntil(value) {
-  if (!value) return null;
-
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return null;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const due = new Date(d);
-  due.setHours(0, 0, 0, 0);
-
-  return Math.round((due.getTime() - today.getTime()) / 86400000);
-}
-
-function dueText(value) {
+function dueText(value, daysUntil) {
   const days = daysUntil(value);
 
   if (days === null) return "No pay-by date";
@@ -97,7 +64,7 @@ function dueText(value) {
   return `Due in ${days} days`;
 }
 
-function dueTone(value, balance = 0, status = "") {
+function dueTone(value, balance = 0, status = "", daysUntil) {
   const days = daysUntil(value);
   const normalizedStatus = String(status || "").toUpperCase();
 
@@ -171,7 +138,7 @@ function branchLabel(sale) {
   return activeBranchNameFromStorage();
 }
 
-function statusForSale(sale) {
+function statusForSale(sale, daysUntil) {
   const balance = saleBalance(sale);
   const days = daysUntil(sale?.dueDate);
   const status = String(sale?.status || "").toUpperCase();
@@ -188,7 +155,7 @@ function statusForSale(sale) {
     return {
       label: "Late",
       tone: "danger",
-      text: dueText(sale?.dueDate),
+      text: dueText(sale?.dueDate, daysUntil),
     };
   }
 
@@ -211,7 +178,7 @@ function statusForSale(sale) {
   return {
     label: "Open",
     tone: "neutral",
-    text: dueText(sale?.dueDate),
+    text: dueText(sale?.dueDate, daysUntil),
   };
 }
 
@@ -247,10 +214,6 @@ function CloseIcon() {
       <path d="M6 6l12 12M18 6 6 18" />
     </svg>
   );
-}
-
-function StatusBadge({ tone = "neutral", children }) {
-  return <span className={cx("svx-dues-badge", `is-${tone}`)}>{children}</span>;
 }
 
 function SkeletonBlock({ className = "" }) {
@@ -315,11 +278,16 @@ function MoneyField({ label, value, tone = "neutral" }) {
 }
 
 function CustomerDueRow({ sale, onOpen, onPay }) {
-  const status = statusForSale(sale);
+  const { formatMoney } = useTenantMoney();
+  const {
+    formatDate,
+    daysUntil,
+  } = useTenantDateTime();
+  const status = statusForSale(sale, daysUntil);
   const balance = saleBalance(sale);
   const total = saleTotal(sale);
   const paid = salePaid(sale);
-  const due = dueText(sale?.dueDate);
+  const due = dueText(sale?.dueDate, daysUntil);
   const receipt = receiptCode(sale);
   const receiptUrl = `/app/pos/sales/${sale.id}`;
   const returnUrl = `${receiptUrl}?refund=1`;
@@ -396,6 +364,7 @@ function PaymentModal({
   onClose,
   onSubmit,
 }) {
+  const { formatMoney } = useTenantMoney();
   if (!open || !sale) return null;
 
   const balance = saleBalance(sale);
@@ -478,6 +447,8 @@ function PaymentModal({
 }
 
 export default function CreditDashboard() {
+  const { formatMoney } = useTenantMoney();
+  const { daysUntil } = useTenantDateTime();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -679,7 +650,7 @@ export default function CreditDashboard() {
       const isLate =
         overdueIds.has(sale.id) ||
         String(sale?.status || "").toUpperCase() === "OVERDUE" ||
-        dueTone(sale?.dueDate, saleBalance(sale), sale?.status) === "danger";
+        dueTone(sale?.dueDate, saleBalance(sale), sale?.status, daysUntil) === "danger";
 
       const dueToday = daysUntil(sale?.dueDate) === 0;
       const dueSoon = [0, 1, 2, 3].includes(daysUntil(sale?.dueDate));
@@ -707,7 +678,7 @@ export default function CreditDashboard() {
 
       return haystack.includes(search);
     });
-  }, [allBalances, overdueIds, q, statusFilter]);
+  }, [allBalances, overdueIds, q, statusFilter, daysUntil]);
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
@@ -722,7 +693,7 @@ export default function CreditDashboard() {
       return (
         overdueIds.has(sale.id) ||
         String(sale?.status || "").toUpperCase() === "OVERDUE" ||
-        dueTone(sale?.dueDate, saleBalance(sale), sale?.status) === "danger"
+        dueTone(sale?.dueDate, saleBalance(sale), sale?.status, daysUntil) === "danger"
       );
     });
 

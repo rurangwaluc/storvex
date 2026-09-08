@@ -129,18 +129,13 @@
 
 .svx-supplier-eyebrow,
 .svx-supplier-kicker {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
+  display: block;
   width: fit-content;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  border-radius: 999px;
-  background: rgba(16, 185, 129, 0.13);
-  padding: 0 12px;
   color: #10d89b;
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0.16em;
+  line-height: 1.4;
   text-transform: uppercase;
 }
 
@@ -966,8 +961,6 @@
 
 :root:not([data-theme="dark"]) .svx-supplier-page .svx-supplier-eyebrow,
 :root:not([data-theme="dark"]) .svx-supplier-page .svx-supplier-kicker {
-  background: rgba(16, 185, 129, 0.11) !important;
-  border-color: rgba(16, 185, 129, 0.18) !important;
   color: #047857 !important;
 }
 
@@ -1286,11 +1279,9 @@ html:not(.dark) body:not(.dark) .svx-supplier-modal-layer .svx-supplier-modal-ca
 }
 
 .svx-supplier-tab strong {
-  min-width: 22px;
-  border-radius: 999px;
-  background: var(--color-surface);
+  min-width: 0;
   color: var(--color-text);
-  padding: 3px 7px;
+  padding: 0;
   font-size: 11px;
   line-height: 1;
 }
@@ -1302,7 +1293,6 @@ html:not(.dark) body:not(.dark) .svx-supplier-modal-layer .svx-supplier-modal-ca
 }
 
 .svx-supplier-tab.is-active strong {
-  background: rgba(255, 255, 255, 0.18);
   color: #ffffff;
 }
 

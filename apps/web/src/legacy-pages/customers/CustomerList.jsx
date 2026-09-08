@@ -13,6 +13,8 @@ import {
 } from "../../lib/customerQueryKeys";
 import AsyncButton from "../../components/ui/AsyncButton";
 import TableSkeleton from "../../components/ui/TableSkeleton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import "./Customers.css";
 import {
   createCustomer,
@@ -33,19 +35,6 @@ const card = () => "svx-customer-card";
 const panel = () => "svx-customer-panel";
 
 const raised = () => "svx-customer-panel";
-
-function formatMoney(value) {
-  return `RWF ${Number(value || 0).toLocaleString()}`;
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleDateString();
-}
 
 function normalizeCustomerResponse(data) {
   if (Array.isArray(data)) return data;
@@ -71,29 +60,29 @@ function PulseBar({ className = "" }) {
   return (
     <div
       className={cn(
-        "animate-pulse rounded-full bg-[var(--color-surface)]",
+        "animate-pulse rounded-md bg-[var(--color-surface)]",
         className,
       )}
     />
   );
 }
 
-function Pill({ children, tone = "neutral" }) {
+function StatusText({ children, tone = "neutral" }) {
   const cls =
     tone === "success"
-      ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
+      ? "text-emerald-700 dark:text-emerald-300"
       : tone === "warning"
-        ? "bg-amber-500/14 text-amber-700 dark:text-amber-300"
+        ? "text-amber-700 dark:text-amber-300"
         : tone === "danger"
-          ? "bg-[rgba(219,80,74,0.14)] text-[var(--color-danger)]"
+          ? "text-[var(--color-danger)]"
           : tone === "info"
-            ? "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
-            : "bg-[var(--color-surface)] text-[var(--color-text-muted)]";
+            ? "text-[var(--color-primary)]"
+            : "text-[var(--color-text-muted)]";
 
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold",
+        "inline-flex items-center text-xs font-semibold",
         cls,
       )}
     >
@@ -177,7 +166,7 @@ function CustomerListPageSkeleton() {
                   <PulseBar className="h-3 w-24" />
                   <PulseBar className="h-3 w-28" />
                 </div>
-                <PulseBar className="h-6 w-16 rounded-full" />
+                <PulseBar className="h-6 w-16 rounded-md" />
               </div>
               <div className="mt-3 flex gap-2">
                 <PulseBar className="h-8 w-16 rounded-2xl" />
@@ -299,7 +288,7 @@ function CustomerFormModal({ initial, onSave, onClose, busy }) {
                 className="app-input"
                 value={form.phone || ""}
                 onChange={(event) => setField("phone", event.target.value)}
-                placeholder="07x xxx xxxx"
+                placeholder="Phone number"
                 required
               />
             </div>
@@ -412,6 +401,9 @@ function CustomerFormModal({ initial, onSave, onClose, busy }) {
 }
 
 function LedgerDrawer({ customerId, onClose }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   const ledgerQuery = useQuery({
     queryKey:
       customerQueryKeys.ledger(
@@ -526,11 +518,11 @@ function LedgerDrawer({ customerId, onClose }) {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-2">
-                          <Pill tone={sale.saleType === "CREDIT" ? "warning" : "success"}>
+                          <StatusText tone={sale.saleType === "CREDIT" ? "warning" : "success"}>
                             {sale.saleType || "SALE"}
-                          </Pill>
+                          </StatusText>
 
-                          <Pill
+                          <StatusText
                             tone={
                               sale.status === "PAID"
                                 ? "success"
@@ -540,7 +532,7 @@ function LedgerDrawer({ customerId, onClose }) {
                             }
                           >
                             {sale.status || "OPEN"}
-                          </Pill>
+                          </StatusText>
 
                           <span className={cn("text-sm font-bold", strong())}>
                             {formatMoney(sale.total)}
@@ -625,6 +617,8 @@ function ConfirmModal({
 }
 
 export default function CustomerList() {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -1237,8 +1231,8 @@ export default function CustomerList() {
               <div key={index} className={cn(panel(), "space-y-2 p-4")}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 space-y-1.5">
-                    <div className="h-4 w-36 animate-pulse rounded-full bg-[var(--color-surface)]" />
-                    <div className="h-3 w-24 animate-pulse rounded-full bg-[var(--color-surface)]" />
+                    <div className="h-4 w-36 animate-pulse rounded-md bg-[var(--color-surface)]" />
+                    <div className="h-3 w-24 animate-pulse rounded-md bg-[var(--color-surface)]" />
                   </div>
                   <div className="h-9 w-16 animate-pulse rounded-2xl bg-[var(--color-surface)]" />
                 </div>
@@ -1265,12 +1259,12 @@ export default function CustomerList() {
                   </div>
 
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <Pill tone={customer.isActive !== false ? "success" : "neutral"}>
+                    <StatusText tone={customer.isActive !== false ? "success" : "neutral"}>
                       {customer.isActive !== false ? "Active" : "Inactive"}
-                    </Pill>
+                    </StatusText>
 
                     {Number(customer.outstanding || 0) > 0 ? (
-                      <Pill tone="danger">{formatMoney(customer.outstanding)}</Pill>
+                      <StatusText tone="danger">{formatMoney(customer.outstanding)}</StatusText>
                     ) : null}
                   </div>
                 </div>

@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
+import useTenantDateTime from "../../hooks/useTenantDateTime";
+import useTenantMoney from "../../hooks/useTenantMoney";
+
 import {
   getDealsWithMeta,
   markReturned,
@@ -30,18 +33,6 @@ function initialVisibleCount() {
 
 function cleanString(value) {
   return String(value || "").trim();
-}
-
-function formatMoney(value) {
-  const n = Number(value || 0);
-  return `RWF ${Math.round(Number.isFinite(n) ? n : 0).toLocaleString("en-US")}`;
-}
-
-function toDateLabel(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
 function statusMeta(status) {
@@ -75,21 +66,16 @@ function branchParts(deal) {
 
 function branchLabel(deal) {
   const branch = branchParts(deal);
-  return [branch.code, branch.name].filter(Boolean).join(" ") || branch.fallback;
+  return branch.name || branch.fallback;
 }
 
 function BranchStack({ deal }) {
   const branch = branchParts(deal);
-  if (branch.code || branch.name) {
-    return (
-      <span className="svx-transfer-branch-stack">
-        {branch.code ? <strong>{branch.code}</strong> : null}
-        {branch.name ? <em>{branch.name}</em> : null}
-      </span>
-    );
-  }
-
-  return <span>{branch.fallback}</span>;
+  return (
+    <span className="svx-transfer-branch-stack">
+      {branch.name || branch.fallback}
+    </span>
+  );
 }
 
 function payableQuantity(deal) {
@@ -117,9 +103,13 @@ function SummaryCard({ label, value, note, tone = "primary" }) {
   );
 }
 
-function StatusPill({ status }) {
+function StatusText({ status }) {
   const meta = statusMeta(status);
-  return <span className={`svx-transfer-status ${meta.className}`}>{meta.label}</span>;
+  return (
+    <span className={`svx-transfer-status-text ${meta.className}`}>
+      {meta.label}
+    </span>
+  );
 }
 
 function QuantityStack({ quantity, soldQuantity, returnedQuantity }) {
@@ -136,7 +126,14 @@ function QuantityStack({ quantity, soldQuantity, returnedQuantity }) {
   );
 }
 
-function TransferCard({ deal, busyAction, onOpen, onReturn }) {
+function TransferCard({
+  deal,
+  busyAction,
+  onOpen,
+  onReturn,
+  formatMoney,
+  formatDate,
+}) {
   const statusKey = cleanString(deal.status).toUpperCase();
   const meta = statusMeta(deal.status);
   const risk = paymentRisk(deal);
@@ -167,7 +164,7 @@ function TransferCard({ deal, busyAction, onOpen, onReturn }) {
       aria-label={`Open transfer ${deal.productName || "item"}`}
     >
       <div className="svx-transfer-register-primary">
-        <StatusPill status={deal.status} />
+        <StatusText status={deal.status} />
         <div className="svx-transfer-register-item-copy">
           <h3 title={deal.productName || "Unnamed item"}>{deal.productName || "Unnamed item"}</h3>
           <QuantityStack
@@ -196,7 +193,7 @@ function TransferCard({ deal, busyAction, onOpen, onReturn }) {
       <span className="svx-transfer-register-cell svx-transfer-register-money">
         <small>Money at risk</small>
         <strong>{formatMoney(risk)}</strong>
-        <em>Due {toDateLabel(deal.dueDate)}</em>
+        <em>Due {formatDate(deal.dueDate)}</em>
       </span>
 
       <span className="svx-transfer-register-cell svx-transfer-register-next">
@@ -240,6 +237,8 @@ function SkeletonList() {
 
 export default function InterStoreDeals() {
   const navigate = useNavigate();
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
   const [deals, setDeals] = useState([]);
   const [branchScope, setBranchScope] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -339,24 +338,24 @@ export default function InterStoreDeals() {
   }
 
   return (
-    <div className="svx-transfer-page">
+    <div className="svx-transfer-page svx-transfer-list-page">
       <div className="svx-transfer-shell">
         <section className="svx-transfer-hero">
           <div className="svx-transfer-hero-inner">
             <div>
-              <span className="svx-transfer-eyebrow">Store transfers</span>
               <h1 className="svx-transfer-title">Store transfers</h1>
               <p className="svx-transfer-subtitle">
-                Track products taken by a person or another store, with money due, returns, and final payment under control.
+                Track stock given out and money still expected.
               </p>
-              <div className="svx-transfer-category-pill">Operations</div>
             </div>
-            <div className="svx-transfer-hero-side">
-              <button type="button" className="svx-transfer-create-button" onClick={() => navigate("/app/interstore/new")}>
-                <span className="svx-transfer-create-plus" aria-hidden="true">+</span>
-                <span>New transfer</span>
-              </button>
-            </div>
+
+            <button
+              type="button"
+              className="svx-transfer-primary"
+              onClick={() => navigate("/app/interstore/new")}
+            >
+              + New transfer
+            </button>
           </div>
         </section>
 
@@ -419,9 +418,8 @@ export default function InterStoreDeals() {
           <div>
             <div className="svx-transfer-section-head">
               <div>
-                <span className="svx-transfer-kicker">Transfers</span>
-                <h2>Transfer register</h2>
-                <p>{displayedDeals.length} shown now. Tap any transfer to view the full details.</p>
+                <h2>Transfers</h2>
+                <p>{displayedDeals.length} shown</p>
               </div>
             </div>
 
@@ -445,6 +443,8 @@ export default function InterStoreDeals() {
                       key={deal.id}
                       deal={deal}
                       busyAction={busyAction}
+                      formatMoney={formatMoney}
+                      formatDate={formatDate}
                       onReturn={(row) => runAction(row, () => markReturned(row.id, { returnedQuantity: row.quantity || 1 }, { allBranches }), "Transfer returned")}
                       onOpen={(row) => navigate(`/app/interstore/${row.id}`)}
                     />

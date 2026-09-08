@@ -5306,3 +5306,910 @@
 .svx-transfer-payment-form .svx-transfer-field-hint {
   line-height: 1.45;
 }
+
+/* -------------------------------------------------------------------------- */
+/* FINAL STORE TRANSFER CREATE ACTION VISIBILITY                               */
+/* -------------------------------------------------------------------------- */
+
+/* Desktop: keep the decision/save panel visible while completing the form. */
+@media (min-width: 1181px) {
+  .svx-transfer-create-page-simple .svx-transfer-create-side {
+    position: sticky !important;
+    top: 88px !important;
+    align-self: start !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-side-card-simple {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-footer {
+    display: none !important;
+  }
+
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-side-card-simple
+    > .svx-transfer-primary {
+    display: inline-flex !important;
+    width: 100% !important;
+  }
+}
+
+/* Medium layouts: the side panel falls below the form, so surface actions
+   persistently instead of forcing the owner to scroll to reach Save. */
+@media (min-width: 761px) and (max-width: 1180px) {
+  .svx-transfer-create-page-simple .svx-transfer-create-side {
+    position: static !important;
+  }
+
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-side-card-simple
+    > .svx-transfer-primary {
+    display: none !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-footer {
+    position: sticky !important;
+    bottom: 12px !important;
+    z-index: 30 !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(160px, 220px) !important;
+    justify-content: end !important;
+    gap: 10px !important;
+    width: 100% !important;
+    border: 1px solid var(--transfer-border) !important;
+    border-radius: 18px !important;
+    background: var(--transfer-card) !important;
+    padding: 10px !important;
+    box-shadow: none !important;
+  }
+
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-footer
+    .svx-transfer-primary,
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-footer
+    .svx-transfer-secondary {
+    min-height: 44px !important;
+  }
+}
+
+/* Mobile/PWA: persistent thumb-reachable actions. */
+@media (max-width: 760px) {
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-side-card-simple
+    > .svx-transfer-primary {
+    display: none !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-footer {
+    position: fixed !important;
+    left: max(10px, env(safe-area-inset-left)) !important;
+    right: max(10px, env(safe-area-inset-right)) !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    z-index: 40 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) !important;
+    gap: 8px !important;
+    width: auto !important;
+    border: 1px solid var(--transfer-border) !important;
+    border-radius: 18px !important;
+    background: var(--transfer-card) !important;
+    padding: 10px !important;
+    box-shadow: none !important;
+  }
+
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-footer
+    .svx-transfer-primary,
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-footer
+    .svx-transfer-secondary {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 44px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .svx-transfer-create-page-simple .svx-transfer-create-footer {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* STORE TRANSFER CREATE — FINAL DESKTOP WORKSPACE                             */
+/* Keep Save visible whenever the app has enough horizontal room.              */
+/* -------------------------------------------------------------------------- */
+
+@media (min-width: 960px) {
+  .svx-transfer-create-page-simple .svx-transfer-create-layout-simple {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 280px !important;
+    gap: 16px !important;
+    align-items: start !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-side {
+    display: block !important;
+    position: sticky !important;
+    top: 88px !important;
+    align-self: start !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-side-card-simple {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-side-card-simple
+    > .svx-transfer-primary {
+    display: inline-flex !important;
+    width: 100% !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-footer {
+    display: none !important;
+  }
+}
+
+/* Compact screens become a one-column form with persistent actions. */
+@media (min-width: 761px) and (max-width: 959px) {
+  .svx-transfer-create-page-simple .svx-transfer-create-layout-simple {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-side {
+    display: none !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-footer {
+    position: sticky !important;
+    bottom: 10px !important;
+    z-index: 30 !important;
+    display: grid !important;
+    grid-template-columns: auto minmax(180px, 220px) !important;
+    justify-content: end !important;
+    gap: 8px !important;
+    width: 100% !important;
+    border: 1px solid var(--transfer-border) !important;
+    border-radius: 16px !important;
+    background: var(--transfer-card) !important;
+    padding: 10px !important;
+    box-shadow: none !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* STORE TRANSFER CREATE — OWNER-FIRST COMPACT FORM                            */
+/* -------------------------------------------------------------------------- */
+
+.svx-transfer-create-page-simple .svx-transfer-create-shell {
+  width: min(100%, 860px) !important;
+  gap: 12px !important;
+  padding-top: 28px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-hero {
+  padding: 22px 24px !important;
+  border-radius: 20px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-hero-copy h1 {
+  margin-top: 0 !important;
+  font-size: clamp(30px, 3vw, 40px) !important;
+  line-height: 1 !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-hero-copy > p {
+  margin-top: 9px !important;
+  max-width: 560px !important;
+}
+
+.svx-transfer-create-branch-line {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: 12px;
+  color: var(--transfer-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.svx-transfer-create-branch-line span {
+  color: var(--transfer-muted);
+}
+
+.svx-transfer-create-branch-line strong {
+  color: var(--transfer-text);
+  font-weight: 850;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-layout-simple {
+  display: block !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-main {
+  display: grid !important;
+  gap: 10px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section {
+  padding: 18px !important;
+  border-radius: 20px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section-head {
+  grid-template-columns: 32px minmax(0, 1fr) !important;
+  gap: 10px !important;
+  align-items: center !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-step-number {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 50% !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section-head h3 {
+  margin-top: 0 !important;
+  font-size: 22px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section-body {
+  margin-top: 14px !important;
+  gap: 12px !important;
+}
+
+/* One clear action area — always easy to reach. */
+.svx-transfer-create-page-simple .svx-transfer-create-footer {
+  position: sticky !important;
+  bottom: 10px !important;
+  z-index: 30 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(180px, 220px) !important;
+  justify-content: end !important;
+  gap: 8px !important;
+  width: 100% !important;
+  border: 1px solid var(--transfer-border) !important;
+  border-radius: 16px !important;
+  background: var(--transfer-card) !important;
+  padding: 10px !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-create-page-simple
+  .svx-transfer-create-footer
+  .svx-transfer-primary,
+.svx-transfer-create-page-simple
+  .svx-transfer-create-footer
+  .svx-transfer-secondary {
+  min-height: 44px !important;
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-create-page-simple .svx-transfer-create-shell {
+    width: 100% !important;
+    padding: 12px 10px calc(86px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-hero {
+    padding: 18px 16px !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-footer {
+    position: fixed !important;
+    left: max(10px, env(safe-area-inset-left)) !important;
+    right: max(10px, env(safe-area-inset-right)) !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) !important;
+  }
+
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-footer
+    .svx-transfer-primary,
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-footer
+    .svx-transfer-secondary {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .svx-transfer-create-page-simple .svx-transfer-create-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* STORE TRANSFER CREATE — OWNER-FIRST DESKTOP WORKSPACE                       */
+/* -------------------------------------------------------------------------- */
+
+.svx-transfer-create-page-simple .svx-transfer-create-shell {
+  width: min(100%, 1080px) !important;
+  gap: 12px !important;
+  padding: 24px 0 88px !important;
+}
+
+/* Compact header — this is a form, not a landing page. */
+.svx-transfer-create-page-simple .svx-transfer-create-hero {
+  min-height: 0 !important;
+  padding: 20px 22px !important;
+  border-radius: 18px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-hero-copy h1 {
+  margin: 0 !important;
+  font-size: clamp(28px, 2.5vw, 36px) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-hero-copy > p {
+  max-width: 520px !important;
+  margin-top: 7px !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+.svx-transfer-create-branch-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.svx-transfer-create-branch-line span {
+  color: var(--transfer-muted);
+  font-weight: 700;
+}
+
+.svx-transfer-create-branch-line strong {
+  color: var(--transfer-text);
+  font-weight: 850;
+}
+
+/* There is no dashboard summary or second save panel anymore. */
+.svx-transfer-create-page-simple .svx-transfer-create-overview,
+.svx-transfer-create-page-simple .svx-transfer-create-side {
+  display: none !important;
+}
+
+/* First two business questions sit beside each other. */
+.svx-transfer-create-page-simple .svx-transfer-create-layout-simple {
+  display: block !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-main {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 12px !important;
+  align-items: start !important;
+}
+
+/* Payment uses the full available width. */
+.svx-transfer-create-page-simple
+  .svx-transfer-create-main
+  > .svx-transfer-create-section:nth-child(3) {
+  grid-column: 1 / -1 !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section {
+  min-width: 0 !important;
+  border-radius: 18px !important;
+  padding: 16px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section-head {
+  grid-template-columns: 30px minmax(0, 1fr) !important;
+  gap: 9px !important;
+  align-items: center !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-step-number {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  font-size: 12px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section-head h3 {
+  margin: 0 !important;
+  font-size: 21px !important;
+  line-height: 1.05 !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section-head p {
+  display: none !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-section-body {
+  margin-top: 13px !important;
+  gap: 11px !important;
+}
+
+/* Use the horizontal room instead of making a long phone-shaped desktop form. */
+.svx-transfer-create-page-simple .svx-transfer-create-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-create-mode-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.svx-transfer-create-page-simple .svx-transfer-mode-card {
+  min-height: 72px !important;
+  padding: 12px !important;
+}
+
+/* Payment has enough width for three useful columns. */
+.svx-transfer-create-page-simple
+  .svx-transfer-create-main
+  > .svx-transfer-create-section:nth-child(3)
+  .svx-transfer-create-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+/* Full-width fields, including notes, remain full width. */
+.svx-transfer-create-page-simple
+  .svx-transfer-create-main
+  > .svx-transfer-create-section:nth-child(3)
+  .svx-transfer-form-field.is-full {
+  grid-column: 1 / -1 !important;
+}
+
+/* One persistent decision area only. */
+.svx-transfer-create-page-simple .svx-transfer-create-footer {
+  position: sticky !important;
+  bottom: 10px !important;
+  z-index: 35 !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(180px, 220px) !important;
+  justify-content: end !important;
+  gap: 8px !important;
+  width: 100% !important;
+  border: 1px solid var(--transfer-border) !important;
+  border-radius: 14px !important;
+  background: var(--transfer-card) !important;
+  padding: 9px !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-create-page-simple
+  .svx-transfer-create-footer
+  .svx-transfer-primary,
+.svx-transfer-create-page-simple
+  .svx-transfer-create-footer
+  .svx-transfer-secondary {
+  min-height: 42px !important;
+}
+
+/* Tablet: one question per row. */
+@media (max-width: 900px) {
+  .svx-transfer-create-page-simple .svx-transfer-create-main {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-main
+    > .svx-transfer-create-section:nth-child(3) {
+    grid-column: auto !important;
+  }
+
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-main
+    > .svx-transfer-create-section:nth-child(3)
+    .svx-transfer-create-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Mobile/PWA. */
+@media (max-width: 600px) {
+  .svx-transfer-create-page-simple .svx-transfer-create-shell {
+    width: 100% !important;
+    padding: 10px 10px calc(84px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-hero {
+    grid-template-columns: 1fr !important;
+    padding: 16px !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-grid,
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-main
+    > .svx-transfer-create-section:nth-child(3)
+    .svx-transfer-create-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-create-page-simple .svx-transfer-create-footer {
+    position: fixed !important;
+    left: max(10px, env(safe-area-inset-left)) !important;
+    right: max(10px, env(safe-area-inset-right)) !important;
+    bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) !important;
+  }
+
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-footer
+    .svx-transfer-primary,
+  .svx-transfer-create-page-simple
+    .svx-transfer-create-footer
+    .svx-transfer-secondary {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* STORE TRANSFERS LIST — OWNER-FIRST FINAL PASS                               */
+/* -------------------------------------------------------------------------- */
+
+.svx-transfer-list-page .svx-transfer-shell {
+  gap: 12px !important;
+}
+
+/* Operational header, not a landing-page hero. */
+.svx-transfer-list-page .svx-transfer-hero {
+  overflow: visible !important;
+  min-height: 0 !important;
+  border-radius: 18px !important;
+  background: var(--transfer-card) !important;
+  padding: 20px 22px !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-list-page .svx-transfer-hero::after {
+  display: none !important;
+}
+
+.svx-transfer-list-page .svx-transfer-hero-inner {
+  display: block !important;
+}
+
+.svx-transfer-list-page .svx-transfer-title {
+  margin: 0 !important;
+  max-width: none !important;
+  font-size: clamp(28px, 2.5vw, 36px) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.svx-transfer-list-page .svx-transfer-subtitle {
+  margin-top: 7px !important;
+  max-width: 520px !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+/* Status is information, not a badge. */
+.svx-transfer-status-text {
+  display: inline !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+  line-height: 1.25 !important;
+}
+
+.svx-transfer-status-text.borrowed {
+  color: var(--transfer-warning) !important;
+}
+
+.svx-transfer-status-text.received,
+.svx-transfer-status-text.sold {
+  color: var(--transfer-primary) !important;
+}
+
+.svx-transfer-status-text.paid {
+  color: var(--transfer-success) !important;
+}
+
+.svx-transfer-status-text.returned {
+  color: var(--transfer-muted) !important;
+}
+
+/* Product + status should read naturally rather than as badge + title. */
+.svx-transfer-list-page .svx-transfer-register-primary {
+  grid-template-columns: 1fr !important;
+  gap: 4px !important;
+  align-items: start !important;
+}
+
+.svx-transfer-list-page .svx-transfer-register-item-copy {
+  order: -1;
+}
+
+/* Never expose branch system codes in the register. */
+.svx-transfer-list-page .svx-transfer-branch-stack {
+  display: block !important;
+  color: var(--transfer-text) !important;
+  font-style: normal !important;
+  font-weight: 800 !important;
+  line-height: 1.3 !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Register heading should be compact. */
+.svx-transfer-list-page .svx-transfer-section-head {
+  margin-bottom: 10px !important;
+}
+
+.svx-transfer-list-page .svx-transfer-section-head h2 {
+  margin: 0 !important;
+}
+
+.svx-transfer-list-page .svx-transfer-section-head p {
+  margin-top: 3px !important;
+}
+
+/* Keep status filters as controls — they are not badges. */
+.svx-transfer-list-page .svx-transfer-filter-row {
+  margin-top: 8px !important;
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-list-page .svx-transfer-hero {
+    padding: 17px 16px !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* STORE TRANSFERS LIST — OWNER-FIRST FINAL PASS                               */
+/* -------------------------------------------------------------------------- */
+
+.svx-transfer-list-page .svx-transfer-shell {
+  gap: 12px !important;
+}
+
+/* Operational header, not a landing-page hero. */
+.svx-transfer-list-page .svx-transfer-hero {
+  overflow: visible !important;
+  min-height: 0 !important;
+  border-radius: 18px !important;
+  background: var(--transfer-card) !important;
+  padding: 20px 22px !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-list-page .svx-transfer-hero::after {
+  display: none !important;
+}
+
+.svx-transfer-list-page .svx-transfer-hero-inner {
+  display: block !important;
+}
+
+.svx-transfer-list-page .svx-transfer-title {
+  margin: 0 !important;
+  max-width: none !important;
+  font-size: clamp(28px, 2.5vw, 36px) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.045em !important;
+}
+
+.svx-transfer-list-page .svx-transfer-subtitle {
+  margin-top: 7px !important;
+  max-width: 520px !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+}
+
+/* Status is information, not a badge. */
+.svx-transfer-status-text {
+  display: inline !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  font-size: 12px !important;
+  font-weight: 850 !important;
+  line-height: 1.25 !important;
+}
+
+.svx-transfer-status-text.borrowed {
+  color: var(--transfer-warning) !important;
+}
+
+.svx-transfer-status-text.received,
+.svx-transfer-status-text.sold {
+  color: var(--transfer-primary) !important;
+}
+
+.svx-transfer-status-text.paid {
+  color: var(--transfer-success) !important;
+}
+
+.svx-transfer-status-text.returned {
+  color: var(--transfer-muted) !important;
+}
+
+/* Product + status should read naturally rather than as badge + title. */
+.svx-transfer-list-page .svx-transfer-register-primary {
+  grid-template-columns: 1fr !important;
+  gap: 4px !important;
+  align-items: start !important;
+}
+
+.svx-transfer-list-page .svx-transfer-register-item-copy {
+  order: -1;
+}
+
+/* Never expose branch system codes in the register. */
+.svx-transfer-list-page .svx-transfer-branch-stack {
+  display: block !important;
+  color: var(--transfer-text) !important;
+  font-style: normal !important;
+  font-weight: 800 !important;
+  line-height: 1.3 !important;
+  overflow-wrap: break-word !important;
+}
+
+/* Register heading should be compact. */
+.svx-transfer-list-page .svx-transfer-section-head {
+  margin-bottom: 10px !important;
+}
+
+.svx-transfer-list-page .svx-transfer-section-head h2 {
+  margin: 0 !important;
+}
+
+.svx-transfer-list-page .svx-transfer-section-head p {
+  margin-top: 3px !important;
+}
+
+/* Keep status filters as controls — they are not badges. */
+.svx-transfer-list-page .svx-transfer-filter-row {
+  margin-top: 8px !important;
+}
+
+@media (max-width: 760px) {
+  .svx-transfer-list-page .svx-transfer-hero {
+    padding: 17px 16px !important;
+  }
+}
+
+/* Store Transfers: obvious page-specific primary action */
+.svx-transfer-list-page .svx-transfer-hero-inner {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: 20px !important;
+}
+
+.svx-transfer-list-page .svx-transfer-hero-inner > .svx-transfer-primary {
+  min-width: 148px !important;
+  white-space: nowrap !important;
+}
+
+@media (max-width: 600px) {
+  .svx-transfer-list-page .svx-transfer-hero-inner {
+    grid-template-columns: 1fr !important;
+  }
+
+  .svx-transfer-list-page .svx-transfer-hero-inner > .svx-transfer-primary {
+    width: 100% !important;
+  }
+}
+
+/* Store transfer register: give Next action enough room */
+@media (min-width: 1241px) {
+  .svx-transfer-list-page .svx-transfer-register-card {
+    grid-template-columns:
+      minmax(170px, 1.2fr)
+      minmax(130px, 0.9fr)
+      minmax(150px, 0.9fr)
+      minmax(120px, 0.7fr)
+      minmax(80px, 0.45fr)
+      minmax(130px, 0.7fr)
+      minmax(150px, 0.9fr)
+      96px !important;
+  }
+
+  .svx-transfer-list-page .svx-transfer-register-next strong {
+    white-space: normal !important;
+    line-height: 1.3 !important;
+    overflow-wrap: normal !important;
+    word-break: normal !important;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* STORE TRANSFERS LIST — FINAL PROFESSIONAL POLISH                            */
+/* -------------------------------------------------------------------------- */
+
+/* Desktop already has the horizontal status filters.
+   Do not show a second Status view control. */
+@media (min-width: 761px) {
+  .svx-transfer-list-page .svx-transfer-mobile-status-control {
+    display: none !important;
+  }
+}
+
+/* Keep the compact select for small screens where the filter row is less useful. */
+@media (max-width: 760px) {
+  .svx-transfer-list-page .svx-transfer-mobile-status-control {
+    display: grid !important;
+  }
+
+  .svx-transfer-list-page .svx-transfer-filter-row {
+    display: none !important;
+  }
+}
+
+/* Return stock is important, but it should not dominate the transfer record. */
+.svx-transfer-list-page
+  .svx-transfer-register-card
+  .svx-transfer-warning {
+  min-height: 38px !important;
+  border: 1px solid color-mix(in srgb, var(--transfer-warning) 35%, var(--transfer-border)) !important;
+  background: transparent !important;
+  color: var(--transfer-warning) !important;
+  box-shadow: none !important;
+}
+
+.svx-transfer-list-page
+  .svx-transfer-register-card
+  .svx-transfer-warning:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--transfer-warning) 8%, transparent) !important;
+}
+
+/* Values are the information owners scan.
+   Labels should support them rather than compete with them. */
+.svx-transfer-list-page .svx-transfer-register-cell small {
+  margin-bottom: 1px !important;
+  color: var(--transfer-muted) !important;
+  font-size: 8px !important;
+  font-weight: 750 !important;
+  letter-spacing: 0.1em !important;
+}
+
+.svx-transfer-list-page .svx-transfer-register-cell strong {
+  font-size: 12px !important;
+  font-weight: 850 !important;
+  line-height: 1.3 !important;
+}
+
+.svx-transfer-list-page .svx-transfer-register-cell em {
+  font-size: 11px !important;
+  line-height: 1.3 !important;
+}
+
+/* Product remains the visual anchor of each row. */
+.svx-transfer-list-page .svx-transfer-register-primary h3 {
+  font-size: 15px !important;
+  font-weight: 900 !important;
+}
+
+.svx-transfer-list-page .svx-transfer-status-text {
+  margin-top: 1px !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+/* Cleaner register controls. */
+.svx-transfer-list-page .svx-transfer-toolbar {
+  padding-block: 12px !important;
+}
+
+.svx-transfer-list-page .svx-transfer-register-card {
+  min-height: 72px !important;
+}

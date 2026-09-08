@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import useTenantMoney from "../../hooks/useTenantMoney";
 import { createProduct } from "../../services/inventoryApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
 import {
@@ -64,14 +65,6 @@ function parseNumber(value) {
   if (value === "" || value === null || value === undefined) return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
-}
-
-function formatRwf(value) {
-  const n = Number(value || 0);
-
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(n) ? Math.round(n) : 0)}`;
 }
 
 function formatPlain(value) {
@@ -134,7 +127,7 @@ function Field({ label, required = false, help, children, wide = false }) {
   );
 }
 
-function SectionHeader({ icon: Icon, title, text, badge }) {
+function SectionHeader({ icon: Icon, title, text }) {
   return (
     <div className="svx-product-section-head">
       <span className="svx-product-section-icon" aria-hidden="true">
@@ -144,7 +137,6 @@ function SectionHeader({ icon: Icon, title, text, badge }) {
       <div>
         <div className="svx-product-section-title-row">
           <h2>{title}</h2>
-          {badge ? <span>{badge}</span> : null}
         </div>
         <p>{text}</p>
       </div>
@@ -162,6 +154,7 @@ function SummaryRow({ label, value, tone }) {
 }
 
 export default function InventoryCreate() {
+  const { currencyCode, formatMoney } = useTenantMoney();
   const navigate = useNavigate();
   const [workspace, setWorkspace] = useState(() => readCachedWorkspace());
   const [branchLabel] = useState(() => activeBranchNameFromStorage());
@@ -634,26 +627,26 @@ export default function InventoryCreate() {
               />
 
               <div className="svx-product-grid">
-                <Field label="Cost price" required>
+                <Field label={`Cost price${currencyCode ? ` (${currencyCode})` : ""}`} required>
                   <input
                     type="number"
                     min="0"
                     className="svx-product-input"
                     value={form.costPrice}
                     onChange={(event) => setField("costPrice", event.target.value)}
-                    placeholder="450000"
+                    placeholder="0"
                     disabled={saving}
                   />
                 </Field>
 
-                <Field label="Selling price" required>
+                <Field label={`Selling price${currencyCode ? ` (${currencyCode})` : ""}`} required>
                   <input
                     type="number"
                     min="0"
                     className="svx-product-input"
                     value={form.sellPrice}
                     onChange={(event) => setField("sellPrice", event.target.value)}
-                    placeholder="530000"
+                    placeholder="0"
                     disabled={saving}
                   />
                 </Field>
@@ -704,7 +697,7 @@ export default function InventoryCreate() {
                 />
                 <SummaryRow
                   label="Selling price"
-                  value={formatRwf(sellPrice || 0)}
+                  value={formatMoney(sellPrice || 0)}
                 />
                 <SummaryRow
                   label="Starting stock"

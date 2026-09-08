@@ -6,6 +6,8 @@ import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import {
   createSupplierSupply,
   getSupplierById,
@@ -81,36 +83,36 @@ function textareaClass() {
   return "svx-supplier-textarea";
 }
 
-function badgeClass(tone = "neutral") {
+function statusTextClass(tone = "neutral") {
   if (tone === "primary") {
-    return "bg-[var(--color-primary-soft)] text-[var(--color-primary)]";
+    return "text-[var(--color-primary)]";
   }
 
   if (tone === "success") {
-    return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300";
+    return "text-emerald-600 dark:text-emerald-300";
   }
 
   if (tone === "warning") {
-    return "bg-amber-500/10 text-amber-600 dark:text-amber-300";
+    return "text-amber-600 dark:text-amber-300";
   }
 
   if (tone === "danger") {
-    return "bg-red-500/10 text-red-600 dark:text-red-300";
+    return "text-red-600 dark:text-red-300";
   }
 
   if (tone === "info") {
-    return "bg-sky-500/10 text-sky-600 dark:text-sky-300";
+    return "text-sky-600 dark:text-sky-300";
   }
 
-  return "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
+  return "text-[var(--color-text-muted)]";
 }
 
-function Badge({ children, tone = "neutral", className = "" }) {
+function StatusText({ children, tone = "neutral", className = "" }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-xs font-black",
-        badgeClass(tone),
+        "inline-flex items-center text-xs font-black",
+        statusTextClass(tone),
         className
       )}
     >
@@ -121,19 +123,6 @@ function Badge({ children, tone = "neutral", className = "" }) {
 
 function cleanString(value) {
   return String(value || "").trim();
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 function purchaseOrderDisplayNumber(order) {
@@ -150,7 +139,7 @@ function purchaseOrderStatusLabel(status) {
   return "Draft";
 }
 
-function purchaseOrderSearchText(order) {
+function purchaseOrderSearchText(order, formatDate, formatMoney) {
   return [
     purchaseOrderDisplayNumber(order),
     purchaseOrderStatusLabel(order?.status),
@@ -167,12 +156,6 @@ function purchaseOrderSearchText(order) {
 function toNumber(value, fallback = 0) {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
-}
-
-function formatMoney(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return "RWF 0";
-  return `RWF ${Math.round(n).toLocaleString("en-US")}`;
 }
 
 function sourceLabel(value) {
@@ -338,7 +321,7 @@ function MiniStat({ label, value, note, tone = "neutral" }) {
         </div>
 
         {tone !== "neutral" ? (
-          <Badge tone={tone}>{tone === "success" ? "OK" : "Check"}</Badge>
+          <StatusText tone={tone}>{tone === "success" ? "OK" : "Check"}</StatusText>
         ) : null}
       </div>
 
@@ -377,8 +360,8 @@ function ItemCard({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge tone="primary">Required</Badge>
-              {cleanString(item.serial) ? <Badge tone="success">Serial saved</Badge> : null}
+              <StatusText tone="primary">Required</StatusText>
+              {cleanString(item.serial) ? <StatusText tone="success">Serial saved</StatusText> : null}
             </div>
 
             <div className={cx("mt-3 text-lg font-black tracking-[-0.03em]", strongText())}>
@@ -558,7 +541,7 @@ function ItemCard({
                     Category, brand, serial, item note
                   </span>
                 </span>
-                <span className={cx("rounded-full bg-[var(--color-surface-2)] px-3 py-1 text-xs font-black", mutedText())}>
+                <span className={cx("rounded-xl bg-[var(--color-surface-2)] px-3 py-1 text-xs font-black", mutedText())}>
                   Open
                 </span>
               </summary>
@@ -664,10 +647,10 @@ function PreviewPanel({
   return (
     <aside className={cx(pageCard(), "h-fit p-5 sm:p-6")}>
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={needsReview ? "warning" : "success"}>
+        <StatusText tone={needsReview ? "warning" : "success"}>
           {missingNames ? "Needs item" : missingCosts ? "Needs cost" : "Ready"}
-        </Badge>
-        <Badge tone="primary">{sourceLabel(sourceType)}</Badge>
+        </StatusText>
+        <StatusText tone="primary">{sourceLabel(sourceType)}</StatusText>
       </div>
 
       <div className={cx("mt-5 text-lg font-black tracking-[-0.03em]", strongText())}>
@@ -727,6 +710,8 @@ function PreviewPanel({
 }
 
 export default function SupplierSupplyCreate() {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -763,9 +748,20 @@ export default function SupplierSupplyCreate() {
     if (query.length < 2) return [];
 
     return purchaseOrders
-      .filter((order) => purchaseOrderSearchText(order).includes(query))
+      .filter((order) =>
+        purchaseOrderSearchText(
+          order,
+          formatDate,
+          formatMoney,
+        ).includes(query),
+      )
       .slice(0, 5);
-  }, [purchaseOrders, purchaseOrderSearch]);
+  }, [
+    purchaseOrders,
+    purchaseOrderSearch,
+    formatDate,
+    formatMoney,
+  ]);
 
   function fillReceivedItemsFromPurchaseOrder() {
     if (!selectedPurchaseOrder || !Array.isArray(selectedPurchaseOrder.items) || !selectedPurchaseOrder.items.length) {
@@ -1136,11 +1132,11 @@ export default function SupplierSupplyCreate() {
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div className="min-w-0 max-w-3xl">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone="primary">Supplier restock</Badge>
-                <Badge tone="success">{currentBranchName}</Badge>
-                <Badge tone={form.alsoUpdateStock ? "success" : "warning"}>
+                <StatusText tone="primary">Supplier restock</StatusText>
+                <StatusText tone="success">{currentBranchName}</StatusText>
+                <StatusText tone={form.alsoUpdateStock ? "success" : "warning"}>
                   {form.alsoUpdateStock ? "Stock will be updated" : "Record only"}
-                </Badge>
+                </StatusText>
               </div>
 
               <SectionHeading
@@ -1224,10 +1220,10 @@ export default function SupplierSupplyCreate() {
                   </div>
                 </div>
 
-                <span className="shrink-0 rounded-full bg-[var(--color-surface-2)] px-4 py-2 text-xs font-black text-[var(--color-text-muted)] group-open:hidden">
+                <span className="shrink-0 rounded-xl bg-[var(--color-surface-2)] px-4 py-2 text-xs font-black text-[var(--color-text-muted)] group-open:hidden">
                   Open optional details
                 </span>
-                <span className="hidden shrink-0 rounded-full bg-[var(--color-surface-2)] px-4 py-2 text-xs font-black text-[var(--color-text-muted)] group-open:inline-flex">
+                <span className="hidden shrink-0 rounded-xl bg-[var(--color-surface-2)] px-4 py-2 text-xs font-black text-[var(--color-text-muted)] group-open:inline-flex">
                   Hide optional details
                 </span>
               </summary>
@@ -1372,7 +1368,7 @@ export default function SupplierSupplyCreate() {
                           <button
                             key={ref}
                             type="button"
-                            className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-black text-[var(--color-text-muted)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-text)]"
+                            className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-black text-[var(--color-text-muted)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-text)]"
                             onClick={() => setField("documentRef", ref)}
                           >
                             {ref}
@@ -1397,7 +1393,7 @@ export default function SupplierSupplyCreate() {
                             Match the received stock against this list before saving.
                           </div>
                         </div>
-                        <Badge tone="primary">{formatMoney(selectedPurchaseOrder.totalAmount)}</Badge>
+                        <StatusText tone="primary">{formatMoney(selectedPurchaseOrder.totalAmount)}</StatusText>
                       </div>
 
                       <div className="mt-4 grid grid-cols-1 gap-2">
@@ -1464,7 +1460,7 @@ export default function SupplierSupplyCreate() {
                             Condition, missing item, or supplier promise
                           </span>
                         </span>
-                        <span className={cx("rounded-full bg-[var(--color-surface-2)] px-3 py-1 text-xs font-black", mutedText())}>
+                        <span className={cx("rounded-xl bg-[var(--color-surface-2)] px-3 py-1 text-xs font-black", mutedText())}>
                           Open
                         </span>
                       </summary>

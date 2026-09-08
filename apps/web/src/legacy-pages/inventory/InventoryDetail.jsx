@@ -28,6 +28,7 @@ import {
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import FormPageSkeleton from "../../components/ui/FormPageSkeleton";
+import useTenantMoney from "../../hooks/useTenantMoney";
 import {
   adjustStock,
   getProductById,
@@ -140,35 +141,12 @@ function marketplaceDepartmentForBusiness(
   );
 }
 
-function formatRwf(value) {
-  const n = Number(value || 0);
-
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(n) ? Math.round(n) : 0)}`;
-}
-
 function formatNumber(value) {
   const n = Number(value || 0);
 
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(Number.isFinite(n) ? n : 0);
-}
-
-function formatDateTime(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function productStock(product) {
@@ -537,8 +515,8 @@ function stockActionCopy(type) {
   };
 }
 
-function StatusBadge({ tone = "neutral", children }) {
-  return <span className={cx("svx-detail-badge", `is-${tone}`)}>{children}</span>;
+function StatusText({ tone = "neutral", children }) {
+  return <span className={cx("svx-detail-status-text", `is-${tone}`)}>{children}</span>;
 }
 
 function DetailSection({ icon: Icon, title, text, action, children }) {
@@ -574,13 +552,15 @@ function InfoRow({ label, value, tone }) {
 
 function Gallery({ product, onViewImage }) {
   const images = productImages(product);
+  const mainImage = images[0] || null;
+  const main = mainImage ? getProductImageUrl(mainImage) : "";
+  const [mainImageFailed, setMainImageFailed] = useState(false);
 
-  if (!images.length) return null;
+  useEffect(() => {
+    setMainImageFailed(false);
+  }, [main]);
 
-  const mainImage = images[0];
-  const main = getProductImageUrl(mainImage);
-
-  if (!main) return null;
+  if (!images.length || !main) return null;
 
   return (
     <div className="svx-detail-gallery">
@@ -591,16 +571,26 @@ function Gallery({ product, onViewImage }) {
           onClick={() => onViewImage(mainImage)}
           aria-label="View product image"
         >
-          <img
-            src={main}
-            alt={product?.name || "Product"}
-            loading="lazy"
-          />
+          {mainImageFailed ? (
+            <span className="svx-detail-image-empty">
+              <ImagePlus size={24} strokeWidth={2.2} />
+              <span>Image unavailable</span>
+            </span>
+          ) : (
+            <>
+              <img
+                src={main}
+                alt={product?.name || "Product"}
+                loading="lazy"
+                onError={() => setMainImageFailed(true)}
+              />
 
-          <span>
-            <Eye size={15} strokeWidth={2.35} />
-            View product image
-          </span>
+              <span className="svx-detail-main-image-action">
+                <Eye size={15} strokeWidth={2.35} />
+                View product image
+              </span>
+            </>
+          )}
         </button>
       </div>
 
@@ -627,6 +617,12 @@ function Gallery({ product, onViewImage }) {
                   src={getProductImageUrl(image)}
                   alt=""
                   loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.style.display = "none";
+                    event.currentTarget.parentElement?.classList.add(
+                      "is-image-unavailable",
+                    );
+                  }}
                 />
               </button>
             ),
@@ -638,6 +634,12 @@ function Gallery({ product, onViewImage }) {
 }
 
 function ProductImageViewer({ image, productName, onClose }) {
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [image]);
+
   useEffect(() => {
     if (!image) return undefined;
 
@@ -671,9 +673,9 @@ function ProductImageViewer({ image, productName, onClose }) {
       <section className="svx-detail-product-viewer">
         <header>
           <div>
-            <StatusBadge tone={image?.isPrimary ? "success" : "neutral"}>
+            <StatusText tone={image?.isPrimary ? "success" : "neutral"}>
               {image?.isPrimary ? "Feature image" : "Product image"}
-            </StatusBadge>
+            </StatusText>
             <h2>{productName || "Product"}</h2>
           </div>
 
@@ -683,7 +685,18 @@ function ProductImageViewer({ image, productName, onClose }) {
         </header>
 
         <div className="svx-detail-product-viewer-frame">
-          <img src={url} alt={image?.altText || productName || "Product"} />
+          {imageFailed ? (
+            <div className="svx-detail-image-empty">
+              <ImagePlus size={28} strokeWidth={2.2} />
+              <span>Image unavailable</span>
+            </div>
+          ) : (
+            <img
+              src={url}
+              alt={image?.altText || productName || "Product"}
+              onError={() => setImageFailed(true)}
+            />
+          )}
         </div>
       </section>
     </div>
@@ -867,6 +880,7 @@ function EmptyState({ title, text }) {
 }
 
 export default function InventoryDetail() {
+  const { currencyCode, formatMoney } = useTenantMoney();
   const { id } = useParams();
   const navigate = useNavigate();
   const userRole = useAuthRole();
@@ -1721,8 +1735,8 @@ export default function InventoryDetail() {
             </button>
 
             <div className="svx-detail-kicker-row">
-              <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
-              <StatusBadge tone={imageStatus.tone}>{imageStatus.label}</StatusBadge>
+              <StatusText tone={status.tone}>{status.label}</StatusText>
+              <StatusText tone={imageStatus.tone}>{imageStatus.label}</StatusText>
             </div>
 
             <h1 className="svx-detail-product-title">{product?.name || "Product"}</h1>
@@ -1762,7 +1776,6 @@ export default function InventoryDetail() {
               icon={PackageCheck}
               title="Product overview"
               text="Clear product information for sales, stock control, and product image preparation."
-              action={<StatusBadge tone={status.tone}>{status.label}</StatusBadge>}
             >
               <div
                 className={cx(
@@ -1855,7 +1868,7 @@ export default function InventoryDetail() {
                               : "Ready to publish"}
                       </h3>
 
-                      <StatusBadge
+                      <StatusText
                         tone={
                           isPublished
                             ? "success"
@@ -1871,7 +1884,7 @@ export default function InventoryDetail() {
                               listingDetailsComplete
                             ? "Ready"
                             : "Action needed"}
-                      </StatusBadge>
+                      </StatusText>
                     </div>
 
                     <p>
@@ -1997,9 +2010,9 @@ export default function InventoryDetail() {
                         </p>
                       </div>
 
-                      <StatusBadge tone={listingStatus.tone}>
+                      <StatusText tone={listingStatus.tone}>
                         {listingStatus.label}
-                      </StatusBadge>
+                      </StatusText>
                     </div>
 
                     <div className="svx-detail-listing-compact-form">
@@ -2020,7 +2033,7 @@ export default function InventoryDetail() {
 
                       <div className="svx-detail-listing-field-grid">
                         <label className="svx-detail-listing-field">
-                          <span>Marketplace price</span>
+                          <span>Marketplace price{currencyCode ? ` (${currencyCode})` : ""}</span>
                           <input
                             type="number"
                             min="0"
@@ -2191,7 +2204,7 @@ export default function InventoryDetail() {
 
                           <div className="svx-detail-listing-field-grid">
                             <label className="svx-detail-listing-field">
-                              <span>Sale price</span>
+                              <span>Sale price{currencyCode ? ` (${currencyCode})` : ""}</span>
                               <input
                                 type="number"
                                 min="0"
@@ -2396,11 +2409,11 @@ export default function InventoryDetail() {
                 />
                 <InfoRow
                   label="Cost price"
-                  value={formatRwf(costPrice)}
+                  value={formatMoney(costPrice)}
                 />
                 <InfoRow
                   label="Selling price"
-                  value={formatRwf(sellPrice)}
+                  value={formatMoney(sellPrice)}
                 />
                 <InfoRow
                   label="Branch"

@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import {
   addOwnerLoanPayment,
   createOwnerLoan,
@@ -61,37 +63,6 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function formatMoney(value) {
-  const n = toNumber(value, 0);
-
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(n)}`;
-}
-
-function formatDate(value) {
-  if (!value) return "No date";
-
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "No date";
-
-  return d.toLocaleDateString("en-RW", {
-    dateStyle: "medium",
-  });
-}
-
-function formatDateTime(value) {
-  if (!value) return "No date";
-
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "No date";
-
-  return d.toLocaleString("en-RW", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
-
 function paymentMethodLabel(method) {
   const value = cleanString(method).toUpperCase();
 
@@ -137,10 +108,6 @@ function incomingTone(value) {
   return toNumber(value, 0) > 0 ? "good" : "calm";
 }
 
-function Badge({ children, tone = "calm" }) {
-  return <span className={`svx-money-badge is-${tone}`}>{children}</span>;
-}
-
 function StatCard({ label, value, note, tone = "calm" }) {
   return (
     <article className={`svx-money-stat is-${tone}`}>
@@ -168,6 +135,8 @@ function EmptyBlock({ title, text, action }) {
 }
 
 function PersonMoneyRow({ name, phone, amount, meta, tone = "calm" }) {
+  const { formatMoney } = useTenantMoney();
+
   return (
     <div className="svx-money-person-row">
       <div>
@@ -340,6 +309,7 @@ function LoanFormModal({ onClose, onSaved }) {
 }
 
 function LoanPaymentModal({ loan, onClose, onSaved }) {
+  const { formatMoney } = useTenantMoney();
   const [form, setForm] = useState(EMPTY_PAYMENT_FORM);
   const [saving, setSaving] = useState(false);
 
@@ -430,6 +400,12 @@ function LoanPaymentModal({ loan, onClose, onSaved }) {
 }
 
 export default function Money() {
+  const { formatMoney } = useTenantMoney();
+  const {
+    formatDate,
+    formatDateTime,
+  } = useTenantDateTime();
+
   const [payload, setPayload] = useState(EMPTY_SUMMARY);
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -534,7 +510,7 @@ export default function Money() {
       <div className="svx-money-page">
         <section className="svx-money-hero">
           <div className="svx-money-skeleton-block">
-            <span className="svx-money-skeleton pill" />
+            <span className="svx-money-skeleton meta" />
             <span className="svx-money-skeleton title" />
             <span className="svx-money-skeleton line" />
           </div>
@@ -561,13 +537,15 @@ export default function Money() {
           </p>
 
           <div className="svx-money-hero-meta">
-            <Badge tone={drawer?.open ? "good" : "calm"}>
+            <span className={drawer?.open ? "svx-money-meta-text is-good" : "svx-money-meta-text"}>
               {drawer?.open ? "Cash drawer open" : "Cash drawer closed"}
-            </Badge>
-            <Badge tone={netTone(summary.netPosition)}>
+            </span>
+            <span className={`svx-money-meta-text is-${netTone(summary.netPosition)}`}>
               Business money picture {formatMoney(moneyInBusinessNow)}
-            </Badge>
-            <Badge>Updated {formatDateTime(payload.generatedAt)}</Badge>
+            </span>
+            <span className="svx-money-meta-text">
+              Updated {formatDateTime(payload.generatedAt)}
+            </span>
           </div>
         </div>
 
@@ -886,7 +864,7 @@ export default function Money() {
               <section className="svx-money-card svx-money-movements-card">
           <div className="svx-money-card-head">
             <div>
-              <span className="svx-money-badge">RECENT</span>
+              <span className="svx-money-section-kicker">Recent</span>
               <h2>Recent money movements</h2>
             </div>
           </div>
@@ -992,9 +970,15 @@ export default function Money() {
                   </div>
                   <div>
                     <b>{formatMoney(loan.balanceDue)}</b>
-                    <Badge tone={loan.status === "PAID" ? "good" : "calm"}>
+                    <span
+                      className={
+                        loan.status === "PAID"
+                          ? "svx-money-loan-status is-good"
+                          : "svx-money-loan-status"
+                      }
+                    >
                       {loanStatusLabel(loan.status)}
-                    </Badge>
+                    </span>
                   </div>
                 </div>
               ))}

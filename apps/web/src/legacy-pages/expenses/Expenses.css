@@ -33,42 +33,52 @@
   background: var(--color-surface-2);
 }
 
-.svx-expense-pill,
-.svx-expense-badge {
-  display: inline-flex;
+.svx-expense-card-heading {
+  display: grid;
+  gap: 6px;
+}
+
+.svx-expense-card-meta {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  width: fit-content;
-  max-width: 100%;
-  white-space: nowrap;
-  word-break: keep-all;
-  border-radius: 999px;
-  padding: 6px 10px;
+  gap: 6px 10px;
+  color: var(--color-text-muted);
   font-size: 12px;
-  font-weight: 800;
-  line-height: 1;
+  font-weight: 750;
+  line-height: 1.45;
 }
 
-.svx-expense-pill {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-2);
+.svx-expense-card-meta > span + span {
+  position: relative;
+  padding-left: 11px;
+}
+
+.svx-expense-card-meta > span + span::before {
+  content: "/";
+  position: absolute;
+  left: 0;
   color: var(--color-text-muted);
+  opacity: 0.6;
 }
 
-.svx-expense-pill.is-source {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-  border-color: transparent;
-}
-
-.svx-expense-badge.is-approved {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-
-.svx-expense-badge.is-pending {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-2);
+.svx-expense-status-text {
   color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.4;
+}
+
+.svx-expense-status-text.is-approved {
+  color: var(--color-primary);
+}
+
+.svx-expense-ledger-count {
+  align-self: flex-start;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.4;
 }
 
 .svx-expenses-page a,
@@ -101,12 +111,6 @@
 @media (max-width: 640px) {
   .svx-expenses-page .svx-expense-card {
     border-radius: 22px;
-  }
-
-  .svx-expenses-page .svx-expense-pill,
-  .svx-expenses-page .svx-expense-badge {
-    font-size: 11px;
-    padding: 6px 9px;
   }
 
   .svx-expenses-page button {
@@ -399,38 +403,31 @@
 
 /* Owner-visible expense money movement */
 .svx-expense-movement {
-  display: inline-flex;
+  display: inline;
   max-width: 100%;
-  align-items: center;
-  border-radius: 999px;
-  padding: 6px 10px;
+  padding: 0;
   font-size: 12px;
   font-weight: 900;
-  line-height: 1;
-  white-space: nowrap;
+  line-height: 1.4;
+  white-space: normal;
 }
 
 .svx-expense-movement.is-primary {
-  background: var(--color-primary-soft);
   color: var(--color-primary);
 }
 
 .svx-expense-movement.is-pending,
 .svx-expense-movement.is-neutral {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-2);
   color: var(--color-text-muted);
 }
 
 .svx-expense-movement.is-danger {
-  background: rgba(219, 80, 74, 0.12);
   color: var(--color-danger);
 }
 
 @media (max-width: 640px) {
   .svx-expense-movement {
     font-size: 11px;
-    padding: 6px 9px;
   }
 }
 
@@ -579,7 +576,7 @@ html:not(.dark) body:not(.dark) .svx-expense-table tbody tr:hover {
 
 .svx-expense-table .svx-expense-movement {
   max-width: 100%;
-  padding: 6px 9px;
+  padding: 0;
   font-size: 11px;
 }
 
@@ -704,25 +701,14 @@ html:not(.dark) body:not(.dark) .svx-expenses-page textarea,
   color: #ffffff !important;
 }
 
-.svx-expenses-page .svx-expense-row-action.is-primary,
-.svx-expenses-page .svx-expense-pill.is-source,
-.svx-expenses-page .svx-expense-badge.is-approved,
-.svx-expenses-page .svx-expense-movement.is-primary {
+.svx-expenses-page .svx-expense-row-action.is-primary {
   background: var(--color-primary-soft) !important;
   color: var(--color-primary) !important;
 }
 
-/* Light mode badges should not turn into white pills on dark cards */
-html:not(.dark) body:not(.dark) .svx-expenses-page .svx-expense-pill,
-html:not(.dark) body:not(.dark) .svx-expenses-page .svx-expense-badge,
-html:not(.dark) body:not(.dark) .svx-expenses-page .svx-expense-movement,
-:root:not([data-theme="dark"]) .svx-expenses-page .svx-expense-pill,
-:root:not([data-theme="dark"]) .svx-expenses-page .svx-expense-badge,
-:root:not([data-theme="dark"]) .svx-expenses-page .svx-expense-movement,
-[data-theme="light"] .svx-expenses-page .svx-expense-pill,
-[data-theme="light"] .svx-expenses-page .svx-expense-badge,
-[data-theme="light"] .svx-expenses-page .svx-expense-movement {
-  border-color: var(--color-border) !important;
+.svx-expenses-page .svx-expense-movement.is-primary {
+  background: transparent !important;
+  color: var(--color-primary) !important;
 }
 
 /* Keep destructive action calm */
@@ -743,8 +729,6 @@ html:not(.dark) body:not(.dark) .svx-expenses-page .svx-expense-movement,
 \n
 /* Cash drawer expense pending state */
 .svx-expense-movement.is-warning {
-  border: 1px solid var(--color-border);
-  background: var(--color-surface-2);
   color: var(--color-text);
 }
 

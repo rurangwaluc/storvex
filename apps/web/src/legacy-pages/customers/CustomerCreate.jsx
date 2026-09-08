@@ -241,7 +241,7 @@ export default function CustomerCreate() {
                     className={inputClass()}
                     value={form.phone}
                     onChange={(e) => setField("phone", e.target.value)}
-                    placeholder="07x xxx xxxx"
+                    placeholder="Phone number"
                     disabled={saving}
                     required
                   />

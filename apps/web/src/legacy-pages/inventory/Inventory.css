@@ -366,6 +366,13 @@
   object-fit: cover;
 }
 
+.svx-inventory-product-thumb.is-fallback {
+  color: var(--inventory-blue);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
 .svx-inventory-product-name {
   display: block;
   margin-bottom: 3px;
@@ -572,34 +579,28 @@
   white-space: nowrap;
 }
 
-.svx-inventory-stock-pill,
-.svx-inventory-status {
-  min-height: 28px;
-  border-radius: 999px;
-  padding: 0 10px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+.svx-inventory-stock-text,
+.svx-inventory-status-text {
+  display: inline;
+  padding: 0;
   font-size: 12px;
   font-weight: 800;
+  line-height: 1.4;
   white-space: nowrap;
 }
 
-.svx-inventory-stock-pill--good,
-.svx-inventory-status--good {
-  background: var(--inventory-green-soft);
+.svx-inventory-stock-text--good,
+.svx-inventory-status-text--good {
   color: var(--inventory-green);
 }
 
-.svx-inventory-stock-pill--low,
-.svx-inventory-status--low {
-  background: var(--inventory-orange-soft);
+.svx-inventory-stock-text--low,
+.svx-inventory-status-text--low {
   color: var(--inventory-orange);
 }
 
-.svx-inventory-stock-pill--out,
-.svx-inventory-status--out {
-  background: var(--inventory-red-soft);
+.svx-inventory-stock-text--out,
+.svx-inventory-status-text--out {
   color: var(--inventory-red);
 }
 
@@ -1786,8 +1787,8 @@
     justify-items: end !important;
   }
 
-  .svx-inventory-stock-pill,
-  .svx-inventory-status {
+  .svx-inventory-stock-text,
+  .svx-inventory-status-text {
     min-height: 30px !important;
     padding-inline: 12px !important;
     border-radius: 999px !important;
@@ -2001,10 +2002,9 @@
     line-height: 1.15 !important;
   }
 
-  .svx-inventory-stock-pill,
-  .svx-inventory-status {
-    min-height: 28px !important;
-    padding-inline: 10px !important;
+  .svx-inventory-stock-text,
+  .svx-inventory-status-text {
+    padding: 0 !important;
     font-size: 11.5px !important;
   }
 
@@ -2064,13 +2064,13 @@
     justify-items: start !important;
   }
 
-  .svx-inventory-table td:nth-child(3) .svx-inventory-stock-pill,
-  .svx-inventory-table td:nth-child(6) .svx-inventory-status {
+  .svx-inventory-table td:nth-child(3) .svx-inventory-stock-text,
+  .svx-inventory-table td:nth-child(6) .svx-inventory-status-text {
     justify-self: start !important;
   }
 
-  .svx-inventory-stock-pill,
-  .svx-inventory-status {
+  .svx-inventory-stock-text,
+  .svx-inventory-status-text {
     margin-left: 0 !important;
   }
 }
@@ -2145,13 +2145,13 @@
     justify-items: stretch !important;
   }
 
-  .svx-inventory-table td:nth-child(3) .svx-inventory-stock-pill,
-  .svx-inventory-table td:nth-child(6) .svx-inventory-status {
+  .svx-inventory-table td:nth-child(3) .svx-inventory-stock-text,
+  .svx-inventory-table td:nth-child(6) .svx-inventory-status-text {
     justify-self: end !important;
   }
 
-  .svx-inventory-stock-pill,
-  .svx-inventory-status {
+  .svx-inventory-stock-text,
+  .svx-inventory-status-text {
     margin-left: 0 !important;
   }
 }

@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import {
   downloadStockAdjustmentsExcel,
   getStockAdjustments,
@@ -33,23 +34,19 @@ function cleanString(value) {
   return s || "";
 }
 
-function toISODate(date) {
-  const d = new Date(date);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
+function shiftDateInput(value, days) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return "";
 
-  return `${yyyy}-${mm}-${dd}`;
-}
+  const date = new Date(
+    Date.UTC(
+      Number(match[1]),
+      Number(match[2]) - 1,
+      Number(match[3]) + Number(days || 0),
+    ),
+  );
 
-function startOfDayQuery(value) {
-  if (!value) return undefined;
-  return `${value}T00:00:00.000`;
-}
-
-function endOfDayQuery(value) {
-  if (!value) return undefined;
-  return `${value}T23:59:59.999`;
+  return date.toISOString().slice(0, 10);
 }
 
 function formatNumber(value) {
@@ -58,21 +55,6 @@ function formatNumber(value) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(Number.isFinite(n) ? n : 0);
-}
-
-function formatDateTime(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function stockTypeLabel(type) {
@@ -142,8 +124,8 @@ function branchLabelFromStorage() {
   return "Current branch";
 }
 
-function StatusBadge({ tone = "neutral", children }) {
-  return <span className={cx("svx-stock-activity-badge", `is-${tone}`)}>{children}</span>;
+function StatusText({ tone = "neutral", children }) {
+  return <span className={cx("svx-stock-activity-status-text", `is-${tone}`)}>{children}</span>;
 }
 
 function StatCard({ icon: Icon, label, value, note, tone = "neutral" }) {
@@ -176,6 +158,7 @@ function EmptyState() {
 }
 
 function ChangeCard({ row }) {
+  const { formatDateTime } = useTenantDateTime();
   const tone = stockChangeTone(row);
   const before = Number(row?.beforeQty ?? 0);
   const after = Number(row?.afterQty ?? 0);
@@ -227,7 +210,7 @@ function ChangeCard({ row }) {
       </div>
 
       <div className="svx-stock-activity-row-side">
-        <StatusBadge tone={tone}>{stockTypeShortLabel(row?.type)}</StatusBadge>
+        <StatusText tone={tone}>{stockTypeShortLabel(row?.type)}</StatusText>
         <p>{rowNote(row)}</p>
       </div>
     </article>
@@ -253,15 +236,20 @@ function PageSkeleton() {
 
 export default function StockAdjustments() {
   const navigate = useNavigate();
+  const { dateInput } = useTenantDateTime();
 
-  const today = useMemo(() => new Date(), []);
-  const sevenDaysAgo = useMemo(
-    () => new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000),
-    [today],
-  );
+  const tenantToday = dateInput(new Date());
+  const tenantSevenDaysAgo = shiftDateInput(tenantToday, -7);
 
-  const [from, setFrom] = useState(toISODate(sevenDaysAgo));
-  const [to, setTo] = useState(toISODate(today));
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  useEffect(() => {
+    if (!tenantToday) return;
+
+    setFrom((current) => current || tenantSevenDaysAgo);
+    setTo((current) => current || tenantToday);
+  }, [tenantSevenDaysAgo, tenantToday]);
   const [type, setType] = useState("");
   const [q, setQ] = useState("");
   const [branchLabel, setBranchLabel] = useState(() => branchLabelFromStorage());
@@ -276,8 +264,8 @@ export default function StockAdjustments() {
 
     try {
       const data = await getStockAdjustments({
-        from: startOfDayQuery(from),
-        to: endOfDayQuery(to),
+        from: from || undefined,
+        to: to || undefined,
         type: type || undefined,
         q: q.trim() || undefined,
         limit: 200,
@@ -303,8 +291,8 @@ export default function StockAdjustments() {
 
     try {
       await downloadStockAdjustmentsExcel({
-        from: startOfDayQuery(from),
-        to: endOfDayQuery(to),
+        from: from || undefined,
+        to: to || undefined,
         type: type || undefined,
         q: q.trim() || undefined,
       });

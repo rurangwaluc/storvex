@@ -11,8 +11,21 @@
   --onboard-primary: #2563eb;
   --onboard-primary-dark: #0f4fd8;
   --onboard-primary-soft: #eef6ff;
-  --onboard-success: #10b981;
+
+  --onboard-success: #17c287;
+  --onboard-success-soft: #e9f9f3;
+
+  --onboard-progress: #17c287;
+  --onboard-progress-soft: #e9f9f3;
+
+  --onboard-warning: #f4b740;
+  --onboard-warning-soft: #fff7e5;
+
+  --onboard-money: #f28c28;
+  --onboard-money-soft: #fff1e4;
+
   --onboard-danger: #ef4444;
+  --onboard-danger-soft: #fff0f0;
   --onboard-heading-font: "Archivo", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --onboard-body-font: "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --onboard-shadow: 0 14px 34px rgba(15, 45, 90, 0.045);
@@ -35,6 +48,21 @@
   --onboard-primary: #159cff;
   --onboard-primary-dark: #0b86df;
   --onboard-primary-soft: rgba(21, 156, 255, 0.1);
+
+  --onboard-success: #21cf94;
+  --onboard-success-soft: rgba(23, 194, 135, 0.13);
+
+  --onboard-progress: #21cf94;
+  --onboard-progress-soft: rgba(23, 194, 135, 0.13);
+
+  --onboard-warning: #f4bd4f;
+  --onboard-warning-soft: rgba(244, 183, 64, 0.13);
+
+  --onboard-money: #f49a3d;
+  --onboard-money-soft: rgba(242, 140, 40, 0.13);
+
+  --onboard-danger: #f06464;
+  --onboard-danger-soft: rgba(239, 68, 68, 0.13);
   --onboard-shadow: none;
   --onboard-shadow-strong: none;
 
@@ -1173,4 +1201,165 @@ select.svx-onboard-input {
 .storvex-onboarding small,
 .storvex-onboarding b {
   font-family: var(--onboard-body-font);
+}
+/* Semantic onboarding accents.
+   Large surfaces remain neutral; color is reserved for meaning. */
+
+.svx-onboard-icon-badge--primary {
+  border-color: color-mix(
+    in srgb,
+    var(--onboard-primary) 22%,
+    transparent
+  );
+  background: var(--onboard-primary-soft);
+  color: var(--onboard-primary);
+}
+
+.svx-onboard-icon-badge--neutral {
+  border-color: var(--onboard-border);
+  background: var(--onboard-card-soft);
+  color: var(--onboard-muted);
+}
+
+.svx-onboard-icon-badge--success {
+  border-color: color-mix(
+    in srgb,
+    var(--onboard-success) 24%,
+    transparent
+  );
+  background: var(--onboard-success-soft);
+  color: var(--onboard-success);
+}
+
+.svx-onboard-icon-badge--warning {
+  border-color: color-mix(
+    in srgb,
+    var(--onboard-warning) 28%,
+    transparent
+  );
+  background: var(--onboard-warning-soft);
+  color: var(--onboard-warning);
+}
+
+.svx-onboard-icon-badge--money {
+  border-color: color-mix(
+    in srgb,
+    var(--onboard-money) 26%,
+    transparent
+  );
+  background: var(--onboard-money-soft);
+  color: var(--onboard-money);
+}
+
+/* Onboarding progress uses green.
+   Primary actions remain Storvex blue. */
+
+.svx-onboard-progress .is-active .svx-onboard-progress-number,
+.svx-onboard-progress .is-done .svx-onboard-progress-number {
+  border-color: var(--onboard-progress);
+  background: var(--onboard-progress);
+  color: #ffffff;
+}
+
+.svx-onboard-progress .is-active .svx-onboard-progress-label,
+.svx-onboard-progress .is-done .svx-onboard-progress-label {
+  color: var(--onboard-progress);
+}
+
+.svx-onboard-step-pill {
+  background: var(--onboard-progress-soft);
+  color: var(--onboard-progress);
+}
+
+/* --------------------------------------------------------------------------
+   Step 2 — semantic verification colors
+   Same visual language used across Storvex onboarding:
+   yellow = pending action
+   green  = verified / successful
+   blue   = security / primary action
+   -------------------------------------------------------------------------- */
+
+.svx-onboard-verification-panel {
+  border-color: var(--onboard-border);
+  box-shadow: var(--onboard-shadow);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+/* Email still needs action from the owner. */
+.svx-onboard-verification-panel.is-email-pending {
+  border-color: color-mix(
+    in srgb,
+    var(--onboard-warning) 34%,
+    var(--onboard-border)
+  );
+}
+
+/* Phone pending remains part of the secure-account flow. */
+.svx-onboard-verification-panel.is-phone-pending {
+  border-color: color-mix(
+    in srgb,
+    var(--onboard-primary) 26%,
+    var(--onboard-border)
+  );
+}
+
+/* A completed contact check becomes success green. */
+.svx-onboard-verification-panel.is-verified {
+  border-color: color-mix(
+    in srgb,
+    var(--onboard-success) 34%,
+    var(--onboard-border)
+  );
+}
+
+:root[data-theme="dark"]
+  .svx-onboard-verification-panel.is-email-pending {
+  border-color: color-mix(
+    in srgb,
+    var(--onboard-warning) 38%,
+    var(--onboard-border)
+  );
+}
+
+:root[data-theme="dark"]
+  .svx-onboard-verification-panel.is-phone-pending {
+  border-color: color-mix(
+    in srgb,
+    var(--onboard-primary) 34%,
+    var(--onboard-border)
+  );
+}
+
+:root[data-theme="dark"]
+  .svx-onboard-verification-panel.is-verified {
+  border-color: color-mix(
+    in srgb,
+    var(--onboard-success) 38%,
+    var(--onboard-border)
+  );
+}
+
+/* Step 3 — recommended launch plan.
+   Recommendation is communicated by the card itself, never a badge. */
+.svx-launch-choice.is-recommended {
+  border-color: var(--onboard-primary);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--onboard-primary) 34%, transparent);
+}
+
+:root[data-theme="dark"] .svx-launch-choice.is-recommended {
+  background: color-mix(
+    in srgb,
+    var(--onboard-card) 96%,
+    var(--onboard-primary) 4%
+  );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--onboard-primary) 42%, transparent);
+}
+
+.svx-onboard-lock-icon--neutral {
+  border-color: var(--onboard-border);
+  color: var(--onboard-muted);
 }

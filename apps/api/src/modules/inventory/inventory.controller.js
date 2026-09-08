@@ -1,5 +1,9 @@
 const prisma = require("../../config/database");
 const {
+  getDefaultCurrencyForMarket,
+  getDefaultTimezoneForMarket,
+} = require("../../config/markets");
+const {
   invalidatePublicProductsCache,
 } = require("../marketplace/marketplace.public.cache");
 const {
@@ -138,31 +142,228 @@ function normalizeStockAdjustmentReason(type, value) {
     : null;
 }
 
-function parseDateOnly(s) {
-  if (!s) return null;
-  const d = new Date(String(s));
-  return Number.isNaN(d.getTime()) ? null : d;
-}
+function parseDateKey(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
 
-function startOfDay(d) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
 
-function endOfDay(d) {
-  const x = new Date(d);
-  x.setHours(23, 59, 59, 999);
-  return x;
+  const probe = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    probe.getUTCFullYear() !== year ||
+    probe.getUTCMonth() !== month - 1 ||
+    probe.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return `${match[1]}-${match[2]}-${match[3]}`;
 }
 
 function isoDate(d) {
   return new Date(d).toISOString().slice(0, 10);
 }
 
-function formatRwf(n) {
-  const x = Number(n || 0);
-  return `RWF ${x.toLocaleString()}`;
+function validTimezone(value) {
+  const timezone = cleanString(value);
+  if (!timezone) return null;
+
+  try {
+    new Intl.DateTimeFormat("en", {
+      timeZone: timezone,
+    }).format(new Date());
+
+    return timezone;
+  } catch {
+    return null;
+  }
+}
+
+function tenantTimezone(tenant) {
+  const stored = validTimezone(tenant?.timezone);
+  if (stored) return stored;
+
+  const countryCode = cleanString(tenant?.countryCode);
+
+  if (!countryCode) {
+    throw new Error("Tenant timezone and country are unavailable");
+  }
+
+  return getDefaultTimezoneForMarket(countryCode);
+}
+
+function tenantCurrencyCode(tenant) {
+  const stored = String(tenant?.currencyCode || "")
+    .trim()
+    .toUpperCase();
+
+  if (/^[A-Z]{3}$/.test(stored)) {
+    return stored;
+  }
+
+  const countryCode = cleanString(tenant?.countryCode);
+
+  if (!countryCode) {
+    throw new Error("Tenant currency and country are unavailable");
+  }
+
+  return getDefaultCurrencyForMarket(countryCode);
+}
+
+function formatMoneyValue(value, currencyCode) {
+  const amount = Number(value || 0);
+  const safe = Number.isFinite(amount) ? amount : 0;
+
+  return `${currencyCode} ${new Intl.NumberFormat("en", {
+    maximumFractionDigits: 0,
+  }).format(safe)}`;
+}
+
+function calendarPartsInTimezone(value, timezone) {
+  const date = value instanceof Date ? value : new Date(value);
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)]),
+  );
+
+  return values;
+}
+
+function dateKeyInTimezone(value, timezone) {
+  const parts = calendarPartsInTimezone(value, timezone);
+
+  return [
+    String(parts.year).padStart(4, "0"),
+    String(parts.month).padStart(2, "0"),
+    String(parts.day).padStart(2, "0"),
+  ].join("-");
+}
+
+function shiftDateKey(value, days) {
+  const key = parseDateKey(value);
+  if (!key) return null;
+
+  const [year, month, day] = key.split("-").map(Number);
+  const shifted = new Date(
+    Date.UTC(year, month - 1, day + Number(days || 0)),
+  );
+
+  return shifted.toISOString().slice(0, 10);
+}
+
+function zonedDateBoundary(dateKey, timezone, endOfDay = false) {
+  const key = parseDateKey(dateKey);
+  if (!key) return null;
+
+  const [year, month, day] = key.split("-").map(Number);
+
+  const target = {
+    year,
+    month,
+    day,
+    hour: endOfDay ? 23 : 0,
+    minute: endOfDay ? 59 : 0,
+    second: endOfDay ? 59 : 0,
+    millisecond: endOfDay ? 999 : 0,
+  };
+
+  const desiredAsUtc = Date.UTC(
+    target.year,
+    target.month - 1,
+    target.day,
+    target.hour,
+    target.minute,
+    target.second,
+    target.millisecond,
+  );
+
+  let guess = new Date(desiredAsUtc);
+
+  for (let i = 0; i < 4; i += 1) {
+    const shown = calendarPartsInTimezone(
+      guess,
+      timezone,
+    );
+
+    const shownAsUtc = Date.UTC(
+      shown.year,
+      shown.month - 1,
+      shown.day,
+      shown.hour,
+      shown.minute,
+      shown.second,
+      target.millisecond,
+    );
+
+    const correction =
+      desiredAsUtc - shownAsUtc;
+
+    if (correction === 0) break;
+
+    guess = new Date(
+      guess.getTime() + correction,
+    );
+  }
+
+  return guess;
+}
+
+function tenantDateRange({ from, to, tenant, now = new Date() }) {
+  const timezone = tenantTimezone(tenant);
+  const today = dateKeyInTimezone(now, timezone);
+
+  const fromKey =
+    parseDateKey(from) ||
+    shiftDateKey(today, -7);
+
+  const toKey =
+    parseDateKey(to) ||
+    today;
+
+  return {
+    timezone,
+    fromKey,
+    toKey,
+    start: zonedDateBoundary(
+      fromKey,
+      timezone,
+      false,
+    ),
+    end: zonedDateBoundary(
+      toKey,
+      timezone,
+      true,
+    ),
+  };
+}
+
+function formatTenantDateTime(value, timezone) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: timezone,
+  }).format(date);
 }
 
 function normalizeCategoryValue(x) {
@@ -2331,17 +2532,26 @@ async function listAllStockAdjustments(req, res) {
     const q = cleanString(req.query.q);
     const type = normalizeAdjustmentType(req.query.type);
 
-    const from = parseDateOnly(req.query.from);
-    const to = parseDateOnly(req.query.to);
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: {
+        countryCode: true,
+        currencyCode: true,
+        timezone: true,
+      },
+    });
+
+    const range = tenantDateRange({
+      from: req.query.from,
+      to: req.query.to,
+      tenant,
+    });
+
+    const start = range.start;
+    const end = range.end;
 
     const limitRaw = toInt(req.query.limit);
     const limit = Number.isFinite(limitRaw) && limitRaw > 0 && limitRaw <= 200 ? limitRaw : 50;
-
-    const now = new Date();
-    const start = from
-      ? startOfDay(from)
-      : startOfDay(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
-    const end = to ? endOfDay(to) : endOfDay(now);
 
     const where = {
       tenantId,
@@ -2500,8 +2710,17 @@ async function reorderPdf(req, res) {
 
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { name: true, phone: true, email: true },
+      select: {
+        name: true,
+        phone: true,
+        email: true,
+        countryCode: true,
+        currencyCode: true,
+        timezone: true,
+      },
     });
+
+    const currencyCode = tenantCurrencyCode(tenant);
 
     const allActiveProducts = await prisma.product.findMany({
       where: { tenantId, isActive: true },
@@ -2707,7 +2926,7 @@ async function reorderPdf(req, res) {
         doc.text(String(r.effectiveStockQty ?? 0), x + colName + colCat, y + 6, { width: colStock - 8, align: "center" });
         doc.text(thresholdText(r), x + colName + colCat + colStock, y + 6, { width: colMin - 8, align: "center" });
 
-        doc.text(formatRwf(r.sellPrice), x + colName + colCat + colStock + colMin, y + 6, {
+        doc.text(formatMoneyValue(r.sellPrice, currencyCode), x + colName + colCat + colStock + colMin, y + 6, {
           width: colPrice - 8,
           align: "right",
         });
@@ -2761,8 +2980,16 @@ async function exportInventoryExcel(req, res) {
 
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { name: true },
+      select: {
+        name: true,
+        countryCode: true,
+        currencyCode: true,
+        timezone: true,
+      },
     });
+
+    const currencyCode = tenantCurrencyCode(tenant);
+    const timezone = tenantTimezone(tenant);
 
     const products = await prisma.product.findMany({
       where: buildProductWhere(req),
@@ -2837,7 +3064,7 @@ async function exportInventoryExcel(req, res) {
         thresholdToUse,
         stockStatus,
         p.isActive ? "Yes" : "No",
-        p.createdAt ? new Date(p.createdAt).toLocaleString() : "",
+        p.createdAt ? formatTenantDateTime(p.createdAt, timezone) : "",
       ]);
     }
 
@@ -2855,7 +3082,7 @@ async function exportInventoryExcel(req, res) {
       "",
       "",
       "",
-      `Generated ${new Date().toLocaleString()}`,
+      `Generated ${formatTenantDateTime(new Date(), timezone)}`,
     ]);
     ws.mergeCells("A1:M1");
     ws.getCell("A1").font = { bold: true, size: 14 };
@@ -2863,8 +3090,8 @@ async function exportInventoryExcel(req, res) {
     ws.getCell("N1").font = { italic: true, size: 10 };
     ws.getRow(1).height = 22;
 
-    ws.getColumn(7).numFmt = '#,##0 "RWF"';
-    ws.getColumn(8).numFmt = '#,##0 "RWF"';
+    ws.getColumn(7).numFmt = `#,##0 "${currencyCode}"`;
+    ws.getColumn(8).numFmt = `#,##0 "${currencyCode}"`;
 
     styleDataRows(ws);
     autosizeWorksheet(ws);
@@ -2896,19 +3123,26 @@ async function exportStockAdjustmentsExcel(req, res) {
 
     const tenant = await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { name: true },
+      select: {
+        name: true,
+        countryCode: true,
+        currencyCode: true,
+        timezone: true,
+      },
     });
 
     const q = cleanString(req.query.q);
     const type = normalizeAdjustmentType(req.query.type);
-    const from = parseDateOnly(req.query.from);
-    const to = parseDateOnly(req.query.to);
 
-    const now = new Date();
-    const start = from
-      ? startOfDay(from)
-      : startOfDay(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000));
-    const end = to ? endOfDay(to) : endOfDay(now);
+    const range = tenantDateRange({
+      from: req.query.from,
+      to: req.query.to,
+      tenant,
+    });
+
+    const timezone = range.timezone;
+    const start = range.start;
+    const end = range.end;
 
     const where = {
       tenantId,
@@ -2986,7 +3220,7 @@ async function exportStockAdjustmentsExcel(req, res) {
 
     for (const row of rows) {
       ws.addRow([
-        row.createdAt ? new Date(row.createdAt).toLocaleString() : "",
+        row.createdAt ? formatTenantDateTime(row.createdAt, timezone) : "",
         row.branch?.code || row.branch?.name || "",
         row.product?.name || "",
         row.product?.sku || "",
@@ -3013,7 +3247,7 @@ async function exportStockAdjustmentsExcel(req, res) {
       "",
       "",
       "",
-      `Generated ${new Date().toLocaleString()}`,
+      `Generated ${formatTenantDateTime(new Date(), timezone)}`,
     ]);
     ws.mergeCells("A1:K1");
     ws.getCell("A1").font = { bold: true, size: 14 };

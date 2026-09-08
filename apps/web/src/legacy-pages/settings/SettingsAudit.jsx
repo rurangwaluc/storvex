@@ -121,7 +121,7 @@ function actionTone(action) {
   const key = normalizeAction(action);
   if (key.includes("CREATE") || key.includes("CREATED")) return "success";
   if (key.includes("UPDATE") || key.includes("EDIT") || key.includes("ASSIGN")) return "info";
-  if (key.includes("DELETE") || key.includes("REMOVE") || key.includes("CANCEL")) return "warning";
+  if (key.includes("DELETE") || key.includes("REMOVE") || key.includes("CANCEL")) return "danger";
   if (key.includes("REFUND") || key.includes("VOID")) return "danger";
   if (key.includes("LOGIN") || key.includes("AUTH")) return "primary";
   return "neutral";

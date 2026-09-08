@@ -24,6 +24,8 @@ import { getTenantDashboard } from "../../services/dashboardApi";
 import {
   dashboardQueryKeys,
 } from "../../lib/dashboardQueryKeys";
+import { tenantMarketFromWorkspace } from "../../lib/tenantMarket";
+import { formatTenantMoney } from "../../lib/tenantMoney";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import "./Dashboard.css";
 
@@ -31,14 +33,6 @@ const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
 
 function cx(...items) {
   return items.filter(Boolean).join(" ");
-}
-
-function money(value) {
-  const n = Number(value || 0);
-
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(Math.round(n))}`;
 }
 
 function fmtDate(value) {
@@ -191,7 +185,7 @@ function pickPaymentAmount(source, keys) {
   return null;
 }
 
-function RevenueChart({ weeklySales = [] }) {
+function RevenueChart({ weeklySales = [], formatMoney }) {
   const items =
     Array.isArray(weeklySales) &&
     weeklySales.length > 0
@@ -435,7 +429,7 @@ function RevenueChart({ weeklySales = [] }) {
                   r="5"
                 >
                   <title>
-                    {`${point.day}: ${money(
+                    {`${point.day}: ${formatMoney(
                       point.amount,
                     )} · ${
                       point.salesCount
@@ -647,7 +641,7 @@ function activityEntityLabel(item = {}) {
   );
 }
 
-function ActivityRow({ item }) {
+function ActivityRow({ item, formatMoney }) {
   const amount = Number(
     item?.amount ||
       item?.total ||
@@ -676,7 +670,7 @@ function ActivityRow({ item }) {
 
       <div className="svx-activity-meta">
         {amount > 0 ? (
-          <strong>{money(amount)}</strong>
+          <strong>{formatMoney(amount)}</strong>
         ) : null}
 
         <Badge tone={statusTone(status)}>
@@ -1011,6 +1005,16 @@ export default function Dashboard() {
     dashboardFetching && !dashboardPending;
 
   const tenant = dashboard?.tenant || workspace?.tenant || workspace?.business || {};
+
+  const tenantMarket = tenantMarketFromWorkspace({
+    tenant,
+  });
+
+  const money = useMemo(
+    () => (value) => formatTenantMoney(value, tenantMarket),
+    [tenantMarket?.currencyCode],
+  );
+
   const subscription = dashboard?.subscriptionSummary || null;
   const setupSummary = workspace?.setupChecklistSummary || null;
   const readiness = setupSummary?.summary || {};
@@ -1214,7 +1218,7 @@ export default function Dashboard() {
     const fallbackItems = [
       {
         icon: ShoppingBag,
-        tone: "info",
+        tone: "success",
         title: "Record today’s sale",
         text: "Open the sales desk when a customer pays.",
         action: "New sale",
@@ -1222,7 +1226,7 @@ export default function Dashboard() {
       },
       {
         icon: Boxes,
-        tone: lowStockCount + outOfStockCount > 0 ? "warning" : "info",
+        tone: lowStockCount + outOfStockCount > 0 ? "warning" : "money",
         title: "Check stock movement",
         text: "Review low stock, fast-moving products, and unavailable items.",
         action: "Open stock",
@@ -1272,21 +1276,21 @@ export default function Dashboard() {
         value: money(ownerTodaySales),
         note: ownerTodaySalesCount > 0 ? `${ownerTodaySalesCount} completed sale${ownerTodaySalesCount === 1 ? "" : "s"}` : "No sales yet today",
         icon: BarChart3,
-        tone: ownerTodaySales > 0 ? "success" : "neutral",
+        tone: "info",
       },
       {
         label: "Money received",
         value: money(ownerTodayMoneyReceived),
         note: ownerTodayMoneyReceived > 0 ? "Payments received today" : "No payments yet today",
         icon: CreditCard,
-        tone: ownerTodayMoneyReceived > 0 ? "success" : "neutral",
+        tone: "success",
       },
       {
         label: "Profit estimate",
         value: money(ownerTodayProfit),
         note: "After costs and expenses",
         icon: BarChart3,
-        tone: ownerTodayProfit > 0 ? "success" : ownerTodayProfit < 0 ? "danger" : "neutral",
+        tone: ownerTodayProfit < 0 ? "danger" : "money",
       },
       {
         label: "Owner attention",
@@ -1304,6 +1308,7 @@ export default function Dashboard() {
       ownerTodayProfit,
       ownerTodaySales,
       ownerTodaySalesCount,
+      money,
     ],
   );
 
@@ -1359,7 +1364,10 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <RevenueChart weeklySales={weeklySales} />
+          <RevenueChart
+            weeklySales={weeklySales}
+            formatMoney={money}
+          />
         </section>
 
         <section className="svx-dashboard-card svx-products-panel svx-reveal-card">
@@ -1387,7 +1395,11 @@ export default function Dashboard() {
           ) : (
             <div className="svx-row-stack">
               {activity.slice(0, 5).map((item) => (
-                <ActivityRow key={item.id || `${item.action}-${item.createdAt}`} item={item} />
+                <ActivityRow
+                  key={item.id || `${item.action}-${item.createdAt}`}
+                  item={item}
+                  formatMoney={money}
+                />
               ))}
             </div>
           )}

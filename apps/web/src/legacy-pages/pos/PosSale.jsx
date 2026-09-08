@@ -41,20 +41,12 @@ import {
 import { getCashDrawerStatus } from "../../services/cashDrawerApi";
 import { getDocumentSettings } from "../../services/storeApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import useTenantMoney from "../../hooks/useTenantMoney";
 import "./PosSale.css";
 
 const PAGE_SIZE = 10;
 const DEFAULT_PRODUCT_DISPLAY_LIMIT = 6;
 const WORKSPACE_CACHE_KEY = "storvex_me_cache_v2";
-
-function formatMoney(value) {
-  const n = Number(value || 0);
-  const safe = Number.isFinite(n) ? n : 0;
-
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(safe)}`;
-}
 
 function formatNumber(value) {
   const n = Number(value || 0);
@@ -502,33 +494,12 @@ function dangerButton(className = "") {
 }
 
 
-function StatusBadge({ tone = "neutral", children }) {
-  const classes =
-    tone === "danger"
-      ? "bg-red-500/10 text-red-600"
-      : tone === "warning"
-        ? "bg-amber-500/10 text-amber-600"
-        : tone === "success"
-          ? "bg-emerald-500/10 text-emerald-600"
-          : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
-
-  return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em]",
-        classes,
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
 function SkeletonBlock({ className = "" }) {
   return (
     <div className={cx("animate-pulse rounded-[22px] bg-[var(--color-surface-2)]", className)} />
   );
 }
+
 
 function PosSaleSkeleton() {
   return (
@@ -571,6 +542,7 @@ function PosSaleSkeleton() {
     </main>
   );
 }
+
 
 function SummaryCard({ label, value, note, tone = "neutral", loading = false }) {
   const dot =
@@ -617,6 +589,7 @@ function SummaryCard({ label, value, note, tone = "neutral", loading = false }) 
   );
 }
 
+
 function EmptyState({ title, text }) {
   return (
     <div className="flex min-h-[170px] flex-col items-center justify-center rounded-[28px] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-2)] p-6 text-center">
@@ -645,6 +618,7 @@ function SaleModeButton({ active, tone, title, text, onClick }) {
 
 
 function ProductRow({ product, onAdd }) {
+  const { formatMoney } = useTenantMoney();
   const stock = productStock(product);
   const disabled = !Number.isFinite(stock) || stock <= 0;
   const facts = categoryAwareProductFacts(product, 3);
@@ -710,18 +684,17 @@ function ProductRow({ product, onAdd }) {
             </div>
           ) : null}
 
-          <div className="svx-pos-product-badges">
-            <StatusBadge
-              tone={
-                stock <= 0
-                  ? "danger"
-                  : "success"
-              }
-            >
+          <div
+            className={cx(
+              "svx-pos-product-status",
+              stock <= 0 ? "is-danger" : "is-success",
+            )}
+          >
+            <span>
               {stock <= 0
                 ? "Out of stock"
                 : `${formatNumber(stock)} available`}
-            </StatusBadge>
+            </span>
           </div>
         </div>
       </div>
@@ -783,7 +756,7 @@ function CustomerCard({ customer, active, onClick }) {
         </div>
 
         {active ? (
-          <span className="rounded-full border border-[var(--color-primary-contrast)]/20 bg-[var(--color-primary-contrast)]/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-primary-contrast)]">
+          <span className="svx-pos-category-selected">
             Selected
           </span>
         ) : null}
@@ -793,6 +766,7 @@ function CustomerCard({ customer, active, onClick }) {
 }
 
 function CartItemCard({ item, onDec, onInc, onRemove }) {
+  const { formatMoney } = useTenantMoney();
   const metaParts = Array.isArray(item.metaParts) ? item.metaParts : [];
 
   return (
@@ -802,7 +776,7 @@ function CartItemCard({ item, onDec, onInc, onRemove }) {
           <strong>{item.name}</strong>
 
           {metaParts.length ? (
-            <div className="svx-pos-cart-meta-pills" aria-label="Cart item details">
+            <div className="svx-pos-cart-meta" aria-label="Cart item details">
               {metaParts.map((part) => (
                 <span key={`${part.label}-${part.value}`}>
                   <small>{part.label}</small>
@@ -844,6 +818,7 @@ function CartItemCard({ item, onDec, onInc, onRemove }) {
 }
 
 export default function PosSale() {
+  const { formatMoney } = useTenantMoney();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -1716,9 +1691,9 @@ export default function PosSale() {
               Sell from <strong>{activeBranchLabel}</strong>. {salesDeskCategory.sellerHint}
             </p>
 
-            <div className="svx-pos-hero-badges">
-              <StatusBadge tone="success">{salesDeskCategory.label}</StatusBadge>
-            </div>
+            <p className="svx-pos-hero-context">
+              {salesDeskCategory.label}
+            </p>
           </div>
 
           <div className="svx-pos-hero-actions">
@@ -1842,7 +1817,7 @@ export default function PosSale() {
                         <p>Showing the best {Math.min(DEFAULT_PRODUCT_DISPLAY_LIMIT, visibleProducts.length)} products for a clean selling view.</p>
                       ) : null}
                     </div>
-                    <StatusBadge tone="success">Tap to add</StatusBadge>
+                    <span className="svx-pos-action-hint">Select a product to add it</span>
                   </div>
 
                   {visibleProducts.length === 0 ? (
@@ -2054,9 +2029,18 @@ export default function PosSale() {
                         <strong>Pay later</strong>
                         <span>Use this only when a known customer will pay after leaving with the products.</span>
                       </div>
-                      <StatusBadge tone={payLaterCustomerReady ? "success" : "warning"}>
-                        {payLaterCustomerReady ? "Customer ready" : "Choose customer"}
-                      </StatusBadge>
+                      <span
+                        className={cx(
+                          "svx-pos-pay-later-status",
+                          payLaterCustomerReady
+                            ? "is-success"
+                            : "is-warning",
+                        )}
+                      >
+                        {payLaterCustomerReady
+                          ? "Customer ready"
+                          : "Choose a customer"}
+                      </span>
                     </div>
 
                     <div className="svx-pos-setup-grid svx-pos-setup-grid--two">

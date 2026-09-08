@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import { getSupplierById, updateSupplier } from "../../services/suppliersApi";
 
 const ID_TYPE_OPTIONS = [
@@ -56,36 +57,36 @@ function textareaClass() {
   return "svx-supplier-textarea";
 }
 
-function badgeClass(tone = "neutral") {
+function statusTextClass(tone = "neutral") {
   if (tone === "primary") {
-    return "bg-[var(--color-primary-soft)] text-[var(--color-primary)]";
+    return "text-[var(--color-primary)]";
   }
 
   if (tone === "success") {
-    return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300";
+    return "text-emerald-600 dark:text-emerald-300";
   }
 
   if (tone === "warning") {
-    return "bg-amber-500/10 text-amber-600 dark:text-amber-300";
+    return "text-amber-600 dark:text-amber-300";
   }
 
   if (tone === "danger") {
-    return "bg-red-500/10 text-red-600 dark:text-red-300";
+    return "text-red-600 dark:text-red-300";
   }
 
   if (tone === "info") {
-    return "bg-sky-500/10 text-sky-600 dark:text-sky-300";
+    return "text-sky-600 dark:text-sky-300";
   }
 
-  return "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
+  return "text-[var(--color-text-muted)]";
 }
 
-function Badge({ children, tone = "neutral", className = "" }) {
+function StatusText({ children, tone = "neutral", className = "" }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-xs font-black",
-        badgeClass(tone),
+        "inline-flex items-center text-xs font-black",
+        statusTextClass(tone),
         className
       )}
     >
@@ -113,19 +114,6 @@ function sourceLabel(value) {
 
 function identityLabel(value) {
   return ID_TYPE_OPTIONS.find((item) => item.value === value)?.label || "Identity document";
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-
-  return d.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 function SectionHeading({ eyebrow, title, subtitle }) {
@@ -219,7 +207,7 @@ function InfoBlock({ label, value, note, tone = "neutral" }) {
           </div>
         </div>
 
-        {tone !== "neutral" ? <Badge tone={tone}>{tone === "success" ? "OK" : "Note"}</Badge> : null}
+        {tone !== "neutral" ? <StatusText tone={tone}>{tone === "success" ? "OK" : "Note"}</StatusText> : null}
       </div>
 
       {note ? (
@@ -235,12 +223,12 @@ function PreviewPanel({ form, supplier }) {
   return (
     <aside className={cx(pageCard(), "h-fit p-5 sm:p-6")}>
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={hasRequired ? "success" : "warning"}>
+        <StatusText tone={hasRequired ? "success" : "warning"}>
           {hasRequired ? "Ready to update" : "Needs details"}
-        </Badge>
-        <Badge tone={supplier?.isActive === false ? "warning" : "success"}>
+        </StatusText>
+        <StatusText tone={supplier?.isActive === false ? "warning" : "success"}>
           {supplier?.isActive === false ? "Inactive" : "Active"}
-        </Badge>
+        </StatusText>
       </div>
 
       <div className={cx("mt-5 text-lg font-black tracking-[-0.03em]", strongText())}>
@@ -284,6 +272,7 @@ function PreviewPanel({ form, supplier }) {
 }
 
 export default function SupplierEdit() {
+  const { formatDate } = useTenantDateTime();
   const { id } = useParams();
   const nav = useNavigate();
 
@@ -447,13 +436,13 @@ export default function SupplierEdit() {
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div className="min-w-0 max-w-3xl">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone="primary">Supplier records</Badge>
-                <Badge tone={supplier.isActive === false ? "warning" : "success"}>
+                <StatusText tone="primary">Supplier records</StatusText>
+                <StatusText tone={supplier.isActive === false ? "warning" : "success"}>
                   {supplier.isActive === false ? "Inactive" : "Active"}
-                </Badge>
-                <Badge tone={completion === "2/2" ? "success" : "warning"}>
+                </StatusText>
+                <StatusText tone={completion === "2/2" ? "success" : "warning"}>
                   Required details {completion}
-                </Badge>
+                </StatusText>
               </div>
 
               <SectionHeading
@@ -565,7 +554,7 @@ export default function SupplierEdit() {
                     className="app-input"
                     value={form.phone}
                     onChange={(event) => setField("phone", event.target.value)}
-                    placeholder="+2507..."
+                    placeholder="Phone number"
                   />
                 </Field>
 

@@ -29,6 +29,8 @@ import {
   reportQueryKeys,
 } from "../../lib/reportQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import "./SalesList.css";
 
 const PAGE_SIZE = 8;
@@ -42,15 +44,6 @@ function cleanString(value) {
   return s || "";
 }
 
-function formatMoney(value) {
-  const n = Number(value || 0);
-  const safe = Number.isFinite(n) ? n : 0;
-
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(safe)}`;
-}
-
 function formatNumber(value) {
   const n = Number(value || 0);
 
@@ -59,45 +52,7 @@ function formatNumber(value) {
   }).format(Number.isFinite(n) ? n : 0);
 }
 
-function formatDateTime(value) {
-  if (!value) return "—";
-
-  try {
-    return new Date(value).toLocaleString("en-RW", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-  } catch {
-    return "—";
-  }
-}
-
-function formatDateOnly(value) {
-  if (!value) return "—";
-
-  try {
-    return new Date(value).toLocaleDateString("en-RW", {
-      dateStyle: "medium",
-    });
-  } catch {
-    return "—";
-  }
-}
-
-function daysUntil(value) {
-  if (!value) return null;
-
-  const due = new Date(value);
-  if (Number.isNaN(due.getTime())) return null;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  due.setHours(0, 0, 0, 0);
-
-  return Math.round((due.getTime() - today.getTime()) / 86400000);
-}
-
-function saleDueMeta(sale) {
+function saleDueMeta(sale, formatMoney, formatDate, daysUntil) {
   const saleType = String(sale?.saleType || "").toUpperCase();
   const balance = saleBalance(sale);
 
@@ -132,7 +87,7 @@ function saleDueMeta(sale) {
     return {
       label: `${Math.abs(days)}d overdue`,
       tone: "danger",
-      dueText: formatDateOnly(dueDate),
+      dueText: formatDate(dueDate),
     };
   }
 
@@ -140,7 +95,7 @@ function saleDueMeta(sale) {
     return {
       label: "Due today",
       tone: "warning",
-      dueText: formatDateOnly(dueDate),
+      dueText: formatDate(dueDate),
     };
   }
 
@@ -148,14 +103,14 @@ function saleDueMeta(sale) {
     return {
       label: "Due tomorrow",
       tone: "warning",
-      dueText: formatDateOnly(dueDate),
+      dueText: formatDate(dueDate),
     };
   }
 
   return {
     label: `Due in ${days}d`,
     tone: "neutral",
-    dueText: formatDateOnly(dueDate),
+    dueText: formatDate(dueDate),
   };
 }
 
@@ -286,10 +241,6 @@ function CancelIcon() {
   );
 }
 
-function StatusBadge({ tone = "neutral", children }) {
-  return <span className={cx("svx-sales-badge", `is-${tone}`)}>{children}</span>;
-}
-
 function EmptyState({ title, text, action }) {
   return (
     <div className="svx-sales-empty">
@@ -354,6 +305,12 @@ function SalesListSkeleton() {
 }
 
 function SaleRow({ sale, onOpenSale, onOpenCancel, cancelBusy }) {
+  const { formatMoney } = useTenantMoney();
+  const {
+    formatDate,
+    formatDateTime,
+    daysUntil,
+  } = useTenantDateTime();
   const status = saleStatus(sale);
   const cancelEnabled = canCancelFromList(sale);
   const total = saleTotal(sale);
@@ -362,7 +319,7 @@ function SaleRow({ sale, onOpenSale, onOpenCancel, cancelBusy }) {
   const saleType = String(sale?.saleType || "").toUpperCase();
   const isPayLater = saleType === "CREDIT" || balance > 0;
   const phone = customerPhone(sale);
-  const due = saleDueMeta(sale);
+  const due = saleDueMeta(sale, formatMoney, formatDate, daysUntil);
   const saleUrl = `/app/pos/sales/${sale.id}`;
 
   function handleRowOpen() {
@@ -406,18 +363,41 @@ function SaleRow({ sale, onOpenSale, onOpenCancel, cancelBusy }) {
       </SaleField>
 
       <SaleField className="is-payment" label="Payment">
-        <div className="svx-sales-payment-pills">
-          <StatusBadge tone={status.tone === "danger" ? "danger" : saleType === "CREDIT" ? "warning" : "success"}>
-            {status.tone === "danger" ? status.label : saleTypeLabel(saleType)}
-          </StatusBadge>
-          {isPayLater ? <span className={cx("svx-sales-due-chip", `is-${due.tone}`)}>{due.label}</span> : null}
+        <div className="svx-sales-payment-status">
+          <strong
+            className={cx(
+              "svx-sales-status-text",
+              `is-${
+                status.tone === "danger"
+                  ? "danger"
+                  : saleType === "CREDIT"
+                    ? "warning"
+                    : "success"
+              }`,
+            )}
+          >
+            {status.tone === "danger"
+              ? status.label
+              : saleTypeLabel(saleType)}
+          </strong>
+
+          {isPayLater ? (
+            <span
+              className={cx(
+                "svx-sales-due-status",
+                `is-${due.tone}`,
+              )}
+            >
+              {due.label}
+            </span>
+          ) : null}
         </div>
       </SaleField>
 
       <SaleField className="is-money" label="Amount">
         <b>{formatMoney(total)}</b>
         <span>Paid {formatMoney(paid)}</span>
-        {balance > 0 ? <em>Balance {formatMoney(balance)}</em> : <em>Balance Rwf 0</em>}
+        {balance > 0 ? <em>Balance {formatMoney(balance)}</em> : <em>Balance {formatMoney(0)}</em>}
       </SaleField>
 
       <div className="svx-sales-actions" onClick={stopRowOpen}>
@@ -444,6 +424,7 @@ function SaleRow({ sale, onOpenSale, onOpenCancel, cancelBusy }) {
 }
 
 export default function SalesList() {
+  const { formatMoney } = useTenantMoney();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 

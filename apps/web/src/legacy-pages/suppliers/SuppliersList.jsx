@@ -6,6 +6,8 @@ import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import {
   activateSupplier,
   deactivateSupplier,
@@ -74,36 +76,36 @@ function successBtn() {
   return "svx-supplier-success";
 }
 
-function badgeClass(tone = "neutral") {
+function statusTextClass(tone = "neutral") {
   if (tone === "primary") {
-    return "bg-[var(--color-primary-soft)] text-[var(--color-primary)]";
+    return "text-[var(--color-primary)]";
   }
 
   if (tone === "success") {
-    return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300";
+    return "text-emerald-600 dark:text-emerald-300";
   }
 
   if (tone === "warning") {
-    return "bg-amber-500/10 text-amber-600 dark:text-amber-300";
+    return "text-amber-600 dark:text-amber-300";
   }
 
   if (tone === "danger") {
-    return "bg-red-500/10 text-red-600 dark:text-red-300";
+    return "text-red-600 dark:text-red-300";
   }
 
   if (tone === "info") {
-    return "bg-sky-500/10 text-sky-600 dark:text-sky-300";
+    return "text-sky-600 dark:text-sky-300";
   }
 
-  return "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
+  return "text-[var(--color-text-muted)]";
 }
 
-function Badge({ children, tone = "neutral", className = "" }) {
+function StatusText({ children, tone = "neutral", className = "" }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-xs font-black",
-        badgeClass(tone),
+        "inline-flex items-center text-xs font-black",
+        statusTextClass(tone),
         className,
       )}
     >
@@ -114,25 +116,6 @@ function Badge({ children, tone = "neutral", className = "" }) {
 
 function cleanString(value) {
   return String(value || "").trim();
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-
-  return d.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function formatMoney(value) {
-  const n = Number(value || 0);
-  if (!Number.isFinite(n)) return "RWF 0";
-  return `RWF ${Math.round(n).toLocaleString("en-US")}`;
 }
 
 function prettyEnum(value) {
@@ -277,8 +260,8 @@ function SuppliersSkeleton() {
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
               <div className="min-w-0 flex-1">
                 <div className="flex gap-2">
-                  <SkeletonBlock className="h-7 w-28 rounded-full" />
-                  <SkeletonBlock className="h-7 w-24 rounded-full" />
+                  <SkeletonBlock className="h-7 w-28 rounded-md" />
+                  <SkeletonBlock className="h-7 w-24 rounded-md" />
                 </div>
 
                 <SkeletonBlock className="mt-4 h-6 w-56" />
@@ -333,6 +316,8 @@ function EmptyState({ title, text, onCreate }) {
 }
 
 function SupplierCard({ supplier, balance, busyId, onOpen, onEdit, onActivate, onDeactivate }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
   const active = supplier.isActive !== false;
   const busy = busyId === supplier.id;
   const totals = balance?.totals || {};
@@ -350,16 +335,23 @@ function SupplierCard({ supplier, balance, busyId, onOpen, onEdit, onActivate, o
     >
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={active ? "success" : "warning"}>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <StatusText tone={active ? "success" : "warning"}>
               {active ? "Active supplier" : "Inactive supplier"}
-            </Badge>
+            </StatusText>
 
-            <Badge tone={balanceDue > 0 ? "warning" : "success"}>
+            <StatusText
+              tone={balanceDue > 0 ? "warning" : "success"}
+              className="opacity-80"
+            >
               {balanceDue > 0 ? "Money owed" : "Nothing owed"}
-            </Badge>
+            </StatusText>
 
-            {openBills > 0 ? <Badge tone="info">{openBills} open bill{openBills === 1 ? "" : "s"}</Badge> : null}
+            {openBills > 0 ? (
+              <StatusText tone="info" className="opacity-80">
+                {openBills} open bill{openBills === 1 ? "" : "s"}
+              </StatusText>
+            ) : null}
           </div>
 
           <div className="mt-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -468,6 +460,7 @@ function SupplierCard({ supplier, balance, busyId, onOpen, onEdit, onActivate, o
 }
 
 export default function SuppliersList() {
+  const { formatMoney } = useTenantMoney();
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);

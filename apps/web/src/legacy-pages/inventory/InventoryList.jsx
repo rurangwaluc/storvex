@@ -15,6 +15,7 @@ import {
   getActiveBranchId,
 } from "../../services/apiClient";
 import inventoryApi from "../../services/inventoryApi";
+import useTenantMoney from "../../hooks/useTenantMoney";
 import "./Inventory.css";
 
 const PAGE_SIZE = 10;
@@ -40,19 +41,9 @@ function cn(...xs) {
   return xs.filter(Boolean).join(" ");
 }
 
-function formatRwf(value) {
-  const n = Number(value || 0);
-  const safe = Number.isFinite(n) ? n : 0;
-
-  return `Rwf ${new Intl.NumberFormat("en-RW", {
-    maximumFractionDigits: 0,
-  }).format(safe)}`;
-}
-
-
 function formatNumber(value) {
   const n = Number(value || 0);
-  return new Intl.NumberFormat("en-RW").format(Number.isFinite(n) ? n : 0);
+  return new Intl.NumberFormat("en").format(Number.isFinite(n) ? n : 0);
 }
 
 function cleanString(value) {
@@ -288,7 +279,7 @@ function CloseIcon() {
 }
 
 function SkeletonLine({ className = "" }) {
-  return <div className={cn("animate-pulse rounded-full bg-[var(--inventory-line-soft)]", className)} />;
+  return <div className={cn("animate-pulse rounded-[6px] bg-[var(--inventory-line-soft)]", className)} />;
 }
 
 function PageSkeleton() {
@@ -367,11 +358,11 @@ function MetricCard({ label, value, sub, tone = "blue", icon }) {
   );
 }
 
-function StatusBadge({ product }) {
+function StatusText({ product }) {
   const status = productStatus(product);
 
   return (
-    <span className={cn("svx-inventory-status", `svx-inventory-status--${status.tone}`)}>
+    <span className={cn("svx-inventory-status-text", `svx-inventory-status-text--${status.tone}`)}>
       {status.label}
     </span>
   );
@@ -379,16 +370,28 @@ function StatusBadge({ product }) {
 
 function ProductThumb({ product }) {
   const image = productImage(product);
+  const [imageFailed, setImageFailed] = useState(false);
 
-  if (image) {
+  if (image && !imageFailed) {
     return (
       <span className="svx-inventory-product-thumb">
-        <img src={image} alt={product?.name || "Product"} />
+        <img
+          src={image}
+          alt={product?.name || "Product"}
+          onError={() => setImageFailed(true)}
+        />
       </span>
     );
   }
 
-  return <span className="svx-inventory-product-thumb">{productInitial(product)}</span>;
+  return (
+    <span
+      className="svx-inventory-product-thumb is-fallback"
+      aria-label={`${product?.name || "Product"} image unavailable`}
+    >
+      {productInitial(product)}
+    </span>
+  );
 }
 
 
@@ -584,6 +587,7 @@ function StockAdjustmentModal({
 
 
 export default function InventoryList() {
+  const { formatMoney } = useTenantMoney();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -1038,7 +1042,7 @@ export default function InventoryList() {
             value={
               summaryLoading
                 ? "—"
-                : formatRwf(
+                : formatMoney(
                     visibleStats.stockValue,
                   )
             }
@@ -1234,13 +1238,13 @@ export default function InventoryList() {
                           </td>
                           <td>{categoryText(product)}</td>
                           <td>
-                            <span className={cn("svx-inventory-stock-pill", `svx-inventory-stock-pill--${status.tone}`)}>
+                            <span className={cn("svx-inventory-stock-text", `svx-inventory-stock-text--${status.tone}`)}>
                               {formatNumber(qty)}
                             </span>
                           </td>
-                          <td>{formatRwf(product.sellPrice)}</td>
-                          <td>{formatRwf(stockValue)}</td>
-                          <td><StatusBadge product={product} /></td>
+                          <td>{formatMoney(product.sellPrice)}</td>
+                          <td>{formatMoney(stockValue)}</td>
+                          <td><StatusText product={product} /></td>
                           <td>
                             <div
                               className="svx-inventory-row-actions"

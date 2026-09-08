@@ -781,3 +781,84 @@
     grid-column: 1 / -1;
   }
 }
+
+/* Cash drawer professional status pass — no badge UI. */
+
+.svx-cash-status-text {
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.svx-cash-status-text.is-success {
+  color: var(--color-success, #16a34a);
+}
+
+.svx-cash-status-text.is-warning {
+  color: var(--color-warning, #d97706);
+}
+
+.svx-cash-status-text.is-danger {
+  color: var(--color-danger, #dc2626);
+}
+
+.svx-cash-status-text.is-neutral {
+  color: var(--color-text-muted);
+}
+
+.svx-cash-heading-status {
+  font-size: 13px;
+}
+
+.svx-cash-reopen-note {
+  max-width: 280px;
+  color: var(--color-warning, #d97706);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+  text-align: right;
+}
+
+/* Cash drawer professional status treatment — no badge UI. */
+
+.svx-cash-status-text {
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.svx-cash-status-text.is-success {
+  color: var(--color-success, #16a34a);
+}
+
+.svx-cash-status-text.is-warning {
+  color: var(--color-warning, #d97706);
+}
+
+.svx-cash-status-text.is-danger {
+  color: var(--color-danger, #dc2626);
+}
+
+.svx-cash-status-text.is-neutral {
+  color: var(--color-text-muted);
+}
+
+.svx-cash-heading-status {
+  font-size: 13px;
+}
+
+.svx-cash-reopen-note {
+  max-width: 300px;
+  color: var(--color-warning, #d97706);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+  text-align: right;
+}
+
+@media (max-width: 1023px) {
+  .svx-cash-reopen-note {
+    max-width: none;
+    text-align: left;
+  }
+}

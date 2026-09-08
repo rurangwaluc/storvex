@@ -55,36 +55,36 @@ function textareaClass() {
   return "svx-supplier-textarea";
 }
 
-function badgeClass(tone = "neutral") {
+function statusTextClass(tone = "neutral") {
   if (tone === "primary") {
-    return "bg-[var(--color-primary-soft)] text-[var(--color-primary)]";
+    return "text-[var(--color-primary)]";
   }
 
   if (tone === "success") {
-    return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300";
+    return "text-emerald-600 dark:text-emerald-300";
   }
 
   if (tone === "warning") {
-    return "bg-amber-500/10 text-amber-600 dark:text-amber-300";
+    return "text-amber-600 dark:text-amber-300";
   }
 
   if (tone === "danger") {
-    return "bg-red-500/10 text-red-600 dark:text-red-300";
+    return "text-red-600 dark:text-red-300";
   }
 
   if (tone === "info") {
-    return "bg-sky-500/10 text-sky-600 dark:text-sky-300";
+    return "text-sky-600 dark:text-sky-300";
   }
 
-  return "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
+  return "text-[var(--color-text-muted)]";
 }
 
-function Badge({ children, tone = "neutral", className = "" }) {
+function StatusText({ children, tone = "neutral", className = "" }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-xs font-black",
-        badgeClass(tone),
+        "inline-flex items-center text-xs font-black",
+        statusTextClass(tone),
         className
       )}
     >
@@ -188,10 +188,10 @@ function PreviewPanel({ form }) {
   return (
     <aside className={cx(pageCard(), "h-fit p-5 sm:p-6")}>
       <div className="flex flex-wrap items-center gap-2">
-        <Badge tone={hasRequired ? "success" : "warning"}>
+        <StatusText tone={hasRequired ? "success" : "warning"}>
           {hasRequired ? "Ready to save" : "Needs details"}
-        </Badge>
-        <Badge tone="primary">{sourceLabel(form.sourceType)}</Badge>
+        </StatusText>
+        <StatusText tone="primary">{sourceLabel(form.sourceType)}</StatusText>
       </div>
 
       <div className={cx("mt-5 text-lg font-black tracking-[-0.03em]", strongText())}>
@@ -327,10 +327,10 @@ export default function SupplierCreate() {
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div className="min-w-0 max-w-3xl">
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone="primary">Supplier records</Badge>
-                <Badge tone={completion === "2/2" ? "success" : "warning"}>
+                <StatusText tone="primary">Supplier records</StatusText>
+                <StatusText tone={completion === "2/2" ? "success" : "warning"}>
                   Required details {completion}
-                </Badge>
+                </StatusText>
               </div>
 
               <SectionHeading
@@ -436,7 +436,7 @@ export default function SupplierCreate() {
                     className="app-input"
                     value={form.phone}
                     onChange={(event) => setField("phone", event.target.value)}
-                    placeholder="+2507..."
+                    placeholder="Phone number"
                   />
                 </Field>
 

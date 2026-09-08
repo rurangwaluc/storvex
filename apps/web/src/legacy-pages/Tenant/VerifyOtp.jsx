@@ -1,8 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  LockKeyhole,
+  MailCheck,
+  MailOpen,
+  Phone,
+  PhoneCall,
+  ShieldCheck,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
-import OnboardingShell from "../../components/onboarding/OnboardingShell";
+import OnboardingShell, {
+  OnboardingIconBadge,
+} from "../../components/onboarding/OnboardingShell";
 import {
   readOnboardingState,
   saveOnboardingState,
@@ -324,7 +334,7 @@ function DigitCodeInput({
               ? "border-red-500/70 focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
               : digit
                 ? "border-[var(--onboard-primary)] bg-[var(--onboard-card)]"
-                : "border-[var(--onboard-border)] hover:border-[var(--onboard-primary)]/60 focus:border-[var(--onboard-primary)] focus:bg-[var(--onboard-card)] focus:ring-4 focus:ring-[rgba(37,99,235,0.15)]",
+                : "border-[var(--onboard-border)] hover:border-[var(--onboard-primary)]/60 focus:border-[var(--onboard-primary)] focus:bg-[var(--onboard-card)] focus:ring-4 focus:ring-[color:var(--onboard-primary-soft)]",
             disabled && "cursor-not-allowed opacity-55",
           )}
           value={digit}
@@ -369,33 +379,59 @@ function VerificationPanel({
   const disabled = verified || sending || verifying;
   const actionLabel = getCodeActionLabel({ verified, sending, cooldown, hasSentCode });
 
-  return (
-    <section className="relative overflow-hidden rounded-[18px] border border-[var(--onboard-border)] bg-[var(--onboard-card)] shadow-[0_24px_70px_rgba(15,45,90,0.06)]">
-      <div className="absolute left-5 top-5 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--onboard-primary)] text-xs font-black text-white">
-        2
-      </div>
+  const panelTone = verified
+    ? "is-verified"
+    : isEmail
+      ? "is-email-pending"
+      : "is-phone-pending";
 
-      <div className="grid min-h-[278px] gap-4 px-8 pb-6 pt-9 md:grid-cols-[148px_minmax(0,1fr)] md:items-center md:px-8">
-        <div className="flex justify-center md:justify-start">
-          {isEmail ? (
-            <EmailIllustration verified={verified} />
-          ) : (
-            <PhoneIllustration verified={verified} />
-          )}
+  return (
+    <section
+      className={cx(
+        "svx-onboard-verification-panel relative overflow-hidden rounded-[18px] border bg-[var(--onboard-card)]",
+        panelTone,
+      )}
+    >
+      <div className="p-7 sm:p-8">
+        <div className="flex items-start gap-4">
+          <OnboardingIconBadge
+            tone={
+              verified
+                ? "success"
+                : isEmail
+                  ? "warning"
+                  : "primary"
+            }
+          >
+            {isEmail ? (
+              verified ? (
+                <MailCheck size={23} strokeWidth={2.2} />
+              ) : (
+                <MailOpen size={23} strokeWidth={2.2} />
+              )
+            ) : verified ? (
+              <Phone size={23} strokeWidth={2.2} />
+            ) : (
+              <PhoneCall size={23} strokeWidth={2.2} />
+            )}
+          </OnboardingIconBadge>
+
+          <div className="min-w-0">
+            <h3 className="text-[20px] font-black tracking-[-0.035em] text-[var(--onboard-text)]">
+              {title}
+            </h3>
+
+            <p className="mt-1 text-sm font-semibold leading-5 text-[var(--onboard-muted)]">
+              {instruction}
+            </p>
+
+            <p className="mt-1 text-sm font-black text-[var(--onboard-text)]">
+              {maskedDestination}
+            </p>
+          </div>
         </div>
 
-        <div className="text-center md:text-left">
-          <h3 className="text-[23px] font-black tracking-[-0.04em] text-[var(--onboard-text)]">
-            {title}
-          </h3>
-
-          <p className="mt-3 text-sm font-semibold leading-5 text-[var(--onboard-muted)]">
-            {instruction}
-          </p>
-
-          <p className="mt-1 text-sm font-black text-[var(--onboard-text)]">
-            {maskedDestination}
-          </p>
+        <div className="mt-7">
 
           <div className="mt-5">
             <DigitCodeInput
@@ -522,7 +558,7 @@ function PasswordField({
           "flex h-14 items-center rounded-[16px] border bg-[var(--onboard-card)] px-4 transition",
           error
             ? "border-red-500/70"
-            : "border-[var(--onboard-border)] focus-within:border-[var(--onboard-primary)] focus-within:ring-4 focus-within:ring-[rgba(37,99,235,0.14)]",
+            : "border-[var(--onboard-border)] focus-within:border-[var(--onboard-primary)] focus-within:ring-4 focus-within:ring-[color:var(--onboard-primary-soft)]",
           disabled && "opacity-60",
         )}
       >
@@ -577,9 +613,9 @@ function PasswordPanel({
   return (
     <section className={cx("svx-onboard-card", !unlocked && "opacity-70")}>
       <div className="svx-onboard-card-title-row">
-        <div className="svx-onboard-lock-icon">
-          <LockIcon />
-        </div>
+        <OnboardingIconBadge tone="primary">
+          <LockKeyhole size={23} strokeWidth={2.2} />
+        </OnboardingIconBadge>
 
         <div>
           <h3>Create owner password</h3>
@@ -923,7 +959,7 @@ export default function VerifyOtp() {
       email: ownerEmail,
       phone: ownerPhone,
       shopType: current.shopType || localStorage.getItem("storvex_shopType") || "",
-      country: current.country || "Rwanda",
+      country: current.country || "",
       district: current.district || localStorage.getItem("storvex_district") || "",
       sector: current.sector || localStorage.getItem("storvex_sector") || "",
       address: current.address || localStorage.getItem("storvex_address") || "",
@@ -976,15 +1012,15 @@ export default function VerifyOtp() {
         );
       }
 
-      if (data?.devOtp) {
-          const autoCode = String(data.devOtp).replace(/[^\d]/g, "").slice(0, OTP_LENGTH);
+      // Development OTP echo may keep the phone flow fast while testing,
+      // but email must still be verified by entering the code received by email.
+      if (data?.devOtp && !isEmail) {
+        const autoCode = String(data.devOtp)
+          .replace(/[^\d]/g, "")
+          .slice(0, OTP_LENGTH);
 
         if (autoCode.length === OTP_LENGTH) {
-          if (isEmail) {
-            setEmailCode(autoCode);
-          } else {
-            setPhoneCode(autoCode);
-          }
+          setPhoneCode(autoCode);
         }
       }
 
@@ -1134,10 +1170,7 @@ export default function VerifyOtp() {
             </p>
           </div>
 
-          <span className="svx-onboard-safe-pill">
-            <span>{canContinue ? "✓" : "2"}</span>
-            {canContinue ? "Ready to continue" : contactsVerified ? "Password needed" : "Checks required"}
-          </span>
+
         </div>
 
         <div className="grid gap-7 lg:grid-cols-2">
@@ -1203,9 +1236,9 @@ export default function VerifyOtp() {
 
         <section className="svx-onboard-card svx-onboard-next-card">
           <div className="svx-onboard-next-copy">
-            <div className="svx-onboard-lock-icon">
-              <ShieldIcon />
-            </div>
+            <OnboardingIconBadge tone="primary">
+              <ShieldCheck size={23} strokeWidth={2.2} />
+            </OnboardingIconBadge>
 
             <div>
               <strong>Next: choose how to start</strong>

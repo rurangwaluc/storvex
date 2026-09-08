@@ -28,6 +28,8 @@ import {
   reportQueryKeys,
 } from "../../lib/reportQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import "./CashDrawer.css";
 
 const PAGE_SIZE = 10;
@@ -170,33 +172,12 @@ function normalizeDigits(value) {
   return String(value || "").replace(/[^\d]/g, "");
 }
 
-function formatMoney(value) {
-  const n = Number(value || 0);
-  const safe = Number.isFinite(n) ? n : 0;
-
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(safe)}`;
-}
-
 function formatNumber(value) {
   const n = Number(value || 0);
 
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(Number.isFinite(n) ? n : 0);
-}
-
-function formatDateTime(value) {
-  if (!value) return "—";
-
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-
-  return d.toLocaleString("en-RW", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
 }
 
 function activeBranchNameFromStorage() {
@@ -321,7 +302,7 @@ function optionLabel(options, value, fallback = "Other") {
   return options.find((item) => item.value === v)?.label || cleanString(value) || fallback;
 }
 
-function signedMoney(value) {
+function signedMoney(value, formatMoney) {
   const n = Number(value || 0);
 
   if (!Number.isFinite(n) || n === 0) return formatMoney(0);
@@ -453,28 +434,6 @@ function movementTitle(movement) {
   if (type === "IN") return "Money in";
   if (type === "OUT") return "Money out";
   return "Cash movement";
-}
-
-function StatusBadge({ tone = "neutral", children }) {
-  const cls =
-    tone === "danger"
-      ? "bg-red-500/10 text-red-600"
-      : tone === "warning"
-        ? "bg-amber-500/10 text-amber-600"
-        : tone === "success"
-          ? "bg-emerald-500/10 text-emerald-600"
-          : "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
-
-  return (
-    <span
-      className={cx(
-        "inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.12em]",
-        cls,
-      )}
-    >
-      {children}
-    </span>
-  );
 }
 
 function SkeletonBlock({ className = "" }) {
@@ -629,6 +588,8 @@ function CloseIcon() {
 }
 
 function MovementCard({ movement }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDateTime } = useTenantDateTime();
   const tone = movementTone(movement);
   const amount = movementAmount(movement);
   const note = cleanString(movement?.note);
@@ -659,9 +620,14 @@ function MovementCard({ movement }) {
                 {movementTitle(movement)}
               </h3>
 
-              <StatusBadge tone={tone}>
+              <span
+                className={cx(
+                  "svx-cash-status-text",
+                  `is-${tone}`,
+                )}
+              >
                 {movementType(movement) || "Movement"}
-              </StatusBadge>
+              </span>
             </div>
 
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -704,6 +670,8 @@ function MovementCard({ movement }) {
 }
 
 function RecentSessionCard({ session }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDateTime } = useTenantDateTime();
   const status = sessionStatus(session);
   const difference = sessionCashDifference(session);
   const counted = sessionCountedCash(session);
@@ -719,12 +687,23 @@ function RecentSessionCard({ session }) {
               {formatDateTime(session?.openedAt || session?.opened_at)}
             </h3>
 
-            <StatusBadge tone={sessionStatusTone(session)}>{status}</StatusBadge>
+            <span
+              className={cx(
+                "svx-cash-status-text",
+                `is-${sessionStatusTone(session)}`,
+              )}
+            >
+              {status}
+            </span>
 
             {difference !== 0 ? (
-              <StatusBadge tone="warning">{varianceLabel(difference)}</StatusBadge>
+              <span className="svx-cash-status-text is-warning">
+                {varianceLabel(difference)}
+              </span>
             ) : status === "Closed" ? (
-              <StatusBadge tone="success">Exact</StatusBadge>
+              <span className="svx-cash-status-text is-success">
+                Exact cash
+              </span>
             ) : null}
           </div>
 
@@ -766,7 +745,7 @@ function RecentSessionCard({ session }) {
           />
           <InfoTile
             label={varianceLabel(difference)}
-            value={signedMoney(difference)}
+            value={signedMoney(difference, formatMoney)}
             tone={varianceTone(difference)}
           />
           <InfoTile label="Money in" value={formatMoney(sessionTotalIn(session))} tone="success" />
@@ -897,6 +876,7 @@ function CloseDrawerModal({
   onClose,
   onSubmit,
 }) {
+  const { formatMoney } = useTenantMoney();
   if (!open) return null;
 
   const counted = Number(countedCash || 0);
@@ -937,7 +917,7 @@ function CloseDrawerModal({
           <InfoTile label="Counted cash" value={formatMoney(counted)} />
           <InfoTile
             label={varianceLabel(difference)}
-            value={signedMoney(difference)}
+            value={signedMoney(difference, formatMoney)}
             tone={varianceTone(difference)}
           />
         </div>
@@ -1158,6 +1138,8 @@ function MovementModal({
 }
 
 export default function CashDrawer() {
+  const { formatMoney } = useTenantMoney();
+  const { formatDateTime } = useTenantDateTime();
   const queryClient = useQueryClient();
 
   const [activeBranchId, setActiveBranchId] =
@@ -1517,7 +1499,7 @@ export default function CashDrawer() {
     !drawerOpen && blockCashSales ? "Cash sales are blocked until this branch drawer is opened." : "",
     drawerOpen && expectedCash < 0 ? "Expected cash is below zero. Review money-out entries before closing." : "",
     !drawerOpen && latestSession && latestDifference !== 0
-      ? `Last drawer closed ${varianceLabel(latestDifference).toLowerCase()} by ${signedMoney(latestDifference)}.`
+      ? `Last drawer closed ${varianceLabel(latestDifference).toLowerCase()} by ${signedMoney(latestDifference, formatMoney)}.`
       : "",
   ].filter(Boolean);
 
@@ -1639,7 +1621,7 @@ export default function CashDrawer() {
         rows: [
           ["Expected cash", formatMoney(expectedCash)],
           ["Counted cash", formatMoney(amount)],
-          ["Difference", signedMoney(difference)],
+          ["Difference", signedMoney(difference, formatMoney)],
           ["Difference type", varianceLabel(difference)],
           ...(difference !== 0
             ? [["Difference reason", optionLabel(closingReasonOptionsForDifference(difference), effectiveClosingReason)]]
@@ -1805,9 +1787,14 @@ export default function CashDrawer() {
                 Drawer control
               </h1>
 
-              <StatusBadge tone={drawerOpen ? "success" : "danger"}>
+              <span
+                className={cx(
+                  "svx-cash-status-text svx-cash-heading-status",
+                  drawerOpen ? "is-success" : "is-danger",
+                )}
+              >
                 {drawerOpen ? "Open" : "Closed"}
-              </StatusBadge>
+              </span>
             </div>
 
             <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-[var(--color-text-muted)]">
@@ -2031,8 +2018,8 @@ export default function CashDrawer() {
                       Load 10 more
                     </button>
                   ) : (
-                    <span className="rounded-full bg-[var(--color-card)] px-3 py-2 text-xs font-black text-[var(--color-text-muted)] shadow-[var(--shadow-soft)]">
-                      End of list
+                    <span className="text-xs font-bold text-[var(--color-text-muted)]">
+                      All movements shown
                     </span>
                   )}
                 </div>
@@ -2060,7 +2047,9 @@ export default function CashDrawer() {
             </div>
 
             {status?.canReopenSameDay === false ? (
-              <StatusBadge tone="warning">Owner reopens same day</StatusBadge>
+              <p className="svx-cash-reopen-note">
+                Only the owner can reopen this drawer today.
+              </p>
             ) : null}
           </div>
         </div>
@@ -2094,8 +2083,8 @@ export default function CashDrawer() {
                     View 5 more
                   </button>
                 ) : (
-                  <span className="rounded-full bg-[var(--color-card)] px-3 py-2 text-xs font-black text-[var(--color-text-muted)] shadow-[var(--shadow-soft)]">
-                    End of recent sessions
+                  <span className="text-xs font-bold text-[var(--color-text-muted)]">
+                    All recent sessions shown
                   </span>
                 )}
               </div>

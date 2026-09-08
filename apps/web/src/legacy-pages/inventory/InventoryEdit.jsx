@@ -21,6 +21,7 @@ import {
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import FormPageSkeleton from "../../components/ui/FormPageSkeleton";
+import useTenantMoney from "../../hooks/useTenantMoney";
 import {
   getProductById,
   updateProduct,
@@ -87,14 +88,6 @@ function parseNumber(value) {
   if (value === "" || value === null || value === undefined) return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
-}
-
-function formatRwf(value) {
-  const n = Number(value || 0);
-
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(Number.isFinite(n) ? Math.round(n) : 0)}`;
 }
 
 function formatPlain(value) {
@@ -198,7 +191,7 @@ function Field({ label, required = false, help, children, wide = false }) {
   );
 }
 
-function SectionHeader({ icon: Icon, title, text, badge }) {
+function SectionHeader({ icon: Icon, title, text }) {
   return (
     <div className="svx-edit-section-head">
       <span className="svx-edit-section-icon" aria-hidden="true">
@@ -208,7 +201,6 @@ function SectionHeader({ icon: Icon, title, text, badge }) {
       <div>
         <div className="svx-edit-section-title-row">
           <h2>{title}</h2>
-          {badge ? <span>{badge}</span> : null}
         </div>
         <p>{text}</p>
       </div>
@@ -228,6 +220,7 @@ function SummaryRow({ label, value, tone }) {
 
 
 export default function InventoryEdit() {
+  const { currencyCode, formatMoney } = useTenantMoney();
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -860,26 +853,26 @@ export default function InventoryEdit() {
               />
 
               <div className="svx-edit-grid">
-                <Field label="Cost price" required>
+                <Field label={`Cost price${currencyCode ? ` (${currencyCode})` : ""}`} required>
                   <input
                     type="number"
                     min="0"
                     className="svx-edit-input"
                     value={form.costPrice}
                     onChange={(event) => setField("costPrice", event.target.value)}
-                    placeholder="420000"
+                    placeholder="0"
                     disabled={saving}
                   />
                 </Field>
 
-                <Field label="Selling price" required>
+                <Field label={`Selling price${currencyCode ? ` (${currencyCode})` : ""}`} required>
                   <input
                     type="number"
                     min="0"
                     className="svx-edit-input"
                     value={form.sellPrice}
                     onChange={(event) => setField("sellPrice", event.target.value)}
-                    placeholder="650000"
+                    placeholder="0"
                     disabled={saving}
                   />
                 </Field>
@@ -934,7 +927,7 @@ export default function InventoryEdit() {
                 />
                 <SummaryRow
                   label="Selling price"
-                  value={formatRwf(sellPrice || 0)}
+                  value={formatMoney(sellPrice || 0)}
                 />
                 <SummaryRow
                   label="Current stock"

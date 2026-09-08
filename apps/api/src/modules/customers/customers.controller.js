@@ -1,4 +1,8 @@
 const prisma = require("../../config/database");
+const { getMarket } = require("../../config/markets");
+const {
+  normalizePhone: normalizeMarketPhone,
+} = require("../../lib/phone/marketPhone");
 const {
   aggregateCustomerActivity,
   enrichCustomer,
@@ -8,11 +12,6 @@ const {
 } = require("./customerInsights");
 
 function normalizeText(value) {
-  const s = String(value || "").trim();
-  return s || null;
-}
-
-function normalizePhone(value) {
   const s = String(value || "").trim();
   return s || null;
 }
@@ -30,6 +29,44 @@ function safeNumber(value, fallback = 0) {
 function cleanString(value) {
   const s = String(value || "").trim();
   return s || null;
+}
+
+async function tenantCountryCode(tenantId) {
+  if (!tenantId) return null;
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { countryCode: true },
+  });
+
+  return cleanString(tenant?.countryCode);
+}
+
+function normalizeTenantPhone(value, countryCode) {
+  const raw = cleanString(value);
+  if (!raw) return null;
+
+  const market = getMarket(countryCode);
+  if (!market) return raw;
+
+  const hasReviewedPhoneRules =
+    Number.isInteger(market.phone?.nationalLength) &&
+    market.phone.nationalLength > 0 &&
+    Array.isArray(market.phone?.nationalPrefixes) &&
+    market.phone.nationalPrefixes.length > 0;
+
+  if (!hasReviewedPhoneRules) {
+    return raw;
+  }
+
+  try {
+    return normalizeMarketPhone({
+      countryCode,
+      input: raw,
+    });
+  } catch {
+    return null;
+  }
 }
 
 function canViewAllBranches(req) {
@@ -135,18 +172,25 @@ async function createCustomer(req, res) {
   } = req.body || {};
 
   const cleanName = normalizeText(name);
-  const cleanPhone = normalizePhone(phone);
   const tenantId = req.user?.tenantId;
-
-  if (!cleanName || !cleanPhone) {
-    return res.status(400).json({ message: "Name and phone are required" });
-  }
 
   if (!tenantId) {
     return res.status(400).json({ message: "Tenant ID is missing" });
   }
 
+  if (!cleanName || !cleanString(phone)) {
+    return res.status(400).json({ message: "Name and phone are required" });
+  }
+
   try {
+    const countryCode = await tenantCountryCode(tenantId);
+    const cleanPhone = normalizeTenantPhone(phone, countryCode);
+
+    if (!cleanPhone) {
+      return res.status(400).json({
+        message: "Enter a valid phone number for this business country",
+      });
+    }
     const customer = await prisma.customer.create({
       data: {
         tenantId,
@@ -489,9 +533,28 @@ async function updateCustomer(req, res) {
   } = req.body || {};
 
   try {
+    const tenantId = req.user?.tenantId;
+
+    if (!tenantId) {
+      return res.status(400).json({ message: "Tenant ID is missing" });
+    }
+
+    let normalizedPhone;
+
+    if (phone !== undefined) {
+      const countryCode = await tenantCountryCode(tenantId);
+      normalizedPhone = normalizeTenantPhone(phone, countryCode);
+
+      if (!normalizedPhone) {
+        return res.status(400).json({
+          message: "Enter a valid phone number for this business country",
+        });
+      }
+    }
+
     const data = {
       ...(name !== undefined ? { name: normalizeText(name) } : {}),
-      ...(phone !== undefined ? { phone: normalizePhone(phone) } : {}),
+      ...(phone !== undefined ? { phone: normalizedPhone } : {}),
       ...(email !== undefined ? { email: normalizeText(email) } : {}),
       ...(address !== undefined ? { address: normalizeText(address) } : {}),
       ...(tinNumber !== undefined ? { tinNumber: normalizeText(tinNumber) } : {}),
@@ -510,7 +573,7 @@ async function updateCustomer(req, res) {
     }
 
     const updated = await prisma.customer.updateMany({
-      where: { id, tenantId: req.user?.tenantId },
+      where: { id, tenantId },
       data,
     });
 

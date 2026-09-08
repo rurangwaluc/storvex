@@ -1,6 +1,10 @@
 // src/modules/suppliers/suppliers.controller.js
 const { Prisma } = require("@prisma/client");
 const prisma = require("../../config/database");
+const { getMarket } = require("../../config/markets");
+const {
+  normalizePhone: normalizeMarketPhone,
+} = require("../../lib/phone/marketPhone");
 const {
   loadSupplierListSummaries,
 } = require(
@@ -12,6 +16,44 @@ const { recordMoneyAccountMovement, handleMoneyAccountError } = require("../mone
 function cleanString(value) {
   const s = value == null ? "" : String(value).trim();
   return s || null;
+}
+
+async function tenantCountryCode(tenantId) {
+  if (!tenantId) return null;
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { countryCode: true },
+  });
+
+  return cleanString(tenant?.countryCode);
+}
+
+function normalizeOptionalTenantPhone(value, countryCode) {
+  const raw = cleanString(value);
+  if (!raw) return null;
+
+  const market = getMarket(countryCode);
+  if (!market) return raw;
+
+  const hasReviewedPhoneRules =
+    Number.isInteger(market.phone?.nationalLength) &&
+    market.phone.nationalLength > 0 &&
+    Array.isArray(market.phone?.nationalPrefixes) &&
+    market.phone.nationalPrefixes.length > 0;
+
+  if (!hasReviewedPhoneRules) {
+    return raw;
+  }
+
+  try {
+    return normalizeMarketPhone({
+      countryCode,
+      input: raw,
+    });
+  } catch {
+    return null;
+  }
 }
 
 function cleanStringStrict(value) {
@@ -457,13 +499,25 @@ async function createSupplier(req, res) {
       return res.status(400).json({ message: "ID number is required" });
     }
 
+    const countryCode = await tenantCountryCode(tenantId);
+    const rawPhone = cleanString(req.body.phone);
+    const phone = rawPhone
+      ? normalizeOptionalTenantPhone(rawPhone, countryCode)
+      : null;
+
+    if (rawPhone && !phone) {
+      return res.status(400).json({
+        message: "Enter a valid phone number for this business country",
+      });
+    }
+
     const created = await prisma.supplier.create({
       data: {
         tenantId,
         name,
         idType,
         idNumber,
-        phone: cleanString(req.body.phone),
+        phone,
         email: cleanString(req.body.email),
         address: cleanString(req.body.address),
         notes: cleanString(req.body.notes),
@@ -592,7 +646,27 @@ async function updateSupplier(req, res) {
       data.name = name;
     }
 
-    if (req.body.phone !== undefined) data.phone = cleanString(req.body.phone);
+    if (req.body.phone !== undefined) {
+      const rawPhone = cleanString(req.body.phone);
+
+      if (!rawPhone) {
+        data.phone = null;
+      } else {
+        const countryCode = await tenantCountryCode(tenantId);
+        const phone = normalizeOptionalTenantPhone(
+          rawPhone,
+          countryCode,
+        );
+
+        if (!phone) {
+          return res.status(400).json({
+            message: "Enter a valid phone number for this business country",
+          });
+        }
+
+        data.phone = phone;
+      }
+    }
     if (req.body.email !== undefined) data.email = cleanString(req.body.email);
     if (req.body.address !== undefined) data.address = cleanString(req.body.address);
     if (req.body.notes !== undefined) data.notes = cleanString(req.body.notes);

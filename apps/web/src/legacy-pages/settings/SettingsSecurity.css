@@ -150,8 +150,8 @@
 }
 
 .svx-security-pill.is-process {
-  background: rgba(139, 92, 246, 0.12);
-  color: #7c3aed;
+  background: var(--settings-warning-soft);
+  color: var(--settings-warning);
 }
 
 .svx-security-pill.is-info {
@@ -177,7 +177,7 @@
 }
 
 :root[data-theme="dark"] .svx-security-pill.is-process {
-  color: #c4b5fd;
+  color: var(--settings-warning);
 }
 
 .svx-security-metrics-grid {

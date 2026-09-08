@@ -137,7 +137,7 @@ function loginEventTone(event) {
 
   if (status === "SUCCESS") return "success";
   if (status === "FAILED") return "warning";
-  if (status === "BLOCKED") return "process";
+  if (status === "BLOCKED") return "danger";
 
   return "neutral";
 }

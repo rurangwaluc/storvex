@@ -404,10 +404,19 @@ function signAuthToken({ user, tokenId }) {
 
 async function enforceTrialGuardOrThrowTx(
   tx,
-  { intentId, email, phone, deviceId, browserFingerprint, ip, userAgent }
+  {
+    intentId,
+    email,
+    phone,
+    countryCode,
+    deviceId,
+    browserFingerprint,
+    ip,
+    userAgent,
+  }
 ) {
   const normalizedEmail = normalizeEmail(email);
-  const normalizedPhone = normalizePhone(phone);
+  const normalizedPhone = normalizePhone(phone, countryCode);
   const cleanDeviceId = cleanString(deviceId);
   const cleanFingerprint = cleanString(browserFingerprint);
   const cleanIp = cleanString(ip);
@@ -1165,6 +1174,7 @@ async function confirmSignup(req, res) {
             intentId: intent.id,
             email: ownerEmail,
             phone: ownerPhone,
+            countryCode: selectedMarket.countryCode,
             deviceId: String(intent.deviceId).trim(),
             browserFingerprint: cleanString(intent.browserFingerprint),
             ip: getClientIp(req),

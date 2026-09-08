@@ -50,10 +50,13 @@ const DOCUMENT_SIZE_MODES = new Set(["AUTO", "COMPACT", "STANDARD"]);
 
 const TAX_MODES = new Set([
   "NONE",
+  "CUSTOM",
+]);
+
+const LEGACY_TAX_MODES = new Set([
   "VAT_18",
   "TURNOVER_3_INTERNAL",
   "VAT_18_PLUS_TURNOVER_3",
-  "CUSTOM",
 ]);
 
 const TAX_DISPLAY_MODES = new Set([
@@ -192,7 +195,13 @@ function normalizeDocumentSizeMode(value) {
 }
 
 function normalizeTaxMode(value) {
-  return normalizeEnum(value, TAX_MODES, "NONE");
+  const mode = cleanUpperString(value, "NONE", 80) || "NONE";
+
+  if (LEGACY_TAX_MODES.has(mode)) {
+    return "CUSTOM";
+  }
+
+  return TAX_MODES.has(mode) ? mode : "NONE";
 }
 
 function normalizeTaxDisplayMode(value) {
@@ -200,17 +209,10 @@ function normalizeTaxDisplayMode(value) {
 }
 
 function defaultTaxNameForMode(taxMode) {
-  if (taxMode === "VAT_18") return "VAT 18%";
-  if (taxMode === "TURNOVER_3_INTERNAL") return "Turnover tax estimate 3%";
-  if (taxMode === "VAT_18_PLUS_TURNOVER_3") return "Tax 21%";
-  if (taxMode === "CUSTOM") return "Tax";
-  return null;
+  return taxMode === "CUSTOM" ? "Tax" : null;
 }
 
-function defaultTaxRateBpsForMode(taxMode) {
-  if (taxMode === "VAT_18") return 1800;
-  if (taxMode === "TURNOVER_3_INTERNAL") return 300;
-  if (taxMode === "VAT_18_PLUS_TURNOVER_3") return 2100;
+function defaultTaxRateBpsForMode() {
   return 0;
 }
 

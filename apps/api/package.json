@@ -25,6 +25,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1050.0",
     "@aws-sdk/s3-request-presigner": "^3.995.0",
+    "@photostructure/tz-lookup": "^11.6.1",
     "@prisma/client": "^6.19.2",
     "africastalking": "^0.7.9",
     "axios": "^1.13.2",
@@ -33,6 +34,7 @@
     "dotenv": "^17.4.2",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
+    "geoip-lite": "^2.0.3",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",
     "openai": "^6.32.0",
@@ -41,7 +43,8 @@
     "redis": "^6.2.0",
     "resend": "^6.9.2",
     "sharp": "^0.35.3",
-    "twilio": "^5.12.2"
+    "twilio": "^5.12.2",
+    "world-countries": "^5.1.0"
   },
   "private": true
 }

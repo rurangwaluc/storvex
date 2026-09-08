@@ -282,8 +282,8 @@
 .svx-docs-toggle
   input:checked
   + .svx-docs-toggle-control {
-  border-color: var(--settings-primary);
-  background: var(--settings-primary);
+  border-color: var(--settings-success);
+  background: var(--settings-success);
 }
 
 .svx-docs-toggle
@@ -700,4 +700,36 @@
   border-radius: 0;
   object-fit: contain;
   object-position: center;
+}
+
+
+/* Semantic Settings colors.
+   Financial/tax configuration uses orange while primary actions remain blue. */
+.svx-docs-section--tax {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--settings-money) 24%,
+      var(--settings-border)
+    );
+}
+
+.svx-docs-section--tax .svx-docs-section-heading h2 {
+  color: var(--settings-money);
+}
+
+.svx-docs-section--tax .svx-docs-rate-input > span {
+  color: var(--settings-money);
+}
+
+.svx-docs-section--tax input:focus,
+.svx-docs-section--tax select:focus {
+  border-color:
+    color-mix(
+      in srgb,
+      var(--settings-money) 68%,
+      var(--settings-input-border)
+    );
+  box-shadow:
+    0 0 0 4px var(--settings-money-soft);
 }

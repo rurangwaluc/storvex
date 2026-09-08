@@ -6,6 +6,8 @@ import { Link, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import {
   customerQueryKeys,
 } from "../../lib/customerQueryKeys";
@@ -43,19 +45,6 @@ function danger() {
   return "text-[var(--color-danger)]";
 }
 
-function formatMoney(value) {
-  return `RWF ${Number(value || 0).toLocaleString()}`;
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleDateString();
-}
-
 function normalizeLedger(data) {
   return data || {
     customer: null,
@@ -69,20 +58,20 @@ function normalizeLedger(data) {
   };
 }
 
-function Pill({ children, tone = "neutral" }) {
+function StatusText({ children, tone = "neutral" }) {
   const cls =
     tone === "success"
-      ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
+      ? "text-emerald-700 dark:text-emerald-300"
       : tone === "warning"
-        ? "bg-amber-500/14 text-amber-700 dark:text-amber-300"
+        ? "text-amber-700 dark:text-amber-300"
         : tone === "danger"
-          ? "bg-[rgba(219,80,74,0.14)] text-[var(--color-danger)]"
+          ? "text-[var(--color-danger)]"
           : tone === "info"
-            ? "bg-[var(--color-primary-soft)] text-[var(--color-primary)]"
-            : "bg-[var(--customer-neutral-panel)] text-[var(--color-text-muted)]";
+            ? "text-[var(--color-primary)]"
+            : "text-[var(--color-text-muted)]";
 
   return (
-    <span className={cx("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold", cls)}>
+    <span className={cx("inline-flex items-center text-xs font-bold", cls)}>
       {children}
     </span>
   );
@@ -101,7 +90,7 @@ function InfoTile({ label, value, tone = "neutral" }) {
 }
 
 function SkeletonLine({ className = "" }) {
-  return <div className={cx("animate-pulse rounded-full bg-[var(--customer-neutral-panel)]", className)} />;
+  return <div className={cx("animate-pulse rounded-md bg-[var(--customer-neutral-panel)]", className)} />;
 }
 
 function CustomerViewSkeleton() {
@@ -127,6 +116,9 @@ function CustomerViewSkeleton() {
 }
 
 function LedgerSaleRow({ sale }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   const total =
     sale.totalAmount ??
     sale.total ??
@@ -177,9 +169,9 @@ function LedgerSaleRow({ sale }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Pill tone={balance > 0 ? "danger" : "success"}>{status}</Pill>
-            {isMarketplace ? <Pill tone="info">Marketplace</Pill> : null}
-            {reference ? <Pill>{reference}</Pill> : null}
+            <StatusText tone={balance > 0 ? "danger" : "success"}>{status}</StatusText>
+            {isMarketplace ? <StatusText tone="info">Marketplace</StatusText> : null}
+            {reference ? <StatusText>{reference}</StatusText> : null}
           </div>
 
           <div className={cx("mt-3 text-sm font-black", strong())}>
@@ -208,6 +200,8 @@ function LedgerSaleRow({ sale }) {
 }
 
 export default function CustomerView() {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
   const { id } = useParams();
 
   const customerQuery = useQuery({
@@ -348,11 +342,11 @@ export default function CustomerView() {
                   {customer.name}
                 </h1>
 
-                <Pill tone={customer.isActive !== false ? "success" : "neutral"}>
+                <StatusText tone={customer.isActive !== false ? "success" : "neutral"}>
                   {customer.isActive !== false ? "Active" : "Inactive"}
-                </Pill>
+                </StatusText>
 
-                {totalOutstanding > 0 ? <Pill tone="danger">Owes {formatMoney(totalOutstanding)}</Pill> : null}
+                {totalOutstanding > 0 ? <StatusText tone="danger">Owes {formatMoney(totalOutstanding)}</StatusText> : null}
               </div>
 
               <p className={cx("mt-2 max-w-3xl text-sm font-semibold leading-6", muted())}>

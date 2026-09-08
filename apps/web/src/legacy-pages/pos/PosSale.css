@@ -3631,3 +3631,97 @@
     min-width: 100px !important;
   }
 }
+
+/* POS professional status pass — status is business information, not badge UI. */
+
+.svx-pos-hero-context {
+  margin-top: 14px !important;
+  color: var(--pos-green) !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  line-height: 1.45 !important;
+}
+
+.svx-pos-product-status {
+  margin-top: 9px;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.svx-pos-product-status.is-success {
+  color: var(--pos-green);
+}
+
+.svx-pos-product-status.is-danger {
+  color: var(--pos-red);
+}
+
+.svx-pos-category-selected {
+  color: var(--color-primary-contrast);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+}
+
+.svx-pos-action-hint {
+  color: var(--pos-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.svx-pos-pay-later-status {
+  flex: 0 0 auto;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.svx-pos-pay-later-status.is-success {
+  color: var(--pos-green);
+}
+
+.svx-pos-pay-later-status.is-warning {
+  color: var(--pos-orange);
+}
+
+/* Product facts remain useful, but no longer look like chips. */
+.svx-pos-product-facts {
+  gap: 10px 14px;
+}
+
+.svx-pos-product-facts em {
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+/* Cart metadata remains structured, but flat and professional. */
+.svx-pos-cart-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 14px;
+  margin-top: 7px;
+}
+
+.svx-pos-cart-meta span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  color: var(--pos-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.svx-pos-cart-meta small {
+  color: var(--pos-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.svx-pos-cart-meta b {
+  color: var(--pos-text);
+  font-size: 11px;
+  font-weight: 850;
+}

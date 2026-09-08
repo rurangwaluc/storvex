@@ -1334,3 +1334,45 @@
     gap: 7px;
   }
 }
+
+/* Sales professional status pass — no badge/chip UI. */
+
+.svx-sales-payment-status {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  justify-items: center;
+  gap: 4px;
+}
+
+.svx-sales-status-text,
+.svx-sales-due-status {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.svx-sales-status-text.is-success,
+.svx-sales-due-status.is-success {
+  color: var(--sales-green);
+}
+
+.svx-sales-status-text.is-warning,
+.svx-sales-due-status.is-warning {
+  color: var(--sales-orange);
+}
+
+.svx-sales-status-text.is-danger,
+.svx-sales-due-status.is-danger {
+  color: var(--sales-red);
+}
+
+.svx-sales-due-status {
+  color: var(--sales-muted);
+  font-size: 10px;
+  font-weight: 750;
+}

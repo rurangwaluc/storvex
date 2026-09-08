@@ -35,6 +35,8 @@ import {
   reportQueryKeys,
 } from "../../lib/reportQueryKeys";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import "./PosReceipt.css";
 
 function cx(...xs) {
@@ -46,46 +48,12 @@ function cleanString(value) {
   return s || "";
 }
 
-function formatMoney(value) {
-  const n = Number(value || 0);
-  const safe = Number.isFinite(n) ? n : 0;
-
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(safe)}`;
-}
-
 function formatNumber(value) {
   const n = Number(value || 0);
 
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(Number.isFinite(n) ? n : 0);
-}
-
-function safeDate(value) {
-  const d = value ? new Date(value) : null;
-  if (!d || Number.isNaN(d.getTime())) return null;
-  return d;
-}
-
-function formatDateTime(value) {
-  const d = safeDate(value);
-  if (!d) return "—";
-
-  return d.toLocaleString("en-RW", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
-
-function formatDateOnly(value) {
-  const d = safeDate(value);
-  if (!d) return "—";
-
-  return d.toLocaleDateString("en-RW", {
-    dateStyle: "medium",
-  });
 }
 
 function clampInt(n, min, max) {
@@ -449,7 +417,7 @@ function taxSnapshotFromReceipt(receipt, items = []) {
   };
 }
 
-function saleStatus(receipt) {
+function saleStatus(receipt, formatMoney) {
   const status = String(receipt?.status || "").toUpperCase();
   const saleType = String(receipt?.saleType || "").toUpperCase();
   const balance = Number(receipt?.balanceDue || 0);
@@ -488,7 +456,7 @@ function saleStatus(receipt) {
   };
 }
 
-function creditFollowUpMeta(receipt, balance) {
+function creditFollowUpMeta(receipt, balance, formatMoney, formatDate, daysUntil) {
   if (!receipt || receipt.saleType !== "CREDIT") {
     return {
       label: "Not needed",
@@ -517,8 +485,9 @@ function creditFollowUpMeta(receipt, balance) {
     };
   }
 
-  const due = new Date(dueDate);
-  if (Number.isNaN(due.getTime())) {
+  const days = daysUntil(dueDate);
+
+  if (days === null) {
     return {
       label: "Check due date",
       tone: "warning",
@@ -527,17 +496,11 @@ function creditFollowUpMeta(receipt, balance) {
     };
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  due.setHours(0, 0, 0, 0);
-
-  const days = Math.round((due.getTime() - today.getTime()) / 86400000);
-
   if (days < 0) {
     return {
       label: `${Math.abs(days)}d overdue`,
       tone: "danger",
-      dueText: formatDateOnly(dueDate),
+      dueText: formatDate(dueDate),
       message: `${formatMoney(balance)} is overdue. Follow up with the customer.`,
     };
   }
@@ -546,7 +509,7 @@ function creditFollowUpMeta(receipt, balance) {
     return {
       label: "Due today",
       tone: "warning",
-      dueText: formatDateOnly(dueDate),
+      dueText: formatDate(dueDate),
       message: `${formatMoney(balance)} is due today.`,
     };
   }
@@ -555,7 +518,7 @@ function creditFollowUpMeta(receipt, balance) {
     return {
       label: "Due tomorrow",
       tone: "warning",
-      dueText: formatDateOnly(dueDate),
+      dueText: formatDate(dueDate),
       message: `${formatMoney(balance)} is due tomorrow.`,
     };
   }
@@ -563,12 +526,13 @@ function creditFollowUpMeta(receipt, balance) {
   return {
     label: `Due in ${days}d`,
     tone: "neutral",
-    dueText: formatDateOnly(dueDate),
+    dueText: formatDate(dueDate),
     message: `${formatMoney(balance)} is still unpaid.`,
   };
 }
 
 function CreditFollowUpCard({ receipt, balance, paid, customerNameValue, meta }) {
+  const { formatMoney } = useTenantMoney();
   if (!receipt || receipt.saleType !== "CREDIT") return null;
 
   return (
@@ -587,10 +551,6 @@ function CreditFollowUpCard({ receipt, balance, paid, customerNameValue, meta })
       </div>
     </section>
   );
-}
-
-function StatusBadge({ tone = "neutral", children }) {
-  return <span className={cx("svx-receipt-badge", `is-${tone}`)}>{children}</span>;
 }
 
 function IconBack() {
@@ -688,6 +648,7 @@ function EmptyState({ title, text }) {
 }
 
 function ReceiptItem({ item }) {
+  const { formatMoney } = useTenantMoney();
   const quantity = itemQuantity(item);
   const price = itemPrice(item);
   const total = itemSubtotal(item);
@@ -713,6 +674,8 @@ function ReceiptItem({ item }) {
 }
 
 function PaymentHistory({ payments, paid }) {
+  const { formatDateTime } = useTenantDateTime();
+  const { formatMoney } = useTenantMoney();
   if (!payments.length) {
     return (
       <div className="svx-receipt-payment-empty">
@@ -737,6 +700,7 @@ function PaymentHistory({ payments, paid }) {
 }
 
 function MoneyBreakdown({ receipt, items }) {
+  const { formatMoney } = useTenantMoney();
   const tax = taxSnapshotFromReceipt(receipt, items);
 
   return (
@@ -746,11 +710,16 @@ function MoneyBreakdown({ receipt, items }) {
           <p className="svx-receipt-kicker">Money summary</p>
           <h2>Sale breakdown</h2>
         </div>
-        {tax.showTaxLine ? (
-          <StatusBadge tone="warning">Tax shown</StatusBadge>
-        ) : (
-          <StatusBadge>No customer tax</StatusBadge>
-        )}
+        <span
+          className={cx(
+            "svx-receipt-tax-state",
+            tax.showTaxLine ? "is-taxed" : "is-neutral",
+          )}
+        >
+          {tax.showTaxLine
+            ? `${tax.taxName || "Tax"} included in this sale`
+            : "No customer tax applied"}
+        </span>
       </div>
 
       <div className="svx-receipt-total-box">
@@ -807,6 +776,7 @@ function MoneyBreakdown({ receipt, items }) {
 }
 
 function WarrantyBlock({ receipt, saleDate, store }) {
+  const { formatDate } = useTenantDateTime();
   const warranties = Array.isArray(receipt?.warranties) ? receipt.warranties : [];
 
   return (
@@ -845,8 +815,8 @@ function WarrantyBlock({ receipt, saleDate, store }) {
       ) : (
         <div className="svx-receipt-warranty-list">
           {warranties.map((warranty, index) => {
-            const starts = safeDate(warranty.startsAt);
-            const ends = safeDate(warranty.endsAt);
+            const starts = warranty.startsAt;
+            const ends = warranty.endsAt;
 
             return (
               <div key={warranty.id || index} className="svx-receipt-warranty-card">
@@ -855,8 +825,8 @@ function WarrantyBlock({ receipt, saleDate, store }) {
                   <p>{warranty.policy || "After-sale support coverage recorded for this sale."}</p>
                 </div>
                 <div>
-                  <span>Start: {starts ? formatDateOnly(starts) : "—"}</span>
-                  <span>End: {ends ? formatDateOnly(ends) : "—"}</span>
+                  <span>Start: {starts ? formatDate(starts) : "—"}</span>
+                  <span>End: {ends ? formatDate(ends) : "—"}</span>
                 </div>
 
                 <div className="svx-receipt-warranty-actions">
@@ -878,7 +848,7 @@ function WarrantyBlock({ receipt, saleDate, store }) {
       <div className="svx-receipt-warranty-foot">
         <span>{store?.branchName || store?.name || "Store"}</span>
         <span>Receipt: {receipt?.number || receipt?.id || "—"}</span>
-        <span>Date: {saleDate ? formatDateOnly(saleDate) : "—"}</span>
+        <span>Date: {saleDate ? formatDate(saleDate) : "—"}</span>
       </div>
     </section>
   );
@@ -899,6 +869,7 @@ function RefundModal({
   onClose,
   onSubmit,
 }) {
+  const { formatMoney } = useTenantMoney();
   if (!open) return null;
 
   const items = Array.isArray(receipt?.items) ? receipt.items : [];
@@ -1034,6 +1005,12 @@ function RefundModal({
 }
 
 export default function PosReceipt() {
+  const { formatMoney } = useTenantMoney();
+  const {
+    formatDate,
+    formatDateTime,
+    daysUntil,
+  } = useTenantDateTime();
   const { id } = useParams();
   const [, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -1173,7 +1150,7 @@ export default function PosReceipt() {
   }, [setSearchParams]);
 
   const store = receipt?.store || null;
-  const saleDate = safeDate(receipt?.date || receipt?.createdAt);
+  const saleDate = receipt?.date || receipt?.createdAt || null;
   const items = Array.isArray(receipt?.items) ? receipt.items : [];
   const payments = Array.isArray(receipt?.payments) ? receipt.payments : [];
 
@@ -1196,8 +1173,8 @@ export default function PosReceipt() {
         ? "Payment received"
         : "No payment recorded";
 
-  const status = saleStatus(receipt);
-  const followUp = creditFollowUpMeta(receipt, balance);
+  const status = saleStatus(receipt, formatMoney);
+  const followUp = creditFollowUpMeta(receipt, balance, formatMoney, formatDate, daysUntil);
   const receiptCustomerName =
     cleanString(receipt?.customer?.name) ||
     cleanString(receipt?.customerName) ||
@@ -1566,7 +1543,14 @@ export default function PosReceipt() {
           <p className="svx-receipt-kicker">Sale receipt</p>
           <div className="svx-receipt-title-row">
             <h1>Receipt detail</h1>
-            <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
+            <span
+              className={cx(
+                "svx-receipt-status-text",
+                `is-${status.tone}`,
+              )}
+            >
+              {status.label}
+            </span>
           </div>
           <p>
             {receipt.number || receipt.id || "Receipt"} — {formatDateTime(receipt.date || receipt.createdAt)}
@@ -1697,7 +1681,7 @@ export default function PosReceipt() {
               <DetailLine label="Cashier" value={receipt.cashierName || "—"} />
               <DetailLine label="Branch" value={store?.branchName || activeBranchNameFromStorage()} />
               <DetailLine label="Sale type" value={receipt.saleType === "CREDIT" ? "Pay later" : "Paid now"} />
-              <DetailLine label="Due date" value={receipt.dueDate ? formatDateOnly(receipt.dueDate) : "Not needed"} />
+              <DetailLine label="Due date" value={receipt.dueDate ? formatDate(receipt.dueDate) : "Not needed"} />
             </div>
           </section>
 

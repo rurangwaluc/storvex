@@ -56,26 +56,22 @@ const TAX_OPTIONS = [
     rate: 0,
   },
   {
-    value: "VAT_18",
-    label: "VAT 18%",
-    rate: 1800,
-  },
-  {
-    value: "TURNOVER_3_INTERNAL",
-    label: "Internal 3%",
-    rate: 300,
-  },
-  {
-    value: "VAT_18_PLUS_TURNOVER_3",
-    label: "VAT and internal 3%",
-    rate: 2100,
-  },
-  {
     value: "CUSTOM",
-    label: "Custom tax",
+    label: "Business tax",
     rate: null,
   },
 ];
+
+function normalizeTaxModeForForm(value) {
+  const mode = String(value || "NONE").trim().toUpperCase();
+
+  if (mode === "NONE") return "NONE";
+
+  // Existing Storvex records may still contain the old Rwanda-specific
+  // presets. Treat them as business-defined tax so their saved rate/name
+  // remain editable instead of disappearing.
+  return "CUSTOM";
+}
 
 function cleanString(value) {
   return String(value || "").trim();
@@ -128,7 +124,7 @@ function documentSnapshot(value) {
       value?.documentSizeMode || "AUTO",
 
     taxMode:
-      value?.taxMode || "NONE",
+      normalizeTaxModeForForm(value?.taxMode),
     taxDisplayMode:
       value?.taxDisplayMode || "HIDDEN",
     taxName:
@@ -900,7 +896,7 @@ export default function SettingsDocuments() {
         </div>
       </section>
 
-      <section className="svx-docs-section">
+      <section className="svx-docs-section svx-docs-section--tax">
         <SectionHeading
           title="Tax"
           description="Only show tax when the business is allowed to charge it."

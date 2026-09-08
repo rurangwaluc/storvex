@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
+import useTenantMoney from "../../hooks/useTenantMoney";
+
 import {
   createDeal,
   listInternalSuppliers,
@@ -101,11 +103,6 @@ function cleanString(value) {
 
 function normalizeDigits(value) {
   return String(value || "").replace(/[^\d]/g, "");
-}
-
-function formatMoney(value) {
-  const n = Number(value || 0);
-  return `RWF ${Math.round(Number.isFinite(n) ? n : 0).toLocaleString("en-US")}`;
 }
 
 function parseJsonSafe(value) {
@@ -208,7 +205,8 @@ function activeBranchParts() {
 }
 
 function activeBranchLabel() {
-  return activeBranchParts().label;
+  const branch = activeBranchParts();
+  return branch.name || (branch.id ? "Selected branch" : "No active branch selected");
 }
 
 function supplierPhoneValue(supplier) {
@@ -255,13 +253,12 @@ function SearchResult({ active, title, subtitle, onClick }) {
   );
 }
 
-function StepSection({ number, kicker, title, text, children }) {
+function StepSection({ number, title, text, children }) {
   return (
     <section className="svx-transfer-create-section">
       <header className="svx-transfer-create-section-head">
         <span className="svx-transfer-create-step-number">{number}</span>
         <div>
-          <span className="svx-transfer-kicker">{kicker}</span>
           <h3>{title}</h3>
           {text ? <p>{text}</p> : null}
         </div>
@@ -292,6 +289,7 @@ function ReadyCheck({ ready, text }) {
 
 export default function InterStoreCreatePage() {
   const navigate = useNavigate();
+  const { formatMoney } = useTenantMoney();
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [loading, setLoading] = useState(false);
@@ -559,12 +557,12 @@ export default function InterStoreCreatePage() {
       <form className="svx-transfer-create-shell" onSubmit={handleSubmit}>
         <section className="svx-transfer-create-hero svx-transfer-create-hero-simple">
           <div className="svx-transfer-create-hero-copy">
-            <span className="svx-transfer-eyebrow">Pay later stock</span>
-            <h1>Products taken on pay later</h1>
-            <p>
-              Use this when a person or another same-category store takes products from this branch and will pay later.
-              Keep the record simple: who took it, what they took, and how much money must come back.
-            </p>
+            <h1>New store transfer</h1>
+            <p>Give stock now and collect payment later.</p>
+            <div className="svx-transfer-create-branch-line">
+              <span>From</span>
+              <strong>{activeBranchLabel()}</strong>
+            </div>
           </div>
 
           <div className="svx-transfer-create-hero-actions is-back-only">
@@ -576,20 +574,11 @@ export default function InterStoreCreatePage() {
 
         {error ? <div className="svx-transfer-error">{error}</div> : null}
 
-        <section className="svx-transfer-create-overview svx-transfer-create-overview-simple" aria-label="Transfer overview">
-          <SummaryItem label="From branch" value={activeBranchLabel()} />
-          <SummaryItem label="Who took it" value={summary.source} />
-          <SummaryItem label="Product" value={summary.item} />
-          <SummaryItem label="Amount to collect" value={formatMoney(summary.value)} />
-        </section>
-
         <div className="svx-transfer-create-layout svx-transfer-create-layout-simple">
           <main className="svx-transfer-create-main">
             <StepSection
               number="1"
-              kicker="Who took it"
-              title="Who took the products?"
-              text="Start here. Choose a person/customer or a same-category store that took products and will pay later."
+              title="Who took it?"
             >
               <div className="svx-transfer-mode-grid svx-transfer-create-mode-grid">
                 <ModeCard
@@ -702,7 +691,7 @@ export default function InterStoreCreatePage() {
                       placeholder="Example: Eric, Jean, Remera customer"
                     />
                   </Field>
-                  <Field label="Phone number" hint="Required. This is who the owner will call if payment is late.">
+                  <Field label="Phone number">
                     <input
                       className="svx-transfer-input"
                       value={form.externalSupplierPhone}
@@ -711,7 +700,7 @@ export default function InterStoreCreatePage() {
                         updateField("externalSupplierPhone", next);
                         updateField("resellerPhone", next);
                       }}
-                      placeholder="+250..."
+                      placeholder="Phone number"
                     />
                   </Field>
                 </div>
@@ -720,7 +709,6 @@ export default function InterStoreCreatePage() {
 
             <StepSection
               number="2"
-              kicker="Products"
               title="What did they take?"
               text={`Search this branch's ${fieldCopy.businessLabel} stock first, then confirm the quantity and tracking code.`}
             >
@@ -773,7 +761,7 @@ export default function InterStoreCreatePage() {
               </div>
 
               <div className="svx-transfer-form-grid svx-transfer-create-grid svx-transfer-create-product-grid">
-                <Field label="Product name" hint="Locked. Choose the product from current branch stock above.">
+                <Field label="Product name">
                     <input className="svx-transfer-input" value={form.productName} readOnly placeholder="Choose from current branch stock first" />
                   </Field>
                 <Field label="Quantity">
@@ -793,30 +781,20 @@ export default function InterStoreCreatePage() {
 
             <StepSection
               number="3"
-              kicker="Payment"
-              title="How much should come back?"
-              text="Add the amount to collect, due date, and a short note. Supplier purchasing will be handled separately later."
+              title="Payment"
             >
-              <div className="svx-transfer-branch-callout">
-                <span>Products leave this branch</span>
-                <strong>{activeBranchLabel()}</strong>
-                <p>Change the active branch before creating this transfer if this branch is wrong.</p>
-              </div>
-
-              <div className="svx-transfer-create-pay-strip">
-                <SummaryItem label="Follow up" value={summary.responsible} />
-                <SummaryItem label="Phone" value={form.resellerPhone || form.externalSupplierPhone} />
-                <SummaryItem label="Item" value={summary.item} />
-              </div>
-
               <div className="svx-transfer-form-grid svx-transfer-create-grid">
-                <Field label="Amount to collect" hint="This is the money the owner should keep watching until paid or returned.">
+                <Field label="Amount to collect">
                   <input className="svx-transfer-input" type="number" min="0" value={form.agreedPrice} onChange={(event) => updateField("agreedPrice", event.target.value)} placeholder="0" />
                 </Field>
                 <Field label="Due date">
                   <input className="svx-transfer-input" type="date" value={form.dueDate} onChange={(event) => updateField("dueDate", event.target.value)} />
                 </Field>
-                <Field label="Place / counter" hint="Optional. Use this for a branch counter, store area, or outside workplace.">
+                <Field label="Taken date">
+                  <input className="svx-transfer-input" type="date" value={form.takenAt} onChange={(event) => updateField("takenAt", event.target.value)} />
+                </Field>
+
+                <Field label="Place / counter">
                   <input
                     className="svx-transfer-input"
                     value={form.resellerStore || form.resellerWorkplace}
@@ -827,10 +805,8 @@ export default function InterStoreCreatePage() {
                     placeholder="Example: Main counter, repair desk, Remera shop"
                   />
                 </Field>
-                <Field label="Taken date">
-                  <input className="svx-transfer-input" type="date" value={form.takenAt} onChange={(event) => updateField("takenAt", event.target.value)} />
-                </Field>
-                <Field label="Owner note" hint="Keep it short. Example: promised to pay Friday after delivery." full>
+
+                <Field label="Note" full>
                   <textarea className="svx-transfer-textarea" value={form.notes} onChange={(event) => updateField("notes", event.target.value)} placeholder="Optional note" />
                 </Field>
               </div>
@@ -839,7 +815,6 @@ export default function InterStoreCreatePage() {
 
           <aside className="svx-transfer-create-side" aria-label="Ready to save">
             <div className="svx-transfer-create-side-card svx-transfer-create-side-card-simple">
-              <span className="svx-transfer-kicker">Ready check</span>
               <h2>Ready to save?</h2>
               <p>Save only when these four things are clear.</p>
 

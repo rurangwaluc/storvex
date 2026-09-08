@@ -84,7 +84,7 @@ function statusTone(status) {
   const value = String(status || "").toUpperCase();
 
   if (value === "ACTIVE") {
-    return "bg-[var(--color-primary-soft)] text-[var(--color-primary)]";
+    return "bg-[var(--settings-success-soft)] text-[var(--settings-success)]";
   }
 
   if (value === "CLOSED") {
@@ -142,7 +142,7 @@ function SummaryCard({ label, value, note, tone = "neutral" }) {
       : tone === "danger"
         ? "bg-red-500"
         : tone === "success"
-          ? "bg-[var(--color-primary)]"
+          ? "bg-[var(--settings-success)]"
           : "bg-[var(--color-text-muted)]";
 
   return (

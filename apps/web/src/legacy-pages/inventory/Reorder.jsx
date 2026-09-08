@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import useTenantMoney from "../../hooks/useTenantMoney";
 import {
   adjustStock,
   downloadReorderPdf,
@@ -42,11 +43,6 @@ function cleanString(value) {
 function formatNumber(value) {
   const n = Number(value || 0);
   return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Number.isFinite(n) ? n : 0);
-}
-
-function formatRwf(value) {
-  const n = Number(value || 0);
-  return `Rwf ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(Number.isFinite(n) ? Math.round(n) : 0)}`;
 }
 
 function productStock(product) {
@@ -123,8 +119,8 @@ function stockActionCopy(type) {
   };
 }
 
-function StatusBadge({ tone = "neutral", children }) {
-  return <span className={cx("svx-restock-badge", `is-${tone}`)}>{children}</span>;
+function StatusText({ tone = "neutral", children }) {
+  return <span className={cx("svx-restock-status-text", `is-${tone}`)}>{children}</span>;
 }
 
 function MetricCard({ icon: Icon, label, value, note, tone = "neutral" }) {
@@ -144,6 +140,7 @@ function MetricCard({ icon: Icon, label, value, note, tone = "neutral" }) {
 }
 
 function RestockCard({ product, onRestock, onView }) {
+  const { formatMoney } = useTenantMoney();
   const qty = productStock(product);
   const tone = reorderTone(product);
   const lowAlert = Number(product?.minStockLevel ?? product?.lowStockAlert ?? 0);
@@ -175,7 +172,7 @@ function RestockCard({ product, onRestock, onView }) {
 
         <div>
           <span>Selling price</span>
-          <strong>{formatRwf(product?.sellPrice || product?.price || 0)}</strong>
+          <strong>{formatMoney(product?.sellPrice || product?.price || 0)}</strong>
         </div>
 
         <div>
@@ -185,7 +182,7 @@ function RestockCard({ product, onRestock, onView }) {
       </div>
 
       <div className="svx-restock-product-actions">
-        <StatusBadge tone={tone}>{reorderLabel(product)}</StatusBadge>
+        <StatusText tone={tone}>{reorderLabel(product)}</StatusText>
 
         <button type="button" className="svx-restock-secondary-action" onClick={() => onView(product)}>
           View

@@ -25,10 +25,14 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function formatMoney(value, currency = "RWF") {
+function formatMoney(value, currency = "") {
   const n = Number(value);
   if (!Number.isFinite(n)) return "—";
-  return `${Math.round(n).toLocaleString("en-US")} ${currency || "RWF"}`;
+
+  const amount = Math.round(n).toLocaleString("en-US");
+  const code = cleanString(currency).toUpperCase();
+
+  return code ? `${amount} ${code}` : amount;
 }
 
 function formatDate(value) {
@@ -53,24 +57,21 @@ function daysUntil(value) {
   return Math.max(0, Math.ceil((end - Date.now()) / (1000 * 60 * 60 * 24)));
 }
 
-function normalizePhone(value) {
-  const raw = String(value || "").trim();
-  const digits = raw.replace(/[^\d]/g, "");
-
-  if (!digits) return "";
-  if (digits.startsWith("07") && digits.length === 10) return `250${digits.slice(1)}`;
-  if (digits.startsWith("2507") && digits.length === 12) return digits;
-
-  return digits;
+function normalizePaymentPhone(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[^\d+]/g, "");
 }
 
-function isValidRwandaPhone(value) {
-  return /^2507\d{8}$/.test(normalizePhone(value));
+function hasPaymentPhone(value) {
+  const digits = normalizePaymentPhone(value).replace(/\D/g, "");
+  return digits.length >= 8 && digits.length <= 15;
 }
 
 function pickOverviewPayload(data) {
   return {
     store: data?.store || data?.tenant || data?.me?.tenant || data?.user?.tenant || null,
+    market: data?.market || null,
     subscription: data?.subscription || data?.me?.subscription || null,
     usage: data?.usage || null,
     payments: Array.isArray(data?.payments) ? data.payments : [],
@@ -198,13 +199,24 @@ function ProgressBar({ value, max, tone = "success" }) {
 }
 
 function CapacityLine({ label, value, limit, tone }) {
+  const state =
+    tone === "danger"
+      ? "Over plan limit"
+      : tone === "warning"
+        ? "At plan limit"
+        : "Within plan";
+
   return (
     <div className="svx-billing-capacity-line">
-      <div>
-        <strong>{label}</strong>
-        <span>{value} active / {limit ?? "plan-based"} allowed</span>
+      <div className="svx-billing-capacity-copy">
+        <div>
+          <strong>{label}</strong>
+          <span>{value} active / {limit ?? "plan-based"} allowed</span>
+        </div>
+
+        <small className={`is-${tone}`}>{state}</small>
       </div>
-      <Badge tone={tone}>{tone === "danger" ? "Over" : tone === "warning" ? "Limit" : "OK"}</Badge>
+
       {limit ? <ProgressBar value={value} max={limit} tone={tone} /> : null}
     </div>
   );
@@ -232,9 +244,6 @@ function LaunchPlanRow({
         <div>
           <div className="svx-billing-plan-top">
             <strong>{plan.name}</strong>
-            {plan.recommended ? (
-              <Badge tone="primary">Recommended</Badge>
-            ) : null}
           </div>
           <p>{plan.audience}</p>
         </div>
@@ -273,10 +282,9 @@ function LaunchPlanRow({
 
 function MetricBlock({ label, value, note, tone = "neutral" }) {
   return (
-    <div className="svx-billing-mini-card">
+    <div className={`svx-billing-mini-card is-${tone}`}>
       <div className="svx-billing-mini-head">
         <span>{label}</span>
-        <Badge tone={tone}>{tone === "warning" ? "Watch" : tone === "danger" ? "Over" : "Live"}</Badge>
       </div>
 
       <strong>{value}</strong>
@@ -303,7 +311,9 @@ function PaymentHistory({ payments }) {
           <span>Payment history</span>
           <h3>Recent billing activity</h3>
         </div>
-        <Badge tone="neutral">{payments.length} records</Badge>
+        <span className="svx-billing-record-count">
+          {payments.length} record{payments.length === 1 ? "" : "s"}
+        </span>
       </div>
 
       <div className="svx-billing-history-table">
@@ -332,8 +342,12 @@ function PaymentHistory({ payments }) {
                 <strong>{payment.reference || "—"}</strong>
                 <small>{payment.purpose || "Subscription"}</small>
               </div>
-              <div data-label="Amount">{formatMoney(payment.amount ?? payment.priceAmount, payment.currency || "RWF")}</div>
-              <div data-label="Status"><Badge tone={tone}>{status || "UNKNOWN"}</Badge></div>
+              <div data-label="Amount">{formatMoney(payment.amount ?? payment.priceAmount, payment.currency)}</div>
+              <div data-label="Status">
+                <span className={`svx-billing-status-text is-${tone}`}>
+                  {status || "UNKNOWN"}
+                </span>
+              </div>
               <div data-label="Provider">{payment.provider || "—"}</div>
               <div data-label="Created">{formatDate(payment.createdAt)}</div>
             </div>
@@ -351,6 +365,7 @@ export default function Billing({ embedded = false } = {}) {
 
   const [overview, setOverview] = useState({
     store: null,
+    market: null,
     subscription: null,
     usage: null,
     payments: [],
@@ -469,10 +484,10 @@ export default function Billing({ embedded = false } = {}) {
       return;
     }
 
-    const cleanPhone = normalizePhone(phone);
+    const cleanPhone = normalizePaymentPhone(phone);
 
-    if (!isValidRwandaPhone(cleanPhone)) {
-      toast.error("Use a Rwanda phone number like 078xxxxxxx or 25078xxxxxxx.");
+    if (!hasPaymentPhone(cleanPhone)) {
+      toast.error("Enter a valid payment phone number.");
       return;
     }
 
@@ -494,7 +509,7 @@ export default function Billing({ embedded = false } = {}) {
       setPaymentRef(ref);
       localStorage.setItem("storvex_ownerPhone", cleanPhone);
 
-      toast.success("MoMo request sent. Confirm on your phone.");
+      toast.success("Payment request sent. Confirm on your phone.");
 
       await loadBilling({ silent: true });
     } catch (err) {
@@ -510,7 +525,17 @@ export default function Billing({ embedded = false } = {}) {
 
   const subscription = overview.subscription || null;
   const store = overview.store || null;
+  const market = overview.market || null;
   const storeName = store?.name || "Your store";
+
+  const subscriptionPaymentsEnabled =
+    market?.subscriptionPaymentsEnabled === true;
+
+  const marketCurrency =
+    market?.currencyCode ||
+    store?.currencyCode ||
+    "";
+
   const meta = subscriptionMeta(subscription);
   const daysLeft = daysUntil(subscription?.endDate);
   const graceDaysLeft = daysUntil(subscription?.graceEndDate);
@@ -535,12 +560,24 @@ export default function Billing({ embedded = false } = {}) {
         <div className="svx-billing-command-main">
           <span>Billing</span>
           <h2>Your plan and renewal</h2>
-          <p>See if the store is active, when access renews, and pay for the next month.</p>
+          <p>
+            {subscriptionPaymentsEnabled
+              ? "Manage your plan, usage, renewal date, and subscription payment."
+              : "Manage your plan, usage, and renewal readiness for your market."}
+          </p>
         </div>
 
         <div className="svx-billing-command-actions">
-          <Badge tone={meta.tone}>{meta.label}</Badge>
-          <AsyncButton type="button" loading={refreshing} onClick={refreshStatus} className="svx-billing-secondary-btn svx-billing-refresh-soft">
+          <span className={`svx-billing-plan-state is-${meta.tone}`}>
+            {meta.label}
+          </span>
+
+          <AsyncButton
+            type="button"
+            loading={refreshing}
+            onClick={refreshStatus}
+            className="svx-billing-secondary-btn svx-billing-refresh-soft"
+          >
             Refresh
           </AsyncButton>
         </div>
@@ -553,13 +590,15 @@ export default function Billing({ embedded = false } = {}) {
               <span>Current plan</span>
               <h3>{displayPlan?.name || "Storvex plan"}</h3>
             </div>
-            <Badge tone="primary">Launch pricing</Badge>
           </div>
 
           <div className="svx-billing-current-amount">
             {displayPlan
               ? formatMoney(displayPlan.price, displayPlan.currency)
-              : formatMoney(subscription?.priceAmount, subscription?.currency)}
+              : formatMoney(
+                  subscription?.priceAmount,
+                  subscription?.currency || marketCurrency,
+                )}
             <span>/ month</span>
           </div>
 
@@ -609,9 +648,17 @@ export default function Billing({ embedded = false } = {}) {
       <section className="svx-billing-card svx-billing-renewal">
         <div className="svx-billing-card-head">
           <div>
-            <span>Renewal</span>
-            <h3>Pay for next month</h3>
-            <p>Choose the plan that matches your store, confirm the MoMo number, and send the request.</p>
+            <span>Next plan</span>
+            <h3>
+              {subscriptionPaymentsEnabled
+                ? "Choose and renew"
+                : "Choose your next plan"}
+            </h3>
+            <p>
+              {subscriptionPaymentsEnabled
+                ? "Choose the plan that fits your business, then complete renewal."
+                : "Compare plans and choose what you want to use when subscription payments become available in your market."}
+            </p>
           </div>
         </div>
 
@@ -661,33 +708,52 @@ export default function Billing({ embedded = false } = {}) {
               </p>
             </div>
 
-            <label>
-              <span>MoMo phone</span>
-              <input
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                placeholder="07XXXXXXXX or 2507XXXXXXXX"
-                inputMode="tel"
-                required
-              />
-            </label>
-
-            {!isValidRwandaPhone(phone) ? (
-              <div className="svx-billing-warning">Enter a Rwanda MoMo number before sending the payment request.</div>
+            {subscriptionPaymentsEnabled ? (
+              <label>
+                <span>Payment phone</span>
+                <input
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  placeholder="Enter payment phone number"
+                  inputMode="tel"
+                  required
+                />
+              </label>
             ) : null}
 
-            <AsyncButton
-              type="submit"
-              loading={submitting}
-              disabled={!selectedPlan || !isValidRwandaPhone(phone)}
-              className="svx-billing-primary-btn"
-            >
-              Send MoMo request
-            </AsyncButton>
+            {!subscriptionPaymentsEnabled ? (
+              <div className="svx-billing-availability">
+                <span>Payment availability</span>
+                <strong>Online renewal is not available in your market yet.</strong>
+                <p>Your current access is unchanged. You can still choose the plan you want next.</p>
+              </div>
+            ) : !hasPaymentPhone(phone) ? (
+              <div className="svx-billing-warning">
+                Enter a valid payment phone number before sending the payment request.
+              </div>
+            ) : null}
 
-            <AsyncButton type="button" loading={refreshing} onClick={refreshStatus} className="svx-billing-secondary-btn svx-billing-payment-status-btn">
-              Check payment status
-            </AsyncButton>
+            {subscriptionPaymentsEnabled ? (
+              <AsyncButton
+                type="submit"
+                loading={submitting}
+                disabled={!selectedPlan || !hasPaymentPhone(phone)}
+                className="svx-billing-primary-btn"
+              >
+                Send payment request
+              </AsyncButton>
+            ) : null}
+
+            {subscriptionPaymentsEnabled ? (
+              <AsyncButton
+                type="button"
+                loading={refreshing}
+                onClick={refreshStatus}
+                className="svx-billing-secondary-btn svx-billing-payment-status-btn"
+              >
+                Check payment status
+              </AsyncButton>
+            ) : null}
 
             {paymentRef ? (
               <div className="svx-billing-payment-ref">

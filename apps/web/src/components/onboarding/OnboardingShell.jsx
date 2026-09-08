@@ -12,8 +12,17 @@ export function OnboardingCard({ children, className = "" }) {
   return <section className={cx("svx-onboard-card", className)}>{children}</section>;
 }
 
-export function OnboardingIconBadge({ children }) {
-  return <div className="svx-onboard-icon-badge">{children}</div>;
+export function OnboardingIconBadge({
+  children,
+  tone = "primary",
+}) {
+  return (
+    <div
+      className={`svx-onboard-icon-badge svx-onboard-icon-badge--${tone}`}
+    >
+      {children}
+    </div>
+  );
 }
 
 export default function OnboardingShell({

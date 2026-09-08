@@ -64,7 +64,7 @@ function secondaryBtn(disabled = false) {
 }
 
 function SkeletonLine({ className = "" }) {
-  return <div className={cx("animate-pulse rounded-full bg-[var(--customer-neutral-panel)]", className)} />;
+  return <div className={cx("animate-pulse rounded-md bg-[var(--customer-neutral-panel)]", className)} />;
 }
 
 function InfoTile({ label, value, tone = "neutral" }) {

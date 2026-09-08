@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  BadgeCheck,
   Boxes,
   Building2,
   Check,
@@ -39,15 +38,7 @@ import {
   normalizeMarketPhone,
 } from "../../lib/marketPhone";
 
-const RWANDA_MARKET_FALLBACK = {
-  countryCode: "RW",
-  countryName: "Rwanda",
-  currencyCode: "RWF",
-  timezone: "Africa/Kigali",
-  callingCode: "+250",
-  phoneNationalPrefixes: ["07"],
-  phoneNationalLength: 10,
-};
+const DEFAULT_LAUNCH_COUNTRY_CODE = "RW";
 
 const BUSINESS_CATEGORIES = [
   {
@@ -296,35 +287,117 @@ export default function TenantIntent() {
   );
 
   const [loading, setLoading] = useState(false);
-  const [markets, setMarkets] = useState([RWANDA_MARKET_FALLBACK]);
+  const [markets, setMarkets] = useState([]);
+  const [marketsLoading, setMarketsLoading] = useState(true);
+  const [marketLoadError, setMarketLoadError] = useState("");
   const [form, setForm] = useState({
     storeName: previous?.storeName || "",
     ownerName: previous?.ownerName || "",
     email: previous?.email || "",
     phone: previous?.phone || "",
     shopType: previous?.shopType || "",
-    countryCode: previous?.countryCode || "RW",
+    countryCode: previous?.countryCode || "",
     district: previous?.district || "",
     sector: previous?.sector || "",
     address: previous?.address || "",
   });
 
   const selectedMarket =
-    markets.find((market) => market.countryCode === form.countryCode) ||
-    markets[0] ||
-    RWANDA_MARKET_FALLBACK;
-  const normalizedPhone = normalizeMarketPhone(form.phone, selectedMarket);
+    markets.find(
+      (market) => market.countryCode === form.countryCode,
+    ) || null;
+
+  const marketAvailable =
+    selectedMarket?.onboardingEnabled === true;
+
+  const normalizedPhone = selectedMarket
+    ? normalizeMarketPhone(form.phone, selectedMarket)
+    : "";
+
   const normalizedEmail = normalizeEmail(form.email);
 
   useEffect(() => {
     let cancelled = false;
 
-    apiFetch("/auth/markets")
-      .then((data) => {
-        const available = Array.isArray(data?.markets) ? data.markets : [];
-        if (!cancelled && available.length) setMarkets(available);
+    setMarketsLoading(true);
+    setMarketLoadError("");
+
+    Promise.all([
+      apiFetch("/auth/markets"),
+      apiFetch("/auth/country-hint").catch(() => ({
+        countryCode: null,
+      })),
+    ])
+      .then(([marketsData, hintData]) => {
+        if (cancelled) return;
+
+        const available = Array.isArray(marketsData?.markets)
+          ? marketsData.markets
+          : [];
+
+        setMarkets(available);
+
+        setForm((current) => {
+          const currentCountry = cleanString(current.countryCode).toUpperCase();
+
+          const currentExists = available.some(
+            (market) =>
+              market.countryCode === currentCountry,
+          );
+
+          if (currentExists) {
+            return current;
+          }
+
+          const hintedCountryCode = cleanString(
+            hintData?.countryCode,
+          ).toUpperCase();
+
+          const hintedMarket = available.find(
+            (market) =>
+              market.countryCode === hintedCountryCode,
+          );
+
+          const launchMarket = available.find(
+            (market) =>
+              market.countryCode ===
+              DEFAULT_LAUNCH_COUNTRY_CODE,
+          );
+
+          const firstAvailableMarket = available.find(
+            (market) => market.onboardingEnabled === true,
+          );
+
+          return {
+            ...current,
+            countryCode:
+              hintedMarket?.countryCode ||
+              launchMarket?.countryCode ||
+              firstAvailableMarket?.countryCode ||
+              "",
+            phone: "",
+          };
+        });
+
+        if (!available.length) {
+          setMarketLoadError(
+            "We couldn't load available countries. Please try again.",
+          );
+        }
       })
-      .catch(() => null);
+      .catch(() => {
+        if (cancelled) return;
+
+        setMarkets([]);
+        setMarketLoadError(
+          "We couldn't load available countries. Please try again.",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setMarketsLoading(false);
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -332,14 +405,36 @@ export default function TenantIntent() {
   }, []);
 
   useEffect(() => {
+    if (!selectedMarket) return;
+
     setForm((current) => ({
       ...current,
-      phone: displayMarketPhone(current.phone, selectedMarket),
+      phone: displayMarketPhone(
+        current.phone,
+        selectedMarket,
+      ),
     }));
-  }, [selectedMarket.countryCode]);
+  }, [selectedMarket?.countryCode]);
 
   function setField(key, value) {
-    setForm((current) => ({ ...current, [key]: value }));
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  }
+
+  function setCountry(countryCode) {
+    setForm((current) => {
+      if (current.countryCode === countryCode) {
+        return current;
+      }
+
+      return {
+        ...current,
+        countryCode,
+        phone: "",
+      };
+    });
   }
 
   function continueDraft() {
@@ -373,7 +468,7 @@ export default function TenantIntent() {
       email: "",
       phone: "",
       shopType: "",
-      countryCode: "RW",
+      countryCode: DEFAULT_LAUNCH_COUNTRY_CODE,
       district: "",
       sector: "",
       address: "",
@@ -383,10 +478,35 @@ export default function TenantIntent() {
   }
 
   function validate() {
+    if (marketsLoading) {
+      toast.error(
+        "Countries are still loading. Please wait.",
+      );
+      return false;
+    }
+
+    if (marketLoadError || !selectedMarket) {
+      toast.error(
+        marketLoadError ||
+          "Choose a valid business country.",
+      );
+      return false;
+    }
+
+    if (!marketAvailable) {
+      toast.error(
+        `Storvex isn't available in ${selectedMarket.countryName} yet.`,
+      );
+      return false;
+    }
+
     const storeName = cleanString(form.storeName);
     const ownerName = cleanString(form.ownerName);
     const shopType = cleanString(form.shopType);
-    const phone = normalizeMarketPhone(form.phone, selectedMarket);
+    const phone = normalizeMarketPhone(
+      form.phone,
+      selectedMarket,
+    );
 
     if (!storeName) {
       toast.error("Enter the store name");
@@ -430,11 +550,6 @@ export default function TenantIntent() {
 
     if (!phone) {
       toast.error(`Use a valid ${selectedMarket.countryName} mobile number (${selectedMarket.callingCode})`);
-      return false;
-    }
-
-    if (!cleanString(form.countryCode)) {
-      toast.error("Choose the country");
       return false;
     }
 
@@ -501,6 +616,14 @@ export default function TenantIntent() {
         shopType: payload.shopType,
         countryCode: selectedMarket.countryCode,
         country: selectedMarket.countryName,
+        currencyCode:
+          selectedMarket.currencyCode || "",
+        timezone:
+          selectedMarket.timezone || "",
+        callingCode:
+          selectedMarket.callingCode || "",
+        subscriptionPaymentsEnabled:
+          selectedMarket.subscriptionPaymentsEnabled === true,
         district: payload.district,
         sector: payload.sector,
         address: payload.address,
@@ -569,16 +692,12 @@ export default function TenantIntent() {
             </p>
           </div>
 
-          <span className="svx-onboard-safe-pill">
-            <BadgeCheck size={15} strokeWidth={2.8} />
-            No payment on this step
-          </span>
         </div>
 
         <div className="svx-onboard-form-grid lg:grid-cols-[0.94fr_1.06fr] lg:items-stretch">
           <OnboardingCard className="h-full">
             <div className="svx-onboard-card-title-row">
-              <OnboardingIconBadge>
+              <OnboardingIconBadge tone="warning">
                 <Store size={23} strokeWidth={2.2} />
               </OnboardingIconBadge>
 
@@ -589,12 +708,67 @@ export default function TenantIntent() {
             </div>
 
             <div className="svx-onboard-field-group">
+              <Field label="Country" required>
+                <select
+                  className="svx-onboard-input"
+                  value={form.countryCode}
+                  onChange={(event) =>
+                    setCountry(event.target.value)
+                  }
+                  disabled={
+                    marketsLoading ||
+                    Boolean(marketLoadError)
+                  }
+                  required
+                >
+                  {marketsLoading ? (
+                    <option value="">
+                      Loading countries...
+                    </option>
+                  ) : null}
+
+                  {!marketsLoading &&
+                  !markets.length ? (
+                    <option value="">
+                      Countries unavailable
+                    </option>
+                  ) : null}
+
+                  {markets.map((market) => (
+                    <option
+                      key={market.countryCode}
+                      value={market.countryCode}
+                    >
+                      {market.countryName}
+                      {market.onboardingEnabled
+                        ? ""
+                        : " — Coming soon"}
+                    </option>
+                  ))}
+                </select>
+
+                {!marketsLoading &&
+                selectedMarket &&
+                !marketAvailable ? (
+                  <p className="mt-2 text-xs font-bold text-[var(--onboard-warning)]">
+                    Storvex isn't available in{" "}
+                    {selectedMarket.countryName} yet.
+                  </p>
+                ) : null}
+
+                {marketLoadError ? (
+                  <p className="mt-2 text-xs font-bold text-red-500">
+                    {marketLoadError}
+                  </p>
+                ) : null}
+              </Field>
+
               <Field label="Store name" required>
                 <input
                   className="svx-onboard-input"
                   value={form.storeName}
                   onChange={(event) => setField("storeName", event.target.value)}
-                  placeholder="Example: Kigali Tech Store"
+                  placeholder="Example: City Electronics"
                   autoComplete="organization"
                   required
                 />
@@ -611,7 +785,7 @@ export default function TenantIntent() {
 
           <OnboardingCard className="h-full">
             <div className="svx-onboard-card-title-row">
-              <OnboardingIconBadge>
+              <OnboardingIconBadge tone="success">
                 <UserRoundCheck size={23} strokeWidth={2.2} />
               </OnboardingIconBadge>
 
@@ -627,7 +801,7 @@ export default function TenantIntent() {
                   className="svx-onboard-input"
                   value={form.ownerName}
                   onChange={(event) => setField("ownerName", event.target.value)}
-                  placeholder="Example: Jean Luc Rurangwa"
+                  placeholder="Example: Alex K."
                   autoComplete="name"
                   required
                 />
@@ -649,13 +823,21 @@ export default function TenantIntent() {
                 <Field
                   label="Phone"
                   required
-                  help={`Use a ${selectedMarket.countryName} number that can receive verification (${selectedMarket.callingCode}).`}
+                  help={
+                    selectedMarket
+                      ? `Use a ${selectedMarket.countryName} number that can receive verification (${selectedMarket.callingCode}).`
+                      : "Choose the business country first."
+                  }
                 >
                   <input
                     className="svx-onboard-input"
                     value={form.phone}
                     onChange={(event) => setField("phone", event.target.value)}
-                    placeholder={`${selectedMarket.callingCode} mobile number`}
+                    placeholder={
+                      selectedMarket
+                        ? `${selectedMarket.callingCode} mobile number`
+                        : "Mobile number"
+                    }
                     autoComplete="tel"
                     required
                   />
@@ -667,38 +849,23 @@ export default function TenantIntent() {
 
         <OnboardingCard>
           <div className="svx-onboard-card-title-row">
-            <OnboardingIconBadge>
+            <OnboardingIconBadge tone="money">
               <MapPinHouse size={23} strokeWidth={2.2} />
             </OnboardingIconBadge>
 
             <div>
               <h3>Store location</h3>
-              <p>Use flexible location names now, so Storvex can support more markets later.</p>
+              <p>Add the business location using names people normally use.</p>
             </div>
           </div>
 
           <div className="svx-onboard-location-grid">
-            <Field label="Country" required>
-              <select
-                className="svx-onboard-input"
-                value={form.countryCode}
-                onChange={(event) => setField("countryCode", event.target.value)}
-                required
-              >
-                {markets.map((market) => (
-                  <option key={market.countryCode} value={market.countryCode}>
-                    {market.countryName}
-                  </option>
-                ))}
-              </select>
-            </Field>
-
             <Field label="District / city" required>
               <input
                 className="svx-onboard-input"
                 value={form.district}
                 onChange={(event) => setField("district", event.target.value)}
-                placeholder="Example: Nyarugenge"
+                placeholder="Example: Central district"
                 required
               />
             </Field>
@@ -708,7 +875,7 @@ export default function TenantIntent() {
                 className="svx-onboard-input"
                 value={form.sector}
                 onChange={(event) => setField("sector", event.target.value)}
-                placeholder="Example: Nyarugenge"
+                placeholder="Example: City centre"
                 required
               />
             </Field>
@@ -718,7 +885,7 @@ export default function TenantIntent() {
                 className="svx-onboard-input"
                 value={form.address}
                 onChange={(event) => setField("address", event.target.value)}
-                placeholder="Example: Kigali, TCB"
+                placeholder="Example: Main Road, near the market"
                 required
               />
             </Field>
@@ -741,7 +908,17 @@ export default function TenantIntent() {
             </div>
           </div>
 
-          <AsyncButton type="submit" loading={loading} loadingText="Saving setup...">
+          <AsyncButton
+            type="submit"
+            loading={loading}
+            loadingText="Saving setup..."
+            disabled={
+              loading ||
+              marketsLoading ||
+              Boolean(marketLoadError) ||
+              !marketAvailable
+            }
+          >
             Continue to verification
             <span aria-hidden="true">→</span>
           </AsyncButton>

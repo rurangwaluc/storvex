@@ -17,7 +17,13 @@ const passwordResetController = require("./passwordReset.controller");
 
 const authenticate = require("../../middlewares/authenticate");
 const { getPaidPlans, getTrialDays } = require("../../config/plans");
-const { listPublicOnboardingMarkets } = require("../../config/markets");
+const { listPublicMarkets } = require("../../config/markets");
+const {
+  getOnboardingCatalogueForMarket,
+} = require("../../config/subscriptions/pricing");
+const {
+  requestCountryHint,
+} = require("../../lib/geo/countryHint");
 
 // ---------- helpers ----------
 function cleanString(value) {
@@ -248,6 +254,59 @@ router.get(
   authController.getOwnerIntentStatus
 );
 
+router.get(
+  "/signup/owner-intent/:intentId/plans",
+  async (req, res) => {
+    try {
+      const intentId = cleanString(req.params?.intentId);
+
+      if (!intentId) {
+        return res.status(400).json({
+          message:
+            "Your setup could not be restored. Please start again.",
+          code: "ONBOARDING_ID_REQUIRED",
+        });
+      }
+
+      const intent =
+        await prisma.ownerIntent.findUnique({
+          where: { id: intentId },
+          select: {
+            id: true,
+            countryCode: true,
+            status: true,
+            expiresAt: true,
+            onboardingTokenHash: true,
+            onboardingTokenExpiresAt: true,
+            onboardingTokenRevokedAt: true,
+          },
+        });
+
+      assertOnboardingAccess(req, intent);
+
+      const catalogue =
+        getOnboardingCatalogueForMarket(
+          intent.countryCode,
+        );
+
+      return res.json({
+        trialDays: getTrialDays(),
+        ...catalogue,
+      });
+    } catch (error) {
+      const publicError =
+        publicOnboardingError(
+          error,
+          "We could not load Storvex plans. Please try again.",
+        );
+
+      return res
+        .status(publicError.status)
+        .json(publicError.body);
+    }
+  },
+);
+
 router.post("/otp/send", otpController.sendOtp);
 router.post("/otp/verify", otpController.verifyOtp);
 
@@ -262,7 +321,13 @@ router.get("/plans", (req, res) => {
 });
 
 router.get("/markets", (req, res) => {
-  return res.json({ markets: listPublicOnboardingMarkets() });
+  return res.json({ markets: listPublicMarkets() });
+});
+
+router.get("/country-hint", (req, res) => {
+  return res.json({
+    countryCode: requestCountryHint(req)?.countryCode || null,
+  });
 });
 
 router.post("/owner-payment", createOwnerPayment);

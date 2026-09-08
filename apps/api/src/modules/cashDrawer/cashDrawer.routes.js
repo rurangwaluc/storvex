@@ -5,8 +5,6 @@ const { PERMISSIONS } = require("../auth/permissions");
 
 const router = express.Router();
 
-const BUSINESS_TIMEZONE = "Africa/Kigali";
-
 const OPENING_REASONS = new Set([
   "NORMAL_FLOAT",
   "OWNER_ADDED_STARTING_CASH",
@@ -39,6 +37,20 @@ const CASH_OVER_REASONS = new Set([
 function cleanString(value) {
   const s = String(value || "").trim();
   return s || null;
+}
+
+function normalizeBusinessTimezone(value) {
+  const timezone = cleanString(value) || "Africa/Kigali";
+
+  try {
+    new Intl.DateTimeFormat("en", {
+      timeZone: timezone,
+    }).format(new Date());
+
+    return timezone;
+  } catch {
+    return "Africa/Kigali";
+  }
 }
 
 function toBigIntAmount(value) {
@@ -368,7 +380,10 @@ async function getSessionById(tenantId, branchId, sessionId) {
 
 async function getTenantDrawerSettings(tenantId) {
   const rows = await prisma.$queryRaw`
-    select id, cash_drawer_block_cash_sales
+    select
+      id,
+      timezone,
+      cash_drawer_block_cash_sales
     from public."Tenant"
     where id::text = ${String(tenantId)}::text
     limit 1
@@ -428,15 +443,18 @@ async function assertBranchIsOperable(tenantId, branchId) {
   return { ok: true, branch };
 }
 
-async function wasClosedToday(session) {
+async function wasClosedToday(session, timezone) {
   if (!session?.closed_at) return false;
+
+  const businessTimezone =
+    normalizeBusinessTimezone(timezone);
 
   const rows = await prisma.$queryRaw`
     select
       (
-        date(${session.closed_at}::timestamptz at time zone ${BUSINESS_TIMEZONE})
+        date(${session.closed_at}::timestamptz at time zone ${businessTimezone})
         =
-        date(now() at time zone ${BUSINESS_TIMEZONE})
+        date(now() at time zone ${businessTimezone})
       ) as same_business_day
   `;
 
@@ -682,8 +700,15 @@ router.post(
         });
       }
 
-      const latest = await getLatestSession(tenantId, branchId);
-      const latestClosedToday = await wasClosedToday(latest);
+      const [latest, tenantSettings] = await Promise.all([
+        getLatestSession(tenantId, branchId),
+        getTenantDrawerSettings(tenantId),
+      ]);
+
+      const latestClosedToday = await wasClosedToday(
+        latest,
+        tenantSettings?.timezone,
+      );
 
       if (latestClosedToday && !isOwnerLikeUser(user)) {
         return res.status(403).json({

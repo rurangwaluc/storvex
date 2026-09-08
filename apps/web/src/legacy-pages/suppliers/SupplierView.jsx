@@ -5,6 +5,8 @@ import { Link, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import PageSkeleton from "../../components/ui/PageSkeleton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import {
   createSupplierBill,
   updateSupplierBill,
@@ -103,18 +105,18 @@ function textareaClass() {
   return "svx-supplier-textarea";
 }
 
-function badgeClass(tone = "neutral") {
-  if (tone === "primary") return "bg-[var(--color-primary-soft)] text-[var(--color-primary)]";
-  if (tone === "success") return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300";
-  if (tone === "warning") return "bg-amber-500/10 text-amber-600 dark:text-amber-300";
-  if (tone === "danger") return "bg-red-500/10 text-red-600 dark:text-red-300";
-  if (tone === "info") return "bg-sky-500/10 text-sky-600 dark:text-sky-300";
-  return "bg-[var(--color-surface-2)] text-[var(--color-text-muted)]";
+function statusTextClass(tone = "neutral") {
+  if (tone === "primary") return "text-[var(--color-primary)]";
+  if (tone === "success") return "text-emerald-600 dark:text-emerald-300";
+  if (tone === "warning") return "text-amber-600 dark:text-amber-300";
+  if (tone === "danger") return "text-red-600 dark:text-red-300";
+  if (tone === "info") return "text-sky-600 dark:text-sky-300";
+  return "text-[var(--color-text-muted)]";
 }
 
-function Badge({ children, tone = "neutral", className = "" }) {
+function StatusText({ children, tone = "neutral", className = "" }) {
   return (
-    <span className={cx("inline-flex items-center rounded-full px-3 py-1.5 text-xs font-black", badgeClass(tone), className)}>
+    <span className={cx("inline-flex items-center text-xs font-black", statusTextClass(tone), className)}>
       {children}
     </span>
   );
@@ -129,32 +131,9 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(n) ? n : fallback;
 }
 
-function formatMoney(value) {
-  const n = Number(value || 0);
-  if (!Number.isFinite(n)) return "RWF 0";
-  return `RWF ${Math.round(n).toLocaleString("en-US")}`;
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-}
-
-function compactDateKey(value = new Date()) {
-  const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return "00000000";
-
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}${month}${day}`;
-}
-
-function generatedBillNumber(existingBills = []) {
-  const todayKey = compactDateKey();
-  const prefix = `SUP-BILL-${todayKey}`;
+function generatedBillNumber(existingBills = [], tenantDateKey = "") {
+  const todayKey = String(tenantDateKey || "").replaceAll("-", "");
+  const prefix = `SUP-BILL-${todayKey || "00000000"}`;
   const matchingToday = Array.isArray(existingBills)
     ? existingBills.filter((bill) => cleanString(bill?.billNumber).startsWith(prefix)).length
     : 0;
@@ -301,18 +280,11 @@ function EmptyPanel({ title, text }) {
 }
 
 
-function toDateInputValue(value) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
-}
-
-function supplierBillToEditForm(bill) {
+function supplierBillToEditForm(bill, dateInput) {
   return {
     billNumber: bill?.billNumber || "",
     documentRef: bill?.documentRef || "",
-    dueDate: toDateInputValue(bill?.dueDate),
+    dueDate: dateInput(bill?.dueDate),
     notes: bill?.notes || "",
     items: Array.isArray(bill?.items) && bill.items.length
       ? bill.items.map((item) => ({
@@ -327,6 +299,9 @@ function supplierBillToEditForm(bill) {
 }
 
 function BillRow({ bill, onView }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   return (
     <button
       type="button"
@@ -336,8 +311,8 @@ function BillRow({ bill, onView }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={statusTone(bill.status)}>{prettyEnum(bill.status)}</Badge>
-            {bill.billNumber ? <Badge tone="neutral">{bill.billNumber}</Badge> : null}
+            <StatusText tone={statusTone(bill.status)}>{prettyEnum(bill.status)}</StatusText>
+            {bill.billNumber ? <StatusText tone="neutral">{bill.billNumber}</StatusText> : null}
           </div>
           <div className={cx("mt-3 text-sm font-black", strongText())}>
             {formatMoney(bill.totalAmount)} bill
@@ -353,26 +328,24 @@ function BillRow({ bill, onView }) {
           <div className={cx("mt-1 text-sm font-black", strongText())}>{formatDate(bill.dueDate)}</div>
         </div>
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <span className="rounded-full bg-[var(--color-primary-soft)] px-3 py-1.5 text-xs font-black text-[var(--color-primary)]">
-          Open bill details →
-        </span>
-        <span className="rounded-full bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-black text-[var(--color-text-muted)]">
-          View or edit
-        </span>
+      <div className="mt-4 text-xs font-black text-[var(--color-primary)]">
+        Open bill details →
       </div>
     </button>
   );
 }
 
 function PaymentRow({ payment }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   return (
     <div className="rounded-[22px] border border-[var(--color-border)] bg-[var(--color-card)] p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={payment.method === "CASH" ? "warning" : "info"}>{prettyEnum(payment.method)}</Badge>
-            {payment.bill?.billNumber ? <Badge tone="neutral">{payment.bill.billNumber}</Badge> : null}
+            <StatusText tone={payment.method === "CASH" ? "warning" : "info"}>{prettyEnum(payment.method)}</StatusText>
+            {payment.bill?.billNumber ? <StatusText tone="neutral">{payment.bill.billNumber}</StatusText> : null}
           </div>
           <div className={cx("mt-3 text-sm font-black", strongText())}>{formatMoney(payment.amount)}</div>
           <div className={cx("mt-1 text-xs font-semibold leading-5", mutedText())}>
@@ -390,11 +363,14 @@ function PaymentRow({ payment }) {
 }
 
 function SupplyRow({ supply }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   return (
     <div className="rounded-[22px] border border-[var(--color-border)] bg-[var(--color-card)] p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <Badge tone="primary">{prettyEnum(supply.sourceType || "BOUGHT")}</Badge>
+          <StatusText tone="primary">{prettyEnum(supply.sourceType || "BOUGHT")}</StatusText>
           <div className={cx("mt-3 text-sm font-black", strongText())}>
             {formatMoney(supply.totalCost)} stock received
           </div>
@@ -445,6 +421,8 @@ function purchaseOrderNumber(order) {
 }
 
 function PurchaseOrderRow({ order, busy, onEdit, onCopy, onPrint, onMarkOrdered, onCancel }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
   const status = cleanString(order?.status).toUpperCase();
   const canEdit = status === "DRAFT";
   const canMarkOrdered = status === "DRAFT";
@@ -455,7 +433,7 @@ function PurchaseOrderRow({ order, busy, onEdit, onCopy, onPrint, onMarkOrdered,
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge tone={purchaseOrderStatusTone(order.status)}>{purchaseOrderStatusLabel(order.status)}</Badge>
+            <StatusText tone={purchaseOrderStatusTone(order.status)}>{purchaseOrderStatusLabel(order.status)}</StatusText>
             <span className={cx("text-xs font-black uppercase tracking-[0.14em]", softText())}>
               {purchaseOrderNumber(order)}
             </span>
@@ -554,6 +532,8 @@ function PurchaseOrderRow({ order, busy, onEdit, onCopy, onPrint, onMarkOrdered,
 }
 
 export default function SupplierView() {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate, dateInput } = useTenantDateTime();
   const { id } = useParams();
   const canUsePortal = typeof document !== "undefined";
 
@@ -625,7 +605,12 @@ export default function SupplierView() {
   const cashPaymentBlocked = paymentMethod === "CASH" && !cashDrawerIsOpen;
   const paymentTooHigh = selectedPaymentBill && paymentAmount > Number(selectedPaymentBill.balanceDue || 0);
 
-  const autoBillNumber = useMemo(() => generatedBillNumber(bills), [bills]);
+  const tenantTodayKey = dateInput(new Date());
+
+  const autoBillNumber = useMemo(
+    () => generatedBillNumber(bills, tenantTodayKey),
+    [bills, tenantTodayKey],
+  );
 
   const documentReferenceOptions = useMemo(
     () => uniqueCleanValues(supplies.map((supply) => supply?.documentRef)),
@@ -730,7 +715,7 @@ export default function SupplierView() {
 
   function startBillEdit(bill) {
     setBillEditMessage("");
-    setBillEditForm(supplierBillToEditForm(bill));
+    setBillEditForm(supplierBillToEditForm(bill, dateInput));
   }
 
   function cancelBillEdit() {
@@ -911,7 +896,7 @@ export default function SupplierView() {
 
   function purchaseOrderToForm(order) {
     return {
-      orderDate: order?.orderDate ? String(order.orderDate).slice(0, 10) : "",
+      orderDate: dateInput(order?.orderDate),
       note: order?.note || "",
       items: Array.isArray(order?.items) && order.items.length
         ? order.items.map((item) => {
@@ -1546,9 +1531,12 @@ export default function SupplierView() {
                   title="Supplier control center"
                   subtitle="A quick view of orders, bills, received stock, and payments. Open a tab when you need the full list."
                 />
-                <Badge tone={Number(balance?.totals?.balanceDue || 0) > 0 ? "warning" : "success"}>
+                <StatusText
+                  tone={Number(balance?.totals?.balanceDue || 0) > 0 ? "warning" : "success"}
+                  className="self-start sm:mt-1"
+                >
                   {Number(balance?.totals?.balanceDue || 0) > 0 ? "Money owed" : "Settled"}
-                </Badge>
+                </StatusText>
               </div>
 
               <div className="svx-supplier-overview-grid mt-5">
@@ -1627,9 +1615,9 @@ export default function SupplierView() {
                 subtitle="Purchase orders are requests to buy. They are separate from received stock, supplier bills, and payments."
               />
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={activePurchaseOrders.length ? "primary" : "success"}>
+                <StatusText tone={activePurchaseOrders.length ? "primary" : "success"}>
                   {activePurchaseOrders.length ? `${activePurchaseOrders.length} active` : "No active orders"}
-                </Badge>
+                </StatusText>
                 <button
                   type="button"
                   className={primaryBtn()}
@@ -1683,9 +1671,9 @@ export default function SupplierView() {
                 subtitle="Open bills appear here until they are fully paid."
               />
               <div className="flex flex-wrap items-center gap-2">
-                <Badge tone={openBills.length ? "warning" : "success"}>
+                <StatusText tone={openBills.length ? "warning" : "success"}>
                   {openBills.length ? `${openBills.length} open` : "Nothing owed"}
-                </Badge>
+                </StatusText>
                 <button
                   type="button"
                   className={primaryBtn()}
@@ -1796,7 +1784,7 @@ export default function SupplierView() {
                       subtitle="Plan what you want from this supplier. Stock and money are recorded later when goods arrive and bills are paid."
                     />
 
-                    <div className="mt-5 flex justify-end">
+                    <div className="mt-3 flex justify-end">
                       <button
                         type="button"
                         className={secondaryBtn()}
@@ -1989,7 +1977,7 @@ export default function SupplierView() {
               </button>
             </div>
 
-            <form className="mt-4 space-y-4" onSubmit={submitBill}>
+            <form className="mt-3 space-y-3" onSubmit={submitBill}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Bill number" hint="Generated by Storvex.">
                     <input
@@ -2030,7 +2018,7 @@ export default function SupplierView() {
                       <button
                         key={ref}
                         type="button"
-                        className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-black text-[var(--color-text-muted)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-text)]"
+                        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-black text-[var(--color-text-muted)] transition hover:border-[var(--color-primary)] hover:text-[var(--color-text)]"
                         onClick={() => setBillForm((current) => ({ ...current, documentRef: ref }))}
                       >
                         {ref}
@@ -2048,7 +2036,14 @@ export default function SupplierView() {
                 {billForm.items.map((item, index) => (
                   <div key={index} className={cx(softPanel(), "space-y-3 p-4")}>
                     <div className="flex items-center justify-between gap-3">
-                      <Badge tone="primary">Item {index + 1}</Badge>
+                      <div
+                        className={cx(
+                          "text-[10px] font-black uppercase tracking-[0.16em]",
+                          softText(),
+                        )}
+                      >
+                        Item {index + 1}
+                      </div>
                       {billForm.items.length > 1 ? (
                         <button type="button" className={dangerBtn()} onClick={() => removeBillItem(index)}>
                           Remove

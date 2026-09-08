@@ -6,6 +6,13 @@ const {
 } = require("@prisma/client");
 
 const prisma = require("../../config/database");
+const {
+  getDefaultTimezoneForMarket,
+  getMarket,
+} = require("../../config/markets");
+const {
+  normalizePhone: normalizeMarketPhone,
+} = require("../../lib/phone/marketPhone");
 const logAudit = require("../../utils/auditLogger");
 
 const ALLOWED_INTERSTORE_METHODS = new Set(Object.values(InterStorePaymentMethod));
@@ -26,10 +33,31 @@ function cleanNullableString(value, maxLen = null) {
   return s;
 }
 
-function normalizePhone(value) {
-  const s = cleanString(value);
-  if (!s) return null;
-  return s.replace(/[^\d+]/g, "") || null;
+function normalizeTenantPhone(value, countryCode) {
+  const raw = cleanString(value);
+  if (!raw) return null;
+
+  const market = getMarket(countryCode);
+  if (!market) return raw;
+
+  const hasReviewedPhoneRules =
+    Number.isInteger(market.phone?.nationalLength) &&
+    market.phone.nationalLength > 0 &&
+    Array.isArray(market.phone?.nationalPrefixes) &&
+    market.phone.nationalPrefixes.length > 0;
+
+  if (!hasReviewedPhoneRules) {
+    return raw;
+  }
+
+  try {
+    return normalizeMarketPhone({
+      countryCode,
+      input: raw,
+    });
+  } catch {
+    return null;
+  }
 }
 
 function normalizeSerial(value) {
@@ -163,9 +191,20 @@ async function insertCashMovementIfPossible(
 
 async function resolveTransferCustomerIdTx(tx, tenantId, deal) {
   const name = cleanString(deal?.resellerName);
-  const phone = normalizePhone(deal?.resellerPhone);
 
-  if (!tenantId || !name || !phone) return null;
+  if (!tenantId || !name) return null;
+
+  const tenant = await tx.tenant.findUnique({
+    where: { id: tenantId },
+    select: { countryCode: true },
+  });
+
+  const phone = normalizeTenantPhone(
+    deal?.resellerPhone,
+    tenant?.countryCode,
+  );
+
+  if (!phone) return null;
 
   const address =
     [deal.resellerAddress, deal.resellerDistrict, deal.resellerSector]
@@ -265,6 +304,108 @@ function parseIsoDateOrNull(value) {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return null;
   return d;
+}
+
+function validTimezone(value) {
+  const timezone = cleanString(value);
+  if (!timezone) return null;
+
+  try {
+    new Intl.DateTimeFormat("en", {
+      timeZone: timezone,
+    }).format(new Date());
+
+    return timezone;
+  } catch {
+    return null;
+  }
+}
+
+function tenantTimezone(tenant) {
+  const stored = validTimezone(tenant?.timezone);
+  if (stored) return stored;
+
+  const countryCode = cleanString(tenant?.countryCode);
+
+  if (!countryCode) {
+    throw new Error("Tenant timezone and country are unavailable");
+  }
+
+  return getDefaultTimezoneForMarket(countryCode);
+}
+
+function parseCalendarDateOrNull(value) {
+  const raw = cleanString(value);
+  if (!raw) return null;
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  const probe = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0));
+
+  if (
+    probe.getUTCFullYear() !== year ||
+    probe.getUTCMonth() !== month - 1 ||
+    probe.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return probe;
+}
+
+function dateKeyInTimezone(value, timezone) {
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+
+  if (!values.year || !values.month || !values.day) {
+    return null;
+  }
+
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function addDaysToDateKey(dateKey, days) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateKey || ""));
+  if (!match) return null;
+
+  const date = new Date(Date.UTC(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    12,
+    0,
+    0,
+    0,
+  ));
+
+  date.setUTCDate(date.getUTCDate() + Number(days || 0));
+
+  return [
+    String(date.getUTCFullYear()).padStart(4, "0"),
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0"),
+  ].join("-");
 }
 
 function getTenantId(req) {
@@ -1171,12 +1312,32 @@ async function createDeal(req, res) {
     const actorUserId = getActorUserId(req);
     const activeBranch = await ensureWritableBranchAccessOrThrow(req);
 
+    const borrowerTenant = await prisma.tenant.findUnique({
+      where: { id: borrowerTenantId },
+      select: {
+        countryCode: true,
+        timezone: true,
+      },
+    });
+
+    if (!borrowerTenant) {
+      return res.status(404).json({ message: "Business workspace not found" });
+    }
+
+    const borrowerTimezone = tenantTimezone(borrowerTenant);
+
     const payload = {
       supplierTenantId: cleanNullableString(req.body.supplierTenantId),
       externalSupplierName: cleanNullableString(req.body.externalSupplierName, 180),
-      externalSupplierPhone: normalizePhone(req.body.externalSupplierPhone),
+      externalSupplierPhone: normalizeTenantPhone(
+        req.body.externalSupplierPhone,
+        borrowerTenant.countryCode,
+      ),
       resellerName: cleanNullableString(req.body.resellerName, 180),
-      resellerPhone: normalizePhone(req.body.resellerPhone),
+      resellerPhone: normalizeTenantPhone(
+        req.body.resellerPhone,
+        borrowerTenant.countryCode,
+      ),
       resellerStore: cleanNullableString(req.body.resellerStore, 180),
       resellerWorkplace: cleanNullableString(req.body.resellerWorkplace, 180),
       resellerDistrict: cleanNullableString(req.body.resellerDistrict, 120),
@@ -1241,30 +1402,38 @@ async function createDeal(req, res) {
       });
     }
 
-    const parsedDueDate = payload.dueDate ? parseIsoDateOrNull(payload.dueDate) : null;
+    const parsedDueDate = payload.dueDate
+      ? parseCalendarDateOrNull(payload.dueDate)
+      : null;
+
     if (payload.dueDate && !parsedDueDate) {
-      return res.status(400).json({ message: "dueDate is invalid ISO date" });
+      return res.status(400).json({ message: "dueDate must be a valid YYYY-MM-DD date" });
     }
 
     if (parsedDueDate) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const todayKey = dateKeyInTimezone(new Date(), borrowerTimezone);
+      const dueDateKey = cleanString(payload.dueDate);
+      const maxDateKey = addDaysToDateKey(todayKey, 365);
 
-      if (parsedDueDate < today) {
+      if (!todayKey || !maxDateKey) {
+        throw new Error("Unable to resolve tenant calendar date");
+      }
+
+      if (dueDateKey < todayKey) {
         return res.status(400).json({ message: "dueDate cannot be in the past" });
       }
 
-      const max = new Date(today);
-      max.setDate(max.getDate() + 365);
-
-      if (parsedDueDate > max) {
+      if (dueDateKey > maxDateKey) {
         return res.status(400).json({ message: "dueDate too far in the future" });
       }
     }
 
-    const parsedTakenAt = payload.takenAt ? parseIsoDateOrNull(payload.takenAt) : null;
+    const parsedTakenAt = payload.takenAt
+      ? parseCalendarDateOrNull(payload.takenAt)
+      : null;
+
     if (payload.takenAt && !parsedTakenAt) {
-      return res.status(400).json({ message: "takenAt is invalid ISO date" });
+      return res.status(400).json({ message: "takenAt must be a valid YYYY-MM-DD date" });
     }
 
     const deal = await prisma.$transaction(async (tx) => {

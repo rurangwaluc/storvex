@@ -11,12 +11,20 @@ const {
 
 const {
   getGraceDays,
-  getPaidPlans,
-  getPlanByKey,
-  getPlanSnapshot,
   isTrialPlanKey,
   isEnterprisePlanKey,
 } = require("../../config/plans");
+
+const {
+  getPaidPlansForMarket,
+  getPlanForMarket,
+  getPlanSnapshotForMarket,
+} = require("../../config/subscriptions/pricing");
+
+const {
+  requireMarket,
+  isSubscriptionPaymentsEnabled,
+} = require("../../config/markets");
 
 function cleanString(value) {
   const s = String(value || "").trim();
@@ -220,6 +228,9 @@ async function getTenantOrThrow(tenantId) {
       email: true,
       phone: true,
       status: true,
+      countryCode: true,
+      currencyCode: true,
+      timezone: true,
       mainBranchId: true,
       mainBranch: {
         select: {
@@ -295,8 +306,9 @@ function resolveRenewalStartDate(subscription) {
   return now;
 }
 
-function assertRenewalPlanOrThrow(planKey) {
-  const plan = getPlanByKey(planKey);
+function assertRenewalPlanOrThrow(planKey, countryCode) {
+  const market = requireMarket(countryCode);
+  const plan = getPlanForMarket(planKey, market.countryCode);
 
   if (!plan) {
     const err = new Error("Invalid renewal plan");
@@ -321,7 +333,18 @@ function assertRenewalPlanOrThrow(planKey) {
 
 async function listBillingPlans(req, res) {
   try {
-    const plans = getPaidPlans().map((p) => ({
+    const tenantId = normalizeTenantId(req);
+
+    if (!tenantId) {
+      return res.status(400).json({ message: "tenantId is required" });
+    }
+
+    const tenant = await getTenantOrThrow(tenantId);
+    const market = requireMarket(tenant.countryCode || "RW");
+
+    const plans = getPaidPlansForMarket(
+      market.countryCode,
+    ).map((p) => ({
       key: p.key,
       label: p.label,
       tierKey: p.tierKey,
@@ -357,7 +380,15 @@ async function listBillingPlans(req, res) {
         : [],
     }));
 
-    return res.json({ plans });
+    return res.json({
+      countryCode: market.countryCode,
+      currencyCode: market.defaultCurrencyCode,
+      subscriptionPaymentsEnabled:
+        isSubscriptionPaymentsEnabled(
+          market.countryCode,
+        ),
+      plans,
+    });
   } catch (err) {
     console.error("listBillingPlans error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -407,9 +438,19 @@ async function getBillingOverview(req, res) {
     ]);
 
     const branchUsage = computeBranchUsage(subscription, activeBranches);
+    const market = requireMarket(tenant.countryCode || "RW");
 
     return res.json({
       tenant,
+      market: {
+        countryCode: market.countryCode,
+        currencyCode: market.defaultCurrencyCode,
+        timezone: tenant.timezone || market.defaultTimezone,
+        subscriptionPaymentsEnabled:
+          isSubscriptionPaymentsEnabled(
+            market.countryCode,
+          ),
+      },
       subscription: serializeSubscription(subscription, activeUsers, activeBranches),
       usage: {
         activeStaff: activeUsers,
@@ -475,8 +516,27 @@ async function initiateRenewalPayment(req, res) {
       countActiveBranches(tenantId),
     ]);
 
-    const plan = assertRenewalPlanOrThrow(requestedPlanKey);
-    const snap = getPlanSnapshot(plan.key);
+    const market = requireMarket(tenant.countryCode || "RW");
+
+    if (!isSubscriptionPaymentsEnabled(market.countryCode)) {
+      const err = new Error(
+        "Subscription payments are not available in this country",
+      );
+      err.status = 400;
+      err.code = "MARKET_SUBSCRIPTION_PAYMENTS_DISABLED";
+      throw err;
+    }
+
+    const plan = assertRenewalPlanOrThrow(
+      requestedPlanKey,
+      market.countryCode,
+    );
+
+    const snap = getPlanSnapshotForMarket(
+      plan.key,
+      market.countryCode,
+    );
+
     const reference = externalReference || makeReference("RENEW");
 
     const payment = await prisma.payment.upsert({

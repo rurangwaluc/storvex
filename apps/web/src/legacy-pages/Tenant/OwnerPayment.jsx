@@ -219,7 +219,9 @@ function FullPlanOption({
         "svx-launch-choice flex min-w-0 flex-col rounded-[20px] border p-5 transition sm:p-6",
         active
           ? "is-active border-[var(--onboard-primary)]"
-          : "border-[var(--onboard-border)]",
+          : recommended
+            ? "is-recommended border-[var(--onboard-primary)]"
+            : "border-[var(--onboard-border)]",
       )}
     >
       <div className="flex min-w-0 items-start justify-between gap-4">
@@ -236,10 +238,6 @@ function FullPlanOption({
         {active ? (
           <span className="shrink-0 text-xs font-black text-[var(--onboard-primary)]">
             ✓ Selected
-          </span>
-        ) : recommended ? (
-          <span className="shrink-0 text-xs font-black text-[var(--onboard-primary)]">
-            Recommended
           </span>
         ) : null}
       </div>
@@ -635,7 +633,11 @@ export default function OwnerPayment() {
       setLoadingPlans(true);
 
       try {
-        const { data } = await apiClient.get("/auth/plans");
+        const { data } = await apiClient.get(
+          `/auth/signup/owner-intent/${encodeURIComponent(
+            intentId,
+          )}/plans`,
+        );
 
         if (cancelled) return;
 
@@ -676,12 +678,14 @@ export default function OwnerPayment() {
       }
     }
 
-    loadPlans();
+    if (intentId) {
+      loadPlans();
+    }
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [intentId]);
 
   useEffect(() => {
     if (!intentId || !storeName) {

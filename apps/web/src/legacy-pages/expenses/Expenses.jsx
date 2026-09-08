@@ -8,6 +8,8 @@ import { createPortal } from "react-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import {
   approveExpense,
   createExpense,
@@ -86,34 +88,12 @@ function cleanString(value) {
   return text || "";
 }
 
-function formatMoney(value) {
-  const amount = Number(value || 0);
-  const safeAmount = Number.isFinite(amount) ? amount : 0;
-
-  return `Rwf ${safeAmount.toLocaleString("en-US", {
-    maximumFractionDigits: 0,
-  })}`;
-}
-
 function formatNumber(value) {
   const number = Number(value || 0);
 
   return Number.isFinite(number)
     ? number.toLocaleString("en-US", { maximumFractionDigits: 0 })
     : "0";
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 function moneySourceLabel(value) {
@@ -156,7 +136,7 @@ function movementTone(expense) {
   return "is-neutral";
 }
 
-function expenseErrorMessage(error) {
+function expenseErrorMessage(error, formatMoney) {
   const code = String(error?.code || error?.data?.code || "");
 
   if (code === "CASH_DRAWER_NOT_OPEN") {
@@ -177,7 +157,7 @@ function expenseErrorMessage(error) {
   return error?.message || "Expense action failed.";
 }
 
-function relativeTime(value) {
+function relativeTime(value, formatDate) {
   if (!value) return "—";
 
   const date = new Date(value);
@@ -296,30 +276,10 @@ function SkeletonBlock({ className = "" }) {
   return <div className={cx("animate-pulse rounded-[20px] bg-[var(--color-surface-2)]", className)} />;
 }
 
-function StatusBadge({ status }) {
-  const approved = String(status || "").toUpperCase() === "APPROVED";
-
-  return (
-    <span className={cx("svx-expense-badge", approved ? "is-approved" : "is-pending")}>
-      {approved ? "Approved" : "Pending"}
-    </span>
-  );
-}
-
-function CategoryPill({ category }) {
-  return (
-    <span className="svx-expense-pill">
-      {CATEGORY_LABEL[category] || category || "Other"}
-    </span>
-  );
-}
-
-function MoneySourcePill({ paidFrom }) {
-  return (
-    <span className="svx-expense-pill is-source">
-      {moneySourceLabel(paidFrom)}
-    </span>
-  );
+function expenseStatusLabel(status) {
+  return String(status || "").toUpperCase() === "APPROVED"
+    ? "Approved"
+    : "Pending";
 }
 
 function SectionHeading({ eyebrow, title, subtitle }) {
@@ -385,8 +345,8 @@ function ListSkeleton() {
         <div key={index} className={cx(pageCard(), "p-4 sm:p-5")}>
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
-              <SkeletonBlock className="h-7 w-32 rounded-full" />
-              <SkeletonBlock className="h-7 w-20 rounded-full" />
+              <SkeletonBlock className="h-6 w-32 rounded-[10px]" />
+              <SkeletonBlock className="h-4 w-20 rounded-[8px]" />
             </div>
 
             <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
@@ -408,6 +368,8 @@ function ListSkeleton() {
 }
 
 function ExpenseCard({ expense, onApprove, onEdit, onDelete, approveBusy, deleteBusy, index, showStoreLocation }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
   const isApproved = String(expense.status || "").toUpperCase() === "APPROVED";
   const storeLocationName = storeLocationNameFromExpense(expense);
 
@@ -422,13 +384,18 @@ function ExpenseCard({ expense, onApprove, onEdit, onDelete, approveBusy, delete
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="svx-expense-card-heading">
                 <span className={cx("text-[1.1rem] font-black tracking-tight", strongText())}>
                   {formatMoney(expense.amount)}
                 </span>
-                <StatusBadge status={expense.status} />
-                <CategoryPill category={expense.category} />
-                <MoneySourcePill paidFrom={expense.paidFrom} />
+
+                <div className="svx-expense-card-meta">
+                  <span className={isApproved ? "svx-expense-status-text is-approved" : "svx-expense-status-text"}>
+                    {expenseStatusLabel(expense.status)}
+                  </span>
+                  <span>{CATEGORY_LABEL[expense.category] || expense.category || "Other"}</span>
+                  <span>{moneySourceLabel(expense.paidFrom)}</span>
+                </div>
               </div>
 
               <div className={cx("mt-1.5 text-sm font-semibold", strongText())}>
@@ -484,7 +451,7 @@ function ExpenseCard({ expense, onApprove, onEdit, onDelete, approveBusy, delete
               <div className={cx("mt-2.5 text-sm font-bold leading-snug", strongText())}>
                 {expense.createdBy?.name || "—"}
               </div>
-              <div className={cx("mt-0.5 text-xs", mutedText())}>{relativeTime(expense.createdAt)}</div>
+              <div className={cx("mt-0.5 text-xs", mutedText())}>{relativeTime(expense.createdAt, formatDate)}</div>
             </div>
 
             <div className={cx(raisedPanel(), "p-3.5")}>
@@ -569,6 +536,8 @@ function ExpenseTable({
   openActionMenuId,
   setOpenActionMenuId,
 }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
   const [actionMenuPosition, setActionMenuPosition] = useState(null);
 
   const activeExpense = useMemo(
@@ -640,9 +609,10 @@ function ExpenseTable({
                   <div className="truncate text-sm font-black text-[var(--color-text)]">
                     {expense.title || "Untitled expense"}
                   </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-semibold text-[var(--color-text-muted)]">{formatDate(expense.createdAt)}</span>
-                    <CategoryPill category={expense.category} />
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-[var(--color-text-muted)]">
+                    <span>{formatDate(expense.createdAt)}</span>
+                    <span aria-hidden="true">/</span>
+                    <span>{CATEGORY_LABEL[expense.category] || expense.category || "Other"}</span>
                   </div>
                 </div>
               </td>
@@ -665,7 +635,15 @@ function ExpenseTable({
               </td>
 
               <td className="px-5 py-4 align-middle">
-                <StatusBadge status={expense.status} />
+                <span
+                  className={
+                    isApproved
+                      ? "svx-expense-status-text is-approved"
+                      : "svx-expense-status-text"
+                  }
+                >
+                  {expenseStatusLabel(expense.status)}
+                </span>
               </td>
 
               <td className="px-5 py-4 align-middle">
@@ -775,6 +753,8 @@ const EMPTY_FORM = {
 };
 
 function CreateExpenseForm({ onCreated, onUpdated, onCancel, activeStoreLocationLabel, expense = null }) {
+  const { currencyCode } = useTenantMoney();
+
   const [form, setForm] = useState(() =>
     expense
       ? {
@@ -884,7 +864,7 @@ function CreateExpenseForm({ onCreated, onUpdated, onCancel, activeStoreLocation
 
           <div>
             <label className={cx("mb-1.5 block text-sm font-medium", strongText())}>
-              Amount (Rwf) <span className="text-[var(--color-danger)]">*</span>
+              Amount{currencyCode ? ` (${currencyCode})` : ""} <span className="text-[var(--color-danger)]">*</span>
             </label>
             <input
               type="number"
@@ -989,6 +969,9 @@ function ExpenseFormModal({ open, expense, onCreated, onUpdated, onClose, active
 }
 
 function DeleteConfirmDialog({ expense, busy, onConfirm, onClose }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   if (!expense) return null;
 
   return (
@@ -1002,7 +985,7 @@ function DeleteConfirmDialog({ expense, busy, onConfirm, onClose }) {
           <div className={cx("mt-2 space-y-1 text-xs", mutedText())}>
             <div>{CATEGORY_LABEL[expense.category] || expense.category || "Other"}</div>
             <div>{storeLocationNameFromExpense(expense)}</div>
-            <div>Logged {relativeTime(expense.createdAt)}</div>
+            <div>Logged {relativeTime(expense.createdAt, formatDate)}</div>
             <div>Paid from {moneySourceLabel(expense.paidFrom)}</div>
           </div>
         </div>
@@ -1026,6 +1009,7 @@ function DeleteConfirmDialog({ expense, busy, onConfirm, onClose }) {
 }
 
 export default function Expenses() {
+  const { formatMoney } = useTenantMoney();
   const queryClient = useQueryClient();
 
   const [activeBranchId, setActiveBranchId] =
@@ -1332,7 +1316,7 @@ export default function Expenses() {
       toast.success("Expense approved");
     } catch (error) {
       if (handleSubscriptionBlockedError(error, { toastId: "expense-approve-blocked" })) return;
-      toast.error(expenseErrorMessage(error));
+      toast.error(expenseErrorMessage(error, formatMoney));
     } finally {
       setApproveBusy("");
     }
@@ -1514,7 +1498,7 @@ export default function Expenses() {
               </div>
 
               {!loading ? (
-                <span className="inline-flex items-center self-start rounded-full bg-[var(--color-surface-2)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-muted)]">
+                <span className="svx-expense-ledger-count">
                   {formatNumber(visible.length)} of {formatNumber(filtered.length)}
                 </span>
               ) : null}

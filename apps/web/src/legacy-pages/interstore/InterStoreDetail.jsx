@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
+import useTenantDateTime from "../../hooks/useTenantDateTime";
+import useTenantMoney from "../../hooks/useTenantMoney";
+
 import {
   addDealPayment,
   getDeal,
@@ -16,31 +19,6 @@ import "./InterStore.css";
 
 function cleanString(value) {
   return String(value || "").trim();
-}
-
-function formatMoney(value) {
-  const n = Number(value || 0);
-  return `RWF ${Math.round(Number.isFinite(n) ? n : 0).toLocaleString("en-US")}`;
-}
-
-function toDateLabel(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
-}
-
-function toDateTimeLabel(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function statusMeta(status) {
@@ -225,6 +203,8 @@ function PageSkeleton() {
 export default function InterStoreDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { formatMoney } = useTenantMoney();
+  const { formatDate, formatDateTime } = useTenantDateTime();
 
   const [loading, setLoading] = useState(true);
   const [deal, setDeal] = useState(null);
@@ -350,12 +330,12 @@ export default function InterStoreDetail() {
     return [
       {
         title: "Recorded",
-        text: toDateTimeLabel(deal?.createdAt || deal?.borrowedAt),
+        text: formatDateTime(deal?.createdAt || deal?.borrowedAt),
         done: Boolean(deal?.createdAt || deal?.borrowedAt),
       },
       {
         title: "Taken",
-        text: toDateTimeLabel(deal?.takenAt || deal?.borrowedAt || deal?.createdAt),
+        text: formatDateTime(deal?.takenAt || deal?.borrowedAt || deal?.createdAt),
         done: Boolean(deal?.takenAt || deal?.borrowedAt || deal?.createdAt),
       },
       {
@@ -369,9 +349,9 @@ export default function InterStoreDetail() {
                 : "Next action",
         text:
           statusKey === "RETURNED"
-            ? toDateTimeLabel(deal?.returnedAt)
+            ? formatDateTime(deal?.returnedAt)
             : statusKey === "PAID"
-              ? toDateTimeLabel(deal?.paidAt)
+              ? formatDateTime(deal?.paidAt)
               : statusKey === "SOLD"
                 ? "Waiting for remaining payment"
                 : meta.next,
@@ -379,7 +359,7 @@ export default function InterStoreDetail() {
         tone: statusKey === "SOLD" ? "warning" : undefined,
       },
     ];
-  }, [deal, meta.next, statusKey]);
+  }, [deal, formatDateTime, meta.next, statusKey]);
 
   if (loading) return <PageSkeleton />;
 
@@ -465,8 +445,8 @@ export default function InterStoreDetail() {
                 <InfoCard label="Agreed value" value={formatMoney(deal.agreedPrice)} note="Original value recorded" />
                 <InfoCard label="Payable value" value={formatMoney(deal.soldPrice || deal.agreedPrice)} note="Amount expected from the receiver" />
                 <InfoCard label="Paid so far" value={formatMoney(paymentSummary?.totalPaid ?? deal.paidAmount)} note="Collected against this transfer" />
-                <InfoCard label="Due date" value={toDateLabel(deal.dueDate)} note="When payment or return is expected" />
-                <InfoCard label="Taken date" value={toDateLabel(deal.takenAt)} note="When stock left the source" />
+                <InfoCard label="Due date" value={formatDate(deal.dueDate)} note="When payment or return is expected" />
+                <InfoCard label="Taken date" value={formatDate(deal.takenAt)} note="When stock left the source" />
                 <InfoCard label="Notes" value={deal.notes || "No notes"} note="Internal owner note" />
               </div>
             </div>
@@ -554,7 +534,7 @@ export default function InterStoreDetail() {
                       <div>
                         <strong>{formatMoney(payment.amount)}</strong>
                         <span>{payment.method}</span>
-                        <span>{toDateTimeLabel(payment.createdAt)}</span>
+                        <span>{formatDateTime(payment.createdAt)}</span>
                       </div>
                       <span className="svx-transfer-status paid">Paid</span>
                     </div>

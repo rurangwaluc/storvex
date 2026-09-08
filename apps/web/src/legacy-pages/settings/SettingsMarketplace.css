@@ -440,7 +440,7 @@
 
 .svx-marketplace-toggle-row input:checked
   + .svx-marketplace-switch {
-  background: var(--color-primary);
+  background: var(--settings-success);
 }
 
 .svx-marketplace-toggle-row input:checked

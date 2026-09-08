@@ -261,13 +261,17 @@ function normalizeDocumentSizeMode(value) {
 function normalizeTaxMode(value) {
   const mode = String(value || "NONE").trim().toUpperCase();
 
+  if (mode === "NONE") {
+    return "NONE";
+  }
+
   if (
+    mode === "CUSTOM" ||
     mode === "VAT_18" ||
     mode === "TURNOVER_3_INTERNAL" ||
-    mode === "VAT_18_PLUS_TURNOVER_3" ||
-    mode === "CUSTOM"
+    mode === "VAT_18_PLUS_TURNOVER_3"
   ) {
-    return mode;
+    return "CUSTOM";
   }
 
   return "NONE";

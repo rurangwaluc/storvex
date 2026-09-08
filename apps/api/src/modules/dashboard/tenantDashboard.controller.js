@@ -215,6 +215,9 @@ async function getTenantDashboard(req, res) {
           sector: true,
           shopType: true,
           logoUrl: true,
+          countryCode: true,
+          currencyCode: true,
+          timezone: true,
           subscription: {
             select: {
               id: true,
@@ -571,6 +574,22 @@ async function getTenantDashboard(req, res) {
       Number(iOweSuppliers.count || 0) +
       Number(stockToReview.count || 0);
 
+    const dashboardCurrencyCode = String(
+      tenant?.currencyCode ||
+        tenant?.subscription?.currency ||
+        "",
+    )
+      .trim()
+      .toUpperCase();
+
+    const formatDashboardMoney = (value) => {
+      const formatted = money(value).toLocaleString("en-US");
+
+      return dashboardCurrencyCode
+        ? `${dashboardCurrencyCode} ${formatted}`
+        : formatted;
+    };
+
     let ownerPriority = {
       title: "No urgent owner action",
       text: "Money, stock, and follow-ups look calm right now.",
@@ -580,19 +599,19 @@ async function getTenantDashboard(req, res) {
     if (money(overdueCustomerMoney.total) > 0) {
       ownerPriority = {
         title: "Collect overdue customer money",
-        text: `Customers are overdue by Rwf ${money(overdueCustomerMoney.total).toLocaleString("en-US")}.`,
+        text: `Customers are overdue by ${formatDashboardMoney(overdueCustomerMoney.total)}.`,
         tone: "danger",
       };
     } else if (money(customersOweMe.total) > 0) {
       ownerPriority = {
         title: "Review customer credit",
-        text: `Customers still owe Rwf ${money(customersOweMe.total).toLocaleString("en-US")}.`,
+        text: `Customers still owe ${formatDashboardMoney(customersOweMe.total)}.`,
         tone: "warning",
       };
     } else if (money(iOweSuppliers.total) > 0) {
       ownerPriority = {
         title: "Check supplier bills",
-        text: `You owe suppliers Rwf ${money(iOweSuppliers.total).toLocaleString("en-US")}.`,
+        text: `You owe suppliers ${formatDashboardMoney(iOweSuppliers.total)}.`,
         tone: "warning",
       };
     } else if (Number(stockToReview.count || 0) > 0) {
@@ -614,6 +633,9 @@ async function getTenantDashboard(req, res) {
             sector: tenant.sector,
             shopType: tenant.shopType,
             logoUrl: tenant.logoUrl,
+            countryCode: tenant.countryCode || null,
+            currencyCode: tenant.currencyCode || null,
+            timezone: tenant.timezone || null,
           }
         : null,
 

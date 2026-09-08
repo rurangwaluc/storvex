@@ -1288,3 +1288,36 @@
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Receipt professional status pass — status and tax are plain business information. */
+
+.svx-receipt-status-text {
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.4;
+}
+
+.svx-receipt-status-text.is-success {
+  color: var(--receipt-green);
+}
+
+.svx-receipt-status-text.is-warning {
+  color: var(--receipt-orange);
+}
+
+.svx-receipt-status-text.is-danger {
+  color: var(--receipt-red);
+}
+
+.svx-receipt-tax-state {
+  max-width: 320px;
+  color: var(--receipt-muted);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.45;
+  text-align: right;
+}
+
+.svx-receipt-tax-state.is-taxed {
+  color: var(--receipt-orange);
+}
