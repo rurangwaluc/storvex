@@ -56,11 +56,18 @@ function rgba(hex, alpha = 1) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+function amount(value) {
+  const numericValue = Number(value || 0);
+
+  return Number.isFinite(numericValue)
+    ? numericValue.toLocaleString()
+    : "0";
+}
+
 function money(value, currency = "RWF") {
   const safeCurrency = oneLine(currency || "RWF");
-  const amount = Number(value || 0);
 
-  return `${safeCurrency} ${Number.isFinite(amount) ? amount.toLocaleString() : "0"}`;
+  return `${safeCurrency} ${amount(value)}`;
 }
 
 function fmtDate(value) {
@@ -1233,8 +1240,8 @@ function renderTable({ items, totals, showPrices }) {
         </td>
         <td class="iMeta">${esc(item.sku || item.barcode || "—")}</td>
         <td class="c">${esc(String(item.quantity))}</td>
-        <td class="r">${esc(money(item.unitPrice, totals.currency).replace(/^RWF\s/, ""))}</td>
-        <td class="r iAmt">${esc(money(item.total, totals.currency).replace(/^RWF\s/, ""))}</td>
+        <td class="r">${esc(amount(item.unitPrice))}</td>
+        <td class="r iAmt">${esc(amount(item.total))}</td>
       </tr>`;
           }
 
@@ -1397,7 +1404,7 @@ function buildPage({
   const normalizedTotals = computeTotals(
     normalizedItems,
     totals,
-    extra?.currency || "RWF",
+    extra?.currency || tenant?.currencyCode || "RWF",
     tenant,
   );
 

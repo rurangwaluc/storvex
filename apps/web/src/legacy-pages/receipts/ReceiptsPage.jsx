@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import { listReceipts, getReceiptDetail, getReceiptPrintUrl } from "../../services/receiptsApi";
 
 function cx(...xs) {
@@ -11,36 +13,6 @@ function cx(...xs) {
 function cleanString(value) {
   const s = String(value || "").trim();
   return s || "";
-}
-
-function formatMoney(value) {
-  const amount = Number(value || 0);
-  const safeAmount = Number.isFinite(amount) ? amount : 0;
-
-  return `RWF ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(safeAmount)}`;
-}
-
-function safeDate(value) {
-  const date = value ? new Date(value) : null;
-  if (!date || Number.isNaN(date.getTime())) return null;
-  return date;
-}
-
-function formatDate(value) {
-  const date = safeDate(value);
-  return date ? date.toLocaleDateString("en-RW", { dateStyle: "medium" }) : "—";
-}
-
-function formatDateTime(value) {
-  const date = safeDate(value);
-  return date
-    ? date.toLocaleString("en-RW", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })
-    : "—";
 }
 
 function strongText() {
@@ -502,7 +474,14 @@ function EmptyState({ title, note }) {
   );
 }
 
-function ReceiptDetailDrawer({ open, onClose, receipt, loading }) {
+function ReceiptDetailDrawer({
+  open,
+  onClose,
+  receipt,
+  loading,
+  formatMoney,
+  formatDateTime,
+}) {
   if (!open) return null;
 
   const normalizedReceipt = receipt ? normalizeReceipt(receipt) : null;
@@ -719,7 +698,12 @@ function ReceiptDetailDrawer({ open, onClose, receipt, loading }) {
   );
 }
 
-function ReceiptCard({ row, onView }) {
+function ReceiptCard({
+  row,
+  onView,
+  formatMoney,
+  formatDate,
+}) {
   const receipt = normalizeReceipt(row);
   const money = receiptMoney(receipt);
   const printUrl = getReceiptPrintUrl(receipt.id);
@@ -859,6 +843,12 @@ function ReceiptCard({ row, onView }) {
 }
 
 export default function ReceiptsPage() {
+  const { formatMoney } = useTenantMoney();
+  const {
+    formatDate,
+    formatDateTime,
+  } = useTenantDateTime();
+
   const [query, setQuery] = useState("");
   const [submittedQuery, setSubmittedQuery] = useState("");
 
@@ -1053,7 +1043,13 @@ export default function ReceiptsPage() {
         ) : (
           <section className="space-y-3">
             {rows.map((row) => (
-              <ReceiptCard key={row.id} row={row} onView={openDetail} />
+              <ReceiptCard
+                key={row.id}
+                row={row}
+                onView={openDetail}
+                formatMoney={formatMoney}
+                formatDate={formatDate}
+              />
             ))}
           </section>
         )}
@@ -1064,6 +1060,8 @@ export default function ReceiptsPage() {
         onClose={() => setDetailOpen(false)}
         receipt={detailReceipt}
         loading={detailLoading}
+        formatMoney={formatMoney}
+        formatDateTime={formatDateTime}
       />
     </>
   );

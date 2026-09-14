@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import { listDeliveryNotes, deleteDeliveryNote } from "../../services/deliveryNotesApi";
 import { listInvoices } from "../../services/invoicesApi";
 import { listProformas, deleteProforma, duplicateProforma } from "../../services/proformasApi";
@@ -13,47 +15,6 @@ import "./DocumentCenterPage.css";
 
 const TYPE_KEYS = ["receipts", "invoices", "delivery-notes", "proformas", "warranties"];
 const PAGE_TITLE = "Document Centre - Storvex";
-
-function formatAmount(value) {
-  return Number(value || 0).toLocaleString();
-}
-
-function formatMoney(value) {
-  if (value == null) return null;
-  return `Rwf ${formatAmount(value)}`;
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatDateShort(value) {
-  if (!value) return "";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function getCurrentMonthValue() {
-  const date = new Date();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  return `${date.getFullYear()}-${month}`;
-}
 
 function formatMonthLabel(value) {
   if (!value) return "All dates";
@@ -67,15 +28,17 @@ function formatMonthLabel(value) {
   });
 }
 
-function isSameMonth(value, monthValue) {
+function isSameMonth(
+  value,
+  monthValue,
+  dateInput,
+) {
   if (!monthValue) return true;
-  if (!value) return false;
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return false;
+  const localDate = dateInput(value);
+  if (!localDate) return false;
 
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  return `${date.getFullYear()}-${month}` === monthValue;
+  return localDate.slice(0, 7) === monthValue;
 }
 
 function statusClass(status) {
@@ -100,7 +63,10 @@ function isFinancialType(type) {
   return type === "receipts" || type === "invoices" || type === "proformas";
 }
 
-function getDocumentMeta(document) {
+function getDocumentMeta(
+  document,
+  formatDate,
+) {
   const pieces = [];
 
   if (document.customerName) {
@@ -112,7 +78,10 @@ function getDocumentMeta(document) {
   }
 
   if (document.date) {
-    pieces.push({ label: "Date", value: formatDateShort(document.date) });
+    pieces.push({
+      label: "Date",
+      value: formatDate(document.date, ""),
+    });
   }
 
   return pieces;
@@ -148,7 +117,7 @@ const TYPE_CONFIG = {
     tone: "success",
     description: "Sales proof and branded payment records.",
     fetch: (query) => listReceipts(query),
-    normalize: (response) =>
+    normalize: (response, formatMoney, formatDate) =>
       (Array.isArray(response?.receipts) ? response.receipts : []).map((item) => ({
         id: item.id,
         type: "receipts",
@@ -175,7 +144,7 @@ const TYPE_CONFIG = {
     tone: "info",
     description: "Formal billing records and printable invoice layouts.",
     fetch: (query) => listInvoices(query),
-    normalize: (response) =>
+    normalize: (response, formatMoney, formatDate) =>
       (Array.isArray(response?.invoices) ? response.invoices : []).map((item) => ({
         id: item.id,
         type: "invoices",
@@ -202,7 +171,7 @@ const TYPE_CONFIG = {
     tone: "warning",
     description: "Delivered items, receivers, quantities and signatures. No money fields.",
     fetch: (query) => listDeliveryNotes(query),
-    normalize: (response) =>
+    normalize: (response, formatMoney, formatDate) =>
       (Array.isArray(response?.deliveryNotes) ? response.deliveryNotes : []).map((item) => ({
         id: item.id,
         type: "delivery-notes",
@@ -229,7 +198,7 @@ const TYPE_CONFIG = {
     tone: "purple",
     description: "Pre-sale documents before final billing.",
     fetch: (query) => listProformas(query),
-    normalize: (response) =>
+    normalize: (response, formatMoney, formatDate) =>
       (Array.isArray(response?.proformas) ? response.proformas : []).map((item) => ({
         id: item.id,
         type: "proformas",
@@ -256,7 +225,7 @@ const TYPE_CONFIG = {
     tone: "teal",
     description: "After-sales coverage records and warranty proof.",
     fetch: (query) => listWarranties(query),
-    normalize: (response) =>
+    normalize: (response, formatMoney, formatDate) =>
       (Array.isArray(response?.warranties) ? response.warranties : []).map((item) => ({
         id: item.id,
         type: "warranties",
@@ -340,9 +309,18 @@ function DocumentTypeCard({ item, active, count, loading, onClick }) {
   );
 }
 
-function DocumentRow({ document, selected, onClick }) {
+function DocumentRow({
+  document,
+  selected,
+  onClick,
+  formatMoney,
+  formatDate,
+}) {
   const config = TYPE_CONFIG[document.type];
-  const meta = getDocumentMeta(document);
+  const meta = getDocumentMeta(
+    document,
+    formatDate,
+  );
   const showMoney = isFinancialType(document.type) && document.amount != null && document.amount > 0;
 
   return (
@@ -371,7 +349,7 @@ function DocumentRow({ document, selected, onClick }) {
 
       <span className="svx-doc-row-side">
         {showMoney ? <strong>{formatMoney(document.amount)}</strong> : <strong className="is-muted">{config.label}</strong>}
-        <small>{formatDateShort(document.date)}</small>
+        <small>{formatDate(document.date, "")}</small>
       </span>
     </button>
   );
@@ -509,10 +487,16 @@ function PreviewPanel({ selected, onBack, onDelete, onDuplicate, deleting, dupli
 }
 
 export default function DocumentCenterPage() {
+  const { formatMoney } = useTenantMoney();
+  const {
+    formatDate,
+    dateInput,
+  } = useTenantDateTime();
+
   const [activeTab, setActiveTab] = useState("all");
   const [query, setQuery] = useState("");
   const [draftQuery, setDraftQuery] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
+  const [selectedMonth, setSelectedMonth] = useState("");
   const [allDocuments, setAllDocuments] = useState({});
   const [counts, setCounts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -525,6 +509,24 @@ export default function DocumentCenterPage() {
   const mountedRef = useRef(true);
   const selectedRef = useRef(null);
   const hasLoadedRef = useRef(false);
+  const monthInitializedRef = useRef(false);
+
+  const tenantToday = dateInput(new Date());
+  const currentMonthValue = tenantToday
+    ? tenantToday.slice(0, 7)
+    : "";
+
+  useEffect(() => {
+    if (
+      monthInitializedRef.current ||
+      !currentMonthValue
+    ) {
+      return;
+    }
+
+    monthInitializedRef.current = true;
+    setSelectedMonth(currentMonthValue);
+  }, [currentMonthValue]);
 
   useEffect(() => {
     selectedRef.current = selected;
@@ -558,7 +560,14 @@ export default function DocumentCenterPage() {
 
         TYPE_KEYS.forEach((key, index) => {
           const result = results[index];
-          next[key] = result.status === "fulfilled" ? TYPE_CONFIG[key].normalize(result.value) : [];
+          next[key] =
+            result.status === "fulfilled"
+              ? TYPE_CONFIG[key].normalize(
+                  result.value,
+                  formatMoney,
+                  formatDate,
+                )
+              : [];
         });
 
         setAllDocuments(next);
@@ -584,7 +593,7 @@ export default function DocumentCenterPage() {
         setRefreshing(false);
       }
     },
-    [query]
+    [formatDate, formatMoney, query]
   );
 
   useEffect(() => {
@@ -600,9 +609,20 @@ export default function DocumentCenterPage() {
     const source = activeTab === "all" ? TYPE_KEYS.flatMap((key) => allDocuments[key] || []) : allDocuments[activeTab] || [];
 
     return source
-      .filter((document) => isSameMonth(document.date, selectedMonth))
+      .filter((document) =>
+        isSameMonth(
+          document.date,
+          selectedMonth,
+          dateInput,
+        ),
+      )
       .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-  }, [allDocuments, activeTab, selectedMonth]);
+  }, [
+    activeTab,
+    allDocuments,
+    dateInput,
+    selectedMonth,
+  ]);
 
   const totalCount = useMemo(() => TYPE_KEYS.reduce((sum, key) => sum + (counts[key] || 0), 0), [counts]);
 
@@ -818,6 +838,8 @@ export default function DocumentCenterPage() {
                   document={document}
                   selected={selected?.id === document.id && selected?.type === document.type}
                   onClick={() => setSelected(document)}
+                  formatMoney={formatMoney}
+                  formatDate={formatDate}
                 />
               ))
             )}

@@ -1,6 +1,7 @@
 "use strict";
 
 const { signGetUrl } = require("../../lib/storage/objectStorage");
+const { getMarket } = require("../../config/markets");
 
 function hasField(model, fieldName) {
   return typeof model?.fields?.[fieldName] !== "undefined";
@@ -308,6 +309,23 @@ async function buildTenantDocumentBranding(prisma, tenantId, locationId = null) 
   const location = serializeLocation({ branch, tenant });
   const settings = tenant.documentSettings || {};
 
+  const countryCode =
+    cleanString(tenant.countryCode)?.toUpperCase() || "RW";
+
+  const market =
+    getMarket(countryCode) ||
+    getMarket("RW");
+
+  const currencyCode =
+    cleanString(tenant.currencyCode)?.toUpperCase() ||
+    market?.defaultCurrencyCode ||
+    "RWF";
+
+  const timezone =
+    cleanString(tenant.timezone) ||
+    market?.defaultTimezone ||
+    "Africa/Kigali";
+
   const tenantLocation = buildLocationText(
     tenant.sector,
     tenant.district,
@@ -324,9 +342,9 @@ async function buildTenantDocumentBranding(prisma, tenantId, locationId = null) 
     district: tenant.district || null,
     sector: tenant.sector || null,
     address: tenant.address || null,
-    countryCode: tenant.countryCode || "RW",
-    currencyCode: tenant.currencyCode || "RWF",
-    timezone: tenant.timezone || "Africa/Kigali",
+    countryCode,
+    currencyCode,
+    timezone,
     taxId: tenant.taxId || tenant.tinNumber || null,
     tin: tenant.taxId || tenant.tinNumber || null,
 

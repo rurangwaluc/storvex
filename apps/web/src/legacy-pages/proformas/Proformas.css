@@ -252,7 +252,6 @@
   text-decoration: none;
   cursor: pointer;
   transition:
-    transform 160ms ease,
     border-color 160ms ease,
     background 160ms ease,
     color 160ms ease,
@@ -260,7 +259,6 @@
 }
 
 .svx-proforma-button:hover {
-  transform: translateY(-1px);
   border-color: var(--pf-blue);
   background: var(--pf-soft);
   color: var(--pf-blue);
@@ -538,4 +536,27 @@
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.4;
+}
+
+
+/* Flat document controls.
+   Includes shared AsyncButton only while it is inside Proforma pages. */
+.svx-proforma-page button,
+.svx-proforma-page .svx-proforma-button {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.svx-proforma-page button:hover,
+.svx-proforma-page .svx-proforma-button:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.svx-proforma-page button:focus-visible,
+.svx-proforma-page .svx-proforma-button:focus-visible {
+  outline: 2px solid var(--pf-blue);
+  outline-offset: 2px;
+  box-shadow: none !important;
 }

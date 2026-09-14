@@ -125,6 +125,29 @@ function securityHeaders() {
       : []),
   ].join(" ");
 
+  let configuredApiOrigin = "";
+
+  try {
+    configuredApiOrigin = process.env.NEXT_PUBLIC_API_BASE_URL
+      ? new URL(process.env.NEXT_PUBLIC_API_BASE_URL).origin
+      : "";
+  } catch {
+    configuredApiOrigin = "";
+  }
+
+  const frameSources = [
+    "'self'",
+    configuredApiOrigin,
+    ...(isDevelopment
+      ? [
+          "http://localhost:5000",
+          "http://127.0.0.1:5000",
+        ]
+      : []),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   const contentSecurityPolicy = [
     "default-src 'self'",
     "base-uri 'self'",
@@ -139,7 +162,7 @@ function securityHeaders() {
     "worker-src 'self' blob:",
     "manifest-src 'self'",
     "media-src 'self' blob: https:",
-    "frame-src 'self'",
+    `frame-src ${frameSources}`,
     ...(!isDevelopment
       ? ["upgrade-insecure-requests"]
       : []),

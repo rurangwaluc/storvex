@@ -165,6 +165,9 @@ function mapReceiptPayload(sale, branding = null) {
 
     saleType: sale.saleType || null,
     status: sale.status || null,
+    currency:
+      cleanString(branding?.currencyCode)?.toUpperCase() ||
+      "RWF",
 
     subtotalAmount: Number(sale.subtotalAmount ?? 0),
     taxableAmount: Number(sale.taxableAmount ?? 0),
@@ -662,7 +665,7 @@ async function printReceiptHtml(req, res) {
         total: it.subtotal,
       })),
       totals: {
-        currency: "RWF",
+        currency: payload.currency || branding?.currencyCode || "RWF",
         subtotalAmount: payload.subtotalAmount,
         taxableAmount: payload.taxableAmount,
         taxName: payload.taxName,

@@ -314,7 +314,9 @@ function mapProformaListRow(proforma) {
     customerEmail: proforma.customerEmail,
     total: Number(proforma.total || 0),
     subtotal: Number(proforma.subtotal || 0),
-    currency: proforma.currency || "RWF",
+    currency:
+      cleanString(proforma.currency)?.toUpperCase() ||
+      "RWF",
     validUntil: proforma.validUntil || null,
     preparedBy: proforma.preparedBy || null,
     reference: proforma.reference || null,
@@ -360,7 +362,10 @@ function mapProformaDetail(proforma, tenant) {
 
       subtotal: Number(proforma.subtotal || 0),
       total: Number(proforma.total || 0),
-      currency: proforma.currency || "RWF",
+      currency:
+        cleanString(proforma.currency)?.toUpperCase() ||
+        tenant?.currencyCode ||
+        "RWF",
 
       validUntil: proforma.validUntil || null,
       preparedBy: proforma.preparedBy || null,
@@ -631,6 +636,12 @@ async function createProforma(req, res) {
 
     const activeLocation = await ensureWritableBranchAccessOrThrow(req);
 
+    const tenantBranding = await buildTenantDocumentBranding(
+      prisma,
+      tenantId,
+      activeLocation.id,
+    );
+
     const {
       customerId,
       customerName,
@@ -641,7 +652,6 @@ async function createProforma(req, res) {
       preparedBy,
       reference,
       notes,
-      currency,
       items,
       status,
       source,
@@ -825,7 +835,9 @@ async function createProforma(req, res) {
 
         subtotal,
         total,
-        currency: cleanString(currency) || "RWF",
+        currency:
+          cleanString(tenantBranding?.currencyCode)?.toUpperCase() ||
+          "RWF",
 
         validUntil: parsedValidUntil,
         preparedBy: preparedByText,
@@ -1114,9 +1126,6 @@ async function updateProforma(req, res) {
           ...(req.body?.customerAddress !== undefined
             ? { customerAddress: cleanString(req.body.customerAddress) }
             : {}),
-          ...(req.body?.currency !== undefined
-            ? { currency: cleanString(req.body.currency) || "RWF" }
-            : {}),
           ...(req.body?.preparedBy !== undefined
             ? { preparedBy: cleanString(req.body.preparedBy) }
             : {}),
@@ -1292,7 +1301,9 @@ async function duplicateProforma(req, res) {
 
           subtotal: Number(source.subtotal || 0),
           total: Number(source.total || 0),
-          currency: source.currency || "RWF",
+          currency:
+            cleanString(source.currency)?.toUpperCase() ||
+            "RWF",
 
           validUntil: source.validUntil || null,
           preparedBy: source.preparedBy || req.user?.name || req.user?.email || "Store staff",
@@ -1486,7 +1497,10 @@ async function printProformaHtml(req, res) {
         total,
         amountPaid: 0,
         balanceDue: 0,
-        currency: proforma.currency || "RWF",
+        currency:
+          cleanString(proforma.currency)?.toUpperCase() ||
+          tenant?.currencyCode ||
+          "RWF",
       },
       extra: {
         notes:

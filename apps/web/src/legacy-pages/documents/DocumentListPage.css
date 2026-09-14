@@ -252,11 +252,10 @@
   line-height: 1;
   text-decoration: none;
   cursor: pointer;
-  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease, opacity 160ms ease;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, opacity 160ms ease;
 }
 
 .svx-doc-list-button:hover {
-  transform: translateY(-1px);
   border-color: var(--dl-blue);
   background: var(--dl-soft);
   color: var(--dl-blue);
@@ -266,7 +265,7 @@
   border-color: var(--dl-blue);
   background: var(--dl-blue);
   color: #ffffff;
-  box-shadow: 0 14px 28px rgba(7, 92, 255, 0.18);
+  box-shadow: none;
 }
 
 .svx-doc-list-button.is-primary:hover {
@@ -567,4 +566,23 @@
   .svx-doc-list-hero-actions { grid-template-columns: minmax(0, 1fr); }
   .svx-doc-list-hero { padding: 14px; }
   .svx-doc-list-hero h1 { font-size: 28px; }
+}
+
+
+/* Flat document list controls. */
+.svx-doc-list-button {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.svx-doc-list-button:hover {
+  transform: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.svx-doc-list-button:focus-visible {
+  outline: 2px solid var(--dl-blue);
+  outline-offset: 2px;
+  box-shadow: none !important;
 }

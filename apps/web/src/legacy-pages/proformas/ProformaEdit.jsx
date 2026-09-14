@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import { getProformaById, updateProforma } from "../../services/proformasApi";
 import { searchProducts } from "../../services/inventoryApi";
 import "./Proformas.css";
@@ -32,7 +34,25 @@ function toNumber(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
-function money(value, currency = "RWF") {
+function formatDocumentMoney(
+  value,
+  documentCurrency,
+  tenantCurrencyCode,
+  tenantFormatMoney,
+) {
+  const currency = String(
+    documentCurrency || tenantCurrencyCode || "",
+  )
+    .trim()
+    .toUpperCase();
+
+  if (
+    !currency ||
+    currency === tenantCurrencyCode
+  ) {
+    return tenantFormatMoney(value);
+  }
+
   return `${currency} ${Number(value || 0).toLocaleString()}`;
 }
 
@@ -41,13 +61,6 @@ function clampPercent(value) {
   if (number < 0) return 0;
   if (number > 100) return 100;
   return number;
-}
-
-function toInputDate(value) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
 }
 
 function productPrice(product) {
@@ -77,7 +90,9 @@ function normalizeProforma(raw) {
     customerPhone: doc?.customerPhone || "",
     customerEmail: doc?.customerEmail || "",
     customerAddress: doc?.customerAddress || "",
-    currency: doc?.currency || "RWF",
+    currency: String(doc?.currency || "")
+      .trim()
+      .toUpperCase(),
     validUntil: doc?.validUntil || null,
     notes: doc?.notes || "",
     createdAt: doc?.createdAt || null,
@@ -116,11 +131,15 @@ function StatusCheck({ active, children }) {
   );
 }
 
-function ProductResult({ product, onPick }) {
+function ProductResult({
+  product,
+  onPick,
+  formatMoney,
+}) {
   return (
     <button type="button" onClick={onPick} className="svx-proforma-button">
       {product?.name || "Unnamed product"} · Stock {productStock(product)} ·{" "}
-      {money(productPrice(product))}
+      {formatMoney(productPrice(product))}
     </button>
   );
 }
@@ -137,6 +156,13 @@ function LoadingState() {
 }
 
 export default function ProformaEdit() {
+  const {
+    currencyCode,
+    formatMoney: tenantFormatMoney,
+  } = useTenantMoney();
+
+  const { dateInput } = useTenantDateTime();
+
   const { id } = useParams();
   const navigate = useNavigate();
   const mountedRef = useRef(true);
@@ -185,7 +211,7 @@ export default function ProformaEdit() {
           customerPhone: doc.customerPhone || "",
           customerEmail: doc.customerEmail || "",
           customerAddress: doc.customerAddress || "",
-          validUntil: toInputDate(doc.validUntil),
+          validUntil: dateInput(doc.validUntil),
           notes: doc.notes || "",
         });
         setItems(doc.items?.length ? doc.items : [makeEmptyItem()]);
@@ -198,7 +224,7 @@ export default function ProformaEdit() {
     }
 
     void load();
-  }, [id]);
+  }, [dateInput, id]);
 
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -362,7 +388,6 @@ export default function ProformaEdit() {
         customerAddress: cleanText(form.customerAddress) || undefined,
         validUntil: form.validUntil || null,
         notes: cleanText(form.notes) || undefined,
-        currency: documentData?.currency || "RWF",
         items: validItems.map((item) => ({
           productId: item.productId || undefined,
           productName: cleanText(item.productName),
@@ -562,6 +587,7 @@ export default function ProformaEdit() {
                                 key={product.id}
                                 product={product}
                                 onPick={() => pickProduct(index, product)}
+                                formatMoney={tenantFormatMoney}
                               />
                             ))
                           )}
@@ -591,7 +617,12 @@ export default function ProformaEdit() {
 
                       <label className="svx-proforma-field">
                         <span>Selling price</span>
-                        <input value={money(item.unitPrice, documentData?.currency || "RWF")} readOnly />
+                        <input value={formatDocumentMoney(
+                          item.unitPrice,
+                          documentData?.currency,
+                          currencyCode,
+                          tenantFormatMoney,
+                        )} readOnly />
                       </label>
 
                       <label className="svx-proforma-field">
@@ -608,7 +639,12 @@ export default function ProformaEdit() {
 
                       <div className="svx-proforma-line-total">
                         <span>Line total</span>
-                        <strong>{money(item.total, documentData?.currency || "RWF")}</strong>
+                        <strong>{formatDocumentMoney(
+                          item.total,
+                          documentData?.currency,
+                          currencyCode,
+                          tenantFormatMoney,
+                        )}</strong>
                       </div>
 
                       <label className="svx-proforma-field svx-proforma-span-2">
@@ -647,12 +683,27 @@ export default function ProformaEdit() {
               <SummaryRow label="Customer" value={form.customerName} />
               <SummaryRow label="Valid until" value={form.validUntil} />
               <SummaryRow label="Products" value={String(validItems.length)} />
-              <SummaryRow label="Subtotal" value={money(subtotal, documentData?.currency || "RWF")} />
-              <SummaryRow label="Discount" value={money(discountTotal, documentData?.currency || "RWF")} />
+              <SummaryRow label="Subtotal" value={formatDocumentMoney(
+                subtotal,
+                documentData?.currency,
+                currencyCode,
+                tenantFormatMoney,
+              )} />
+              <SummaryRow label="Discount" value={formatDocumentMoney(
+                discountTotal,
+                documentData?.currency,
+                currencyCode,
+                tenantFormatMoney,
+              )} />
               <SummaryRow label="Tax" value="From settings" />
               <SummaryRow
                 label="Grand total"
-                value={money(grandTotal, documentData?.currency || "RWF")}
+                value={formatDocumentMoney(
+                  grandTotal,
+                  documentData?.currency,
+                  currencyCode,
+                  tenantFormatMoney,
+                )}
                 strong
               />
             </div>

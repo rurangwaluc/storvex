@@ -267,14 +267,18 @@ function resolveTaxName(sale) {
   return null;
 }
 
-function saleTaxSnapshotForPrint(sale, itemSubtotal) {
+function saleTaxSnapshotForPrint(
+  sale,
+  itemSubtotal,
+  currency = "RWF",
+) {
   const subtotalAmount = resolveSubtotalAmount(sale, itemSubtotal);
   const taxableAmount = resolveTaxableAmount(sale, subtotalAmount);
   const taxMode = sale?.taxMode || "NONE";
   const taxAmount = toMoneyNumber(sale?.taxAmount);
 
   return {
-    currency: "RWF",
+    currency: cleanString(currency)?.toUpperCase() || "RWF",
     subtotalAmount,
     taxableAmount,
     taxName: resolveTaxName(sale),
@@ -344,7 +348,11 @@ function mapSaleToInvoiceDetail(sale, branding) {
     : [];
 
   const itemSubtotal = saleItemSubtotal(items);
-  const totals = saleTaxSnapshotForPrint(sale, itemSubtotal);
+  const totals = saleTaxSnapshotForPrint(
+    sale,
+    itemSubtotal,
+    branding?.currencyCode,
+  );
 
   return {
     invoice: {
@@ -580,7 +588,11 @@ async function printInvoiceHtml(req, res) {
     });
 
     const itemSubtotal = saleItemSubtotal(items);
-    const printTotals = saleTaxSnapshotForPrint(sale, itemSubtotal);
+    const printTotals = saleTaxSnapshotForPrint(
+      sale,
+      itemSubtotal,
+      branding?.currencyCode,
+    );
 
     const sellingLocation =
       branding?.sellingLocation ||

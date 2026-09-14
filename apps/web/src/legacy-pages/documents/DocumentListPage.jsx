@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import { deleteDeliveryNote } from "../../services/deliveryNotesApi";
 import { deleteProforma } from "../../services/proformasApi";
 import { deleteWarranty } from "../../services/warrantiesApi";
@@ -13,27 +15,24 @@ function cx(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
-function safeDate(value) {
-  const date = value ? new Date(value) : null;
-  return date && !Number.isNaN(date.getTime()) ? date : null;
-}
+function formatDocumentMoney(
+  value,
+  currency,
+  tenantCurrencyCode,
+  tenantFormatMoney,
+) {
+  const documentCurrency = String(currency || "")
+    .trim()
+    .toUpperCase();
 
-function formatDate(value) {
-  const date = safeDate(value);
-  return date
-    ? date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-    : "—";
-}
+  if (
+    !documentCurrency ||
+    documentCurrency === tenantCurrencyCode
+  ) {
+    return tenantFormatMoney(value);
+  }
 
-function isToday(value) {
-  const date = safeDate(value);
-  if (!date) return false;
-  const today = new Date();
-  return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
-}
-
-function formatMoney(value, currency = "RWF") {
-  return `${currency} ${Number(value || 0).toLocaleString()}`;
+  return `${documentCurrency} ${Number(value || 0).toLocaleString()}`;
 }
 
 function statusKind(status) {
@@ -154,7 +153,13 @@ function getItemCount(item) {
   return 0;
 }
 
-function buildCards(type, rows) {
+function buildCards(
+  type,
+  rows,
+  tenantCurrencyCode,
+  tenantFormatMoney,
+  tenantFormatDate,
+) {
   if (type === "warranties") {
     return rows.map((item) => ({
       id: item.id,
@@ -164,7 +169,7 @@ function buildCards(type, rows) {
       contact: item.customerPhone || item.customer?.phone || "—",
       staff: item.cashierName || item.issuedBy || "—",
       status: item.policy || item.status || "Warranty",
-      amount: item.endsAt ? `Ends ${formatDate(item.endsAt)}` : "No end date",
+      amount: item.endsAt ? `Ends ${tenantFormatDate(item.endsAt)}` : "No end date",
       createdAt: item.createdAt,
       note: item.unitsCount ? `${item.unitsCount} covered units` : "Coverage record",
       metricLabel: "Coverage",
@@ -182,14 +187,27 @@ function buildCards(type, rows) {
       contact: item.customerPhone || item.customer?.phone || item.customerEmail || "—",
       staff: item.preparedBy || item.cashierName || "—",
       status: item.status || "DRAFT",
-      amount: formatMoney(item.total, item.currency || "RWF"),
+      amount: formatDocumentMoney(
+        item.total,
+        item.currency,
+        tenantCurrencyCode,
+        tenantFormatMoney,
+      ),
       numericTotal: Number(item.total || 0),
-      currency: item.currency || "RWF",
+      currency:
+        String(item.currency || tenantCurrencyCode || "")
+          .trim()
+          .toUpperCase(),
       createdAt: item.createdAt,
       validUntil: item.validUntil || null,
-      note: item.validUntil ? `Valid until ${formatDate(item.validUntil)}` : "No validity date",
+      note: item.validUntil ? `Valid until ${tenantFormatDate(item.validUntil)}` : "No validity date",
       metricLabel: "Total",
-      metricValue: formatMoney(item.total, item.currency || "RWF"),
+      metricValue: formatDocumentMoney(
+        item.total,
+        item.currency,
+        tenantCurrencyCode,
+        tenantFormatMoney,
+      ),
       tone: "primary",
     }));
   }
@@ -229,13 +247,26 @@ function buildCards(type, rows) {
     contact: item.customerPhone || item.customer?.phone || "—",
     staff: item.cashierName || item.preparedBy || "—",
     status: item.status || item.saleType || "—",
-    amount: formatMoney(item.total, item.currency || "RWF"),
+    amount: formatDocumentMoney(
+        item.total,
+        item.currency,
+        tenantCurrencyCode,
+        tenantFormatMoney,
+      ),
     numericTotal: Number(item.total || 0),
-    currency: item.currency || "RWF",
+    currency:
+        String(item.currency || tenantCurrencyCode || "")
+          .trim()
+          .toUpperCase(),
     createdAt: item.date || item.createdAt,
     note: item.receiptNumber ? `Reference ${item.receiptNumber}` : "Print-ready document",
     metricLabel: "Total",
-    metricValue: formatMoney(item.total, item.currency || "RWF"),
+    metricValue: formatDocumentMoney(
+        item.total,
+        item.currency,
+        tenantCurrencyCode,
+        tenantFormatMoney,
+      ),
     tone: type === "receipts" ? "success" : "primary",
   }));
 }
@@ -247,7 +278,14 @@ async function deleteByType(type, id) {
   throw new Error("This document cannot be deleted from this screen");
 }
 
-function DocumentRow({ row, typeMeta, type, onDelete, deleting }) {
+function DocumentRow({
+  row,
+  typeMeta,
+  type,
+  onDelete,
+  deleting,
+  formatDate,
+}) {
   const previewPath = `/app/documents/${type}/${encodeURIComponent(row.id)}/preview`;
   const editPath = `/app/documents/${type}/${encodeURIComponent(row.id)}/edit`;
 
@@ -283,6 +321,16 @@ function DocumentRow({ row, typeMeta, type, onDelete, deleting }) {
 }
 
 export default function DocumentListPage({ type, title, subtitle, listFn }) {
+  const {
+    currencyCode,
+    formatMoney: tenantFormatMoney,
+  } = useTenantMoney();
+
+  const {
+    formatDate,
+    dateInput,
+  } = useTenantDateTime();
+
   const [query, setQuery] = useState("");
   const [draftQuery, setDraftQuery] = useState("");
   const [rows, setRows] = useState([]);
@@ -337,14 +385,64 @@ export default function DocumentListPage({ type, title, subtitle, listFn }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftQuery]);
 
-  const cards = useMemo(() => buildCards(type, rows), [type, rows]);
+  const cards = useMemo(
+    () =>
+      buildCards(
+        type,
+        rows,
+        currencyCode,
+        tenantFormatMoney,
+        formatDate,
+      ),
+    [
+      currencyCode,
+      formatDate,
+      rows,
+      tenantFormatMoney,
+      type,
+    ],
+  );
   const totalCount = cards.length;
-  const todayCount = cards.filter((item) => isToday(item.createdAt)).length;
+
+  const tenantToday = dateInput(new Date());
+
+  const todayCount = tenantToday
+    ? cards.filter(
+        (item) =>
+          dateInput(item.createdAt) === tenantToday,
+      ).length
+    : 0;
   const activeCount = cards.filter((item) => ["PAID", "SENT", "CONVERTED", "ACTIVE", "COMPLETED", "DELIVERED"].includes(String(item.status || "").toUpperCase())).length;
   const flaggedCount = cards.filter((item) => ["PARTIAL", "UNPAID", "PENDING", "EXPIRED", "OVERDUE", "CANCELLED"].includes(String(item.status || "").toUpperCase())).length;
   const customerCount = new Set(cards.map((item) => String(item.subtitle || "").trim()).filter(Boolean)).size;
   const deliveryUnsignedCount = type === "delivery-notes" ? cards.filter((item) => !item.signed).length : 0;
-  const proformaTotal = cards.reduce((sum, item) => (type === "proformas" ? sum + Number(item.numericTotal || 0) : sum), 0);
+  const proformaTotal = cards.reduce(
+    (sum, item) =>
+      type === "proformas"
+        ? sum + Number(item.numericTotal || 0)
+        : sum,
+    0,
+  );
+
+  const proformaCurrencies = new Set(
+    type === "proformas"
+      ? cards
+          .map((item) => String(item.currency || "").trim())
+          .filter(Boolean)
+      : [],
+  );
+
+  const proformaQuotedValue =
+    proformaCurrencies.size > 1
+      ? "Mixed currencies"
+      : proformaCurrencies.size === 1
+        ? formatDocumentMoney(
+            proformaTotal,
+            [...proformaCurrencies][0],
+            currencyCode,
+            tenantFormatMoney,
+          )
+        : tenantFormatMoney(proformaTotal);
 
   async function handleConfirmDelete() {
     if (!deleteTarget?.id) return;
@@ -378,7 +476,11 @@ export default function DocumentListPage({ type, title, subtitle, listFn }) {
         { label: "Total proformas", value: totalCount, tone: "primary" },
         { label: "Today", value: todayCount, tone: "success" },
         { label: "Draft or cancelled", value: flaggedCount, tone: flaggedCount > 0 ? "warning" : "neutral" },
-        { label: "Quoted value", value: formatMoney(proformaTotal, "RWF"), tone: "neutral" },
+        {
+          label: "Quoted value",
+          value: proformaQuotedValue,
+          tone: "neutral",
+        },
       ];
     }
 
@@ -397,7 +499,17 @@ export default function DocumentListPage({ type, title, subtitle, listFn }) {
       { label: "Active or valid", value: activeCount, tone: "success" },
       { label: "Needs attention", value: flaggedCount, tone: flaggedCount > 0 ? "warning" : "neutral" },
     ];
-  }, [activeCount, customerCount, deliveryUnsignedCount, flaggedCount, proformaTotal, todayCount, totalCount, type, typeMeta.statLabel]);
+  }, [
+    activeCount,
+    customerCount,
+    deliveryUnsignedCount,
+    flaggedCount,
+    proformaQuotedValue,
+    todayCount,
+    totalCount,
+    type,
+    typeMeta.statLabel,
+  ]);
 
   return (
     <div className="svx-doc-list-page">
@@ -431,7 +543,17 @@ export default function DocumentListPage({ type, title, subtitle, listFn }) {
 
       {loading ? <DocumentSkeleton rows={6} /> : cards.length === 0 ? <EmptyState type={type} title={title} query={query} createTo={typeMeta.actionTo} createLabel={typeMeta.actionLabel} /> : (
         <section className="svx-doc-list-stack">
-          {cards.map((row) => <DocumentRow key={row.id} row={row} typeMeta={typeMeta} type={type} onDelete={setDeleteTarget} deleting={deletingId === row.id} />)}
+          {cards.map((row) => (
+            <DocumentRow
+              key={row.id}
+              row={row}
+              typeMeta={typeMeta}
+              type={type}
+              onDelete={setDeleteTarget}
+              deleting={deletingId === row.id}
+              formatDate={formatDate}
+            />
+          ))}
         </section>
       )}
 

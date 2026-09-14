@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
+import useTenantMoney from "../../hooks/useTenantMoney";
 import { createProforma } from "../../services/proformasApi";
 import { searchProducts } from "../../services/inventoryApi";
 import "./Proformas.css";
@@ -67,10 +68,6 @@ function toNumber(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
-function money(value, currency = "RWF") {
-  return `${currency} ${Number(value || 0).toLocaleString()}`;
-}
-
 function clampPercent(value) {
   const number = toNumber(value);
   if (number < 0) return 0;
@@ -116,15 +113,21 @@ function StatusCheck({ active, children }) {
   );
 }
 
-function ProductResult({ product, onPick }) {
+function ProductResult({
+  product,
+  onPick,
+  formatMoney,
+}) {
   return (
     <button type="button" onClick={onPick} className="svx-proforma-button">
-      {product?.name || "Unnamed product"} · Stock {productStock(product)} · {money(productPrice(product))}
+      {product?.name || "Unnamed product"} · Stock {productStock(product)} ·{" "}
+      {formatMoney(productPrice(product))}
     </button>
   );
 }
 
 export default function ProformaCreate() {
+  const { formatMoney } = useTenantMoney();
   const navigate = useNavigate();
   const location = useLocation();
   const debounceRef = useRef(null);
@@ -329,7 +332,6 @@ export default function ProformaCreate() {
         source: cleanText(form.source) || undefined,
         conversationId: cleanText(form.conversationId) || undefined,
         draftSaleId: cleanText(form.draftSaleId) || undefined,
-        currency: "RWF",
         status: "DRAFT",
         items: validItems.map((item) => ({
           productId: item.productId || undefined,
@@ -539,6 +541,7 @@ export default function ProformaCreate() {
                                 key={product.id}
                                 product={product}
                                 onPick={() => pickProduct(index, product)}
+                                formatMoney={formatMoney}
                               />
                             ))
                           )}
@@ -568,7 +571,7 @@ export default function ProformaCreate() {
 
                       <label className="svx-proforma-field">
                         <span>Selling price</span>
-                        <input value={money(item.unitPrice)} readOnly />
+                        <input value={formatMoney(item.unitPrice)} readOnly />
                       </label>
 
                       <label className="svx-proforma-field">
@@ -585,7 +588,7 @@ export default function ProformaCreate() {
 
                       <div className="svx-proforma-line-total">
                         <span>Line total</span>
-                        <strong>{money(item.total)}</strong>
+                        <strong>{formatMoney(item.total)}</strong>
                       </div>
 
                       <label className="svx-proforma-field svx-proforma-span-2">
@@ -624,10 +627,10 @@ export default function ProformaCreate() {
               {form.source === "WHATSAPP" ? <SummaryRow label="Source" value="WhatsApp" /> : null}
               <SummaryRow label="Valid until" value={form.validUntil} />
               <SummaryRow label="Products" value={String(validItems.length)} />
-              <SummaryRow label="Subtotal" value={money(subtotal)} />
-              <SummaryRow label="Discount" value={money(discountTotal)} />
+              <SummaryRow label="Subtotal" value={formatMoney(subtotal)} />
+              <SummaryRow label="Discount" value={formatMoney(discountTotal)} />
               <SummaryRow label="Tax" value="From settings" />
-              <SummaryRow label="Grand total" value={money(grandTotal)} strong />
+              <SummaryRow label="Grand total" value={formatMoney(grandTotal)} strong />
             </div>
 
             <div className="svx-proforma-summary-actions">
