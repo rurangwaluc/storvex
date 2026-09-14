@@ -5,7 +5,10 @@ import {
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
-import { getFinancialSummary } from "../../services/reportsApi";
+import {
+  getFinancialSummary,
+  getInsights,
+} from "../../services/reportsApi";
 import {
   reportQueryKeys,
 } from "../../lib/reportQueryKeys";
@@ -13,6 +16,8 @@ import {
   useActiveBranchId,
 } from "../../hooks/useActiveBranchId";
 import PageSkeleton from "../../components/ui/PageSkeleton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import "../dashboard/Dashboard.css";
 import "./Reports.css";
 
@@ -84,12 +89,6 @@ function rangeForPreset(key) {
   return { from: today, to: today };
 }
 
-function money(value) {
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(Math.round(cleanNumber(value)))}`;
-}
-
 function numberLabel(value) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
@@ -103,19 +102,6 @@ function percent(value) {
   return `${n.toFixed(1)}%`;
 }
 
-function formatDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 function profitMargin(profit, sales) {
   const salesValue = cleanNumber(sales);
   if (salesValue <= 0) return null;
@@ -123,7 +109,7 @@ function profitMargin(profit, sales) {
   return (cleanNumber(profit) / salesValue) * 100;
 }
 
-function profitAnswer(summary) {
+function profitAnswer(summary, money) {
   const sales = cleanNumber(summary.revenue);
   const productCost = cleanNumber(summary.costOfGoodsSold);
   const expenses = cleanNumber(summary.approvedExpenses);
@@ -174,7 +160,7 @@ function ProfitStep({ label, value, helper, tone = "neutral" }) {
   );
 }
 
-function TopSellerRow({ item, index }) {
+function TopSellerRow({ item, index, money }) {
   const revenue = sellerRevenue(item);
   const quantity = sellerQty(item);
 
@@ -192,7 +178,7 @@ function TopSellerRow({ item, index }) {
   );
 }
 
-function RangeControls({ selectedPreset, setSelectedPreset, range, setRange }) {
+function RangeControls({ selectedPreset, setSelectedPreset, range, setRange, formatDate }) {
   function choosePreset(key) {
     setSelectedPreset(key);
     setRange(rangeForPreset(key));
@@ -252,6 +238,11 @@ function RangeControls({ selectedPreset, setSelectedPreset, range, setRange }) {
 }
 
 export default function ProfitTable() {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
+  const money = (value) => formatMoney(cleanNumber(value));
+
   const [selectedPreset, setSelectedPreset] =
     useState("month");
   const [range, setRange] =
@@ -285,10 +276,17 @@ export default function ProfitTable() {
         from: range.from,
         to: range.to,
       }),
-    queryFn: () =>
-      getFinancialSummary(
-        requestRange,
-      ),
+    queryFn: async () => {
+      const [financialData, insightData] = await Promise.all([
+        getFinancialSummary(requestRange),
+        getInsights(requestRange, 8, 5),
+      ]);
+
+      return {
+        financial: financialData || null,
+        insights: insightData || null,
+      };
+    },
     staleTime: 30_000,
     gcTime: 5 * 60_000,
     retry: 1,
@@ -296,7 +294,9 @@ export default function ProfitTable() {
   });
 
   const payload =
-    financialQuery.data || null;
+    financialQuery.data?.financial || null;
+  const insights =
+    financialQuery.data?.insights || null;
   const loading =
     financialQuery.isPending;
 
@@ -307,7 +307,7 @@ export default function ProfitTable() {
       financialQuery.error?.response
         ?.data?.message ||
         financialQuery.error?.message ||
-        "Failed to load sales and profit report",
+        "Failed to load profit and sales",
       {
         id: "profit-report-load-error",
       },
@@ -324,6 +324,15 @@ export default function ProfitTable() {
   const profit = cleanNumber(summary.profitEstimate);
   const margin = profitMargin(profit, sales);
 
+  const salesChangeRaw = Number(
+    insights?.comparison?.percent?.revenue,
+  );
+
+  const salesChange =
+    cleanNumber(summary.salesCount) > 0 && Number.isFinite(salesChangeRaw)
+      ? salesChangeRaw
+      : null;
+
   const facts = useMemo(
     () => [
       {
@@ -336,18 +345,8 @@ export default function ProfitTable() {
         value: numberLabel(summary.unitsSold),
         helper: "Total items sold",
       },
-      {
-        label: "Product lines",
-        value: numberLabel(summary.itemLinesCount),
-        helper: "Sale item lines counted",
-      },
-      {
-        label: "Stock changes",
-        value: numberLabel(summary.stockAdjustmentsCount),
-        helper: "Stock adjustments in this period",
-      },
     ],
-    [summary.salesCount, summary.unitsSold, summary.itemLinesCount, summary.stockAdjustmentsCount],
+    [summary.salesCount, summary.unitsSold],
   );
 
   if (loading && !payload) {
@@ -356,32 +355,54 @@ export default function ProfitTable() {
 
   return (
     <main className="svx-owner-dashboard svx-business-reports svx-profit-report-page">
-      <section className="svx-report-hero svx-dashboard-card">
+      <section className="svx-profit-detail-header">
         <div>
-          <p className="svx-report-eyebrow">Sales and profit</p>
-          <h1>See what you sold and what you kept</h1>
-          <span>
-            Simple owner report for sales, product cost, expenses, estimated profit, and best sellers.
-          </span>
+          <p className="svx-report-eyebrow">Profit & sales</p>
+          <h1>Profit & sales</h1>
+          <p>See sales, product cost, expenses, profit or loss, margin, and best sellers.</p>
         </div>
 
-        <aside>
-          <p>Showing</p>
+        <div className="svx-profit-detail-meta">
+          <span>Showing</span>
           <strong>{formatDate(range.from)} to {formatDate(range.to)}</strong>
-          <span>{payload?.branchScope?.label || "Current branch"}</span>
-        </aside>
+          <p>{payload?.branchScope?.label || "Current branch"}</p>
+          <Link to="/app/reports">Back to overview</Link>
+        </div>
       </section>
 
-      <section className="svx-report-owner-answer svx-dashboard-card">
+      <section className="svx-profit-result-card">
         <div>
-          <p className="svx-report-eyebrow">Owner answer</p>
-          <h2>What happened to profit in this period</h2>
-          <strong>{profitAnswer(summary)}</strong>
+          <p className="svx-report-eyebrow">Business result</p>
+          <h2>
+            {cleanNumber(summary.salesCount) <= 0
+              ? "No result yet"
+              : profit < 0
+                ? "Business made a loss"
+                : "Business made a profit"}
+          </h2>
+          <strong>{profitAnswer(summary, money)}</strong>
         </div>
 
-        <Link to="/app/reports" className="svx-report-secondary-link">
-          Back to reports
-        </Link>
+        <div className="svx-profit-result-side">
+          <span>
+            {cleanNumber(summary.salesCount) <= 0
+              ? "No result yet"
+              : profit < 0
+                ? "Loss"
+                : "Profit"}
+          </span>
+          <strong>{money(Math.abs(profit))}</strong>
+          <p>
+            {margin === null
+              ? "No completed sales"
+              : `${percent(Math.abs(margin))} ${profit < 0 ? "loss" : "profit margin"}`}
+          </p>
+          <p>
+            {salesChange == null
+              ? "No comparison yet"
+              : `${salesChange >= 0 ? "+" : ""}${salesChange.toFixed(1)}% sales vs previous period`}
+          </p>
+        </div>
       </section>
 
       <RangeControls
@@ -389,11 +410,12 @@ export default function ProfitTable() {
         setSelectedPreset={setSelectedPreset}
         range={range}
         setRange={setRange}
+        formatDate={formatDate}
       />
 
       <section className="svx-report-kpi-grid">
         <KpiCard
-          label="Sales made"
+          label="Sales"
           value={money(sales)}
           helper={`${numberLabel(summary.salesCount)} completed sales`}
           tone="blue"
@@ -405,19 +427,21 @@ export default function ProfitTable() {
           tone="amber"
         />
         <KpiCard
-          label="Expenses"
-          value={money(expenses)}
-          helper="Approved expenses in this period"
-          tone="amber"
+          label="Gross profit"
+          value={money(grossProfit)}
+          helper="Sales minus product cost"
+          tone={grossProfit < 0 ? "red" : "green"}
         />
         <KpiCard
-          label="Profit estimate"
-          value={money(profit)}
-          helper={margin === null ? "No sales yet" : `${percent(margin)} of sales`}
-          tone={profit >= 0 ? "green" : "red"}
+          label="Expenses"
+          value={money(expenses)}
+          helper="Approved business expenses"
+          tone="amber"
         />
       </section>
 
+      {cleanNumber(summary.salesCount) > 0 ? (
+        <>
       <section className="svx-dashboard-card svx-profit-flow-card">
         <div className="svx-report-section-head">
           <div>
@@ -452,7 +476,7 @@ export default function ProfitTable() {
             tone="amber"
           />
           <ProfitStep
-            label="Estimated profit"
+            label={profit < 0 ? "Loss" : "Profit"}
             value={money(profit)}
             helper="Gross profit minus expenses"
             tone={profit >= 0 ? "green" : "red"}
@@ -484,7 +508,7 @@ export default function ProfitTable() {
           <div className="svx-report-section-head">
             <div>
               <p className="svx-report-eyebrow">Best sellers</p>
-              <h2>Products that brought money</h2>
+              <h2>Best sellers</h2>
             </div>
           </div>
 
@@ -495,6 +519,7 @@ export default function ProfitTable() {
                   key={item.productId || item.id || `${sellerName(item)}-${index}`}
                   item={item}
                   index={index}
+                  money={money}
                 />
               ))
             ) : (
@@ -510,10 +535,16 @@ export default function ProfitTable() {
         <p className="svx-report-eyebrow">Important</p>
         <h2>Profit is an estimate</h2>
         <p>
-          Storvex uses completed sales, product cost price, and approved expenses.
-          This helps the owner see the business result without accounting confusion.
+          Profit uses completed sales, product cost, and approved expenses.
         </p>
       </section>
+        </>
+      ) : (
+        <section className="svx-profit-empty-detail">
+          <strong>No completed sales in this period.</strong>
+          <p>Profit details will appear after sales are completed.</p>
+        </section>
+      )}
     </main>
   );
 }

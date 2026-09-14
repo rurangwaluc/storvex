@@ -80,22 +80,6 @@ export const reportQueryKeys = {
     Number(threshold) || 5,
   ],
 
-  incomeStatements: () => [
-    ...reportQueryKeys.all,
-    "income-statement",
-  ],
-
-  incomeStatement: ({
-    branchId,
-    from,
-    to,
-  } = {}) => [
-    ...reportQueryKeys.incomeStatements(),
-    cleanKeyPart(branchId),
-    cleanKeyPart(from, "no-from"),
-    cleanKeyPart(to, "no-to"),
-  ],
-
   ownerChecks: () => [
     ...reportQueryKeys.all,
     "owner-checks",

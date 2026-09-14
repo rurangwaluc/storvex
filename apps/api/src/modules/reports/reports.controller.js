@@ -26,36 +26,9 @@ const {
 } = require("./reports.service");
 
 // ---- local helpers kept for PDF rendering ----
-function parseDateOnly(s) {
-  if (!s) return null;
-  const d = new Date(String(s));
-  return Number.isNaN(d.getTime()) ? null : d;
-}
-
-function startOfDay(d) {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-}
-
-function endOfDay(d) {
-  const x = new Date(d);
-  x.setHours(23, 59, 59, 999);
-  return x;
-}
-
 function money(n) {
   const x = Number(n);
   return Number.isFinite(x) ? x : 0;
-}
-
-function isoDate(d) {
-  return new Date(d).toISOString().slice(0, 10);
-}
-
-function formatRwf(n) {
-  const x = Number(n || 0);
-  return `RWF ${x.toLocaleString()}`;
 }
 
 function cleanString(x) {
@@ -82,13 +55,6 @@ function pctChange(current, previous) {
   const p = Number(previous || 0);
   if (p === 0) return null;
   return ((c - p) / p) * 100;
-}
-
-function shiftRangeBackward(start, end) {
-  const durationMs = end.getTime() - start.getTime();
-  const prevEnd = new Date(start.getTime() - 1);
-  const prevStart = new Date(prevEnd.getTime() - durationMs);
-  return { prevStart: startOfDay(prevStart), prevEnd: endOfDay(prevEnd) };
 }
 
 function getLimit(query = {}, fallback = 10, max = 50) {
@@ -339,18 +305,18 @@ async function dailyClosePdf(req, res) {
     const tenantId = req.user.tenantId;
     const threshold = getThreshold(req.query, 5, 10000);
 
-    const [tenant, payload] = await Promise.all([
-      getTenantForPdf(tenantId),
-      buildDailyClose({
-        user: req.user,
-        query: req.query,
-      }),
-    ]);
+    const tenant = await getTenantForPdf(tenantId);
 
-    const dateBase = parseDateOnly(req.query.date) || new Date();
-    const start = startOfDay(dateBase);
-    const end = endOfDay(dateBase);
-    const { prevStart, prevEnd } = shiftRangeBackward(start, end);
+    const payload = await buildDailyClose({
+      user: req.user,
+      query: req.query,
+      tenant,
+    });
+
+    const start = new Date(payload.range.from);
+    const end = new Date(payload.range.to);
+    const prevStart = new Date(payload.previousRange.from);
+    const prevEnd = new Date(payload.previousRange.to);
 
     const branchScope = payload.branchScope;
 
@@ -577,12 +543,16 @@ function drawTable(doc, { x, y, w, columns, rows }) {
   return yy;
 }
 
-function drawFooter(doc, { leftText }) {
+function drawFooter(doc, { leftText, pageNumber = 1 }) {
   const margin = doc.page.margins.left;
   const bottom = doc.page.height - doc.page.margins.bottom;
 
-  doc.fillColor("#94a3b8").fontSize(8).text(leftText, margin, bottom - 14, { align: "left" });
-  doc.text(`Page ${doc.page.number}`, margin, bottom - 14, { align: "right" });
+  doc.fillColor("#94a3b8").fontSize(8).text(leftText, margin, bottom - 14, {
+    align: "left",
+  });
+  doc.text(`Page ${pageNumber}`, margin, bottom - 14, {
+    align: "right",
+  });
   doc.fillColor("#0f172a").font("Helvetica");
 }
 
@@ -594,7 +564,7 @@ function fmtPct(x) {
   return `${sign}${n.toFixed(1)}%`;
 }
 
-function renderOwnerActions(doc, { x, y, w, actions, title = "Owner Actions" }) {
+function renderOwnerActions(doc, { x, y, w, actions, formatMoney, title = "Owner Actions" }) {
   drawSectionTitle(doc, { x, y, title });
   y += 16;
 
@@ -687,7 +657,7 @@ function renderOwnerActions(doc, { x, y, w, actions, title = "Owner Actions" }) 
       rank: idx + 1,
       name: c.name,
       phone: c.phone,
-      amount: formatRwf(c.overdueAmount),
+      amount: formatMoney(c.overdueAmount),
     }));
 
     y =
@@ -709,10 +679,14 @@ function renderOwnerActions(doc, { x, y, w, actions, title = "Owner Actions" }) 
 }
 
 function renderDailyClosePdf(doc, payload, tenant, actions) {
+  const currencyCode = String(tenant?.currencyCode || "RWF").trim().toUpperCase() || "RWF";
+  const formatMoney = (value) => ownerPdfMoney(value, currencyCode);
+  const generatedAt = ownerPdfGeneratedAt(tenant?.timezone);
+
   drawHeader(doc, {
     title: "Daily Close",
     subtitleLine1: formatTenantLine(tenant),
-    subtitleLine2: `Date: ${payload.date} • Generated: ${new Date().toISOString()}`,
+    subtitleLine2: `Date: ${payload.date} • Generated: ${generatedAt}`,
   });
 
   const margin = doc.page.margins.left;
@@ -729,7 +703,7 @@ function renderDailyClosePdf(doc, payload, tenant, actions) {
     w: cardW,
     h: cardH,
     title: "Cash collected",
-    value: formatRwf(payload.cashCollectedToday),
+    value: formatMoney(payload.cashCollectedToday),
     tone: "success",
     sub: "Cash sales + credit payments",
   });
@@ -739,7 +713,7 @@ function renderDailyClosePdf(doc, payload, tenant, actions) {
     w: cardW,
     h: cardH,
     title: "Revenue",
-    value: formatRwf(payload.sales.revenueToday),
+    value: formatMoney(payload.sales.revenueToday),
     tone: "neutral",
     sub: "Cash + credit sales",
   });
@@ -749,14 +723,14 @@ function renderDailyClosePdf(doc, payload, tenant, actions) {
     w: cardW,
     h: cardH,
     title: "Profit estimate",
-    value: formatRwf(payload.profitEstimateToday),
+    value: formatMoney(payload.profitEstimateToday),
     tone:
       payload.profitEstimateToday > 0
         ? "success"
         : payload.profitEstimateToday < 0
         ? "danger"
         : "neutral",
-    sub: "Revenue − approved expenses",
+    sub: "Revenue - approved expenses",
   });
 
   y += cardH + 18;
@@ -767,6 +741,7 @@ function renderDailyClosePdf(doc, payload, tenant, actions) {
       y,
       w: pageW,
       actions,
+      formatMoney,
       title: "Owner Actions (Today)",
     }) + 10;
   }
@@ -781,11 +756,11 @@ function renderDailyClosePdf(doc, payload, tenant, actions) {
     x: margin,
     y: y + 18,
     items: [
-      { k: "Cash sales total:", v: formatRwf(payload.sales.cash.total) },
+      { k: "Cash sales total:", v: formatMoney(payload.sales.cash.total) },
       { k: "Cash sales count:", v: String(payload.sales.cash.count) },
-      { k: "Credit sales total:", v: formatRwf(payload.sales.credit.total) },
+      { k: "Credit sales total:", v: formatMoney(payload.sales.credit.total) },
       { k: "Credit sales count:", v: String(payload.sales.credit.count) },
-      { k: "Approved expenses:", v: formatRwf(payload.expenses.approvedTotal) },
+      { k: "Approved expenses:", v: formatMoney(payload.expenses.approvedTotal) },
     ],
   });
 
@@ -795,11 +770,11 @@ function renderDailyClosePdf(doc, payload, tenant, actions) {
     items: [
       {
         k: "Outstanding:",
-        v: `${formatRwf(payload.creditExposure.outstandingTotal)} (${payload.creditExposure.outstandingCount})`,
+        v: `${formatMoney(payload.creditExposure.outstandingTotal)} (${payload.creditExposure.outstandingCount})`,
       },
       {
         k: "Overdue:",
-        v: `${formatRwf(payload.creditExposure.overdueTotal)} (${payload.creditExposure.overdueCount})`,
+        v: `${formatMoney(payload.creditExposure.overdueTotal)} (${payload.creditExposure.overdueCount})`,
       },
     ],
   });
@@ -837,153 +812,17 @@ function renderDailyClosePdf(doc, payload, tenant, actions) {
   y += 18;
 
   const totalsRows = [
-    { k: "Total revenue:", v: formatRwf(payload.sales.revenueToday) },
-    { k: "Total cash collected:", v: formatRwf(payload.cashCollectedToday) },
-    { k: "Total approved expenses:", v: formatRwf(payload.expenses.approvedTotal) },
-    { k: "Profit estimate:", v: formatRwf(payload.profitEstimateToday) },
-    { k: "Outstanding credit:", v: formatRwf(payload.creditExposure.outstandingTotal) },
-    { k: "Overdue credit:", v: formatRwf(payload.creditExposure.overdueTotal) },
+    { k: "Total revenue:", v: formatMoney(payload.sales.revenueToday) },
+    { k: "Total cash collected:", v: formatMoney(payload.cashCollectedToday) },
+    { k: "Total approved expenses:", v: formatMoney(payload.expenses.approvedTotal) },
+    { k: "Profit estimate:", v: formatMoney(payload.profitEstimateToday) },
+    { k: "Outstanding credit:", v: formatMoney(payload.creditExposure.outstandingTotal) },
+    { k: "Overdue credit:", v: formatMoney(payload.creditExposure.overdueTotal) },
   ];
 
   drawKeyValueList(doc, { x: margin, y, items: totalsRows });
   drawFooter(doc, { leftText: "Storvex • Daily Close Report" });
 }
-
-function renderPeriodPdf(doc, dash, topList, meta, tenant, actions) {
-  drawHeader(doc, {
-    title: "Period Report",
-    subtitleLine1: formatTenantLine(tenant),
-    subtitleLine2: `From: ${meta.fromISO} • To: ${meta.toISO} • Generated: ${new Date().toISOString()}`,
-  });
-
-  const margin = doc.page.margins.left;
-  const pageW = doc.page.width - margin * 2;
-  let y = 116;
-
-  const gap = 12;
-  const cardW = (pageW - gap * 2) / 3;
-  const cardH = 72;
-
-  drawCard(doc, {
-    x: margin,
-    y,
-    w: cardW,
-    h: cardH,
-    title: "Revenue",
-    value: formatRwf(dash.sales.total),
-    tone: "neutral",
-    sub: `${dash.sales.count} sale(s)`,
-  });
-  drawCard(doc, {
-    x: margin + cardW + gap,
-    y,
-    w: cardW,
-    h: cardH,
-    title: "Approved expenses",
-    value: formatRwf(dash.expenses.approvedTotal),
-    tone: "warning",
-    sub: `${dash.expenses.approvedCount} item(s)`,
-  });
-  drawCard(doc, {
-    x: margin + (cardW + gap) * 2,
-    y,
-    w: cardW,
-    h: cardH,
-    title: "Profit estimate",
-    value: formatRwf(dash.profitEstimate),
-    tone:
-      dash.profitEstimate > 0 ? "success" : dash.profitEstimate < 0 ? "danger" : "neutral",
-    sub: "Revenue − expenses",
-  });
-
-  y += cardH + 18;
-
-  if (actions) {
-    y = renderOwnerActions(doc, {
-      x: margin,
-      y,
-      w: pageW,
-      actions,
-      title: "Owner Actions (This Period)",
-    }) + 10;
-  }
-
-  drawSectionTitle(doc, { x: margin, y, title: "Repairs by status" });
-  y += 16;
-
-  const byStatus = dash.repairs?.byStatus || {};
-  const statuses = Object.keys(byStatus);
-
-  if (!statuses.length) {
-    doc.fillColor("#64748b").fontSize(10).text("No repairs in this period.", margin, y);
-    doc.fillColor("#0f172a");
-    y += 16;
-  } else {
-    const rows = statuses.map((k) => ({ status: k, count: byStatus[k] }));
-    y =
-      drawTable(doc, {
-        x: margin,
-        y,
-        w: pageW,
-        columns: [
-          { key: "status", label: "Status", w: pageW - 80, align: "left" },
-          { key: "count", label: "Count", w: 80, align: "right" },
-        ],
-        rows,
-      }) + 18;
-  }
-
-  drawSectionTitle(doc, { x: margin, y, title: "Top sellers" });
-  y += 16;
-
-  let topRevenueTotal = 0;
-
-  if (!topList.length) {
-    doc.fillColor("#64748b").fontSize(10).text("No sales in this period.", margin, y);
-    doc.fillColor("#0f172a");
-    y += 20;
-  } else {
-    const rows = topList.map((p, idx) => {
-      topRevenueTotal += money(p.revenue);
-      return {
-        rank: idx + 1,
-        name: p.name,
-        qty: p.soldQty,
-        revenue: formatRwf(p.revenue),
-      };
-    });
-
-    y =
-      drawTable(doc, {
-        x: margin,
-        y,
-        w: pageW,
-        columns: [
-          { key: "rank", label: "#", w: 40, align: "left" },
-          { key: "name", label: "Product", w: pageW - 40 - 80 - 120, align: "left" },
-          { key: "qty", label: "Qty", w: 80, align: "right" },
-          { key: "revenue", label: "Revenue", w: 120, align: "right" },
-        ],
-        rows,
-      }) + 14;
-  }
-
-  drawSectionTitle(doc, { x: margin, y, title: "Totals" });
-  y += 18;
-
-  const totalsRows = [
-    { k: "Total revenue:", v: formatRwf(dash.sales.total) },
-    { k: "Sales count:", v: String(dash.sales.count) },
-    { k: "Total approved expenses:", v: formatRwf(dash.expenses.approvedTotal) },
-    { k: "Profit estimate:", v: formatRwf(dash.profitEstimate) },
-    { k: "Top sellers revenue (top 10):", v: formatRwf(topRevenueTotal) },
-  ];
-
-  drawKeyValueList(doc, { x: margin, y, items: totalsRows });
-  drawFooter(doc, { leftText: "Storvex • Period Report" });
-}
-
-
 
 // === PREMIUM OWNER PERIOD PDF START ===
 function ownerPdfDate(value) {
@@ -1001,8 +840,11 @@ function ownerPdfNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function ownerPdfMoney(value) {
-  return `Rwf ${Math.round(ownerPdfNumber(value)).toLocaleString("en-US")}`;
+function ownerPdfMoney(value, currencyCode = "RWF") {
+  const code = String(currencyCode || "RWF").trim().toUpperCase() || "RWF";
+  const amount = Math.round(ownerPdfNumber(value));
+
+  return `${code} ${amount.toLocaleString("en-US")}`;
 }
 
 function ownerPdfText(value, fallback = "—") {
@@ -1043,14 +885,27 @@ function ownerPdfMinStock(item) {
   return ownerPdfNumber(item?.minStockLevel ?? item?.minStock ?? item?.limit);
 }
 
-function ownerPdfGeneratedAt() {
-  return new Date().toLocaleString("en-GB", {
+function ownerPdfGeneratedAt(timezone) {
+  const options = {
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  });
+  };
+
+  const cleanTimezone = String(timezone || "").trim();
+
+  if (cleanTimezone) {
+    options.timeZone = cleanTimezone;
+  }
+
+  try {
+    return new Date().toLocaleString("en-GB", options);
+  } catch {
+    delete options.timeZone;
+    return new Date().toLocaleString("en-GB", options);
+  }
 }
 
 function ownerPdfReportId(range) {
@@ -1364,19 +1219,27 @@ function ownerPdfRow(doc, { x, y, width, rank, title, meta, value }) {
   return y + 52;
 }
 
-function ownerPdfMainAnswer({ financial, ownerChecks }) {
+function ownerPdfMainAnswer({ financial, ownerChecks, formatMoney }) {
   const revenue = ownerPdfNumber(financial?.summary?.revenue);
   const profit = ownerPdfNumber(financial?.summary?.profitEstimate);
   const overdue = ownerPdfAmount(ownerChecks?.ownerChecks?.overdueCustomerMoney);
 
-  if (overdue > 0) {
-    return `Sales: ${ownerPdfMoney(revenue)}. Profit: ${ownerPdfMoney(profit)}. Collect overdue: ${ownerPdfMoney(overdue)}.`;
+  const salesCount = ownerPdfNumber(financial?.summary?.salesCount);
+
+  if (salesCount <= 0) {
+    return "No completed sales were recorded in this period.";
   }
 
-  return `Sales: ${ownerPdfMoney(revenue)}. Profit: ${ownerPdfMoney(profit)}. No overdue customer money found.`;
+  const resultLabel = profit < 0 ? "Loss" : "Profit";
+
+  if (overdue > 0) {
+    return `Sales: ${formatMoney(revenue)}. ${resultLabel}: ${formatMoney(Math.abs(profit))}. Collect overdue: ${formatMoney(overdue)}.`;
+  }
+
+  return `Sales: ${formatMoney(revenue)}. ${resultLabel}: ${formatMoney(Math.abs(profit))}. No overdue customer money found.`;
 }
 
-function ownerPdfActions({ products, ownerChecks }) {
+function ownerPdfActions({ products, ownerChecks, formatMoney }) {
   const checks = ownerChecks?.ownerChecks || {};
   const overdue = ownerPdfAmount(checks.overdueCustomerMoney);
   const supplierDebt = ownerPdfAmount(checks.iOweSuppliers);
@@ -1391,7 +1254,7 @@ function ownerPdfActions({ products, ownerChecks }) {
   if (overdue > 0) {
     actions.push({
       title: "Collect overdue customer money",
-      meta: `${ownerPdfMoney(overdue)} is already overdue`,
+      meta: `${formatMoney(overdue)} is already overdue`,
       value: "First",
     });
   }
@@ -1399,7 +1262,7 @@ function ownerPdfActions({ products, ownerChecks }) {
   if (supplierDebt > 0) {
     actions.push({
       title: "Review supplier bills",
-      meta: `${ownerPdfMoney(supplierDebt)} still unpaid`,
+      meta: `${formatMoney(supplierDebt)} still unpaid`,
       value: "Check",
     });
   }
@@ -1415,7 +1278,7 @@ function ownerPdfActions({ products, ownerChecks }) {
   if (actions.length < 3 && customerDebt > 0) {
     actions.push({
       title: "Review customer credit",
-      meta: `${ownerPdfMoney(customerDebt)} unpaid by customers`,
+      meta: `${formatMoney(customerDebt)} unpaid by customers`,
       value: "Check",
     });
   }
@@ -1423,7 +1286,7 @@ function ownerPdfActions({ products, ownerChecks }) {
   if (actions.length < 3 && best) {
     actions.push({
       title: `Keep selling ${ownerPdfProductName(best)}`,
-      meta: `${ownerPdfMoney(ownerPdfRevenue(best))} from ${ownerPdfSoldQty(best)} sold`,
+      meta: `${formatMoney(ownerPdfRevenue(best))} from ${ownerPdfSoldQty(best)} sold`,
       value: "Sell",
     });
   }
@@ -1432,9 +1295,11 @@ function ownerPdfActions({ products, ownerChecks }) {
 }
 
 function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, products, ownerChecks }) {
+  const currencyCode = String(tenant?.currencyCode || "RWF").trim().toUpperCase() || "RWF";
+  const formatMoney = (value) => ownerPdfMoney(value, currencyCode);
   const businessName = ownerPdfText(tenant?.name || tenant?.displayName, "Business");
   const period = range.fromISO === range.toISO ? range.fromISO : `${range.fromISO} to ${range.toISO}`;
-  const generatedAt = ownerPdfGeneratedAt();
+  const generatedAt = ownerPdfGeneratedAt(tenant?.timezone);
   const reportId = ownerPdfReportId(range);
 
   const margin = doc.page.margins.left;
@@ -1468,7 +1333,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     y,
     width: pageW,
     title: "What the owner should know",
-    text: ownerPdfMainAnswer({ financial, ownerChecks }),
+    text: ownerPdfMainAnswer({ financial, ownerChecks, formatMoney }),
     tone: ownerPdfAmount(checks.overdueCustomerMoney) > 0 ? "red" : "green",
   });
 
@@ -1483,7 +1348,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     width: metricW,
     height: 84,
     label: "Sales made",
-    value: ownerPdfMoney(revenue),
+    value: formatMoney(revenue),
     helper: ownerPdfCountLabel(salesCount, "completed sale", "completed sales"),
     tone: "blue",
   });
@@ -1494,7 +1359,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     width: metricW,
     height: 84,
     label: "Money received",
-    value: ownerPdfMoney(moneyReceived),
+    value: formatMoney(moneyReceived),
     helper: "Payments received",
     tone: "green",
   });
@@ -1505,7 +1370,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     width: metricW,
     height: 84,
     label: "Expenses",
-    value: ownerPdfMoney(expenses),
+    value: formatMoney(expenses),
     helper: "Approved expenses",
     tone: expenses > 0 ? "amber" : "green",
   });
@@ -1515,10 +1380,10 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     y,
     width: metricW,
     height: 84,
-    label: "Profit estimate",
-    value: ownerPdfMoney(profit),
-    helper: "After costs",
-    tone: profit >= 0 ? "green" : "red",
+    label: salesCount <= 0 ? "Business result" : profit < 0 ? "Loss" : "Profit",
+    value: formatMoney(Math.abs(profit)),
+    helper: salesCount <= 0 ? "No completed sales" : "After product cost and expenses",
+    tone: salesCount <= 0 ? "blue" : profit >= 0 ? "green" : "red",
   });
 
   y += 116;
@@ -1534,29 +1399,51 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
       lineBreak: false,
     });
 
-  ownerPdfFitText(doc, ownerPdfMoney(productCost), margin + 18, y + 30, {
+  ownerPdfFitText(doc, formatMoney(productCost), margin + 18, y + 30, {
     width: 150,
     size: 13,
     minSize: 8,
   });
 
+  const paymentMethods = Array.isArray(cashFlow?.cashFlow?.paymentMethodSplit)
+    ? cashFlow.cashFlow.paymentMethodSplit
+        .map((item) => ({
+          ...item,
+          amount: ownerPdfNumber(item.amount),
+          count: ownerPdfNumber(item.count),
+        }))
+        .sort((a, b) => b.amount - a.amount)
+    : [];
+
+  const topPaymentMethod = paymentMethods.find((item) => item.amount > 0) || null;
+  const topPaymentShare =
+    topPaymentMethod && moneyReceived > 0
+      ? (topPaymentMethod.amount / moneyReceived) * 100
+      : 0;
+
   doc
     .fillColor("#64748b")
     .font("Helvetica-Bold")
-    .fontSize(8.5)
-    .text("Used only to estimate profit.", margin + 184, y + 18, {
+    .fontSize(6.8)
+    .text("MOST USED PAYMENT METHOD", margin + 184, y + 13, {
       width: pageW - 202,
+      characterSpacing: 1.1,
       lineBreak: false,
     });
 
-  doc
-    .fillColor("#94a3b8")
-    .font("Helvetica-Bold")
-    .fontSize(8)
-    .text("This is not a cash payment by itself.", margin + 184, y + 35, {
+  ownerPdfFitText(
+    doc,
+    topPaymentMethod
+      ? `${ownerPdfText(topPaymentMethod.label || topPaymentMethod.method)} · ${formatMoney(topPaymentMethod.amount)} · ${topPaymentShare.toFixed(0)}%`
+      : "No customer payments in this period",
+    margin + 184,
+    y + 31,
+    {
       width: pageW - 202,
-      lineBreak: false,
-    });
+      size: 10.5,
+      minSize: 7,
+    },
+  );
 
   y += 88;
 
@@ -1585,7 +1472,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
         rank: index + 1,
         title: ownerPdfProductName(item),
         meta: `${ownerPdfSoldQty(item)} sold`,
-        value: ownerPdfMoney(ownerPdfRevenue(item)),
+        value: formatMoney(ownerPdfRevenue(item)),
       });
     });
   }
@@ -1620,7 +1507,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
   doc.addPage();
 
   ownerPdfHeader(doc, {
-    title: "Owner Checks",
+    title: "Attention",
     subtitle: `Generated ${generatedAt}`,
     businessName,
     period,
@@ -1644,7 +1531,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     title: "What needs action first",
     text:
       overdue > 0
-        ? `Collect overdue customer money first: ${ownerPdfMoney(overdue)}.`
+        ? `Collect overdue customer money first: ${formatMoney(overdue)}.`
         : "No overdue customer money found right now.",
     tone: overdue > 0 ? "red" : "green",
   });
@@ -1657,7 +1544,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     width: metricW,
     height: 84,
     label: "Customer credit",
-    value: ownerPdfMoney(customersOwe),
+    value: formatMoney(customersOwe),
     helper: ownerPdfCountLabel(customersOweCount, "unpaid sale", "unpaid sales"),
     tone: customersOwe > 0 ? "amber" : "green",
   });
@@ -1668,7 +1555,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     width: metricW,
     height: 84,
     label: "Overdue money",
-    value: ownerPdfMoney(overdue),
+    value: formatMoney(overdue),
     helper: ownerPdfCountLabel(overdueCount, "overdue sale", "overdue sales"),
     tone: overdue > 0 ? "red" : "green",
   });
@@ -1679,7 +1566,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     width: metricW,
     height: 84,
     label: "Supplier bills",
-    value: ownerPdfMoney(suppliersOwe),
+    value: formatMoney(suppliersOwe),
     helper: ownerPdfCountLabel(suppliersOweCount, "unpaid bill", "unpaid bills"),
     tone: suppliersOwe > 0 ? "amber" : "green",
   });
@@ -1704,7 +1591,7 @@ function renderPremiumOwnerPdf(doc, { tenant, range, financial, cashFlow, produc
     title: "Top 3 actions",
   });
 
-  const actions = ownerPdfActions({ products, ownerChecks });
+  const actions = ownerPdfActions({ products, ownerChecks, formatMoney });
 
   if (actions.length === 0) {
     doc

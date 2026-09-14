@@ -46,8 +46,6 @@ import RepairEdit from "./legacy-pages/repairs/RepairEdit";
 
 import Reports from "./legacy-pages/reports/Reports";
 import CashFlowReport from "./legacy-pages/reports/CashFlowReport";
-import IncomeStatement from "./legacy-pages/reports/IncomeStatement";
-import TrialBalance from "./legacy-pages/reports/TrialBalance";
 import ProfitTable from "./legacy-pages/reports/ProfitTable";
 import ProductsReport from "./legacy-pages/reports/ProductsReport";
 import OwnerChecksReport from "./legacy-pages/reports/OwnerChecksReport";
@@ -511,9 +509,12 @@ export default function App() {
               <Route path="reports/cash-flow" element={<CashFlowReport />} />
               <Route
                 path="reports/income-statement"
-                element={<IncomeStatement />}
+                element={<Navigate to="/app/reports/profit-table" replace />}
               />
-              <Route path="reports/trial-balance" element={<TrialBalance />} />
+              <Route
+                path="reports/trial-balance"
+                element={<Navigate to="/app/reports/owner-checks" replace />}
+              />
               <Route path="reports/profit-table" element={<ProfitTable />} />
               <Route path="reports/products" element={<ProductsReport />} />
               <Route path="reports/owner-checks" element={<OwnerChecksReport />} />

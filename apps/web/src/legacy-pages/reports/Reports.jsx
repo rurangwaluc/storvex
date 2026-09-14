@@ -9,6 +9,8 @@ import {
   downloadBlob,
   downloadDailyClosePdf,
   downloadPeriodPdf,
+  getCashFlowReport,
+  getFinancialSummary,
   getInsights,
   getReportsDashboard,
 } from "../../services/reportsApi";
@@ -22,6 +24,8 @@ import {
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import { cn } from "../../lib/cn";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import "../dashboard/Dashboard.css";
 import "./Reports.css";
 
@@ -32,25 +36,25 @@ const PANEL =
 
 const OWNER_REPORTS = [
   {
-    title: "Money report",
+    title: "Money",
     text: "Money in, money out and balances.",
     to: "/app/reports/cash-flow",
     tag: "Money",
   },
   {
-    title: "Sales and profit",
+    title: "Profit & sales",
     text: "Sales, costs and estimated profit.",
     to: "/app/reports/profit-table",
     tag: "Profit",
   },
   {
-    title: "Products report",
+    title: "Products",
     text: "Best sellers and stock to review.",
     to: "/app/reports/products",
     tag: "Stock",
   },
   {
-    title: "Owner checks",
+    title: "Attention",
     text: "Debts, overdue money and stock issues.",
     to: "/app/reports/owner-checks",
     tag: "Control",
@@ -136,12 +140,6 @@ function getValue(source, paths, fallback = 0) {
   }
 
   return fallback;
-}
-
-function money(value) {
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(Math.round(cleanNumber(value)))}`;
 }
 
 function numberLabel(value) {
@@ -269,7 +267,9 @@ function DownloadCard({
   range,
   setRange,
   downloading,
+  dailyCloseDownloading,
   onDownload,
+  onDownloadDailyClose,
 }) {
   const custom = selectedPreset === "custom";
 
@@ -289,14 +289,30 @@ function DownloadCard({
           <h2>Choose a period</h2>
         </div>
 
-        <AsyncButton
-          loading={downloading}
-          disabled={downloading || !range.from || !range.to}
-          onClick={onDownload}
-          className="svx-report-primary-button"
-        >
-          Download PDF
-        </AsyncButton>
+        <div className="flex flex-wrap items-center gap-2">
+          <AsyncButton
+            loading={dailyCloseDownloading}
+            disabled={dailyCloseDownloading || downloading}
+            onClick={onDownloadDailyClose}
+            className="svx-report-primary-button"
+          >
+            Download today's report
+          </AsyncButton>
+
+          <AsyncButton
+            loading={downloading}
+            disabled={
+              downloading ||
+              dailyCloseDownloading ||
+              !range.from ||
+              !range.to
+            }
+            onClick={onDownload}
+            className="svx-report-primary-button"
+          >
+            Download business report
+          </AsyncButton>
+        </div>
       </div>
 
       <div className="svx-report-range-controls">
@@ -348,11 +364,18 @@ function DownloadCard({
 }
 
 export default function Reports() {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate: formatTenantDate } = useTenantDateTime();
+
+  const money = (value) => formatMoney(cleanNumber(value));
+
   const [selectedPreset, setSelectedPreset] =
     useState("month");
   const [range, setRange] =
     useState(() => rangeForPreset("month"));
   const [downloading, setDownloading] =
+    useState(false);
+  const [dailyCloseDownloading, setDailyCloseDownloading] =
     useState(false);
   const [activeBranchId, setActiveBranchId] =
     useState(
@@ -390,6 +413,8 @@ export default function Reports() {
         dashboard,
         insightData,
         moneyData,
+        financialData,
+        cashFlowData,
       ] = await Promise.all([
         getReportsDashboard(
           requestRange,
@@ -409,6 +434,8 @@ export default function Reports() {
               explicitBranchId,
           },
         ).catch(() => null),
+        getFinancialSummary(requestRange),
+        getCashFlowReport(requestRange),
       ]);
 
       return {
@@ -416,6 +443,10 @@ export default function Reports() {
         insights: insightData || null,
         moneySummary:
           moneyData || null,
+        financialSummary:
+          financialData || null,
+        cashFlowReport:
+          cashFlowData || null,
       };
     },
     staleTime: 30_000,
@@ -431,15 +462,22 @@ export default function Reports() {
   const moneySummary =
     reportsQuery.data?.moneySummary ||
     null;
+  const financialSummary =
+    reportsQuery.data?.financialSummary ||
+    null;
+  const cashFlowReport =
+    reportsQuery.data?.cashFlowReport ||
+    null;
   const loading =
     reportsQuery.isPending;
 
   const rangeLabel = useMemo(
     () =>
-      `${formatDate(range.from)} to ${formatDate(range.to)}`,
+      `${formatTenantDate(range.from)} to ${formatTenantDate(range.to)}`,
     [
       range.from,
       range.to,
+      formatTenantDate,
     ],
   );
 
@@ -487,44 +525,33 @@ export default function Reports() {
   }, [reportsQuery.error]);
 
   const numbers = useMemo(() => {
-    const sales = getValue(summary, [
-      "sales.total",
-      "sales.salesTotal",
-      "sales.cash.total",
-      "revenue",
-      "summary.revenue",
-      "period.revenue",
-    ]);
+    const financial = financialSummary?.summary || {};
+    const cashFlow = cashFlowReport?.cashFlow || {};
 
-    const moneyReceived = getValue(
-      summary,
-      [
-        "payments.total",
-        "payments.paymentsTotal",
-        "sales.paymentsTotal",
-        "cashFlow.summary.moneyIn",
-        "moneyIn",
-      ],
-      sales,
+    const sales = cleanNumber(
+      financial.revenue ??
+        getValue(summary, ["sales.total", "revenue"], 0),
     );
 
-    const expenses = getValue(summary, [
-      "expenses.approvedTotal",
-      "expenses.approvedExpenseTotal",
-      "approvedExpenses",
-      "summary.expenses",
-      "period.expensesApproved",
-    ]);
+    const productCost = cleanNumber(
+      financial.costOfGoodsSold,
+    );
 
-    const profit = getValue(
-      summary,
-      [
-        "profitEstimate",
-        "profitEstimateToday",
-        "summary.profitEstimate",
-        "period.profitEstimate",
-      ],
-      cleanNumber(sales) - cleanNumber(expenses),
+    const grossProfit = cleanNumber(
+      financial.grossProfit,
+    );
+
+    const expenses = cleanNumber(
+      financial.approvedExpenses ??
+        getValue(summary, ["expenses.approvedTotal"], 0),
+    );
+
+    const profit = cleanNumber(
+      financial.profitEstimate,
+    );
+
+    const moneyReceived = cleanNumber(
+      cashFlow.moneyIn ?? sales,
     );
 
     const customersOwe = getValue(
@@ -541,42 +568,84 @@ export default function Reports() {
       ),
     );
 
-    const overdue = getValue(summary, ["ownerChecks.overdueCustomerMoney.total"], 0);
-
-    const salesCount = getValue(summary, [
-      "sales.count",
-      "sales.salesCount",
-      "sales.cash.count",
-      "sales.credit.count",
-      "salesCount",
-    ]);
-
-    const expenseCount = getValue(summary, [
-      "expenses.approvedCount",
-      "expenses.approvedExpenseCount",
-    ]);
+    const overdue = getValue(
+      summary,
+      ["ownerChecks.overdueCustomerMoney.total"],
+      0,
+    );
 
     const suppliersOwe = getValue(
       summary,
       ["ownerChecks.iOweSuppliers.total"],
-      getValue(moneySummary, ["summary.iOweSuppliers", "iOweSuppliers.total", "suppliers.total"], 0),
+      getValue(
+        moneySummary,
+        [
+          "summary.iOweSuppliers",
+          "iOweSuppliers.total",
+          "suppliers.total",
+        ],
+        0,
+      ),
     );
 
-    const stockToReview = getValue(summary, ["ownerChecks.stockToReview.count"], 0);
+    const stockToReview = getValue(
+      summary,
+      ["ownerChecks.stockToReview.count"],
+      0,
+    );
+
+    const salesCount = cleanNumber(
+      financial.salesCount ??
+        getValue(summary, ["sales.count"], 0),
+    );
+
+    const profitMargin =
+      sales > 0 ? (profit / sales) * 100 : null;
 
     return {
       sales,
-      moneyReceived,
+      productCost,
+      grossProfit,
       expenses,
       profit,
+      profitMargin,
+      moneyReceived,
       customersOwe,
       overdue,
-      salesCount,
-      expenseCount,
       suppliersOwe,
       stockToReview,
+      salesCount,
     };
-  }, [summary, moneySummary]);
+  }, [
+    summary,
+    moneySummary,
+    financialSummary,
+    cashFlowReport,
+  ]);
+
+  const paymentMethods = useMemo(() => {
+    const rows = Array.isArray(
+      cashFlowReport?.cashFlow?.paymentMethodSplit,
+    )
+      ? cashFlowReport.cashFlow.paymentMethodSplit
+      : [];
+
+    return rows
+      .map((item) => ({
+        ...item,
+        amount: cleanNumber(item.amount),
+        count: cleanNumber(item.count),
+      }))
+      .sort((a, b) => b.amount - a.amount);
+  }, [cashFlowReport]);
+
+  const topPaymentMethod =
+    paymentMethods.find((item) => item.amount > 0) || null;
+
+  const topPaymentShare =
+    topPaymentMethod && numbers.moneyReceived > 0
+      ? (topPaymentMethod.amount / numbers.moneyReceived) * 100
+      : 0;
 
   const currentMoney = useMemo(() => {
     const cash = cashBalance(moneySummary);
@@ -588,6 +657,63 @@ export default function Reports() {
     return { cash, momo, bank, other, total };
   }, [moneySummary]);
 
+  const usedPaymentMethods = paymentMethods.filter(
+    (item) => item.amount > 0 || item.count > 0,
+  );
+
+  const salesChangeRaw = Number(
+    insights?.comparison?.percent?.revenue,
+  );
+
+  const salesChange = Number.isFinite(salesChangeRaw)
+    ? salesChangeRaw
+    : null;
+
+  const topSeller = Array.isArray(financialSummary?.topSellers)
+    ? financialSummary.topSellers[0] || null
+    : null;
+
+  const restockItems = Array.isArray(
+    insights?.reorderSuggestions?.items,
+  )
+    ? insights.reorderSuggestions.items
+    : [];
+
+  const nextActions = [];
+
+  if (cleanNumber(numbers.overdue) > 0) {
+    nextActions.push({
+      title: "Collect overdue customer money",
+      text: `${money(numbers.overdue)} is already overdue.`,
+    });
+  }
+
+  if (cleanNumber(numbers.stockToReview) > 0) {
+    nextActions.push({
+      title: "Review stock",
+      text: `${numberLabel(numbers.stockToReview)} product${
+        numbers.stockToReview === 1 ? "" : "s"
+      } need attention.`,
+    });
+  }
+
+  if (cleanNumber(numbers.suppliersOwe) > 0) {
+    nextActions.push({
+      title: "Review supplier payments",
+      text: `${money(numbers.suppliersOwe)} is still owed to suppliers.`,
+    });
+  }
+
+  if (
+    cleanNumber(numbers.customersOwe) > 0 &&
+    cleanNumber(numbers.overdue) <= 0
+  ) {
+    nextActions.push({
+      title: "Follow up customer balances",
+      text: `Customers still owe ${money(numbers.customersOwe)}.`,
+    });
+  }
+
 
   async function handleDownload() {
     if (!range.from || !range.to) {
@@ -598,36 +724,53 @@ export default function Reports() {
     setDownloading(true);
 
     try {
-      const sameDay = range.from === range.to;
-      const blob = sameDay
-        ? await downloadDailyClosePdf(
-            range.from,
-            {
-              branchId:
-                explicitBranchId,
-              allBranches: false,
-            },
-          )
-        : await downloadPeriodPdf(
-            requestRange,
-            12,
-            5,
-          );
+      const blob = await downloadPeriodPdf(
+        requestRange,
+        12,
+        5,
+      );
 
-      const filename = sameDay
-        ? `storvex-business-report-${fileSafe(range.from)}.pdf`
-        : `storvex-business-report-${fileSafe(range.from)}-to-${fileSafe(range.to)}.pdf`;
+      const filename =
+        `storvex-business-overview-${fileSafe(range.from)}-to-${fileSafe(range.to)}.pdf`;
 
       downloadBlob(blob, filename);
-      toast.success("Report downloaded");
+      toast.success("Business overview downloaded");
     } catch (error) {
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
-          "Failed to download report",
+          "Failed to download business overview",
       );
     } finally {
       setDownloading(false);
+    }
+  }
+
+  async function handleDownloadDailyClose() {
+    setDailyCloseDownloading(true);
+
+    try {
+      const blob = await downloadDailyClosePdf(
+        undefined,
+        {
+          branchId: explicitBranchId,
+        },
+      );
+
+      downloadBlob(
+        blob,
+        "storvex-daily-close.pdf",
+      );
+
+      toast.success("Today's report downloaded");
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Failed to download today's report",
+      );
+    } finally {
+      setDailyCloseDownloading(false);
     }
   }
 
@@ -640,9 +783,9 @@ export default function Reports() {
       <section className="svx-report-hero svx-dashboard-card">
         <div>
           <p className="svx-report-eyebrow">Reports</p>
-          <h1>Business reports</h1>
+          <h1>Business overview</h1>
           <span>
-            Sales, profit, money and issues for the selected period.
+            Profit, sales, money, customer debt, and what needs your attention.
           </span>
         </div>
 
@@ -659,94 +802,227 @@ export default function Reports() {
         range={range}
         setRange={setRange}
         downloading={downloading}
+        dailyCloseDownloading={dailyCloseDownloading}
         onDownload={handleDownload}
+        onDownloadDailyClose={handleDownloadDailyClose}
       />
 
-      <section className="svx-report-kpi-grid">
-        <KpiCard
-          label="Sales made"
-          value={money(numbers.sales)}
-          helper={`${numberLabel(numbers.salesCount)} sale${cleanNumber(numbers.salesCount) === 1 ? "" : "s"}`}
-          tone="blue"
-        />
-        <KpiCard
-          label="Money received"
-          value={money(numbers.moneyReceived)}
-          helper="Payments received"
-          tone="green"
-        />
-        <KpiCard
-          label="Expenses"
-          value={money(numbers.expenses)}
-          helper={`${numberLabel(numbers.expenseCount)} approved`}
-          tone="amber"
-        />
-        <KpiCard
-          label="Profit estimate"
-          value={money(numbers.profit)}
-          helper={cleanNumber(numbers.profit) >= 0 ? "After approved expenses" : "Business made a loss"}
-          tone={cleanNumber(numbers.profit) >= 0 ? "green" : "red"}
-        />
-      </section>
-
-      <section className="svx-report-money-position svx-dashboard-card">
-        <div className="svx-report-section-head">
+      <section className="svx-report-business-result svx-dashboard-card">
+        <div className="svx-report-result-main">
           <div>
-            <p className="svx-report-eyebrow">Current money</p>
-            <h2>Money available</h2>
+            <p className="svx-report-eyebrow">Business result</p>
+            <h2>How is the business doing?</h2>
           </div>
-          <strong>{money(currentMoney.total)}</strong>
-        </div>
 
-        <div className="svx-report-money-grid">
-          <MoneyTile label="Cash" value={money(currentMoney.cash)} helper="" />
-          <MoneyTile label="MoMo" value={money(currentMoney.momo)} helper="" />
-          <MoneyTile label="Bank" value={money(currentMoney.bank)} helper="" />
-          <MoneyTile label="Other" value={money(currentMoney.other)} helper="" />
-        </div>
-      </section>
-
-      <section className="svx-report-attention svx-dashboard-card">
-        <div className="svx-report-section-head">
-          <div>
-            <p className="svx-report-eyebrow">Needs attention</p>
-            <h2>Needs attention</h2>
+          <div
+            className={`svx-report-result-number ${
+              numbers.salesCount <= 0
+                ? "is-neutral"
+                : numbers.profit < 0
+                  ? "is-loss"
+                  : "is-profit"
+            }`}
+          >
+            <span>
+              {numbers.salesCount <= 0
+                ? "No result yet"
+                : numbers.profit < 0
+                  ? "Loss"
+                  : "Profit"}
+            </span>
+            <strong>{money(Math.abs(numbers.profit))}</strong>
+            <p>
+              {numbers.salesCount <= 0 || numbers.profitMargin == null
+                ? "No completed sales in this period"
+                : `${Math.abs(numbers.profitMargin).toFixed(1)}% ${
+                    numbers.profit < 0 ? "loss" : "profit margin"
+                  }`}
+            </p>
           </div>
         </div>
 
-        <div className="svx-report-attention-grid">
-          <AttentionTile
-            label="Customers owe me"
-            value={money(numbers.customersOwe)}
-            helper=""
-            tone={cleanNumber(numbers.customersOwe) > 0 ? "warning" : "good"}
+        <div className="svx-report-result-grid">
+          <MoneyTile
+            label="Sales"
+            value={money(numbers.sales)}
+            helper={`${numberLabel(numbers.salesCount)} completed sale${
+              numbers.salesCount === 1 ? "" : "s"
+            }`}
           />
-          <AttentionTile
-            label="I owe suppliers"
-            value={money(numbers.suppliersOwe)}
-            helper=""
-            tone={cleanNumber(numbers.suppliersOwe) > 0 ? "danger" : "good"}
+          <MoneyTile
+            label="Product cost"
+            value={money(numbers.productCost)}
+            helper="Cost of products sold"
           />
-          <AttentionTile
-            label="Overdue customer money"
-            value={money(numbers.overdue)}
-            helper=""
-            tone={cleanNumber(numbers.overdue) > 0 ? "danger" : "good"}
+          <MoneyTile
+            label="Gross profit"
+            value={money(numbers.grossProfit)}
+            helper="Sales minus product cost"
           />
-          <AttentionTile
-            label="Stock to review"
-            value={numberLabel(numbers.stockToReview)}
-            helper=""
-            tone={cleanNumber(numbers.stockToReview) > 0 ? "warning" : "good"}
+          <MoneyTile
+            label="Expenses"
+            value={money(numbers.expenses)}
+            helper="Approved business expenses"
           />
         </div>
+      </section>
+
+      <section className="svx-report-executive-grid">
+        <article className="svx-report-executive-panel">
+          <div className="svx-report-compact-head">
+            <div>
+              <p className="svx-report-eyebrow">Money received</p>
+              <h2>How customers paid</h2>
+            </div>
+            <strong>{money(numbers.moneyReceived)}</strong>
+          </div>
+
+          {topPaymentMethod ? (
+            <div className="svx-report-payment-leader">
+              <span>Most used</span>
+              <strong>{topPaymentMethod.label}</strong>
+              <p>
+                {money(topPaymentMethod.amount)} /{" "}
+                {topPaymentShare.toFixed(0)}% of money received
+              </p>
+            </div>
+          ) : (
+            <p className="svx-report-compact-empty">
+              No customer payments in this period.
+            </p>
+          )}
+
+          {usedPaymentMethods.length > 0 ? (
+            <div className="svx-report-compact-list">
+              {usedPaymentMethods.map((item) => (
+                <div key={item.method || item.label}>
+                  <span>{item.label || item.method}</span>
+                  <strong>{money(item.amount)}</strong>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </article>
+
+        <article className="svx-report-executive-panel">
+          <div className="svx-report-compact-head">
+            <div>
+              <p className="svx-report-eyebrow">Money now</p>
+              <h2>Money available</h2>
+            </div>
+            <strong>{money(currentMoney.total)}</strong>
+          </div>
+
+          <div className="svx-report-compact-list is-money">
+            <div><span>Cash</span><strong>{money(currentMoney.cash)}</strong></div>
+            <div><span>Mobile money</span><strong>{money(currentMoney.momo)}</strong></div>
+            <div><span>Bank</span><strong>{money(currentMoney.bank)}</strong></div>
+            <div><span>Other</span><strong>{money(currentMoney.other)}</strong></div>
+          </div>
+        </article>
+      </section>
+
+      <section className="svx-report-executive-grid">
+        <article className="svx-report-executive-panel">
+          <div className="svx-report-compact-head">
+            <div>
+              <p className="svx-report-eyebrow">Needs attention</p>
+              <h2>What needs your attention</h2>
+            </div>
+          </div>
+
+          <div className="svx-report-compact-list">
+            <div>
+              <span>Overdue customer money</span>
+              <strong>{money(numbers.overdue)}</strong>
+            </div>
+            <div>
+              <span>Customers owe us</span>
+              <strong>{money(numbers.customersOwe)}</strong>
+            </div>
+            <div>
+              <span>We owe suppliers</span>
+              <strong>{money(numbers.suppliersOwe)}</strong>
+            </div>
+            <div>
+              <span>Products to review</span>
+              <strong>{numberLabel(numbers.stockToReview)}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="svx-report-executive-panel">
+          <div className="svx-report-compact-head">
+            <div>
+              <p className="svx-report-eyebrow">Performance</p>
+              <h2>What is selling</h2>
+            </div>
+          </div>
+
+          {topSeller ? (
+            <div className="svx-report-best-seller">
+              <span>Best seller</span>
+              <strong>{topSeller.name || "Product"}</strong>
+              <p>
+                {numberLabel(topSeller.soldQty)} sold /{" "}
+                {money(topSeller.revenue)}
+              </p>
+            </div>
+          ) : (
+            <p className="svx-report-compact-empty">
+              No products sold in this period.
+            </p>
+          )}
+
+          <div className="svx-report-performance-foot">
+            <div>
+              <span>Sales change</span>
+              <strong>
+                {numbers.salesCount <= 0 || salesChange == null
+                  ? "No comparison yet"
+                  : `${salesChange >= 0 ? "+" : ""}${salesChange.toFixed(1)}%`}
+              </strong>
+            </div>
+            <div>
+              <span>Need restock</span>
+              <strong>{numberLabel(restockItems.length)}</strong>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section className="svx-report-next-actions">
+        <div className="svx-report-compact-head">
+          <div>
+            <p className="svx-report-eyebrow">Next actions</p>
+            <h2>What to do next</h2>
+          </div>
+        </div>
+
+        {nextActions.length > 0 ? (
+          <div className="svx-report-action-list">
+            {nextActions.slice(0, 3).map((action, index) => (
+              <div key={action.title}>
+                <span>{index + 1}</span>
+                <div>
+                  <strong>{action.title}</strong>
+                  <p>{action.text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="svx-report-compact-empty">
+            Nothing urgent needs your attention right now.
+          </p>
+        )}
       </section>
 
       <section className="svx-report-links svx-dashboard-card">
         <div className="svx-report-section-head">
           <div>
-            <p className="svx-report-eyebrow">Detailed reports</p>
-            <h2>More reports</h2>
+            <p className="svx-report-eyebrow">Go deeper</p>
+            <h2>More detail</h2>
           </div>
         </div>
 

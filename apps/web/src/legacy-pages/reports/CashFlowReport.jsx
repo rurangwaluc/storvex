@@ -14,6 +14,8 @@ import {
   useActiveBranchId,
 } from "../../hooks/useActiveBranchId";
 import PageSkeleton from "../../components/ui/PageSkeleton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import "../dashboard/Dashboard.css";
 import "./Reports.css";
 
@@ -85,29 +87,10 @@ function rangeForPreset(key) {
   return { from: today, to: today };
 }
 
-function money(value) {
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(Math.round(cleanNumber(value)))}`;
-}
-
 function numberLabel(value) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(cleanNumber(value));
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 function getValue(source, paths, fallback = 0) {
@@ -152,7 +135,7 @@ function methodLabel(method) {
   const value = String(method || "").toUpperCase();
 
   if (value === "CASH") return "Cash";
-  if (value === "MOMO") return "MoMo";
+  if (value === "MOMO") return "Mobile money";
   if (value === "BANK") return "Bank";
   if (value === "CARD") return "Other / card / cheque";
   if (value === "OTHER") return "Other / card / cheque";
@@ -160,7 +143,7 @@ function methodLabel(method) {
   return "Other";
 }
 
-function moneyAnswer(cashFlow) {
+function moneyAnswer(cashFlow, money) {
   const moneyIn = cleanNumber(cashFlow?.moneyIn);
   const moneyOut = cleanNumber(cashFlow?.moneyOut);
 
@@ -195,7 +178,7 @@ function MoneyTile({ label, value, helper }) {
   );
 }
 
-function MovementRow({ label, amount, count, tone = "in" }) {
+function MovementRow({ label, amount, count, money, tone = "in" }) {
   return (
     <div className={`svx-report-money-row is-${tone}`}>
       <div>
@@ -207,7 +190,7 @@ function MovementRow({ label, amount, count, tone = "in" }) {
   );
 }
 
-function RangeControls({ selectedPreset, setSelectedPreset, range, setRange }) {
+function RangeControls({ selectedPreset, setSelectedPreset, range, setRange, formatDate }) {
   function choosePreset(key) {
     setSelectedPreset(key);
     setRange(rangeForPreset(key));
@@ -267,6 +250,11 @@ function RangeControls({ selectedPreset, setSelectedPreset, range, setRange }) {
 }
 
 export default function CashFlowReport() {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
+  const money = (value) => formatMoney(cleanNumber(value));
+
   const [selectedPreset, setSelectedPreset] =
     useState("month");
   const [range, setRange] =
@@ -349,7 +337,7 @@ export default function CashFlowReport() {
       cashFlowQuery.error?.response
         ?.data?.message ||
         cashFlowQuery.error?.message ||
-        "Failed to load money report",
+        "Failed to load money",
       {
         id: "cash-flow-report-load-error",
       },
@@ -377,6 +365,22 @@ export default function CashFlowReport() {
     ? cashFlow.paymentMethodSplit
     : [];
 
+  const usedPaymentMethods = methodSplit
+    .map((item) => ({
+      ...item,
+      amount: cleanNumber(item.amount),
+      count: cleanNumber(item.count),
+    }))
+    .filter((item) => item.amount > 0 || item.count > 0)
+    .sort((a, b) => b.amount - a.amount);
+
+  const topPaymentMethod = usedPaymentMethods[0] || null;
+
+  const topPaymentShare =
+    topPaymentMethod && cleanNumber(cashFlow.moneyIn) > 0
+      ? (topPaymentMethod.amount / cleanNumber(cashFlow.moneyIn)) * 100
+      : 0;
+
   const moneyInBreakdown = Array.isArray(cashFlow.moneyInBreakdown)
     ? cashFlow.moneyInBreakdown
     : [];
@@ -395,32 +399,29 @@ export default function CashFlowReport() {
 
   return (
     <main className="svx-owner-dashboard svx-business-reports svx-money-report-page">
-      <section className="svx-report-hero svx-dashboard-card">
+      <section className="svx-money-detail-header">
         <div>
-          <p className="svx-report-eyebrow">Money report</p>
-          <h1>See where money came from and where it went</h1>
-          <span>
-            Simple report for cash, MoMo, bank, other payments, approved expenses, and cash drawer movement.
-          </span>
+          <p className="svx-report-eyebrow">Money</p>
+          <h1>Money</h1>
+          <p>
+            See money received, spending, balances, payment methods, and cash drawer movement.
+          </p>
         </div>
 
-        <aside>
-          <p>Showing</p>
+        <div className="svx-money-detail-meta">
+          <span>Showing</span>
           <strong>{formatDate(range.from)} to {formatDate(range.to)}</strong>
-          <span>{payload?.branchScope?.label || "Current branch"}</span>
-        </aside>
+          <p>{payload?.branchScope?.label || "Current branch"}</p>
+          <Link to="/app/reports">Back to overview</Link>
+        </div>
       </section>
 
-      <section className="svx-report-owner-answer svx-dashboard-card">
+      <section className="svx-money-result-card">
         <div>
-          <p className="svx-report-eyebrow">Owner answer</p>
-          <h2>What happened to money in this period</h2>
-          <strong>{moneyAnswer(cashFlow)}</strong>
+          <p className="svx-report-eyebrow">Money result</p>
+          <h2>What happened to money?</h2>
+          <strong>{moneyAnswer(cashFlow, money)}</strong>
         </div>
-
-        <Link to="/app/reports" className="svx-report-secondary-link">
-          Back to reports
-        </Link>
       </section>
 
       <RangeControls
@@ -428,23 +429,24 @@ export default function CashFlowReport() {
         setSelectedPreset={setSelectedPreset}
         range={range}
         setRange={setRange}
+        formatDate={formatDate}
       />
 
       <section className="svx-report-kpi-grid">
         <KpiCard
-          label="Money came in"
+          label="Money received"
           value={money(cashFlow.moneyIn)}
           helper="Payments received in this period"
           tone="green"
         />
         <KpiCard
-          label="Money went out"
+          label="Money spent"
           value={money(cashFlow.moneyOut)}
           helper="Approved expenses and recorded money out"
           tone="amber"
         />
         <KpiCard
-          label="Money left after spending"
+          label="Money left"
           value={money(Math.max(0, cleanNumber(cashFlow.netCashFlow)))}
           helper={
             cleanNumber(cashFlow.netCashFlow) >= 0
@@ -454,9 +456,9 @@ export default function CashFlowReport() {
           tone={cleanNumber(cashFlow.netCashFlow) >= 0 ? "green" : "red"}
         />
         <KpiCard
-          label="Business money now"
+          label="Money available"
           value={money(currentMoney.total)}
-          helper="Cash, MoMo, bank, and other money now"
+          helper="Cash, mobile money, bank, and other money now"
           tone="blue"
         />
       </section>
@@ -465,14 +467,14 @@ export default function CashFlowReport() {
         <div className="svx-report-section-head">
           <div>
             <p className="svx-report-eyebrow">Money now</p>
-            <h2>Where the business money is now</h2>
+            <h2>Money available now</h2>
           </div>
           <strong>{money(currentMoney.total)}</strong>
         </div>
 
         <div className="svx-report-money-grid">
           <MoneyTile label="Cash" value={money(currentMoney.cash)} helper="Physical cash in drawer" />
-          <MoneyTile label="MoMo" value={money(currentMoney.momo)} helper="Money on MoMo" />
+          <MoneyTile label="Mobile money" value={money(currentMoney.momo)} helper="Money in mobile money" />
           <MoneyTile label="Bank" value={money(currentMoney.bank)} helper="Money in the bank" />
           <MoneyTile label="Other / card / cheque" value={money(currentMoney.other)} helper="Card, cheque, or other payments" />
         </div>
@@ -483,23 +485,34 @@ export default function CashFlowReport() {
           <div className="svx-report-section-head">
             <div>
               <p className="svx-report-eyebrow">Money received</p>
-              <h2>Payment methods</h2>
+              <h2>How customers paid</h2>
             </div>
           </div>
 
+          {topPaymentMethod ? (
+            <div className="svx-money-top-method">
+              <span>Most used payment method</span>
+              <strong>{methodLabel(topPaymentMethod.method)}</strong>
+              <p>
+                {money(topPaymentMethod.amount)} / {topPaymentShare.toFixed(0)}% of money received
+              </p>
+            </div>
+          ) : null}
+
           <div className="svx-report-money-list">
-            {methodSplit.length > 0 ? (
-              methodSplit.map((item) => (
+            {usedPaymentMethods.length > 0 ? (
+              usedPaymentMethods.map((item) => (
                 <MovementRow
                   key={item.method}
                   label={methodLabel(item.method)}
                   amount={item.amount}
                   count={item.count}
+                  money={money}
                   tone="in"
                 />
               ))
             ) : (
-              <p className="svx-report-empty-text">No payment method records in this period.</p>
+              <p className="svx-report-empty-text">No customer payments in this period.</p>
             )}
           </div>
         </article>
@@ -508,7 +521,7 @@ export default function CashFlowReport() {
           <div className="svx-report-section-head">
             <div>
               <p className="svx-report-eyebrow">Money movement</p>
-              <h2>Money in and money out</h2>
+              <h2>Money movement</h2>
             </div>
           </div>
 
@@ -519,6 +532,7 @@ export default function CashFlowReport() {
                 label={item.label}
                 amount={item.amount}
                 count={item.count}
+                money={money}
                 tone="in"
               />
             ))}
@@ -529,6 +543,7 @@ export default function CashFlowReport() {
                 label={item.label}
                 amount={item.amount}
                 count={item.count}
+                money={money}
                 tone="out"
               />
             ))}
@@ -556,9 +571,11 @@ export default function CashFlowReport() {
                 : money(Math.abs(cleanNumber(cashFlow.cashDifference)))
             }
             helper={
-              cleanNumber(cashFlow.cashDifference) === 0
-                ? "No difference"
-                : "Check drawer closing"
+              cashFlow.cashDifference === null || cashFlow.cashDifference === undefined
+                ? "Count the drawer to check"
+                : cleanNumber(cashFlow.cashDifference) === 0
+                  ? "No difference"
+                  : "Check drawer closing"
             }
           />
         </div>
@@ -571,6 +588,7 @@ export default function CashFlowReport() {
                 label={item.reason || "Cash movement"}
                 amount={Math.max(cleanNumber(item.moneyIn), cleanNumber(item.moneyOut))}
                 count={item.count}
+                money={money}
                 tone={cleanNumber(item.moneyOut) > 0 ? "out" : "in"}
               />
             ))}

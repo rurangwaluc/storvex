@@ -77,10 +77,6 @@ export function getFinancialSummary(range) {
   return apiFetch(`/reports/financial-summary${qsFromRange(range)}`);
 }
 
-export function getIncomeStatement(range) {
-  return apiFetch(`/reports/income-statement${qsFromRange(range)}`);
-}
-
 export function getCashFlowReport(range) {
   return apiFetch(`/reports/cash-flow${qsFromRange(range)}`);
 }

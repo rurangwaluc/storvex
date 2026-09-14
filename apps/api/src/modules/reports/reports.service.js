@@ -1,4 +1,7 @@
 const prisma = require("../../config/database");
+const {
+  getDefaultTimezoneForMarket,
+} = require("../../config/markets");
 
 function parseDateOnly(s) {
   if (!s) return null;
@@ -30,6 +33,154 @@ function isoDate(d) {
 function cleanString(x) {
   const s = x == null ? "" : String(x).trim();
   return s || null;
+}
+
+function parseDateKey(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  const probe = new Date(Date.UTC(year, month - 1, day));
+
+  if (
+    probe.getUTCFullYear() !== year ||
+    probe.getUTCMonth() !== month - 1 ||
+    probe.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return `${match[1]}-${match[2]}-${match[3]}`;
+}
+
+function validTimezone(value) {
+  const timezone = cleanString(value);
+  if (!timezone) return null;
+
+  try {
+    new Intl.DateTimeFormat("en", {
+      timeZone: timezone,
+    }).format(new Date());
+
+    return timezone;
+  } catch {
+    return null;
+  }
+}
+
+function tenantTimezone(tenant) {
+  const stored = validTimezone(tenant?.timezone);
+  if (stored) return stored;
+
+  const countryCode = cleanString(tenant?.countryCode);
+
+  if (!countryCode) {
+    throw new Error("Tenant timezone and country are unavailable");
+  }
+
+  return getDefaultTimezoneForMarket(countryCode);
+}
+
+function calendarPartsInTimezone(value, timezone) {
+  const date = value instanceof Date ? value : new Date(value);
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+
+  return Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, Number(part.value)]),
+  );
+}
+
+function dateKeyInTimezone(value, timezone) {
+  const parts = calendarPartsInTimezone(value, timezone);
+
+  return [
+    String(parts.year).padStart(4, "0"),
+    String(parts.month).padStart(2, "0"),
+    String(parts.day).padStart(2, "0"),
+  ].join("-");
+}
+
+function shiftDateKey(value, days) {
+  const key = parseDateKey(value);
+  if (!key) return null;
+
+  const [year, month, day] = key.split("-").map(Number);
+  const shifted = new Date(
+    Date.UTC(year, month - 1, day + Number(days || 0)),
+  );
+
+  return shifted.toISOString().slice(0, 10);
+}
+
+function zonedDateBoundary(dateKey, timezone, endOfDay = false) {
+  const key = parseDateKey(dateKey);
+  if (!key) return null;
+
+  const [year, month, day] = key.split("-").map(Number);
+
+  const target = {
+    year,
+    month,
+    day,
+    hour: endOfDay ? 23 : 0,
+    minute: endOfDay ? 59 : 0,
+    second: endOfDay ? 59 : 0,
+    millisecond: endOfDay ? 999 : 0,
+  };
+
+  const desiredAsUtc = Date.UTC(
+    target.year,
+    target.month - 1,
+    target.day,
+    target.hour,
+    target.minute,
+    target.second,
+    target.millisecond,
+  );
+
+  let guess = new Date(desiredAsUtc);
+
+  for (let i = 0; i < 4; i += 1) {
+    const shown = calendarPartsInTimezone(
+      guess,
+      timezone,
+    );
+
+    const shownAsUtc = Date.UTC(
+      shown.year,
+      shown.month - 1,
+      shown.day,
+      shown.hour,
+      shown.minute,
+      shown.second,
+      target.millisecond,
+    );
+
+    const correction = desiredAsUtc - shownAsUtc;
+
+    if (correction === 0) break;
+
+    guess = new Date(
+      guess.getTime() + correction,
+    );
+  }
+
+  return guess;
 }
 
 function pctChange(current, previous) {
@@ -237,7 +388,16 @@ async function getTenantForPdf(tenantId) {
     if (!tenantId) return null;
     return await prisma.tenant.findUnique({
       where: { id: tenantId },
-      select: { id: true, name: true, phone: true, email: true, status: true },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        status: true,
+        countryCode: true,
+        currencyCode: true,
+        timezone: true,
+      },
     });
   } catch (e) {
     console.error("getTenantForPdf error:", e);
@@ -748,16 +908,52 @@ async function buildTopSellers({ user, query }) {
   };
 }
 
-async function buildDailyClose({ user, query }) {
+async function buildDailyClose({
+  user,
+  query,
+  tenant: tenantOverride = null,
+}) {
   const branchScope = await resolveReportBranchScope({ user, query });
   const tenantId = branchScope.tenantId;
 
-  const dateParam = parseDateOnly(query?.date);
-  const base = dateParam || new Date();
+  const tenant =
+    tenantOverride ||
+    (await getTenantForPdf(tenantId));
 
-  const start = startOfDay(base);
-  const end = endOfDay(base);
+  const timezone = tenantTimezone(tenant);
   const now = new Date();
+
+  const requestedDateKey = parseDateKey(query?.date);
+  const dateKey =
+    requestedDateKey ||
+    dateKeyInTimezone(now, timezone);
+
+  const previousDateKey =
+    shiftDateKey(dateKey, -1);
+
+  const start = zonedDateBoundary(
+    dateKey,
+    timezone,
+    false,
+  );
+
+  const end = zonedDateBoundary(
+    dateKey,
+    timezone,
+    true,
+  );
+
+  const previousStart = zonedDateBoundary(
+    previousDateKey,
+    timezone,
+    false,
+  );
+
+  const previousEnd = zonedDateBoundary(
+    previousDateKey,
+    timezone,
+    true,
+  );
 
   const [cashSalesAgg, creditSalesAgg] = await Promise.all([
     prisma.sale.aggregate({
@@ -892,8 +1088,16 @@ async function buildDailyClose({ user, query }) {
 
   return {
     branchScope,
-    date: isoDate(start),
-    range: { from: start.toISOString(), to: end.toISOString() },
+    timezone,
+    date: dateKey,
+    range: {
+      from: start.toISOString(),
+      to: end.toISOString(),
+    },
+    previousRange: {
+      from: previousStart.toISOString(),
+      to: previousEnd.toISOString(),
+    },
     sales: {
       cash: { count: cashSalesAgg._count._all, total: cashSalesTotal },
       credit: {

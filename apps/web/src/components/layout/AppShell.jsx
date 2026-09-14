@@ -317,11 +317,11 @@ function pickPageTitle(pathname) {
 
   if (path === "/app") return "Dashboard";
 
-  if (path === "/app/reports") return "Business reports";
-  if (path.startsWith("/app/reports/cash-flow")) return "Money report";
-  if (path.startsWith("/app/reports/income-statement")) return "Sales and profit report";
-  if (path.startsWith("/app/reports/trial-balance")) return "Owner checks";
-  if (path.startsWith("/app/reports/profit-table")) return "Best selling products";
+  if (path === "/app/reports") return "Business overview";
+  if (path.startsWith("/app/reports/cash-flow")) return "Money";
+  if (path.startsWith("/app/reports/income-statement")) return "Profit & sales";
+  if (path.startsWith("/app/reports/trial-balance")) return "Attention";
+  if (path.startsWith("/app/reports/profit-table")) return "Profit & sales";
 
   if (path.startsWith("/app/whatsapp")) return "WhatsApp";
 
@@ -571,7 +571,7 @@ export default function AppShell({ children }) {
         />
 
         <main
-          className="svx-shell-main mx-auto min-h-[calc(100vh-78px)] w-full max-w-[1880px] px-4 pb-8 pt-5 text-[var(--color-text)] sm:px-6 sm:pb-10 lg:px-8 xl:px-10 2xl:px-12"
+          className="svx-shell-main mx-auto w-full max-w-[1880px] px-4 pb-8 pt-5 text-[var(--color-text)] sm:px-6 sm:pb-10 lg:px-8 xl:px-10 2xl:px-12"
           style={{
             paddingBottom: "max(1.5rem, env(safe-area-inset-bottom, 0px))",
           }}

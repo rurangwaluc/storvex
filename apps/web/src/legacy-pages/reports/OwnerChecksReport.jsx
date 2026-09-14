@@ -13,6 +13,8 @@ import {
   useActiveBranchId,
 } from "../../hooks/useActiveBranchId";
 import PageSkeleton from "../../components/ui/PageSkeleton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import "../dashboard/Dashboard.css";
 import "./Reports.css";
 
@@ -21,31 +23,10 @@ function cleanNumber(value) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function money(value) {
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(Math.round(cleanNumber(value)))}`;
-}
-
 function numberLabel(value) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(cleanNumber(value));
-}
-
-function formatDateTime(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }
 
 function checkAmount(section) {
@@ -73,7 +54,7 @@ function minStock(item) {
   return cleanNumber(item?.minStockLevel ?? item?.minStock ?? item?.limit);
 }
 
-function ownerAnswer(ownerChecks) {
+function ownerAnswer(ownerChecks, money) {
   const customersOwe = checkAmount(ownerChecks?.customersOweMe);
   const overdue = checkAmount(ownerChecks?.overdueCustomerMoney);
   const suppliersOwe = checkAmount(ownerChecks?.iOweSuppliers);
@@ -95,10 +76,10 @@ function ownerAnswer(ownerChecks) {
     return `${numberLabel(stockCount)} product${stockCount === 1 ? "" : "s"} need stock review.`;
   }
 
-  return "No urgent owner checks found right now.";
+  return "Nothing urgent needs your attention right now.";
 }
 
-function nextMoves(ownerChecks) {
+function nextMoves(ownerChecks, money) {
   const moves = [];
 
   const overdue = checkAmount(ownerChecks?.overdueCustomerMoney);
@@ -176,6 +157,11 @@ function StockRow({ item, index }) {
 }
 
 export default function OwnerChecksReport() {
+  const { formatMoney } = useTenantMoney();
+  const { formatDateTime } = useTenantDateTime();
+
+  const money = (value) => formatMoney(cleanNumber(value));
+
   const activeBranchId =
     useActiveBranchId();
 
@@ -211,7 +197,7 @@ export default function OwnerChecksReport() {
       ownerChecksQuery.error?.response
         ?.data?.message ||
         ownerChecksQuery.error?.message ||
-        "Failed to load owner checks",
+        "Failed to load attention",
       {
         id: "owner-checks-report-load-error",
       },
@@ -220,7 +206,7 @@ export default function OwnerChecksReport() {
 
   const ownerChecks = payload?.ownerChecks || {};
   const stockList = stockProducts(ownerChecks);
-  const moves = useMemo(() => nextMoves(ownerChecks), [ownerChecks]);
+  const moves = nextMoves(ownerChecks, money);
 
   const customersOwe = checkAmount(ownerChecks.customersOweMe);
   const customersOweCount = checkCount(ownerChecks.customersOweMe);
@@ -239,37 +225,32 @@ export default function OwnerChecksReport() {
 
   return (
     <main className="svx-owner-dashboard svx-business-reports svx-owner-checks-page">
-      <section className="svx-report-hero svx-dashboard-card">
+      <section className="svx-attention-detail-header">
         <div>
-          <p className="svx-report-eyebrow">Owner checks</p>
-          <h1>See what needs owner attention</h1>
-          <span>
-            Quick control view for customer money, supplier money, overdue money, and stock issues.
-          </span>
+          <p className="svx-report-eyebrow">Attention</p>
+          <h1>Attention</h1>
+          <p>See customer debt, overdue money, supplier bills, and stock issues that need action.</p>
         </div>
 
-        <aside>
-          <p>Checked</p>
+        <div className="svx-attention-detail-meta">
+          <span>Checked</span>
           <strong>{formatDateTime(payload?.checkedAt)}</strong>
-          <span>{payload?.branchScope?.label || "Current branch"}</span>
-        </aside>
+          <p>{payload?.branchScope?.label || "Current branch"}</p>
+          <Link to="/app/reports">Back to overview</Link>
+        </div>
       </section>
 
-      <section className="svx-report-owner-answer svx-dashboard-card">
+      <section className="svx-attention-result-card">
         <div>
-          <p className="svx-report-eyebrow">Owner answer</p>
-          <h2>What needs action first</h2>
-          <strong>{ownerAnswer(ownerChecks)}</strong>
+          <p className="svx-report-eyebrow">What matters now</p>
+          <h2>What needs action first?</h2>
+          <strong>{ownerAnswer(ownerChecks, money)}</strong>
         </div>
-
-        <Link to="/app/reports" className="svx-report-secondary-link">
-          Back to reports
-        </Link>
       </section>
 
       <section className="svx-owner-check-metrics">
         <CheckMetric
-          label="Customers owe me"
+          label="Customers owe us"
           value={money(customersOwe)}
           helper={`${numberLabel(customersOweCount)} unpaid credit sale${customersOweCount === 1 ? "" : "s"}`}
           tone={customersOwe > 0 ? "amber" : "green"}
@@ -281,7 +262,7 @@ export default function OwnerChecksReport() {
           tone={overdue > 0 ? "red" : "green"}
         />
         <CheckMetric
-          label="I owe suppliers"
+          label="We owe suppliers"
           value={money(suppliersOwe)}
           helper={`${numberLabel(suppliersOweCount)} supplier bill${suppliersOweCount === 1 ? "" : "s"} unpaid`}
           tone={suppliersOwe > 0 ? "amber" : "green"}
@@ -294,55 +275,48 @@ export default function OwnerChecksReport() {
         />
       </section>
 
-      <section className="svx-owner-check-grid">
-        <article className="svx-dashboard-card svx-owner-check-panel">
-          <div className="svx-report-section-head">
-            <div>
-              <p className="svx-report-eyebrow">Owner next move</p>
-              <h2>What to do next</h2>
-            </div>
-          </div>
+      {(moves.length > 0 || stockList.length > 0) ? (
+        <section className="svx-owner-check-grid">
+          {moves.length > 0 ? (
+            <article className="svx-dashboard-card svx-owner-check-panel">
+              <div className="svx-report-section-head">
+                <div>
+                  <p className="svx-report-eyebrow">Next actions</p>
+                  <h2>What to do next</h2>
+                </div>
+              </div>
 
-          <div className="svx-owner-check-move-list">
-            {moves.length > 0 ? (
-              moves.map((move) => <MoveCard key={move.title} move={move} />)
-            ) : (
-              <p className="svx-report-empty-text">No urgent owner action found.</p>
-            )}
-          </div>
-        </article>
+              <div className="svx-owner-check-move-list">
+                {moves.slice(0, 4).map((move) => (
+                  <MoveCard key={move.title} move={move} />
+                ))}
+              </div>
+            </article>
+          ) : null}
 
-        <article className="svx-dashboard-card svx-owner-check-panel">
-          <div className="svx-report-section-head">
-            <div>
-              <p className="svx-report-eyebrow">Stock review</p>
-              <h2>Products to check</h2>
-            </div>
-          </div>
+          {stockList.length > 0 ? (
+            <article className="svx-dashboard-card svx-owner-check-panel">
+              <div className="svx-report-section-head">
+                <div>
+                  <p className="svx-report-eyebrow">Stock review</p>
+                  <h2>Products to check</h2>
+                </div>
+              </div>
 
-          <div className="svx-owner-check-stock-list">
-            {stockList.length > 0 ? (
-              stockList.slice(0, 5).map((item, index) => (
-                <StockRow
-                  key={item.productId || item.id || `${productName(item)}-${index}`}
-                  item={item}
-                  index={index}
-                />
-              ))
-            ) : (
-              <p className="svx-report-empty-text">No stock issue found right now.</p>
-            )}
-          </div>
-        </article>
-      </section>
+              <div className="svx-owner-check-stock-list">
+                {stockList.slice(0, 5).map((item, index) => (
+                  <StockRow
+                    key={item.productId || item.id || `${productName(item)}-${index}`}
+                    item={item}
+                    index={index}
+                  />
+                ))}
+              </div>
+            </article>
+          ) : null}
+        </section>
+      ) : null}
 
-      <section className="svx-dashboard-card svx-owner-check-note">
-        <p className="svx-report-eyebrow">Important</p>
-        <h2>This is not an accounting page</h2>
-        <p>
-          This page shows only the checks an owner needs to act on. Full sales, supplier, and stock details stay on their own pages.
-        </p>
-      </section>
     </main>
   );
 }

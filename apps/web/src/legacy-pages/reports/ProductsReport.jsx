@@ -13,6 +13,8 @@ import {
   useActiveBranchId,
 } from "../../hooks/useActiveBranchId";
 import PageSkeleton from "../../components/ui/PageSkeleton";
+import useTenantMoney from "../../hooks/useTenantMoney";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import "../dashboard/Dashboard.css";
 import "./Reports.css";
 
@@ -79,29 +81,10 @@ function rangeForPreset(key) {
   return { from: today, to: today };
 }
 
-function money(value) {
-  return `Rwf ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(Math.round(cleanNumber(value)))}`;
-}
-
 function numberLabel(value) {
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(cleanNumber(value));
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 function productName(item) {
@@ -139,10 +122,10 @@ function ownerAnswer({ bestSellers, needRestock, slowProducts }) {
     return `${numberLabel(needRestock.length)} product${needRestock.length === 1 ? "" : "s"} need restock review.`;
   }
 
-  return `${numberLabel(slowProducts.length)} product${slowProducts.length === 1 ? "" : "s"} have slow movement.`;
+  return `${numberLabel(slowProducts.length)} product${slowProducts.length === 1 ? " has" : "s have"} slow movement.`;
 }
 
-function nextMoves({ bestSellers, needRestock, slowProducts }) {
+function nextMoves({ bestSellers, needRestock, slowProducts, money }) {
   const moves = [];
 
   if (needRestock[0]) {
@@ -179,7 +162,7 @@ function ProductMetric({ label, value, helper, tone = "blue" }) {
   );
 }
 
-function ProductRow({ item, index, mode = "seller" }) {
+function ProductRow({ item, index, money, mode = "seller" }) {
   const helper =
     mode === "seller"
       ? `${numberLabel(soldQty(item))} sold`
@@ -208,7 +191,7 @@ function ProductRow({ item, index, mode = "seller" }) {
   );
 }
 
-function RangeControls({ selectedPreset, setSelectedPreset, range, setRange }) {
+function RangeControls({ selectedPreset, setSelectedPreset, range, setRange, formatDate }) {
   function choosePreset(key) {
     setSelectedPreset(key);
     setRange(rangeForPreset(key));
@@ -268,6 +251,11 @@ function RangeControls({ selectedPreset, setSelectedPreset, range, setRange }) {
 }
 
 export default function ProductsReport() {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
+  const money = (value) => formatMoney(cleanNumber(value));
+
   const [selectedPreset, setSelectedPreset] =
     useState("month");
   const [range, setRange] =
@@ -327,7 +315,7 @@ export default function ProductsReport() {
       productsQuery.error?.response
         ?.data?.message ||
         productsQuery.error?.message ||
-        "Failed to load products report",
+        "Failed to load products",
       {
         id: "products-report-load-error",
       },
@@ -338,7 +326,7 @@ export default function ProductsReport() {
   const needRestock = Array.isArray(payload?.needRestock) ? payload.needRestock : [];
   const slowProducts = Array.isArray(payload?.slowProducts) ? payload.slowProducts : [];
   const summary = payload?.summary || {};
-  const moves = nextMoves({ bestSellers, needRestock, slowProducts });
+  const moves = nextMoves({ bestSellers, needRestock, slowProducts, money });
 
   if (loading && !payload) {
     return <PageSkeleton />;
@@ -346,32 +334,27 @@ export default function ProductsReport() {
 
   return (
     <main className="svx-owner-dashboard svx-business-reports svx-products-report-page">
-      <section className="svx-report-hero svx-dashboard-card">
+      <section className="svx-products-detail-header">
         <div>
-          <p className="svx-report-eyebrow">Products report</p>
-          <h1>See what sells and what needs stock</h1>
-          <span>
-            Simple owner view for best sellers, product sales, slow products, and restock review.
-          </span>
+          <p className="svx-report-eyebrow">Products</p>
+          <h1>Products</h1>
+          <p>See what is selling, what needs restock, what is moving slowly, and what to do next.</p>
         </div>
 
-        <aside>
-          <p>Showing</p>
+        <div className="svx-products-detail-meta">
+          <span>Showing</span>
           <strong>{formatDate(range.from)} to {formatDate(range.to)}</strong>
-          <span>{payload?.branchScope?.label || "Current branch"}</span>
-        </aside>
+          <p>{payload?.branchScope?.label || "Current branch"}</p>
+          <Link to="/app/reports">Back to overview</Link>
+        </div>
       </section>
 
-      <section className="svx-report-owner-answer svx-dashboard-card">
+      <section className="svx-products-result-card">
         <div>
-          <p className="svx-report-eyebrow">Owner answer</p>
-          <h2>What products need your attention</h2>
+          <p className="svx-report-eyebrow">Product result</p>
+          <h2>What needs your attention?</h2>
           <strong>{ownerAnswer({ bestSellers, needRestock, slowProducts })}</strong>
         </div>
-
-        <Link to="/app/reports" className="svx-report-secondary-link">
-          Back to reports
-        </Link>
       </section>
 
       <RangeControls
@@ -379,11 +362,12 @@ export default function ProductsReport() {
         setSelectedPreset={setSelectedPreset}
         range={range}
         setRange={setRange}
+        formatDate={formatDate}
       />
 
       <section className="svx-products-report-metrics">
         <ProductMetric
-          label="Selling products"
+          label="Products sold"
           value={numberLabel(summary.sellingProductsCount)}
           helper="Products with sales in this period"
           tone="blue"
@@ -395,7 +379,7 @@ export default function ProductsReport() {
           tone="green"
         />
         <ProductMetric
-          label="Product sales"
+          label="Sales from products"
           value={money(summary.productSales)}
           helper="Money from shown products"
           tone="green"
@@ -408,110 +392,104 @@ export default function ProductsReport() {
         />
       </section>
 
-      <section className="svx-products-report-grid">
-        <article className="svx-dashboard-card svx-products-report-panel">
-          <div className="svx-report-section-head">
-            <div>
-              <p className="svx-report-eyebrow">Best sellers</p>
-              <h2>Products bringing money</h2>
-            </div>
-          </div>
+      {(bestSellers.length > 0 || needRestock.length > 0 || slowProducts.length > 0 || moves.length > 0) ? (
+        <section className="svx-products-report-grid">
+          {bestSellers.length > 0 ? (
+            <article className="svx-dashboard-card svx-products-report-panel">
+              <div className="svx-report-section-head">
+                <div>
+                  <p className="svx-report-eyebrow">Best sellers</p>
+                  <h2>Best sellers</h2>
+                </div>
+              </div>
 
-          <div className="svx-products-report-list">
-            {bestSellers.length > 0 ? (
-              bestSellers.slice(0, 5).map((item, index) => (
-                <ProductRow
-                  key={item.productId || item.id || `${productName(item)}-${index}`}
-                  item={item}
-                  index={index}
-                  mode="seller"
-                />
-              ))
-            ) : (
-              <p className="svx-report-empty-text">No sold products found in this period.</p>
-            )}
-          </div>
-        </article>
+              <div className="svx-products-report-list">
+                {bestSellers.slice(0, 5).map((item, index) => (
+                  <ProductRow
+                    key={item.productId || item.id || `${productName(item)}-${index}`}
+                    item={item}
+                    index={index}
+                    money={money}
+                    mode="seller"
+                  />
+                ))}
+              </div>
+            </article>
+          ) : null}
 
-        <article className="svx-dashboard-card svx-products-report-panel">
-          <div className="svx-report-section-head">
-            <div>
-              <p className="svx-report-eyebrow">Need restock</p>
-              <h2>Products to review now</h2>
-            </div>
-          </div>
+          {needRestock.length > 0 ? (
+            <article className="svx-dashboard-card svx-products-report-panel">
+              <div className="svx-report-section-head">
+                <div>
+                  <p className="svx-report-eyebrow">Need restock</p>
+                  <h2>Need restock</h2>
+                </div>
+              </div>
 
-          <div className="svx-products-report-list">
-            {needRestock.length > 0 ? (
-              needRestock.slice(0, 5).map((item, index) => (
-                <ProductRow
-                  key={item.productId || item.id || `${productName(item)}-${index}`}
-                  item={item}
-                  index={index}
-                  mode="stock"
-                />
-              ))
-            ) : (
-              <p className="svx-report-empty-text">No urgent restock review found.</p>
-            )}
-          </div>
-        </article>
+              <div className="svx-products-report-list">
+                {needRestock.slice(0, 5).map((item, index) => (
+                  <ProductRow
+                    key={item.productId || item.id || `${productName(item)}-${index}`}
+                    item={item}
+                    index={index}
+                    money={money}
+                    mode="stock"
+                  />
+                ))}
+              </div>
+            </article>
+          ) : null}
 
-        <article className="svx-dashboard-card svx-products-report-panel">
-          <div className="svx-report-section-head">
-            <div>
-              <p className="svx-report-eyebrow">Slow products</p>
-              <h2>Products not moving fast</h2>
-            </div>
-          </div>
+          {slowProducts.length > 0 ? (
+            <article className="svx-dashboard-card svx-products-report-panel">
+              <div className="svx-report-section-head">
+                <div>
+                  <p className="svx-report-eyebrow">Slow products</p>
+                  <h2>Slow products</h2>
+                </div>
+              </div>
 
-          <div className="svx-products-report-list">
-            {slowProducts.length > 0 ? (
-              slowProducts.slice(0, 5).map((item, index) => (
-                <ProductRow
-                  key={item.productId || item.id || `${productName(item)}-${index}`}
-                  item={item}
-                  index={index}
-                  mode="slow"
-                />
-              ))
-            ) : (
-              <p className="svx-report-empty-text">No slow products found in this period.</p>
-            )}
-          </div>
-        </article>
+              <div className="svx-products-report-list">
+                {slowProducts.slice(0, 5).map((item, index) => (
+                  <ProductRow
+                    key={item.productId || item.id || `${productName(item)}-${index}`}
+                    item={item}
+                    index={index}
+                    money={money}
+                    mode="slow"
+                  />
+                ))}
+              </div>
+            </article>
+          ) : null}
 
-        <article className="svx-dashboard-card svx-products-report-panel">
-          <div className="svx-report-section-head">
-            <div>
-              <p className="svx-report-eyebrow">Owner next move</p>
-              <h2>What to do next</h2>
-            </div>
-          </div>
+          {moves.length > 0 ? (
+            <article className="svx-dashboard-card svx-products-report-panel">
+              <div className="svx-report-section-head">
+                <div>
+                  <p className="svx-report-eyebrow">Next actions</p>
+                  <h2>What to do next</h2>
+                </div>
+              </div>
 
-          <div className="svx-products-next-moves">
-            {moves.length > 0 ? (
-              moves.map((move) => (
-                <article key={move.title} className="svx-products-next-move">
-                  <strong>{move.title}</strong>
-                  <p>{move.text}</p>
-                </article>
-              ))
-            ) : (
-              <p className="svx-report-empty-text">No urgent product action found.</p>
-            )}
-          </div>
-        </article>
-      </section>
+              <div className="svx-products-next-moves">
+                {moves.slice(0, 3).map((move) => (
+                  <article key={move.title} className="svx-products-next-move">
+                    <strong>{move.title}</strong>
+                    <p>{move.text}</p>
+                  </article>
+                ))}
+              </div>
+            </article>
+          ) : null}
+        </section>
+      ) : (
+        <section className="svx-products-empty-detail">
+          <strong>No product activity needs attention in this period.</strong>
+          <p>Product details will appear when sales, restock needs, or slow movement are found.</p>
+        </section>
+      )}
 
-      <section className="svx-dashboard-card svx-products-report-note">
-        <p className="svx-report-eyebrow">Important</p>
-        <h2>This report is for owner decisions</h2>
-        <p>
-          Use this page to decide what to restock, what is selling, and what needs attention.
-          Full product editing stays on the Stock page.
-        </p>
-      </section>
     </main>
   );
 }
