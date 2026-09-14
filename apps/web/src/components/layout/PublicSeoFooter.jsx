@@ -42,7 +42,11 @@ export default function PublicSeoFooter() {
       </div>
 
       <div className="seo-shell seo-footer__bottom">
-        <p>© {new Date().getFullYear()} Storvex. All rights reserved.</p>
+        <p>
+          Storvex is a product operated by RURAXIS LTD, a company registered in Rwanda.
+          <br />
+          © {new Date().getFullYear()} RURAXIS LTD. All rights reserved.
+        </p>
         <nav aria-label="Legal">
           {legalLinks.map(([label, href]) => <Link href={href} key={href}>{label}</Link>)}
         </nav>

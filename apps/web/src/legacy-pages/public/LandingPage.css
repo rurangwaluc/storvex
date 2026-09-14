@@ -1538,7 +1538,7 @@
 
 .svx-footer-grid {
   display: grid;
-  grid-template-columns: minmax(260px, 0.95fr) minmax(0, 2.2fr) minmax(260px, 0.9fr);
+  grid-template-columns: minmax(260px, 0.9fr) minmax(0, 2.1fr);
   gap: 44px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding-top: 42px;
@@ -4708,4 +4708,115 @@ body:has(
   min-height: 0;
   overflow: visible;
   background: transparent;
+}
+
+/* Premium small-screen landing footer */
+.storvex-landing:not(.storvex-marketplace) .svx-footer-operator {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.82) !important;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-grid {
+    gap: 32px;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-brand {
+    width: 100%;
+    max-width: 360px;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-brand > p:first-of-type {
+    max-width: 330px;
+    margin-top: 14px;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-operator {
+    max-width: 330px;
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-contact {
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-contact a {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-socials {
+    margin-top: 18px;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-links-wrap {
+    gap: 30px 34px;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-column h3,
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-newsletter h3 {
+    font-size: 14px;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-column div {
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-column a {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-newsletter {
+    padding: 18px;
+    border-radius: 14px;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-newsletter p {
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-email {
+    margin-top: 16px;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-bottom {
+    gap: 14px;
+    margin-top: 28px;
+    padding-top: 20px;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-bottom p {
+    max-width: 340px;
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-bottom a,
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-bottom span {
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-bottom > div {
+    gap: 10px 18px;
+  }
+}
+
+@media (max-width: 380px) {
+  .storvex-landing:not(.storvex-marketplace) .svx-footer-links-wrap {
+    grid-template-columns: 1fr;
+    gap: 26px;
+  }
 }

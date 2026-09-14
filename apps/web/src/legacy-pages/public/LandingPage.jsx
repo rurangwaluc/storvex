@@ -553,19 +553,14 @@ function Footer() {
                 branch with confidence.
               </p>
 
+              <p className="svx-footer-operator">
+                Operated by RURAXIS LTD, Rwanda.
+              </p>
+
               <div className="svx-footer-contact">
                 <a href="https://wa.me/250785587830" target="_blank" rel="noreferrer">
                   WhatsApp: +250 785 587 830
                 </a>
-                <a href="https://webimpactlab.com" target="_blank" rel="noreferrer">
-                  WebimpactLab
-                </a>
-              </div>
-
-              <div className="svx-footer-socials" aria-label="Social links">
-                {["f", "𝕏", "in", "◎"].map((item) => (
-                  <span key={item}>{item}</span>
-                ))}
               </div>
             </div>
 
@@ -584,28 +579,14 @@ function Footer() {
                 </div>
               ))}
             </div>
-
-            <div className="svx-footer-newsletter">
-              <h3>Stay in the loop</h3>
-
-              <p>Get practical updates that help you run a better store.</p>
-
-              <form className="svx-footer-email" action="/signup" method="get">
-                <input
-                  name="email"
-                  placeholder="Enter your email"
-                  type="email"
-                  aria-label="Email address"
-                />
-                <button type="submit" aria-label="Submit email">
-                  →
-                </button>
-              </form>
-            </div>
           </div>
 
           <div className="svx-footer-bottom">
-            <p>© {currentYear} Storvex. All rights reserved.</p>
+            <p>
+              Storvex is a product operated by RURAXIS LTD, a company registered in Rwanda.
+              <br />
+              © {currentYear} RURAXIS LTD. All rights reserved.
+            </p>
 
             <div>
               <Link href="/privacy">Privacy Policy</Link>

@@ -915,7 +915,9 @@ export function MarketplaceFooter({
 
           <div className="svx-footer-bottom">
             <p>
-              © {year} Storvex. All rights reserved.
+              Storvex is a product operated by RURAXIS LTD, a company registered in Rwanda.
+              <br />
+              © {year} RURAXIS LTD. All rights reserved.
             </p>
 
             <div>
