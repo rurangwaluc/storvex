@@ -254,6 +254,57 @@ export const solutionPages = [
     marketplaceRelevant: true,
   },
   {
+    slug: "whatsapp-business",
+    title: "WhatsApp Business Integration for Retail | Storvex",
+    description:
+      "Connect your business WhatsApp account to Storvex so authorized staff can manage customer conversations, permitted replies and message status from one retail workspace.",
+    eyebrow: "WhatsApp Business",
+    h1: "Manage your business WhatsApp conversations from Storvex.",
+    intro:
+      "Each business connects its own WhatsApp Business Account and phone number through Meta. Authorized staff can then manage customer conversations from that business's Storvex workspace.",
+    accent: "green",
+    layout: "flow",
+    outcomesTitle: "Keep customer conversations connected to the right business.",
+    stepsTitle: "Connect your business WhatsApp securely through Meta.",
+    connectedTitle: "WhatsApp stays connected to the rest of the store workflow.",
+    timeSavedTitle: "Give staff one place to follow customer conversations.",
+    proofLabel: "Business WhatsApp",
+    proofTitle: "The connected WhatsApp account belongs to your business",
+    proofRows: [
+      ["Own account", "Each retailer connects its own WhatsApp Business Account"],
+      ["Own number", "Messages use the business's connected WhatsApp phone number"],
+      ["Authorized staff", "Only permitted Storvex users can work with business conversations"],
+      ["Message status", "Staff can see relevant delivery and conversation status information"],
+    ],
+    problemTitle: "Customer conversations become difficult to follow when they stay outside the store workflow.",
+    problemText:
+      "A shop may receive product questions, order requests and follow-ups through WhatsApp while sales and customer records live somewhere else. Storvex gives authorized staff one workspace for those conversations without mixing one business's WhatsApp data with another.",
+    outcomes: [
+      ["Use your own WhatsApp identity", "The shop connects its own WhatsApp Business Account instead of using a shared Storvex number."],
+      ["Work as a team", "Authorized staff can receive customer messages and send permitted WhatsApp replies from the connected business number."],
+      ["Keep business data isolated", "Each Storvex business can access only the WhatsApp account and conversations connected to its own workspace."],
+    ],
+    steps: [
+      ["Connect WhatsApp", "The business starts the Meta authorization flow from its Storvex WhatsApp workspace."],
+      ["Choose the business account", "Meta guides the owner through selecting or setting up the WhatsApp Business Account and phone number."],
+      ["Authorize Storvex", "The business approves Storvex to work with the WhatsApp assets it selected."],
+      ["Manage conversations", "Authorized staff can receive messages, send permitted replies and follow conversation status inside Storvex."],
+    ],
+    users: ["Shop owner", "Store manager", "Customer support staff"],
+    connected: [
+      ["Customer follow-up", "Keep product questions and customer conversations easier for staff to follow."],
+      ["Order requests", "Staff can review customer order requests before completing store-side sales work."],
+      ["Payments stay separate", "Storvex does not process customer payments through WhatsApp. Staff record sale payments separately in the store system."],
+    ],
+    timeSaved:
+      "Staff do not need to share WhatsApp credentials or move customer conversations between unrelated tools. The business keeps its own WhatsApp identity while authorized workers use the Storvex workspace.",
+    ctaTitle: "Bring your business WhatsApp into the same store workspace.",
+    ctaText:
+      "Connect your own WhatsApp Business Account and let authorized staff manage customer conversations from Storvex.",
+    ctaLabel: "Start with Storvex",
+    related: ["sales-tracking", "staff-management", "inventory-management"],
+  },
+  {
     slug: "staff-management",
     title: "Staff Management for Shops | Storvex",
     description:
