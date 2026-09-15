@@ -2,6 +2,11 @@ require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
+const {
+  corsOptions,
+  isCorsOriginAllowed,
+  shouldExposeAuthTest,
+} = require("./config/cors");
 
 const requestMetrics = require("./middlewares/requestMetrics");
 const {
@@ -67,7 +72,17 @@ const supportAttachmentsRoutes = require("./modules/supportTickets/supportAttach
 
 const app = express();
 
-app.use(cors());
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && !isCorsOriginAllowed(origin)) {
+    return res.status(403).json({
+      message: "Origin is not allowed",
+      code: "CORS_ORIGIN_DENIED",
+    });
+  }
+  return next();
+});
+app.use(cors(corsOptions()));
 
 // Disabled by default. Enable only when collecting a performance baseline.
 app.use(requestMetrics);
@@ -99,9 +114,11 @@ app.get("/api", authenticate, requireActiveSubscription, (req, res) => {
   res.json({ message: "Storvex API root" });
 });
 
-app.get("/api/auth-test", authenticate, (req, res) => {
-  res.json({ message: "Authentication successful", user: req.user });
-});
+if (shouldExposeAuthTest()) {
+  app.get("/api/auth-test", authenticate, (req, res) => {
+    res.json({ message: "Authentication successful", user: req.user });
+  });
+}
 
 // Auth
 app.use("/api/auth", authRoutes);

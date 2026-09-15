@@ -28,6 +28,11 @@ const {
   normalizePhone: normalizeMarketPhone,
   phoneExample,
 } = require("../../lib/phone/marketPhone");
+const { getClientIp } = require("../../lib/security/clientIp");
+const {
+  loginProtection,
+  sendLoginProtectionError,
+} = require("../../lib/security/loginProtection");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -47,12 +52,6 @@ function cleanString(x) {
 
 function lower(value) {
   return String(value || "").toLowerCase();
-}
-
-function getClientIp(req) {
-  const xf = req.headers["x-forwarded-for"];
-  if (xf) return String(xf).split(",")[0].trim();
-  return req.ip ? String(req.ip) : null;
 }
 
 function getUserAgent(req) {
@@ -774,16 +773,24 @@ async function getOwnerIntentStatus(req, res) {
 }
 
 async function login(req, res) {
+  let reservation = null;
   try {
     assertJwtSecret();
 
     const { email, password } = req.body;
+    const emailNorm = normalizeEmail(email);
+    const protection = {
+      namespace: "tenant",
+      identifier: emailNorm,
+      ip: getClientIp(req),
+    };
+    reservation = await loginProtection.begin(protection);
 
     if (!email || !password) {
+      await loginProtection.cancelled(reservation);
+      reservation = null;
       return res.status(400).json({ message: "Email and password required" });
     }
-
-    const emailNorm = normalizeEmail(email);
 
     const user = await prisma.user.findUnique({
       where: { email: emailNorm },
@@ -800,6 +807,7 @@ async function login(req, res) {
     });
 
     if (!user) {
+      await loginProtection.failed(reservation);
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -814,7 +822,8 @@ async function login(req, res) {
         reason: "Account is deactivated.",
       });
 
-      return res.status(403).json({ message: "Account is deactivated" });
+      await loginProtection.failed(reservation);
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     const validPassword = await bcrypt.compare(String(password), user.password);
@@ -830,6 +839,7 @@ async function login(req, res) {
         reason: "Incorrect password.",
       });
 
+      await loginProtection.failed(reservation);
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
@@ -863,6 +873,8 @@ async function login(req, res) {
     }).catch(() => null);
 
     const token = signAuthToken({ user, tokenId });
+    await loginProtection.succeeded(reservation);
+    reservation = null;
 
     return res.json({
       token,
@@ -878,6 +890,14 @@ async function login(req, res) {
     });
 
   } catch (err) {
+    if (reservation) {
+      try {
+        await loginProtection.cancelled(reservation);
+      } catch (rollbackError) {
+        err = rollbackError;
+      }
+    }
+    if (sendLoginProtectionError(res, err)) return;
     console.error("login error:", err);
     return res.status(500).json({ message: "Server error" });
   }

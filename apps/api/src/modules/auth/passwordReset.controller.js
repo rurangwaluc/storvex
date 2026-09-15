@@ -2,6 +2,7 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const prisma = require("../../config/database");
+const { getClientIp } = require("../../lib/security/clientIp");
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -403,7 +404,7 @@ async function resetPassword(req, res) {
               tenantId: user.tenantId,
               userId: user.id,
               method: "PASSWORD_RESET",
-              ipAddress: req.ip ? String(req.ip) : null,
+              ipAddress: getClientIp(req),
               userAgent: req.headers["user-agent"] ? String(req.headers["user-agent"]) : null,
             },
           })

@@ -3,6 +3,11 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 
 const prisma = require("../../config/database");
+const { getClientIp } = require("../../lib/security/clientIp");
+const {
+  loginProtection,
+  sendLoginProtectionError,
+} = require("../../lib/security/loginProtection");
 
 const CUSTOMER_SESSION_DAYS = 30;
 
@@ -67,16 +72,6 @@ function passwordProblems(value) {
   }
 
   return problems;
-}
-
-function getClientIp(req) {
-  const forwarded = req.headers["x-forwarded-for"];
-
-  if (forwarded) {
-    return String(forwarded).split(",")[0].trim();
-  }
-
-  return req.ip ? String(req.ip) : null;
 }
 
 function getUserAgent(req) {
@@ -322,6 +317,7 @@ async function registerCustomer(req, res) {
 }
 
 async function loginCustomer(req, res) {
+  let reservation = null;
   try {
     const email = normalizeEmail(
       req.body?.email,
@@ -330,8 +326,16 @@ async function loginCustomer(req, res) {
     const password = String(
       req.body?.password || "",
     );
+    const protection = {
+      namespace: "marketplace-customer",
+      identifier: email,
+      ip: getClientIp(req),
+    };
+    reservation = await loginProtection.begin(protection);
 
     if (!email || !password) {
+      await loginProtection.cancelled(reservation);
+      reservation = null;
       return res.status(400).json({
         message:
           "Enter your email and password.",
@@ -347,6 +351,7 @@ async function loginCustomer(req, res) {
       });
 
     if (!customer) {
+      await loginProtection.failed(reservation);
       return res.status(401).json({
         message:
           "The email or password is incorrect.",
@@ -357,10 +362,11 @@ async function loginCustomer(req, res) {
     if (
       customer.status !== "ACTIVE"
     ) {
-      return res.status(403).json({
+      await loginProtection.failed(reservation);
+      return res.status(401).json({
         message:
-          "This account is not available.",
-        code: "MARKETPLACE_CUSTOMER_DISABLED",
+          "The email or password is incorrect.",
+        code: "MARKETPLACE_CUSTOMER_CREDENTIALS_INVALID",
       });
     }
 
@@ -371,6 +377,7 @@ async function loginCustomer(req, res) {
       );
 
     if (!passwordMatches) {
+      await loginProtection.failed(reservation);
       return res.status(401).json({
         message:
           "The email or password is incorrect.",
@@ -393,6 +400,8 @@ async function loginCustomer(req, res) {
         req,
         updatedCustomer,
       );
+    await loginProtection.succeeded(reservation);
+    reservation = null;
 
     return res.json({
       message: "Signed in.",
@@ -404,6 +413,14 @@ async function loginCustomer(req, res) {
         ),
     });
   } catch (error) {
+    if (reservation) {
+      try {
+        await loginProtection.cancelled(reservation);
+      } catch (rollbackError) {
+        error = rollbackError;
+      }
+    }
+    if (sendLoginProtectionError(res, error)) return;
     console.error(
       "Marketplace customer login error:",
       error,

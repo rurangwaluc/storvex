@@ -25,7 +25,13 @@ test("requestIpForCountryHint prefers x-real-ip", () => {
     },
   };
 
-  assert.equal(requestIpForCountryHint(req), "8.8.8.8");
+  assert.equal(
+    requestIpForCountryHint(req, {
+      NODE_ENV: "production",
+      RAILWAY_ENVIRONMENT: "production",
+    }),
+    "8.8.8.8",
+  );
 });
 
 test("countryHintFromIp returns null for localhost", () => {

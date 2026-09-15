@@ -3,6 +3,11 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const prisma = require("../../config/database");
+const { getClientIp } = require("../../lib/security/clientIp");
+const {
+  loginProtection,
+  sendLoginProtectionError,
+} = require("../../lib/security/loginProtection");
 
 function cleanEmail(value) {
   return String(value || "").trim().toLowerCase();
@@ -65,11 +70,20 @@ function signPlatformToken(user) {
 }
 
 async function platformLogin(req, res) {
+  let reservation = null;
   try {
     const email = cleanEmail(req.body?.email);
     const password = cleanString(req.body?.password);
+    const protection = {
+      namespace: "platform",
+      identifier: email,
+      ip: getClientIp(req),
+    };
+    reservation = await loginProtection.begin(protection);
 
     if (!email || !password) {
+      await loginProtection.cancelled(reservation);
+      reservation = null;
       return res.status(400).json({
         message: "Email and password are required",
         code: "PLATFORM_LOGIN_REQUIRED",
@@ -92,6 +106,7 @@ async function platformLogin(req, res) {
     });
 
     if (!user || !user.passwordHash) {
+      await loginProtection.failed(reservation);
       return res.status(401).json({
         message: "Invalid platform login details",
         code: "PLATFORM_INVALID_CREDENTIALS",
@@ -99,15 +114,17 @@ async function platformLogin(req, res) {
     }
 
     if (user.isActive === false) {
-      return res.status(403).json({
-        message: "This platform account is not active",
-        code: "PLATFORM_ACCOUNT_DISABLED",
+      await loginProtection.failed(reservation);
+      return res.status(401).json({
+        message: "Invalid platform login details",
+        code: "PLATFORM_INVALID_CREDENTIALS",
       });
     }
 
     const passwordOk = await bcrypt.compare(password, user.passwordHash);
 
     if (!passwordOk) {
+      await loginProtection.failed(reservation);
       return res.status(401).json({
         message: "Invalid platform login details",
         code: "PLATFORM_INVALID_CREDENTIALS",
@@ -130,6 +147,8 @@ async function platformLogin(req, res) {
     });
 
     const token = signPlatformToken(updatedUser);
+    await loginProtection.succeeded(reservation);
+    reservation = null;
 
     return res.json({
       message: "Platform login successful",
@@ -137,6 +156,14 @@ async function platformLogin(req, res) {
       platformUser: publicPlatformUser(updatedUser),
     });
   } catch (error) {
+    if (reservation) {
+      try {
+        await loginProtection.cancelled(reservation);
+      } catch (rollbackError) {
+        error = rollbackError;
+      }
+    }
+    if (sendLoginProtectionError(res, error)) return;
     console.error("Platform login failed:", error);
 
     if (error?.code === "PLATFORM_JWT_SECRET_MISSING") {

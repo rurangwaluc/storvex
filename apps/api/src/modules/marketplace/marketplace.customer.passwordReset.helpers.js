@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { getClientIp } = require("../../lib/security/clientIp");
 
 const RESET_TOKEN_BYTES = 32;
 const RESET_TOKEN_MINUTES = 20;
@@ -141,24 +142,6 @@ function frontendBaseUrl(req) {
   }
 
   return "http://localhost:3000";
-}
-
-function getClientIp(req) {
-  const forwarded =
-    req?.headers?.[
-      "x-forwarded-for"
-    ];
-
-  if (forwarded) {
-    return String(forwarded)
-      .split(",")[0]
-      .trim()
-      .slice(0, 200);
-  }
-
-  return req?.ip
-    ? String(req.ip).slice(0, 200)
-    : null;
 }
 
 module.exports = {

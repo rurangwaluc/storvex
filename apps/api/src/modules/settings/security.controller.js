@@ -2,6 +2,7 @@
 
 const bcrypt = require("bcryptjs");
 const prisma = require("../../config/database");
+const { getClientIp } = require("../../lib/security/clientIp");
 
 const ACTIVE_SESSION_LIMIT = 12;
 const LOGIN_EVENT_LIMIT = 20;
@@ -16,10 +17,7 @@ function lower(value) {
 }
 
 function readIp(req) {
-  const forwarded = cleanString(req.headers["x-forwarded-for"]);
-  if (forwarded) return forwarded.split(",")[0].trim() || null;
-
-  return cleanString(req.ip) || cleanString(req.socket?.remoteAddress);
+  return getClientIp(req);
 }
 
 function readUserAgent(req) {

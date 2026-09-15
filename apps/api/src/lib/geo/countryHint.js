@@ -1,35 +1,21 @@
 const geoip = require("geoip-lite");
 
 const { getMarket } = require("../../config/markets");
+const {
+  getClientIp,
+  normalizeClientIp,
+} = require("../security/clientIp");
 
 function cleanString(value) {
   return String(value || "").trim();
 }
 
 function normalizeIp(value) {
-  const raw = cleanString(value);
-
-  if (!raw) return "";
-
-  // Railway may provide IPv4-mapped IPv6 values.
-  if (raw.startsWith("::ffff:")) {
-    return raw.slice(7);
-  }
-
-  return raw;
+  return normalizeClientIp(value) || "";
 }
 
-function requestIpForCountryHint(req) {
-  // Railway documents X-Real-IP as the original client IP.
-  // Do not trust browser-supplied country codes.
-  const railwayIp = normalizeIp(req?.headers?.["x-real-ip"]);
-
-  if (railwayIp) {
-    return railwayIp;
-  }
-
-  // Useful for local/dev and other direct deployments.
-  return normalizeIp(req?.socket?.remoteAddress || req?.ip);
+function requestIpForCountryHint(req, env = process.env) {
+  return getClientIp(req, env);
 }
 
 function countryHintFromIp(ip) {
