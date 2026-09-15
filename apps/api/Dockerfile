@@ -21,4 +21,4 @@ RUN pnpm install --frozen-lockfile \
 
 EXPOSE 5000
 
-CMD ["node", "apps/api/src/server.js"]
+CMD ["sh", "-c", "unset DIRECT_URL SHADOW_DATABASE_URL; exec node apps/api/src/server.js"]
