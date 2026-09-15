@@ -1,4 +1,5 @@
 const prisma = require("../../config/database");
+const { withTenantDb } = require("../../lib/database/tenantDb");
 
 const LOAN_TYPES = new Set(["GIVEN_OUT", "RECEIVED"]);
 const LOAN_STATUSES = new Set(["OPEN", "PARTIAL", "PAID", "CANCELLED"]);
@@ -617,7 +618,7 @@ async function getSupplierMoneySummary(tenantId) {
   };
 }
 
-async function getLoansSummary(tenantId) {
+async function getLoansSummary(tenantId, db) {
   const activeWhere = {
     tenantId,
     archivedAt: null,
@@ -625,17 +626,17 @@ async function getLoansSummary(tenantId) {
   };
 
   const [given, received, recent] = await Promise.all([
-    prisma.ownerLoan.aggregate({
+    db.ownerLoan.aggregate({
       where: { ...activeWhere, type: "GIVEN_OUT" },
       _sum: { balanceDue: true },
       _count: { _all: true },
     }),
-    prisma.ownerLoan.aggregate({
+    db.ownerLoan.aggregate({
       where: { ...activeWhere, type: "RECEIVED" },
       _sum: { balanceDue: true },
       _count: { _all: true },
     }),
-    prisma.ownerLoan.findMany({
+    db.ownerLoan.findMany({
       where: { tenantId, archivedAt: null },
       orderBy: [{ createdAt: "desc" }],
       take: 50,
@@ -688,7 +689,10 @@ async function getSummary(req, res) {
         getLatestDrawerSnapshot(tenantId, branchId).catch(() => null),
         getCustomerMoneySummary(tenantId),
         getSupplierMoneySummary(tenantId),
-        getLoansSummary(tenantId),
+        withTenantDb(
+          tenantId,
+          (db) => getLoansSummary(tenantId, db),
+        ),
         getPaymentSplit(tenantId).catch(() => []),
         getMoneyAccounts(tenantId, branchId).catch(() => []),
       ]);
@@ -743,17 +747,19 @@ async function listLoans(req, res) {
       ...(includeArchived ? {} : { archivedAt: null }),
     };
 
-    const loans = await prisma.ownerLoan.findMany({
-      where,
-      orderBy: [{ createdAt: "desc" }],
-      take: 200,
-      include: {
-        payments: {
-          orderBy: [{ paidAt: "desc" }],
-          take: 20,
+    const loans = await withTenantDb(tenantId, (db) =>
+      db.ownerLoan.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }],
+        take: 200,
+        include: {
+          payments: {
+            orderBy: [{ paidAt: "desc" }],
+            take: 20,
+          },
         },
-      },
-    });
+      }),
+    );
 
     return res.json({
       loans: loans.map(serializeLoan),
@@ -793,7 +799,7 @@ async function createLoan(req, res) {
       return res.status(400).json({ message: "Loan amount must be greater than 0." });
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await withTenantDb(tenantId, async (tx) => {
       const loan = await tx.ownerLoan.create({
         data: {
           tenantId,
@@ -864,7 +870,7 @@ async function addLoanPayment(req, res) {
     if (!loanId) return res.status(400).json({ message: "Loan is required." });
     if (!amount) return res.status(400).json({ message: "Payment amount must be greater than 0." });
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await withTenantDb(tenantId, async (tx) => {
       const loan = await tx.ownerLoan.findFirst({
         where: {
           id: loanId,
@@ -990,24 +996,30 @@ async function updateLoan(req, res) {
       return res.status(400).json({ message: "No loan changes provided." });
     }
 
-    const updatedMany = await prisma.ownerLoan.updateMany({
-      where: { id: loanId, tenantId },
-      data,
+    const loan = await withTenantDb(tenantId, async (db) => {
+      const updatedMany = await db.ownerLoan.updateMany({
+        where: { id: loanId, tenantId },
+        data,
+      });
+
+      if (!updatedMany.count) {
+        return null;
+      }
+
+      return db.ownerLoan.findFirst({
+        where: { id: loanId, tenantId },
+        include: {
+          payments: {
+            orderBy: [{ paidAt: "desc" }],
+            take: 20,
+          },
+        },
+      });
     });
 
-    if (!updatedMany.count) {
+    if (!loan) {
       return res.status(404).json({ message: "Loan not found" });
     }
-
-    const loan = await prisma.ownerLoan.findFirst({
-      where: { id: loanId, tenantId },
-      include: {
-        payments: {
-          orderBy: [{ paidAt: "desc" }],
-          take: 20,
-        },
-      },
-    });
 
     return res.json({ updated: true, loan: serializeLoan(loan) });
   } catch (err) {
