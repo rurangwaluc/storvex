@@ -26,8 +26,13 @@ function normalizeApiBaseUrl(value) {
   return `${cleanValue}/api`;
 }
 
+const developmentApiBaseUrl =
+  process.env.NODE_ENV === "development"
+    ? process.env.NEXT_PUBLIC_API_BASE_URL
+    : "";
+
 export const API_BASE_URL = normalizeApiBaseUrl(
-  process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL,
+  developmentApiBaseUrl || DEFAULT_API_BASE_URL,
 );
 
 const ACTIVE_BRANCH_KEYS = [

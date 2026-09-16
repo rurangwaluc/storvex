@@ -153,8 +153,8 @@ test("only the approved clean Electronics URL can be indexable", () => {
 
 test("catalogue upstream failures remain errors while a real unknown slug remains null", async () => {
   const originalFetch = globalThis.fetch;
-  const originalBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-  process.env.NEXT_PUBLIC_API_BASE_URL = "https://public.example";
+  const originalBaseUrl = process.env.STORVEX_API_ORIGIN;
+  process.env.STORVEX_API_ORIGIN = "https://api.example";
 
   try {
     globalThis.fetch = async () => {
@@ -180,7 +180,7 @@ test("catalogue upstream failures remain errors while a real unknown slug remain
     assert.equal(findMarketplaceCataloguePath(validCatalogue.categories, "bad-slug"), null);
   } finally {
     globalThis.fetch = originalFetch;
-    if (originalBaseUrl === undefined) delete process.env.NEXT_PUBLIC_API_BASE_URL;
-    else process.env.NEXT_PUBLIC_API_BASE_URL = originalBaseUrl;
+    if (originalBaseUrl === undefined) delete process.env.STORVEX_API_ORIGIN;
+    else process.env.STORVEX_API_ORIGIN = originalBaseUrl;
   }
 });

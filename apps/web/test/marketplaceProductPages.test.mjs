@@ -98,16 +98,16 @@ function response({ status = 200, json = publicProductData } = {}) {
 
 async function withProductFetch(fetchImplementation, action) {
   const originalFetch = globalThis.fetch;
-  const originalBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-  process.env.NEXT_PUBLIC_API_BASE_URL = "https://public.example/api";
+  const originalBaseUrl = process.env.STORVEX_API_ORIGIN;
+  process.env.STORVEX_API_ORIGIN = "https://public.example";
   globalThis.fetch = fetchImplementation;
 
   try {
     return await action();
   } finally {
     globalThis.fetch = originalFetch;
-    if (originalBaseUrl === undefined) delete process.env.NEXT_PUBLIC_API_BASE_URL;
-    else process.env.NEXT_PUBLIC_API_BASE_URL = originalBaseUrl;
+    if (originalBaseUrl === undefined) delete process.env.STORVEX_API_ORIGIN;
+    else process.env.STORVEX_API_ORIGIN = originalBaseUrl;
   }
 }
 

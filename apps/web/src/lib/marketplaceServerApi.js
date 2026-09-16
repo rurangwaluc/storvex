@@ -12,13 +12,52 @@ export class MarketplaceServerApiError extends Error {
 }
 
 function apiBaseUrl() {
-  const configured = String(process.env.NEXT_PUBLIC_API_BASE_URL || "").trim().replace(/\/+$/, "");
+  const configured = String(
+    process.env.STORVEX_API_ORIGIN || "",
+  ).trim();
 
   if (!configured) {
-    throw new Error("NEXT_PUBLIC_API_BASE_URL is required for Marketplace server rendering");
+    throw new Error(
+      "STORVEX_API_ORIGIN is required for Marketplace server rendering",
+    );
   }
 
-  return configured.toLowerCase().endsWith("/api") ? configured : `${configured}/api`;
+  let upstream;
+
+  try {
+    upstream = new URL(configured);
+  } catch {
+    throw new Error(
+      "STORVEX_API_ORIGIN must be a valid URL",
+    );
+  }
+
+  const isDevelopment =
+    process.env.NODE_ENV === "development";
+
+  const developmentHttpAllowed =
+    isDevelopment &&
+    upstream.protocol === "http:" &&
+    [
+      "localhost",
+      "127.0.0.1",
+    ].includes(upstream.hostname);
+
+  if (
+    (upstream.protocol !== "https:" &&
+      !developmentHttpAllowed) ||
+    upstream.username ||
+    upstream.password ||
+    upstream.pathname !== "/" ||
+    upstream.search ||
+    upstream.hash
+  ) {
+    throw new Error(
+      "STORVEX_API_ORIGIN must be a secure origin",
+    );
+  }
+
+  return `${upstream.origin}/api`;
 }
 
 export async function marketplaceFetch(path, { revalidate = 30 } = {}) {

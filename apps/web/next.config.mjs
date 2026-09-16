@@ -125,19 +125,8 @@ function securityHeaders() {
       : []),
   ].join(" ");
 
-  let configuredApiOrigin = "";
-
-  try {
-    configuredApiOrigin = process.env.NEXT_PUBLIC_API_BASE_URL
-      ? new URL(process.env.NEXT_PUBLIC_API_BASE_URL).origin
-      : "";
-  } catch {
-    configuredApiOrigin = "";
-  }
-
   const frameSources = [
     "'self'",
-    configuredApiOrigin,
     ...(isDevelopment
       ? [
           "http://localhost:5000",
