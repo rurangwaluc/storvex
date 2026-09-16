@@ -7,18 +7,39 @@ import {
   solutionPages,
 } from "../src/lib/seo/solutionPages.js";
 
-test("publishes six complete and unique solution pages", () => {
-  assert.equal(solutionPages.length, 6);
+test("publishes the seven intended complete and unique solution pages", () => {
+  const expectedSlugs = [
+    "inventory-management",
+    "sales-tracking",
+    "cash-control",
+    "multi-branch-management",
+    "stock-reordering",
+    "whatsapp-business",
+    "staff-management",
+  ];
+
+  assert.deepEqual(
+    solutionPages.map((page) => page.slug),
+    expectedSlugs,
+  );
 
   for (const field of ["slug", "title", "description", "h1"]) {
     const values = solutionPages.map((page) => page[field]);
-    assert.equal(new Set(values).size, 6, `${field} must be unique`);
+    assert.equal(
+      new Set(values).size,
+      solutionPages.length,
+      `${field} must be unique`,
+    );
     assert.equal(values.every(Boolean), true, `${field} must be present`);
   }
 
   for (const field of ["outcomesTitle", "stepsTitle"]) {
     const values = solutionPages.map((page) => page[field]);
-    assert.equal(new Set(values).size, 6, `${field} must be unique`);
+    assert.equal(
+      new Set(values).size,
+      solutionPages.length,
+      `${field} must be unique`,
+    );
     assert.equal(values.every(Boolean), true, `${field} must be present`);
   }
 
