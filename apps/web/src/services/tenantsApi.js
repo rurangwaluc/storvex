@@ -1,6 +1,9 @@
 // src/services/tenantsApi.js
 import { apiFetch } from "./apiClient";
 
+import {
+  assertTenantLogoFile,
+} from "../lib/tenantLogoUploadPolicy.js";
 
 export async function createTenantIntent(data) {
   return apiFetch("/auth/signup/owner-intent", {
@@ -27,6 +30,8 @@ export function updateTenantSettings(data) {
  * - If backend is implemented to delete old logoKey, this also handles "replace"
  */
 export async function uploadTenantLogoViaApi(file) {
+  assertTenantLogoFile(file);
+
   const form = new FormData();
   form.append("file", file);
 

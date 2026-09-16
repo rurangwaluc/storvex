@@ -1,7 +1,6 @@
 // src/modules/tenants/tenants.routes.js
 
 const express = require("express");
-const multer = require("multer");
 
 const router = express.Router();
 
@@ -14,8 +13,9 @@ const {
 } = require("../../middlewares/requireActiveSubscription");
 
 const controller = require("./tenants.controller");
-
-const upload = multer({ storage: multer.memoryStorage() });
+const {
+  tenantLogoUpload,
+} = require("./tenantLogoUpload");
 
 // Settings
 router.get(
@@ -46,7 +46,7 @@ router.post(
   requireActiveSubscription,
   requireWritableSubscription,
   requireRole("OWNER"),
-  upload.single("file"),
+  tenantLogoUpload,
   controller.uploadTenantLogo
 );
 
