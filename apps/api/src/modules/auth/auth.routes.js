@@ -9,6 +9,7 @@ const {
 const router = express.Router();
 
 const authController = require("./auth.controller");
+const logoutController = require("./logout.controller");
 const momoService = require("./momo.service");
 const paymentController = require("./payment.controller");
 const otpController = require("./otp.controller");
@@ -349,6 +350,12 @@ router.post("/signup/confirm", authController.confirmSignup);
 router.post("/signup/initiate", authController.initiateSignup);
 
 router.post("/login", authController.login);
+
+router.post(
+  "/logout",
+  authenticate,
+  logoutController.logout,
+);
 
 router.post("/password/forgot", passwordResetController.forgotPassword);
 router.post("/password/reset", passwordResetController.resetPassword);
