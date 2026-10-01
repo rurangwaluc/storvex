@@ -289,6 +289,32 @@ export default function WhatsAppInbox() {
   }, [selectedId]);
 
   useEffect(() => {
+    if (!selectedId || workspaceTab !== "inbox") return undefined;
+
+    let cancelled = false;
+
+    const refreshDeliveryState = async () => {
+      try {
+        const data = await listWhatsAppConversationMessages(selectedId);
+
+        if (cancelled) return;
+
+        setMessages(data.messages || []);
+        setMessagesConversationId(selectedId);
+      } catch {
+        // Background status refresh must never interrupt the inbox.
+      }
+    };
+
+    const timer = window.setInterval(refreshDeliveryState, 3000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [selectedId, workspaceTab]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView?.({ behavior: "smooth", block: "end" });
   }, [messages.length]);
 

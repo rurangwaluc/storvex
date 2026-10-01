@@ -37,40 +37,147 @@ function normalizeProviderFailure(error, fallbackCode) {
   return metaError(fallbackCode, status >= 400 && status < 500 ? 400 : 502);
 }
 
-async function exchangeCode(code, http = axios) {
+function validateEmbeddedSignupRedirectUri(value) {
+  const raw = String(value || "").trim();
+  if (!raw) throw metaError("WHATSAPP_META_REDIRECT_URI_INVALID", 400);
+
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    throw metaError("WHATSAPP_META_REDIRECT_URI_INVALID", 400);
+  }
+
+  if (
+    parsed.protocol !== "https:" ||
+    parsed.hostname !== "staticxx.facebook.com" ||
+    parsed.pathname !== "/x/connect/xd_arbiter/"
+  ) {
+    throw metaError("WHATSAPP_META_REDIRECT_URI_INVALID", 400);
+  }
+
+  const fragment = new URLSearchParams(parsed.hash.replace(/^#/, ""));
+  const domain = fragment.get("domain");
+  const origin = fragment.get("origin");
+
+  if (domain !== "www.storvex.rw") {
+    throw metaError("WHATSAPP_META_REDIRECT_URI_INVALID", 400);
+  }
+
+  if (!origin) {
+    throw metaError("WHATSAPP_META_REDIRECT_URI_INVALID", 400);
+  }
+
+  let decodedOrigin;
+  try {
+    decodedOrigin = decodeURIComponent(origin);
+  } catch {
+    throw metaError("WHATSAPP_META_REDIRECT_URI_INVALID", 400);
+  }
+
+  let parsedOrigin;
+  try {
+    parsedOrigin = new URL(decodedOrigin);
+  } catch {
+    throw metaError("WHATSAPP_META_REDIRECT_URI_INVALID", 400);
+  }
+
+  if (
+    parsedOrigin.protocol !== "https:" ||
+    parsedOrigin.hostname !== "www.storvex.rw"
+  ) {
+    throw metaError("WHATSAPP_META_REDIRECT_URI_INVALID", 400);
+  }
+
+  return raw;
+}
+
+async function exchangeCode(code, redirectUri, http = axios) {
+  const validatedRedirectUri = validateEmbeddedSignupRedirectUri(redirectUri);
+
   try {
     const response = await http.get(`${GRAPH_ROOT}/${API_VERSION}/oauth/access_token`, {
       params: {
         client_id: requiredEnv("WHATSAPP_META_APP_ID"),
         client_secret: requiredEnv("WHATSAPP_APP_SECRET"),
-        redirect_uri: requiredEnv("WHATSAPP_META_REDIRECT_URI"),
+        redirect_uri: validatedRedirectUri,
         code,
       },
     });
+
     const token = String(response?.data?.access_token || "").trim();
-    if (!token) throw metaError("WHATSAPP_META_EXCHANGE_FAILED", 400);
+
+    if (!token) {
+      throw metaError("WHATSAPP_META_EXCHANGE_FAILED", 400);
+    }
+
     return token;
   } catch (error) {
     throw normalizeProviderFailure(error, "WHATSAPP_META_EXCHANGE_FAILED");
   }
 }
 
-async function resolveAuthorizedAssets({ accessToken, wabaHint, phoneHint, http = axios }) {
-  const wabaIdHint = cleanId(wabaHint);
-  if (!wabaIdHint) throw metaError("WHATSAPP_META_SESSION_INVALID", 400);
-
+async function resolveAuthorizedWabaIds({ accessToken, http = axios }) {
   try {
-    const wabaResponse = await http.get(graphUrl(wabaIdHint), {
+    const response = await http.get(graphUrl("debug_token"), {
+      headers: authHeaders(requiredEnv("WHATSAPP_SYSTEM_USER_ACCESS_TOKEN")),
+      params: { input_token: accessToken },
+    });
+
+    const data = response?.data?.data || {};
+    if (data.is_valid !== true) {
+      throw metaError("WHATSAPP_META_TOKEN_INVALID", 400);
+    }
+
+    const granularScopes = Array.isArray(data.granular_scopes) ? data.granular_scopes : [];
+
+    const wabaIds = granularScopes
+      .filter((entry) => entry?.scope === "whatsapp_business_management")
+      .flatMap((entry) => Array.isArray(entry?.target_ids) ? entry.target_ids : [])
+      .map(cleanId)
+      .filter(Boolean);
+
+    return [...new Set(wabaIds)];
+  } catch (error) {
+    throw normalizeProviderFailure(error, "WHATSAPP_META_ASSET_RESOLUTION_FAILED");
+  }
+}
+
+async function resolveAuthorizedAssets({ accessToken, wabaHint, phoneHint, http = axios }) {
+  try {
+    const authorizedWabaIds = await resolveAuthorizedWabaIds({ accessToken, http });
+    const wabaIdHint = cleanId(wabaHint);
+
+    let authoritativeWabaId;
+    if (wabaIdHint) {
+      if (!authorizedWabaIds.includes(wabaIdHint)) {
+        throw metaError("WHATSAPP_META_WABA_MISMATCH", 400);
+      }
+      authoritativeWabaId = wabaIdHint;
+    } else if (authorizedWabaIds.length === 1) {
+      authoritativeWabaId = authorizedWabaIds[0];
+    } else if (authorizedWabaIds.length === 0) {
+      throw metaError("WHATSAPP_META_WABA_NOT_FOUND", 400);
+    } else {
+      throw metaError("WHATSAPP_META_WABA_AMBIGUOUS", 400);
+    }
+
+    const wabaResponse = await http.get(graphUrl(authoritativeWabaId), {
       headers: authHeaders(accessToken),
-      params: { fields: "id,name,phone_numbers" },
+      params: { fields: "id,name" },
     });
     const waba = wabaResponse?.data || {};
-    const authoritativeWabaId = cleanId(waba.id);
-    if (!authoritativeWabaId || authoritativeWabaId !== wabaIdHint) {
+    const returnedWabaId = cleanId(waba.id);
+    if (!returnedWabaId || returnedWabaId !== authoritativeWabaId) {
       throw metaError("WHATSAPP_META_WABA_MISMATCH", 400);
     }
 
-    const phones = Array.isArray(waba?.phone_numbers?.data) ? waba.phone_numbers.data : [];
+    const phonesResponse = await http.get(graphUrl(`${authoritativeWabaId}/phone_numbers`), {
+      headers: authHeaders(accessToken),
+      params: { fields: "id,display_phone_number,verified_name" },
+    });
+    const phones = Array.isArray(phonesResponse?.data?.data) ? phonesResponse.data.data : [];
+
     const phoneIdHint = cleanId(phoneHint);
     const selected = phoneIdHint
       ? phones.find((phone) => cleanId(phone?.id) === phoneIdHint)
@@ -128,11 +235,11 @@ async function subscribeWaba({ accessToken, wabaId, http = axios }) {
   }
 }
 
-async function completeMetaOnboarding({ code, sessionInfo, http = axios }) {
+async function completeMetaOnboarding({ code, redirectUri, sessionInfo, http = axios }) {
   const authorizationCode = String(code || "").trim();
   if (!authorizationCode) throw metaError("WHATSAPP_META_CODE_REQUIRED", 400);
 
-  const accessToken = await exchangeCode(authorizationCode, http);
+  const accessToken = await exchangeCode(authorizationCode, redirectUri, http);
   const assets = await resolveAuthorizedAssets({
     accessToken,
     wabaHint: sessionInfo?.wabaId,
@@ -150,6 +257,12 @@ module.exports = {
   exchangeCode,
   registerPhone,
   resolveAuthorizedAssets,
+  resolveAuthorizedWabaIds,
   subscribeWaba,
-  __private: { cleanId, graphUrl, normalizeProviderFailure },
+  __private: {
+    cleanId,
+    graphUrl,
+    normalizeProviderFailure,
+    validateEmbeddedSignupRedirectUri,
+  },
 };

@@ -115,6 +115,8 @@ function SecureKeyIcon() {
   );
 }
 
+const EMBEDDED_SIGNUP_ATTEMPT_TIMEOUT_MS = 5 * 60 * 1000;
+
 export function SetupWorkspace({ accounts, onRefresh }) {
   const account = accounts[0] || null;
   const appId = process.env.NEXT_PUBLIC_STORVEX_META_APP_ID || "";
@@ -127,9 +129,12 @@ export function SetupWorkspace({ accounts, onRefresh }) {
   const activeAttemptRef = useRef(false);
   const codeRef = useRef("");
   const sessionRef = useRef(null);
+  const redirectUriRef = useRef("");
   const completingRef = useRef(false);
   const popupRef = useRef(null);
   const popupTimerRef = useRef(null);
+  const attemptTimeoutRef = useRef(null);
+  const attemptIdRef = useRef(0);
   const isConnected = account?.connectionState === "connected";
   const isPaused = account?.connectionState === "paused";
 
@@ -141,12 +146,21 @@ export function SetupWorkspace({ accounts, onRefresh }) {
     });
   }
 
+  function stopAttemptTimeout() {
+    if (attemptTimeoutRef.current !== null) {
+      window.clearTimeout(attemptTimeoutRef.current);
+      attemptTimeoutRef.current = null;
+    }
+  }
+
   function clearAttempt() {
     activeAttemptRef.current = false;
     codeRef.current = "";
     sessionRef.current = null;
+    redirectUriRef.current = "";
     completingRef.current = false;
     stopPopupWatcher();
+    stopAttemptTimeout();
   }
 
   async function finishWhenReady() {
@@ -157,16 +171,23 @@ export function SetupWorkspace({ accounts, onRefresh }) {
       session: sessionRef.current,
     })) return;
     completingRef.current = true;
+    const attemptId = attemptIdRef.current;
     setFlowState("connecting");
     setFlowMessage("Finishing your WhatsApp connection…");
     try {
-      await completeWhatsAppEmbeddedSignup({ code: codeRef.current, sessionInfo: sessionRef.current });
+      await completeWhatsAppEmbeddedSignup({
+        code: codeRef.current,
+        sessionInfo: sessionRef.current,
+        redirectUri: redirectUriRef.current,
+      });
+      if (!activeAttemptRef.current || attemptIdRef.current !== attemptId) return;
       clearAttempt();
       setFlowState("success");
       setFlowMessage("WhatsApp connected successfully.");
       toast.success("WhatsApp connected");
       await onRefresh?.();
     } catch (error) {
+      if (!activeAttemptRef.current || attemptIdRef.current !== attemptId) return;
       clearAttempt();
       setFlowState("error");
       setFlowMessage("Unable to connect WhatsApp. Please try again.");
@@ -196,6 +217,7 @@ export function SetupWorkspace({ accounts, onRefresh }) {
     prepareSdk();
     return () => {
       if (popupTimerRef.current) window.clearInterval(popupTimerRef.current);
+      if (attemptTimeoutRef.current !== null) window.clearTimeout(attemptTimeoutRef.current);
     };
     // Public configuration is fixed for the deployed bundle.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -204,16 +226,20 @@ export function SetupWorkspace({ accounts, onRefresh }) {
   useEffect(() => {
     const handleMessage = (event) => {
       if (!activeAttemptRef.current) return;
+
       const message = parseEmbeddedSignupMessage(event);
+
       if (!message) return;
 
       if (message.event === "CANCEL") {
+        if (completingRef.current) return;
         clearAttempt();
         setFlowState("cancelled");
         setFlowMessage("Connection cancelled. You can try again when ready.");
         return;
       }
       if (message.event === "ERROR") {
+        if (completingRef.current) return;
         clearAttempt();
         setFlowState("error");
         setFlowMessage("Unable to connect WhatsApp. Please try again.");
@@ -235,12 +261,34 @@ export function SetupWorkspace({ accounts, onRefresh }) {
     }
 
     clearAttempt();
+    attemptIdRef.current += 1;
+    const attemptId = attemptIdRef.current;
     activeAttemptRef.current = true;
     setFlowState("connecting");
     setFlowMessage("Complete the secure Meta signup window to continue.");
 
+    attemptTimeoutRef.current = window.setTimeout(() => {
+      if (!activeAttemptRef.current || attemptIdRef.current !== attemptId) return;
+      clearAttempt();
+      setFlowState("error");
+      setFlowMessage("WhatsApp connection timed out. Please try again.");
+    }, EMBEDDED_SIGNUP_ATTEMPT_TIMEOUT_MS);
+
     const originalOpen = window.open;
     window.open = function (...args) {
+      const popupUrl = typeof args[0] === "string" ? args[0] : "";
+
+      if (popupUrl) {
+        try {
+          const parsedPopupUrl = new URL(popupUrl, window.location.href);
+          const redirectUri = parsedPopupUrl.searchParams.get("redirect_uri");
+
+          redirectUriRef.current = redirectUri || "";
+        } catch {
+          redirectUriRef.current = "";
+        }
+      }
+
       const popup = originalOpen.apply(window, args);
       popupRef.current = popup;
       window.open = originalOpen;
@@ -250,6 +298,7 @@ export function SetupWorkspace({ accounts, onRefresh }) {
     try {
       launchEmbeddedSignup(sdk, configId, (response) => {
         window.open = originalOpen;
+        if (!activeAttemptRef.current || attemptIdRef.current !== attemptId) return;
         stopPopupWatcher();
         const code = String(response?.authResponse?.code || "").trim();
         if (!code) {
@@ -273,14 +322,25 @@ export function SetupWorkspace({ accounts, onRefresh }) {
     }
 
     window.setTimeout(() => {
-      if (activeAttemptRef.current && popupRef.current === null) {
+      if (
+        activeAttemptRef.current &&
+        attemptIdRef.current === attemptId &&
+        !completingRef.current &&
+        popupRef.current === null
+      ) {
         clearAttempt();
         setFlowState("error");
         setFlowMessage("The Meta signup window was blocked. Allow popups and retry.");
       }
     }, 500);
+
     popupTimerRef.current = window.setInterval(() => {
-      if (activeAttemptRef.current && popupRef.current?.closed) {
+      if (
+        activeAttemptRef.current &&
+        attemptIdRef.current === attemptId &&
+        !completingRef.current &&
+        popupRef.current?.closed
+      ) {
         clearAttempt();
         setFlowState("cancelled");
         setFlowMessage("Connection window closed. You can try again.");

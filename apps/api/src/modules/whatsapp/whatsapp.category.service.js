@@ -78,6 +78,8 @@ function hasAnyKeyword(text, keywords = []) {
 
 const CATEGORY_KEYWORDS = Object.freeze({
   [BUSINESS_CATEGORIES.ELECTRONICS]: [
+    "electronics",
+    "electronic",
     "iphone",
     "samsung",
     "tecno",
@@ -137,6 +139,8 @@ const CATEGORY_KEYWORDS = Object.freeze({
   ],
 
   [BUSINESS_CATEGORIES.HARDWARE]: [
+    "hardware",
+    "quincaillerie",
     "cement",
     "nails",
     "nail",
@@ -183,6 +187,8 @@ const CATEGORY_KEYWORDS = Object.freeze({
   ],
 
   [BUSINESS_CATEGORIES.HOME_KITCHEN]: [
+    "home kitchen",
+    "kitchen",
     "plate",
     "plates",
     "cup",
@@ -230,6 +236,7 @@ const CATEGORY_KEYWORDS = Object.freeze({
   ],
 
   [BUSINESS_CATEGORIES.LIGHTING]: [
+    "lighting",
     "bulb",
     "bulbs",
     "led",
@@ -263,6 +270,8 @@ const CATEGORY_KEYWORDS = Object.freeze({
   ],
 
   [BUSINESS_CATEGORIES.SPARE_PARTS]: [
+    "spare parts",
+    "spare part",
     "brake",
     "brake pad",
     "brake pads",
@@ -436,6 +445,8 @@ const PRODUCT_SPEC_PATTERNS = Object.freeze({
 });
 
 function normalizeBusinessCategory(value) {
+  if (value === null) return null;
+
   const raw = normalizeText(value).toUpperCase();
 
   if (BUSINESS_CATEGORIES[raw]) return BUSINESS_CATEGORIES[raw];

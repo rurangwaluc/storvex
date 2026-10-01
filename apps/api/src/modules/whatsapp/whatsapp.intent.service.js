@@ -446,18 +446,6 @@ function detectProductQueryIntent(text) {
     };
   }
 
-  const words = cleanSearchText(raw).split(/\s+/).filter(Boolean);
-
-  if (words.length >= 1 && words.length <= 8 && productQuery) {
-    if (!looksLikeGreeting(raw) && !looksLikeHumanHelp(raw)) {
-      return {
-        type: INTENTS.PRODUCT_SEARCH,
-        legacyType: INTENTS.PRODUCT_QUERY,
-        payload: buildCategoryPayload(raw, { query: productQuery, rawText: text }),
-      };
-    }
-  }
-
   return null;
 }
 

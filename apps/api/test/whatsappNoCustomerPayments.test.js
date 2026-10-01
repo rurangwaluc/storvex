@@ -56,6 +56,41 @@ test("WhatsApp inbound service contains no customer payment mutation path", () =
     "handlePayIntent",
     "applyPaymentToSale",
   ]) {
-    assert.equal(source.includes(forbidden), false, `${forbidden} must not exist in WhatsApp inbound processing`);
+    assert.equal(
+      source.includes(forbidden),
+      false,
+      `${forbidden} must not exist in WhatsApp inbound processing`,
+    );
   }
+});
+
+test("customer-facing WhatsApp business context prefers the Storvex tenant identity", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "../src/modules/whatsapp/whatsapp.service.js"),
+    "utf8",
+  );
+
+  assert.match(
+    source,
+    /async function resolveBusinessContext\(tenantId, account\)/,
+    "WhatsApp inbound processing must resolve tenant-owned business context",
+  );
+
+  assert.match(
+    source,
+    /select:\s*\{\s*name:\s*true,\s*shopType:\s*true,?\s*\}/,
+    "WhatsApp business context must load both tenant name and business category",
+  );
+
+  assert.match(
+    source,
+    /businessName:\s*normalizeText\(tenant\?\.name\)\s*\|\|\s*normalizeText\(account\?\.businessName\)\s*\|\|\s*"our store"/,
+    "WhatsApp customer-facing business name must prefer the Storvex tenant name, then Meta account name, then the generic fallback",
+  );
+
+  assert.match(
+    source,
+    /businessCategory:\s*normalizeText\(tenant\?\.shopType\)\s*\|\|\s*null/,
+    "WhatsApp business category must come from the Storvex tenant shopType",
+  );
 });

@@ -442,11 +442,13 @@ async function completeEmbeddedSignup(tenantId, data = {}, dependencies = {}) {
   const meta = dependencies.meta || metaOnboarding;
   const encrypt = dependencies.encryptCredential || encryptCredential;
   const code = normalizeStr(data.code);
+  const redirectUri = normalizeStr(data.redirectUri);
   if (!code) throw appError("WHATSAPP_META_CODE_REQUIRED");
+  if (!redirectUri) throw appError("WHATSAPP_META_REDIRECT_URI_REQUIRED");
 
   await ensureTenantExists(tenantId, db);
   const sessionInfo = normalizeSessionInfo(data.sessionInfo);
-  const accessToken = await meta.exchangeCode(code);
+  const accessToken = await meta.exchangeCode(code, redirectUri);
   const assets = await meta.resolveAuthorizedAssets({
     accessToken,
     wabaHint: sessionInfo.wabaId,

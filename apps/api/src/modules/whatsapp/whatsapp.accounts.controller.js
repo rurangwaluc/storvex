@@ -91,10 +91,15 @@ function mapAccountError(err, res, fallbackMessage) {
 
   const metaClientErrors = new Set([
     "WHATSAPP_META_CODE_REQUIRED",
+    "WHATSAPP_META_REDIRECT_URI_REQUIRED",
+    "WHATSAPP_META_REDIRECT_URI_INVALID",
     "WHATSAPP_META_NOT_CONFIGURED",
     "WHATSAPP_META_SESSION_INVALID",
     "WHATSAPP_META_EXCHANGE_FAILED",
+    "WHATSAPP_META_TOKEN_INVALID",
     "WHATSAPP_META_ASSET_RESOLUTION_FAILED",
+    "WHATSAPP_META_WABA_NOT_FOUND",
+    "WHATSAPP_META_WABA_AMBIGUOUS",
     "WHATSAPP_META_WABA_MISMATCH",
     "WHATSAPP_META_PHONE_NOT_FOUND",
     "WHATSAPP_META_PHONE_MISMATCH",
@@ -102,7 +107,15 @@ function mapAccountError(err, res, fallbackMessage) {
     "WHATSAPP_META_SUBSCRIPTION_FAILED",
   ]);
   if (metaClientErrors.has(code)) {
-    return res.status(Number(err?.status) === 503 || code === "WHATSAPP_META_NOT_CONFIGURED" ? 503 : 400).json({
+    const providerStatus = Number(err?.status);
+    const status =
+      code === "WHATSAPP_META_NOT_CONFIGURED"
+        ? 503
+        : [400, 502, 503].includes(providerStatus)
+          ? providerStatus
+          : 400;
+
+    return res.status(status).json({
       ok: false,
       message: "Unable to connect WhatsApp. Please try again.",
       code,

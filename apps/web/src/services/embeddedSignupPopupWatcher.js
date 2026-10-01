@@ -4,6 +4,6 @@ export function stopEmbeddedSignupPopupWatcher({ timerRef, popupRef, clearInterv
   popupRef.current = null;
 }
 
-export function isEmbeddedSignupHandoffReady({ active, completing, code, session }) {
-  return Boolean(active && !completing && code && session);
+export function isEmbeddedSignupHandoffReady({ active, completing, code }) {
+  return Boolean(active && !completing && code);
 }

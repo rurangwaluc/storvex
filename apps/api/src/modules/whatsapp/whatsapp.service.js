@@ -21,6 +21,7 @@ const {
 } = require("./whatsapp.ai.service");
 const {
   inferCategoryFromText,
+  getCategoryContext,
   shouldAskCategoryClarifier,
 } = require("./whatsapp.category.service");
 
@@ -445,33 +446,23 @@ function buildNotFoundReply({
   return lines.join("\n");
 }
 
-function buildWelcomeReply({ businessName }) {
+function buildWelcomeReply({ businessName, businessCategory }) {
+  const context = getCategoryContext(businessCategory);
+
   return [
     `👋 Welcome to *${businessName}*`,
     "",
-    `I can help you find products quickly.`,
+    context.replyCopy.greeting,
     "",
-    `📂 Categories`,
-    `1️⃣ Electronics`,
-    `2️⃣ Hardware`,
-    `3️⃣ Home & Kitchen`,
-    `4️⃣ Lighting`,
-    `5️⃣ Spare Parts`,
+    `You can ask about:`,
+    `• Product availability`,
+    `• Price`,
+    `• Stock`,
+    `• Product details`,
     "",
-    `💬 Examples`,
-    `• Samsung A16`,
-    `• Hammer`,
-    `• Blender`,
-    `• LED bulb`,
-    `• Toyota brake pads`,
-    "",
-    `You can also ask:`,
-    `• Price of Samsung A16`,
-    `• Do you have LED bulb 12W?`,
-    `• I need 2 hammers`,
+    `Example: ${context.questionRule.examples[0] || "Send the product name you need"}`,
   ].join("\n");
 }
-
 function buildBranchPendingReply({ businessName, query }) {
   const lines = [];
   lines.push(`✅ *${businessName}*`);
@@ -963,13 +954,22 @@ async function bumpConvo(convoId) {
   } catch {}
 }
 
-async function resolveBusinessName(tenantId, account) {
+async function resolveBusinessContext(tenantId, account) {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
-    select: { name: true },
+    select: {
+      name: true,
+      shopType: true,
+    },
   });
 
-  return normalizeText(account?.businessName) || normalizeText(tenant?.name) || "our store";
+  return {
+    businessName:
+      normalizeText(tenant?.name) ||
+      normalizeText(account?.businessName) ||
+      "our store",
+    businessCategory: normalizeText(tenant?.shopType) || null,
+  };
 }
 
 async function resolveConversationAndCustomer({ tenantId, accountId, from }) {
@@ -1249,6 +1249,7 @@ async function handleProductQueryIntent({
   convo,
   from,
   businessName,
+  businessCategory,
   text,
   directQuery,
   category = null,
@@ -1256,7 +1257,7 @@ async function handleProductQueryIntent({
   const detectedCategory = category || inferCategoryFromText(directQuery || text);
 
   if (!directQuery) {
-    const reply = buildWelcomeReply({ businessName });
+    const reply = buildWelcomeReply({ businessName, businessCategory });
 
     await safeSendAndLog({
       account,
@@ -1376,6 +1377,7 @@ async function handleGreetingOrUnknownIntent({
   convo,
   from,
   businessName,
+  businessCategory,
   text = "",
   intentType = "UNKNOWN",
 }) {
@@ -1403,7 +1405,7 @@ async function handleGreetingOrUnknownIntent({
   });
 
   if (outboundCount === 0 || intentType === "GREETING" || intentType === "EMPTY") {
-    const welcome = buildWelcomeReply({ businessName });
+    const welcome = buildWelcomeReply({ businessName, businessCategory });
 
     await safeSendAndLog({
       account,
@@ -1481,7 +1483,10 @@ async function handleInboundWebhook({ account, payload, inbound }) {
   void payload;
 
   const tenantId = account.tenantId;
-  const businessName = await resolveBusinessName(tenantId, account);
+  const {
+    businessName,
+    businessCategory,
+  } = await resolveBusinessContext(tenantId, account);
 
   for (const message of inbound) {
     const text = normalizeText(message?.text) || "";
@@ -1543,6 +1548,7 @@ async function handleInboundWebhook({ account, payload, inbound }) {
           convo,
           from,
           businessName,
+          businessCategory,
           text,
           directQuery,
           category,
@@ -1590,6 +1596,7 @@ async function handleInboundWebhook({ account, payload, inbound }) {
           convo,
           from,
           businessName,
+          businessCategory,
           text,
           intentType: intent.type,
         });

@@ -116,29 +116,41 @@ test("popup closure before the FB callback remains a genuine cancellation", asyn
   assert.equal(attempt.completions.length, 0);
 });
 
-test("code before session stops popup cancellation and completes exactly once", async () => {
+test("OAuth code alone starts completion exactly once", async () => {
   const attempt = await createAttemptHarness();
   attempt.loginCallback("short-code");
-  assert.equal(attempt.completions.length, 0, "code alone must not call completion");
+
+  assert.equal(attempt.completions.length, 1);
+  assert.deepEqual(attempt.completions[0], {
+    code: "short-code",
+    sessionInfo: null,
+  });
   assert.equal(attempt.timerRef.current, null);
   assert.equal(attempt.popupRef.current, null);
 
   attempt.popupClosed();
   attempt.popupClosed();
-  assert.equal(attempt.state.active, true, "late polling must not cancel the handoff");
+  assert.equal(attempt.state.active, true, "late popup polling must not cancel the handoff");
 
-  attempt.sessionEvent("FINISH", { wabaId: "111", phoneNumberId: "222" });
-  attempt.sessionEvent("FINISH", { wabaId: "111", phoneNumberId: "222" });
-  assert.equal(attempt.completions.length, 1);
+  attempt.loginCallback("short-code");
+  assert.equal(attempt.completions.length, 1, "duplicate callbacks must not start another completion");
 });
 
-test("session before code waits and then completes exactly once", async () => {
+test("session before code is preserved as optional validation hints", async () => {
   const attempt = await createAttemptHarness();
-  attempt.sessionEvent("FINISH", { wabaId: "111", phoneNumberId: "222" });
+  const sessionInfo = { wabaId: "111", phoneNumberId: "222" };
+
+  attempt.sessionEvent("FINISH", sessionInfo);
   assert.equal(attempt.completions.length, 0, "session alone must not call completion");
+
   attempt.loginCallback("short-code");
   attempt.loginCallback("short-code");
+
   assert.equal(attempt.completions.length, 1);
+  assert.deepEqual(attempt.completions[0], {
+    code: "short-code",
+    sessionInfo,
+  });
 });
 
 test("callback without code, Meta CANCEL, and Meta ERROR remain terminal", async () => {

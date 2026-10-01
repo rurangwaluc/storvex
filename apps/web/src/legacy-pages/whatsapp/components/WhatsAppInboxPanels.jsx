@@ -169,7 +169,6 @@ export function EmptyState({ title, body }) {
 export function ConversationRow({ conversation, active, draft, salesSummary, onClick }) {
   const name = customerName(conversation);
   const count = unreadCount(conversation, active);
-  const needsLocation = !conversation.branchId;
   const priority = conversationPriority({ conversation, draft, summary: salesSummary });
 
   return (
@@ -194,7 +193,6 @@ export function ConversationRow({ conversation, active, draft, salesSummary, onC
           <Badge tone={priority.tone}>{priority.label}</Badge>
           <Badge tone={toneForStatus(conversation.status)}>{statusLabel(conversation.status)}</Badge>
           {draft ? <Badge tone="warning">Draft sale</Badge> : null}
-          {needsLocation ? <Badge tone="warning">Location needed</Badge> : null}
         </span>
       </span>
 
@@ -650,11 +648,6 @@ export function CustomerPanel({
           <div className="svx-wa-info-item">
             <span>Assigned to</span>
             <strong>{conversation.assignedTo?.name || "Unassigned"}</strong>
-          </div>
-
-          <div className="svx-wa-info-item">
-            <span>Location</span>
-            <strong>{conversation.branchId ? "Ready" : "Location needed"}</strong>
           </div>
 
           <div className="svx-wa-info-item">

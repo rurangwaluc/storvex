@@ -29,6 +29,60 @@ test("tenant authority comes from the authenticated user, never the browser body
   assert.equal(controller.__private.getTenantId(req), "tenant-auth");
 });
 
+function mapErrorResult(error) {
+  let statusCode = null;
+  let body = null;
+
+  const res = {
+    status(code) {
+      statusCode = code;
+      return this;
+    },
+    json(payload) {
+      body = payload;
+      return payload;
+    },
+  };
+
+  controller.__private.mapAccountError(
+    error,
+    res,
+    "Failed to connect WhatsApp",
+  );
+
+  return { statusCode, body };
+}
+
+test("maps Meta onboarding client and provider failures to controlled statuses", () => {
+  const wabaNotFound = mapErrorResult({
+    code: "WHATSAPP_META_WABA_NOT_FOUND",
+    status: 400,
+  });
+  assert.equal(wabaNotFound.statusCode, 400);
+  assert.equal(wabaNotFound.body.code, "WHATSAPP_META_WABA_NOT_FOUND");
+
+  const invalidRedirect = mapErrorResult({
+    code: "WHATSAPP_META_REDIRECT_URI_INVALID",
+    status: 400,
+  });
+  assert.equal(invalidRedirect.statusCode, 400);
+  assert.equal(invalidRedirect.body.code, "WHATSAPP_META_REDIRECT_URI_INVALID");
+
+  const providerFailure = mapErrorResult({
+    code: "WHATSAPP_META_ASSET_RESOLUTION_FAILED",
+    status: 502,
+  });
+  assert.equal(providerFailure.statusCode, 502);
+  assert.equal(providerFailure.body.code, "WHATSAPP_META_ASSET_RESOLUTION_FAILED");
+
+  const notConfigured = mapErrorResult({
+    code: "WHATSAPP_META_NOT_CONFIGURED",
+    status: 400,
+  });
+  assert.equal(notConfigured.statusCode, 503);
+  assert.equal(notConfigured.body.code, "WHATSAPP_META_NOT_CONFIGURED");
+});
+
 function setup({ existing = null, foreign = null, subscriptionFails = false } = {}) {
   const writes = [];
   const db = {
@@ -53,7 +107,10 @@ function setup({ existing = null, foreign = null, subscriptionFails = false } = 
   };
   const calls = [];
   const meta = {
-    exchangeCode: async (code) => { calls.push(["exchange", code]); return "provider-token"; },
+    exchangeCode: async (code, redirectUri) => {
+      calls.push(["exchange", code, redirectUri]);
+      return "provider-token";
+    },
     resolveAuthorizedAssets: async () => ({
       wabaId: "111", phoneNumberId: "222", phoneNumber: "250788123456",
       businessName: "Verified Store", wabaName: "Verified Store",
@@ -69,6 +126,7 @@ function setup({ existing = null, foreign = null, subscriptionFails = false } = 
 
 const INPUT = {
   code: "short-lived-code",
+  redirectUri: "https://staticxx.facebook.com/x/connect/xd_arbiter/?version=46#cb=test-callback&domain=www.storvex.rw&is_canvas=false&origin=https%3A%2F%2Fwww.storvex.rw%2Ftest-origin&relation=opener&frame=test-frame",
   tenantId: "browser-tenant",
   sessionInfo: { wabaId: "111", phoneNumberId: "222", businessId: "333" },
 };
@@ -88,6 +146,31 @@ test("authoritatively connects and redacts the encrypted credential", async () =
   assert.equal(account.hasAccessToken, true);
   assert.equal(Object.hasOwn(account, "accessToken"), false);
   assert.deepEqual(ctx.calls.map((call) => call[0]), ["exchange", "register", "subscribe"]);
+  assert.deepEqual(ctx.calls[0], [
+    "exchange",
+    INPUT.code,
+    INPUT.redirectUri,
+  ]);
+});
+
+test("requires the per-attempt Meta SDK redirect URI before provider exchange", async () => {
+  const ctx = setup();
+
+  await assert.rejects(
+    service.completeEmbeddedSignup(
+      "tenant-a",
+      { ...INPUT, redirectUri: "" },
+      {
+        prisma: ctx.db,
+        meta: ctx.meta,
+        encryptCredential: () => "encrypted",
+      },
+    ),
+    { code: "WHATSAPP_META_REDIRECT_URI_REQUIRED" },
+  );
+
+  assert.equal(ctx.calls.length, 0);
+  assert.equal(ctx.writes.length, 0);
 });
 
 test("retries idempotently by updating the same tenant account", async () => {

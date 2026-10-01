@@ -257,6 +257,11 @@ function sanitizeMessage(value) {
     textContent: typeof item.textContent === "string" ? item.textContent : "",
     mediaUrl: trimString(item.mediaUrl),
     messageId: trimString(item.messageId),
+    status: toUpper(item.status || "SENT"),
+    deliveredAt: item.deliveredAt || null,
+    readAt: item.readAt || null,
+    failedAt: item.failedAt || null,
+    failureReason: trimString(item.failureReason),
     createdAt: item.createdAt || null,
     sentById: trimString(item.sentById),
   };
@@ -824,6 +829,7 @@ export async function completeWhatsAppEmbeddedSignup(payload) {
     body: {
       code: trimString(source.code),
       sessionInfo: ensureObject(source.sessionInfo),
+      redirectUri: trimString(source.redirectUri),
     },
   });
 
