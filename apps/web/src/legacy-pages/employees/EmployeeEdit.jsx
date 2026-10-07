@@ -203,7 +203,7 @@ function normalizeEmployeeBranches(employee) {
 
 function branchDisplayName(branch) {
   if (!branch) return "Branch";
-  return branch.code ? `${branch.code} • ${branch.name}` : branch.name;
+  return branch.code ? `${branch.code} / ${branch.name}` : branch.name;
 }
 
 export default function EmployeeEdit({ employee, onSaved, onCancel, canEdit = true }) {
@@ -525,7 +525,7 @@ export default function EmployeeEdit({ employee, onSaved, onCancel, canEdit = tr
                         {branchDisplayName(branch)}
                       </span>
                       <span className={cx("mt-1 block text-xs font-semibold", mutedText())}>
-                        {branch.isMain ? "Main branch" : "Standard branch"} • {branch.status}
+                        {branch.isMain ? "Main branch" : "Standard branch"} / {branch.status}
                       </span>
                     </span>
                   </label>

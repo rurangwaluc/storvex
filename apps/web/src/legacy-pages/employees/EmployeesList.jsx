@@ -302,7 +302,7 @@ function normalizeEmployeeBranches(employee) {
 
 function branchDisplayName(branch) {
   if (!branch) return "—";
-  return branch.code ? `${branch.code} • ${branch.name}` : branch.name;
+  return branch.code ? `${branch.code} / ${branch.name}` : branch.name;
 }
 
 function BranchBadgeList({ branches, compact = false }) {
@@ -318,7 +318,7 @@ function BranchBadgeList({ branches, compact = false }) {
       {visible.map((branch) => (
         <Badge key={branch.id} tone={branch.isDefault ? "primary" : "neutral"}>
           {branchDisplayName(branch)}
-          {branch.isDefault ? " • Default" : ""}
+          {branch.isDefault ? " / Default" : ""}
         </Badge>
       ))}
 

@@ -2,6 +2,10 @@
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const prisma = require("../../config/database");
+const { getMarket } = require("../../config/markets");
+const {
+  normalizePhone: normalizeMarketPhone,
+} = require("../../lib/phone/marketPhone");
 
 const ALLOWED_ROLES = new Set([
   "MANAGER",
@@ -38,10 +42,42 @@ function normalizeEmail(value) {
   return s ? s.toLowerCase() : null;
 }
 
-function normalizePhone(value) {
-  const s = cleanString(value);
-  if (!s) return null;
-  return s.replace(/[^\d+]/g, "") || null;
+async function tenantCountryCode(tenantId) {
+  if (!tenantId) return null;
+
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { countryCode: true },
+  });
+
+  return cleanString(tenant?.countryCode);
+}
+
+function normalizeOptionalTenantPhone(value, countryCode) {
+  const raw = cleanString(value);
+  if (!raw) return null;
+
+  const market = getMarket(countryCode);
+  if (!market) return raw;
+
+  const hasReviewedPhoneRules =
+    Number.isInteger(market.phone?.nationalLength) &&
+    market.phone.nationalLength > 0 &&
+    Array.isArray(market.phone?.nationalPrefixes) &&
+    market.phone.nationalPrefixes.length > 0;
+
+  if (!hasReviewedPhoneRules) {
+    return raw;
+  }
+
+  try {
+    return normalizeMarketPhone({
+      countryCode,
+      input: raw,
+    });
+  } catch {
+    return null;
+  }
 }
 
 function requireTenantId(req) {
@@ -127,7 +163,7 @@ function serializeBranchAssignment(assignment) {
           status: assignment.branch.status,
           phone: assignment.branch.phone || null,
           email: assignment.branch.email || null,
-          countryCode: assignment.branch.countryCode || "RW",
+          countryCode: assignment.branch.countryCode || null,
           district: assignment.branch.district || null,
           sector: assignment.branch.sector || null,
           address: assignment.branch.address || null,
@@ -503,7 +539,13 @@ async function createEmployee(req, res) {
 
     const name = cleanString(req.body?.name);
     const email = normalizeEmail(req.body?.email);
-    const phone = normalizePhone(req.body?.phone);
+    const rawPhone = cleanString(req.body?.phone);
+    const countryCode = rawPhone
+      ? await tenantCountryCode(tenantId)
+      : null;
+    const phone = rawPhone
+      ? normalizeOptionalTenantPhone(rawPhone, countryCode)
+      : null;
     const role = validateRoleOrThrow(req.body?.role);
     const password = validatePasswordOrThrow(req.body?.password);
 
@@ -513,6 +555,12 @@ async function createEmployee(req, res) {
 
     if (!email) {
       return res.status(400).json({ message: "email is required" });
+    }
+
+    if (rawPhone && !phone) {
+      return res.status(400).json({
+        message: "Enter a valid phone number for this business country",
+      });
     }
 
     const assignmentInput = await resolveBranchAssignmentInput({
@@ -597,7 +645,29 @@ async function updateEmployee(req, res) {
 
     const name = req.body?.name === undefined ? undefined : cleanString(req.body?.name);
     const email = req.body?.email === undefined ? undefined : normalizeEmail(req.body?.email);
-    const phone = req.body?.phone === undefined ? undefined : normalizePhone(req.body?.phone);
+
+    let phone;
+
+    if (req.body?.phone !== undefined) {
+      const rawPhone = cleanString(req.body.phone);
+
+      if (!rawPhone) {
+        phone = null;
+      } else {
+        const countryCode = await tenantCountryCode(tenantId);
+        phone = normalizeOptionalTenantPhone(
+          rawPhone,
+          countryCode,
+        );
+
+        if (!phone) {
+          return res.status(400).json({
+            message: "Enter a valid phone number for this business country",
+          });
+        }
+      }
+    }
+
     const role = req.body?.role === undefined ? undefined : validateRoleOrThrow(req.body?.role);
     const isActive =
       req.body?.isActive === undefined ? undefined : normalizeBoolean(req.body?.isActive);
