@@ -12,10 +12,12 @@ const {
   normalizeBusinessCategory,
   serializeBusinessCategory,
 } = require("../../config/businessCategories");
-
-const DEFAULT_COUNTRY_CODE = "RW";
-const DEFAULT_CURRENCY_CODE = "RWF";
-const DEFAULT_TIMEZONE = "Africa/Kigali";
+const {
+  getMarket,
+} = require("../../config/markets");
+const {
+  normalizePhone: normalizeMarketPhone,
+} = require("../../lib/phone/marketPhone");
 
 const ALLOWED_LOGO_CONTENT_TYPES = new Set([
   "image/png",
@@ -105,22 +107,28 @@ function cleanUpperString(value, fallback = null, maxLen = null) {
   return s.toUpperCase();
 }
 
-function normalizePhone(value) {
+function normalizePhone(value, countryCode) {
   const raw = String(value ?? "").trim();
   if (!raw) return null;
 
-  const digits = raw.replace(/[^\d]/g, "");
-  if (!digits) return null;
+  const market = getMarket(countryCode);
+  const hasReviewedPhoneRules =
+    Number.isInteger(market?.phone?.nationalLength) &&
+    Array.isArray(market?.phone?.nationalPrefixes) &&
+    market.phone.nationalPrefixes.length > 0;
 
-  if (digits.startsWith("07") && digits.length === 10) {
-    return `250${digits.slice(1)}`;
+  if (!hasReviewedPhoneRules) {
+    return raw;
   }
 
-  if (digits.startsWith("2507") && digits.length === 12) {
-    return digits;
+  try {
+    return normalizeMarketPhone({
+      countryCode,
+      input: raw,
+    });
+  } catch {
+    return null;
   }
-
-  return digits;
 }
 
 function normalizeEmail(value) {
@@ -133,18 +141,6 @@ function normalizeShopType(value) {
   if (!raw) return null;
 
   return normalizeBusinessCategory(raw);
-}
-
-function normalizeCountryCode(value) {
-  return cleanUpperString(value, DEFAULT_COUNTRY_CODE, 8) || DEFAULT_COUNTRY_CODE;
-}
-
-function normalizeCurrencyCode(value) {
-  return cleanUpperString(value, DEFAULT_CURRENCY_CODE, 8) || DEFAULT_CURRENCY_CODE;
-}
-
-function normalizeTimezone(value) {
-  return cleanNullableString(value, 100) || DEFAULT_TIMEZONE;
 }
 
 function toBool(value, fallback = false) {
@@ -376,9 +372,9 @@ function serializeStoreProfileRow(tenant) {
     district: tenant.district || null,
     sector: tenant.sector || null,
     address: tenant.address || null,
-    countryCode: tenant.countryCode || DEFAULT_COUNTRY_CODE,
-    currencyCode: tenant.currencyCode || DEFAULT_CURRENCY_CODE,
-    timezone: tenant.timezone || DEFAULT_TIMEZONE,
+    countryCode: tenant.countryCode || null,
+    currencyCode: tenant.currencyCode || null,
+    timezone: tenant.timezone || null,
     logoUrl: tenant.logoUrl || null,
     logoKey: tenant.logoKey || null,
     receiptHeader: tenant.receiptHeader || null,
@@ -865,9 +861,28 @@ async function updateStoreProfile(tenantId, payload) {
   const body = payload || {};
   const data = {};
 
+  const currentTenant = await prisma.tenant.findUnique({
+    where: { id },
+    select: {
+      countryCode: true,
+      shopType: true,
+    },
+  });
+
+  if (!currentTenant) {
+    const err = new Error("Store profile not found");
+    err.status = 404;
+    throw err;
+  }
+
   if ("name" in body) data.name = cleanNullableString(body.name, 180);
   if ("email" in body) data.email = normalizeEmail(body.email);
-  if ("phone" in body) data.phone = normalizePhone(body.phone);
+  if ("phone" in body) {
+    data.phone = normalizePhone(
+      body.phone,
+      currentTenant.countryCode,
+    );
+  }
   if ("shopType" in body) data.shopType = normalizeShopType(body.shopType);
   if ("businessCategory" in body) data.shopType = normalizeShopType(body.businessCategory);
   if ("district" in body) data.district = cleanNullableString(body.district, 120);
@@ -877,9 +892,6 @@ async function updateStoreProfile(tenantId, payload) {
   if ("logoKey" in body) data.logoKey = cleanNullableString(body.logoKey, 1000);
   if ("receiptHeader" in body) data.receiptHeader = cleanNullableString(body.receiptHeader, 1000);
   if ("receiptFooter" in body) data.receiptFooter = cleanNullableString(body.receiptFooter, 1000);
-  if ("countryCode" in body) data.countryCode = normalizeCountryCode(body.countryCode);
-  if ("currencyCode" in body) data.currencyCode = normalizeCurrencyCode(body.currencyCode);
-  if ("timezone" in body) data.timezone = normalizeTimezone(body.timezone);
 
   if ("cashDrawerBlockCashSales" in body) {
     data.cash_drawer_block_cash_sales = toBool(body.cashDrawerBlockCashSales, true);
@@ -888,12 +900,9 @@ async function updateStoreProfile(tenantId, payload) {
   assertRequiredProfileFields(data);
 
   if ("shopType" in data) {
-    const current = await prisma.tenant.findUnique({
-      where: { id },
-      select: { shopType: true },
-    });
-
-    const currentCategory = normalizeShopType(current?.shopType);
+    const currentCategory = normalizeShopType(
+      currentTenant.shopType,
+    );
     const nextCategory = normalizeShopType(data.shopType);
 
     if (currentCategory && nextCategory && currentCategory !== nextCategory) {

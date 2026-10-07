@@ -123,11 +123,9 @@ function profileSnapshot(value) {
     address: value?.address || "",
     logoUrl: value?.logoUrl || "",
     logoKey: value?.logoKey || "",
-    countryCode: value?.countryCode || "RW",
-    currencyCode:
-      value?.currencyCode || "RWF",
-    timezone:
-      value?.timezone || "Africa/Kigali",
+    countryCode: value?.countryCode || "",
+    currencyCode: value?.currencyCode || "",
+    timezone: value?.timezone || "",
   };
 }
 
@@ -162,6 +160,35 @@ function Field({
           onChange(event.target.value)
         }
       />
+    </div>
+  );
+}
+
+function countryLabel(countryCode) {
+  const code = cleanString(countryCode).toUpperCase();
+  if (!code) return "Not configured";
+
+  try {
+    const names = new Intl.DisplayNames(
+      ["en"],
+      { type: "region" },
+    );
+
+    return names.of(code) || code;
+  } catch {
+    return code;
+  }
+}
+
+function regionalValue(value) {
+  return cleanString(value) || "Not configured";
+}
+
+function InfoField({ label, value }) {
+  return (
+    <div className="svx-general-info-field">
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }
@@ -250,6 +277,18 @@ export default function SettingsGeneral() {
                       tenant?.logoSignedUrl ||
                       tenant?.logoUrl ||
                       storeProfile.logoUrl ||
+                      null,
+                    countryCode:
+                      tenant?.countryCode ||
+                      storeProfile.countryCode ||
+                      null,
+                    currencyCode:
+                      tenant?.currencyCode ||
+                      storeProfile.currencyCode ||
+                      null,
+                    timezone:
+                      tenant?.timezone ||
+                      storeProfile.timezone ||
                       null,
                   }
                 : null;
@@ -351,17 +390,6 @@ export default function SettingsGeneral() {
         address:
           cleanString(form.address) ||
           null,
-        countryCode:
-          cleanString(
-            form.countryCode,
-          ).toUpperCase() || "RW",
-        currencyCode:
-          cleanString(
-            form.currencyCode,
-          ).toUpperCase() || "RWF",
-        timezone:
-          cleanString(form.timezone) ||
-          "Africa/Kigali",
       };
 
       const data =
@@ -700,39 +728,32 @@ export default function SettingsGeneral() {
         />
 
         <div className="svx-general-grid is-three">
-          <Field
+          <InfoField
             label="Country"
-            value={form.countryCode}
-            disabled={isReadOnly || saving}
-            onChange={(value) =>
-              setField(
-                "countryCode",
-                value.toUpperCase(),
-              )
-            }
+            value={countryLabel(
+              form.countryCode,
+            )}
           />
 
-          <Field
+          <InfoField
             label="Currency"
-            value={form.currencyCode}
-            disabled={isReadOnly || saving}
-            onChange={(value) =>
-              setField(
-                "currencyCode",
-                value.toUpperCase(),
-              )
-            }
+            value={regionalValue(
+              form.currencyCode,
+            )}
           />
 
-          <Field
-            label="Timezone"
-            value={form.timezone}
-            disabled={isReadOnly || saving}
-            onChange={(value) =>
-              setField("timezone", value)
-            }
+          <InfoField
+            label="Time zone"
+            value={regionalValue(
+              form.timezone,
+            )}
           />
         </div>
+
+        <p className="svx-general-regional-note">
+          These are set from your business country so
+          money and dates stay consistent.
+        </p>
       </section>
 
       {dirty && !isReadOnly ? (

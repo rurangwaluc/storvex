@@ -276,6 +276,42 @@
   overflow-wrap: anywhere;
 }
 
+.svx-general-info-field {
+  min-width: 0;
+}
+
+.svx-general-info-field > span {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--settings-text);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.svx-general-info-field > strong {
+  display: flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  border: 1px solid var(--settings-border);
+  border-radius: 10px;
+  background: var(--settings-panel);
+  color: var(--settings-text);
+  padding: 0 13px;
+  font-size: 14px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.svx-general-regional-note {
+  margin: 12px 0 0;
+  color: var(--settings-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
 .svx-general-savebar {
   position: sticky;
   bottom: max(
