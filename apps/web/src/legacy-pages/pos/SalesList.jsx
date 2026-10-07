@@ -482,9 +482,6 @@ export default function SalesList() {
 
     function handleStorage(event) {
       if (
-        event.key === "activeBranchId" ||
-        event.key ===
-          "storvex_activeBranchId" ||
         event.key ===
           "storvex_active_branch_id" ||
         event.key ===
