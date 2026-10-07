@@ -6,6 +6,9 @@ import { createPortal } from "react-dom";
 import { jwtDecode } from "jwt-decode";
 import toast from "react-hot-toast";
 
+import useTenantDateTime from "../../hooks/useTenantDateTime";
+import useTenantMoney from "../../hooks/useTenantMoney";
+
 import {
   archiveRepair,
   assignTechnician,
@@ -138,28 +141,6 @@ function getCurrentRole() {
   } catch {
     return null;
   }
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatMoney(value) {
-  const amount = Number(value || 0);
-  const safeAmount = Number.isFinite(amount) ? amount : 0;
-
-  return `Rwf ${safeAmount.toLocaleString("en-US", {
-    maximumFractionDigits: 0,
-  })}`;
 }
 
 function approvalLabel(value) {
@@ -685,6 +666,9 @@ function RepairTable({
   assignBusy,
   onOpenActions,
 }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   return (
     <div className="svx-repair-table-wrap">
       <table className="svx-repair-table">
@@ -821,6 +805,9 @@ function RepairRow({
   assignBusy,
   onOpenActions,
 }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   return (
     <article className={cx(pageCard(), "svx-repair-row p-4 sm:p-5")}>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_240px]">
