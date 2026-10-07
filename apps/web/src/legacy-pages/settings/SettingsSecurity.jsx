@@ -163,7 +163,7 @@ function LoadMorePanel({ visible, total, onLoadMore, label }) {
         <strong>
           Showing {visible} of {total}
         </strong>
-        <p>Load more only when you need deeper review.</p>
+        <p>Show more only when you need older records.</p>
       </div>
       <button type="button" onClick={onLoadMore} className={securityButton("secondary")}>
         Load {nextCount} more {label}
@@ -516,7 +516,7 @@ export default function SettingsSecurity() {
         <SectionHeader
           eyebrow="Security"
           title="Login & security"
-          subtitle="Protect owner access, review active devices, and change the password without turning security into a technical report."
+          subtitle="Protect account access, review signed-in devices, and update your password."
           action={
             <div className="svx-security-hero-actions">
               <Pill tone={posture.tone}>{posture.label}</Pill>
@@ -543,7 +543,7 @@ export default function SettingsSecurity() {
           <MetricCard
             label="Recent sign-ins"
             value={String(recentLoginsCount)}
-            note="Latest account access records"
+            note="Recent successful and unsuccessful sign-ins"
             tone="info"
           />
           <MetricCard
@@ -566,7 +566,7 @@ export default function SettingsSecurity() {
           <SectionHeader
             eyebrow="Password"
             title="Change password"
-            subtitle="Use this when access feels risky, a staff device was lost, or the owner password needs rotation."
+            subtitle="Change your password if it may be known by someone else or a device has been lost."
             compact
           />
 
@@ -636,7 +636,7 @@ export default function SettingsSecurity() {
         <SectionHeader
           eyebrow="Devices"
           title="Signed-in devices"
-          subtitle="Start with the current device. Load more only when the owner needs a deeper security review."
+          subtitle="Review the devices currently signed in to this account."
           action={
             <div className="svx-security-device-actions">
               <AsyncButton
@@ -650,7 +650,7 @@ export default function SettingsSecurity() {
                 Sign out other devices
               </AsyncButton>
               <Link to="/app/settings/audit" className={securityButton("primary")}>
-                Open audit logs
+                View activity
               </Link>
             </div>
           }
@@ -688,10 +688,10 @@ export default function SettingsSecurity() {
         <SectionHeader
           eyebrow="Recent access"
           title="Sign-in activity"
-          subtitle="A short security feed for owners. Open audit logs when a full operational investigation is needed."
+          subtitle="Recent successful, failed, and blocked sign-in attempts."
           action={
             <Link to="/app/settings/audit" className={securityButton("secondary")}>
-              Full audit logs
+              View all activity
             </Link>
           }
         />

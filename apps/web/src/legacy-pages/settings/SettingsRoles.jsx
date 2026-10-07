@@ -100,7 +100,7 @@ function roleDescription(role) {
     return "Repair jobs and technical customer support access.";
   }
 
-  return "Role permissions are controlled by the backend policy.";
+  return "This role uses Storvex's standard access rules.";
 }
 
 function groupForPermission(permission) {
@@ -361,7 +361,7 @@ function RoleOverview({ role, permissions, areaRows }) {
       </div>
 
       <div className="svx-roles-metrics-grid">
-        <SummaryCard label="Allowed actions" value={total} note="Backend policy access points" tone="success" />
+        <SummaryCard label="Allowed actions" value={total} note="Actions available to this role" tone="success" />
         <SummaryCard label="Sensitive" value={sensitive} note="Needs owner awareness" tone={sensitive > 0 ? "warning" : "neutral"} />
         <SummaryCard label="Can change data" value={writes} note="Creates or updates records" tone={writes > 0 ? "info" : "neutral"} />
         <SummaryCard label="Store areas" value={areaRows.length} note="Business areas unlocked" tone="primary" />
@@ -376,7 +376,7 @@ function AccessTable({ role, areaRows }) {
       <div className="svx-roles-card-head">
         <SectionHeading
           eyebrow="Access table"
-          title={`${roleLabel(role)} permissions`}
+          title={`${roleLabel(role)} access`}
           subtitle="A compact business table. Owners see the area, the level of access, and whether the role can change important data."
         />
         <Badge tone="primary">{areaRows.length} areas</Badge>
@@ -403,7 +403,7 @@ function AccessTable({ role, areaRows }) {
               <span>{row.sensitive} sensitive</span>
             </div>
             <div role="cell" data-label="Can do">
-              <p>{row.preview || "Allowed by policy"}</p>
+              <p>{row.preview || "Available to this role"}</p>
             </div>
             <div role="cell" data-label="Risk">
               <Badge tone={riskTone(row.mainRisk)}>{row.mainRisk}</Badge>
@@ -426,12 +426,12 @@ function CompareRoles({ roles, policy, selectedPermission, onSelectPermission, p
       <div className="svx-roles-card-head">
         <SectionHeading
           eyebrow="Compare"
-          title="Compare one permission"
-          subtitle="Use this only when you need to verify one action across roles."
+          title="Compare one action"
+          subtitle="Use this when you need to check which roles can perform a specific action."
         />
 
         <div className="svx-roles-compare-select">
-          <label>Permission</label>
+          <label>Action</label>
           <select className="app-input" value={selectedPermission} onChange={(event) => onSelectPermission(event.target.value)}>
             {permissions.map((permission) => (
               <option key={permission} value={permission}>
@@ -517,7 +517,7 @@ export default function SettingsRoles() {
         console.error(error);
         if (!alive) return;
 
-        toast.error(error?.message || "Failed to load roles policy");
+        toast.error(error?.message || "Could not load access rules");
         setPolicy(null);
       } finally {
         if (alive) setLoading(false);
@@ -618,8 +618,8 @@ export default function SettingsRoles() {
   if (!policy) {
     return (
       <div className={cx(pageCard(), "p-6")}> 
-        <div className={cx("text-lg font-black", strongText())}>Roles & permissions</div>
-        <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>Role policy is not available right now.</p>
+        <div className={cx("text-lg font-black", strongText())}>Roles & access</div>
+        <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>Access rules are not available right now.</p>
       </div>
     );
   }
@@ -630,13 +630,13 @@ export default function SettingsRoles() {
         <div>
           <SectionHeading
             eyebrow="Roles"
-            title="Roles & permissions"
-            subtitle="See what each staff role can do. This page summarizes backend access rules in plain business language."
+            title="Roles & access"
+            subtitle="See what each staff role can view or change across the business."
           />
         </div>
 
         <div className="svx-roles-hero-badges">
-          <Badge tone="success">Policy controlled</Badge>
+          <Badge tone="success">Access protected</Badge>
           {myRole ? <Badge tone="primary">My role: {roleLabel(myRole)}</Badge> : null}
           <Badge tone="neutral">{roleNames.length} roles</Badge>
         </div>

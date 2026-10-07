@@ -488,7 +488,7 @@ function ActivityDetailDrawer({ open, item, loading, onClose }) {
               <section className={cx(softPanel(), "svx-audit-recorded-details")}>
                 <div className={cx("text-sm font-black", strongText())}>Activity summary</div>
                 <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>
-                  Useful store-friendly details about this activity.
+                  Key details recorded for this activity.
                 </p>
 
                 <div className="svx-audit-metadata-grid">
@@ -687,9 +687,9 @@ export default function SettingsAudit() {
         <section className={cx(pageCard(), "svx-audit-filter-card")}>
           <div className="svx-audit-filter-head">
             <div>
-              <div className={sectionEyebrow()}>Audit filters</div>
+              <div className={sectionEyebrow()}>Activity filters</div>
               <h2>Find activity</h2>
-              <p>Filter by user, branch, activity type, or date without showing internal system data.</p>
+              <p>Filter business activity by person, branch, type, or date.</p>
             </div>
 
             <div className="svx-audit-visible-count">
@@ -795,8 +795,8 @@ export default function SettingsAudit() {
           <div className="svx-audit-list-head">
             <div>
               <div className={sectionEyebrow()}>Activity list</div>
-              <h2>Audit log</h2>
-              <p>Compact records showing what happened, where it happened, who did it, and when.</p>
+              <h2>Business activity</h2>
+              <p>See what happened, where it happened, who did it, and when.</p>
             </div>
 
             <Badge tone="primary">{total} visible</Badge>
