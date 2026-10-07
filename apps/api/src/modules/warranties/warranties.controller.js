@@ -1230,7 +1230,7 @@ async function printWarrantyHtml(req, res) {
         total: 0,
         amountPaid: 0,
         balanceDue: 0,
-        currency: "RWF",
+        currency: tenant.currencyCode,
         _itemCount: items.length,
         _itemCountLabel: "Items covered",
       },

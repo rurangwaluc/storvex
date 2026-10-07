@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
+import useTenantDateTime from "../../hooks/useTenantDateTime";
+import useTenantMoney from "../../hooks/useTenantMoney";
 import AsyncButton from "../../components/ui/AsyncButton";
 import { createWarranty } from "../../services/warrantiesApi";
 import { getSale, listSales } from "../../services/posApi";
@@ -18,32 +20,12 @@ function cleanString(value) {
   return text || "";
 }
 
-function formatMoney(value) {
-  const amount = Number(value || 0);
-  const safeAmount = Number.isFinite(amount) ? amount : 0;
-
-  return `RWF ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(safeAmount)}`;
-}
-
 function formatNumber(value) {
   const amount = Number(value || 0);
 
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(Number.isFinite(amount) ? amount : 0);
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleDateString("en-RW", {
-    dateStyle: "medium",
-  });
 }
 
 function todayInputDate() {
@@ -74,7 +56,7 @@ function activeStoreLocationFromStorage() {
   const name = cleanString(localStorage.getItem("activeBranchName"));
   const code = cleanString(localStorage.getItem("activeBranchCode"));
 
-  if (code && name) return `${code} • ${name}`;
+  if (code && name) return `${code} / ${name}`;
   if (name) return name;
   if (code) return code;
 
@@ -156,7 +138,7 @@ function storeLocationLabel(sale) {
   const code = cleanString(location?.code);
   const name = cleanString(location?.name);
 
-  if (code && name) return `${code} • ${name}`;
+  if (code && name) return `${code} / ${name}`;
   if (name) return name;
   if (code) return code;
 
@@ -405,6 +387,9 @@ function InfoTile({ label, value, tone = "neutral", compact = false }) {
 }
 
 function SaleOption({ sale, selected, onClick }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   return (
     <button
       type="button"
@@ -427,11 +412,11 @@ function SaleOption({ sale, selected, onClick }) {
           </div>
 
           <p className="mt-1 truncate text-sm font-semibold text-[var(--doc-muted)]">
-            {customerName(sale)} • {customerPhone(sale)}
+            {customerName(sale)} / {customerPhone(sale)}
           </p>
 
           <p className="mt-1 text-xs font-bold text-[var(--doc-muted)]">
-            {formatDate(sale?.createdAt)} • Staff: {cashierName(sale)}
+            {formatDate(sale?.createdAt)} / Staff: {cashierName(sale)}
           </p>
         </div>
 
@@ -456,6 +441,8 @@ function EmptyState({ title, text }) {
 }
 
 function CoveredItemCard({ item, index, onChange }) {
+  const { formatMoney } = useTenantMoney();
+
   return (
     <article
       className={cx(
@@ -485,7 +472,7 @@ function CoveredItemCard({ item, index, onChange }) {
           </div>
 
           <p className="mt-1 text-xs font-bold text-[var(--doc-muted)]">
-            Qty: {formatNumber(item.quantity || 1)} • Sold for {formatMoney(item.price || 0)}
+            Qty: {formatNumber(item.quantity || 1)} / Sold for {formatMoney(item.price || 0)}
           </p>
 
           {item.checked ? (
@@ -550,6 +537,9 @@ function CoveredItemCard({ item, index, onChange }) {
 }
 
 export default function WarrantyCreate() {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const saleIdFromQuery = cleanString(searchParams.get("saleId"));
@@ -846,7 +836,7 @@ export default function WarrantyCreate() {
           value={selectedSale ? saleReferenceLabel(selectedSale) : "None"}
           note={
             selectedSale
-              ? `${customerName(selectedSale)} • ${customerPhone(selectedSale)}`
+              ? `${customerName(selectedSale)} / ${customerPhone(selectedSale)}`
               : "Choose a sale first"
           }
           tone={selectedSale ? "success" : "warning"}
@@ -939,11 +929,11 @@ export default function WarrantyCreate() {
                     </h3>
 
                     <p className="mt-1 text-sm font-semibold text-[var(--doc-muted)]">
-                      {customerName(selectedSale)} • {customerPhone(selectedSale)}
+                      {customerName(selectedSale)} / {customerPhone(selectedSale)}
                     </p>
 
                     <p className="mt-2 text-xs font-bold text-[var(--doc-muted)]">
-                      {formatDate(selectedSale?.createdAt)} • {formatMoney(selectedSale?.total)} •
+                      {formatDate(selectedSale?.createdAt)} / {formatMoney(selectedSale?.total)} /
                       Staff: {cashierName(selectedSale)}
                     </p>
                   </div>
@@ -1126,7 +1116,7 @@ export default function WarrantyCreate() {
                 label="Customer"
                 value={
                   selectedSale
-                    ? `${customerName(selectedSale)} • ${customerPhone(selectedSale)}`
+                    ? `${customerName(selectedSale)} / ${customerPhone(selectedSale)}`
                     : "—"
                 }
                 compact

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
+import useTenantDateTime from "../../hooks/useTenantDateTime";
+import useTenantMoney from "../../hooks/useTenantMoney";
 import AsyncButton from "../../components/ui/AsyncButton";
 import { listWarranties } from "../../services/warrantiesApi";
 import { handleSubscriptionBlockedError } from "../../utils/subscriptionError";
@@ -17,15 +19,6 @@ function cleanString(value) {
   return text || "";
 }
 
-function formatMoney(value) {
-  const amount = Number(value || 0);
-  const safeAmount = Number.isFinite(amount) ? amount : 0;
-
-  return `RWF ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(safeAmount)}`;
-}
-
 function formatNumber(value) {
   const amount = Number(value || 0);
 
@@ -38,15 +31,6 @@ function safeDate(value) {
   const date = value ? new Date(value) : null;
   if (!date || Number.isNaN(date.getTime())) return null;
   return date;
-}
-
-function formatDate(value) {
-  const date = safeDate(value);
-  if (!date) return "—";
-
-  return date.toLocaleDateString("en-RW", {
-    dateStyle: "medium",
-  });
 }
 
 function daysUntil(value) {
@@ -66,7 +50,7 @@ function activeStoreLocationFromStorage() {
   const name = cleanString(localStorage.getItem("activeBranchName"));
   const code = cleanString(localStorage.getItem("activeBranchCode"));
 
-  if (code && name) return `${code} • ${name}`;
+  if (code && name) return `${code} / ${name}`;
   if (name) return name;
   if (code) return code;
 
@@ -154,7 +138,7 @@ function storeLocationLabel(warranty) {
   const code = cleanString(location?.code);
   const name = cleanString(location?.name);
 
-  if (code && name) return `${code} • ${name}`;
+  if (code && name) return `${code} / ${name}`;
   if (name) return name;
   if (code) return code;
 
@@ -441,6 +425,9 @@ function EmptyState({ title, text, action = null }) {
 }
 
 function WarrantyCard({ warranty }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   const status = warrantyStatus(warranty);
   const units = warrantyUnits(warranty);
   const total = saleTotal(warranty);
@@ -470,7 +457,7 @@ function WarrantyCard({ warranty }) {
             </div>
 
             <p className="mt-2 text-sm font-semibold text-[var(--color-text-muted)]">
-              {customerName(warranty)} • {customerPhone(warranty)}
+              {customerName(warranty)} / {customerPhone(warranty)}
             </p>
 
             <p className="mt-1 text-xs font-bold text-[var(--color-text-muted)]">
@@ -500,7 +487,7 @@ function WarrantyCard({ warranty }) {
           <InfoTile label="Starts" value={formatDate(warranty?.startsAt)} />
           <InfoTile
             label="Ends"
-            value={`${formatDate(warranty?.endsAt)} • ${status.note}`}
+            value={`${formatDate(warranty?.endsAt)} / ${status.note}`}
             tone={status.tone}
           />
           <InfoTile label="Sale value" value={total ? formatMoney(total) : "Not shown"} />
@@ -510,7 +497,7 @@ function WarrantyCard({ warranty }) {
           <InfoTile label="Store location" value={storeLocationLabel(warranty)} />
           <InfoTile
             label="Created by"
-            value={`${createdByName(warranty)} • ${formatDate(warranty?.createdAt)}`}
+            value={`${createdByName(warranty)} / ${formatDate(warranty?.createdAt)}`}
           />
         </div>
 

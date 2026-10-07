@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
+import useTenantDateTime from "../../hooks/useTenantDateTime";
+import useTenantMoney from "../../hooks/useTenantMoney";
 import AsyncButton from "../../components/ui/AsyncButton";
 import { getSale } from "../../services/posApi";
 import { getWarranty, updateWarranty } from "../../services/warrantiesApi";
@@ -16,32 +18,12 @@ function cleanString(value) {
   return text || "";
 }
 
-function formatMoney(value) {
-  const amount = Number(value || 0);
-  const safeAmount = Number.isFinite(amount) ? amount : 0;
-
-  return `RWF ${new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 0,
-  }).format(safeAmount)}`;
-}
-
 function formatNumber(value) {
   const amount = Number(value || 0);
 
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
   }).format(Number.isFinite(amount) ? amount : 0);
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleDateString("en-RW", {
-    dateStyle: "medium",
-  });
 }
 
 function toInputDate(value) {
@@ -77,7 +59,7 @@ function activeStoreLocationFromStorage() {
   const name = cleanString(localStorage.getItem("activeBranchName"));
   const code = cleanString(localStorage.getItem("activeBranchCode"));
 
-  if (code && name) return `${code} • ${name}`;
+  if (code && name) return `${code} / ${name}`;
   if (name) return name;
   if (code) return code;
 
@@ -172,7 +154,7 @@ function storeLocationLabel(sale) {
   const code = cleanString(location?.code);
   const name = cleanString(location?.name);
 
-  if (code && name) return `${code} • ${name}`;
+  if (code && name) return `${code} / ${name}`;
   if (name) return name;
   if (code) return code;
 
@@ -451,6 +433,8 @@ function EmptyState({ title, text }) {
 }
 
 function CoveredItemCard({ item, index, onChange }) {
+  const { formatMoney } = useTenantMoney();
+
   return (
     <article
       className={cx(
@@ -480,7 +464,7 @@ function CoveredItemCard({ item, index, onChange }) {
           </div>
 
           <p className="mt-1 text-xs font-bold text-[var(--color-text-muted)]">
-            Qty: {formatNumber(item.quantity || 1)} • Sold for {formatMoney(item.price || 0)}
+            Qty: {formatNumber(item.quantity || 1)} / Sold for {formatMoney(item.price || 0)}
           </p>
 
           {item.checked ? (
@@ -545,6 +529,9 @@ function CoveredItemCard({ item, index, onChange }) {
 }
 
 export default function WarrantyEdit() {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   const { id } = useParams();
   const navigate = useNavigate();
   const mountedRef = useRef(true);
@@ -830,7 +817,7 @@ export default function WarrantyEdit() {
         <SummaryCard
           label="Sale"
           value={sale ? saleReferenceLabel(sale) : "Missing"}
-          note={sale ? `${customerName(sale)} • ${customerPhone(sale)}` : "Linked sale unavailable"}
+          note={sale ? `${customerName(sale)} / ${customerPhone(sale)}` : "Linked sale unavailable"}
           tone={sale ? "success" : "danger"}
         />
 
@@ -875,11 +862,11 @@ export default function WarrantyEdit() {
                     </h3>
 
                     <p className="mt-1 text-sm font-semibold text-[var(--color-text-muted)]">
-                      {customerName(sale)} • {customerPhone(sale)}
+                      {customerName(sale)} / {customerPhone(sale)}
                     </p>
 
                     <p className="mt-2 text-xs font-bold text-[var(--color-text-muted)]">
-                      {formatDate(sale?.createdAt)} • {formatMoney(sale?.total)} • Staff:{" "}
+                      {formatDate(sale?.createdAt)} / {formatMoney(sale?.total)} / Staff:{" "}
                       {cashierName(sale)}
                     </p>
                   </div>
@@ -1063,7 +1050,7 @@ export default function WarrantyEdit() {
 
               <InfoTile
                 label="Customer"
-                value={sale ? `${customerName(sale)} • ${customerPhone(sale)}` : "—"}
+                value={sale ? `${customerName(sale)} / ${customerPhone(sale)}` : "—"}
               />
 
               <InfoTile label="Covered products" value={formatNumber(totalCoveredItems)} />
