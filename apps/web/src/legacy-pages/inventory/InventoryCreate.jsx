@@ -189,8 +189,7 @@ export default function InventoryCreate() {
     function handleStorage(event) {
       if (
         event.key === WORKSPACE_CACHE_KEY ||
-        event.key === "activeBranchId" ||
-        event.key === "storvex_activeBranchId"
+        event.key === "storvex_active_branch_id"
       ) {
         refreshWorkspaceFromCache();
       }

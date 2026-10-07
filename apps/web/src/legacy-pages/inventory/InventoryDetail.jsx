@@ -1086,8 +1086,6 @@ export default function InventoryDetail() {
 
     function handleStorage(event) {
       if (
-        event.key === "activeBranchId" ||
-        event.key === "storvex_activeBranchId" ||
         event.key === "storvex_active_branch_id" ||
         event.key === "storvex_me_cache_v2"
       ) {
