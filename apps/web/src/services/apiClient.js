@@ -35,8 +35,10 @@ export const API_BASE_URL = normalizeApiBaseUrl(
   developmentApiBaseUrl || DEFAULT_API_BASE_URL,
 );
 
-const ACTIVE_BRANCH_KEYS = [
-  "storvex_active_branch_id",
+const ACTIVE_BRANCH_KEY = "storvex_active_branch_id";
+
+const LEGACY_ACTIVE_BRANCH_KEYS = [
+  "storvex_activeBranchId",
   "activeBranchId",
   "branchId",
 ];
@@ -164,9 +166,19 @@ function readBranchIdFromMeCache() {
 }
 
 export function getActiveBranchId() {
-  for (const key of ACTIVE_BRANCH_KEYS) {
+  const canonical = readStorageValue(ACTIVE_BRANCH_KEY);
+
+  if (canonical) {
+    return canonical;
+  }
+
+  for (const key of LEGACY_ACTIVE_BRANCH_KEYS) {
     const value = readStorageValue(key);
-    if (value) return value;
+
+    if (!value) continue;
+
+    setActiveBranchId(value);
+    return value;
   }
 
   return readBranchIdFromMeCache();
@@ -180,12 +192,21 @@ export function setActiveBranchId(branchId) {
     return;
   }
 
-  localStorage.setItem("storvex_active_branch_id", cleanBranchId);
-  localStorage.setItem("activeBranchId", cleanBranchId);
+  localStorage.setItem(ACTIVE_BRANCH_KEY, cleanBranchId);
+
+  for (const key of LEGACY_ACTIVE_BRANCH_KEYS) {
+    localStorage.removeItem(key);
+    sessionStorage.removeItem(key);
+  }
 }
 
 export function clearActiveBranchId() {
-  for (const key of ACTIVE_BRANCH_KEYS) {
+  const keys = [
+    ACTIVE_BRANCH_KEY,
+    ...LEGACY_ACTIVE_BRANCH_KEYS,
+  ];
+
+  for (const key of keys) {
     localStorage.removeItem(key);
     sessionStorage.removeItem(key);
   }

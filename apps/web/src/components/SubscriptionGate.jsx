@@ -12,7 +12,6 @@ import {
 } from "../lib/internalWorkspaceQuery";
 
 const CACHE_KEY = "storvex_me_cache_v2";
-const ACTIVE_BRANCH_KEY = "storvex_active_branch_id";
 
 function cleanString(value) {
   const s = String(value || "").trim();
@@ -134,7 +133,6 @@ function persistWorkspace(data) {
 
     if (activeBranch?.name) localStorage.setItem("activeBranchName", activeBranch.name);
     if (activeBranch?.code) localStorage.setItem("activeBranchCode", activeBranch.code);
-    if (activeBranchId) localStorage.setItem(ACTIVE_BRANCH_KEY, activeBranchId);
 
     const district = cleanString(activeBranch?.district || tenant?.district);
     const sector = cleanString(activeBranch?.sector || tenant?.sector);

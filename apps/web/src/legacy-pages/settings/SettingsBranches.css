@@ -99,7 +99,8 @@
 .svx-branch-row-actions button,
 .svx-branch-drawer-close,
 .svx-branch-primary-action,
-.svx-branch-secondary-action {
+.svx-branch-secondary-action,
+.svx-branch-danger-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -128,8 +129,36 @@
   box-shadow: var(--shadow-soft);
 }
 
-.svx-branch-secondary-action {
+.svx-branch-secondary-action,
+.svx-branch-danger-action {
   min-height: 42px;
+}
+
+.svx-branch-danger-action {
+  border: 1px solid
+    color-mix(in srgb, #dc2626 42%, var(--color-border));
+  background: color-mix(
+    in srgb,
+    #dc2626 8%,
+    var(--color-card)
+  );
+  color: #dc2626;
+}
+
+.svx-branch-danger-action:hover {
+  border-color: #dc2626;
+  background: color-mix(
+    in srgb,
+    #dc2626 13%,
+    var(--color-card)
+  );
+}
+
+.svx-branch-primary-action:disabled,
+.svx-branch-secondary-action:disabled,
+.svx-branch-danger-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .svx-branch-row-actions button:hover,
@@ -254,6 +283,7 @@
 
 .svx-branch-drawer-footer {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-end;
   border-top: 1px solid var(--color-border);
@@ -315,6 +345,36 @@
 
 .svx-branch-drawer-section h4 {
   margin: 0 0 12px;
+}
+
+.svx-branch-drawer-note,
+.svx-branch-archive-confirm p,
+.svx-branch-capacity-note p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.6;
+}
+
+.svx-branch-archive-confirm {
+  border-color: color-mix(
+    in srgb,
+    #dc2626 28%,
+    var(--color-border)
+  );
+}
+
+.svx-branch-archive-confirm h4 {
+  color: #dc2626;
+}
+
+.svx-branch-capacity-note {
+  border-color: color-mix(
+    in srgb,
+    #d97706 28%,
+    var(--color-border)
+  );
 }
 
 .svx-branch-drawer-form {

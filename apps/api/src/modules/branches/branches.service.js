@@ -1,6 +1,11 @@
 // backend/src/modules/branches/branches.service.js
 const prisma = require("../../config/database");
-const { normalizePhone: normalizeMarketPhone } = require("../../lib/phone/marketPhone");
+const {
+  requireMarket,
+} = require("../../config/markets");
+const {
+  normalizePhone: normalizeMarketPhone,
+} = require("../../lib/phone/marketPhone");
 
 const STORE_ROLES = new Set([
   "OWNER",
@@ -24,7 +29,7 @@ function normalizeUpper(value) {
 }
 
 function authoritativeBranchCountry(tenantCountryCode) {
-  return normalizeUpper(tenantCountryCode) || "RW";
+  return requireMarket(tenantCountryCode).countryCode;
 }
 
 function normalizeBranchCode(value) {
@@ -54,11 +59,24 @@ function normalizeOptionalEmail(value) {
   return s ? s.toLowerCase() : null;
 }
 
-function normalizeOptionalPhone(value, countryCode = "RW") {
+function normalizeOptionalPhone(value, countryCode) {
   const raw = String(value || "").trim();
   if (!raw) return null;
 
-  return normalizeMarketPhone({ countryCode, input: raw });
+  const market = requireMarket(countryCode);
+  const hasReviewedPhoneRules =
+    Number.isInteger(market.phone?.nationalLength) &&
+    Array.isArray(market.phone?.nationalPrefixes) &&
+    market.phone.nationalPrefixes.length > 0;
+
+  if (!hasReviewedPhoneRules) {
+    return raw;
+  }
+
+  return normalizeMarketPhone({
+    countryCode: market.countryCode,
+    input: raw,
+  });
 }
 
 function toPositiveIntOrNull(value) {
@@ -137,7 +155,7 @@ function formatBranch(branch) {
     status: branch.status,
     phone: branch.phone || null,
     email: branch.email || null,
-    countryCode: branch.countryCode || "RW",
+    countryCode: branch.countryCode || null,
     district: branch.district || null,
     sector: branch.sector || null,
     address: branch.address || null,
@@ -353,7 +371,7 @@ async function getTenantBranchUsage(tenantId) {
       name: tenant.name,
       status: tenant.status,
       mainBranchId: tenant.mainBranchId || null,
-      countryCode: tenant.countryCode || "RW",
+      countryCode: tenant.countryCode || null,
     },
     subscription: {
       id: subscription.id,
@@ -723,7 +741,6 @@ async function createBranch({
   code,
   phone,
   email,
-  countryCode,
   district,
   sector,
   address,
@@ -818,7 +835,6 @@ async function updateBranch({
   code,
   phone,
   email,
-  countryCode,
   district,
   sector,
   address,

@@ -90,7 +90,6 @@ async function createBranchHandler(req, res) {
       code,
       phone,
       email,
-      countryCode,
       district,
       sector,
       address,
@@ -112,7 +111,6 @@ async function createBranchHandler(req, res) {
       code,
       phone,
       email,
-      countryCode,
       district,
       sector,
       address,
@@ -141,12 +139,18 @@ async function updateBranchHandler(req, res) {
       return res.status(400).json({ message: "Location is required" });
     }
 
+    const changes = {
+      ...(req.body || {}),
+    };
+
+    delete changes.countryCode;
+
     const result = await updateBranch({
       tenantId,
       actorUserId,
       actorRole,
       branchId,
-      ...req.body,
+      ...changes,
     });
 
     return res.json({

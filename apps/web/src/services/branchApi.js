@@ -20,7 +20,6 @@ function normalizeBranchPayload(payload = {}) {
     code: cleanString(payload.code),
     phone: cleanString(payload.phone) || null,
     email: cleanString(payload.email) || null,
-    countryCode: cleanString(payload.countryCode) || "RW",
     district: cleanString(payload.district) || null,
     sector: cleanString(payload.sector) || null,
     address: cleanString(payload.address) || null,
@@ -34,7 +33,6 @@ function normalizeBranchUpdatePayload(payload = {}) {
   if ("code" in payload) body.code = cleanString(payload.code);
   if ("phone" in payload) body.phone = cleanString(payload.phone) || null;
   if ("email" in payload) body.email = cleanString(payload.email) || null;
-  if ("countryCode" in payload) body.countryCode = cleanString(payload.countryCode) || "RW";
   if ("district" in payload) body.district = cleanString(payload.district) || null;
   if ("sector" in payload) body.sector = cleanString(payload.sector) || null;
   if ("address" in payload) body.address = cleanString(payload.address) || null;

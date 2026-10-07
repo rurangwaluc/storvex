@@ -4,8 +4,15 @@ import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
-import { createBranch, listBranches } from "../../services/branchApi";
-import apiClient from "../../services/apiClient";
+import {
+  archiveBranch,
+  createBranch,
+  listBranches,
+  reactivateBranch,
+  setMainBranch,
+  updateBranch,
+} from "../../services/branchApi";
+import { getUserRole } from "../../utils/role";
 import "./Settings.css";
 import "./SettingsBranches.css";
 
@@ -14,7 +21,6 @@ const EMPTY_FORM = {
   code: "",
   phone: "",
   email: "",
-  countryCode: "RW",
   district: "",
   sector: "",
   address: "",
@@ -26,6 +32,21 @@ function cx(...items) {
 
 function cleanString(value) {
   return String(value || "").trim();
+}
+
+function planLabel(value) {
+  const raw = cleanString(value);
+  if (!raw) return "";
+
+  const normalized = raw
+    .replace(/^LAUNCH_/i, "")
+    .replace(/_/g, " ")
+    .toLowerCase();
+
+  return normalized.replace(
+    /\b\w/g,
+    (letter) => letter.toUpperCase(),
+  );
 }
 
 function pageCard() {
@@ -190,7 +211,6 @@ function formFromBranch(branch) {
     code: branch?.code || "",
     phone: branch?.phone || "",
     email: branch?.email || "",
-    countryCode: branch?.countryCode || "RW",
     district: branch?.district || "",
     sector: branch?.sector || "",
     address: branch?.address || "",
@@ -203,20 +223,25 @@ function payloadFromForm(form) {
     code: normalizeBranchCode(form.code),
     phone: cleanString(form.phone) || undefined,
     email: cleanString(form.email) || undefined,
-    countryCode: cleanString(form.countryCode) || "RW",
     district: cleanString(form.district) || undefined,
     sector: cleanString(form.sector) || undefined,
     address: cleanString(form.address) || undefined,
   };
 }
 
-async function updateBranchRequest(branchId, payload) {
-  const { data } = await apiClient.patch(`/branches/${branchId}`, payload);
-  return data;
-}
-
-function BranchRow({ branch, onView, onEdit }) {
+function BranchRow({
+  branch,
+  onView,
+  onEdit,
+  canManage,
+}) {
   const location = branchLocation(branch);
+  const status = String(
+    branch?.status || "",
+  ).toUpperCase();
+
+  const canEdit =
+    canManage && status !== "ARCHIVED";
 
   return (
     <article className="svx-branch-row">
@@ -250,9 +275,14 @@ function BranchRow({ branch, onView, onEdit }) {
         <button type="button" onClick={() => onView(branch)}>
           View
         </button>
-        <button type="button" onClick={() => onEdit(branch)}>
-          Edit
-        </button>
+        {canEdit ? (
+          <button
+            type="button"
+            onClick={() => onEdit(branch)}
+          >
+            Edit
+          </button>
+        ) : null}
       </div>
     </article>
   );
@@ -321,23 +351,159 @@ function DrawerShell({ open, title, eyebrow, subtitle, onClose, children, footer
   );
 }
 
-function BranchDetailsDrawer({ branch, open, onClose, onEdit }) {
+function BranchDetailsDrawer({
+  branch,
+  open,
+  onClose,
+  onEdit,
+  onSetMain,
+  onArchive,
+  onReactivate,
+  canManage,
+  canReactivate,
+  action,
+}) {
+  const [confirmArchive, setConfirmArchive] =
+    useState(false);
+
+  useEffect(() => {
+    setConfirmArchive(false);
+  }, [branch?.id, open]);
+
   if (!branch) return null;
 
   const location = branchLocation(branch);
+  const status = String(
+    branch?.status || "",
+  ).toUpperCase();
+
+  const isActive = status === "ACTIVE";
+  const isArchived = status === "ARCHIVED";
+  const isBusy = Boolean(action);
+
+  const showEdit =
+    canManage && !isArchived;
+
+  const showSetMain =
+    canManage &&
+    isActive &&
+    !branch?.isMain;
+
+  const showArchive =
+    canManage &&
+    !branch?.isMain &&
+    !isArchived;
+
+  const showReactivate =
+    canManage &&
+    !isActive;
+
+  let footer = null;
+
+  if (canManage) {
+    if (confirmArchive) {
+      footer = (
+        <>
+          <button
+            type="button"
+            className="svx-branch-secondary-action"
+            disabled={isBusy}
+            onClick={() =>
+              setConfirmArchive(false)
+            }
+          >
+            Keep branch
+          </button>
+
+          <button
+            type="button"
+            className="svx-branch-danger-action"
+            disabled={isBusy}
+            onClick={() => onArchive(branch)}
+          >
+            {action === "archive"
+              ? "Archiving..."
+              : "Archive branch"}
+          </button>
+        </>
+      );
+    } else {
+      footer = (
+        <>
+          {showArchive ? (
+            <button
+              type="button"
+              className="svx-branch-danger-action"
+              disabled={isBusy}
+              onClick={() =>
+                setConfirmArchive(true)
+              }
+            >
+              Archive
+            </button>
+          ) : null}
+
+          {showSetMain ? (
+            <button
+              type="button"
+              className="svx-branch-secondary-action"
+              disabled={isBusy}
+              onClick={() =>
+                onSetMain(branch)
+              }
+            >
+              {action === "main"
+                ? "Updating..."
+                : "Set as main"}
+            </button>
+          ) : null}
+
+          {showReactivate ? (
+            <button
+              type="button"
+              className="svx-branch-primary-action"
+              disabled={
+                isBusy || !canReactivate
+              }
+              onClick={() =>
+                onReactivate(branch)
+              }
+            >
+              {action === "reactivate"
+                ? "Reactivating..."
+                : "Reactivate"}
+            </button>
+          ) : null}
+
+          {showEdit ? (
+            <button
+              type="button"
+              className="svx-branch-primary-action"
+              disabled={isBusy}
+              onClick={() =>
+                onEdit(branch)
+              }
+            >
+              Edit branch
+            </button>
+          ) : null}
+        </>
+      );
+    }
+  }
 
   return (
     <DrawerShell
       open={open}
-      onClose={onClose}
+      onClose={isBusy ? undefined : onClose}
       eyebrow="Branch details"
       title={branch.name || "Branch"}
-      subtitle="Review contact and location details before changing the branch."
-      footer={
-        <button type="button" className="svx-branch-primary-action" onClick={() => onEdit(branch)}>
-          Edit branch
-        </button>
+      subtitle={
+        canManage
+          ? "Review this branch and manage how it is used across the business."
+          : "Review this branch and its business details."
       }
+      footer={footer}
     >
       <div className="svx-branch-drawer-profile">
         <div className="svx-branch-code-mark">{String(branch?.code || "BR").slice(0, 2)}</div>
@@ -365,7 +531,10 @@ function BranchDetailsDrawer({ branch, open, onClose, onEdit }) {
 
       <section className="svx-branch-drawer-section">
         <h4>Location</h4>
-        <DetailLine label="Country" value={branch?.countryCode || "RW"} />
+        <DetailLine
+          label="Country"
+          value={branch?.countryCode || "Not configured"}
+        />
         <DetailLine label="District" value={branch?.district} />
         <DetailLine label="Sector" value={branch?.sector} />
         <DetailLine label="Address" value={branch?.address} />
@@ -374,9 +543,48 @@ function BranchDetailsDrawer({ branch, open, onClose, onEdit }) {
 
       <section className="svx-branch-drawer-section">
         <h4>Record</h4>
-        <DetailLine label="Created" value={formatDate(branch?.createdAt)} />
-        <DetailLine label="Updated" value={formatDate(branch?.updatedAt)} />
+        <DetailLine
+          label="Created"
+          value={formatDate(branch?.createdAt)}
+        />
+        <DetailLine
+          label="Updated"
+          value={formatDate(branch?.updatedAt)}
+        />
       </section>
+
+      {confirmArchive ? (
+        <section className="svx-branch-drawer-section svx-branch-archive-confirm">
+          <h4>Archive this branch?</h4>
+          <p>
+            This removes staff access to this branch
+            and takes it out of active operations.
+            You can reactivate it later if your plan
+            has branch capacity.
+          </p>
+        </section>
+      ) : null}
+
+      {showReactivate && !canReactivate ? (
+        <section className="svx-branch-drawer-section svx-branch-capacity-note">
+          <h4>Branch limit reached</h4>
+          <p>
+            Your current plan has no free branch
+            capacity. Add capacity before
+            reactivating this branch.
+          </p>
+        </section>
+      ) : null}
+
+      {!canManage ? (
+        <section className="svx-branch-drawer-section">
+          <h4>View only</h4>
+          <p className="svx-branch-drawer-note">
+            Branch changes are managed by the
+            business owner.
+          </p>
+        </section>
+      ) : null}
     </DrawerShell>
   );
 }
@@ -429,18 +637,18 @@ function BranchCreateDrawer({ open, form, setForm, saving, canCreate, usage, onC
         <div className="svx-branch-form-grid grid gap-4 sm:grid-cols-2">
           <div>
             <label className={fieldLabel()}>Branch name</label>
-            <input className={inputClass()} value={form.name} disabled={disabled} onChange={(event) => setField("name", event.target.value)} placeholder="Example: Kigali Downtown Branch" required />
+            <input className={inputClass()} value={form.name} disabled={disabled} onChange={(event) => setField("name", event.target.value)} placeholder="Example: Downtown branch" required />
           </div>
 
           <div>
             <label className={fieldLabel()}>Branch code</label>
             <input className={inputClass()} value={form.code} disabled={disabled} onChange={(event) => setField("code", normalizeBranchCode(event.target.value))} placeholder="Example: DOWNTOWN" required />
-            <p className={fieldHelp()}>Use a short owner-friendly code. Example: MAIN, KACYIRU, CBD.</p>
+            <p className={fieldHelp()}>Use a short owner-friendly code. Example: MAIN, CBD, WEST.</p>
           </div>
 
           <div>
             <label className={fieldLabel()}>Phone</label>
-            <input className={inputClass()} value={form.phone} disabled={disabled} onChange={(event) => setField("phone", event.target.value)} placeholder="2507XXXXXXXX" />
+            <input className={inputClass()} value={form.phone} disabled={disabled} onChange={(event) => setField("phone", event.target.value)} placeholder="Phone number" />
           </div>
 
           <div>
@@ -449,23 +657,18 @@ function BranchCreateDrawer({ open, form, setForm, saving, canCreate, usage, onC
           </div>
 
           <div>
-            <label className={fieldLabel()}>Country code</label>
-            <input className={inputClass()} value={form.countryCode} disabled={disabled} onChange={(event) => setField("countryCode", event.target.value.toUpperCase())} placeholder="RW" />
-          </div>
-
-          <div>
             <label className={fieldLabel()}>District</label>
-            <input className={inputClass()} value={form.district} disabled={disabled} onChange={(event) => setField("district", event.target.value)} placeholder="Example: Nyarugenge" />
+            <input className={inputClass()} value={form.district} disabled={disabled} onChange={(event) => setField("district", event.target.value)} placeholder="Example: Central" />
           </div>
 
           <div>
             <label className={fieldLabel()}>Sector</label>
-            <input className={inputClass()} value={form.sector} disabled={disabled} onChange={(event) => setField("sector", event.target.value)} placeholder="Example: Nyarugenge" />
+            <input className={inputClass()} value={form.sector} disabled={disabled} onChange={(event) => setField("sector", event.target.value)} placeholder="Example: Central" />
           </div>
 
           <div>
             <label className={fieldLabel()}>Address</label>
-            <input className={inputClass()} value={form.address} disabled={disabled} onChange={(event) => setField("address", event.target.value)} placeholder="Example: Kigali, TCB" />
+            <input className={inputClass()} value={form.address} disabled={disabled} onChange={(event) => setField("address", event.target.value)} placeholder="Street, building or landmark" />
           </div>
         </div>
       </form>
@@ -520,7 +723,7 @@ function BranchEditDrawer({ branch, open, form, setForm, saving, onClose, onSubm
 
           <div>
             <label className={fieldLabel()}>Phone</label>
-            <input className={inputClass()} value={form.phone} disabled={saving} onChange={(event) => setField("phone", event.target.value)} placeholder="2507XXXXXXXX" />
+            <input className={inputClass()} value={form.phone} disabled={saving} onChange={(event) => setField("phone", event.target.value)} placeholder="Phone number" />
           </div>
 
           <div>
@@ -529,23 +732,18 @@ function BranchEditDrawer({ branch, open, form, setForm, saving, onClose, onSubm
           </div>
 
           <div>
-            <label className={fieldLabel()}>Country code</label>
-            <input className={inputClass()} value={form.countryCode} disabled={saving} onChange={(event) => setField("countryCode", event.target.value.toUpperCase())} placeholder="RW" />
-          </div>
-
-          <div>
             <label className={fieldLabel()}>District</label>
-            <input className={inputClass()} value={form.district} disabled={saving} onChange={(event) => setField("district", event.target.value)} placeholder="Example: Nyarugenge" />
+            <input className={inputClass()} value={form.district} disabled={saving} onChange={(event) => setField("district", event.target.value)} placeholder="Example: Central" />
           </div>
 
           <div>
             <label className={fieldLabel()}>Sector</label>
-            <input className={inputClass()} value={form.sector} disabled={saving} onChange={(event) => setField("sector", event.target.value)} placeholder="Example: Nyarugenge" />
+            <input className={inputClass()} value={form.sector} disabled={saving} onChange={(event) => setField("sector", event.target.value)} placeholder="Example: Central" />
           </div>
 
           <div>
             <label className={fieldLabel()}>Address</label>
-            <input className={inputClass()} value={form.address} disabled={saving} onChange={(event) => setField("address", event.target.value)} placeholder="Example: Kigali, TCB" />
+            <input className={inputClass()} value={form.address} disabled={saving} onChange={(event) => setField("address", event.target.value)} placeholder="Street, building or landmark" />
           </div>
         </div>
       </form>
@@ -586,7 +784,7 @@ function BranchForm({ form, setForm, saving, canCreate, usage, onSubmit }) {
             value={form.name}
             disabled={!canCreate || saving || atLimit}
             onChange={(event) => setField("name", event.target.value)}
-            placeholder="Example: Kigali Downtown Branch"
+            placeholder="Example: Downtown branch"
             required
           />
         </div>
@@ -601,7 +799,7 @@ function BranchForm({ form, setForm, saving, canCreate, usage, onSubmit }) {
             placeholder="Example: DOWNTOWN"
             required
           />
-          <p className={fieldHelp()}>Use a short owner-friendly code. Example: MAIN, KACYIRU, CBD.</p>
+          <p className={fieldHelp()}>Use a short owner-friendly code. Example: MAIN, CBD, WEST.</p>
         </div>
 
         <div>
@@ -611,7 +809,7 @@ function BranchForm({ form, setForm, saving, canCreate, usage, onSubmit }) {
             value={form.phone}
             disabled={!canCreate || saving || atLimit}
             onChange={(event) => setField("phone", event.target.value)}
-            placeholder="2507XXXXXXXX"
+            placeholder="Phone number"
           />
         </div>
 
@@ -628,24 +826,13 @@ function BranchForm({ form, setForm, saving, canCreate, usage, onSubmit }) {
         </div>
 
         <div>
-          <label className={fieldLabel()}>Country code</label>
-          <input
-            className={inputClass()}
-            value={form.countryCode}
-            disabled={!canCreate || saving || atLimit}
-            onChange={(event) => setField("countryCode", event.target.value.toUpperCase())}
-            placeholder="RW"
-          />
-        </div>
-
-        <div>
           <label className={fieldLabel()}>District</label>
           <input
             className={inputClass()}
             value={form.district}
             disabled={!canCreate || saving || atLimit}
             onChange={(event) => setField("district", event.target.value)}
-            placeholder="Example: Nyarugenge"
+            placeholder="Example: Central"
           />
         </div>
 
@@ -656,7 +843,7 @@ function BranchForm({ form, setForm, saving, canCreate, usage, onSubmit }) {
             value={form.sector}
             disabled={!canCreate || saving || atLimit}
             onChange={(event) => setField("sector", event.target.value)}
-            placeholder="Example: Nyarugenge"
+            placeholder="Example: Central"
           />
         </div>
 
@@ -667,7 +854,7 @@ function BranchForm({ form, setForm, saving, canCreate, usage, onSubmit }) {
             value={form.address}
             disabled={!canCreate || saving || atLimit}
             onChange={(event) => setField("address", event.target.value)}
-            placeholder="Example: Kigali, TCB"
+            placeholder="Street, building or landmark"
           />
         </div>
       </div>
@@ -695,6 +882,9 @@ function BranchForm({ form, setForm, saving, canCreate, usage, onSubmit }) {
 }
 
 export default function SettingsBranches() {
+  const role = getUserRole();
+  const canManage = role === "OWNER";
+
   const [branches, setBranches] = useState([]);
   const [usage, setUsage] = useState(null);
   const [tenant, setTenant] = useState(null);
@@ -709,6 +899,8 @@ export default function SettingsBranches() {
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
   const [editSaving, setEditSaving] = useState(false);
+  const [branchAction, setBranchAction] =
+    useState(null);
 
   async function load({ quiet = false } = {}) {
     if (quiet) setRefreshing(true);
@@ -754,10 +946,18 @@ export default function SettingsBranches() {
       ? "Unlimited"
       : String(usage.effectiveBranchLimit);
 
-  const canCreate = usage?.canAddBranch !== false;
+  const hasBranchCapacity =
+    usage?.canAddBranch !== false;
+
+  const canCreate =
+    canManage && hasBranchCapacity;
+
+  const canReactivate =
+    hasBranchCapacity;
 
 
   function openCreate() {
+    if (!canManage) return;
     setViewingBranch(null);
     setEditingBranch(null);
     setForm(EMPTY_FORM);
@@ -770,13 +970,26 @@ export default function SettingsBranches() {
   }
 
   function openEdit(branch) {
+    if (!canManage) return;
+
+    if (
+      String(
+        branch?.status || "",
+      ).toUpperCase() === "ARCHIVED"
+    ) {
+      toast.error(
+        "Reactivate this branch before editing it.",
+      );
+      return;
+    }
+
     setViewingBranch(null);
     setEditingBranch(branch);
     setEditForm(formFromBranch(branch));
   }
 
   function closeBranchDrawers() {
-    if (editSaving) return;
+    if (editSaving || branchAction) return;
     setViewingBranch(null);
     setEditingBranch(null);
     setShowCreateDrawer(false);
@@ -786,6 +999,13 @@ export default function SettingsBranches() {
 
   async function submitEdit(event) {
     event.preventDefault();
+
+    if (!canManage) {
+      toast.error(
+        "Only the business owner can change branches.",
+      );
+      return;
+    }
 
     if (!editingBranch?.id) return;
 
@@ -804,7 +1024,7 @@ export default function SettingsBranches() {
     setEditSaving(true);
 
     try {
-      await updateBranchRequest(editingBranch.id, payload);
+      await updateBranch(editingBranch.id, payload);
       toast.success("Branch updated");
       closeBranchDrawers();
       await load({ quiet: true });
@@ -818,12 +1038,18 @@ export default function SettingsBranches() {
   async function submit(event) {
     event.preventDefault();
 
+    if (!canManage) {
+      toast.error(
+        "Only the business owner can add branches.",
+      );
+      return;
+    }
+
     const payload = {
       name: cleanString(form.name),
       code: normalizeBranchCode(form.code),
       phone: cleanString(form.phone) || undefined,
       email: cleanString(form.email) || undefined,
-      countryCode: cleanString(form.countryCode) || "RW",
       district: cleanString(form.district) || undefined,
       sector: cleanString(form.sector) || undefined,
       address: cleanString(form.address) || undefined,
@@ -853,8 +1079,76 @@ export default function SettingsBranches() {
     }
   }
 
+  async function runBranchAction(
+    type,
+    branch,
+    request,
+    successMessage,
+  ) {
+    if (!canManage || !branch?.id || branchAction) {
+      return;
+    }
+
+    setBranchAction(type);
+
+    try {
+      await request(branch.id);
+      toast.success(successMessage);
+      setViewingBranch(null);
+      setEditingBranch(null);
+      await load({ quiet: true });
+    } catch (error) {
+      toast.error(
+        error?.message ||
+          "Could not update this branch.",
+      );
+    } finally {
+      setBranchAction(null);
+    }
+  }
+
+  async function handleSetMain(branch) {
+    await runBranchAction(
+      "main",
+      branch,
+      setMainBranch,
+      "Main branch updated",
+    );
+  }
+
+  async function handleArchive(branch) {
+    await runBranchAction(
+      "archive",
+      branch,
+      archiveBranch,
+      "Branch archived",
+    );
+  }
+
+  async function handleReactivate(branch) {
+    if (!canReactivate) {
+      toast.error(
+        "Your current plan has no free branch capacity.",
+      );
+      return;
+    }
+
+    await runBranchAction(
+      "reactivate",
+      branch,
+      reactivateBranch,
+      "Branch reactivated",
+    );
+  }
+
   if (loading) {
-    return <PageSkeleton titleWidth="w-52" lines={3} showTable={false} />;
+    return (
+      <PageSkeleton
+        titleWidth="w-52"
+        lines={3}
+        showTable={false}
+      />
+    );
   }
 
   return (
@@ -863,7 +1157,7 @@ export default function SettingsBranches() {
         <SectionHeader
           eyebrow="Branches"
           title="Branch control"
-          text="Manage the physical locations that belong to this store. Every branch must stay clear because sales, inventory, documents, reports, and staff work depend on branch truth."
+          text="Manage the physical locations used by your business. Sales, stock, reports, documents and staff access depend on the correct branch."
           action={
             <div className="svx-branch-page-actions">
               <AsyncButton
@@ -876,14 +1170,16 @@ export default function SettingsBranches() {
                 Refresh
               </AsyncButton>
 
-              <button
-                type="button"
-                className="svx-branch-primary-action"
-                disabled={!canCreate}
-                onClick={openCreate}
-              >
-                Add branch
-              </button>
+              {canManage ? (
+                <button
+                  type="button"
+                  className="svx-branch-primary-action"
+                  disabled={!hasBranchCapacity}
+                  onClick={openCreate}
+                >
+                  Add branch
+                </button>
+              ) : null}
             </div>
           }
         />
@@ -901,24 +1197,38 @@ export default function SettingsBranches() {
             value={limitLabel}
             note={
               subscription?.planKey
-                ? `${subscription.planKey} plan capacity.`
-                : "Current subscription capacity."
+                ? `${planLabel(subscription.planKey)} plan capacity.`
+                : "Current plan capacity."
             }
             tone={usage?.atLimit ? "warning" : "neutral"}
           />
 
           <SummaryCard
             label="Main branch"
-            value={mainBranch?.code || "—"}
-            note={mainBranch?.name || tenant?.name || "Main branch not found."}
+            value={mainBranch?.name || "—"}
+            note={
+              mainBranch?.code
+                ? `Code ${mainBranch.code}`
+                : tenant?.name || "Main branch not found."
+            }
             tone={mainBranch ? "success" : "warning"}
           />
 
           <SummaryCard
-            label="Can add branch"
-            value={canCreate ? "Yes" : "No"}
-            note={canCreate ? "Plan still has branch capacity." : "Plan branch limit is reached."}
-            tone={canCreate ? "success" : "warning"}
+            label="Branch capacity"
+            value={
+              hasBranchCapacity ? "Available" : "Full"
+            }
+            note={
+              hasBranchCapacity
+                ? "Plan still has room for another active branch."
+                : "Plan branch limit is reached."
+            }
+            tone={
+              hasBranchCapacity
+                ? "success"
+                : "warning"
+            }
           />
         </div>
       </section>
@@ -941,7 +1251,13 @@ export default function SettingsBranches() {
               </div>
 
               {sortedBranches.map((branch) => (
-                <BranchRow key={branch.id} branch={branch} onView={openView} onEdit={openEdit} />
+                <BranchRow
+                  key={branch.id}
+                  branch={branch}
+                  onView={openView}
+                  onEdit={openEdit}
+                  canManage={canManage}
+                />
               ))}
             </div>
           ) : (
@@ -969,6 +1285,12 @@ export default function SettingsBranches() {
         open={Boolean(viewingBranch)}
         onClose={closeBranchDrawers}
         onEdit={openEdit}
+        onSetMain={handleSetMain}
+        onArchive={handleArchive}
+        onReactivate={handleReactivate}
+        canManage={canManage}
+        canReactivate={canReactivate}
+        action={branchAction}
       />
 
       <BranchEditDrawer

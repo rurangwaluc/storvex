@@ -62,7 +62,7 @@ function normalizeBranch(branch) {
     status: cleanString(branch.status) || "ACTIVE",
     phone: cleanString(branch.phone),
     email: cleanString(branch.email),
-    countryCode: cleanString(branch.countryCode) || "RW",
+    countryCode: cleanString(branch.countryCode),
     district: cleanString(branch.district),
     sector: cleanString(branch.sector),
     address: cleanString(branch.address),
@@ -121,10 +121,6 @@ function pickActiveBranch(workspace) {
 
   const activeBranchId =
     cleanString(getActiveBranchId()) ||
-    cleanString(localStorage.getItem("storvex_active_branch_id")) ||
-    cleanString(localStorage.getItem("storvex_activeBranchId")) ||
-    cleanString(localStorage.getItem("activeBranchId")) ||
-    cleanString(localStorage.getItem("branchId")) ||
     cleanString(workspace?.user?.activeBranchId) ||
     cleanString(workspace?.user?.branchId) ||
     cleanString(workspace?.branchAccess?.activeBranchId) ||
@@ -207,19 +203,12 @@ function persistActiveBranch(branch) {
 
   setActiveBranchId(activeBranch.id);
 
-  localStorage.setItem("branchId", activeBranch.id);
-  localStorage.setItem("activeBranchId", activeBranch.id);
-  localStorage.setItem("storvex_activeBranchId", activeBranch.id);
-  localStorage.setItem("storvex_active_branch_id", activeBranch.id);
-
   if (activeBranch.name) {
     localStorage.setItem("activeBranchName", activeBranch.name);
-    localStorage.setItem("storvex_activeBranchName", activeBranch.name);
   }
 
   if (activeBranch.code) {
     localStorage.setItem("activeBranchCode", activeBranch.code);
-    localStorage.setItem("storvex_activeBranchCode", activeBranch.code);
   }
 
   localStorage.setItem("activeBranchIsMain", String(Boolean(activeBranch.isMain)));
@@ -520,9 +509,6 @@ export default function AppShell({ children }) {
     function handleStorage(event) {
       if (
         event.key === "storvex_active_branch_id" ||
-        event.key === "storvex_activeBranchId" ||
-        event.key === "activeBranchId" ||
-        event.key === "branchId" ||
         event.key === WORKSPACE_CACHE_KEY
       ) {
         const latest = normalizeWorkspacePayload(readCachedWorkspace());
