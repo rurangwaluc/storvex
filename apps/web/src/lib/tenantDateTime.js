@@ -32,6 +32,21 @@ export function formatTenantDateTime(value, market) {
   }
 }
 
+export function formatTenantTime(value, market) {
+  const date = safeDate(value);
+  if (!date) return "—";
+
+  try {
+    return new Intl.DateTimeFormat("en", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: tenantTimezone(market),
+    }).format(date);
+  } catch {
+    return "—";
+  }
+}
+
 export function formatTenantDate(value, market, fallback = "—") {
   const date = safeDate(value);
   if (!date) return fallback;

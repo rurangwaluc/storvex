@@ -457,7 +457,7 @@ function sanitizeProformaSummary(value) {
     number: trimString(item.number),
     status: toUpper(item.status || "DRAFT"),
     total: toNumber(item.total, 0),
-    currency: trimString(item.currency || "RWF"),
+    currency: trimString(item.currency),
     reference: trimString(item.reference),
     source: toUpper(item.source),
     conversationId: trimString(item.conversationId),

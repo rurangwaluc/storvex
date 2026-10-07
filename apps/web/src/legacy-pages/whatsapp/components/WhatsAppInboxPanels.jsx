@@ -1,4 +1,7 @@
 import { useMemo } from "react";
+
+import useTenantDateTime from "../../../hooks/useTenantDateTime";
+import useTenantMoney from "../../../hooks/useTenantMoney";
 import AsyncButton from "../../../components/ui/AsyncButton";
 import * as U from "../lib/whatsappInbox.utils";
 
@@ -11,11 +14,8 @@ const {
   conversationPriority,
   customerTier,
   cx,
-  dateLabel,
   daysSince,
   formatCompactNumber,
-  formatDay,
-  formatTime,
   hasCompletedSale,
   hasDeliveryNote,
   hasDeliveryNoteCustomerMessage,
@@ -36,12 +36,10 @@ const {
   latestWarranty,
   latestWarrantyCustomerMessage,
   leadTemperature,
-  money,
   opportunityValue,
   probabilityLabel,
   recommendedCustomerAction,
   recommendedSalesAction,
-  shortDate,
   statusLabel,
   toneForStatus,
   unreadCount,
@@ -167,6 +165,8 @@ export function EmptyState({ title, body }) {
 }
 
 export function ConversationRow({ conversation, active, draft, salesSummary, onClick }) {
+  const { formatTime } = useTenantDateTime();
+
   const name = customerName(conversation);
   const count = unreadCount(conversation, active);
   const priority = conversationPriority({ conversation, draft, summary: salesSummary });
@@ -223,6 +223,8 @@ export function deliveryStatusMeta(message, outbound) {
 }
 
 export function MessageBubble({ message }) {
+  const { formatTime } = useTenantDateTime();
+
   const outbound = message.direction === "OUTBOUND";
   const delivery = deliveryStatusMeta(message, outbound);
 
@@ -362,6 +364,8 @@ export function ConversationList({ conversations, drafts, selectedId, selectedSa
 }
 
 export function DraftSummaryCard({ draft, onFinalize, finalizing = false }) {
+  const { formatMoney } = useTenantMoney();
+
   if (!draft) {
     return (
       <section className="svx-wa-side-card svx-wa-draft-card">
@@ -376,9 +380,9 @@ export function DraftSummaryCard({ draft, onFinalize, finalizing = false }) {
   return (
     <section className="svx-wa-side-card svx-wa-draft-card is-highlight">
       <div className="svx-wa-side-title">Recent draft sale</div>
-      <div className="svx-wa-draft-value">{money(draft.total)}</div>
+      <div className="svx-wa-draft-value">{formatMoney(draft.total)}</div>
       <p className="svx-wa-help-text">
-        {draft.items?.length || 0} item{draft.items?.length === 1 ? "" : "s"} ·{" "}
+        {draft.items?.length || 0} item{draft.items?.length === 1 ? "" : "s"} /{" "}
         {statusLabel(draft.saleType)} sale
       </p>
       <AsyncButton
@@ -395,6 +399,8 @@ export function DraftSummaryCard({ draft, onFinalize, finalizing = false }) {
 
 
 export function SalesTimeline({ events }) {
+  const { formatDate } = useTenantDateTime();
+
   if (!events.length) {
     return (
       <div className="svx-wa-sales-timeline is-empty">
@@ -408,7 +414,7 @@ export function SalesTimeline({ events }) {
     <div className="svx-wa-sales-timeline">
       {events.map((event) => (
         <div key={event.id} className="svx-wa-sales-timeline-item">
-          <time>{shortDate(event.at)}</time>
+          <time>{formatDate(event.at)}</time>
           <div>
             <strong>{event.title}</strong>
             <span>{event.meta}</span>
@@ -420,11 +426,19 @@ export function SalesTimeline({ events }) {
 }
 
 export function SalesIntelligenceCard({ conversation, draft, summary, messages = [], loading, convertingProformaId = "", creatingDeliveryNote = false, onRecommendedAction }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
   const safeSummary = summary || {};
   const tier = customerTier(safeSummary);
   const temperature = leadTemperature({ conversation, draft, summary: safeSummary });
   const nextAction = recommendedSalesAction({ conversation, draft, summary: safeSummary, messages });
-  const timeline = buildSalesTimeline({ conversation, draft, summary: safeSummary, messages });
+  const timeline = buildSalesTimeline({
+    conversation,
+    draft,
+    summary: safeSummary,
+    messages,
+    formatMoney,
+  });
   const quotation = latestQuotation(safeSummary);
   const lastPurchaseDays = daysSince(safeSummary.lastPurchase);
   const lastPurchaseLabel =
@@ -462,11 +476,11 @@ export function SalesIntelligenceCard({ conversation, draft, summary, messages =
             </div>
             <div>
               <span>Lifetime value</span>
-              <strong>{money(safeSummary.totalRevenue)}</strong>
+              <strong>{formatMoney(safeSummary.totalRevenue)}</strong>
             </div>
             <div>
               <span>Outstanding credit</span>
-              <strong>{money(safeSummary.outstandingCredit)}</strong>
+              <strong>{formatMoney(safeSummary.outstandingCredit)}</strong>
             </div>
             <div>
               <span>Proformas</span>
@@ -476,7 +490,7 @@ export function SalesIntelligenceCard({ conversation, draft, summary, messages =
             <div>
               <span>Last purchase</span>
               <strong>{lastPurchaseLabel}</strong>
-              <small>{shortDate(safeSummary.lastPurchase)}</small>
+              <small>{formatDate(safeSummary.lastPurchase)}</small>
             </div>
             <div>
               <span>Delivery notes</span>
@@ -538,9 +552,12 @@ export function CustomerPanel({
   convertingProformaId,
   creatingDeliveryNote,
 }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   if (!conversation) {
     return (
-      <aside className="svx-wa-side-panel">
+      <aside className="svx-wa-side-panel is-empty">
         <EmptyState
           title="No customer selected"
           body="Choose a conversation to view customer details and actions."
@@ -562,7 +579,7 @@ export function CustomerPanel({
           <div>
             <strong>{customerName(conversation)}</strong>
             <span>{cleanPhone(conversation.phone)}</span>
-            <small>Customer since {dateLabel(conversation.createdAt)}</small>
+            <small>Customer since {formatDate(conversation.createdAt)}</small>
           </div>
         </div>
 
@@ -652,7 +669,7 @@ export function CustomerPanel({
 
           <div className="svx-wa-info-item">
             <span>Last message</span>
-            <strong>{formatDay(conversation.updatedAt)}</strong>
+            <strong>{formatDate(conversation.updatedAt)}</strong>
           </div>
         </div>
       </section>
@@ -677,6 +694,9 @@ export function ChatPanel({
   linkedDraft,
   messagesEndRef,
 }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   if (!conversation) {
     return (
       <main className="svx-wa-chat-panel">
@@ -702,9 +722,9 @@ export function ChatPanel({
           <div>
             <strong>{customerName(conversation)}</strong>
             <span>
-              <i /> {tier.label} · {Number(salesSummary?.totalOrders || 0)} orders · {money(opportunity)}
+              <i /> {tier.label} / {Number(salesSummary?.totalOrders || 0)} orders / {formatMoney(opportunity)}
             </span>
-            <small>{statusLabel(conversation.status)} · {cleanPhone(conversation.phone)}</small>
+            <small>{statusLabel(conversation.status)} / {cleanPhone(conversation.phone)}</small>
           </div>
         </div>
 
@@ -727,7 +747,7 @@ export function ChatPanel({
         ) : null}
 
         <div className="svx-wa-date-pill">
-          <Badge tone="neutral">{formatDay(visibleMessages[0]?.createdAt || conversation.createdAt)}</Badge>
+          <Badge tone="neutral">{formatDate(visibleMessages[0]?.createdAt || conversation.createdAt)}</Badge>
         </div>
 
         {(showMessagesSkeleton || openingDifferentConversation) && visibleMessages.length === 0 ? (
@@ -767,6 +787,8 @@ export function ChatPanel({
 }
 
 export function DraftsWorkspace({ drafts, conversations, onOpenConversation, onFinalize, finalizingDraftId }) {
+  const { formatMoney } = useTenantMoney();
+
   const totalValue = drafts.reduce((sum, draft) => sum + Number(draft.total || 0), 0);
 
   return (
@@ -774,7 +796,7 @@ export function DraftsWorkspace({ drafts, conversations, onOpenConversation, onF
       <div className="svx-wa-section-title">
         <p>WhatsApp orders</p>
         <h2>Draft sales waiting for action</h2>
-        <span>{money(totalValue)} prepared from customer chats.</span>
+        <span>{formatMoney(totalValue)} prepared from customer chats.</span>
       </div>
 
       {drafts.length ? (
@@ -793,7 +815,7 @@ export function DraftsWorkspace({ drafts, conversations, onOpenConversation, onF
                   <p>{cleanPhone(draft.customer?.phone || draft.conversation?.phone)}</p>
                 </div>
 
-                <strong>{money(draft.total)}</strong>
+                <strong>{formatMoney(draft.total)}</strong>
                 <span>{draft.items?.length || 0} item{draft.items?.length === 1 ? "" : "s"}</span>
 
                 <div className="svx-wa-card-actions">

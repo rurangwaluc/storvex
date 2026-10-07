@@ -960,6 +960,7 @@ async function resolveBusinessContext(tenantId, account) {
     select: {
       name: true,
       shopType: true,
+      currencyCode: true,
     },
   });
 
@@ -969,6 +970,7 @@ async function resolveBusinessContext(tenantId, account) {
       normalizeText(account?.businessName) ||
       "our store",
     businessCategory: normalizeText(tenant?.shopType) || null,
+    currencyCode: normalizeText(tenant?.currencyCode) || null,
   };
 }
 
@@ -1086,6 +1088,7 @@ async function handleBuyIntent({
   customer,
   from,
   businessName,
+  currencyCode,
   payload,
 }) {
   const { quantity, query } = payload;
@@ -1123,6 +1126,7 @@ async function handleBuyIntent({
         query,
         candidates: match.candidates,
         category,
+        currencyCode,
       });
 
       await safeSendAndLog({
@@ -1197,6 +1201,7 @@ async function handleBuyIntent({
       product,
       quantity,
       draftId: created.draftId,
+      currencyCode,
     });
 
     await safeSendAndLog({
@@ -1250,6 +1255,7 @@ async function handleProductQueryIntent({
   from,
   businessName,
   businessCategory,
+  currencyCode,
   text,
   directQuery,
   category = null,
@@ -1311,6 +1317,7 @@ async function handleProductQueryIntent({
         originalText: text,
         products: result.products,
         meta: result.budgetMeta,
+        currencyCode,
       });
     } else {
       reply = buildProductsReply({
@@ -1318,6 +1325,7 @@ async function handleProductQueryIntent({
         q: result.queryUsed,
         products: result.products,
         category: result.category || detectedCategory,
+        currencyCode,
       });
     }
 
@@ -1486,6 +1494,7 @@ async function handleInboundWebhook({ account, payload, inbound }) {
   const {
     businessName,
     businessCategory,
+    currencyCode,
   } = await resolveBusinessContext(tenantId, account);
 
   for (const message of inbound) {
@@ -1526,6 +1535,7 @@ async function handleInboundWebhook({ account, payload, inbound }) {
           customer,
           from,
           businessName,
+          currencyCode,
           payload: intent.payload,
         });
         continue;
@@ -1549,6 +1559,7 @@ async function handleInboundWebhook({ account, payload, inbound }) {
           from,
           businessName,
           businessCategory,
+          currencyCode,
           text,
           directQuery,
           category,

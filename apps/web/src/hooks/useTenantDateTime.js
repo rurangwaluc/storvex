@@ -4,6 +4,7 @@ import useTenantMarket from "./useTenantMarket";
 import {
   formatTenantDate,
   formatTenantDateTime,
+  formatTenantTime,
   tenantDateInput,
   tenantDaysUntil,
   tenantTimezone,
@@ -41,6 +42,18 @@ export default function useTenantDateTime() {
     [market],
   );
 
+  const formatTime = useCallback(
+    (value) => {
+      if (!market) return "—";
+
+      return formatTenantTime(
+        value,
+        market,
+      );
+    },
+    [market],
+  );
+
   const dateInput = useCallback(
     (value) => {
       if (!market) return "";
@@ -70,6 +83,7 @@ export default function useTenantDateTime() {
     timezone: market ? tenantTimezone(market) : "",
     formatDate,
     formatDateTime,
+    formatTime,
     dateInput,
     daysUntil,
     isLoading,

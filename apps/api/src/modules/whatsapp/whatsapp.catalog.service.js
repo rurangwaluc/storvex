@@ -25,11 +25,14 @@ function escapeRegExp(value) {
   return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function formatMoneyRwf(n) {
+function formatMoney(n, currencyCode) {
   const x = Number(n);
   if (!Number.isFinite(x)) return String(n);
 
-  return `${Math.round(x).toLocaleString("en-US")} RWF`;
+  const amount = Math.round(x).toLocaleString("en-US");
+  const currency = normalizeText(currencyCode);
+
+  return currency ? `${amount} ${currency}` : amount;
 }
 
 function normalizeSearchText(value) {
@@ -729,7 +732,7 @@ function formatProductLine(p) {
   if (p?.subcategory) pieces.push(p.subcategory);
   if (p?.sku) pieces.push(`SKU ${p.sku}`);
 
-  return pieces.join(" • ");
+  return pieces.join(" / ");
 }
 
 function availabilityLine(product) {
@@ -742,13 +745,13 @@ function availabilityLine(product) {
   return `Available: ${Math.round(qty)}`;
 }
 
-function buildProductListLines(products) {
+function buildProductListLines(products, currencyCode) {
   const lines = [];
 
   for (const p of products || []) {
     lines.push(`📦 *${p.name}*`);
     if (formatProductLine(p)) lines.push(formatProductLine(p));
-    lines.push(`💰 Price: ${formatMoneyRwf(p.sellPrice)}`);
+    lines.push(`💰 Price: ${formatMoney(p.sellPrice, currencyCode)}`);
     lines.push(`📍 ${availabilityLine(p)}`);
     lines.push("");
   }
@@ -756,7 +759,7 @@ function buildProductListLines(products) {
   return lines;
 }
 
-function buildProductsReply({ businessName, q, products, category = null }) {
+function buildProductsReply({ businessName, q, products, category = null, currencyCode = null }) {
   const context = getCategoryContext(category || q, q);
   const categoryLabel = context.label;
 
@@ -776,7 +779,7 @@ function buildProductsReply({ businessName, q, products, category = null }) {
   lines.push(`Closest matches for: "${q}"`);
   lines.push("");
 
-  lines.push(...buildProductListLines(products));
+  lines.push(...buildProductListLines(products, currencyCode));
 
   lines.push(`To reserve, reply with:`);
   lines.push(`*BUY <exact product name>*`);
@@ -785,7 +788,13 @@ function buildProductsReply({ businessName, q, products, category = null }) {
   return lines.join("\n").trim();
 }
 
-function buildBudgetProductsReply({ businessName, originalText, products, meta }) {
+function buildBudgetProductsReply({
+  businessName,
+  originalText,
+  products,
+  meta,
+  currencyCode = null,
+}) {
   const context = getCategoryContext(meta?.category || originalText, originalText);
 
   if (!products || products.length === 0) {
@@ -812,13 +821,13 @@ function buildBudgetProductsReply({ businessName, originalText, products, meta }
 
   if (meta?.brand) hints.push(`brand: ${meta.brand}`);
   if (meta?.categoryLabel || meta?.category) hints.push(`category: ${meta.categoryLabel || meta.category}`);
-  if (meta?.budget) hints.push(`budget: ${formatMoneyRwf(meta.budget)}`);
+  if (meta?.budget) hints.push(`budget: ${formatMoney(meta.budget, currencyCode)}`);
 
-  if (hints.length) lines.push(`(${hints.join(" • ")})`);
+  if (hints.length) lines.push(`(${hints.join(" / ")})`);
 
   lines.push("");
 
-  lines.push(...buildProductListLines(products));
+  lines.push(...buildProductListLines(products, currencyCode));
 
   lines.push(`To reserve, reply with:`);
   lines.push(`*BUY <exact product name>*`);
@@ -827,7 +836,13 @@ function buildBudgetProductsReply({ businessName, originalText, products, meta }
   return lines.join("\n").trim();
 }
 
-function buildBuyCreatedReply({ businessName, product, quantity, draftId }) {
+function buildBuyCreatedReply({
+  businessName,
+  product,
+  quantity,
+  draftId,
+  currencyCode = null,
+}) {
   const code = String(draftId || "").slice(-6).toUpperCase();
   const qty = Math.max(1, Number(quantity || 1));
   const total = Number(product?.sellPrice || 0) * qty;
@@ -839,16 +854,22 @@ function buildBuyCreatedReply({ businessName, product, quantity, draftId }) {
   lines.push("");
   lines.push(`📦 Product: *${product.name}*`);
   lines.push(`🔢 Quantity: *${qty}*`);
-  lines.push(`💰 Unit price: ${formatMoneyRwf(product.sellPrice)}`);
+  lines.push(`💰 Unit price: ${formatMoney(product.sellPrice, currencyCode)}`);
   lines.push(`🧾 Draft code: *${code}*`);
-  lines.push(`Estimated total: *${formatMoneyRwf(total)}*`);
+  lines.push(`Estimated total: *${formatMoney(total, currencyCode)}*`);
   lines.push("");
   lines.push(`Our staff will review and finalize your order.`);
 
   return lines.join("\n");
 }
 
-function buildBuyMultipleReply({ businessName, query, candidates, category = null }) {
+function buildBuyMultipleReply({
+  businessName,
+  query,
+  candidates,
+  category = null,
+  currencyCode = null,
+}) {
   const context = getCategoryContext(category || query, query);
   const lines = [];
 
@@ -859,7 +880,7 @@ function buildBuyMultipleReply({ businessName, query, candidates, category = nul
 
   for (const p of candidates || []) {
     lines.push(
-      `• *${p.name}* — ${formatMoneyRwf(p.sellPrice)} — ${availabilityLine(p)}`
+      `- *${p.name}* / ${formatMoney(p.sellPrice, currencyCode)} / ${availabilityLine(p)}`
     );
   }
 
@@ -887,10 +908,10 @@ function buildHumanEscalationReply({ businessName, text = "" }) {
     `🤝 *${businessName}*\n` +
     `A staff member will help you shortly.\n\n` +
     `You can also reply with:\n` +
-    `• Product name\n` +
-    `• ${context.questionRule.shortLabel}\n` +
-    `• Quantity\n` +
-    `• Photo if available`
+    `- Product name\n` +
+    `- ${context.questionRule.shortLabel}\n` +
+    `- Quantity\n` +
+    `- Photo if available`
   );
 }
 
@@ -898,7 +919,7 @@ module.exports = {
   searchProducts,
   searchProductsByBudgetIntent,
   findBestProductMatch,
-  formatMoneyRwf,
+  formatMoney,
   buildProductsReply,
   buildBudgetProductsReply,
   buildBuyCreatedReply,

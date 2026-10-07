@@ -34,13 +34,6 @@ export function canUseWhatsAppInbox(role) {
   return WHATSAPP_WORKSPACE_ROLES.includes(normalizeRole(role));
 }
 
-export function money(value) {
-  const amount = Number(value || 0);
-  const safe = Number.isFinite(amount) ? amount : 0;
-
-  return `${Math.round(safe).toLocaleString("en-US")} RWF`;
-}
-
 export function formatCompactNumber(value) {
   const amount = Number(value || 0);
   const safe = Number.isFinite(amount) ? amount : 0;
@@ -185,58 +178,6 @@ export function statusLabel(value) {
   if (status === "CREDIT") return "Credit";
 
   return status || "Record";
-}
-
-export function formatTime(value) {
-  if (!value) return "—";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return new Intl.DateTimeFormat("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-export function formatDay(value) {
-  if (!value) return "Today";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Today";
-
-  return new Intl.DateTimeFormat("en-GB", {
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
-
-export function dateLabel(value) {
-  if (!value) return "Not available";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Not available";
-
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
-
-export function shortDate(value) {
-  if (!value) return "No purchases yet";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "No purchases yet";
-
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
 }
 
 export function daysSince(value) {
@@ -401,7 +342,7 @@ export function deliveryNoteCustomerMessage({ conversation, summary }) {
   return `Hello ${name}, your delivery note ${number} is ready for ${deliveryItems}. Please check the products and quantities when received.`;
 }
 
-export function warrantyCustomerMessage({ conversation, summary }) {
+export function warrantyCustomerMessage({ conversation, summary, formatDate }) {
   const warranty = latestWarranty(summary);
   const note = latestDeliveryNote(summary);
   const name = customerName(conversation);
@@ -416,7 +357,7 @@ export function warrantyCustomerMessage({ conversation, summary }) {
   const productsText = productNames.length
     ? productNames.join(", ")
     : "your covered product";
-  const endText = warranty?.endsAt ? ` until ${dateLabel(warranty.endsAt)}` : "";
+  const endText = warranty?.endsAt ? ` until ${formatDate(warranty.endsAt)}` : "";
   const deliveryText = note?.number ? ` Please keep delivery note ${note.number} for support requests.` : "";
 
   return `Hello ${name}, your warranty ${number} is active for ${productsText}${endText}.${deliveryText}`;
@@ -526,11 +467,11 @@ export function isOutboundMessage(message) {
   return String(message?.direction || "").toUpperCase() === "OUTBOUND";
 }
 
-export function quotationFollowUpMessage({ conversation, summary }) {
+export function quotationFollowUpMessage({ conversation, summary, formatMoney }) {
   const quotation = latestQuotation(summary);
   const name = customerName(conversation);
   const number = quotation?.number || "your quotation";
-  const amount = money(quotation?.total || 0);
+  const amount = formatMoney(quotation?.total || 0);
 
   return `Hello ${name}, your quotation ${number} for ${amount} is ready. Please confirm if you would like us to proceed with the sale.`;
 }
@@ -681,7 +622,13 @@ export function recommendedSalesAction({ conversation, draft, summary, messages 
   };
 }
 
-export function buildSalesTimeline({ conversation, draft, summary, messages = [] }) {
+export function buildSalesTimeline({
+  conversation,
+  draft,
+  summary,
+  messages = [],
+  formatMoney,
+}) {
   const events = [];
 
   if (conversation?.createdAt) {
@@ -698,7 +645,7 @@ export function buildSalesTimeline({ conversation, draft, summary, messages = []
       id: `draft-${draft.id}`,
       at: draft.createdAt || draft.updatedAt,
       title: "Draft sale created",
-      meta: `${money(draft.total)} · ${draft.items?.length || 0} item${draft.items?.length === 1 ? "" : "s"}`,
+      meta: `${formatMoney(draft.total)} / ${draft.items?.length || 0} item${draft.items?.length === 1 ? "" : "s"}`,
     });
   }
 
@@ -715,7 +662,7 @@ export function buildSalesTimeline({ conversation, draft, summary, messages = []
       id: `proforma-${quotation.id || quotation.number || quotation.createdAt}`,
       at: quotation.createdAt,
       title: "Proforma created",
-      meta: `${quotation.number || "Proforma"} · ${money(quotation.total)}`,
+      meta: `${quotation.number || "Proforma"} / ${formatMoney(quotation.total)}`,
     });
   });
 
@@ -752,7 +699,7 @@ export function buildSalesTimeline({ conversation, draft, summary, messages = []
       id: `delivery-note-${note.id || note.number || note.createdAt || note.date}`,
       at: note.createdAt || note.date,
       title: "Delivery note created",
-      meta: `${note.number || "Delivery note"} · ${Number(note.itemsCount || 0)} item${Number(note.itemsCount || 0) === 1 ? "" : "s"}`,
+      meta: `${note.number || "Delivery note"} / ${Number(note.itemsCount || 0)} item${Number(note.itemsCount || 0) === 1 ? "" : "s"}`,
     });
   });
 
@@ -774,7 +721,7 @@ export function buildSalesTimeline({ conversation, draft, summary, messages = []
       id: `warranty-${warranty?.id || warranty?.number || summary.lastWarranty}`,
       at: warranty?.createdAt || summary.lastWarranty,
       title: "Warranty activated",
-      meta: `${warranty?.number || warranty?.warrantyNumber || "Warranty"} · ${Number(warranty?.unitsCount || warranty?.units?.length || 0)} covered item${Number(warranty?.unitsCount || warranty?.units?.length || 0) === 1 ? "" : "s"}`,
+      meta: `${warranty?.number || warranty?.warrantyNumber || "Warranty"} / ${Number(warranty?.unitsCount || warranty?.units?.length || 0)} covered item${Number(warranty?.unitsCount || warranty?.units?.length || 0) === 1 ? "" : "s"}`,
     });
   }
 

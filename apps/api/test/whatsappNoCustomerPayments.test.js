@@ -78,8 +78,8 @@ test("customer-facing WhatsApp business context prefers the Storvex tenant ident
 
   assert.match(
     source,
-    /select:\s*\{\s*name:\s*true,\s*shopType:\s*true,?\s*\}/,
-    "WhatsApp business context must load both tenant name and business category",
+    /select:\s*\{\s*name:\s*true,\s*shopType:\s*true,\s*currencyCode:\s*true,?\s*\}/,
+    "WhatsApp business context must load tenant name, business category, and currency",
   );
 
   assert.match(

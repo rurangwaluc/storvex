@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 
+import useTenantDateTime from "../../../hooks/useTenantDateTime";
+import useTenantMoney from "../../../hooks/useTenantMoney";
 import AsyncButton from "../../../components/ui/AsyncButton";
 import { searchProducts } from "../../../services/inventoryApi";
 import {
@@ -19,7 +21,7 @@ import {
   isEmbeddedSignupHandoffReady,
   stopEmbeddedSignupPopupWatcher,
 } from "../../../services/embeddedSignupPopupWatcher";
-import { cleanText, customerName, cx, formatDay, latestPreview, money, normalizeProductList, safeError, statusLabel, toneForStatus } from "../lib/whatsappInbox.utils";
+import { cleanText, customerName, cx, latestPreview, normalizeProductList, safeError, statusLabel, toneForStatus } from "../lib/whatsappInbox.utils";
 import { Badge, EmptyState, MetricCard, SettingsIcon } from "./WhatsAppInboxPanels";
 
 function LinkSignalIcon() {
@@ -520,6 +522,9 @@ function getBroadcastStats(item) {
 }
 
 export function ActivityWorkspace({ conversations, drafts, broadcasts }) {
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
+
   const conversationRows = conversations.slice(0, 8).map((item) => ({
     id: `conversation-${item.id}`,
     type: "conversation",
@@ -537,7 +542,7 @@ export function ActivityWorkspace({ conversations, drafts, broadcasts }) {
     icon: <DraftActivityIcon />,
     title: "Draft sale pending",
     eyebrow: "WhatsApp order",
-    text: `${money(item.total)} · ${item.items?.length || 0} item(s) need completion`,
+    text: `${formatMoney(item.total)} / ${item.items?.length || 0} item(s) need completion`,
     status: "Draft",
     time: item.updatedAt || item.createdAt,
   }));
@@ -552,8 +557,8 @@ export function ActivityWorkspace({ conversations, drafts, broadcasts }) {
       title: item.promotion?.title || item.templateName || "Broadcast campaign",
       eyebrow: "Campaign report",
       text: failed
-        ? `${stats.failedCount} failed · ${stats.deliveredCount} delivered · ${stats.readCount} read`
-        : `${stats.recipientCount} targeted · ${stats.deliveredCount} delivered · ${stats.readCount} read`,
+        ? `${stats.failedCount} failed / ${stats.deliveredCount} delivered / ${stats.readCount} read`
+        : `${stats.recipientCount} targeted / ${stats.deliveredCount} delivered / ${stats.readCount} read`,
       status: failed ? "Needs attention" : statusLabel(item.status),
       time: item.sentAt || item.updatedAt || item.createdAt,
       stats,
@@ -605,7 +610,7 @@ export function ActivityWorkspace({ conversations, drafts, broadcasts }) {
           <div>
             <p>Draft sales</p>
             <strong>{drafts.length}</strong>
-            <small>{money(draftValue)} waiting for completion</small>
+            <small>{formatMoney(draftValue)} waiting for completion</small>
           </div>
         </article>
 
@@ -614,7 +619,7 @@ export function ActivityWorkspace({ conversations, drafts, broadcasts }) {
           <div>
             <p>Campaigns</p>
             <strong>{sentBroadcasts}</strong>
-            <small>{queuedBroadcasts} queued · {deliveredBroadcasts} delivered · {readBroadcasts} read</small>
+            <small>{queuedBroadcasts} queued / {deliveredBroadcasts} delivered / {readBroadcasts} read</small>
           </div>
         </article>
 
@@ -649,7 +654,7 @@ export function ActivityWorkspace({ conversations, drafts, broadcasts }) {
                     <p>{row.text}</p>
                   </div>
                   <Badge tone={activityStatusTone(row.type, row.status)}>{row.status}</Badge>
-                  <small>{formatDay(row.time)}</small>
+                  <small>{formatDate(row.time)}</small>
                 </article>
               ))}
             </div>
@@ -686,7 +691,7 @@ export function ActivityWorkspace({ conversations, drafts, broadcasts }) {
                     <div className="svx-wa-campaign-health-top">
                       <div>
                         <strong>{title}</strong>
-                        <span>{stats.recipientCount} audience · {stats.pendingCount} pending</span>
+                        <span>{stats.recipientCount} audience / {stats.pendingCount} pending</span>
                       </div>
                       <Badge tone={hasFailure ? "warning" : toneForStatus(statusLabel(item.status))}>
                         {hasFailure ? "Needs review" : statusLabel(item.status)}
@@ -732,6 +737,8 @@ export function ActivityWorkspace({ conversations, drafts, broadcasts }) {
 }
 
 export function CreateDraftModal({ open, conversation, onClose, onCreated }) {
+  const { formatMoney } = useTenantMoney();
+
   const [query, setQuery] = useState("");
   const [products, setProducts] = useState([]);
   const [searching, setSearching] = useState(false);
@@ -874,7 +881,7 @@ export function CreateDraftModal({ open, conversation, onClose, onCreated }) {
                 <button key={product.id} type="button" onClick={() => addProduct(product)}>
                   <strong>{product.name}</strong>
                   <span>Stock {product.stockQty}</span>
-                  <small>{money(product.sellPrice)}</small>
+                  <small>{formatMoney(product.sellPrice)}</small>
                 </button>
               ))}
             </div>
@@ -954,7 +961,7 @@ export function CreateDraftModal({ open, conversation, onClose, onCreated }) {
 
             <div className="svx-wa-total-box">
               <span>Total</span>
-              <strong>{money(total)}</strong>
+              <strong>{formatMoney(total)}</strong>
             </div>
 
             <AsyncButton onClick={submit} loading={saving} loadingText="Creating...">

@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
+import useTenantDateTime from "../../hooks/useTenantDateTime";
+import useTenantMoney from "../../hooks/useTenantMoney";
 import { convertProformaToSale } from "../../services/proformasApi";
 import { createDeliveryNote } from "../../services/deliveryNotesApi";
 import {
@@ -63,6 +65,8 @@ import "./WhatsAppInbox.css";
 
 export default function WhatsAppInbox() {
   const navigate = useNavigate();
+  const { formatMoney } = useTenantMoney();
+  const { formatDate } = useTenantDateTime();
   const messagesEndRef = useRef(null);
   const hasLoadedOnceRef = useRef(false);
 
@@ -177,7 +181,7 @@ export default function WhatsAppInbox() {
   }
 
   useEffect(() => {
-    document.title = "WhatsApp Workspace • Storvex";
+    document.title = "WhatsApp Workspace / Storvex";
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -377,6 +381,7 @@ export default function WhatsAppInbox() {
     setReplyText(quotationFollowUpMessage({
       conversation: selectedConversation,
       summary: salesSummary,
+      formatMoney,
     }));
     toast.success("Quotation follow-up prepared. Review it before sending.");
 
@@ -415,6 +420,7 @@ export default function WhatsAppInbox() {
     setReplyText(warrantyCustomerMessage({
       conversation: selectedConversation,
       summary: salesSummary,
+      formatDate,
     }));
     toast.success("Warranty message prepared. Review it before sending.");
 

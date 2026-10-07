@@ -2372,7 +2372,7 @@ function normalizeProformaSummary(proforma) {
     number: proforma.number || null,
     status: proforma.status || null,
     total: Number(proforma.total || 0),
-    currency: proforma.currency || "RWF",
+    currency: proforma.currency || null,
     reference: proforma.reference || null,
     source: proforma.source || null,
     conversationId: proforma.conversationId || null,

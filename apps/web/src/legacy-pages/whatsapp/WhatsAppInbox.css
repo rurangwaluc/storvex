@@ -1003,6 +1003,18 @@ background: var(--wa-soft);
   padding: 13px;
 }
 
+.svx-wa-side-panel.is-empty {
+  grid-template-columns: minmax(0, 1fr) !important;
+  width: 100%;
+}
+
+.svx-wa-side-panel.is-empty > .svx-wa-empty {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  min-height: 170px;
+}
+
 .svx-wa-side-card.is-highlight {
   background: var(--wa-warning-soft);
 }

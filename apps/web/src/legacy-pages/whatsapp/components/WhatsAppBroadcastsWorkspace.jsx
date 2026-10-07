@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
+import useTenantDateTime from "../../../hooks/useTenantDateTime";
 import AsyncButton from "../../../components/ui/AsyncButton";
 import { previewWhatsAppBroadcastRecipients } from "../../../services/whatsappBroadcastsApi";
 import {
@@ -405,19 +406,6 @@ function reportInsightTone(value) {
   return "neutral";
 }
 
-function reportTime(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return new Intl.DateTimeFormat("en-GB", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
 function recipientDisplayName(recipient) {
   return cleanText(recipient?.customerName) || cleanText(recipient?.phone) || "WhatsApp customer";
 }
@@ -446,6 +434,8 @@ function cleanupBroadcastMessage(broadcast) {
 }
 
 export function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefresh }) {
+  const { formatDateTime } = useTenantDateTime();
+
   const registeredBusinessCategory = useMemo(() => getRegisteredBusinessCategory(), []);
   const registeredBusinessCategoryLabel = categoryLabel(registeredBusinessCategory);
 
@@ -1296,7 +1286,7 @@ export function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefres
                                   <strong>Issue</strong>
                                   <span>{failureDetails.message}</span>
                                   <small>
-                                    Attempted {formatCompactNumber(failureDetails.attempted || recipientCount || 0)} · Failed {formatCompactNumber(failureDetails.failed || 0)}
+                                    Attempted {formatCompactNumber(failureDetails.attempted || recipientCount || 0)} / Failed {formatCompactNumber(failureDetails.failed || 0)}
                                   </small>
                                 </div>
                               ) : null}
@@ -1442,7 +1432,7 @@ export function BroadcastsWorkspace({ accounts, promotions, broadcasts, onRefres
                     </div>
                     <div>
                       <Badge tone={reportStatusTone(recipient.status)}>{statusLabel(recipient.status)}</Badge>
-                      <small>{reportTime(recipientStatusTime(recipient))}</small>
+                      <small>{formatDateTime(recipientStatusTime(recipient))}</small>
                     </div>
                   </article>
                 ))}
