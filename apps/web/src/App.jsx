@@ -232,7 +232,15 @@ export default function App() {
                 />
 
                 <Route path="members" element={<SettingsMembers />} />
-                <Route path="roles" element={<SettingsRoles />} />
+
+                <Route
+                  path="roles"
+                  element={
+                    <RequireRole roles={["OWNER"]}>
+                      <SettingsRoles />
+                    </RequireRole>
+                  }
+                />
 
                 <Route
                   path="billing"

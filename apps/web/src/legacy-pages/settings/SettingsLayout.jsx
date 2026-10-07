@@ -43,7 +43,7 @@ const NAV_ITEMS = [
     key: "roles",
     label: "Access",
     to: "/app/settings/roles",
-    roles: ["OWNER", "MANAGER"],
+    roles: ["OWNER"],
   },
   {
     key: "billing",
