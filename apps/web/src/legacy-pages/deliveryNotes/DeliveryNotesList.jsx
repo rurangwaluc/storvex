@@ -2,18 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import AsyncButton from "../../components/ui/AsyncButton";
 import TableSkeleton from "../../components/ui/TableSkeleton";
 import { listDeliveryNotes } from "../../services/deliveryNotesApi";
 
-function fmtDate(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString();
-}
-
 export default function DeliveryNotesList() {
+  const { formatDate } = useTenantDateTime();
   const nav = useNavigate();
 
   const [q, setQ] = useState("");
@@ -152,7 +147,7 @@ export default function DeliveryNotesList() {
                       {row.number || "—"}
                     </td>
                     <td className="p-3 text-sm text-[var(--color-text-muted)]">
-                      {fmtDate(row.date || row.createdAt)}
+                      {formatDate(row.date || row.createdAt)}
                     </td>
                     <td className="p-3 text-sm text-[var(--color-text)]">
                       {row.customerName || "—"}

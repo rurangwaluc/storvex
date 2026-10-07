@@ -2,24 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import AsyncButton from "../../components/ui/AsyncButton";
 import { getDeliveryNoteById, updateDeliveryNote } from "../../services/deliveryNotesApi";
 import "./DeliveryNotes.css";
 
 function cleanText(value) {
   return String(value || "").trim();
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-
-  return d.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 function emptyItem() {
@@ -100,6 +89,8 @@ function EditSkeleton() {
 }
 
 export default function DeliveryNoteEdit() {
+  const { formatDate } = useTenantDateTime();
+
   const { id } = useParams();
   const navigate = useNavigate();
   const mountedRef = useRef(true);

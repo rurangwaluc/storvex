@@ -43,7 +43,7 @@ function ProductSearchResult({ product, onPick }) {
     <button type="button" onClick={onPick} className="svx-delivery-result-button">
       <strong>{product.name || "Unnamed product"}</strong>
       <span>
-        {product.category || "No category"} | Available stock: {product.stockQty ?? 0}
+        {product.category || "No category"} / Available stock: {product.stockQty ?? 0}
       </span>
     </button>
   );
@@ -248,7 +248,7 @@ export default function DeliveryNoteCreate() {
                   className="svx-delivery-input"
                   value={customerPhone}
                   onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder="+2507..."
+                  placeholder="Phone number"
                 />
               </div>
 
@@ -258,7 +258,7 @@ export default function DeliveryNoteCreate() {
                   className="svx-delivery-input"
                   value={customerAddress}
                   onChange={(e) => setCustomerAddress(e.target.value)}
-                  placeholder="Kigali, shop, site, or customer address"
+                  placeholder="Shop, site, street, or customer address"
                 />
               </div>
 

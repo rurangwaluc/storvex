@@ -2,24 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 
+import useTenantDateTime from "../../hooks/useTenantDateTime";
 import AsyncButton from "../../components/ui/AsyncButton";
 import { getDeliveryNoteById, openDeliveryNotePrint } from "../../services/deliveryNotesApi";
 import "./DeliveryNotes.css";
 
 function safeStr(value) {
   return value == null ? "" : String(value);
-}
-
-function formatDate(value) {
-  if (!value) return "—";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-
-  return d.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 function SmallLink({ to, children, primary = false }) {
@@ -58,6 +47,8 @@ function ViewSkeleton() {
 }
 
 export default function DeliveryNoteView() {
+  const { formatDate } = useTenantDateTime();
+
   const { id } = useParams();
   const nav = useNavigate();
 
