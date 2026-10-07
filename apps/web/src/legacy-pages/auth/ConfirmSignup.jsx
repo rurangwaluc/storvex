@@ -6,7 +6,9 @@ import PublicLayout from "../../components/layout/PublicLayout";
 import PasswordField from "../../components/auth/PasswordField";
 import AsyncButton from "../../components/ui/AsyncButton";
 import AuthPageSkeleton from "../../components/ui/AuthPageSkeleton";
-import apiClient from "../../services/apiClient";
+import apiClient, {
+  setActiveBranchId,
+} from "../../services/apiClient";
 import {
   findSubscriptionPlan,
   normalizeSubscriptionPlans,
@@ -108,12 +110,6 @@ function saveAuthSession(data) {
   const user = data?.user || {};
   const tenant = data?.tenant || {};
   const activeBranch = data?.activeBranch || data?.mainBranch || null;
-  const allowedBranches = Array.isArray(data?.allowedBranches)
-    ? data.allowedBranches
-    : activeBranch
-      ? [activeBranch]
-      : [];
-
   if (token) {
     localStorage.setItem("tenantToken", token);
     localStorage.setItem("token", token);
@@ -129,38 +125,35 @@ function saveAuthSession(data) {
   if (tenant?.name) localStorage.setItem("activeTenantName", tenant.name);
 
   if (activeBranch?.id) {
-    localStorage.setItem("activeBranchId", activeBranch.id);
-    localStorage.setItem("storvex_activeBranchId", activeBranch.id);
+    setActiveBranchId(activeBranch.id);
   }
 
   if (activeBranch?.name) {
     localStorage.setItem("activeBranchName", activeBranch.name);
-    localStorage.setItem("storvex_activeBranchName", activeBranch.name);
   }
 
   if (activeBranch?.code) {
     localStorage.setItem("activeBranchCode", activeBranch.code);
-    localStorage.setItem("storvex_activeBranchCode", activeBranch.code);
   }
 
   if (typeof activeBranch?.isMain === "boolean") {
     localStorage.setItem("activeBranchIsMain", String(activeBranch.isMain));
   }
 
-  localStorage.setItem("allowedBranches", JSON.stringify(allowedBranches));
-
   sessionStorage.removeItem("storvex_me_cache_v2");
 }
 
 function formatMoney(value, currency) {
   const n = Number(value);
-  const c = currency || "RWF";
+  const c = String(currency || "").trim().toUpperCase();
 
   if (!Number.isFinite(n)) return String(value || "—");
 
-  return `${new Intl.NumberFormat("en-US", {
+  const formatted = new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 0,
-  }).format(Math.round(n))} ${c}`;
+  }).format(Math.round(n));
+
+  return c ? `${formatted} ${c}` : formatted;
 }
 
 function normalizeMode(raw) {

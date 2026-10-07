@@ -16,7 +16,9 @@ import {
 } from "../../components/onboarding/OnboardingShell";
 import PasswordField from "../../components/auth/PasswordField";
 import AsyncButton from "../../components/ui/AsyncButton";
-import apiClient from "../../services/apiClient";
+import apiClient, {
+  setActiveBranchId,
+} from "../../services/apiClient";
 import { queryClient } from "../../lib/queryClient";
 
 function normalizeEmail(value) {
@@ -73,27 +75,23 @@ function clearOnboardingState() {
   ]);
 }
 
-function saveBranchSession(activeBranch, allowedBranches = []) {
+function saveBranchSession(activeBranch) {
   if (activeBranch?.id) {
-    localStorage.setItem("activeBranchId", activeBranch.id);
-    localStorage.setItem("storvex_activeBranchId", activeBranch.id);
+    setActiveBranchId(activeBranch.id);
   }
 
   if (activeBranch?.name) {
     localStorage.setItem("activeBranchName", activeBranch.name);
-    localStorage.setItem("storvex_activeBranchName", activeBranch.name);
   }
 
   if (activeBranch?.code) {
     localStorage.setItem("activeBranchCode", activeBranch.code);
-    localStorage.setItem("storvex_activeBranchCode", activeBranch.code);
   }
 
   if (typeof activeBranch?.isMain === "boolean") {
     localStorage.setItem("activeBranchIsMain", String(activeBranch.isMain));
   }
 
-  localStorage.setItem("allowedBranches", JSON.stringify(allowedBranches));
 }
 
 function persistAuthSession(data) {
@@ -139,7 +137,7 @@ function persistAuthSession(data) {
   }
 
   clearOldWorkspaceCache();
-  saveBranchSession(activeBranch, allowedBranches);
+  saveBranchSession(activeBranch);
 
   return {
     decoded,
