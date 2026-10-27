@@ -31,6 +31,7 @@ function reject(message) {
  */
 async function reserveSandboxRenewalCheckout({
   prisma,
+  transaction = null,
   reference,
   identity,
   plan,
@@ -64,7 +65,7 @@ async function reserveSandboxRenewalCheckout({
   }
 
   try {
-    return await prisma.$transaction(async (tx) => {
+    const reserve = async (tx) => {
       if (
         typeof tx.payment?.findUnique !== "function" ||
         typeof tx.paymentAttempt?.create !== "function"
@@ -139,7 +140,20 @@ async function reserveSandboxRenewalCheckout({
         currency: trusted.currency,
         status: "CREATED",
       };
-    });
+    };
+
+    if (transaction) {
+      if (
+        typeof transaction.payment?.findUnique !== "function" ||
+        typeof transaction.paymentAttempt?.create !== "function"
+      ) {
+        reject("Trusted checkout transaction required");
+      }
+
+      return await reserve(transaction);
+    }
+
+    return await prisma.$transaction(reserve);
   } catch (error) {
     if (error?.code === "P2002") {
       reject("Checkout already reserved for this payment");

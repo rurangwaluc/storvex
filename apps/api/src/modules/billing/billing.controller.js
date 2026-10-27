@@ -646,7 +646,49 @@ async function initiateRenewalPayment(req, res) {
 
     const reference = makeReference("RENEW");
 
-    const payment = await prisma.payment.create({
+    const { payment, reservation } = await prisma.$transaction(async tx => {
+      // Serialize checkout creation for this subscription.
+      // This lock is held until the new payment is committed.
+      const locked = await tx.$queryRaw`
+        SELECT "id"
+        FROM "Subscription"
+        WHERE "tenantId" = ${tenantId}
+        FOR UPDATE
+      `;
+
+      if (locked.length !== 1 || !locked[0].id) {
+        const error = new Error("Subscription not found.");
+        error.status = 409;
+        throw error;
+      }
+
+      if (sandboxRequested) {
+        // Age limits checkout reservation, not payment validity.
+        // Old payments remain available for provider verification.
+        const recentPending = await tx.payment.findFirst({
+          where: {
+            tenantId,
+            provider: "FLUTTERWAVE",
+            purpose: "SUBSCRIPTION_RENEWAL",
+            status: "PENDING",
+            createdAt: {
+              gte: new Date(Date.now() - 30 * 60 * 1000),
+            },
+          },
+          select: { id: true },
+        });
+
+        if (recentPending) {
+          const error = new Error(
+            "An earlier payment is awaiting confirmation. Check its status before starting another payment."
+          );
+          error.status = 409;
+          error.code = "PENDING_RENEWAL_EXISTS";
+          throw error;
+        }
+      }
+
+      const payment = await tx.payment.create({
       data: {
         tenantId,
         amount: snap.price,
@@ -690,6 +732,35 @@ async function initiateRenewalPayment(req, res) {
       },
     });
 
+      if (!sandboxRequested) {
+        return { payment, reservation: null };
+      }
+
+      const returnUrl =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3000/billing/return"
+          : "https://storvex.rw/billing/return";
+
+      const reservation = await reserveSandboxRenewalCheckout({
+        prisma,
+        transaction: tx,
+        reference: payment.reference,
+        identity: sandboxIdentity,
+        plan: {
+          planKey: snap.planKey,
+          amount: payment.amount,
+          currency: payment.currency,
+        },
+        customer: sandboxCustomer,
+        returnUrl,
+        checkoutMethod: inlineRequested
+          ? "FLUTTERWAVE_SANDBOX_INLINE"
+          : "FLUTTERWAVE_SANDBOX",
+      });
+
+      return { payment, reservation };
+    });
+
     if (sandboxRequested) {
       // Do not create a provider session before reservation.
       // The verified transaction will be handled separately.
@@ -709,14 +780,7 @@ async function initiateRenewalPayment(req, res) {
         returnUrl,
       };
 
-      const reservation = await reserveSandboxRenewalCheckout({
-        prisma,
-        reference: payment.reference,
-        ...checkoutArgs,
-        checkoutMethod: inlineRequested
-          ? "FLUTTERWAVE_SANDBOX_INLINE"
-          : "FLUTTERWAVE_SANDBOX",
-      });
+      // Payment and attempt committed atomically above.
 
       if (inlineRequested) {
         // Reservation is persisted before the browser receives the

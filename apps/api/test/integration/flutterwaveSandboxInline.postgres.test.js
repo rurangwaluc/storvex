@@ -167,6 +167,105 @@ test.after(async () => {
   }
 });
 
+
+// STEP 342CN-KG / ATOMIC RESERVATION ROLLBACK
+test("failed attempt reservation rolls back its parent payment", async () => {
+  const f = await fixture();
+
+  const {
+    reserveSandboxRenewalCheckout,
+  } = require("../../src/modules/payments/flutterwaveCheckoutReservation");
+
+  const reference =
+    `RENEW_ROLLBACK_${crypto.randomUUID().replaceAll("-", "")}`;
+
+  const initialPayments = await prisma.payment.count({
+    where: { tenantId: f.tenant.id },
+  });
+
+  const initialAttempts = await prisma.paymentAttempt.count({
+    where: { payment: { tenantId: f.tenant.id } },
+  });
+
+  await assert.rejects(
+    prisma.$transaction(async tx => {
+      await tx.$queryRaw`
+        SELECT "id"
+        FROM "Subscription"
+        WHERE "tenantId" = ${f.tenant.id}
+        FOR UPDATE
+      `;
+
+      await tx.payment.create({
+        data: {
+          tenantId: f.tenant.id,
+          amount: 10000,
+          currency: "RWF",
+          reference,
+          provider: "FLUTTERWAVE",
+          status: "PENDING",
+          purpose: "SUBSCRIPTION_RENEWAL",
+          planKey: "LAUNCH_GROWTH",
+        },
+      });
+
+      const deliberatelyBrokenTransaction = {
+        payment: tx.payment,
+        paymentAttempt: {
+          create: async () => {
+            throw new Error("INTENTIONAL_ATTEMPT_RESERVATION_FAILURE");
+          },
+        },
+      };
+
+      await reserveSandboxRenewalCheckout({
+        prisma,
+        transaction: deliberatelyBrokenTransaction,
+        reference,
+        identity: {
+          userId: f.owner.id,
+          tenantId: f.tenant.id,
+        },
+        plan: {
+          planKey: "LAUNCH_GROWTH",
+          amount: 10000,
+          currency: "RWF",
+        },
+        customer: {
+          email: f.owner.email,
+          name: "Storvex Customer",
+        },
+        returnUrl: "http://localhost:3000/billing/return",
+        checkoutMethod: "FLUTTERWAVE_SANDBOX_INLINE",
+      });
+    }),
+    /INTENTIONAL_ATTEMPT_RESERVATION_FAILURE/
+  );
+
+  assert.equal(
+    await prisma.payment.count({
+      where: { tenantId: f.tenant.id },
+    }),
+    initialPayments
+  );
+
+  assert.equal(
+    await prisma.paymentAttempt.count({
+      where: { payment: { tenantId: f.tenant.id } },
+    }),
+    initialAttempts
+  );
+
+  assert.equal(
+    await prisma.payment.findUnique({
+      where: { reference },
+    }),
+    null
+  );
+
+  assert.equal(providerCalls, 0);
+});
+
 test("test database identity is verified", async () => {
   const result = await prisma.$queryRaw`
     SELECT current_database() AS db, current_schema() AS schema_name
@@ -174,6 +273,75 @@ test("test database identity is verified", async () => {
 
   assert.equal(result[0].db, "storvex_payment_test");
   assert.equal(result[0].schema_name, "public");
+});
+
+
+test("recent pending renewal prevents a second reservation", async () => {
+  const f = await fixture();
+
+  const first = await checkout(f);
+  const second = await checkout(f);
+
+  assert.equal(first.statusCode, 201);
+  assert.equal(second.statusCode, 409);
+
+  assert.equal(
+    await prisma.payment.count({
+      where: {
+        tenantId: f.tenant.id,
+        provider: "FLUTTERWAVE",
+        purpose: "SUBSCRIPTION_RENEWAL",
+      },
+    }),
+    1
+  );
+
+  assert.equal(
+    await prisma.paymentAttempt.count({
+      where: {
+        payment: { tenantId: f.tenant.id },
+      },
+    }),
+    1
+  );
+
+  assert.equal(providerCalls, 0);
+});
+
+test("simultaneous renewal requests create only one checkout", async () => {
+  const f = await fixture();
+
+  const responses = await Promise.all([
+    checkout(f),
+    checkout(f),
+  ]);
+
+  assert.deepEqual(
+    responses.map(response => response.statusCode).sort(),
+    [201, 409]
+  );
+
+  assert.equal(
+    await prisma.payment.count({
+      where: {
+        tenantId: f.tenant.id,
+        provider: "FLUTTERWAVE",
+        purpose: "SUBSCRIPTION_RENEWAL",
+      },
+    }),
+    1
+  );
+
+  assert.equal(
+    await prisma.paymentAttempt.count({
+      where: {
+        payment: { tenantId: f.tenant.id },
+      },
+    }),
+    1
+  );
+
+  assert.equal(providerCalls, 0);
 });
 
 test("disabled Inline creates no payment or attempt", async () => {
@@ -367,6 +535,113 @@ test("Inline without verified provider payment stays pending", async () => {
       reference
     );
     return providerResponse(reference, 71250, "pending");
+  });
+
+  assert.equal(result.status, "PENDING");
+  assert.equal(requests, 1);
+
+  const payment = await prisma.payment.findUnique({ where: { reference } });
+  const attempt = await prisma.paymentAttempt.findUnique({
+    where: { checkoutReference: reference },
+  });
+  const subscription = await prisma.subscription.findUnique({
+    where: { tenantId: f.tenant.id },
+  });
+
+  assert.equal(payment.status, "PENDING");
+  assert.equal(attempt.status, "CREATED");
+  assert.equal(attempt.verifiedAt, null);
+  assert.equal(attempt.appliedAt, null);
+  assert.equal(subscription.endDate.toISOString(), f.subscription.endDate.toISOString());
+});
+
+// STEP 342CN-JS / PROVIDER FAILURE REGRESSIONS
+
+test("Provider failed cannot activate Inline renewal", async () => {
+  const f = await fixture();
+  const response = await checkout(f);
+  assert.equal(response.statusCode, 201, JSON.stringify(response.body));
+
+  const reference = response.body.paymentReference;
+  let requests = 0;
+
+  const result = await completeInline(f, reference, async url => {
+    requests++;
+    assert.equal(
+      new URL(url).searchParams.get("tx_ref"),
+      reference
+    );
+    return providerResponse(reference, 71250, "failed");
+  });
+
+  assert.equal(result.status, "PENDING");
+  assert.equal(requests, 1);
+
+  const payment = await prisma.payment.findUnique({ where: { reference } });
+  const attempt = await prisma.paymentAttempt.findUnique({
+    where: { checkoutReference: reference },
+  });
+  const subscription = await prisma.subscription.findUnique({
+    where: { tenantId: f.tenant.id },
+  });
+
+  assert.equal(payment.status, "PENDING");
+  assert.equal(attempt.status, "CREATED");
+  assert.equal(attempt.verifiedAt, null);
+  assert.equal(attempt.appliedAt, null);
+  assert.equal(subscription.endDate.toISOString(), f.subscription.endDate.toISOString());
+});
+
+test("Provider cancelled cannot activate Inline renewal", async () => {
+  const f = await fixture();
+  const response = await checkout(f);
+  assert.equal(response.statusCode, 201, JSON.stringify(response.body));
+
+  const reference = response.body.paymentReference;
+  let requests = 0;
+
+  const result = await completeInline(f, reference, async url => {
+    requests++;
+    assert.equal(
+      new URL(url).searchParams.get("tx_ref"),
+      reference
+    );
+    return providerResponse(reference, 71250, "cancelled");
+  });
+
+  assert.equal(result.status, "PENDING");
+  assert.equal(requests, 1);
+
+  const payment = await prisma.payment.findUnique({ where: { reference } });
+  const attempt = await prisma.paymentAttempt.findUnique({
+    where: { checkoutReference: reference },
+  });
+  const subscription = await prisma.subscription.findUnique({
+    where: { tenantId: f.tenant.id },
+  });
+
+  assert.equal(payment.status, "PENDING");
+  assert.equal(attempt.status, "CREATED");
+  assert.equal(attempt.verifiedAt, null);
+  assert.equal(attempt.appliedAt, null);
+  assert.equal(subscription.endDate.toISOString(), f.subscription.endDate.toISOString());
+});
+
+test("Provider verification unavailable cannot activate Inline renewal", async () => {
+  const f = await fixture();
+  const response = await checkout(f);
+  assert.equal(response.statusCode, 201, JSON.stringify(response.body));
+
+  const reference = response.body.paymentReference;
+  let requests = 0;
+
+  const result = await completeInline(f, reference, async url => {
+    requests++;
+    assert.equal(
+      new URL(url).searchParams.get("tx_ref"),
+      reference
+    );
+    return { ok: false };
   });
 
   assert.equal(result.status, "PENDING");

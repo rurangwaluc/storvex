@@ -949,6 +949,21 @@ function RenewContent({
     // A verified renewal cannot initiate a second checkout.
     if (inlinePaymentStatus === "SUCCESS") return;
 
+    // Do not replace an unresolved, recoverable payment reference.
+    // Closing Flutterwave is not proof that payment failed.
+    if (STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED) {
+      const pendingReference = readInlineRecoveryReference(
+        window.sessionStorage
+      );
+
+      if (pendingReference) {
+        toast(
+          "An earlier payment is awaiting confirmation. Check its status before starting another payment."
+        );
+        return;
+      }
+    }
+
     if (!selectedPlan) {
       toast.error("Select a subscription plan.");
       return;

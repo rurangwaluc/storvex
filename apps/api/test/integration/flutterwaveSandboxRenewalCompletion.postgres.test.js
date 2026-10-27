@@ -590,6 +590,145 @@ test(
 );
 
 
+// STEP 342CN-JG / OUT-OF-ORDER LATE PAYMENT CONFIRMATION
+test(
+  "Newer renewal completes before older late payment without losing either extension",
+  async () => {
+    const first = await fixture();
+    const before = await state(first);
+    const quote = await attachQuotedPurchase(first, 3);
+
+    const suffix = crypto.randomUUID().replaceAll("-", "");
+
+    const secondPayment = await prisma.payment.create({
+      data: {
+        tenantId: first.tenant.id,
+        reference: `RENEW_${suffix}`,
+        provider: "FLUTTERWAVE",
+        purpose: "SUBSCRIPTION_RENEWAL",
+        status: "PENDING",
+        amount: quote.totalAmount,
+        currency: quote.currency,
+        planKey: plan.planKey,
+        tierKey: plan.tierKey,
+        cycleKey: plan.cycleKey,
+        staffLimit: plan.staffLimit,
+        branchLimit: plan.branchLimit,
+        priceAmount: quote.monthlyAmount,
+        entitlementSnapshot: {},
+        renewalQuote: quote,
+      },
+    });
+
+    const secondAttempt = await prisma.paymentAttempt.create({
+      data: {
+        paymentId: secondPayment.id,
+        provider: "FLUTTERWAVE",
+        checkoutReference: secondPayment.reference,
+        status: "CREATED",
+        amount: secondPayment.amount,
+        currency: secondPayment.currency,
+        checkoutUrl:
+          "https://checkout-v2.dev-flutterwave.com/test",
+      },
+    });
+
+    const second = {
+      tenant: first.tenant,
+      payment: secondPayment,
+      attempt: secondAttempt,
+      transactionId: crypto.randomInt(100000000, 999999999),
+    };
+
+    // The earlier checkout is beyond the 30-minute retry window.
+    // Its payment remains valid for later provider verification.
+    const olderCreatedAt = new Date(
+      Date.now() - 31 * 60 * 1000
+    );
+
+    await prisma.payment.update({
+      where: { id: first.payment.id },
+      data: { createdAt: olderCreatedAt },
+    });
+
+    const newerResult = await complete(second);
+    assert.equal(newerResult.status, "SUCCESS");
+
+    const olderBeforeConfirmation = await state(first);
+    assert.equal(olderBeforeConfirmation.payment.status, "PENDING");
+    assert.equal(olderBeforeConfirmation.attempt.status, "CREATED");
+
+    // Flutterwave subsequently confirms the older checkout.
+    const olderResult = await complete(first);
+    assert.equal(olderResult.status, "SUCCESS");
+
+    const [savedFirst, savedSecond, subscription] =
+      await Promise.all([
+        prisma.payment.findUnique({
+          where: { id: first.payment.id },
+        }),
+        prisma.payment.findUnique({
+          where: { id: second.payment.id },
+        }),
+        prisma.subscription.findUnique({
+          where: { tenantId: first.tenant.id },
+        }),
+      ]);
+
+    assert.equal(savedFirst.status, "SUCCESS");
+    assert.equal(savedSecond.status, "SUCCESS");
+
+    const expectedEnd = addCalendarMonths(
+      addCalendarMonths(before.subscription.endDate, 3),
+      3
+    );
+
+    assert.equal(
+      subscription.endDate.toISOString(),
+      expectedEnd.toISOString()
+    );
+
+    const [firstAttempt, savedSecondAttempt] =
+      await Promise.all([
+        prisma.paymentAttempt.findUnique({
+          where: { id: first.attempt.id },
+        }),
+        prisma.paymentAttempt.findUnique({
+          where: { id: second.attempt.id },
+        }),
+      ]);
+
+    assert.equal(firstAttempt.status, "APPLIED");
+    assert.equal(savedSecondAttempt.status, "APPLIED");
+
+    // Repeated verification must not add another subscription period.
+    const repeatOlder = await complete(first, {
+      fetchImpl: async () => {
+        throw new Error("Provider must not be called again");
+      },
+    });
+
+    const repeatNewer = await complete(second, {
+      fetchImpl: async () => {
+        throw new Error("Provider must not be called again");
+      },
+    });
+
+    assert.equal(repeatOlder.status, "SUCCESS");
+    assert.equal(repeatNewer.status, "SUCCESS");
+
+    const unchanged = await prisma.subscription.findUnique({
+      where: { tenantId: first.tenant.id },
+    });
+
+    assert.equal(
+      unchanged.endDate.toISOString(),
+      expectedEnd.toISOString()
+    );
+  }
+);
+
+
 // STEP 342CN-Y / ATOMIC TRIAL ACTIVATION
 test(
   "Annual trial purchase activates exactly once after trial expiry",

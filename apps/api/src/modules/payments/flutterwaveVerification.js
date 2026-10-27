@@ -18,19 +18,47 @@ function verifyFlutterwaveResult(response, expected) {
     throw new Error("Invalid expected payment record");
   }
 
-  if (
-    response?.status !== "success" ||
-    !data ||
-    typeof data !== "object" ||
-    data.status !== "successful" ||
-    data.tx_ref !== expected.reference ||
-    data.currency !== expected.currency ||
-    typeof data.amount !== "number" ||
-    !Number.isFinite(data.amount) ||
-    data.amount !== expected.amount ||
-    !Number.isSafeInteger(data.id) ||
-    data.id <= 0
-  ) {
+  // Classify provider status only after establishing the
+  // transaction's identity, currency, amount, and response validity.
+  // A mismatched transaction must never establish terminal failure.
+  const matchesExpectedPayment =
+    response?.status === "success" &&
+    data &&
+    typeof data === "object" &&
+    data.tx_ref === expected.reference &&
+    data.currency === expected.currency &&
+    typeof data.amount === "number" &&
+    Number.isFinite(data.amount) &&
+    data.amount === expected.amount &&
+    Number.isSafeInteger(data.id) &&
+    data.id > 0;
+
+  if (!matchesExpectedPayment) {
+    return {
+      verified: false,
+      reason: "PAYMENT_VERIFICATION_FAILED",
+    };
+  }
+
+  if (data.status === "pending") {
+    return {
+      verified: false,
+      reason: "PAYMENT_VERIFICATION_FAILED",
+      providerStatus: "PENDING",
+      terminalFailure: false,
+    };
+  }
+
+  if (data.status === "failed" || data.status === "cancelled") {
+    return {
+      verified: false,
+      reason: "PAYMENT_VERIFICATION_FAILED",
+      providerStatus: data.status.toUpperCase(),
+      terminalFailure: true,
+    };
+  }
+
+  if (data.status !== "successful") {
     return {
       verified: false,
       reason: "PAYMENT_VERIFICATION_FAILED",

@@ -171,3 +171,51 @@ test("10. Accepts matching provider response via test transport", async () => {
     else process.env.NODE_ENV = previous;
   }
 });
+
+// STEP 342CN-JP / PROVIDER STATUS CLASSIFICATION
+test("Provider pending remains unresolved", () => {
+  const result = verifyFlutterwaveResult(
+    providerResult({ status: "pending" }),
+    expected
+  );
+
+  assert.equal(result.verified, false);
+  assert.equal(result.providerStatus, "PENDING");
+  assert.equal(result.terminalFailure, false);
+});
+
+for (const status of ["failed", "cancelled"]) {
+  test(`Explicit provider ${status} is distinguishable`, () => {
+    const result = verifyFlutterwaveResult(
+      providerResult({ status }),
+      expected
+    );
+
+    assert.equal(result.verified, false);
+    assert.equal(result.providerStatus, status.toUpperCase());
+    assert.equal(result.terminalFailure, true);
+  });
+}
+
+test("Mismatched failure cannot establish terminal failure", () => {
+  const result = verifyFlutterwaveResult(
+    providerResult({
+      status: "failed",
+      tx_ref: "WRONG_REFERENCE",
+    }),
+    expected
+  );
+
+  assert.equal(result.verified, false);
+  assert.notEqual(result.terminalFailure, true);
+});
+
+test("Malformed response cannot establish terminal failure", () => {
+  const result = verifyFlutterwaveResult(
+    { status: "success", data: { status: "failed" } },
+    expected
+  );
+
+  assert.equal(result.verified, false);
+  assert.notEqual(result.terminalFailure, true);
+});

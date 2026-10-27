@@ -21,6 +21,21 @@ const flow = fs.readFileSync(
   "utf8"
 );
 
+test("recoverable pending payment blocks another Inline checkout", () => {
+  assert.match(
+    renew,
+    /readInlineRecoveryReference\(\s*window\.sessionStorage/
+  );
+  assert.match(
+    renew,
+    /if \(pendingReference\) \{/
+  );
+  assert.match(
+    renew,
+    /An earlier payment is awaiting confirmation/
+  );
+});
+
 test("rapid payment clicks are blocked synchronously", () => {
   assert.match(renew, /useRef/);
   assert.match(
