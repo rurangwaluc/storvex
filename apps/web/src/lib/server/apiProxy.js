@@ -102,6 +102,13 @@ function trustedVercelClientIp(
    * Never enable this same trust model on
    * an arbitrary server.
    */
+  if (
+    env.NODE_ENV === "development" &&
+    env.VERCEL !== "1"
+  ) {
+    return "127.0.0.1";
+  }
+
   if (env.VERCEL !== "1") {
     return null;
   }
@@ -137,7 +144,14 @@ function configuredUpstreamOrigin(
   }
 
   if (
-    upstream.protocol !== "https:" ||
+    (
+      upstream.protocol !== "https:" &&
+      !(
+        env.NODE_ENV === "development" &&
+        upstream.protocol === "http:" &&
+        ["127.0.0.1", "localhost", "[::1]"].includes(upstream.hostname)
+      )
+    ) ||
     upstream.username ||
     upstream.password ||
     upstream.pathname !== "/" ||
@@ -256,6 +270,46 @@ function signProxyAssertion({
     .digest("hex");
 }
 
+
+const ACCOUNT_COOKIE = "storvex_account_session";
+
+function isAccountAuthRoute(request) {
+  const path = new URL(request.url).pathname;
+  return path === "/api/auth/account" ||
+    path.startsWith("/api/auth/account/");
+}
+
+function accountRequestCookie(request) {
+  if (!isAccountAuthRoute(request)) return null;
+
+  const matches = (request.headers.get("cookie") || "")
+    .split(";")
+    .map(value => value.trim())
+    .filter(value => value.startsWith(ACCOUNT_COOKIE + "="));
+
+  if (matches.length !== 1) return null;
+
+  const token = matches[0].slice(ACCOUNT_COOKIE.length + 1);
+  return /^[a-f0-9]{64}$/.test(token)
+    ? ACCOUNT_COOKIE + "=" + token
+    : null;
+}
+
+function allowedAccountSetCookie(value) {
+  if (typeof value !== "string" || /[\r\n]/.test(value)) {
+    return false;
+  }
+
+  const parts = value.split(";").map(value => value.trim());
+
+  return (
+    /^storvex_account_session=/.test(parts[0]) &&
+    parts.some(part => /^path=\/api\/auth\/account$/i.test(part)) &&
+    parts.some(part => /^httponly$/i.test(part)) &&
+    !parts.some(part => /^domain=/i.test(part))
+  );
+}
+
 function buildUpstreamHeaders(
   request,
   {
@@ -282,6 +336,12 @@ function buildUpstreamHeaders(
     }
   }
 
+  const accountCookie = accountRequestCookie(request);
+
+  if (accountCookie) {
+    headers.set("cookie", accountCookie);
+  }
+
   headers.set(
     PROXY_IP_HEADER,
     clientIp,
@@ -302,6 +362,7 @@ function buildUpstreamHeaders(
 
 function buildResponseHeaders(
   upstreamResponse,
+  request,
 ) {
   const headers =
     new Headers();
@@ -320,6 +381,24 @@ function buildResponseHeaders(
         name,
         value,
       );
+    }
+  }
+
+  const pathname = new URL(request.url).pathname;
+
+  if (
+    isAccountAuthRoute(request) ||
+    pathname === "/api/auth/login/unified/verify"
+  ) {
+    const values =
+      typeof upstreamResponse.headers.getSetCookie === "function"
+        ? upstreamResponse.headers.getSetCookie()
+        : [upstreamResponse.headers.get("set-cookie")];
+
+    for (const value of values) {
+      if (allowedAccountSetCookie(value)) {
+        headers.append("Set-Cookie", value);
+      }
     }
   }
 
@@ -358,6 +437,28 @@ export async function proxyApiRequest(
       "API_PROXY_UNAVAILABLE",
       "The service is temporarily unavailable.",
     );
+  }
+
+  // Account state-changing requests must originate from
+  // this browser-facing application, not another website.
+  if (
+    isAccountAuthRoute(request) &&
+    !["GET", "HEAD", "OPTIONS"].includes(request.method.toUpperCase())
+  ) {
+    const origin = request.headers.get("origin");
+    const expected = new URL(request.url).origin;
+    const fetchSite = request.headers.get("sec-fetch-site");
+
+    if (
+      (origin && origin !== expected) ||
+      fetchSite === "cross-site"
+    ) {
+      return errorResponse(
+        403,
+        "ACCOUNT_ORIGIN_FORBIDDEN",
+        "Request origin not permitted.",
+      );
+    }
   }
 
   if (isBlockedPath(request)) {
@@ -509,6 +610,7 @@ export async function proxyApiRequest(
       headers:
         buildResponseHeaders(
           upstreamResponse,
+          request,
         ),
     },
   );

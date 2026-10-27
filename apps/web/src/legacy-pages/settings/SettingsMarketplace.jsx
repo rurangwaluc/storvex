@@ -11,7 +11,6 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import {
-  ArrowLeft,
   AlertCircle,
   ChevronDown,
   ChevronRight,
@@ -541,28 +540,21 @@ export default function SettingsMarketplace() {
 
   return (
     <div className="svx-marketplace-page">
-      <div className="svx-marketplace-back-row">
-        <Link
-          to="/app/settings"
-          className="svx-marketplace-back-link"
-          aria-label="Back to settings"
-        >
-          <ArrowLeft size={17} aria-hidden="true" />
-          <span>Back to settings</span>
-        </Link>
+      <div className="svx-marketplace-intro">
+        <div>
+          <h2>Marketplace store</h2>
+          <p>Manage your public store and selling preferences.</p>
+        </div>
       </div>
 
       <section className="svx-marketplace-status-card">
         <div>
-          <p>Marketplace store</p>
           <h1>{statusTitle}</h1>
-          <span>{statusMessage}</span>
-
-          {!marketplaceReady && firstMissingDetails ? (
-            <strong className="svx-marketplace-status-next">
-              Next: {firstMissingDetails.title}
-            </strong>
-          ) : null}
+          <span>
+            {!marketplaceReady && firstMissingDetails
+              ? firstMissingDetails.title
+              : statusMessage}
+          </span>
         </div>
 
         <div className="svx-marketplace-status-actions">
@@ -605,13 +597,14 @@ export default function SettingsMarketplace() {
         </div>
       </section>
 
+      <div className="svx-marketplace-settings-panel">
       <SectionCard
         id="marketplace-profile"
         section="profile"
         activeSection={activeSection}
         onOpen={setActiveSection}
-        eyebrow="Store details"
-        title="Your Marketplace store"
+        eyebrow="Public store profile"
+        title="Store information"
         summary={profileSummary}
         icon={Store}
       >
@@ -799,6 +792,8 @@ export default function SettingsMarketplace() {
           </div>
         </SectionCard>
       ) : null}
+
+      </div>
 
       {dirty ? (
         <div className="svx-marketplace-save-bar">

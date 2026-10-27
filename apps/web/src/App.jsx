@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AuditLogs from "./legacy-pages/audit/AuditLogs";
 import ConfirmSignup from "./legacy-pages/auth/ConfirmSignup";
 import Login from "./legacy-pages/auth/Login";
+import AccountLogin from "./legacy-pages/auth/AccountLogin";
 import ForgotPassword from "./legacy-pages/auth/ForgotPassword";
 import ResetPassword from "./legacy-pages/auth/ResetPassword";
 import LandingPage from "./legacy-pages/public/LandingPage";
@@ -27,6 +28,7 @@ import InterStoreCreatePage from "./legacy-pages/interstore/InterStoreCreatePage
 import InterStoreDetail from "./legacy-pages/interstore/InterStoreDetail";
 
 import InventoryCreate from "./legacy-pages/inventory/InventoryCreate";
+import DevCatalogImport from "./legacy-pages/inventory/DevCatalogImport";
 import InventoryEdit from "./legacy-pages/inventory/InventoryEdit";
 import InventoryList from "./legacy-pages/inventory/InventoryList";
 import InventoryDetail from "./legacy-pages/inventory/InventoryDetail";
@@ -60,11 +62,13 @@ import RequireTenantAuth from "./auth/requireTenantAuth";
 import StoreLayout from "./components/StoreLayout";
 
 import TenantIntent from "./legacy-pages/Tenant/TenantIntent";
+import AccountSignup from "./legacy-pages/auth/AccountSignup";
 import OwnerPayment from "./legacy-pages/Tenant/OwnerPayment";
 import VerifyOtp from "./legacy-pages/Tenant/VerifyOtp";
 
 import SubscriptionGate from "./components/SubscriptionGate";
 import Renew from "./legacy-pages/Billing/Renew";
+import FlutterwaveReturn from "./legacy-pages/Billing/FlutterwaveReturn";
 
 import SuppliersList from "./legacy-pages/suppliers/SuppliersList";
 import SupplierCreate from "./legacy-pages/suppliers/SupplierCreate";
@@ -182,13 +186,19 @@ export default function App() {
           path="/marketplace/:storeSlug/:productSlug"
           element={<MarketplaceProductDetails />}
         />
-        <Route path="/signup" element={<TenantIntent />} />
+        <Route path="/signup" element={<AccountSignup />} />
+        <Route path="/business-setup" element={<TenantIntent />} />
         <Route path="/verify-otp" element={<VerifyOtp />} />
         <Route path="/owner-payment" element={<OwnerPayment />} />
         <Route path="/confirm-signup" element={<ConfirmSignup />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<AccountLogin />} />
+        <Route path="/login/workspace" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+
+        <Route path="/billing/return" element={<RequireTenantAuth />}>
+          <Route index element={<FlutterwaveReturn />} />
+        </Route>
 
         <Route path="/renew" element={<RequireTenantAuth />}>
           <Route index element={<GuardedRenewPage />} />
@@ -251,12 +261,28 @@ export default function App() {
                   }
                 />
 
+                {/* STEP 342CM-P / EMBEDDED SETTINGS RENEW */}
+                <Route
+                  path="billing/renew"
+                  element={
+                    <RequireRole roles={["OWNER"]}>
+                      <Renew embedded />
+                    </RequireRole>
+                  }
+                />
+
                 <Route path="security" element={<SettingsSecurity />} />
                 <Route path="audit" element={<SettingsAudit />} />
               </Route>
             </Route>
 
             <Route element={<RequireRole roles={["OWNER"]} />}>
+              {process.env.NODE_ENV === "development" && (
+                <Route
+                  path="inventory/demo-import"
+                  element={<DevCatalogImport />}
+                />
+              )}
               <Route path="marketplace" element={<MarketplaceRequests />} />
               <Route
                 path="marketplace/analytics"

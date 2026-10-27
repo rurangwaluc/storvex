@@ -291,66 +291,11 @@ export default function MarketplaceHeader() {
               onClick={closeNavigation}
             >
               <img
-                src="/storvex_icon.webp"
-                alt=""
+                src="/storvex-header-tricolor.png"
+                alt="Storvex"
                 draggable="false"
               />
-
-              <span>
-                <strong>Storvex</strong>
-                <small>Marketplace</small>
-              </span>
             </Link>
-
-            <div className="smh__categories">
-              <button
-                type="button"
-                className="smh__categories-trigger"
-                onClick={() =>
-                  setCategoriesOpen(
-                    (current) => !current,
-                  )
-                }
-                aria-expanded={categoriesOpen}
-              >
-                <span>Categories</span>
-                <ChevronDown
-                  size={17}
-                  strokeWidth={2.2}
-                  aria-hidden="true"
-                />
-              </button>
-
-              <div
-                className={cx(
-                  "smh__categories-menu",
-                  categoriesOpen && "is-open",
-                )}
-              >
-                {MARKETPLACE_CATEGORIES.map(
-                  (category) => (
-                    <button
-                      key={category.value}
-                      type="button"
-                      onClick={() =>
-                        chooseCategory(
-                          category.slug,
-                        )
-                      }
-                    >
-                      {category.label}
-                    </button>
-                  ),
-                )}
-
-                <Link
-                  to="/marketplace/shop"
-                  onClick={closeNavigation}
-                >
-                  View all products
-                </Link>
-              </div>
-            </div>
 
             <MarketplaceSearchBox
               className="smh__search"
@@ -472,6 +417,56 @@ export default function MarketplaceHeader() {
             className="smh__secondary-inner"
             aria-label="Marketplace navigation"
           >
+            <div className="smh__categories">
+              <button
+                type="button"
+                className="smh__categories-trigger"
+                onClick={() =>
+                  setCategoriesOpen(
+                    (current) => !current,
+                  )
+                }
+                aria-expanded={categoriesOpen}
+              >
+                <span>Categories</span>
+                <ChevronDown
+                  size={17}
+                  strokeWidth={2.2}
+                  aria-hidden="true"
+                />
+              </button>
+
+              <div
+                className={cx(
+                  "smh__categories-menu",
+                  categoriesOpen && "is-open",
+                )}
+              >
+                {MARKETPLACE_CATEGORIES.map(
+                  (category) => (
+                    <button
+                      key={category.value}
+                      type="button"
+                      onClick={() =>
+                        chooseCategory(
+                          category.slug,
+                        )
+                      }
+                    >
+                      {category.label}
+                    </button>
+                  ),
+                )}
+
+                <Link
+                  to="/marketplace/shop"
+                  onClick={closeNavigation}
+                >
+                  View all products
+                </Link>
+              </div>
+            </div>
+
             {[
               {
                 label: "Home",
@@ -511,8 +506,40 @@ export default function MarketplaceHeader() {
             <Link
               to="/"
               className="smh__business-link"
+              aria-label="Storvex for businesses"
             >
-              Storvex for businesses
+              <span className="smh__business-link-icon" aria-hidden="true">
+                <svg
+                  width="17"
+                  height="17"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 10h18l-1.5-6h-15L3 10Z" />
+                  <path d="M5 10v10h14V10" />
+                  <path d="M9 20v-7h6v7" />
+                  <path d="M3 10a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0" />
+                </svg>
+              </span>
+              <span>For Businesses</span>
+              <svg
+                className="smh__business-link-arrow"
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M7 17 17 7M8 7h9v9" />
+              </svg>
             </Link>
           </nav>
         </div>
@@ -541,7 +568,7 @@ export default function MarketplaceHeader() {
               >
                 <span className="smh-menu__brand-mark">
                   <img
-                    src="/storvex_icon.webp"
+                    src="/storvex-menu-tricolor-icon.png"
                     alt=""
                     aria-hidden="true"
                   />

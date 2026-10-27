@@ -6,7 +6,6 @@ const {
   marketplaceRequestNumber,
   buildWhatsappMessage,
   buildWhatsappUrl,
-  normalizePhone,
 } = require(
   "../src/modules/marketplace/marketplace.request.service",
 ).__private;
@@ -40,7 +39,7 @@ test(
 
     assert.equal(
       input.customerPhone,
-      "250785587833",
+      "0785587833",
     );
 
     assert.equal(
@@ -97,6 +96,38 @@ test(
       (error) =>
         error.code ===
         "CUSTOMER_EMAIL_REQUIRED",
+    );
+  },
+);
+
+test(
+  "accepts a generic African delivery location without Kigali coverage",
+  () => {
+    const input = validateRequestInput(
+      validInput({
+        fulfilmentMethod: "DELIVERY",
+        deliveryCoverage: null,
+        deliveryArea: "Gasabo",
+        deliveryLocality: "Remera",
+        deliveryDistrict: null,
+        deliverySector: null,
+        deliveryAddress: "KG 11 Avenue",
+      }),
+    );
+
+    assert.equal(
+      input.deliveryCoverage,
+      null,
+    );
+
+    assert.equal(
+      input.deliveryArea,
+      "Gasabo",
+    );
+
+    assert.equal(
+      input.deliveryLocality,
+      "Remera",
     );
   },
 );
@@ -288,13 +319,8 @@ test(
       });
 
     const url = buildWhatsappUrl(
-      "0785587833",
-      message,
-    );
-
-    assert.equal(
-      normalizePhone("0785587833"),
       "250785587833",
+      message,
     );
 
     assert.match(
@@ -675,7 +701,7 @@ test(
 
     assert.match(
       message,
-      /\*Item total\*\nRwf 650,000/,
+      /\*Item total\*\nRWF 650,000/,
     );
 
     assert.match(
@@ -685,7 +711,7 @@ test(
 
     assert.match(
       message,
-      /\*Phone\*\n\+250 785 587 833/,
+      /\*Phone\*\n\+250785587833/,
     );
 
     assert.doesNotMatch(
@@ -904,7 +930,7 @@ test(
     );
     assert.match(
       email.text,
-      /Rwf 650,000/,
+      /RWF 650,000/,
     );
     assert.match(
       email.html,

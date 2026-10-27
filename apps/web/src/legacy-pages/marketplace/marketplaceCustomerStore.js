@@ -98,7 +98,7 @@ export function marketplaceProductSnapshot(product) {
       !Array.isArray(product.attributes)
         ? { ...product.attributes }
         : {},
-    currency: cleanString(product?.currency) || "RWF",
+    currency: cleanString(product?.currency),
     price: Math.max(0, Number(product?.price || 0)),
     regularPrice: Math.max(
       0,

@@ -1,0 +1,273 @@
+/* Storvex billing experience: visual styling only. Payment verification is unchanged. */
+.svx-billing-page {
+  --billing-card: #fff;
+  --billing-panel: #f7f9fc;
+  --billing-text: #11151c;
+  --billing-muted: #617084;
+  --billing-border: #e3e7eb;
+  --billing-primary: #168df7;
+  --billing-primary-soft: #eaf4ff;
+  --billing-money: #11151c;
+  gap: clamp(16px, 2.5vw, 26px);
+  font-family: "Archivo", system-ui, sans-serif;
+}
+.svx-billing-page .svx-billing-command,
+.svx-billing-page .svx-billing-card {
+  border: 1px solid var(--billing-border);
+  border-radius: 24px;
+  background: var(--billing-card);
+  box-shadow: none;
+}
+.svx-billing-page .svx-billing-command {
+  padding: clamp(22px, 3vw, 34px);
+  background: #f5f8f2;
+}
+.svx-billing-page .svx-billing-command-main h2 {
+  font-size: clamp(29px, 3vw, 43px);
+  letter-spacing: -.06em;
+  line-height: 1.06;
+}
+.svx-billing-page .svx-billing-command-main > span,
+.svx-billing-page .svx-billing-card-head span,
+.svx-billing-page .svx-billing-selected > span {
+  letter-spacing: .105em;
+  font-size: 11px;
+}
+.svx-billing-page .svx-billing-grid { grid-template-columns: minmax(0, 1.65fr) minmax(250px, .75fr); gap: 16px; }
+.svx-billing-page .svx-billing-card { padding: clamp(19px, 2.6vw, 28px); }
+.svx-billing-page .svx-billing-current { min-height: 0; }
+.svx-billing-page .svx-billing-current-amount { color: #11151c; letter-spacing: -.055em; }
+.svx-billing-page .svx-billing-current-meta > div,
+.svx-billing-page .svx-billing-capacity-line {
+  border: 1px solid var(--billing-border);
+  background: var(--billing-panel);
+  border-radius: 15px;
+}
+.svx-billing-page .svx-billing-progress { background: #e8eaf0; }
+.svx-billing-page .svx-billing-progress span { background: #168df7; }
+.svx-billing-page .svx-billing-renewal { overflow: visible; padding: 0; }
+.svx-billing-page .svx-billing-renewal > .svx-billing-card-head { padding: clamp(20px,2.6vw,28px); }
+.svx-billing-page .svx-billing-renewal-layout { gap: 20px; padding: clamp(16px,2.4vw,26px); grid-template-columns: minmax(0,1fr) minmax(260px,.46fr); }
+.svx-billing-page .svx-billing-plan-row { border-radius: 17px; padding: 18px; }
+.svx-billing-page .svx-billing-plan-row.is-active {
+  background: #f8fbe9;
+  border: 1.5px solid #93ac1d;
+  box-shadow: inset 4px 0 0 #dff448;
+}
+.svx-billing-page .svx-billing-plan-row:focus-visible,
+.svx-billing-page button:focus-visible { outline: 3px solid #168df7; outline-offset: 3px; }
+.svx-billing-page .svx-billing-plan-features span { padding: 0; background: transparent; }
+.svx-billing-page .svx-billing-renewal-panel { background: #f7f9fc; border-radius: 18px; border: 1px solid var(--billing-border); padding: 20px; }
+.svx-billing-page .svx-billing-renewal-panel .svx-billing-primary-btn { background: #ff5961; border-color: #ff5961; color: #11151c; box-shadow: none; min-height: 50px; }
+.svx-billing-page .svx-billing-renewal-panel .svx-billing-primary-btn:hover { background: #ff777d; border-color: #ff777d; }
+.svx-billing-page .svx-billing-renewal-panel .svx-billing-primary-btn:disabled { opacity: .55; }
+.svx-billing-page .svx-billing-history-row strong { overflow-wrap: anywhere; }
+:root[data-theme="dark"] .svx-billing-page,
+:root.dark .svx-billing-page { --billing-card:#1b1c1e;--billing-panel:#171819;--billing-text:#f7f8fa;--billing-muted:#b5bdc9;--billing-border:#343638;--billing-primary:#42a5ff;--billing-primary-soft:#142334;--billing-money:#f7f8fa; }
+:root[data-theme="dark"] .svx-billing-page .svx-billing-command,
+:root.dark .svx-billing-page .svx-billing-command { background:#222921; }
+:root[data-theme="dark"] .svx-billing-page .svx-billing-card,
+:root.dark .svx-billing-page .svx-billing-card { background:var(--billing-card); border-color:var(--billing-border); box-shadow:none; }
+:root[data-theme="dark"] .svx-billing-page .svx-billing-current-amount,
+:root.dark .svx-billing-page .svx-billing-current-amount { color:#f7f8fa; }
+:root[data-theme="dark"] .svx-billing-page .svx-billing-plan-row.is-active,
+:root.dark .svx-billing-page .svx-billing-plan-row.is-active { background:#262a1d; border-color:#c8dd3b; box-shadow:inset 4px 0 0 #dff448; }
+:root[data-theme="dark"] .svx-billing-page .svx-billing-current-meta > div,
+:root[data-theme="dark"] .svx-billing-page .svx-billing-capacity-line,
+:root[data-theme="dark"] .svx-billing-page .svx-billing-renewal-panel,
+:root.dark .svx-billing-page .svx-billing-current-meta > div,
+:root.dark .svx-billing-page .svx-billing-capacity-line,
+:root.dark .svx-billing-page .svx-billing-renewal-panel { background:#171819; border-color:#343638; }
+/* Renewal and provider-return experiences use the same brand primitives. */
+.svx-renew-page { font-family:"Archivo",system-ui,sans-serif; }
+.svx-renew-page > main { max-width:1120px; }
+.svx-renew-page .rounded-\[28px\] { border-radius:24px; box-shadow:none; }
+.svx-renew-page button:focus-visible,
+.svx-renew-page a:focus-visible,
+.svx-flutterwave-return a:focus-visible { outline:3px solid #168df7; outline-offset:3px; }
+.svx-flutterwave-return { font-family:"Archivo",system-ui,sans-serif; background:#f8f9f6; }
+.svx-flutterwave-return-card { background:#fff; border:1px solid #e3e7eb; border-radius:26px; box-shadow:0 22px 60px rgba(10,22,35,.07); }
+.svx-flutterwave-return-card h1 { letter-spacing:-.045em; font-size:clamp(26px,3.3vw,38px); line-height:1.13; }
+.svx-flutterwave-return-card a:first-child { background:#ff5961; color:#11151c; }
+:root[data-theme="dark"] .svx-flutterwave-return,
+:root.dark .svx-flutterwave-return { background:#111213; }
+:root[data-theme="dark"] .svx-flutterwave-return-card,
+:root.dark .svx-flutterwave-return-card { background:#1b1c1e; border-color:#343638; box-shadow:none; }
+@media (max-width:1180px) { .svx-billing-page .svx-billing-grid,.svx-billing-page .svx-billing-renewal-layout { grid-template-columns:minmax(0,1fr); } }
+@media (max-width:720px) {
+  .svx-billing-page .svx-billing-command { grid-template-columns:minmax(0,1fr); }
+  .svx-billing-page .svx-billing-current-meta { grid-template-columns:minmax(0,1fr); }
+  .svx-billing-page .svx-billing-card,.svx-billing-page .svx-billing-command { border-radius:18px; }
+  .svx-billing-page .svx-billing-renewal-panel { padding:16px; }
+  .svx-billing-page .svx-billing-plan-main { display:grid; grid-template-columns:minmax(0,1fr); }
+  .svx-billing-page .svx-billing-plan-main > span { white-space:normal; }
+  .svx-billing-page .svx-billing-renewal-layout { padding:16px; }
+  .svx-flutterwave-return { padding-inline:18px; }
+}
+@media (prefers-reduced-motion:reduce) { .svx-billing-page,.svx-billing-page > * { animation:none; } }
+
+/* STEP 342CM-C / BILLING OVERVIEW */
+/* UI only: subscription API, payments and history are unchanged. */
+
+.svx-billing-page {
+  min-width: 0;
+}
+
+.svx-billing-page .svx-billing-command {
+  background: var(--billing-card, #fff);
+  border: 1px solid var(--billing-border, #e1e4ea);
+  box-shadow: none;
+}
+
+.svx-billing-page .svx-billing-command-main h2 {
+  font-size: clamp(23px, 2.5vw, 31px);
+  letter-spacing: -.045em;
+}
+
+.svx-billing-page .svx-billing-current,
+.svx-billing-page .svx-billing-capacity {
+  min-height: 0;
+}
+
+.svx-billing-page .svx-billing-manage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: clamp(20px, 2.5vw, 30px);
+}
+
+.svx-billing-page .svx-billing-manage-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.svx-billing-page .svx-billing-manage-eyebrow {
+  display: block;
+  color: var(--billing-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.svx-billing-page .svx-billing-manage h3 {
+  margin: 8px 0 6px;
+  color: var(--billing-text);
+  font-size: clamp(19px, 2vw, 24px);
+  font-weight: 800;
+  letter-spacing: -.04em;
+}
+
+.svx-billing-page .svx-billing-manage-copy > p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--billing-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.svx-billing-page .svx-billing-manage-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px 12px;
+  margin-top: 18px;
+  font-size: 12px;
+}
+
+.svx-billing-page .svx-billing-manage-summary > span {
+  color: var(--billing-muted);
+}
+
+.svx-billing-page .svx-billing-manage-summary strong {
+  color: var(--billing-text);
+  font-weight: 750;
+}
+
+.svx-billing-page .svx-billing-manage-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--billing-border);
+}
+
+.svx-billing-page .svx-billing-manage-copy
+> p.svx-billing-manage-availability {
+  margin-top: 12px;
+}
+
+.svx-billing-page .svx-billing-manage-action {
+  display: grid;
+  flex: 0 0 228px;
+  gap: 9px;
+  justify-items: stretch;
+}
+
+.svx-billing-page .svx-billing-manage-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 11px 16px;
+  border: 1px solid #ff5961;
+  border-radius: 11px;
+  background: #ff5961;
+  color: #11151c;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: none;
+}
+
+.svx-billing-page .svx-billing-manage-link:hover {
+  background: #ff777d;
+  border-color: #ff777d;
+  color: #11151c;
+  box-shadow: none;
+}
+
+.svx-billing-page .svx-billing-manage-link:focus-visible {
+  outline: 3px solid #d3ef45;
+  outline-offset: 3px;
+}
+
+.svx-billing-page .svx-billing-manage-action small {
+  color: var(--billing-muted);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+:root[data-theme="dark"] .svx-billing-page .svx-billing-command,
+:root.dark .svx-billing-page .svx-billing-command {
+  background: var(--billing-card);
+  border-color: var(--billing-border);
+}
+
+@media (max-width: 760px) {
+  .svx-billing-page .svx-billing-manage {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+
+  .svx-billing-page .svx-billing-manage-action {
+    flex: 0 1 auto;
+    width: 100%;
+  }
+
+  .svx-billing-page .svx-billing-manage-divider {
+    display: none;
+  }
+}
+
+@media (max-width: 390px) {
+  .svx-billing-page .svx-billing-manage {
+    padding: 18px 15px;
+  }
+
+  .svx-billing-page .svx-billing-manage-link {
+    width: 100%;
+  }
+}

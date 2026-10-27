@@ -55,21 +55,39 @@ function productImageSource(product) {
   );
 }
 
-function formatMoney(value, currency = "RWF") {
+function formatMoney(value, currency) {
   const amount = Number(value || 0);
 
   if (!Number.isFinite(amount)) {
     return "";
   }
 
-  const formatted =
-    new Intl.NumberFormat("en-RW", {
-      maximumFractionDigits: 0,
-    }).format(amount);
+  const code =
+    cleanString(currency).toUpperCase();
 
-  return currency === "RWF"
-    ? `Rwf ${formatted}`
-    : `${currency} ${formatted}`;
+  if (!code) {
+    return new Intl.NumberFormat(
+      "en",
+      {
+        maximumFractionDigits: 2,
+      },
+    ).format(amount);
+  }
+
+  try {
+    return new Intl.NumberFormat(
+      "en",
+      {
+        style: "currency",
+        currency: code,
+        currencyDisplay: "code",
+      },
+    )
+      .format(amount)
+      .replace(/\u00a0/g, " ");
+  } catch {
+    return `${code} ${amount.toLocaleString()}`;
+  }
 }
 
 function productUrl(product) {

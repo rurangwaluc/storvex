@@ -1,0 +1,911 @@
+
+/* STEP 342CM-Q / APPROVED REFERENCE
+   Reference-aligned Renew. Coral actions, neutral surfaces, no navy. */
+
+.svx-renew-premium {
+  --rq-bg: #ffffff;
+  --rq-card: #ffffff;
+  --rq-soft: #f5f6f6;
+  --rq-muted: #687078;
+  --rq-text: #202426;
+  --rq-line: #e1e4e5;
+  --rq-coral: #ff5961;
+  --rq-lime: #c9eb3a;
+  color: var(--rq-text);
+  background: var(--rq-bg);
+  min-width: 0;
+  min-height: 100vh;
+  font-family: "Archivo", system-ui, sans-serif;
+}
+.svx-renew-premium.is-dark {
+  --rq-bg: #171717;
+  --rq-card: #202020;
+  --rq-soft: #292929;
+  --rq-muted: #b0b0b0;
+  --rq-text: #f4f4f4;
+  --rq-line: #373737;
+}
+.svx-renew-premium.is-embedded {
+  background: transparent;
+  min-height: 0;
+  width: 100%;
+}
+.svx-renew-premium *,
+.svx-renew-premium *::before,
+.svx-renew-premium *::after { box-sizing: border-box; }
+.svx-rq-wrap {
+  max-width: 1200px;
+  margin: auto;
+  padding: 26px 24px 40px;
+  min-width: 0;
+}
+.is-embedded .svx-rq-wrap {
+  width: 100%;
+  max-width: none;
+  padding: 0 0 24px;
+}
+.svx-rq-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 12px;
+  color: var(--rq-muted);
+  font-size: 11px;
+}
+.svx-rq-breadcrumb button {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--rq-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.svx-rq-breadcrumb strong { color: var(--rq-text); }
+.svx-rq-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 19px;
+}
+.svx-rq-heading h1 {
+  margin: 0;
+  color: var(--rq-text);
+  font-size: clamp(23px, 2.4vw, 30px);
+  font-weight: 850;
+  line-height: 1.2;
+  letter-spacing: -.045em;
+}
+.svx-rq-heading p {
+  margin: 7px 0 0;
+  color: var(--rq-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.svx-rq-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 13px 15px;
+  margin-bottom: 20px;
+  background: var(--rq-card);
+  border: 1px solid var(--rq-line);
+  border-radius: 12px;
+}
+.svx-rq-strip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 12px;
+}
+.svx-rq-strip-item + .svx-rq-strip-item {
+  border-left: 1px solid var(--rq-line);
+}
+.svx-rq-strip-item > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.svx-rq-strip-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  height: 32px;
+  width: 32px;
+  background: var(--rq-soft);
+  border-radius: 9px;
+  color: var(--rq-text);
+  font-weight: 800;
+}
+.svx-rq-strip-item:first-child .svx-rq-strip-icon {
+  color: #308343;
+  background: #e5f5e3;
+}
+.is-dark .svx-rq-strip-item:first-child .svx-rq-strip-icon {
+  color: var(--rq-lime);
+  background: #343e22;
+}
+.svx-rq-strip-item small {
+  color: var(--rq-muted);
+  font-size: 10px;
+}
+.svx-rq-strip-item strong {
+  color: var(--rq-text);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.svx-rq-strip-item div > span {
+  color: var(--rq-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.svx-rq-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(280px, .8fr);
+  align-items: start;
+  gap: 17px;
+  min-width: 0;
+}
+.svx-rq-left { display: grid; gap: 17px; min-width: 0; }
+.svx-rq-section-title { margin: 0 0 12px; }
+.svx-rq-section-title h2,
+.svx-rq-payment-card h2,
+.svx-rq-steps h2 {
+  margin: 0;
+  color: var(--rq-text);
+  font-size: 15px;
+  font-weight: 850;
+  letter-spacing: -.035em;
+}
+.svx-rq-section-title p {
+  margin: 5px 0 0;
+  color: var(--rq-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.svx-rq-plans {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+.svx-rq-plan {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+  min-height: 185px;
+  padding: 13px 11px 10px;
+  background: var(--rq-card);
+  border: 1px solid var(--rq-line);
+  border-radius: 11px;
+  color: var(--rq-text);
+  text-align: left;
+  cursor: pointer;
+}
+.svx-rq-plan.is-selected {
+  padding: 12px 10px 9px;
+  border: 2px solid var(--rq-lime);
+}
+.svx-rq-plan:disabled { opacity: .5; cursor: not-allowed; }
+.svx-rq-plan-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  font-size: 12px;
+}
+.svx-rq-radio {
+  flex: 0 0 13px;
+  width: 13px;
+  height: 13px;
+  border: 1px solid var(--rq-muted);
+  border-radius: 50%;
+}
+.is-selected .svx-rq-radio {
+  border: 4px solid #9fbe21;
+}
+.svx-rq-recommended {
+  align-self: flex-start;
+  padding: 3px 6px;
+  margin-top: 6px;
+  border-radius: 5px;
+  background: #edf5cd;
+  color: #58710f;
+  font-size: 9px;
+  font-weight: 800;
+}
+.is-dark .svx-rq-recommended {
+  background: #374125;
+  color: #dcf58e;
+}
+.svx-rq-price {
+  margin-top: 10px;
+  color: var(--rq-text);
+  font-size: clamp(14px, 1.5vw, 19px);
+  font-weight: 850;
+  letter-spacing: -.04em;
+  overflow-wrap: anywhere;
+}
+.svx-rq-price small {
+  display: block;
+  margin-top: 3px;
+  color: var(--rq-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+.svx-rq-limits {
+  display: block;
+  margin: 9px 0 7px;
+  color: var(--rq-muted);
+  font-size: 10px;
+}
+.svx-rq-feature {
+  display: block;
+  margin: 2px 0;
+  color: var(--rq-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+.svx-rq-plan-action {
+  display: grid;
+  place-items: center;
+  min-height: 33px;
+  width: 100%;
+  padding: 7px;
+  margin-top: auto;
+  border: 1px solid var(--rq-line);
+  border-radius: 7px;
+  background: var(--rq-soft);
+  color: var(--rq-text);
+  font-size: 10px;
+  font-weight: 800;
+}
+.svx-rq-plan-action.is-selected {
+  background: var(--rq-coral);
+  border-color: var(--rq-coral);
+  color: #171717;
+}
+.svx-rq-warning {
+  font-size: 11px;
+  color: #b87619;
+}
+.svx-rq-payment-card {
+  padding: 16px;
+  background: var(--rq-card);
+  border: 1px solid var(--rq-line);
+  border-radius: 12px;
+  min-width: 0;
+}
+.svx-rq-details { display: grid; gap: 9px; margin: 15px 0; }
+.svx-rq-details > div,
+.svx-rq-totals > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.svx-rq-details span,
+.svx-rq-totals span {
+  color: var(--rq-muted);
+  font-size: 10px;
+}
+.svx-rq-details strong,
+.svx-rq-totals strong {
+  color: var(--rq-text);
+  font-size: 11px;
+  font-weight: 750;
+  text-align: right;
+}
+.svx-rq-duration-heading {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 18px 0 8px;
+}
+.svx-rq-duration-heading strong { font-size: 11px; }
+.svx-rq-duration-heading small {
+  color: var(--rq-muted);
+  font-size: 10px;
+}
+.svx-rq-duration-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+.svx-rq-duration {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 3px;
+  border: 1px solid var(--rq-line);
+  border-radius: 7px;
+  background: var(--rq-soft);
+  color: var(--rq-text);
+  cursor: pointer;
+}
+.svx-rq-duration.is-selected {
+  border-color: #a7c622;
+  background: var(--rq-card);
+}
+.svx-rq-duration strong { font-size: 10px; }
+.svx-rq-duration span {
+  color: var(--rq-muted);
+  font-size: 9px;
+}
+.svx-rq-totals {
+  display: grid;
+  gap: 10px;
+  margin: 17px 0;
+  padding: 13px 0;
+  border-top: 1px solid var(--rq-line);
+  border-bottom: 1px solid var(--rq-line);
+}
+.svx-rq-totals .is-saving span,
+.svx-rq-totals .is-saving strong { color: #1b9a68; }
+.svx-rq-grand-total strong { font-size: 17px; }
+.svx-rq-payment-method > strong { font-size: 11px; }
+.svx-rq-provider {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 8px 0 12px;
+  padding: 10px;
+  background: var(--rq-soft);
+  border: 1px solid var(--rq-line);
+  border-radius: 8px;
+}
+.svx-rq-provider > span { color: #91b11d; }
+.svx-rq-provider > div { display: grid; gap: 3px; }
+.svx-rq-provider strong { font-size: 10px; }
+.svx-rq-provider small { color: var(--rq-muted); font-size: 9px; }
+.svx-rq-checkout {
+  width: 100%;
+  min-height: 39px;
+  padding: 10px;
+  border: 1px solid var(--rq-coral);
+  border-radius: 8px;
+  background: var(--rq-coral);
+  color: #161616;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.svx-rq-checkout:hover:not(:disabled) { background: #ff747c; }
+.svx-rq-checkout:disabled {
+  background: var(--rq-soft);
+  border-color: var(--rq-line);
+  color: var(--rq-muted);
+  cursor: not-allowed;
+}
+.svx-rq-checkout-note,
+.svx-rq-secure {
+  margin: 9px 0 0;
+  color: var(--rq-muted);
+  font-size: 10px;
+  line-height: 1.5;
+  text-align: center;
+}
+.svx-rq-secondary {
+  padding: 9px 13px;
+  border: 1px solid var(--rq-line);
+  border-radius: 8px;
+  background: var(--rq-card);
+  color: var(--rq-text);
+  cursor: pointer;
+}
+.svx-rq-status-check { width: 100%; margin-top: 10px; }
+.svx-rq-steps {
+  padding: 14px 16px;
+  background: var(--rq-soft);
+  border: 1px solid var(--rq-line);
+  border-radius: 11px;
+}
+.svx-rq-steps h2 { font-size: 12px; margin-bottom: 12px; }
+.svx-rq-step-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.svx-rq-step-grid > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+.svx-rq-step-grid b {
+  display: grid;
+  place-items: center;
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #c6e83c;
+  color: #222;
+  font-size: 10px;
+}
+.svx-rq-step-grid span { display: grid; gap: 3px; }
+.svx-rq-step-grid strong { font-size: 10px; }
+.svx-rq-step-grid small {
+  color: var(--rq-muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+.svx-rq-footer {
+  margin-top: 20px;
+  color: var(--rq-muted);
+  font-size: 11px;
+}
+.svx-rq-footer strong { color: var(--rq-text); }
+.svx-rq-checkout:focus-visible,
+.svx-rq-duration:focus-visible,
+.svx-rq-plan:focus-visible,
+.svx-rq-breadcrumb button:focus-visible {
+  outline: 3px solid #c9eb3a;
+  outline-offset: 3px;
+}
+@media (max-width: 1080px) {
+  .svx-rq-layout { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 740px) {
+  .svx-rq-strip { grid-template-columns: 1fr; }
+  .svx-rq-strip-item + .svx-rq-strip-item {
+    border-left: 0;
+    border-top: 1px solid var(--rq-line);
+  }
+  .svx-rq-plans { grid-template-columns: 1fr; }
+  .svx-rq-plan { min-height: 0; }
+  .svx-rq-step-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 450px) {
+  .svx-rq-wrap { padding: 20px 16px 35px; }
+  .is-embedded .svx-rq-wrap { padding: 0 0 24px; }
+  .svx-rq-duration-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* STEP 342CM-S / RENEW NAVIGATION */
+
+.svx-renew-premium .svx-rq-heading-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.svx-renew-premium .svx-rq-heading-copy {
+  min-width: 0;
+}
+
+.svx-renew-premium .svx-rq-back,
+.svx-renew-premium .svx-rq-theme-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--rq-line);
+  border-radius: 10px;
+  background: var(--rq-card);
+  color: var(--rq-text);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.svx-renew-premium .svx-rq-back:hover,
+.svx-renew-premium .svx-rq-theme-icon:hover {
+  background: var(--rq-soft);
+}
+
+.svx-renew-premium .svx-rq-back:focus-visible,
+.svx-renew-premium .svx-rq-theme-icon:focus-visible {
+  outline: 3px solid #c9eb3a;
+  outline-offset: 3px;
+}
+
+.svx-renew-premium .svx-rq-theme-icon svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+
+@media (max-width: 600px) {
+  .svx-renew-premium .svx-rq-heading-main {
+    gap: 9px;
+  }
+  .svx-renew-premium .svx-rq-back {
+    width: 32px;
+    height: 32px;
+  }
+}
+
+/* STEP 342CM-T / RECOVERY CONTROLS */
+.svx-renew-premium .svx-rq-theme-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+  padding: 4px;
+  border: 1px solid var(--rq-line);
+  border-radius: 999px;
+  background: var(--rq-card);
+  color: var(--rq-muted);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.svx-renew-premium .svx-rq-theme-pill > span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+.svx-renew-premium .svx-rq-theme-pill > span.is-active {
+  background: var(--rq-soft);
+  color: var(--rq-text);
+}
+
+.svx-renew-premium .svx-rq-theme-pill svg {
+  width: 16px;
+  height: 16px;
+}
+
+.svx-renew-premium .svx-rq-theme-pill:focus-visible {
+  outline: 3px solid #c9eb3a;
+  outline-offset: 3px;
+}
+
+/* STEP 342CM-V / RENEW REFINEMENT */
+
+.svx-renew-premium .svx-rq-left {
+  container-type: inline-size;
+}
+
+.svx-renew-premium .svx-rq-grand-total {
+  padding-top: 10px;
+  border-top: 1px solid var(--rq-line);
+}
+
+.svx-renew-premium .svx-rq-grand-total span {
+  font-size: 11px;
+  font-weight: 750;
+  color: var(--rq-text);
+}
+
+.svx-renew-premium .svx-rq-grand-total strong {
+  font-size: clamp(19px, 2vw, 23px);
+  font-weight: 850;
+  letter-spacing: -.045em;
+}
+
+.svx-renew-premium .svx-rq-feature {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.svx-renew-premium .svx-rq-plan-action {
+  margin-top: 12px;
+}
+
+.svx-renew-premium .svx-rq-plan.is-selected
+.svx-rq-plan-action {
+  background: #ff5961;
+  border-color: #ff5961;
+  color: #171717;
+}
+
+.svx-renew-premium .svx-rq-payment-card {
+  align-self: start;
+}
+
+@container (max-width: 640px) {
+  .svx-renew-premium .svx-rq-plans {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (max-width: 420px) {
+  .svx-renew-premium .svx-rq-plans {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .svx-renew-premium .svx-rq-heading {
+    gap: 12px;
+  }
+
+  .svx-renew-premium .svx-rq-payment-card {
+    padding: 15px;
+  }
+
+  .svx-renew-premium .svx-rq-plan {
+    min-height: 0;
+  }
+}
+
+/* STEP 342CM-X / MATCH APP HEADER THEME
+   Exact color treatment from AppHeader.css. */
+
+.svx-renew-premium .svx-rq-theme-pill {
+  width: 82px;
+  min-width: 82px;
+  height: 39px;
+  justify-content: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--rq-card);
+  border: 1px solid var(--rq-line);
+  box-shadow: none;
+}
+
+.svx-renew-premium .svx-rq-theme-pill > span {
+  width: 33px;
+  height: 31px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.svx-renew-premium .svx-rq-theme-pill > span svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.85;
+}
+
+.svx-renew-premium .svx-rq-theme-pill > span:first-child {
+  color: #A88D68;
+}
+
+.svx-renew-premium .svx-rq-theme-pill > span:last-child {
+  color: #8999AC;
+}
+
+.svx-renew-premium .svx-rq-theme-pill > span:first-child.is-active {
+  background: #F4EEE3;
+  color: #A36B27;
+}
+
+.svx-renew-premium .svx-rq-theme-pill > span:last-child.is-active {
+  background: #354357;
+  color: #D3E2F5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-renew-premium .svx-rq-theme-pill > span {
+    transition: none;
+  }
+}
+
+/* STEP 342CM-Y / WORKSPACE THEME SOURCE
+   Embedded Renew follows the same document theme as Business Settings.
+   Standalone /renew continues using its existing theme behavior.
+   Neutral gray and charcoal only; no navy surfaces or blue actions.
+*/
+
+/* Explicit light tokens prevent a stale component theme from
+   rendering dark surfaces while the workspace is in light mode. */
+:root:not([data-theme="dark"]) .svx-renew-premium.is-embedded {
+  --rq-bg: #ffffff;
+  --rq-card: #ffffff;
+  --rq-soft: #f5f6f6;
+  --rq-muted: #687078;
+  --rq-text: #202426;
+  --rq-line: #e1e4e5;
+  color: var(--rq-text);
+}
+
+/* The document theme, not a second React hook's initial state,
+   determines colors when Renew is embedded in Business Settings. */
+:root[data-theme="dark"] .svx-renew-premium.is-embedded,
+:root.dark .svx-renew-premium.is-embedded {
+  --rq-bg: #171717;
+  --rq-card: #202020;
+  --rq-soft: #292929;
+  --rq-muted: #b0b0b0;
+  --rq-text: #f4f4f4;
+  --rq-line: #373737;
+  color: var(--rq-text);
+}
+
+/* The background stays integrated with the Settings workspace. */
+.svx-renew-premium.is-embedded {
+  background: transparent;
+}
+
+/* Keep recovery and embedded controls legible with theme tokens. */
+.svx-renew-premium.is-embedded .svx-rq-back,
+.svx-renew-premium.is-embedded .svx-rq-payment-card,
+.svx-renew-premium.is-embedded .svx-rq-strip,
+.svx-renew-premium.is-embedded .svx-rq-plan {
+  background-color: var(--rq-card);
+  color: var(--rq-text);
+  border-color: var(--rq-line);
+}
+
+.svx-renew-premium.is-embedded .svx-rq-steps,
+.svx-renew-premium.is-embedded .svx-rq-plan-action:not(.is-selected),
+.svx-renew-premium.is-embedded .svx-rq-provider,
+.svx-renew-premium.is-embedded .svx-rq-duration:not(.is-selected) {
+  background-color: var(--rq-soft);
+  color: var(--rq-text);
+  border-color: var(--rq-line);
+}
+
+/* Selected subscription action stays coral in either theme. */
+.svx-renew-premium.is-embedded .svx-rq-checkout:not(:disabled),
+.svx-renew-premium.is-embedded .svx-rq-plan-action.is-selected {
+  background-color: #ff5961;
+  border-color: #ff5961;
+  color: #171717;
+}
+
+/* STEP 342CM-Z / PLAN CARD ALIGNMENT */
+
+/* Grid stretches all plan cards to the tallest card in each row. */
+.svx-renew-premium .svx-rq-plans {
+  align-items: stretch;
+}
+
+.svx-renew-premium .svx-rq-plan {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Reserve equivalent space for the optional recommendation badge. */
+.svx-renew-premium .svx-rq-plan-head {
+  min-height: 19px;
+}
+
+.svx-renew-premium .svx-rq-recommended {
+  margin-top: 5px;
+}
+
+.svx-renew-premium .svx-rq-price {
+  margin-top: 13px;
+}
+
+/* The selection action stays at the bottom of every card. */
+.svx-renew-premium .svx-rq-plan-action {
+  margin-top: auto;
+}
+
+/* Leave sufficient room for the plan description. */
+.svx-renew-premium .svx-rq-feature {
+  min-height: 32px;
+  margin-bottom: 13px;
+}
+
+/* Avoid clipping inside the embedded workspace. */
+.svx-renew-premium .svx-rq-layout,
+.svx-renew-premium .svx-rq-left,
+.svx-renew-premium .svx-rq-payment,
+.svx-renew-premium .svx-rq-plans {
+  min-width: 0;
+}
+
+@media (max-width: 740px) {
+  .svx-renew-premium .svx-rq-plan {
+    height: auto;
+  }
+
+  .svx-renew-premium .svx-rq-feature {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 450px) {
+  .svx-renew-premium .svx-rq-wrap {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .svx-renew-premium .svx-rq-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+
+/* STEP 342CN-CM / EMBEDDED WORKSPACE THEME AUTHORITY
+   Workspace selection overrides stale independent theme state.
+   Standalone renewal styling is unchanged. */
+[data-svx-theme="dark"] .svx-renew-premium.is-embedded {
+  --rq-bg: #171717;
+  --rq-card: #202020;
+  --rq-soft: #292929;
+  --rq-muted: #b0b0b0;
+  --rq-text: #f4f4f4;
+  --rq-line: #373737;
+}
+
+[data-svx-theme="light"] .svx-renew-premium.is-embedded {
+  --rq-bg: #ffffff;
+  --rq-card: #ffffff;
+  --rq-soft: #f5f6f6;
+  --rq-muted: #687078;
+  --rq-text: #202426;
+  --rq-line: #e1e4e5;
+}
+
+.svx-renew-premium.is-embedded {
+  background: transparent;
+}
+
+
+/* STEP 342CN-FY / VERIFIED INLINE RENEWAL CONFIRMATION */
+.svx-renew-premium .svx-rq-payment-success {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  margin-top: 13px;
+  padding: 15px;
+  border: 1px solid var(--rq-line);
+  border-radius: 12px;
+  background: var(--rq-soft);
+  color: var(--rq-text);
+}
+
+.svx-renew-premium .svx-rq-payment-success-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.svx-renew-premium .svx-rq-payment-success-mark {
+  display: inline-grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: #1b9a68;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.svx-renew-premium .svx-rq-payment-success p {
+  margin: 0;
+  color: var(--rq-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.svx-renew-premium .svx-rq-payment-success-action {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid var(--rq-line);
+  border-radius: 9px;
+  background: var(--rq-card);
+  color: var(--rq-text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.svx-renew-premium .svx-rq-payment-success-action:hover {
+  border-color: var(--rq-coral);
+}
+
+.svx-renew-premium .svx-rq-payment-success-action:focus-visible {
+  outline: 3px solid var(--rq-coral);
+  outline-offset: 3px;
+}

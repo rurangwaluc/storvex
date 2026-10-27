@@ -159,8 +159,14 @@ function requestSelect({
     customerName: true,
     customerPhone: true,
     customerEmail: true,
+    customerCountryCode: true,
+
+    sellerCountryCode: true,
+    sellerTimezone: true,
 
     deliveryAddress: true,
+    deliveryArea: true,
+    deliveryLocality: true,
     deliveryDistrict: true,
     deliverySector: true,
     customerNote: true,
@@ -269,6 +275,7 @@ function resolveDeliveryFee(
     );
 
   if (
+    !request.deliveryArea &&
     request.deliveryCoverage ===
       "OUTSIDE_KIGALI" &&
     !supplied

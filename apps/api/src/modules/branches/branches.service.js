@@ -103,8 +103,7 @@ function toBool(value, fallback = false) {
 }
 
 function isOwnerOrManager(role) {
-  const normalized = normalizeUpper(role);
-  return normalized === "OWNER" || normalized === "MANAGER";
+  return normalizeUpper(role) === "OWNER";
 }
 
 function assertTenantId(tenantId) {
@@ -255,6 +254,60 @@ function computeBranchUsage(subscription, activeBranchesCount) {
     atLimit,
     canAddBranch,
   };
+}
+
+
+// Serialize branch capacity changes for the same business.
+// This check runs inside the transaction that changes the branch.
+async function assertBranchCapacityInTransaction(tx, tenantId) {
+  const locked = await tx.$queryRaw`
+    SELECT "id"
+    FROM "Tenant"
+    WHERE "id" = ${tenantId}
+    FOR UPDATE
+  `;
+
+  if (locked.length !== 1) {
+    const err = new Error("Business not found");
+    err.status = 404;
+    throw err;
+  }
+
+  const subscription = await tx.subscription.findUnique({
+    where: { tenantId },
+    select: {
+      branchLimit: true,
+      extraBranchCount: true,
+    },
+  });
+
+  if (!subscription) {
+    const err = new Error("Subscription not found");
+    err.status = 404;
+    throw err;
+  }
+
+  const activeBranches = await tx.branch.count({
+    where: {
+      tenantId,
+      status: { in: BRANCH_USAGE_COUNTED_STATUSES },
+    },
+  });
+
+  const usage = computeBranchUsage(
+    subscription,
+    activeBranches,
+  );
+
+  if (!usage.canAddBranch) {
+    const err = new Error("Branch limit reached");
+    err.status = 403;
+    err.code = "BRANCH_LIMIT_REACHED";
+    err.details = { usage };
+    throw err;
+  }
+
+  return usage;
 }
 
 async function writeBranchAudit({
@@ -542,7 +595,7 @@ async function assertActorCanManageBranches({ actorUserId, actorRole, tenantId }
   const safeTenantId = assertTenantId(tenantId);
 
   if (!isOwnerOrManager(actorRole)) {
-    const err = new Error("Only owner or manager can manage branches");
+    const err = new Error("Only the business owner can manage branches");
     err.status = 403;
     err.code = "BRANCH_MANAGEMENT_FORBIDDEN";
     throw err;
@@ -764,6 +817,8 @@ async function createBranch({
   ]);
 
   const result = await prisma.$transaction(async (tx) => {
+    await assertBranchCapacityInTransaction(tx, safeTenantId);
+
     const created = await tx.branch.create({
       data: {
         tenantId: safeTenantId,
@@ -1114,6 +1169,8 @@ async function reactivateBranch({ tenantId, branchId, actorUserId, actorRole }) 
   }
 
   const updated = await prisma.$transaction(async (tx) => {
+    await assertBranchCapacityInTransaction(tx, safeTenantId);
+
     const next = await tx.branch.update({
       where: { id: safeBranchId },
       data: {

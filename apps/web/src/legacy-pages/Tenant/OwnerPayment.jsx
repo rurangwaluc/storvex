@@ -1,8 +1,13 @@
+import { persistAuthSession } from "../auth/Login";
+import { queryClient } from "../../lib/queryClient";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
-import OnboardingShell from "../../components/onboarding/OnboardingShell";
+import { useTheme } from "../../theme/ThemeProvider";
+import "./BusinessSetupPremium.css";
+import "./OwnerPaymentPremium.css";
+import "./OwnerPaymentBrand.css";
 import {
   readOnboardingState,
   saveOnboardingState,
@@ -10,6 +15,7 @@ import {
 import AsyncButton from "../../components/ui/AsyncButton";
 import AuthPageSkeleton from "../../components/ui/AuthPageSkeleton";
 import apiClient from "../../services/apiClient";
+import "./OwnerPaymentReference.css";
 import {
   findSubscriptionPlan,
   normalizeSubscriptionPlans,
@@ -216,98 +222,98 @@ function FullPlanOption({
   return (
     <article
       className={cx(
-        "svx-launch-choice flex min-w-0 flex-col rounded-[20px] border p-5 transition sm:p-6",
-        active
-          ? "is-active border-[var(--onboard-primary)]"
-          : recommended
-            ? "is-recommended border-[var(--onboard-primary)]"
-            : "border-[var(--onboard-border)]",
+        "svx-launch-choice svx-reference-plan",
+        recommended && "is-recommended",
+        active && "is-active",
       )}
     >
-      <div className="flex min-w-0 items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[var(--onboard-primary)]">
-            {getPlanAudience(plan)}
-          </p>
+      {recommended ? (
+        <span className="svx-reference-plan__recommended">
+          Recommended
+        </span>
+      ) : null}
 
-          <h3 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
-            {plan.name}
-          </h3>
-        </div>
+      <div className="svx-reference-plan__top">
+        <p className="svx-reference-plan__audience">
+          {getPlanAudience(plan)}
+        </p>
+
+        <h3>{plan.name}</h3>
 
         {active ? (
-          <span className="shrink-0 text-xs font-black text-[var(--onboard-primary)]">
-            ✓ Selected
+          <span className="svx-reference-plan__selected">
+            <span aria-hidden="true">✓</span>
+            Selected plan
           </span>
         ) : null}
+
+        <p className="svx-reference-plan__description">
+          {plan.shortDescription}
+        </p>
+
+        <div className="svx-reference-plan__price">
+          <strong>{formatMoney(plan.price, plan.currency)}</strong>
+          <span>
+            per {plan.cycleLabel?.toLowerCase() || "month"} after
+            the {trialDays}-day trial
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => onSelect(plan)}
+          disabled={active}
+          className="svx-reference-plan__button"
+        >
+          {active
+            ? `${plan.name} selected`
+            : recommended
+              ? `Continue with ${plan.name}`
+              : `Choose ${plan.name}`}
+        </button>
       </div>
 
-      <p className="mt-4 min-h-[48px] text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
-        {plan.shortDescription}
-      </p>
-
-      <div className="mt-5 border-y border-[var(--onboard-border)] py-5">
-        <p className="text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
-          {formatMoney(plan.price, plan.currency)}
+      <div className="svx-reference-plan__bottom">
+        <p className="svx-reference-plan__section-label">
+          PLAN INCLUDES
         </p>
 
-        <p className="mt-1 text-xs font-bold text-[var(--onboard-muted)]">
-          per {plan.cycleLabel?.toLowerCase() || "month"} after the {trialDays}-day trial
-        </p>
-      </div>
+        <ul className="svx-reference-plan__features">
+          <li>
+            <span aria-hidden="true">✓</span>
+            <span>{getStaffLabel(plan)}</span>
+          </li>
+          <li>
+            <span aria-hidden="true">✓</span>
+            <span>{getBranchLabel(plan)}</span>
+          </li>
+          <li>
+            <span aria-hidden="true">✓</span>
+            <span>
+              {plan.marketplaceIncluded !== false
+                ? "Marketplace included"
+                : "Marketplace not included"}
+            </span>
+          </li>
+        </ul>
 
-      <div className="mt-5 grid gap-3 text-sm font-bold text-[var(--onboard-text)]">
-        <p>✓ {getStaffLabel(plan)}</p>
-        <p>✓ {getBranchLabel(plan)}</p>
-        <p>
-          ✓{" "}
-          {plan.marketplaceIncluded !== false
-            ? "Marketplace included"
-            : "Marketplace not included"}
-        </p>
-      </div>
-
-      <div className="mt-6">
-        <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[var(--onboard-muted)]">
-          Key differences
+        <p className="svx-reference-plan__section-label svx-reference-plan__section-label--more">
+          KEY DIFFERENCES
         </p>
 
-        <ul className="mt-3 grid gap-2.5">
+        <ul className="svx-reference-plan__features">
           {features.map((feature) => (
-            <li
-              key={feature}
-              className="flex items-start gap-2.5 text-xs font-semibold leading-5 text-[var(--onboard-muted)]"
-            >
-              <span
-                className="mt-0.5 text-[var(--onboard-primary)]"
-                aria-hidden="true"
-              >
-                ✓
-              </span>
-
+            <li key={feature}>
+              <span aria-hidden="true">✓</span>
               <span>{feature}</span>
             </li>
           ))}
         </ul>
+
+        <p className="svx-reference-plan__footnote">
+          No payment today
+        </p>
       </div>
-
-      <button
-        type="button"
-        onClick={() => onSelect(plan)}
-        disabled={active}
-        className={cx(
-          "mt-auto min-h-12 rounded-[14px] border px-5 pt-0 text-sm font-black transition disabled:cursor-default",
-          active
-            ? "mt-7 border-[var(--onboard-primary)] bg-transparent text-[var(--onboard-primary)]"
-            : "mt-7 border-[var(--onboard-primary)] bg-[var(--onboard-primary)] text-white hover:opacity-90",
-        )}
-      >
-        {active ? `${plan.name} selected` : `Choose ${plan.name}`}
-      </button>
-
-      <p className="mt-3 text-center text-[10px] font-bold text-[var(--onboard-muted)]">
-        No payment today
-      </p>
     </article>
   );
 }
@@ -344,7 +350,7 @@ function SelectedPlanPanel({
             className="svx-onboard-back-action"
           >
             <span aria-hidden="true">←</span>
-            Back to account setup
+            Back to verification
           </button>
         </div>
       </section>
@@ -531,7 +537,7 @@ function SelectedPlanPanel({
           className="svx-onboard-back-action"
         >
           <span aria-hidden="true">←</span>
-          Back to account setup
+          Back to verification
         </button>
       </div>
     </section>
@@ -540,6 +546,7 @@ function SelectedPlanPanel({
 
 export default function OwnerPayment() {
   const nav = useNavigate();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const onboarding = useMemo(() => readOnboardingState(), []);
 
   const intentId = onboarding?.intentId || localStorage.getItem("storvex_intentId") || "";
@@ -562,6 +569,89 @@ export default function OwnerPayment() {
     contactMatches(savedVerifiedPhone, ownerPhone);
 
   const passwordReady = Boolean(onboarding?.passwordReady && readPasswordDraft());
+
+  /* STEP 147 — VERIFIED PASSWORDLESS PLAN ACCESS */
+  const isPasswordlessBusiness = onboarding?.accountBusinessIntent === true;
+
+  const [passwordlessAccess, setPasswordlessAccess] = useState(
+    isPasswordlessBusiness ? "checking" : "legacy"
+  );
+
+  useEffect(() => {
+    if (!isPasswordlessBusiness) return undefined;
+
+    let cancelled = false;
+
+    async function verifyAccess() {
+      try {
+        const accountResponse = await fetch("/api/auth/account/me", {
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+
+        if (!accountResponse.ok) {
+          throw new Error("Your Storvex account session has ended.");
+        }
+
+        const accountData = await accountResponse.json();
+        const account = accountData?.account;
+
+        if (
+          !account?.accountId ||
+          account.emailVerified !== true ||
+          String(account.email || "").trim().toLowerCase() !==
+            String(ownerEmail || "").trim().toLowerCase()
+        ) {
+          throw new Error("Your verified Storvex account is required.");
+        }
+
+        const intentToken = onboarding?.onboardingToken;
+
+        if (!intentId || !intentToken) {
+          throw new Error("Your secure business setup session is missing.");
+        }
+
+        const statusResponse = await fetch(
+          `/api/auth/signup/owner-intent/${encodeURIComponent(intentId)}/status`,
+          {
+            credentials: "same-origin",
+            cache: "no-store",
+            headers: {
+              "x-storvex-onboarding-token": intentToken,
+            },
+          }
+        );
+
+        if (!statusResponse.ok) {
+          throw new Error("Business verification could not be confirmed.");
+        }
+
+        const status = await statusResponse.json();
+
+        if (
+          status.emailVerified !== true ||
+          status.phoneVerified !== true
+        ) {
+          throw new Error("Complete business verification first.");
+        }
+
+        if (!cancelled) setPasswordlessAccess("verified");
+      } catch {
+        if (!cancelled) setPasswordlessAccess("denied");
+      }
+    }
+
+    void verifyAccess();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isPasswordlessBusiness,
+    intentId,
+    ownerEmail,
+    onboarding?.onboardingToken,
+  ]);
 
   const [booting, setBooting] = useState(true);
   const [loadingPlans, setLoadingPlans] = useState(true);
@@ -626,6 +716,8 @@ export default function OwnerPayment() {
     [plans],
   );
 
+
+
   useEffect(() => {
     let cancelled = false;
 
@@ -661,7 +753,7 @@ export default function OwnerPayment() {
 
         if (initialPlan) {
           setSelectedPlanKey(initialPlan.key);
-          setShowPlanChoices(false);
+          setShowPlanChoices(true);
         } else {
           setSelectedPlanKey("");
           setShowPlanChoices(true);
@@ -699,8 +791,20 @@ export default function OwnerPayment() {
       return;
     }
 
-    if (!emailVerified || !phoneVerified || !passwordReady) {
-      toast.error("Secure your account first.");
+    if (isPasswordlessBusiness && passwordlessAccess === "checking") {
+      return;
+    }
+
+    const verificationReady = isPasswordlessBusiness
+      ? passwordlessAccess === "verified"
+      : emailVerified && phoneVerified && passwordReady;
+
+    if (!verificationReady) {
+      toast.error(
+        isPasswordlessBusiness
+          ? "Your verified account and business contact are required."
+          : "Secure your account first."
+      );
       nav("/verify-otp", { replace: true });
       return;
     }
@@ -714,6 +818,8 @@ export default function OwnerPayment() {
     emailVerified,
     phoneVerified,
     passwordReady,
+    isPasswordlessBusiness,
+    passwordlessAccess,
     loadingPlans,
     nav,
   ]);
@@ -770,7 +876,7 @@ export default function OwnerPayment() {
     localStorage.removeItem("storvex_paymentReference");
 
     setSelectedPlanKey(plan.key);
-    setShowPlanChoices(false);
+    setShowPlanChoices(true);
     localStorage.setItem("storvex_signupMode", "TRIAL");
     localStorage.setItem("storvex_planKey", plan.key);
     localStorage.setItem("storvex_planSelectionExplicit", "true");
@@ -798,9 +904,11 @@ export default function OwnerPayment() {
   }
 
   async function completeSignup(mode, planKey = "") {
-    const password = readPasswordDraft();
+    const password = isPasswordlessBusiness
+      ? null
+      : readPasswordDraft();
 
-    if (!password) {
+    if (!isPasswordlessBusiness && !password) {
       toast.error("Password is missing. Secure your account again.");
       nav("/verify-otp", { replace: true });
       return;
@@ -808,25 +916,76 @@ export default function OwnerPayment() {
 
     const payload = {
       intentId,
-      password,
       mode,
+      ...(password ? { password } : {}),
     };
 
     if (planKey) {
       payload.planKey = planKey;
     }
 
-    await apiClient.post("/auth/confirm-signup", payload);
+    if (isPasswordlessBusiness) {
+      // Preserve both independently verified account and business
+      // onboarding credentials. The server validates both.
+      const intentToken = onboarding?.onboardingToken;
+
+      if (!intentId || !intentToken) {
+        throw new Error(
+          "Your business setup session has expired. Please sign in again."
+        );
+      }
+
+      const response = await fetch("/api/auth/account/business/confirm", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "x-storvex-onboarding-token": intentToken,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          result?.message ||
+            "We could not complete your business setup.",
+        );
+      }
+
+      if (!result?.token || !result?.user?.tenantId) {
+        throw new Error(
+          "Your store was activated, but automatic sign-in could not be completed."
+        );
+      }
+
+      queryClient.clear();
+      persistAuthSession(result);
+    } else {
+      // Preserve the original password-based signup flow.
+      const response = await apiClient.post("/auth/confirm-signup", payload);
+
+      if (!response?.data?.token || !response?.data?.user?.tenantId) {
+        throw new Error(
+          "Your store was activated, but automatic sign-in could not be completed."
+        );
+      }
+
+      queryClient.clear();
+      persistAuthSession(response.data);
+    }
 
     markSignupCompleted();
     clearOnboardingSession();
 
     toast.success(
       mode === "TRIAL"
-        ? `${trialDays}-day free trial started. Please log in.`
-        : "Store account activated. Please log in.",
+        ? `${trialDays}-day free trial started. Welcome to Storvex!`
+        : "Your store is ready. Welcome to Storvex!",
     );
-    goToLogin(nav);
+
+    nav("/app", { replace: true });
   }
 
   async function finalizePaidSignup(planKey) {
@@ -1076,80 +1235,106 @@ export default function OwnerPayment() {
   }
 
   return (
-    <OnboardingShell
-      activeStep={3}
-      title="Launch your store."
-      subtitle="Review your selected plan, then open your store free for 30 days."
-      footer={
-        <p className="svx-onboard-login-note">
-          Your business and account details remain saved until setup is complete.
-        </p>
-      }
-    >
-      <form
+    <div className={cx(
+          "storvex-onboarding svx-business-premium svx-plan-premium",
+          resolvedTheme === "dark" && "svx-plan-is-dark",
+        )}>
+      <div className="svx-plan-premium__shell">
+
+        <header className="svx-business-premium__header">
+          <button
+            type="button"
+            className="svx-business-premium__logo"
+            onClick={() => nav("/")}
+            aria-label="Storvex homepage"
+          >
+            <img src="/storvex-header-tricolor.png" alt="Storvex" />
+          </button>
+
+          <div className="svx-business-premium__header-actions">
+            <button
+              type="button"
+              className="svx-business-premium__theme"
+              onClick={toggleTheme}
+              aria-label="Toggle light and dark theme"
+            >
+              {resolvedTheme === "dark" ? "☀" : "☾"}
+            </button>
+
+            <button
+              type="button"
+              className="svx-business-premium__help"
+              onClick={() => nav("/contact")}
+            >
+              Need help?
+            </button>
+
+            <button
+              type="button"
+              className="svx-business-premium__exit"
+              onClick={() => nav("/login")}
+            >
+              Exit setup
+            </button>
+          </div>
+        </header>
+
+        <main className="svx-plan-premium__body">
+          <div className="svx-plan-premium__top">
+            <div className="svx-plan-premium__intro">
+              <span className="svx-business-premium__eyebrow">
+                CHOOSE YOUR PLAN · STEP 3 OF 3
+              </span>
+
+              <h1>Choose how your store grows.</h1>
+              <p>
+                Find the right plan for your business.
+                Your trial starts only when you confirm.
+              </p>
+            </div>
+
+            <div
+              className="svx-plan-premium__progress"
+              aria-label="Onboarding progress"
+            >
+              <div className="is-done">
+                <span aria-hidden="true">✓</span>
+                <strong>Business details</strong>
+              </div>
+              <i aria-hidden="true" />
+              <div className="is-done">
+                <span aria-hidden="true">✓</span>
+                <strong>Verification</strong>
+              </div>
+              <i aria-hidden="true" />
+              <div className="is-active" aria-current="step">
+                <span>3</span>
+                <strong>Choose plan</strong>
+              </div>
+            </div>
+          </div>
+
+<form
         className="svx-onboard-form mx-auto w-full max-w-[1180px]"
         onSubmit={(event) => event.preventDefault()}
       >
-        {selectedPlan ? (
-          <div ref={confirmationRef} className="scroll-mt-6">
-            <SelectedPlanPanel
-              selectedPlan={selectedPlan}
-              storeName={storeName}
-              trialDays={trialDays}
-              loading={loading}
-              onStartTrial={startTrial}
-              onBackToAccount={() => nav("/verify-otp")}
-              onChangePlan={() =>
-                setShowPlanChoices((current) => !current)
-              }
-              selectedEarlier={Boolean(
-                originallySelectedPlanKey &&
-                  selectedPlan?.key?.toUpperCase() ===
-                    originallySelectedPlanKey,
-              )}
-            />
-          </div>
-        ) : null}
+          <section className="svx-launch-plan-selector svx-launch-plan-selector--premium mt-6">
+            <div className="svx-plan-premium__compare-actions">
+              <p>
+                Select the plan that fits your store.
+                Your trial starts only when you confirm.
+              </p>
 
-        {showPlanChoices ? (
-          <section className="svx-launch-plan-selector mt-6 rounded-[24px] border border-[var(--onboard-border)] p-5 sm:p-7">
-            <div className="flex flex-col gap-4 border-b border-[var(--onboard-border)] pb-5 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[var(--onboard-primary)]">
-                  {selectedPlan ? "Change plan" : "Choose a plan"}
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--onboard-text)]">
-                  {selectedPlan
-                    ? "Select another plan"
-                    : "Choose the right plan for your store"}
-                </h2>
-
-                <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[var(--onboard-muted)]">
-                  Compare the complete plan details, then choose the plan that
-                  fits your store. Choosing a plan does not start the trial.
-                </p>
-              </div>
-
-              {selectedPlan ? (
-                <button
-                  type="button"
-                  onClick={() => setShowPlanChoices(false)}
-                  className="h-10 self-start rounded-[12px] border border-[var(--onboard-border)] px-4 text-xs font-black text-[var(--onboard-text)] transition hover:border-[var(--onboard-primary)] hover:text-[var(--onboard-primary)] sm:self-auto"
-                >
-                  Close
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => nav("/verify-otp")}
-                  className="svx-onboard-back-action self-start sm:self-auto"
-                >
-                  <span aria-hidden="true">←</span>
-                  Back to account setup
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => nav("/verify-otp")}
+                className="svx-onboard-back-action"
+              >
+                <span aria-hidden="true">←</span>
+                Back to verification
+              </button>
             </div>
+
 
             <div className="mt-6 grid items-stretch gap-4 lg:grid-cols-3">
               {plans.map((plan) => (
@@ -1169,9 +1354,74 @@ export default function OwnerPayment() {
               trial does not begin until you confirm the selected plan.
             </p>
           </section>
+
+        {selectedPlan ? (
+          <section
+            ref={confirmationRef}
+            className="svx-plan-premium__confirmation"
+            aria-label="Confirm your selected plan"
+          >
+            <div className="svx-plan-premium__confirmation-details">
+              <p className="svx-plan-premium__confirmation-eyebrow">
+                YOUR SELECTED PLAN
+              </p>
+
+              <h2>{selectedPlan.name}</h2>
+
+              <p>
+                Enjoy your selected plan free for {trialDays} days.
+                After the trial, continue with this plan for{" "}
+                <strong>
+                  {formatMoney(
+                    selectedPlan.price,
+                    selectedPlan.currency,
+                  )}
+                </strong>{" "}
+                per {selectedPlan.cycleLabel?.toLowerCase() || "month"},
+                or choose another paid plan.
+              </p>
+
+              <div
+                className="svx-plan-premium__operator-disclosure"
+                role="note"
+              >
+                <strong>Storvex is operated by RURAXIS LTD</strong>
+                <p>
+                  RURAXIS LTD is the legal business responsible for
+                  Storvex subscriptions and payments.
+                </p>
+              </div>
+
+              <span className="svx-plan-premium__confirmation-assurance">
+                No payment required to start.
+                No automatic charge after the trial.
+              </span>
+            </div>
+
+            <div className="svx-plan-premium__confirmation-action">
+              <button
+                type="button"
+                onClick={startTrial}
+                disabled={loading}
+                className="svx-plan-premium__trial-button"
+              >
+                {loading
+                  ? "Starting your trial..."
+                  : `Start my ${trialDays}-day free trial`}
+              </button>
+
+              <small>
+                Your trial starts only when you click this button.
+              </small>
+            </div>
+          </section>
         ) : null}
+
+
       </form>
-    </OnboardingShell>
+        </main>
+      </div>
+    </div>
   );
 
 }

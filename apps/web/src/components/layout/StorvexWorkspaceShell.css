@@ -1,0 +1,20 @@
+/* Storvex navigation layout */
+.svx-shell-frame{min-width:0}
+.svx-shell-content{min-width:0;transition:padding-left .2s ease}
+@media(max-width:767px){.svx-shell-content{padding-left:0!important}}
+@media(prefers-reduced-motion:reduce){.svx-shell-content{transition:none}}
+
+/* Step 304 — no horizontal content overflow from navigation */
+.svx-shell-content{min-width:0!important}
+.svx-shell-frame{min-width:0!important}
+
+/* svx-step306-mobile-bottom-nav — reserved safe-area space, no content overlap */
+.svx-mobile-bottom-nav{display:none}
+@media(max-width:767px){
+  .svx-shell-main{padding-bottom:calc(93px + env(safe-area-inset-bottom,0px))!important}
+  .svx-mobile-bottom-nav{position:fixed;bottom:0;left:0;right:0;z-index:35;display:flex;justify-content:space-evenly;align-items:center;min-height:66px;padding:6px 8px max(6px,env(safe-area-inset-bottom,0px));background:var(--nav-bg,var(--color-card));border-top:1px solid var(--nav-line,var(--color-border));color:var(--nav-fg,var(--color-text));box-shadow:0 -4px 20px rgba(0,0,0,.05)}
+  .svx-mobile-bottom-nav>a,.svx-mobile-bottom-nav>button{display:flex;flex:1;min-width:0;min-height:49px;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;border-radius:10px;background:transparent;color:inherit;font-size:11px;font-weight:650;text-decoration:none}
+  .svx-mobile-bottom-nav svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .svx-mobile-bottom-nav [aria-current="page"]{color:#589514;background:rgba(200,237,53,.13)}
+  .svx-mobile-bottom-nav :is(a,button):focus-visible{outline:2px solid #168df7;outline-offset:2px}
+}

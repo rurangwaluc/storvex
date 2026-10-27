@@ -89,6 +89,10 @@ test(
           "DELIVERY",
         deliveryCoverage:
           "KIGALI",
+        sellerCountryCode:
+          "RW",
+        sellerTimezone:
+          "Africa/Kigali",
         paymentMethod:
           "CASH_ON_DELIVERY",
         currency:
@@ -114,6 +118,10 @@ test(
           new Date(
             "2026-07-20T11:00:00Z",
           ),
+        deliveryArea:
+          "Kigali City",
+        deliveryLocality:
+          "Remera",
         deliveryDistrict:
           "Gasabo",
         deliverySector:
@@ -146,14 +154,32 @@ test(
     );
 
     assert.equal(
-      order.deliveryLocation
-        .district,
+      order.market.countryCode,
+      "RW",
+    );
+
+    assert.equal(
+      order.market.timezone,
+      "Africa/Kigali",
+    );
+
+    assert.equal(
+      order.deliveryLocation.area,
+      "Kigali City",
+    );
+
+    assert.equal(
+      order.deliveryLocation.locality,
+      "Remera",
+    );
+
+    assert.equal(
+      order.deliveryLocation.district,
       "Gasabo",
     );
 
     assert.equal(
-      order.deliveryLocation
-        .sector,
+      order.deliveryLocation.sector,
       "Remera",
     );
 

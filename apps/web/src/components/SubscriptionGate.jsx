@@ -232,10 +232,9 @@ function handleSubscriptionState({ data, pathname, nav }) {
     return;
   }
 
-  if (onRenew && status !== "EXPIRED" && accessMode !== "READ_ONLY") {
-    toast.success("Subscription is active.");
-    nav("/app/billing", { replace: true });
-  }
+  // STEP 342CM-N / ALLOW ACTIVE RENEW
+  // Renewal is available to active subscribers for plan management.
+  // Authentication and expired-workspace restrictions remain unchanged.
 }
 
 export default function SubscriptionGate({ children }) {

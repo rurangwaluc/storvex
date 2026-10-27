@@ -1,0 +1,235 @@
+/* STORVEX STEP 91 — FOCUSED LOGIN PRESENTATION */
+/* Scoped to Login only; authentication and route behavior are unchanged. */
+
+.storvex-onboarding.svx-login-page {
+  --onboard-page: #ffffff;
+  --onboard-card: #ffffff;
+  --onboard-card-soft: #fafbfc;
+  --onboard-text: #11151c;
+  --onboard-muted: #627083;
+  --onboard-border: #e3e7ec;
+  --onboard-primary: #168df7;
+  background: var(--onboard-page);
+  color: var(--onboard-text);
+  min-height: calc(100svh - 76px);
+}
+
+:root[data-theme="dark"] .storvex-onboarding.svx-login-page {
+  --onboard-page: #111213;
+  --onboard-card: #1b1c1d;
+  --onboard-card-soft: #161819;
+  --onboard-text: #f8f9fa;
+  --onboard-muted: #b8c1cd;
+  --onboard-border: #323438;
+  --onboard-primary: #42a5ff;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused {
+  box-sizing: border-box;
+  width: min(100%, 490px);
+  margin-inline: auto;
+  padding: clamp(44px, 8vh, 84px) 20px 68px;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__intro {
+  margin-bottom: 26px;
+  text-align: center;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__intro h1 {
+  margin: 0;
+  font-family: var(--onboard-heading-font);
+  font-weight: 800;
+  font-size: clamp(32px, 4.2vw, 42px);
+  line-height: 1.14;
+  letter-spacing: -0.045em;
+  color: var(--onboard-text);
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__intro p {
+  margin: 10px 0 0;
+  color: var(--onboard-muted);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__card {
+  display: grid;
+  gap: 19px;
+  min-width: 0;
+  padding: 30px;
+  border: 1px solid var(--onboard-border);
+  border-radius: 20px;
+  background: var(--onboard-card);
+  box-shadow: 0 14px 44px rgba(18, 30, 50, 0.045);
+}
+
+:root[data-theme="dark"]
+.storvex-onboarding.svx-login-page .svx-login-focused__card {
+  box-shadow: none;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__field {
+  min-width: 0;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__field > label,
+.storvex-onboarding.svx-login-page .svx-login-focused__password label {
+  display: block;
+  margin: 0 0 8px;
+  color: var(--onboard-text);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__card .svx-onboard-input,
+.storvex-onboarding.svx-login-page .svx-login-focused__card .app-input {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  height: 52px;
+  min-height: 52px;
+  border: 1px solid var(--onboard-border);
+  border-radius: 11px;
+  background: var(--onboard-card-soft);
+  color: var(--onboard-text);
+  font-family: var(--onboard-body-font);
+  font-size: 15px;
+  font-weight: 600;
+  outline: none;
+  padding: 0 16px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__card .app-input {
+  padding-right: 49px;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__card input::placeholder {
+  color: var(--onboard-muted);
+  opacity: .8;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__card input:focus {
+  border-color: var(--onboard-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--onboard-primary) 16%, transparent);
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__card input:disabled {
+  cursor: not-allowed;
+  opacity: .7;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__card input:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px var(--onboard-card-soft) inset;
+  -webkit-text-fill-color: var(--onboard-text);
+  caret-color: var(--onboard-text);
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__recovery {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -5px;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__recovery a,
+.storvex-onboarding.svx-login-page .svx-login-focused__signup a {
+  color: var(--onboard-primary);
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+  text-underline-offset: 3px;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__recovery a:hover,
+.storvex-onboarding.svx-login-page .svx-login-focused__signup a:hover {
+  text-decoration: underline;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__card .svx-login-focused__submit {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 50px;
+  border: 1px solid #ff5961;
+  border-radius: 11px;
+  background: #ff5961;
+  color: #ffffff;
+  font-family: var(--onboard-body-font);
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__card .svx-login-focused__submit:hover:not(:disabled) {
+  border-color: #eb4852;
+  background: #eb4852;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__card .svx-login-focused__submit:focus-visible {
+  outline: 3px solid var(--onboard-primary);
+  outline-offset: 3px;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__signup {
+  margin: 22px 0 0;
+  color: var(--onboard-muted);
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__error {
+  display: grid;
+  gap: 3px;
+  border: 1px solid rgba(220, 58, 66, .35);
+  border-radius: 11px;
+  background: rgba(220, 58, 66, .085);
+  padding: 13px 15px;
+  color: #ba2632;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.storvex-onboarding.svx-login-page .svx-login-focused__error strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+:root[data-theme="dark"] .storvex-onboarding.svx-login-page .svx-login-focused__error {
+  color: #ffa4a9;
+}
+
+@media (max-width: 520px) {
+  .storvex-onboarding.svx-login-page .svx-login-focused {
+    padding: 36px 16px 50px;
+  }
+
+  .storvex-onboarding.svx-login-page .svx-login-focused__intro {
+    margin-bottom: 22px;
+  }
+
+  .storvex-onboarding.svx-login-page .svx-login-focused__intro h1 {
+    font-size: 32px;
+  }
+
+  .storvex-onboarding.svx-login-page .svx-login-focused__intro p {
+    font-size: 14px;
+  }
+
+  .storvex-onboarding.svx-login-page .svx-login-focused__card {
+    gap: 18px;
+    padding: 21px;
+    border-radius: 17px;
+  }
+}
+
+@media (max-width: 350px) {
+  .storvex-onboarding.svx-login-page .svx-login-focused__card {
+    padding: 17px;
+  }
+}

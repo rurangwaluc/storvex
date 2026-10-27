@@ -302,7 +302,7 @@ function normalizeEmployeeBranches(employee) {
 
 function branchDisplayName(branch) {
   if (!branch) return "—";
-  return branch.code ? `${branch.code} / ${branch.name}` : branch.name;
+  return branch.code ? `${String(branch.code).replaceAll("_", " ")} / ${branch.name}` : branch.name;
 }
 
 function BranchBadgeList({ branches, compact = false }) {
@@ -490,7 +490,8 @@ function PasswordResetDialog({
   );
 }
 
-function MemberFormDrawer({ open, mode, onClose, children }) {
+/* STEP 342CH-B / TEAM ROWS AND DRAWERS */
+function MemberFormDrawer({ open, mode, onClose, children, embedded = false }) {
   useEffect(() => {
     if (!open) return undefined;
 
@@ -511,10 +512,22 @@ function MemberFormDrawer({ open, mode, onClose, children }) {
   if (!open) return null;
 
   return createPortal(
-    <div className="svx-member-drawer-layer svx-member-form-layer">
+    <div className={embedded ? "svx-member-drawer-layer svx-member-form-layer svx-team-settings-drawer" : "svx-member-drawer-layer svx-member-form-layer"}>
       <button type="button" className="svx-member-drawer-backdrop" aria-label="Close member form" onClick={onClose} />
 
-      <aside className="svx-member-form-drawer-panel" role="dialog" aria-modal="true" aria-label={mode === "edit" ? "Update member" : "Create member"}>
+      <aside className="svx-member-form-drawer-panel" role="dialog" aria-modal="true" aria-label={mode === "edit" ? "Edit member" : "Add member"}>
+        {embedded ? (
+          <header className="svx-team-form-drawer-header">
+            <div>
+              <span>{mode === "edit" ? "Team management" : "New team member"}</span>
+              <h3>{mode === "edit" ? "Edit member" : "Add member"}</h3>
+              <p>{mode === "edit"
+                ? "Update staff information, role and branch access."
+                : "Create an employee account and assign the right access."}</p>
+            </div>
+            <button type="button" className="svx-team-form-drawer-close" onClick={onClose}>Close</button>
+          </header>
+        ) : null}
         <div className="svx-member-form-drawer-body">{children}</div>
       </aside>
     </div>,
@@ -522,7 +535,8 @@ function MemberFormDrawer({ open, mode, onClose, children }) {
   );
 }
 
-function EmptyState({ onAdd, canManage }) {
+/* STEP 342CG-B / TEAM EMPTY STATES */
+function EmptyState({ onAdd, onClear, canManage, hasMembers, embedded }) {
   return (
     <div className={cx(pageCard(), "px-6 py-12 text-center")}>
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] border border-[var(--color-border)] bg-[var(--color-surface-2)] text-[var(--color-text)]">
@@ -538,15 +552,29 @@ function EmptyState({ onAdd, canManage }) {
       </div>
 
       <div className={cx("mt-4 text-lg font-black tracking-tight", strongText())}>
-        No team members found
+        {hasMembers ? "No members match your filters" : "No team members found"}
       </div>
 
       <p className={cx("mx-auto mt-3 max-w-md text-sm font-semibold leading-6", mutedText())}>
-        Build a structured team with controlled roles, branch access, and clear accountability.
+        {hasMembers
+          ? "Try another search, role, branch, or status filter to find your team members."
+          : "Build a structured team with controlled roles, branch access, and clear accountability."}
       </p>
 
-      {canManage ? (
-        <button type="button" onClick={onAdd} className={cx(primaryBtn(), "mt-5")}>
+      {hasMembers ? (
+        <button
+          type="button"
+          onClick={onClear}
+          className={cx(secondaryBtn(), "svx-team-clear-filters mt-5")}
+        >
+          Clear filters
+        </button>
+      ) : canManage ? (
+        <button
+          type="button"
+          onClick={onAdd}
+          className={cx(primaryBtn(), embedded ? "svx-team-empty-primary mt-5" : "mt-5")}
+        >
           Add first member
         </button>
       ) : null}
@@ -623,6 +651,7 @@ function MemberDetailsDrawer({
   onDeactivate,
   onReactivate,
   onDelete,
+  embedded = false,
 }) {
   useEffect(() => {
     if (!open) return undefined;
@@ -650,12 +679,12 @@ function MemberDetailsDrawer({
   const defaultBranch = branches.find((branch) => branch.isDefault) || branches.find((branch) => branch.isMain) || branches[0] || null;
 
   return createPortal(
-    <div className="svx-member-drawer-layer">
+    <div className={embedded ? "svx-member-drawer-layer svx-team-settings-drawer" : "svx-member-drawer-layer"}>
       <button type="button" className="svx-member-drawer-backdrop" aria-label="Close member details" onClick={onClose} />
 
       <aside className="svx-member-drawer-panel" aria-label="Member details" role="dialog" aria-modal="true">
-        <div className="svx-member-drawer-header">
-          <div className="svx-member-drawer-person">
+        <div className={embedded ? "svx-member-drawer-header svx-team-refined-header" : "svx-member-drawer-header"}>
+          <div className={embedded ? "svx-member-drawer-person svx-team-refined-person" : "svx-member-drawer-person"}>
             <div className="svx-member-avatar is-large">{initialsFromName(employee.name)}</div>
             <div className="min-w-0">
               <p>Staff profile</p>
@@ -669,36 +698,107 @@ function MemberDetailsDrawer({
           </button>
         </div>
 
-        <div className="svx-member-drawer-body">
-          <div className="svx-member-drawer-badges">
-            <RoleBadge role={employee.role} />
-            <StatusBadge active={!inactive} />
-            {isOwnerRow ? <Badge tone="primary">Protected account</Badge> : null}
-          </div>
-
-          <section className="svx-member-detail-grid">
-            <DetailItem label="Phone" value={employee.phone || "—"} />
-            <DetailItem label="Default branch" value={defaultBranch ? branchDisplayName(defaultBranch) : "No branch assigned"} />
-            <DetailItem label="Branch count" value={branches.length ? `${branches.length} branch${branches.length === 1 ? "" : "es"}` : "No branches"} />
-            <DetailItem label="Account state" value={inactive ? "Inactive" : "Active"} />
-          </section>
-
-          <section className="svx-member-detail-section">
-            <div className="svx-member-detail-title">Branch access</div>
-            <div className="svx-member-branch-list">
-              <BranchBadgeList branches={branches} />
+        {/* STEP 342CH-C / COMPACT DETAILS DRAWER */}
+        {/* STEP 342CH-D / REFINED TEAM DETAILS */}
+        {embedded ? (
+          <div className="svx-team-detail-compact">
+            <div className="svx-team-detail-status svx-team-refined-badges">
+              <RoleBadge role={employee.role} />
+              <StatusBadge active={!inactive} />
+              {isOwnerRow ? <span className="svx-team-protected-label">Protected account</span> : null}
             </div>
-          </section>
 
-          <section className="svx-member-detail-section">
-            <div className="svx-member-detail-title">Access rule</div>
-            <p className="svx-member-detail-copy">
-              This member can only use the role and branch access assigned here. Owner-only controls remain protected.
-            </p>
-          </section>
-        </div>
+            <section className="svx-team-detail-group">
+              <h4>Contact</h4>
+              <div className="svx-team-detail-line">
+                <span>Phone</span>
+                <strong>{employee.phone || "—"}</strong>
+              </div>
+              <div className="svx-team-detail-line">
+                <span>Email</span>
+                <strong>{employee.email || "—"}</strong>
+              </div>
+            </section>
 
-        <div className="svx-member-drawer-actions">
+            <section className="svx-team-detail-group">
+              <h4>Account</h4>
+              <div className="svx-team-detail-line">
+                <span>Role</span>
+                <strong>{roleMeta(employee.role).label}</strong>
+              </div>
+              <div className="svx-team-detail-line">
+                <span>Status</span>
+                <strong>{inactive ? "Inactive" : "Active"}</strong>
+              </div>
+            </section>
+
+            <section className="svx-team-detail-group">
+              <h4>Branch access</h4>
+              <div className="svx-team-detail-line">
+                <span>Main branch</span>
+                <strong>{defaultBranch ? branchDisplayName(defaultBranch) : "No branch assigned"}</strong>
+              </div>
+              <div className="svx-team-detail-line">
+                <span>Assigned branches</span>
+                <strong>{branches.length}</strong>
+              </div>
+              {branches.length > 1 ? (
+                <div className="svx-team-detail-extra-branches">
+                  <span>Other assigned branches</span>
+                  <div>
+                    {branches
+                      .filter((branch) => branch.id !== defaultBranch?.id)
+                      .map((branch) => (
+                        <p key={branch.id}>{branchDisplayName(branch)}</p>
+                      ))}
+                  </div>
+                </div>
+              ) : null}
+            </section>
+
+            {isOwnerRow ? (
+              <p className="svx-team-detail-protection">
+                Owner account is protected. Member details are view-only.
+              </p>
+            ) : (
+              <p className="svx-team-detail-protection">
+                Role and branch access determine the operations available to this member.
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="svx-member-drawer-body">
+            <div className="svx-member-drawer-badges">
+              <RoleBadge role={employee.role} />
+              <StatusBadge active={!inactive} />
+              {isOwnerRow ? <Badge tone="primary">Protected account</Badge> : null}
+            </div>
+
+            <section className="svx-member-detail-grid">
+              <DetailItem label="Phone" value={employee.phone || "—"} />
+              <DetailItem label="Default branch" value={defaultBranch ? branchDisplayName(defaultBranch) : "No branch assigned"} />
+              <DetailItem label="Branch count" value={branches.length ? `${branches.length} branch${branches.length === 1 ? "" : "es"}` : "No branches"} />
+              <DetailItem label="Account state" value={inactive ? "Inactive" : "Active"} />
+            </section>
+
+            <section className="svx-member-detail-section">
+              <div className="svx-member-detail-title">Branch access</div>
+              <div className="svx-member-branch-list">
+                <BranchBadgeList branches={branches} />
+              </div>
+            </section>
+
+            <section className="svx-member-detail-section">
+              <div className="svx-member-detail-title">Access rule</div>
+              <p className="svx-member-detail-copy">
+                This member can only use the role and branch access assigned here. Owner-only controls remain protected.
+              </p>
+            </section>
+          </div>
+        )}
+
+        {(canManageRow || !embedded) ? (
+          <div className="svx-member-drawer-actions">
           {canManageRow ? (
             <>
               <button type="button" className={primaryBtn()} disabled={rowBusy} onClick={() => onEdit(employee)}>
@@ -724,7 +824,8 @@ function MemberDetailsDrawer({
               {isOwnerRow ? "Owner account is protected. Details are view-only here." : "You can view this member, but only the owner can update access."}
             </div>
           )}
-        </div>
+          </div>
+        ) : null}
       </aside>
     </div>,
     document.body,
@@ -742,8 +843,11 @@ function RowActionsMenu({
   onDeactivate,
   onReactivate,
   onDelete,
+  embedded = false,
 }) {
   const [open, setOpen] = useState(false);
+  // STEP 342CI-D / SMART ACTION MENU
+  const [openUpward, setOpenUpward] = useState(false);
   const wrapRef = useRef(null);
 
   useEffect(() => {
@@ -779,7 +883,17 @@ function RowActionsMenu({
       <button
         type="button"
         className={menuBtn()}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (!open && embedded) {
+            const rect = wrapRef.current?.getBoundingClientRect();
+            if (rect) {
+              const below = window.innerHeight - rect.bottom;
+              const above = rect.top;
+              setOpenUpward(below < 290 && above > below);
+            }
+          }
+          setOpen((value) => !value);
+        }}
         disabled={rowBusy}
         aria-label={`Open actions for ${employee.name}`}
       >
@@ -791,7 +905,13 @@ function RowActionsMenu({
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-[calc(100%+8px)] z-30 w-[240px] rounded-[22px] border border-[var(--color-border)] bg-[var(--color-card)] p-2 shadow-[var(--shadow-card)]">
+        <div className={cx(
+            "absolute right-0 z-30 w-[240px] rounded-[22px] border border-[var(--color-border)] bg-[var(--color-card)] p-2 shadow-[var(--shadow-card)]",
+            embedded ? "svx-team-actions-popover" : "",
+            embedded && openUpward
+              ? "bottom-[calc(100%+8px)]"
+              : "top-[calc(100%+8px)]",
+          )}>
           <button
             type="button"
             onClick={() => {
@@ -882,6 +1002,21 @@ export default function EmployeesList({ embedded = false }) {
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [branchFilter, setBranchFilter] = useState("ALL");
+
+  /* STEP 342CG-C / SIMPLE QUICK FILTERS */
+  const quickFilter =
+    branchFilter === "UNASSIGNED" ? "UNASSIGNED" : statusFilter;
+
+  function chooseQuickFilter(value) {
+    if (value === "UNASSIGNED") {
+      setStatusFilter("ALL");
+      setBranchFilter("UNASSIGNED");
+      return;
+    }
+
+    setStatusFilter(value);
+    setBranchFilter("ALL");
+  }
 
   const [busyId, setBusyId] = useState("");
 
@@ -997,6 +1132,19 @@ export default function EmployeesList({ embedded = false }) {
     () => list.filter((x) => normalizeEmployeeBranches(x).length > 0).length,
     [list],
   );
+
+  function openTeamRow(employee, event) {
+    if (!embedded) return;
+    if (event.target.closest("button, a, input, select, textarea, [role='menu']")) return;
+    openDetail(employee);
+  }
+
+  function onTeamRowKeyDown(employee, event) {
+    if (!embedded || event.target !== event.currentTarget) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    openDetail(employee);
+  }
 
   function openDetail(employee) {
     setDetailEmployee(employee);
@@ -1199,6 +1347,7 @@ export default function EmployeesList({ embedded = false }) {
   return (
     <div className={cx("svx-members-page", embedded ? "space-y-6" : "space-y-6")}>
       <MemberDetailsDrawer
+        embedded={embedded}
         open={Boolean(detailEmployee)}
         employee={detailEmployee}
         canManage={canManageMembers}
@@ -1232,7 +1381,7 @@ export default function EmployeesList({ embedded = false }) {
         onConfirm={handleResetPassword}
       />
 
-            <MemberFormDrawer open={showForm} mode={editing ? "edit" : "create"} onClose={closeForm}>
+            <MemberFormDrawer open={showForm} mode={editing ? "edit" : "create"} onClose={closeForm} embedded={embedded}>
         {editing ? (
           <EmployeeEdit
             employee={editing}
@@ -1259,17 +1408,28 @@ export default function EmployeesList({ embedded = false }) {
         <div className="svx-members-filter-head">
           <div className="min-w-0">
             <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>
-              Staff directory
+              {embedded ? "" : "Staff directory"}
             </div>
             <div className="svx-members-title-row">
               <h2 className={cx("text-[1.45rem] font-black tracking-[-0.04em]", strongText())}>
-                Members
+                {embedded ? "Team" : "Members"}
               </h2>
-              <Badge tone="neutral">{filtered.length} shown</Badge>
+              {!embedded ? (
+                <Badge tone="neutral">{filtered.length} shown</Badge>
+              ) : null}
             </div>
             <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>
-              Search staff, open details, then update access only when needed.
+              {embedded
+                ? "Manage staff, roles and branch access."
+                : "Search staff, open details, then update access only when needed."}
             </p>
+            {embedded ? (
+              <p className="svx-team-count-line">
+                {activeCount} active {activeCount === 1 ? "member" : "members"}
+                <span aria-hidden="true"> / </span>
+                {list.length} total
+              </p>
+            ) : null}
           </div>
 
           <div className="svx-members-filter-actions">
@@ -1341,42 +1501,50 @@ export default function EmployeesList({ embedded = false }) {
               </select>
             </div>
 
-            <div>
-              <label className={cx("text-sm font-black", strongText())}>Status</label>
-              <select
-                className="app-input mt-2"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <option value="ALL">All members</option>
-                <option value="ACTIVE">Active only</option>
-                <option value="INACTIVE">Inactive only</option>
-              </select>
-            </div>
+            {!embedded ? (
+              <div>
+                <label className={cx("text-sm font-black", strongText())}>Status</label>
+                <select
+                  className="app-input mt-2"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="ALL">All members</option>
+                  <option value="ACTIVE">Active only</option>
+                  <option value="INACTIVE">Inactive only</option>
+                </select>
+              </div>
+            ) : null}
           </div>
         </div>
 
-        <div className="svx-members-filter-chips">
-          <FilterChip active={statusFilter === "ALL"} onClick={() => setStatusFilter("ALL")}>
-            All
+        <div className="svx-members-filter-chips" role="group" aria-label="Quick team filters">
+          <FilterChip
+            active={quickFilter === "ALL"}
+            onClick={() => chooseQuickFilter("ALL")}
+          >
+            {embedded ? "All members" : "All"}
           </FilterChip>
 
-          <FilterChip active={statusFilter === "ACTIVE"} onClick={() => setStatusFilter("ACTIVE")}>
+          <FilterChip
+            active={quickFilter === "ACTIVE"}
+            onClick={() => chooseQuickFilter("ACTIVE")}
+          >
             Active
           </FilterChip>
 
           <FilterChip
-            active={statusFilter === "INACTIVE"}
-            onClick={() => setStatusFilter("INACTIVE")}
+            active={quickFilter === "INACTIVE"}
+            onClick={() => chooseQuickFilter("INACTIVE")}
           >
             Inactive
           </FilterChip>
 
           <FilterChip
-            active={branchFilter === "UNASSIGNED"}
-            onClick={() => setBranchFilter("UNASSIGNED")}
+            active={quickFilter === "UNASSIGNED"}
+            onClick={() => chooseQuickFilter("UNASSIGNED")}
           >
-            Missing branch
+            {embedded ? "No branch assigned" : "Missing branch"}
           </FilterChip>
         </div>
       </section>
@@ -1384,7 +1552,18 @@ export default function EmployeesList({ embedded = false }) {
       {loading ? (
         <EmployeesSkeleton />
       ) : filtered.length === 0 ? (
-        <EmptyState onAdd={openCreate} canManage={canManageMembers} />
+        <EmptyState
+          onAdd={openCreate}
+          onClear={() => {
+            setSearch("");
+            setRoleFilter("ALL");
+            setBranchFilter("ALL");
+            setStatusFilter("ALL");
+          }}
+          canManage={canManageMembers}
+          hasMembers={list.length > 0}
+          embedded={embedded}
+        />
       ) : (
         <>
           <section className="hidden lg:block svx-members-listing-section">
@@ -1422,7 +1601,12 @@ export default function EmployeesList({ embedded = false }) {
                     return (
                       <tr
                         key={u.id}
-                        className="svx-member-row border-b border-[var(--color-border)] align-middle last:border-b-0"
+                        className={cx("svx-member-row border-b border-[var(--color-border)] align-middle last:border-b-0", embedded ? "svx-team-clickable-row" : "")}
+                        role={embedded ? "button" : undefined}
+                        tabIndex={embedded ? 0 : undefined}
+                        aria-label={embedded ? `View details for ${u.name || "team member"}` : undefined}
+                        onClick={(event) => openTeamRow(u, event)}
+                        onKeyDown={(event) => onTeamRowKeyDown(u, event)}
                       >
                         <td className="px-4 py-4">
                           <button type="button" className="svx-member-person-button" onClick={() => openDetail(u)}>
@@ -1456,6 +1640,7 @@ export default function EmployeesList({ embedded = false }) {
                         <td className="px-4 py-4">
                           <div className="flex justify-end">
                             <RowActionsMenu
+                      embedded={embedded}
                               employee={u}
                               inactive={inactive}
                               rowBusy={rowBusy}
@@ -1487,7 +1672,15 @@ export default function EmployeesList({ embedded = false }) {
               const defaultBranch = branches.find((branch) => branch.isDefault) || branches.find((branch) => branch.isMain) || branches[0] || null;
 
               return (
-                <article key={u.id} className={cx(pageCard(), "svx-member-mobile-card p-4")}>
+                <article
+                  key={u.id}
+                  className={cx(pageCard(), "svx-member-mobile-card p-4", embedded ? "svx-team-clickable-row" : "")}
+                  role={embedded ? "button" : undefined}
+                  tabIndex={embedded ? 0 : undefined}
+                  aria-label={embedded ? `View details for ${u.name || "team member"}` : undefined}
+                  onClick={(event) => openTeamRow(u, event)}
+                  onKeyDown={(event) => onTeamRowKeyDown(u, event)}
+                >
                   <div className="flex items-start justify-between gap-3">
                     <button type="button" className="svx-member-person-button" onClick={() => openDetail(u)}>
                       <div className="svx-member-avatar">{initialsFromName(u.name)}</div>
@@ -1517,6 +1710,7 @@ export default function EmployeesList({ embedded = false }) {
                     </button>
 
                     <RowActionsMenu
+                      embedded={embedded}
                       employee={u}
                       inactive={inactive}
                       rowBusy={rowBusy}

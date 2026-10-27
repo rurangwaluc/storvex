@@ -27,6 +27,11 @@ test(
         name: "RURAXIS LTD",
         phone: "0785587833",
         email: "owner@example.com",
+        countryCode: "RW",
+        currencyCode: "RWF",
+        timezone: "Africa/Kigali",
+        district: "Gasabo",
+        sector: "Kimironko",
       },
     );
 
@@ -58,7 +63,40 @@ test(
       false,
     );
 
-    assert.equal(Object.hasOwn(result, "location"), false);
-    assert.equal(Object.hasOwn(result, "deliveryAreas"), false);
+    assert.deepEqual(
+      result.market,
+      {
+        countryCode: "RW",
+        countryName: "Rwanda",
+        currencyCode: "RWF",
+        timezone: "Africa/Kigali",
+        locale: "en-RW",
+        locationSchema: "DISTRICT_SECTOR",
+      },
+    );
+
+    assert.deepEqual(
+      result.location,
+      {
+        countryCode: "RW",
+        area: "Gasabo",
+        locality: "Kimironko",
+        district: "Gasabo",
+        sector: "Kimironko",
+      },
+    );
+
+    assert.deepEqual(
+      result.deliveryPolicy,
+      {
+        defaultFee: 2000,
+        areas: [],
+      },
+    );
+
+    assert.equal(
+      Object.hasOwn(result, "deliveryAreas"),
+      false,
+    );
   },
 );

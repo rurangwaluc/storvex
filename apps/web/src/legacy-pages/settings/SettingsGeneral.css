@@ -581,3 +581,26 @@
     padding: 8px;
   }
 }
+
+/* STORVEX STEP 325 — General page finishing details */
+.svx-general-page .svx-general-section { padding-top: 18px; padding-bottom: 21px; }
+.svx-general-page .svx-general-section-heading { margin-bottom: 15px; }
+.svx-general-page .svx-general-regional-note {
+  display: flex; align-items: flex-start; gap: 12px;
+  margin: 15px 0 0; padding: 11px 13px;
+  border: 1px solid var(--settings-border); border-radius: 8px;
+  background: var(--settings-panel); color: var(--settings-muted);
+  font-size: 12px; line-height: 1.5;
+}
+.svx-general-page .svx-general-regional-note-symbol {
+  display: grid; place-items: center; flex: 0 0 20px;
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 1px solid var(--settings-muted); color: var(--settings-text);
+  font-size: 12px; font-weight: 700;
+}
+.svx-general-page .svx-general-regional-note > span:last-child { display: grid; gap: 2px; }
+.svx-general-page .svx-general-regional-note strong { color: var(--settings-text); font-weight: 700; }
+@media (max-width: 600px) {
+  .svx-general-page .svx-general-section { padding-block: 16px; }
+  .svx-general-page .svx-general-regional-note { padding: 11px; }
+}

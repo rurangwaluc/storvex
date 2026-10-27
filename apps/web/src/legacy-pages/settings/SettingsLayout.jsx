@@ -134,8 +134,7 @@ export default function SettingsLayout() {
         <div className="svx-settings-simple-heading">
           <h1>Business settings</h1>
           <p>
-            Manage the information and controls used by
-            your business.
+            Manage your business information and preferences.
           </p>
         </div>
 

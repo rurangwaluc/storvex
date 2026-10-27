@@ -1,0 +1,599 @@
+
+/*
+ * STORVEX STEP 330C
+ * Approved compact General Settings layout.
+ * Presentation only. Existing data and handlers are preserved.
+ */
+
+.svx-settings-shell:has(.svx-general-page) {
+  --settings-panel: #f7f8fa;
+  --settings-card: #ffffff;
+  --settings-input: #ffffff;
+  --settings-border: #e4e6ea;
+  --settings-input-border: #dfe2e7;
+  --settings-text: #18212f;
+  --settings-muted: #647084;
+  max-width: 1160px;
+  gap: 0;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell:has(.svx-general-page) {
+  --settings-panel: #242424;
+  --settings-card: #202020;
+  --settings-input: #242424;
+  --settings-border: #363636;
+  --settings-input-border: #414141;
+  --settings-text: #f5f5f5;
+  --settings-muted: #aaaaaa;
+}
+
+/* Keep the existing Settings title and horizontal navigation. */
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-settings-simple-header {
+  border-bottom: 0;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-settings-outlet {
+  overflow: visible;
+}
+
+/* The General page becomes one compact settings workspace. */
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-page {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 10px 2px 42px;
+  overflow: visible;
+}
+
+/* Keep saved / unsaved feedback near the page heading. */
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-page-heading {
+  position: absolute;
+  top: -122px;
+  right: 3px;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.svx-general-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-saved-indicator {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  border: 1px solid #d8e8db;
+  border-radius: 6px;
+  background: #eef7f0;
+  color: #216a43;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell .svx-general-saved-indicator {
+  border-color: #345344;
+  background: #22392c;
+  color: #a1d5b4;
+}
+
+/* Each section: context on the left, controls on the right. */
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-section {
+  display: grid;
+  grid-template-columns:
+    minmax(165px, 0.23fr)
+    minmax(0, 0.77fr);
+  align-items: start;
+  column-gap: clamp(22px, 3vw, 44px);
+  row-gap: 14px;
+  margin: 0;
+  padding: 25px 0;
+  border: 0;
+  border-bottom: 1px solid var(--settings-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-section:last-of-type {
+  border-bottom: 0;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-section-heading {
+  grid-column: 1;
+  margin: 0;
+  padding: 2px 0 0;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-section-heading h2 {
+  margin: 0;
+  color: var(--settings-text);
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-section-heading p {
+  margin: 5px 0 0;
+  color: var(--settings-muted);
+  font-size: 12.5px;
+  font-weight: 450;
+  line-height: 1.55;
+}
+
+/* Section bodies share the same right-column alignment. */
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-section > :not(.svx-general-section-heading) {
+  grid-column: 2;
+  min-width: 0;
+}
+
+/* Business profile: logo + business fields in a single row. */
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-identity-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(210px, 0.9fr)
+    minmax(0, 1.1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-logo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-logo-preview {
+  display: grid;
+  place-items: center;
+  flex: 0 0 68px;
+  width: 68px;
+  height: 68px;
+  overflow: hidden;
+  border: 1px solid var(--settings-border);
+  border-radius: 9px;
+  background: var(--settings-panel);
+  color: var(--settings-text);
+  font-size: 20px;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-logo-preview img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-logo-copy {
+  padding-top: 2px;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-logo-copy strong {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-logo-copy p {
+  margin: 5px 0 9px;
+  font-size: 11.5px;
+  font-weight: 450;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-logo-button {
+  min-height: 35px;
+  border-radius: 7px;
+  padding-inline: 11px;
+  font-size: 12px;
+  font-weight: 650;
+  box-shadow: none;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-identity-fields {
+  gap: 12px;
+}
+
+/* Form grids, typography and controls. */
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-grid {
+  gap: 11px 17px;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-grid.is-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-grid.is-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-field.is-full {
+  grid-column: 1 / -1;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-field label,
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-business-type > span,
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-info-field > span {
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-field input,
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-business-type strong,
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-info-field > strong {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--settings-input-border);
+  border-radius: 7px;
+  background: var(--settings-input);
+  color: var(--settings-text);
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 550;
+  box-shadow: none;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-business-type strong,
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-info-field > strong {
+  display: flex;
+  align-items: center;
+  background: var(--settings-panel);
+}
+
+/* Regional settings remain truly read-only. */
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-regional-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin: 11px 0 0;
+  border: 1px solid var(--settings-border);
+  border-radius: 7px;
+  background: var(--settings-panel);
+  padding: 11px 13px;
+  color: var(--settings-muted);
+  font-size: 12px;
+  font-weight: 450;
+  line-height: 1.5;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-regional-note-symbol {
+  display: grid;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-regional-note > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-regional-note strong {
+  color: var(--settings-text);
+  font-weight: 650;
+}
+
+/* Preserve the functional unsaved-changes controls. */
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-savebar {
+  margin-top: 20px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+}
+
+/* Tablet: avoid squeezing logo and form fields. */
+
+@media (max-width: 1100px) {
+  .svx-settings-shell:has(.svx-general-page)
+  .svx-general-section {
+    grid-template-columns:
+      minmax(145px, 0.25fr)
+      minmax(0, 0.75fr);
+    column-gap: 22px;
+  }
+
+  .svx-settings-shell:has(.svx-general-page)
+  .svx-general-identity-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+}
+
+/* Narrow tablets and phones: titles above their fields. */
+
+@media (max-width: 760px) {
+  .svx-settings-shell:has(.svx-general-page)
+  .svx-general-page-heading {
+    position: static;
+    margin: 4px 0 10px;
+  }
+
+  .svx-settings-shell:has(.svx-general-page)
+  .svx-general-section {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding: 22px 0;
+  }
+
+  .svx-settings-shell:has(.svx-general-page)
+  .svx-general-section-heading,
+  .svx-settings-shell:has(.svx-general-page)
+  .svx-general-section > :not(.svx-general-section-heading) {
+    grid-column: 1;
+  }
+
+  .svx-settings-shell:has(.svx-general-page)
+  .svx-general-identity-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .svx-settings-shell:has(.svx-general-page)
+  .svx-general-page {
+    padding-inline: 0;
+  }
+
+  .svx-settings-shell:has(.svx-general-page)
+  .svx-general-grid.is-two,
+  .svx-settings-shell:has(.svx-general-page)
+  .svx-general-grid.is-three {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-settings-shell:has(.svx-general-page)
+  .svx-general-logo-row {
+    align-items: center;
+    flex-wrap: wrap;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-settings-shell:has(.svx-general-page) * {
+    animation: none !important;
+  }
+}
+
+
+/* STORVEX STEP 333 — FINAL GENERAL SETTINGS DESIGN */
+
+/*
+ * Brand hierarchy:
+ * Lime   #E4F449 — selected navigation and focus
+ * Blue   #168DF7 — information
+ * Coral  #FF5961 — unsaved primary action
+ * White / charcoal — neutral working surfaces
+ */
+
+/* Precisely integrated Settings navigation */
+.svx-settings-shell:has(.svx-general-page)
+.svx-settings-simple-link.is-active {
+  color: #202020 !important;
+  background: transparent !important;
+  font-weight: 750 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell:has(.svx-general-page)
+.svx-settings-simple-link.is-active {
+  color: #FFFFFF !important;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-settings-simple-link.is-active::after {
+  left: 8px !important;
+  right: 8px !important;
+  bottom: 0 !important;
+  height: 2px !important;
+  background: #C0D529 !important;
+  border-radius: 2px 2px 0 0 !important;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell:has(.svx-general-page)
+.svx-settings-simple-link.is-active::after {
+  background: #E4F449 !important;
+}
+
+/* Clear focus for keyboard navigation */
+.svx-settings-shell:has(.svx-general-page)
+.svx-settings-simple-link:focus-visible,
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-logo-button:focus-visible {
+  outline: 2px solid #A5B827 !important;
+  outline-offset: 2px !important;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell:has(.svx-general-page)
+.svx-settings-simple-link:focus-visible,
+:root[data-theme="dark"]
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-logo-button:focus-visible {
+  outline-color: #E4F449 !important;
+}
+
+/* Uniform business profile controls */
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-logo-preview {
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-logo-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 36px !important;
+  border: 1px solid var(--settings-border) !important;
+  border-radius: 7px !important;
+  background: var(--settings-card) !important;
+  color: var(--settings-text) !important;
+  font-weight: 650 !important;
+  box-shadow: none !important;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-logo-button:not(:disabled):hover {
+  border-color: #A5B827 !important;
+}
+
+/* Professional, consistent form typography */
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-field input,
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-business-type strong,
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-info-field > strong {
+  font-size: 13px !important;
+  font-weight: 550 !important;
+  letter-spacing: 0 !important;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-field input:focus {
+  border-color: #A5B827 !important;
+  outline: 2px solid rgba(192, 213, 41, 0.22) !important;
+  outline-offset: 1px !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-field input:focus {
+  border-color: #E4F449 !important;
+  outline-color: rgba(228, 244, 73, 0.20) !important;
+}
+
+/* Blue is used only for an informational message */
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-regional-note {
+  background: var(--settings-panel) !important;
+  border: 1px solid var(--settings-border) !important;
+  border-left: 2px solid rgba(22, 141, 247, 0.65) !important;
+  border-radius: 7px !important;
+  box-shadow: none !important;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-regional-note-symbol {
+  color: #168DF7 !important;
+  border-color: #168DF7 !important;
+  background: transparent !important;
+}
+
+/* Save action appears only when the user changes a field */
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-save-button,
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-savebar button {
+  background: #FF5961 !important;
+  border: 1px solid #FF5961 !important;
+  border-radius: 7px !important;
+  color: #1B1B1B !important;
+  font-weight: 750 !important;
+  box-shadow: none !important;
+}
+
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-save-button:not(:disabled):hover,
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-savebar button:not(:disabled):hover {
+  background: #F54B55 !important;
+  border-color: #F54B55 !important;
+}
+
+/* Saved state: muted, not a competing call to action */
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-saved-indicator {
+  border: 1px solid #D8E8DB !important;
+  border-radius: 6px !important;
+  background: #EEF7F0 !important;
+  color: #216A43 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell:has(.svx-general-page)
+.svx-general-saved-indicator {
+  border-color: #345344 !important;
+  background: #22392C !important;
+  color: #A1D5B4 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-settings-shell:has(.svx-general-page)
+  .svx-general-logo-button {
+    transition: none !important;
+  }
+}

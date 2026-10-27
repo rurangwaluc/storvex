@@ -2,6 +2,8 @@
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const prisma = require("../../config/database");
+// STEP 342CL-U / EMPLOYEE AUDIT
+const logAudit = require("../../utils/auditLogger");
 const { getMarket } = require("../../config/markets");
 const {
   normalizePhone: normalizeMarketPhone,
@@ -572,12 +574,15 @@ async function createEmployee(req, res) {
     const hashedPassword = await hashPassword(password);
 
     const created = await prisma.$transaction(async (tx) => {
+      // STEP 342CI-B / EMPLOYEE TENANT RELATION
+      // Connect using the tenant resolved from authenticated context.
+      // User.phone is required by the Prisma schema.
       const user = await tx.user.create({
         data: {
-          tenantId,
+          tenant: { connect: { id: tenantId } },
           name,
           email,
-          phone,
+          phone: phone || "",
           role,
           isActive: true,
           password: hashedPassword,
@@ -602,6 +607,15 @@ async function createEmployee(req, res) {
         },
         select: employeeSelect(),
       });
+    });
+
+    await logAudit({
+      tenantId,
+      userId: getActorUserId(req),
+      action: "EMPLOYEE_CREATED",
+      entity: "USER",
+      entityId: created.id,
+      metadata: { role: created.role },
     });
 
     return res.status(201).json({
@@ -652,7 +666,9 @@ async function updateEmployee(req, res) {
       const rawPhone = cleanString(req.body.phone);
 
       if (!rawPhone) {
-        phone = null;
+        // STEP 342CI-C2 / OPTIONAL UPDATE PHONE
+        // Prisma User.phone is required; a blank optional phone is "".
+        phone = "";
       } else {
         const countryCode = await tenantCountryCode(tenantId);
         phone = normalizeOptionalTenantPhone(
@@ -724,6 +740,21 @@ async function updateEmployee(req, res) {
       });
     });
 
+    await logAudit({
+      tenantId,
+      userId: getActorUserId(req),
+      action: "EMPLOYEE_UPDATED",
+      entity: "USER",
+      entityId: existing.id,
+      metadata: {
+        changedFields: Object.keys(data).filter(
+          (field) => field !== "password"
+        ),
+        passwordChanged: Boolean(data.password),
+        branchAssignmentsChanged: Boolean(assignmentInput.shouldUpdateAssignments),
+      },
+    });
+
     return res.json({
       updated: true,
       employee: publicEmployee(updated),
@@ -775,6 +806,15 @@ async function setEmployeeActiveStatus(req, res) {
       where: { id: existing.id },
       data: { isActive },
       select: employeeSelect(),
+    });
+
+    await logAudit({
+      tenantId,
+      userId: getActorUserId(req),
+      action: "EMPLOYEE_STATUS_CHANGED",
+      entity: "USER",
+      entityId: updated.id,
+      metadata: { isActive },
     });
 
     return res.json({
@@ -832,6 +872,15 @@ async function resetEmployeePassword(req, res) {
       select: { id: true },
     });
 
+    await logAudit({
+      tenantId,
+      userId: getActorUserId(req),
+      action: "EMPLOYEE_PASSWORD_RESET",
+      entity: "USER",
+      entityId: existing.id,
+      metadata: { passwordReset: true },
+    });
+
     return res.json({
       updated: true,
       message: "Password reset successful",
@@ -880,6 +929,15 @@ async function deleteEmployee(req, res) {
         isActive: false,
       },
       select: employeeSelect(),
+    });
+
+    await logAudit({
+      tenantId,
+      userId: getActorUserId(req),
+      action: "EMPLOYEE_DEACTIVATED",
+      entity: "USER",
+      entityId: updated.id,
+      metadata: { isActive: false },
     });
 
     return res.json({

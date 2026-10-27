@@ -46,11 +46,11 @@
 
 :root[data-theme="dark"] .svx-settings-shell,
 :root[data-theme="dark"] .svx-settings-page {
-  --settings-bg: #0a0e17;
-  --settings-header: #0d1320;
+  --settings-bg: #161616;
+  --settings-header: #242424;
   --settings-card: #1f1f20;
   --settings-panel: #1f1f20;
-  --settings-panel-strong: #0d1d32;
+  --settings-panel-strong: #2b2b2b;
   --settings-input: #1c1c1d;
   --settings-text: #ffffff;
   --settings-muted: rgba(255, 255, 255, 0.72);
@@ -77,11 +77,11 @@
   --settings-shadow: 0 24px 64px rgba(0, 0, 0, 0.24);
   --settings-shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.18);
 
-  --color-bg: #0a0e17;
+  --color-bg: #161616;
   --color-card: #1f1f20;
   --color-surface: #1f1f20;
   --color-surface-2: #1f1f20;
-  --color-surface-3: #0d1d32;
+  --color-surface-3: #2b2b2b;
   --color-text: #ffffff;
   --color-text-muted: rgba(255, 255, 255, 0.72);
   --color-border: rgba(255, 255, 255, 0.11);
@@ -1147,3 +1147,236 @@
 }
 
 /* STORVEX_SIMPLE_SETTINGS_END */
+
+
+/* STORVEX STEP 327 — neutral Settings palette and tab treatment */
+/* The actual workspace main, not just the form, must be charcoal. */
+:root[data-theme="dark"] .svx-shell-main:has(.svx-settings-shell) {
+  background-color: #161616 !important;
+}
+:root[data-theme="dark"] .svx-settings-shell,
+:root[data-theme="dark"] .svx-settings-outlet {
+  background-color: #161616;
+}
+/* One quiet, connected tab strip — no rounded pill treatment. */
+/* Step 328C — refined, flat Settings tabs */
+.svx-settings-shell .svx-settings-simple-header {
+  border-bottom: 0;
+}
+.svx-settings-shell .svx-settings-simple-nav {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  min-height: 44px;
+  padding: 0 8px;
+  border: 1px solid #e6e7e9;
+  border-radius: 6px;
+  background: #f7f7f8;
+  box-shadow: none;
+}
+.svx-settings-shell .svx-settings-simple-link {
+  min-height: 43px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 0;
+  color: #656b75;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  box-shadow: none;
+  transform: none !important;
+}
+.svx-settings-shell .svx-settings-simple-link:hover {
+  color: #20242a;
+  background: transparent;
+}
+.svx-settings-shell .svx-settings-simple-link.is-active {
+  color: #20242a;
+  background: #ffffff;
+  font-weight: 750;
+  box-shadow: none;
+}
+.svx-settings-shell .svx-settings-simple-link::after {
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: transparent;
+}
+.svx-settings-shell .svx-settings-simple-link.is-active::after {
+  background: #92979e;
+}
+:root[data-theme="dark"] .svx-settings-shell .svx-settings-simple-nav {
+  border-color: #383838;
+  background: #242424;
+}
+:root[data-theme="dark"] .svx-settings-shell .svx-settings-simple-link {
+  color: #afafaf;
+}
+:root[data-theme="dark"] .svx-settings-shell .svx-settings-simple-link:hover {
+  color: #f5f5f5;
+  background: transparent;
+}
+:root[data-theme="dark"] .svx-settings-shell .svx-settings-simple-link.is-active {
+  color: #ffffff;
+  background: #303030;
+}
+:root[data-theme="dark"] .svx-settings-shell .svx-settings-simple-link.is-active::after {
+  background: #a9a9a9;
+}
+@media (max-width: 900px) {
+  .svx-settings-shell .svx-settings-simple-nav {
+    display: none;
+  }
+}
+
+
+/* Step 329 — flat active tab edge */
+.svx-settings-shell .svx-settings-simple-link,
+.svx-settings-shell .svx-settings-simple-link.is-active {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-top: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline-offset: -2px;
+}
+
+.svx-settings-shell .svx-settings-simple-link.is-active {
+  background: transparent !important;
+}
+
+.svx-settings-shell .svx-settings-simple-link.is-active::after {
+  left: 8px !important;
+  right: 8px !important;
+  height: 1px !important;
+}
+
+
+/* STORVEX STEP 338 — UNIFIED SETTINGS TABS */
+
+/* Shared neutral navigation for every Settings page. */
+.svx-settings-shell .svx-settings-simple-nav {
+  gap: 0;
+  border: 1px solid #E3E5E8;
+  border-radius: 7px;
+  background: #F6F7F8;
+}
+
+/* Inactive: clearly available but not selected. */
+.svx-settings-shell .svx-settings-simple-link:not(.is-active) {
+  background: transparent !important;
+  color: #657085 !important;
+  font-weight: 550 !important;
+  box-shadow: none !important;
+}
+
+/* Hover: simple neutral indication of interactivity. */
+.svx-settings-shell .svx-settings-simple-link:not(.is-active):hover {
+  background: #EAEDF0 !important;
+  color: #172033 !important;
+}
+
+/* Active: one consistent Storvex selection treatment. */
+.svx-settings-shell .svx-settings-simple-link.is-active {
+  background: #FFFFFF !important;
+  color: #182132 !important;
+  font-weight: 750 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.svx-settings-shell .svx-settings-simple-link.is-active::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 8px !important;
+  right: 8px !important;
+  bottom: 0 !important;
+  height: 2px !important;
+  border-radius: 2px 2px 0 0;
+  background: #C2D52D !important;
+}
+
+/* Dark mode: charcoal only, never navy. */
+:root[data-theme="dark"] .svx-settings-shell .svx-settings-simple-nav {
+  border-color: #383838;
+  background: #242424;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell .svx-settings-simple-link:not(.is-active) {
+  color: #AEAEAE !important;
+  background: transparent !important;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell .svx-settings-simple-link:not(.is-active):hover {
+  color: #F5F5F5 !important;
+  background: #313131 !important;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell .svx-settings-simple-link.is-active {
+  color: #FFFFFF !important;
+  background: #303030 !important;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell .svx-settings-simple-link.is-active::after {
+  background: #E4F449 !important;
+}
+
+/* Visible focus for keyboard users. */
+.svx-settings-shell .svx-settings-simple-link:focus-visible {
+  outline: 2px solid #A5BD24 !important;
+  outline-offset: -3px !important;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell .svx-settings-simple-link:focus-visible {
+  outline-color: #E4F449 !important;
+}
+
+/* The existing mobile section selector remains unchanged. */
+@media (max-width: 900px) {
+  .svx-settings-shell .svx-settings-simple-nav {
+    display: none !important;
+  }
+}
+
+
+/* STORVEX STEP 339 — TAB BAR LEFT EDGE */
+
+/* Let the selected first tab occupy the bar's rounded left edge. */
+.svx-settings-shell .svx-settings-simple-nav {
+  padding-left: 0 !important;
+  overflow: hidden;
+}
+
+.svx-settings-shell
+.svx-settings-simple-link:first-child.is-active {
+  border-top-left-radius: 6px !important;
+  border-bottom-left-radius: 6px !important;
+}
+
+/* The selected surface and the left edge remain identical. */
+.svx-settings-shell
+.svx-settings-simple-link:first-child.is-active {
+  background: #FFFFFF !important;
+}
+
+:root[data-theme="dark"]
+.svx-settings-shell
+.svx-settings-simple-link:first-child.is-active {
+  background: #303030 !important;
+}
+
+
+/* STORVEX STEP 342M — SETTINGS SURFACE CONTINUITY */
+
+:root[data-theme="dark"]:has(.svx-settings-shell),
+:root[data-theme="dark"] body:has(.svx-settings-shell),
+:root[data-theme="dark"] .svx-shell-frame:has(.svx-settings-shell),
+:root[data-theme="dark"] .svx-shell-content:has(.svx-settings-shell) {
+  background-color: #161616 !important;
+}

@@ -1,0 +1,236 @@
+
+/* STORVEX STEP 149 — PREMIUM CHOOSE PLAN
+   Presentation only. Existing plan and payment logic retained. */
+
+.svx-plan-premium {
+  --onboard-primary: #ff5961;
+  --onboard-text: #111827;
+  --onboard-muted: #64748b;
+  --onboard-border: #e6ebf0;
+  --onboard-card: #ffffff;
+  --onboard-card-soft: #f5f7fa;
+
+  min-height: 100vh;
+  background: #ffffff;
+  color: var(--onboard-text);
+}
+
+:root[data-theme="dark"] .svx-plan-premium {
+  --onboard-primary: #ff5961;
+  --onboard-text: #f7f7f7;
+  --onboard-muted: #aeb4bf;
+  --onboard-border: #343434;
+  --onboard-card: #1c1c1c;
+  --onboard-card-soft: #242424;
+
+  background: #111111;
+}
+
+.svx-plan-premium__shell {
+  width: 100%;
+  min-height: 100vh;
+}
+
+.svx-plan-premium .svx-business-premium__header {
+  z-index: 50;
+}
+
+.svx-plan-premium__body {
+  width: min(100% - 80px, 1260px);
+  margin-inline: auto;
+  padding-top: 110px;
+  padding-bottom: 75px;
+}
+
+.svx-plan-premium__top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(460px, .85fr);
+  align-items: center;
+  gap: 48px;
+  padding-block: 25px 36px;
+}
+
+.svx-plan-premium__intro {
+  min-width: 0;
+}
+
+.svx-plan-premium__intro h1 {
+  margin: 18px 0 10px;
+  max-width: 620px;
+  color: var(--onboard-text);
+  font-size: clamp(32px, 3.5vw, 49px);
+  font-weight: 850;
+  line-height: 1.09;
+  letter-spacing: -.055em;
+}
+
+.svx-plan-premium__intro > p {
+  max-width: 520px;
+  color: var(--onboard-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.svx-plan-premium__progress {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px 14px;
+  border: 1px solid var(--onboard-border);
+  border-radius: 17px;
+  background: var(--onboard-card);
+}
+
+.svx-plan-premium__progress > div {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  text-align: center;
+}
+
+.svx-plan-premium__progress > div > span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--onboard-border);
+  border-radius: 50%;
+  background: var(--onboard-card-soft);
+  color: var(--onboard-muted);
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.svx-plan-premium__progress .is-done > span {
+  background: #dbfaed;
+  border-color: #dbfaed;
+  color: #07845e;
+}
+
+.svx-plan-premium__progress .is-active > span {
+  background: #e7ff3b;
+  border-color: #e7ff3b;
+  color: #111111;
+}
+
+.svx-plan-premium__progress strong {
+  color: var(--onboard-text);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.svx-plan-premium__progress i {
+  flex: 0 1 42px;
+  min-width: 10px;
+  height: 3px;
+  margin-top: 18px;
+  background: #e7ff3b;
+  border-radius: 999px;
+}
+
+.svx-plan-premium .svx-onboard-form {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.svx-plan-premium .svx-launch-plan-selector--premium {
+  margin-top: 14px;
+}
+
+.svx-plan-premium .svx-launch-plan-selector--premium
+.svx-launch-choice {
+  background: var(--onboard-card) !important;
+  border-color: var(--onboard-border) !important;
+}
+
+.svx-plan-premium .svx-launch-choice.is-recommended:not(.is-active) {
+  border-color: #e7ff3b !important;
+  box-shadow: none !important;
+}
+
+.svx-plan-premium .svx-launch-choice.is-recommended:not(.is-active)::before {
+  background: #e7ff3b !important;
+}
+
+.svx-plan-premium .svx-launch-choice.is-active {
+  border-color: #e7ff3b !important;
+}
+
+.svx-plan-premium .svx-launch-choice li > span:first-child {
+  color: #ff5961;
+}
+
+.svx-plan-premium .svx-launch-choice.is-recommended:not(.is-active)
+> button {
+  background: #ff5961;
+  border-color: #ff5961;
+  color: #111111;
+}
+
+.svx-plan-premium .svx-launch-plan-panel {
+  background: var(--onboard-card);
+  border-color: var(--onboard-border);
+}
+
+.svx-plan-premium .svx-launch-plan-detail {
+  background: var(--onboard-card-soft);
+  border-color: var(--onboard-border);
+}
+
+.svx-plan-premium .svx-onboard-back-action {
+  border-color: var(--onboard-border);
+  color: var(--onboard-text);
+  background: var(--onboard-card);
+}
+
+@media (max-width: 1000px) {
+  .svx-plan-premium__body {
+    width: calc(100% - 48px);
+    padding-top: 100px;
+  }
+
+  .svx-plan-premium__top {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 600px) {
+  .svx-plan-premium__body {
+    width: calc(100% - 32px);
+    padding-top: 90px;
+    padding-bottom: 45px;
+  }
+
+  .svx-plan-premium__top {
+    padding-top: 12px;
+    padding-bottom: 20px;
+  }
+
+  .svx-plan-premium__intro h1 {
+    font-size: 34px;
+  }
+
+  .svx-plan-premium__progress {
+    padding: 15px 9px;
+  }
+
+  .svx-plan-premium__progress strong {
+    font-size: 10px;
+  }
+
+  .svx-plan-premium__progress > div > span {
+    width: 33px;
+    height: 33px;
+  }
+
+  .svx-plan-premium__progress i {
+    margin-top: 15px;
+    flex-basis: 20px;
+  }
+}

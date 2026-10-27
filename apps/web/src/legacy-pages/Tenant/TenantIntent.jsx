@@ -1,3 +1,7 @@
+import SearchableCountryPicker from "../../components/onboarding/SearchableCountryPicker";
+import { HeroDesktopPreview, HeroPhonePreview } from "../../components/layout/StorvexLockedHero";
+import { useTheme } from "../../theme/ThemeProvider";
+import "./BusinessSetupPremium.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Boxes,
@@ -254,6 +258,402 @@ function ResumeDraftCard({ draft, onContinue, onStartOver }) {
   );
 }
 
+const LOCATION_EXAMPLES = {
+  RW: {
+    firstLabel: "District / city",
+    secondLabel: "Sector / locality",
+    district: "Example: Gasabo",
+    sector: "Example: Kacyiru",
+    address: "Example: KG 5 Ave, near the market",
+  },
+  AO: {
+    firstLabel: "City / municipality",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Luanda",
+    sector: "Example: Talatona",
+    address: "Example: Near Talatona Shopping",
+  },
+  KE: {
+    firstLabel: "City / town",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Nairobi",
+    sector: "Example: Westlands",
+    address: "Example: Near Sarit Centre",
+  },
+  UG: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Kampala",
+    sector: "Example: Kololo",
+    address: "Example: Near Acacia Mall",
+  },
+  TZ: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Dar es Salaam",
+    sector: "Example: Masaki",
+    address: "Example: Near Slipway",
+  },
+  BI: {
+    firstLabel: "City / province",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Bujumbura",
+    sector: "Example: Rohero",
+    address: "Example: Near the central market",
+  },
+  NG: {
+    firstLabel: "City / town",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Lagos",
+    sector: "Example: Ikeja",
+    address: "Example: Near a main shopping centre",
+  },
+  GH: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Accra",
+    sector: "Example: Osu",
+    address: "Example: Near Oxford Street",
+  },
+  ZA: {
+    firstLabel: "City / municipality",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Johannesburg",
+    sector: "Example: Sandton",
+    address: "Example: Near Sandton City",
+  },
+  BF: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Ouagadougou",
+    sector: "Example: Ouaga 2000",
+    address: "Example: Near a main road or landmark in Ouagadougou",
+  },
+  BJ: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Cotonou",
+    sector: "Example: Akpakpa",
+    address: "Example: Near a main road or landmark in Cotonou",
+  },
+  BW: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Gaborone",
+    sector: "Example: Broadhurst",
+    address: "Example: Near a main road or landmark in Gaborone",
+  },
+  CD: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Kinshasa",
+    sector: "Example: Gombe",
+    address: "Example: Near a main road or landmark in Kinshasa",
+  },
+  CF: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Bangui",
+    sector: "Example: PK5",
+    address: "Example: Near a main road or landmark in Bangui",
+  },
+  CG: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Brazzaville",
+    sector: "Example: Poto-Poto",
+    address: "Example: Near a main road or landmark in Brazzaville",
+  },
+  CI: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Abidjan",
+    sector: "Example: Cocody",
+    address: "Example: Near a main road or landmark in Abidjan",
+  },
+  CM: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Douala",
+    sector: "Example: Bonapriso",
+    address: "Example: Near a main road or landmark in Douala",
+  },
+  CV: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Praia",
+    sector: "Example: Achada Santo António",
+    address: "Example: Near a main road or landmark in Praia",
+  },
+  DJ: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Djibouti City",
+    sector: "Example: Balbala",
+    address: "Example: Near a main road or landmark in Djibouti City",
+  },
+  DZ: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Algiers",
+    sector: "Example: Bab El Oued",
+    address: "Example: Near a main road or landmark in Algiers",
+  },
+  EG: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Cairo",
+    sector: "Example: Nasr City",
+    address: "Example: Near a main road or landmark in Cairo",
+  },
+  ER: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Asmara",
+    sector: "Example: Tiravolo",
+    address: "Example: Near a main road or landmark in Asmara",
+  },
+  ET: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Addis Ababa",
+    sector: "Example: Bole",
+    address: "Example: Near a main road or landmark in Addis Ababa",
+  },
+  GA: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Libreville",
+    sector: "Example: Louis",
+    address: "Example: Near a main road or landmark in Libreville",
+  },
+  GM: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Banjul",
+    sector: "Example: Serrekunda",
+    address: "Example: Near a main road or landmark in Banjul",
+  },
+  GN: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Conakry",
+    sector: "Example: Kaloum",
+    address: "Example: Near a main road or landmark in Conakry",
+  },
+  GQ: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Malabo",
+    sector: "Example: Ela Nguema",
+    address: "Example: Near a main road or landmark in Malabo",
+  },
+  GW: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Bissau",
+    sector: "Example: Bandim",
+    address: "Example: Near a main road or landmark in Bissau",
+  },
+  KM: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Moroni",
+    sector: "Example: Mtsangani",
+    address: "Example: Near a main road or landmark in Moroni",
+  },
+  LR: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Monrovia",
+    sector: "Example: Sinkor",
+    address: "Example: Near a main road or landmark in Monrovia",
+  },
+  LS: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Maseru",
+    sector: "Example: Thetsane",
+    address: "Example: Near a main road or landmark in Maseru",
+  },
+  LY: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Tripoli",
+    sector: "Example: Hay Al Andalus",
+    address: "Example: Near a main road or landmark in Tripoli",
+  },
+  MA: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Casablanca",
+    sector: "Example: Maarif",
+    address: "Example: Near a main road or landmark in Casablanca",
+  },
+  MG: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Antananarivo",
+    sector: "Example: Analakely",
+    address: "Example: Near a main road or landmark in Antananarivo",
+  },
+  ML: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Bamako",
+    sector: "Example: ACI 2000",
+    address: "Example: Near a main road or landmark in Bamako",
+  },
+  MR: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Nouakchott",
+    sector: "Example: Tevragh Zeina",
+    address: "Example: Near a main road or landmark in Nouakchott",
+  },
+  MU: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Port Louis",
+    sector: "Example: Cassis",
+    address: "Example: Near a main road or landmark in Port Louis",
+  },
+  MW: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Lilongwe",
+    sector: "Example: Area 18",
+    address: "Example: Near a main road or landmark in Lilongwe",
+  },
+  MZ: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Maputo",
+    sector: "Example: Polana",
+    address: "Example: Near a main road or landmark in Maputo",
+  },
+  NA: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Windhoek",
+    sector: "Example: Klein Windhoek",
+    address: "Example: Near a main road or landmark in Windhoek",
+  },
+  NE: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Niamey",
+    sector: "Example: Plateau",
+    address: "Example: Near a main road or landmark in Niamey",
+  },
+  SC: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Victoria",
+    sector: "Example: Mont Fleuri",
+    address: "Example: Near a main road or landmark in Victoria",
+  },
+  SD: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Khartoum",
+    sector: "Example: Bahri",
+    address: "Example: Near a main road or landmark in Khartoum",
+  },
+  SL: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Freetown",
+    sector: "Example: Aberdeen",
+    address: "Example: Near a main road or landmark in Freetown",
+  },
+  SN: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Dakar",
+    sector: "Example: Plateau",
+    address: "Example: Near a main road or landmark in Dakar",
+  },
+  SO: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Mogadishu",
+    sector: "Example: Hodan",
+    address: "Example: Near a main road or landmark in Mogadishu",
+  },
+  SS: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Juba",
+    sector: "Example: Konyo Konyo",
+    address: "Example: Near a main road or landmark in Juba",
+  },
+  ST: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: São Tomé",
+    sector: "Example: Água Grande",
+    address: "Example: Near a main road or landmark in São Tomé",
+  },
+  SZ: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Mbabane",
+    sector: "Example: Ezulwini",
+    address: "Example: Near a main road or landmark in Mbabane",
+  },
+  TD: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: N'Djamena",
+    sector: "Example: Moursal",
+    address: "Example: Near a main road or landmark in N'Djamena",
+  },
+  TG: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Lomé",
+    sector: "Example: Bè",
+    address: "Example: Near a main road or landmark in Lomé",
+  },
+  TN: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Tunis",
+    sector: "Example: La Marsa",
+    address: "Example: Near a main road or landmark in Tunis",
+  },
+  ZM: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Lusaka",
+    sector: "Example: Kabulonga",
+    address: "Example: Near a main road or landmark in Lusaka",
+  },
+  ZW: {
+    firstLabel: "City / district",
+    secondLabel: "Area / neighborhood",
+    district: "Example: Harare",
+    sector: "Example: Avondale",
+    address: "Example: Near a main road or landmark in Harare",
+  },
+
+};
+
+const DEFAULT_LOCATION_EXAMPLES = {
+  firstLabel: "City / district",
+  secondLabel: "Area / neighborhood",
+  district: "Enter your city or district",
+  sector: "Enter your area or neighborhood",
+  address: "Enter your street, building or nearby landmark",
+};
+
+function getLocationExamples(countryCode) {
+  return LOCATION_EXAMPLES[
+    String(countryCode || "").trim().toUpperCase()
+  ] || DEFAULT_LOCATION_EXAMPLES;
+}
+
 export default function TenantIntent() {
   const nav = useNavigate();
   const [searchParams] = useSearchParams();
@@ -286,7 +686,40 @@ export default function TenantIntent() {
     hasOnboardingDraft(previous) && !reviewMode,
   );
 
+  const { resolvedTheme, toggleTheme } = useTheme();
+  const [testimonialIndex, setTestimonialIndex] = useState(0);
+  const [testimonialPaused, setTestimonialPaused] = useState(false);
+
+  const testimonials = [
+    {
+      quote: "Storvex gave us the tools to manage our store easily and sell more.",
+      caption: "Example testimonial / Preview content",
+    },
+    {
+      quote: "We can keep sales, products and stock information together in one place.",
+      caption: "Example testimonial / Preview content",
+    },
+    {
+      quote: "Managing daily retail operations should be simpler and faster.",
+      caption: "Example testimonial / Preview content",
+    },
+  ];
+
+  useEffect(() => {
+    if (testimonialPaused) return;
+
+    const timer = setInterval(() => {
+      setTestimonialIndex((current) =>
+        (current + 1) % testimonials.length
+      );
+    }, 6000);
+
+    return () => clearInterval(timer);
+  }, [testimonialPaused]);
+
   const [loading, setLoading] = useState(false);
+  const [verifiedAccount, setVerifiedAccount] = useState(null);
+  const [checkingAccount, setCheckingAccount] = useState(true);
   const [markets, setMarkets] = useState([]);
   const [marketsLoading, setMarketsLoading] = useState(true);
   const [marketLoadError, setMarketLoadError] = useState("");
@@ -314,7 +747,61 @@ export default function TenantIntent() {
     ? normalizeMarketPhone(form.phone, selectedMarket)
     : "";
 
-  const normalizedEmail = normalizeEmail(form.email);
+  const locationExamples = getLocationExamples(form.countryCode);
+
+  const normalizedEmail = normalizeEmail(
+    verifiedAccount?.email || form.email
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadVerifiedAccount() {
+      try {
+        const response = await fetch("/api/auth/account/me", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error("Account session unavailable.");
+        }
+
+        const data = await response.json();
+        const account = data?.account;
+
+        if (
+          !account?.accountId ||
+          account.emailVerified !== true ||
+          !isValidEmail(account.email) ||
+          !cleanString(account.fullName)
+        ) {
+          throw new Error("Verified Storvex account required.");
+        }
+
+        if (cancelled) return;
+
+        setVerifiedAccount(account);
+        setForm((current) => ({
+          ...current,
+          ownerName: account.fullName,
+          email: normalizeEmail(account.email),
+        }));
+      } catch {
+        if (!cancelled) {
+          toast.error("Please sign in to your verified Storvex account.");
+          nav("/signup", { replace: true });
+        }
+      } finally {
+        if (!cancelled) setCheckingAccount(false);
+      }
+    }
+
+    loadVerifiedAccount();
+
+    return () => { cancelled = true; };
+  }, [nav]);
 
   useEffect(() => {
     let cancelled = false;
@@ -573,6 +1060,16 @@ export default function TenantIntent() {
 
   async function submit(event) {
     event.preventDefault();
+
+    if (
+      checkingAccount ||
+      !verifiedAccount?.accountId ||
+      verifiedAccount.emailVerified !== true
+    ) {
+      toast.error("Verify your Storvex account before continuing.");
+      return;
+    }
+
     if (!validate()) return;
 
     setLoading(true);
@@ -582,8 +1079,8 @@ export default function TenantIntent() {
 
       const payload = {
         storeName: cleanString(form.storeName),
-        ownerName: cleanString(form.ownerName),
-        email: normalizedEmail,
+        ownerName: cleanString(verifiedAccount.fullName),
+        email: normalizeEmail(verifiedAccount.email),
         phone: normalizedPhone,
         countryCode: selectedMarket.countryCode,
         shopType: cleanString(form.shopType),
@@ -594,16 +1091,31 @@ export default function TenantIntent() {
         browserFingerprint,
       };
 
-      const data = await apiFetch("/auth/signup/owner-intent", {
+      const response = await fetch("/api/auth/account/business/intent", {
         method: "POST",
-        body: payload,
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || "Unable to start business setup."
+        );
+      }
 
       const intentId = data?.intentId || "";
       const onboardingToken = data?.onboardingToken || "";
 
-      if (!intentId || !onboardingToken) {
-        throw new Error("Store setup could not be started. Please try again.");
+      if (!intentId || !onboardingToken || data.emailVerified !== true) {
+        throw new Error(
+          "Your verified email could not be connected to this store. Please try again."
+        );
       }
 
       saveOnboardingState({
@@ -629,8 +1141,11 @@ export default function TenantIntent() {
         address: payload.address,
         deviceId,
         browserFingerprint,
-        emailVerified: false,
-        phoneVerified: false,
+        accountBusinessIntent: true,
+        emailVerified: data.emailVerified === true,
+        emailVerifiedFor: payload.email,
+        phoneVerified: data.phoneVerified === true,
+        phoneVerifiedFor: "",
         signupMode: selectedPlanKey ? "PAID" : "",
         planKey: selectedPlanKey,
         planSelectionExplicit: planWasExplicitlySelected,
@@ -651,279 +1166,328 @@ export default function TenantIntent() {
   }
 
   return (
-    <OnboardingShell
-      activeStep={1}
-      footer={
-        <div className="svx-onboard-login-note">
-          <span className="svx-onboard-login-icon">
-            <ShieldCheck size={16} strokeWidth={2.5} />
-          </span>
+    <div className="svx-business-premium">
+      <div className="svx-business-premium__shell">
+        <header className="svx-business-premium__header">
+          <Link to="/" className="svx-business-premium__logo">
+            <img src="/storvex-header-tricolor.png" alt="Storvex" />
+          </Link>
 
-          <span>Already have a store account?</span>
+          <div className="svx-business-premium__header-actions">
+            <button
+              type="button"
+              className="svx-business-premium__theme"
+              onClick={toggleTheme}
+              aria-label="Toggle light and dark theme"
+            >
+              {resolvedTheme === "dark" ? "☀" : "☾"}
+            </button>
 
-          <Link to="/login">Log in</Link>
-        </div>
-      }
-    >
-      {draftVisible ? (
-        <ResumeDraftCard
-          draft={previous}
-          onContinue={continueDraft}
-          onStartOver={startOver}
-        />
-      ) : null}
+            <Link
+              className="svx-business-premium__help"
+              to="/login"
+            >
+              Need help?
+            </Link>
 
-      <form onSubmit={submit} className="svx-onboard-form">
-        <div className="svx-onboard-form-heading">
-          <div>
-            <span className="svx-onboard-step-pill">Step 1 of 3</span>
+            <Link
+              className="svx-business-premium__exit"
+              to="/login"
+            >
+              Exit setup
+            </Link>
+          </div>
+        </header>
 
-            <h2>Tell us about your business.</h2>
+        <div className="svx-business-premium__columns">
+          <aside className="svx-business-premium__intro">
+            <div className="svx-business-premium__intro-top">
+              <span className="svx-business-premium__eyebrow">
+                BUSINESS SETUP · STEP 1 OF 3
+              </span>
 
-            {selectedPlanKey ? (
-              <p className="mt-2 text-sm font-black text-[var(--onboard-primary)]">
-                Your selected plan will be kept for the Launch plan step.
+              <h1>Let’s set up<br />your store.</h1>
+
+              <p className="svx-business-premium__intro-text">
+                Add your business details so we can set up your store,
+                connect it to your account and get you ready to sell.
               </p>
+
+              <div className="svx-business-premium__milestones">
+                <div className="is-active">
+                  <span><Store size={20} strokeWidth={2.2} /></span>
+                  <p>
+                    <strong>Set up your store</strong>
+                    <small>Tell us about your business</small>
+                  </p>
+                </div>
+                <div>
+                  <span><LockKeyhole size={19} strokeWidth={2} /></span>
+                  <p>
+                    <strong>Choose your plan</strong>
+                    <small>Pick what works for you</small>
+                  </p>
+                </div>
+                <div>
+                  <span><Boxes size={19} strokeWidth={2} /></span>
+                  <p>
+                    <strong>Start selling</strong>
+                    <small>Add products and go live</small>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="svx-business-premium__visual-area">
+              <div className="svx-business-premium__art" aria-hidden="true">
+                <div className="svx-business-premium__lime" />
+                <div className="svx-business-premium__coral" />
+                <div className="svx-business-premium__devices">
+                  <HeroDesktopPreview />
+                  <HeroPhonePreview />
+                </div>
+              </div>
+
+              <div
+                className="svx-business-premium__testimonial"
+                aria-label="Illustrative testimonial carousel"
+                onMouseEnter={() => setTestimonialPaused(true)}
+                onMouseLeave={() => setTestimonialPaused(false)}
+                onFocusCapture={() => setTestimonialPaused(true)}
+                onBlurCapture={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget)) {
+                    setTestimonialPaused(false);
+                  }
+                }}
+              >
+                <span className="svx-business-premium__quote-icon" aria-hidden="true">
+                  ❞
+                </span>
+                <div className="svx-business-premium__testimonial-copy">
+                  <p key={testimonialIndex} className="svx-business-premium__testimonial-slide">
+                    “{testimonials[testimonialIndex].quote}”
+                  </p>
+                  <small>{testimonials[testimonialIndex].caption}</small>
+                </div>
+              </div>
+
+              <div
+                className="svx-business-premium__dots"
+                aria-label="Choose testimonial"
+              >
+                {testimonials.map((item, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    className={index === testimonialIndex ? "is-active" : ""}
+                    onClick={() => setTestimonialIndex(index)}
+                    aria-label={`Show example testimonial ${index + 1}`}
+                    aria-pressed={index === testimonialIndex}
+                  />
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          <main className="svx-business-premium__main">
+            <div
+              className="svx-business-premium__progress svx-business-premium__progress-three"
+              aria-label="Onboarding progress"
+            >
+              <div className="is-active" aria-current="step">
+                <span>1</span>
+                <strong>Business details</strong>
+              </div>
+              <div className="svx-business-premium__progress-line" />
+              <div>
+                <span>2</span>
+                <strong>Verification</strong>
+              </div>
+              <div className="svx-business-premium__progress-line" />
+              <div>
+                <span>3</span>
+                <strong>Choose plan</strong>
+              </div>
+            </div>
+
+            {draftVisible ? (
+              <ResumeDraftCard
+                draft={previous}
+                onContinue={continueDraft}
+                onStartOver={startOver}
+              />
             ) : null}
 
-            <p>
-              Start with the real store identity and owner contact. This becomes the foundation for
-              verification and activation.
-            </p>
-          </div>
-
-        </div>
-
-        <div className="svx-onboard-form-grid lg:grid-cols-[0.94fr_1.06fr] lg:items-stretch">
-          <OnboardingCard className="h-full">
-            <div className="svx-onboard-card-title-row">
-              <OnboardingIconBadge tone="warning">
-                <Store size={23} strokeWidth={2.2} />
-              </OnboardingIconBadge>
-
-              <div>
-                <h3>Store details</h3>
-                <p>Name the store and choose the closest business type.</p>
+            <section className="svx-business-premium__verified">
+              <div className="svx-business-premium__verified-heading">
+                <span className="svx-business-premium__verified-icon">
+                  <Check size={21} strokeWidth={2.6} />
+                </span>
+                <div>
+                  <strong>Your account <em>(verified)</em></strong>
+                  <p>This account will be the owner of this store.</p>
+                </div>
               </div>
-            </div>
+              <div className="svx-business-premium__account">
+                <span className="svx-business-premium__avatar">
+                  <UserRoundCheck size={22} strokeWidth={2} />
+                </span>
+                <div className="svx-business-premium__account-identity">
+                  <strong>{verifiedAccount?.fullName || "Loading your account..."}</strong>
+                  <p>{verifiedAccount?.email || ""}</p>
+                </div>
+                <span className="svx-business-premium__account-status">
+                  Verified
+                </span>
+              </div>
+            </section>
 
-            <div className="svx-onboard-field-group">
-              <Field label="Country" required>
-                <select
-                  className="svx-onboard-input"
-                  value={form.countryCode}
-                  onChange={(event) =>
-                    setCountry(event.target.value)
-                  }
-                  disabled={
-                    marketsLoading ||
-                    Boolean(marketLoadError)
-                  }
-                  required
-                >
-                  {marketsLoading ? (
-                    <option value="">
-                      Loading countries...
-                    </option>
-                  ) : null}
+            <form
+              onSubmit={submit}
+              className="svx-business-premium__form"
+            >
+              <section className="svx-business-premium__card">
+                <div className="svx-business-premium__card-heading">
+                  <span className="svx-business-premium__card-icon is-store">
+                    <Store size={22} strokeWidth={2.1} />
+                  </span>
+                  <div>
+                    <h2>Store details</h2>
+                    <p>Tell us about your business.</p>
+                  </div>
+                </div>
 
-                  {!marketsLoading &&
-                  !markets.length ? (
-                    <option value="">
-                      Countries unavailable
-                    </option>
-                  ) : null}
-
-                  {markets.map((market) => (
-                    <option
-                      key={market.countryCode}
-                      value={market.countryCode}
-                    >
-                      {market.countryName}
-                      {market.onboardingEnabled
-                        ? ""
-                        : " — Coming soon"}
-                    </option>
-                  ))}
-                </select>
-
-                {!marketsLoading &&
-                selectedMarket &&
-                !marketAvailable ? (
-                  <p className="mt-2 text-xs font-bold text-[var(--onboard-warning)]">
-                    Storvex isn't available in{" "}
-                    {selectedMarket.countryName} yet.
+                {selectedPlanKey ? (
+                  <p className="svx-business-premium__plan-note">
+                    Your selected plan will be saved for the next step.
                   </p>
                 ) : null}
 
-                {marketLoadError ? (
-                  <p className="mt-2 text-xs font-bold text-red-500">
-                    {marketLoadError}
-                  </p>
-                ) : null}
-              </Field>
+                <div className="svx-business-premium__fields svx-business-premium__store-grid">
+                  <Field label="Country" required>
+                    <SearchableCountryPicker
+                      markets={markets}
+                      value={form.countryCode}
+                      onChange={setCountry}
+                      loading={marketsLoading}
+                      disabled={marketsLoading || Boolean(marketLoadError)}
+                    />
+                    {!marketsLoading && selectedMarket && !marketAvailable ? (
+                      <p className="svx-business-premium__validation">
+                        Storvex isn't available in {selectedMarket.countryName} yet.
+                      </p>
+                    ) : null}
+                    {marketLoadError ? (
+                      <p className="svx-business-premium__validation">
+                        {marketLoadError}
+                      </p>
+                    ) : null}
+                  </Field>
 
-              <Field label="Store name" required>
-                <input
-                  className="svx-onboard-input"
-                  value={form.storeName}
-                  onChange={(event) => setField("storeName", event.target.value)}
-                  placeholder="Example: City Electronics"
-                  autoComplete="organization"
-                  required
-                />
-              </Field>
+                  <Field label="Store name" required>
+                    <input
+                      className="svx-onboard-input"
+                      value={form.storeName}
+                      onChange={(event) => setField("storeName", event.target.value)}
+                      placeholder="Example: City Electronics"
+                      autoComplete="organization"
+                      required
+                    />
+                  </Field>
 
-              <Field label="Business category" required>
-                <BusinessCategoryPicker
-                  value={form.shopType}
-                  onChange={(nextValue) => setField("shopType", nextValue)}
-                />
-              </Field>
-            </div>
-          </OnboardingCard>
+                  <Field label="Business category" required>
+                    <BusinessCategoryPicker
+                      value={form.shopType}
+                      onChange={(value) => setField("shopType", value)}
+                    />
+                  </Field>
 
-          <OnboardingCard className="h-full">
-            <div className="svx-onboard-card-title-row">
-              <OnboardingIconBadge tone="success">
-                <UserRoundCheck size={23} strokeWidth={2.2} />
-              </OnboardingIconBadge>
-
-              <div>
-                <h3>Owner details</h3>
-                <p>The first owner gets full access after verification.</p>
-              </div>
-            </div>
-
-            <div className="svx-onboard-field-group">
-              <Field label="Owner name" required>
-                <input
-                  className="svx-onboard-input"
-                  value={form.ownerName}
-                  onChange={(event) => setField("ownerName", event.target.value)}
-                  placeholder="Example: Alex K."
-                  autoComplete="name"
-                  required
-                />
-              </Field>
-
-              <div className="grid gap-5 lg:grid-cols-2">
-                <Field label="Email" required help="A verification code will be sent to this email.">
-                  <input
-                    type="email"
-                    className="svx-onboard-input"
-                    value={form.email}
-                    onChange={(event) => setField("email", event.target.value)}
-                    placeholder="owner@store.com"
-                    autoComplete="email"
+                  <Field
+                    label="Business phone"
                     required
-                  />
-                </Field>
-
-                <Field
-                  label="Phone"
-                  required
-                  help={
-                    selectedMarket
-                      ? `Use a ${selectedMarket.countryName} number that can receive verification (${selectedMarket.callingCode}).`
-                      : "Choose the business country first."
-                  }
-                >
-                  <input
-                    className="svx-onboard-input"
-                    value={form.phone}
-                    onChange={(event) => setField("phone", event.target.value)}
-                    placeholder={
-                      selectedMarket
+                    help={selectedMarket
+                      ? `Use a number that can receive verification (${selectedMarket.callingCode}).`
+                      : "Choose your business country first."}
+                  >
+                    <input
+                      className="svx-onboard-input"
+                      value={form.phone}
+                      onChange={(event) => setField("phone", event.target.value)}
+                      placeholder={selectedMarket
                         ? `${selectedMarket.callingCode} mobile number`
-                        : "Mobile number"
-                    }
-                    autoComplete="tel"
-                    required
-                  />
-                </Field>
-              </div>
-            </div>
-          </OnboardingCard>
+                        : "Mobile number"}
+                      autoComplete="tel"
+                      required
+                    />
+                  </Field>
+                </div>
+              </section>
+
+              <section className="svx-business-premium__card">
+                <div className="svx-business-premium__card-heading">
+                  <span className="svx-business-premium__card-icon is-location">
+                    <MapPinHouse size={22} strokeWidth={2.1} />
+                  </span>
+                  <div>
+                    <h2>Store location</h2>
+                    <p>Help customers find your store.</p>
+                  </div>
+                </div>
+
+                <div className="svx-business-premium__location">
+                  <Field label={locationExamples.firstLabel} required>
+                    <input
+                      className="svx-onboard-input"
+                      value={form.district}
+                      onChange={(event) => setField("district", event.target.value)}
+                      placeholder={locationExamples.district}
+                      required
+                    />
+                  </Field>
+
+                  <Field label={locationExamples.secondLabel} required>
+                    <input
+                      className="svx-onboard-input"
+                      value={form.sector}
+                      onChange={(event) => setField("sector", event.target.value)}
+                      placeholder={locationExamples.sector}
+                      required
+                    />
+                  </Field>
+
+                  <div className="svx-business-premium__address">
+                    <Field label="Address / landmark" required>
+                      <input
+                        className="svx-onboard-input"
+                        value={form.address}
+                        onChange={(event) => setField("address", event.target.value)}
+                        placeholder={locationExamples.address}
+                        required
+                      />
+                    </Field>
+                  </div>
+                </div>
+              </section>
+
+              <AsyncButton
+                type="submit"
+                loading={loading}
+                loadingText="Saving business details..."
+                className="svx-business-premium__continue"
+                disabled={
+                  loading ||
+                  checkingAccount ||
+                  marketsLoading ||
+                  Boolean(marketLoadError) ||
+                  !marketAvailable
+                }
+              >
+                Continue to verification <span aria-hidden="true">→</span>
+              </AsyncButton>
+            </form>
+          </main>
         </div>
-
-        <OnboardingCard>
-          <div className="svx-onboard-card-title-row">
-            <OnboardingIconBadge tone="money">
-              <MapPinHouse size={23} strokeWidth={2.2} />
-            </OnboardingIconBadge>
-
-            <div>
-              <h3>Store location</h3>
-              <p>Add the business location using names people normally use.</p>
-            </div>
-          </div>
-
-          <div className="svx-onboard-location-grid">
-            <Field label="District / city" required>
-              <input
-                className="svx-onboard-input"
-                value={form.district}
-                onChange={(event) => setField("district", event.target.value)}
-                placeholder="Example: Central district"
-                required
-              />
-            </Field>
-
-            <Field label="Sector / locality" required>
-              <input
-                className="svx-onboard-input"
-                value={form.sector}
-                onChange={(event) => setField("sector", event.target.value)}
-                placeholder="Example: City centre"
-                required
-              />
-            </Field>
-
-            <Field label="Address / landmark" required>
-              <input
-                className="svx-onboard-input"
-                value={form.address}
-                onChange={(event) => setField("address", event.target.value)}
-                placeholder="Example: Main Road, near the market"
-                required
-              />
-            </Field>
-          </div>
-        </OnboardingCard>
-
-        <OnboardingCard className="svx-onboard-next-card">
-          <div className="svx-onboard-next-copy">
-            <div className="svx-onboard-lock-icon">
-              <LockKeyhole size={31} strokeWidth={2.3} />
-
-              <span className="svx-onboard-lock-mini">
-                <CircleDollarSign size={14} strokeWidth={2.7} />
-              </span>
-            </div>
-
-            <div>
-              <strong>Next: secure your account</strong>
-              <p>Verify email and phone before choosing how to start.</p>
-            </div>
-          </div>
-
-          <AsyncButton
-            type="submit"
-            loading={loading}
-            loadingText="Saving setup..."
-            disabled={
-              loading ||
-              marketsLoading ||
-              Boolean(marketLoadError) ||
-              !marketAvailable
-            }
-          >
-            Continue to verification
-            <span aria-hidden="true">→</span>
-          </AsyncButton>
-        </OnboardingCard>
-      </form>
-    </OnboardingShell>
+      </div>
+    </div>
   );
 }

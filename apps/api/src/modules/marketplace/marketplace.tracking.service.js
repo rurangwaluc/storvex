@@ -292,8 +292,20 @@ function serializeTrackedOrder(
       ] || "Order update",
     fulfilmentMethod:
       request.fulfilmentMethod,
+
+    // Legacy Rwanda delivery coverage remains during the frontend migration.
     deliveryCoverage:
       request.deliveryCoverage,
+
+    market: {
+      countryCode:
+        request.sellerCountryCode ||
+        null,
+      timezone:
+        request.sellerTimezone ||
+        null,
+    },
+
     paymentMethod:
       request.paymentMethod,
     currency:
@@ -345,13 +357,23 @@ function serializeTrackedOrder(
       request.fulfilmentMethod ===
       "DELIVERY"
         ? {
+            area:
+              request.deliveryArea ||
+              request.deliveryDistrict ||
+              null,
+            locality:
+              request.deliveryLocality ||
+              request.deliverySector ||
+              null,
+
+            // Temporary compatibility aliases for the existing web UI.
             district:
-              request
-                .deliveryDistrict ||
+              request.deliveryDistrict ||
+              request.deliveryArea ||
               null,
             sector:
-              request
-                .deliverySector ||
+              request.deliverySector ||
+              request.deliveryLocality ||
               null,
           }
         : null,
@@ -382,6 +404,18 @@ function serializeTrackedOrder(
                 .fulfilmentBranch
                 .phone ||
               sellerPhone,
+            area:
+              request
+                .fulfilmentBranch
+                .district ||
+              null,
+            locality:
+              request
+                .fulfilmentBranch
+                .sector ||
+              null,
+
+            // Temporary compatibility aliases.
             district:
               request
                 .fulfilmentBranch

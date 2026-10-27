@@ -32,23 +32,35 @@ function cleanString(value) {
   return String(value || "").trim();
 }
 
-function formatMoney(value, currency = "RWF") {
-  const amount = Math.max(0, Number(value || 0));
-  const code =
-    cleanString(currency).toUpperCase() || "RWF";
+function formatMoney(value, currency) {
+  const amount = Math.max(
+    0,
+    Number(value || 0),
+  );
 
-  if (code === "RWF") {
-    return `Rwf ${new Intl.NumberFormat("en-US", {
-      maximumFractionDigits: 0,
-    }).format(amount)}`;
+  const code =
+    cleanString(currency).toUpperCase();
+
+  if (!code) {
+    return new Intl.NumberFormat(
+      "en",
+      {
+        maximumFractionDigits: 2,
+      },
+    ).format(amount);
   }
 
   try {
-    return new Intl.NumberFormat("en", {
-      style: "currency",
-      currency: code,
-      maximumFractionDigits: 0,
-    }).format(amount);
+    return new Intl.NumberFormat(
+      "en",
+      {
+        style: "currency",
+        currency: code,
+        currencyDisplay: "code",
+      },
+    )
+      .format(amount)
+      .replace(/\u00a0/g, " ");
   } catch {
     return `${code} ${amount.toLocaleString()}`;
   }

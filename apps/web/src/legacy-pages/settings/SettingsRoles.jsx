@@ -1,523 +1,125 @@
+/* STEP 342CJ-C / SIMPLE ACCESS PAGE */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
-
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import { getMyPermissions, getPermissionPolicy } from "../../services/permissionsApi";
 import "./Settings.css";
 import "./SettingsRoles.css";
 
-function cx(...xs) {
-  return xs.filter(Boolean).join(" ");
+const ROLES = [
+  ["OWNER", "Owner"],
+  ["MANAGER", "Manager"],
+  ["CASHIER", "Cashier"],
+  ["SELLER", "Seller"],
+  ["STOREKEEPER", "Storekeeper"],
+  ["TECHNICIAN", "Technician"],
+];
+
+const DESCRIPTIONS = {
+  OWNER: "Full control of business operations, staff and sensitive settings.",
+  MANAGER: "Oversees daily operations without owner-only controls.",
+  CASHIER: "Handles checkout, sales and payment workflows.",
+  SELLER: "Supports selling and customer-facing work.",
+  STOREKEEPER: "Manages stock, supplies and inventory activities.",
+  TECHNICIAN: "Handles repairs and technical service work.",
+};
+
+const CATEGORIES = [
+  "Sales & payments",
+  "Stock & operations",
+  "Customers & services",
+  "Reports & oversight",
+  "Team & settings",
+];
+
+function permissionCategory(permission) {
+  const p = String(permission || "").toUpperCase();
+  if (/^(POS_|SALE_|WARRANTY_|CASH_DRAWER_)/.test(p)) return CATEGORIES[0];
+  if (/^(INVENTORY_|SUPPLIERS_|DELIVERY_NOTES_|INTERSTORE_|BRANCHES_)/.test(p)) return CATEGORIES[1];
+  if (/^(CUSTOMERS_|REPAIRS_|WHATSAPP_)/.test(p)) return CATEGORIES[2];
+  if (/^(DASHBOARD_|REPORTS_|AUDIT_)/.test(p)) return CATEGORIES[3];
+  return CATEGORIES[4];
 }
 
-function strongText() {
-  return "text-[var(--color-text)]";
+const PREFIXES = [
+  "DELIVERY_NOTES_", "CASH_DRAWER_", "INTERSTORE_",
+  "INVENTORY_", "SUPPLIERS_", "CUSTOMERS_", "SETTINGS_",
+  "BRANCHES_", "MEMBERS_", "SECURITY_", "BILLING_",
+  "DASHBOARD_", "REPORTS_", "REPAIRS_", "WHATSAPP_",
+  "WARRANTY_", "SALE_", "AUDIT_", "POS_",
+];
+
+function readableAction(permission) {
+  let text = String(permission || "").toUpperCase();
+  const prefix = PREFIXES.find((item) => text.startsWith(item));
+  if (prefix) text = text.slice(prefix.length);
+  return text.replaceAll("_", " ").toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
-function mutedText() {
-  return "text-[var(--color-text-muted)]";
-}
-
-function softText() {
-  return "text-[var(--color-text-muted)]";
-}
-
-function pageCard() {
-  return "rounded-[28px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-card)]";
-}
-
-function cleanString(value) {
-  return String(value || "").trim();
-}
-
-function normalizeRole(role) {
-  return cleanString(role).toUpperCase();
-}
-
-
-function isBusinessRole(role) {
-  return ["OWNER", "MANAGER", "CASHIER", "SELLER", "STOREKEEPER", "TECHNICIAN"].includes(normalizeRole(role));
-}
-
-function businessPolicyOnly(policy) {
-  if (!policy) return null;
-
-  return Object.fromEntries(
-    Object.entries(policy).filter(([role]) => isBusinessRole(role)),
-  );
-}
-
-function roleLabel(role) {
-  const r = normalizeRole(role);
-
-  if (r === "OWNER") return "Owner";
-  if (r === "MANAGER") return "Manager";
-  if (r === "CASHIER") return "Cashier";
-  if (r === "SELLER") return "Seller";
-  if (r === "STOREKEEPER") return "Storekeeper";
-  if (r === "TECHNICIAN") return "Technician";
-  return r || "Unknown";
-}
-
-function roleTone(role) {
-  const r = normalizeRole(role);
-
-  if (r === "OWNER") return "primary";
-  if (r === "MANAGER") return "info";
-  if (r === "CASHIER") return "success";
-  if (r === "SELLER") return "warning";
-  if (r === "STOREKEEPER") return "neutral";
-  if (r === "TECHNICIAN") return "success";
-
-  return "neutral";
-}
-
-function roleDescription(role) {
-  const r = normalizeRole(role);
-
-  if (r === "OWNER") {
-    return "Full store control across staff, branches, billing, settings, reports, and sensitive actions.";
-  }
-
-  if (r === "MANAGER") {
-    return "Daily operations access without owner-only billing and staff control.";
-  }
-
-  if (r === "CASHIER") {
-    return "Sales desk access for payments, receipts, and cashier workflows.";
-  }
-
-  if (r === "SELLER") {
-    return "Sales and customer support access for daily selling work.";
-  }
-
-  if (r === "STOREKEEPER") {
-    return "Stock, supply, and inventory movement access.";
-  }
-
-  if (r === "TECHNICIAN") {
-    return "Repair jobs and technical customer support access.";
-  }
-
-  return "This role uses Storvex's standard access rules.";
-}
-
-function groupForPermission(permission) {
-  const p = cleanString(permission).toUpperCase();
-
-  if (p.startsWith("DASHBOARD_")) return "Dashboard";
-  if (p.startsWith("SETTINGS_")) return "Settings";
-  if (p.startsWith("BRANCHES_")) return "Branches";
-  if (p.startsWith("MEMBERS_")) return "Members";
-  if (p.startsWith("BILLING_")) return "Billing";
-  if (p.startsWith("SECURITY_")) return "Security";
-  if (p.startsWith("AUDIT_")) return "Audit";
-  if (p.startsWith("POS_") || p.startsWith("SALE_") || p.startsWith("WARRANTY_")) return "Point of sale";
+function readableArea(permission) {
+  const p = String(permission || "").toUpperCase();
+  if (p.startsWith("POS_") || p.startsWith("SALE_")) return "Sales";
   if (p.startsWith("CASH_DRAWER_")) return "Cash drawer";
-  if (p.startsWith("INVENTORY_")) return "Inventory";
-  if (p.startsWith("SUPPLIERS_")) return "Suppliers";
-  if (p.startsWith("CUSTOMERS_")) return "Customers";
-  if (p.startsWith("REPAIRS_")) return "Repairs";
-  if (p.startsWith("REPORTS_")) return "Reports";
+  if (p.startsWith("WARRANTY_")) return "Warranty";
   if (p.startsWith("DELIVERY_NOTES_")) return "Delivery notes";
   if (p.startsWith("INTERSTORE_")) return "Inter-store";
-  if (p.startsWith("WHATSAPP_")) return "WhatsApp";
-
-  return "Other";
-}
-
-function actionLabel(action) {
-  const a = cleanString(action).toUpperCase();
-
-  if (a === "VIEW") return "View";
-  if (a === "CREATE") return "Create";
-  if (a === "EDIT" || a === "UPDATE") return "Edit";
-  if (a === "DELETE" || a === "REMOVE") return "Remove";
-  if (a === "DEACTIVATE") return "Deactivate";
-  if (a === "RESET_PASSWORD") return "Reset password";
-  if (a === "OPEN") return "Open";
-  if (a === "CLOSE") return "Close";
-  if (a === "PAY") return "Pay";
-  if (a === "PAYMENT_ADD") return "Add payment";
-  if (a === "RECEIVE") return "Receive";
-  if (a === "RETURN") return "Return";
-  if (a === "SELL") return "Sell";
-  if (a === "ADJUST") return "Adjust";
-  if (a === "HISTORY_VIEW") return "View history";
-  if (a === "REORDER_VIEW") return "View reorder list";
-  if (a === "VIEW_CREDIT") return "View credit";
-  if (a === "VIEW_SALES") return "View sales";
-  if (a === "CREATE_SALE") return "Create sale";
-  if (a === "RECORD_MOVEMENT") return "Record movement";
-  if (a === "VIEW_ROLES") return "View roles";
-
-  return a
-    .replaceAll("_", " ")
-    .toLowerCase()
-    .replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
-}
-
-function permissionLabel(permission) {
-  const p = cleanString(permission).toUpperCase();
-  const group = groupForPermission(p);
-
-  const prefixMap = {
-    Dashboard: "DASHBOARD_",
-    Settings: "SETTINGS_",
-    Branches: "BRANCHES_",
-    Members: "MEMBERS_",
-    Billing: "BILLING_",
-    Security: "SECURITY_",
-    Audit: "AUDIT_",
-    "Point of sale": "",
-    "Cash drawer": "CASH_DRAWER_",
-    Inventory: "INVENTORY_",
-    Suppliers: "SUPPLIERS_",
-    Customers: "CUSTOMERS_",
-    Repairs: "REPAIRS_",
-    Reports: "REPORTS_",
-    "Delivery notes": "DELIVERY_NOTES_",
-    "Inter-store": "INTERSTORE_",
-    WhatsApp: "WHATSAPP_",
-  };
-
-  if (p === "POS_CREATE_SALE") return "Create POS sale";
-  if (p === "POS_VIEW") return "View POS";
-  if (p === "POS_VIEW_SALES") return "View POS sales";
-  if (p === "POS_VIEW_CREDIT") return "View customer credit";
-  if (p === "SALE_PAYMENT_ADD") return "Add sale payment";
-  if (p === "SALE_CANCEL") return "Cancel sale";
-  if (p === "SALE_REFUND") return "Refund sale";
-  if (p === "WARRANTY_CREATE") return "Create warranty";
-
-  const prefix = prefixMap[group] || "";
-  const action = prefix && p.startsWith(prefix) ? p.slice(prefix.length) : p;
-
-  return actionLabel(action);
-}
-
-function permissionRisk(permission) {
-  const p = cleanString(permission).toUpperCase();
-
-  if (
-    p.includes("BILLING") ||
-    p.includes("RESET_PASSWORD") ||
-    p.includes("DEACTIVATE") ||
-    p.includes("DELETE") ||
-    p.includes("CANCEL") ||
-    p.includes("REFUND") ||
-    p.includes("AUDIT") ||
-    p.includes("SETTINGS")
-  ) {
-    return "Sensitive";
-  }
-
-  if (
-    p.includes("CREATE") ||
-    p.includes("EDIT") ||
-    p.includes("UPDATE") ||
-    p.includes("ADJUST") ||
-    p.includes("PAYMENT") ||
-    p.includes("OPEN") ||
-    p.includes("CLOSE")
-  ) {
-    return "Can change data";
-  }
-
-  return "View only";
-}
-
-function riskTone(risk) {
-  if (risk === "Sensitive") return "warning";
-  if (risk === "Can change data") return "info";
-  return "neutral";
-}
-
-function permissionTone(permission) {
-  return riskTone(permissionRisk(permission));
-}
-
-function roleCan(policy, role, permission) {
-  return Array.isArray(policy?.[role]) && policy[role].includes(permission);
-}
-
-function Badge({ children, tone = "neutral", className = "" }) {
-  return <span className={cx("svx-roles-badge", `is-${tone}`, className)}>{children}</span>;
-}
-
-function PermissionStatus({ on }) {
-  return <span className={cx("svx-roles-status", on ? "is-on" : "is-off")}>{on ? "Allowed" : "Blocked"}</span>;
-}
-
-function SectionHeading({ eyebrow, title, subtitle }) {
-  return (
-    <div>
-      {eyebrow ? <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>{eyebrow}</div> : null}
-
-      <h2 className={cx("mt-3 text-[1.55rem] font-black tracking-[-0.04em] sm:text-[1.9rem]", strongText())}>{title}</h2>
-
-      {subtitle ? <p className={cx("mt-3 max-w-3xl text-sm font-semibold leading-6", mutedText())}>{subtitle}</p> : null}
-    </div>
-  );
-}
-
-function SummaryCard({ label, value, note, tone = "neutral" }) {
-  return (
-    <article className={cx("svx-roles-metric", `is-${tone}`)}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-      {note ? <p>{note}</p> : null}
-    </article>
-  );
-}
-
-function RoleSwitcher({ roles, selectedRole, onSelect }) {
-  return (
-    <section className={cx(pageCard(), "svx-roles-switch")}> 
-      <div>
-        <div className={cx("text-[11px] font-black uppercase tracking-[0.18em]", softText())}>Choose role</div>
-        <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>Select a role. The table below shows only what that role can do.</p>
-      </div>
-
-      <div className="svx-roles-tabs" role="tablist" aria-label="Store role selector">
-        {roles.map((role) => (
-          <button
-            key={role}
-            type="button"
-            onClick={() => onSelect(role)}
-            className={cx("svx-roles-tab", selectedRole === role && "is-active")}
-          >
-            {roleLabel(role)}
-          </button>
-        ))}
-      </div>
-
-      <div className="svx-roles-select-wrap">
-        <select className="app-input" value={selectedRole} onChange={(event) => onSelect(event.target.value)}>
-          {roles.map((role) => (
-            <option key={role} value={role}>
-              {roleLabel(role)}
-            </option>
-          ))}
-        </select>
-      </div>
-    </section>
-  );
-}
-
-function buildAreaRows({ role, policy, groups }) {
-  return groups
-    .map((section) => {
-      const allowed = section.rows.filter((permission) => roleCan(policy, role, permission));
-      if (!allowed.length) return null;
-
-      const sensitive = allowed.filter((permission) => permissionRisk(permission) === "Sensitive").length;
-      const writes = allowed.filter((permission) => permissionRisk(permission) === "Can change data").length;
-      const views = Math.max(0, allowed.length - sensitive - writes);
-      const mainRisk = sensitive > 0 ? "Sensitive" : writes > 0 ? "Can change data" : "View only";
-
-      const preview = allowed
-        .slice(0, 3)
-        .map(permissionLabel)
-        .join(", ");
-
-      return {
-        area: section.group,
-        count: allowed.length,
-        sensitive,
-        writes,
-        views,
-        mainRisk,
-        preview,
-      };
-    })
-    .filter(Boolean);
-}
-
-function RoleOverview({ role, permissions, areaRows }) {
-  const total = permissions.length;
-  const sensitive = permissions.filter((permission) => permissionRisk(permission) === "Sensitive").length;
-  const writes = permissions.filter((permission) => permissionRisk(permission) === "Can change data").length;
-  const views = Math.max(0, total - sensitive - writes);
-
-  return (
-    <section className={cx(pageCard(), "svx-roles-overview")}> 
-      <div className="svx-roles-overview-head">
-        <div>
-          <div className="svx-roles-overview-badges">
-            <Badge tone={roleTone(role)}>{roleLabel(role)}</Badge>
-            {normalizeRole(role) === "OWNER" ? <Badge tone="warning">Owner powers</Badge> : null}
-            {normalizeRole(role) === "MANAGER" ? <Badge tone="info">Daily operations</Badge> : null}
-          </div>
-
-          <h3>{roleLabel(role)} access</h3>
-          <p>{roleDescription(role)}</p>
-        </div>
-
-        <Link to="/app/settings/members" className="svx-roles-primary-link">
-          Open members
-        </Link>
-      </div>
-
-      <div className="svx-roles-metrics-grid">
-        <SummaryCard label="Allowed actions" value={total} note="Actions available to this role" tone="success" />
-        <SummaryCard label="Sensitive" value={sensitive} note="Needs owner awareness" tone={sensitive > 0 ? "warning" : "neutral"} />
-        <SummaryCard label="Can change data" value={writes} note="Creates or updates records" tone={writes > 0 ? "info" : "neutral"} />
-        <SummaryCard label="Store areas" value={areaRows.length} note="Business areas unlocked" tone="primary" />
-      </div>
-    </section>
-  );
-}
-
-function AccessTable({ role, areaRows }) {
-  return (
-    <section className={cx(pageCard(), "svx-roles-table-card")}> 
-      <div className="svx-roles-card-head">
-        <SectionHeading
-          eyebrow="Access table"
-          title={`${roleLabel(role)} access`}
-          subtitle="A compact business table. Owners see the area, the level of access, and whether the role can change important data."
-        />
-        <Badge tone="primary">{areaRows.length} areas</Badge>
-      </div>
-
-      <div className="svx-roles-access-table" role="table" aria-label={`${roleLabel(role)} access table`}>
-        <div className="svx-roles-table-row is-head" role="row">
-          <div role="columnheader">Area</div>
-          <div role="columnheader">Access</div>
-          <div role="columnheader">What this role can do</div>
-          <div role="columnheader">Risk</div>
-          <div role="columnheader">Status</div>
-        </div>
-
-        {areaRows.map((row) => (
-          <div className="svx-roles-table-row" role="row" key={row.area}>
-            <div role="cell" data-label="Area">
-              <strong>{row.area}</strong>
-              <span>{row.count} allowed action{row.count === 1 ? "" : "s"}</span>
-            </div>
-            <div role="cell" data-label="Access">
-              <span>{row.views} view</span>
-              <span>{row.writes} change</span>
-              <span>{row.sensitive} sensitive</span>
-            </div>
-            <div role="cell" data-label="Can do">
-              <p>{row.preview || "Available to this role"}</p>
-            </div>
-            <div role="cell" data-label="Risk">
-              <Badge tone={riskTone(row.mainRisk)}>{row.mainRisk}</Badge>
-            </div>
-            <div role="cell" data-label="Status">
-              <PermissionStatus on />
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function CompareRoles({ roles, policy, selectedPermission, onSelectPermission, permissions }) {
-  const visibleRoles = roles.filter(isBusinessRole);
-
-  return (
-    <section className={cx(pageCard(), "svx-roles-compare-card")}> 
-      <div className="svx-roles-card-head">
-        <SectionHeading
-          eyebrow="Compare"
-          title="Compare one action"
-          subtitle="Use this when you need to check which roles can perform a specific action."
-        />
-
-        <div className="svx-roles-compare-select">
-          <label>Action</label>
-          <select className="app-input" value={selectedPermission} onChange={(event) => onSelectPermission(event.target.value)}>
-            {permissions.map((permission) => (
-              <option key={permission} value={permission}>
-                {groupForPermission(permission)} — {permissionLabel(permission)}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {selectedPermission ? (
-        <div className="svx-roles-compare-table" role="table" aria-label="Compare permission by role">
-          <div className="svx-roles-compare-row is-head" role="row">
-            <div role="columnheader">Role</div>
-            <div role="columnheader">Meaning</div>
-            <div role="columnheader">Status</div>
-          </div>
-
-          {visibleRoles.map((role) => (
-            <div key={`${role}-${selectedPermission}`} className="svx-roles-compare-row" role="row">
-              <div role="cell" data-label="Role">
-                <strong>{roleLabel(role)}</strong>
-                <span>{normalizeRole(role)}</span>
-              </div>
-              <div role="cell" data-label="Meaning">
-                {roleDescription(role)}
-              </div>
-              <div role="cell" data-label="Status">
-                <PermissionStatus on={roleCan(policy, role, selectedPermission)} />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </section>
-  );
+  const prefix = PREFIXES.find((item) => p.startsWith(item));
+  if (!prefix) return "Other";
+  return prefix.slice(0, -1).toLowerCase()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 export default function SettingsRoles() {
   const [loading, setLoading] = useState(true);
-  const [myRole, setMyRole] = useState(null);
   const [policy, setPolicy] = useState(null);
-  const [selectedRole, setSelectedRole] = useState("");
-  const [selectedPermission, setSelectedPermission] = useState("");
+  const [selectedRole, setSelectedRole] = useState("OWNER");
+  // STEP 342CJ-D / COLLAPSED ACCESS
+  const [expandedCategory, setExpandedCategory] = useState(null);
+
+  function chooseRole(role) {
+    setSelectedRole(role);
+    setExpandedCategory(null);
+  }
 
   useEffect(() => {
-    document.title = "User roles • Storvex";
-  }, []);
-
-  useEffect(() => {
+    document.title = "Roles & access • Storvex";
     let alive = true;
 
     async function load() {
-      setLoading(true);
-
       try {
-        const [me, policyData] = await Promise.all([getMyPermissions(), getPermissionPolicy()]);
-
+        const [me, result] = await Promise.all([
+          getMyPermissions(),
+          getPermissionPolicy(),
+        ]);
         if (!alive) return;
 
-        const roles = businessPolicyOnly(policyData?.roles || null);
-        const roleNames = roles ? Object.keys(roles) : [];
+        const roles = result?.roles;
+        if (!roles || typeof roles !== "object" || Array.isArray(roles)) {
+          throw new Error("Access rules unavailable");
+        }
 
-        setMyRole(isBusinessRole(me?.role) ? me?.role : null);
-        setPolicy(roles);
+        const permittedRoles = Object.fromEntries(
+          ROLES.filter(([key]) => Array.isArray(roles[key]))
+            .map(([key]) => [key, roles[key]]),
+        );
 
-        const preferredRole = roleNames.find((role) => normalizeRole(role) === "OWNER") || roleNames[0] || "";
-        setSelectedRole(preferredRole);
+        if (!Object.keys(permittedRoles).length) {
+          throw new Error("No business role policies returned");
+        }
 
-        const allPermissions = new Set();
-        Object.values(roles || {}).forEach((items) => {
-          if (!Array.isArray(items)) return;
-          items.forEach((permission) => allPermissions.add(permission));
-        });
-
-        const firstPermission =
-          Array.from(allPermissions).find((permission) => permission === "MEMBERS_RESET_PASSWORD") ||
-          Array.from(allPermissions)[0] ||
-          "";
-
-        setSelectedPermission(firstPermission);
+        setPolicy(permittedRoles);
+        setSelectedRole((current) =>
+          Array.isArray(permittedRoles[current])
+            ? current
+            : (Array.isArray(permittedRoles[me?.role])
+              ? me.role : Object.keys(permittedRoles)[0]),
+        );
       } catch (error) {
-        console.error(error);
         if (!alive) return;
-
-        toast.error(error?.message || "Could not load access rules");
+        console.error("Could not load Access policy:", error);
+        toast.error("Could not load access rules");
         setPolicy(null);
       } finally {
         if (alive) setLoading(false);
@@ -525,91 +127,45 @@ export default function SettingsRoles() {
     }
 
     load();
-
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, []);
 
-  const roleNames = useMemo(() => {
+  const categories = useMemo(() => {
     if (!policy) return [];
+    const all = new Set();
 
-    return Object.keys(policy).filter(isBusinessRole).sort((a, b) => {
-      const rank = {
-        OWNER: 1,
-        MANAGER: 2,
-        CASHIER: 3,
-        SELLER: 4,
-        STOREKEEPER: 5,
-        TECHNICIAN: 6,
+    Object.values(policy).forEach((items) => {
+      items.forEach((permission) => all.add(permission));
+    });
+
+    const allowed = new Set(policy[selectedRole] || []);
+
+    return CATEGORIES.map((title) => {
+      const entries = [...all]
+        .filter((permission) => permissionCategory(permission) === title)
+        .sort((a, b) => {
+          const area = readableArea(a).localeCompare(readableArea(b));
+          return area || readableAction(a).localeCompare(readableAction(b));
+        });
+
+      const allowedCount = entries.filter((permission) => allowed.has(permission)).length;
+
+      return {
+        title,
+        entries: entries.map((permission) => ({
+          id: permission,
+          label: `${readableArea(permission)} · ${readableAction(permission)}`,
+          allowed: allowed.has(permission),
+        })),
+        allowedCount,
+        accessLabel: allowedCount === 0
+          ? "No access"
+          : allowedCount === entries.length
+            ? "Full access"
+            : "Limited access",
       };
-
-      return (rank[normalizeRole(a)] || 99) - (rank[normalizeRole(b)] || 99);
-    });
-  }, [policy]);
-
-  const allPermissions = useMemo(() => {
-    if (!policy) return [];
-
-    const permissions = new Set();
-
-    Object.entries(policy).forEach(([role, items]) => {
-      if (!isBusinessRole(role) || !Array.isArray(items)) return;
-      items.forEach((permission) => permissions.add(permission));
-    });
-
-    return Array.from(permissions).sort((a, b) => {
-      const groupDiff = groupForPermission(a).localeCompare(groupForPermission(b));
-      if (groupDiff !== 0) return groupDiff;
-
-      return permissionLabel(a).localeCompare(permissionLabel(b));
-    });
-  }, [policy]);
-
-  const groupedPermissions = useMemo(() => {
-    const groups = new Map();
-
-    for (const permission of allPermissions) {
-      const group = groupForPermission(permission);
-      if (!groups.has(group)) groups.set(group, []);
-      groups.get(group).push(permission);
-    }
-
-    const preferredOrder = [
-      "Dashboard",
-      "Settings",
-      "Branches",
-      "Members",
-      "Billing",
-      "Security",
-      "Audit",
-      "Point of sale",
-      "Cash drawer",
-      "Inventory",
-      "Suppliers",
-      "Customers",
-      "Repairs",
-      "Reports",
-      "Delivery notes",
-      "Inter-store",
-      "WhatsApp",
-      "Other",
-    ];
-
-    return Array.from(groups.entries())
-      .map(([group, rows]) => ({ group, rows }))
-      .sort((a, b) => preferredOrder.indexOf(a.group) - preferredOrder.indexOf(b.group));
-  }, [allPermissions]);
-
-  const selectedRolePermissions = useMemo(() => {
-    if (!policy || !selectedRole) return [];
-    return Array.isArray(policy[selectedRole]) ? policy[selectedRole] : [];
+    }).filter((category) => category.entries.length > 0);
   }, [policy, selectedRole]);
-
-  const areaRows = useMemo(() => {
-    if (!policy || !selectedRole) return [];
-    return buildAreaRows({ role: selectedRole, policy, groups: groupedPermissions });
-  }, [groupedPermissions, policy, selectedRole]);
 
   if (loading) {
     return <PageSkeleton titleWidth="w-56" lines={2} showTable={false} />;
@@ -617,57 +173,94 @@ export default function SettingsRoles() {
 
   if (!policy) {
     return (
-      <div className={cx(pageCard(), "p-6")}> 
-        <div className={cx("text-lg font-black", strongText())}>Roles & access</div>
-        <p className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>Access rules are not available right now.</p>
-      </div>
+      <section className="svx-access-simple svx-access-error">
+        <h2>Roles & access</h2>
+        <p>Access rules are unavailable right now. Please refresh the page.</p>
+      </section>
     );
   }
 
   return (
-    <div className="svx-settings-page svx-settings-roles min-w-0 space-y-6 overflow-x-hidden">
-      <section className={cx(pageCard(), "svx-roles-hero")}> 
+    <div className="svx-settings-page svx-access-simple">
+      <header className="svx-access-heading">
         <div>
-          <SectionHeading
-            eyebrow="Roles"
-            title="Roles & access"
-            subtitle="See what each staff role can view or change across the business."
-          />
+          <h2>Roles & access</h2>
+          <p>See what each staff role can do.</p>
         </div>
-
-        <div className="svx-roles-hero-badges">
-          <Badge tone="success">Access protected</Badge>
-          {myRole ? <Badge tone="primary">My role: {roleLabel(myRole)}</Badge> : null}
-          <Badge tone="neutral">{roleNames.length} roles</Badge>
-        </div>
-      </section>
-
-     
-
-      <RoleSwitcher roles={roleNames} selectedRole={selectedRole} onSelect={setSelectedRole} />
-
-      <RoleOverview role={selectedRole} permissions={selectedRolePermissions} areaRows={areaRows} />
-
-      <AccessTable role={selectedRole} areaRows={areaRows} />
-
-      <CompareRoles
-        roles={roleNames}
-        policy={policy}
-        selectedPermission={selectedPermission}
-        onSelectPermission={setSelectedPermission}
-        permissions={allPermissions}
-      />
-
-      <section className={cx(pageCard(), "svx-roles-members-card")}> 
-        <div>
-          <strong>Need to change someone’s role?</strong>
-          <p>Role changes should be done from Members so every staff account stays tied to the right role and branch access.</p>
-        </div>
-
-        <Link to="/app/settings/members" className="svx-roles-primary-link">
-          Open members
+        <Link className="svx-access-manage" to="/app/settings/members">
+          Manage team <span aria-hidden="true">→</span>
         </Link>
+      </header>
+
+      <div className="svx-access-role-section">
+        <h3>Choose a role</h3>
+        <div className="svx-access-role-tabs" role="group" aria-label="Select staff role">
+          {ROLES.filter(([key]) => Array.isArray(policy[key])).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              className={selectedRole === key ? "is-selected" : ""}
+              aria-pressed={selectedRole === key}
+              onClick={() => chooseRole(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <section className="svx-access-role-description">
+        <h3>{ROLES.find(([key]) => key === selectedRole)?.[1] || selectedRole}</h3>
+        <p>{DESCRIPTIONS[selectedRole] || "Standard business access."}</p>
       </section>
+
+      <section className="svx-access-permissions" aria-label="Permissions by area">
+        <div className="svx-access-list-heading">
+          <h3>Permissions</h3>
+          <span>Select an area to see details</span>
+        </div>
+
+        {categories.map((category) => {
+          const expanded = expandedCategory === category.title;
+          const panelId = `svx-access-${CATEGORIES.indexOf(category.title)}`;
+
+          return (
+            <section className="svx-access-category" key={category.title}>
+              <button
+                type="button"
+                className="svx-access-category-trigger"
+                aria-expanded={expanded}
+                aria-controls={panelId}
+                onClick={() => setExpandedCategory(
+                  expanded ? null : category.title
+                )}
+              >
+                <span className="svx-access-category-name">{category.title}</span>
+                <span className="svx-access-category-meta">{category.accessLabel}</span>
+                <span className="svx-access-chevron" aria-hidden="true">⌄</span>
+              </button>
+
+              {expanded ? (
+                <div className="svx-access-category-content" id={panelId}>
+                  {category.entries.map((item) => (
+                    <div className="svx-access-permission-row" key={item.id}>
+                      <span>{item.label}</span>
+                      <span className={item.allowed ? "is-allowed" : "is-blocked"}>
+                        {item.allowed ? "Allowed" : "Not allowed"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+          );
+        })}
+      </section>
+
+      <p className="svx-access-footnote">
+        These are Storvex role permissions. To change a staff member's role
+        or assigned branches, use Manage team.
+      </p>
     </div>
   );
 }

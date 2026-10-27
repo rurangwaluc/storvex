@@ -173,7 +173,7 @@ function normalizeBranch(branch) {
 
 function branchDisplayName(branch) {
   if (!branch) return "Branch";
-  return branch.code ? `${branch.code} / ${branch.name}` : branch.name;
+  return branch.code ? `${String(branch.code).replaceAll("_", " ")} / ${branch.name}` : branch.name;
 }
 
 function EyeIcon({ open }) {
@@ -519,12 +519,19 @@ export default function EmployeeCreate({ onSaved, onCancel, canCreate = true }) 
               </p>
             </div>
 
-            <span className={sectionBadge(form.branchIds.length ? "success" : "warning")}>
-              {loadingBranches ? "Loading branches" : `${form.branchIds.length} selected`}
+            <span className="svx-team-branch-count" aria-live="polite">
+              {loadingBranches ? (
+                "Loading branches"
+              ) : (
+                <>
+                  <strong>{form.branchIds.length}</strong>
+                  <span>selected</span>
+                </>
+              )}
             </span>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          <div className="svx-team-branch-options mt-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
             {branches.map((branch) => {
               const selected = form.branchIds.includes(branch.id);
               const isDefault = form.defaultBranchId === branch.id;
@@ -533,13 +540,13 @@ export default function EmployeeCreate({ onSaved, onCancel, canCreate = true }) 
                 <div
                   key={branch.id}
                   className={cx(
-                    "rounded-[22px] border p-4 transition",
+                    "svx-team-branch-option rounded-[22px] border p-4 transition",
                     selected
                       ? "border-[var(--color-primary)] bg-[var(--color-primary-soft)]"
                       : "border-[var(--color-border)] bg-[var(--color-card)]",
                   )}
                 >
-                  <label className="flex cursor-pointer items-start gap-3">
+                  <label className="svx-team-branch-choice flex cursor-pointer items-start gap-3">
                     <input
                       type="checkbox"
                       checked={selected}
@@ -561,14 +568,18 @@ export default function EmployeeCreate({ onSaved, onCancel, canCreate = true }) 
                     <button
                       type="button"
                       onClick={() => setField("defaultBranchId", branch.id)}
+                      aria-pressed={isDefault}
+                      aria-label={isDefault
+                        ? `Default branch: ${branchDisplayName(branch)}`
+                        : `Set ${branchDisplayName(branch)} as default`}
                       className={cx(
-                        "mt-3 inline-flex h-9 items-center justify-center rounded-2xl px-3 text-xs font-black transition",
+                        "svx-team-default-control mt-3 inline-flex h-9 items-center justify-center rounded-2xl px-3 text-xs font-black transition",
                         isDefault
                           ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)]"
                           : "border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)]",
                       )}
                     >
-                      {isDefault ? "Default branch" : "Set as default"}
+                      {isDefault ? "Default" : "Set default"}
                     </button>
                   ) : null}
                 </div>

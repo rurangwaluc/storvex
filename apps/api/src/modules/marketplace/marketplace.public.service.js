@@ -1,4 +1,5 @@
 const prisma = require("../../config/database");
+const { requireMarket } = require("../../config/markets");
 const {
   signGetUrl,
 } = require("../../lib/storage/objectStorage");
@@ -368,6 +369,20 @@ function isPublicMarketplaceSubscriptionVisible(
 }
 
 function serializePublicSeller(profile, tenant, counts = {}) {
+  const market = requireMarket(tenant.countryCode);
+
+  const area =
+    cleanString(tenant.district, 120);
+
+  const locality =
+    cleanString(tenant.sector, 120);
+
+  const currencyCode =
+    cleanString(tenant.currencyCode, 16);
+
+  const timezone =
+    cleanString(tenant.timezone, 100);
+
   return {
     slug: profile.publicSlug,
     name: profile.displayName || tenant.name,
@@ -379,12 +394,36 @@ function serializePublicSeller(profile, tenant, counts = {}) {
     temporarilyClosed: Boolean(profile.temporarilyClosed),
     pickupEnabled: Boolean(profile.pickupEnabled),
     deliveryEnabled: Boolean(profile.deliveryEnabled),
+
+    market: {
+      countryCode: market.countryCode,
+      countryName: market.countryName,
+      currencyCode,
+      timezone,
+      locale: market.locale,
+      locationSchema: market.location.schema,
+    },
+
+    location: {
+      countryCode: market.countryCode,
+      area,
+      locality,
+
+      // Temporary compatibility aliases for the Rwanda Marketplace UI.
+      district: area,
+      sector: locality,
+    },
+
     deliveryPolicy: profile.deliveryEnabled
       ? {
-          kigali: "FREE",
-          outsideKigali: "CONFIRM_WITH_STORE",
+          defaultFee: Math.max(
+            0,
+            Number(profile.defaultDeliveryFee || 0),
+          ),
+          areas: normalizeList(profile.deliveryAreas),
         }
       : null,
+
     paymentMethods: normalizeList(profile.paymentMethods),
     productCount: Math.max(0, Number(counts.productCount || 0)),
     availableProductCount: Math.max(
@@ -608,7 +647,7 @@ function serializePublicProduct(product, seller) {
     onSale: pricing.onSale,
     saleStartsAt: pricing.saleStartsAt,
     saleEndsAt: pricing.saleEndsAt,
-    currency: seller.tenant.currencyCode || "RWF",
+    currency: seller.tenant.currencyCode,
     category:
       categoryPath?.categoryLabel ||
       product.marketplaceCategory ||
@@ -724,7 +763,11 @@ const publicSellerInclude = {
       name: true,
       logoUrl: true,
       logoKey: true,
+      countryCode: true,
       currencyCode: true,
+      timezone: true,
+      district: true,
+      sector: true,
       status: true,
       subscription: {
         select: {
@@ -778,8 +821,9 @@ async function listPublicStores(query = {}) {
     100,
   );
 
-  const district = cleanString(
-    query.district,
+  const area = cleanString(
+    query.area ||
+      query.district,
     100,
   );
 
@@ -984,64 +1028,56 @@ async function listPublicStores(query = {}) {
           store.availableProductCount > 0,
       );
 
-  function normalizeDistrictName(value) {
+  function normalizeAreaName(value) {
     const cleaned = String(value || "")
       .trim()
-      .replace(
-        /\s+district$/i,
-        "",
-      )
       .replace(/\s+/g, " ");
 
     if (!cleaned) return "";
 
-    return cleaned
-      .split(" ")
-      .map(
-        (part) =>
-          part.charAt(0).toUpperCase() +
-          part.slice(1).toLowerCase(),
-      )
-      .join(" ");
+    return cleaned;
   }
 
-  const districtMap = new Map();
+  const areaMap = new Map();
 
   for (const store of allVisibleStores) {
     const normalized =
-      normalizeDistrictName(
-        store.location?.district,
+      normalizeAreaName(
+        store.location?.area ||
+          store.location?.district,
       );
 
     if (!normalized) continue;
 
-    const key = normalized.toLowerCase();
+    const key =
+      normalized.toLocaleLowerCase();
 
-    if (!districtMap.has(key)) {
-      districtMap.set(
+    if (!areaMap.has(key)) {
+      areaMap.set(
         key,
         normalized,
       );
     }
   }
 
-  const districts = Array.from(
-    districtMap.values(),
+  const areas = Array.from(
+    areaMap.values(),
   ).sort((left, right) =>
     left.localeCompare(right),
   );
 
-  const requestedDistrict =
-    normalizeDistrictName(district)
-      .toLowerCase();
+  const requestedArea =
+    normalizeAreaName(area)
+      .toLocaleLowerCase();
 
-  const visible = requestedDistrict
+  const visible = requestedArea
     ? allVisibleStores.filter(
         (store) =>
-          normalizeDistrictName(
-            store.location?.district,
-          ).toLowerCase() ===
-          requestedDistrict,
+          normalizeAreaName(
+            store.location?.area ||
+              store.location?.district,
+          ).toLocaleLowerCase() ===
+          requestedArea,
       )
     : [...allVisibleStores];
 
@@ -1083,7 +1119,11 @@ async function listPublicStores(query = {}) {
       startIndex,
       startIndex + limit,
     ),
-    districts,
+    areas,
+
+    // Temporary response alias for older web clients.
+    districts: areas,
+
     pagination: {
       page: safePage,
       limit,
@@ -1096,10 +1136,17 @@ async function listPublicStores(query = {}) {
     },
     filters: {
       search: search || "",
-      district:
-        districtMap.get(
-          requestedDistrict,
+      area:
+        areaMap.get(
+          requestedArea,
         ) || "",
+
+      // Temporary filter alias for older clients.
+      district:
+        areaMap.get(
+          requestedArea,
+        ) || "",
+
       fulfilment,
       openOnly,
       sort,

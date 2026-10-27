@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode";
 
 import { useTheme } from "../../hooks/useTheme";
 import AppHeader from "./AppHeader";
+import "./StorvexWorkspaceShell.css";
 import AppSidebar from "./AppSidebar";
 import {
   clearActiveBranchId,
@@ -368,8 +370,25 @@ export default function AppShell({ children }) {
     placeholderData: cachedWorkspace || undefined,
   });
 
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return window.localStorage.getItem("storvex_sidebar_collapsed_v1") === "true"; }
+    catch { return false; }
+  });
+
+  function toggleSidebarCollapse() {
+    setCollapsed((previous) => {
+      const next = !previous;
+      try { window.localStorage.setItem("storvex_sidebar_collapsed_v1", String(next)); }
+      catch {}
+      return next;
+    });
+  }
   const [mobileOpen, setMobileOpen] = useState(false);
+  useEffect(() => {
+    const openForSearch = () => setMobileOpen(true);
+    window.addEventListener("storvex:open-navigation-search", openForSearch);
+    return () => window.removeEventListener("storvex:open-navigation-search", openForSearch);
+  }, []);
   const [workspace, setWorkspace] = useState(cachedWorkspace);
 
   const workspaceName = useMemo(() => pickWorkspaceName(workspace), [workspace]);
@@ -377,6 +396,16 @@ export default function AppShell({ children }) {
   const pageTitle = useMemo(() => pickPageTitle(location.pathname), [location.pathname]);
 
   const headerTitle = pageTitle || workspaceName || "Workspace";
+  // svx-step306-mobile-bottom-nav: same retail role limits as AppSidebar.
+  const mobileRole = useMemo(() => {
+    try {
+      const raw = localStorage.getItem("tenantToken") || localStorage.getItem("token");
+      if (!raw) return "";
+      return String(jwtDecode(raw)?.role || "").toUpperCase();
+    } catch { return ""; }
+  }, []);
+  const canSeeProducts = ["OWNER", "MANAGER", "STOREKEEPER"].includes(mobileRole);
+  const canSeeSales = ["OWNER", "MANAGER", "CASHIER", "SELLER"].includes(mobileRole);
 
   useEffect(() => {
     const payload = workspaceQuery.data || null;
@@ -523,29 +552,55 @@ export default function AppShell({ children }) {
     };
   }, []);
 
-  function handleLogout() {
+  async function handleLogout() {
+    // Revoke BOTH server-side sessions before changing routes. A surviving
+    // account cookie otherwise triggers the account-to-workspace auto-login.
+    const retailToken = localStorage.getItem("tenantToken") || localStorage.getItem("token");
+    const operations = [
+      fetch("/api/auth/account/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+      }),
+    ];
+
+    if (retailToken) {
+      operations.push(fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        headers: { Authorization: `Bearer ${retailToken}` },
+      }));
+    }
+
+    const results = await Promise.allSettled(operations);
+    const failures = results.filter((item) =>
+      item.status !== "fulfilled" ||
+      (item.value.status !== 200 && item.value.status !== 401)
+    );
+
+    if (failures.length) {
+      // Do not claim logout succeeded while a valid session might remain.
+      window.alert("Sign out could not be completed. Please try again.");
+      return;
+    }
+
     clearWorkspaceStorage();
-
-    /*
-     * Internal query keys are compact and mostly branch-scoped.
-     * Logout is therefore a hard browser server-state boundary.
-     */
     queryClient.clear();
-
     navigate("/login", { replace: true });
   }
 
   return (
-    <div className="svx-shell-frame min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
+    <div data-svx-theme={isDark ? "dark" : "light"} className="svx-shell-frame min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
       <AppSidebar
         collapsed={collapsed}
         mobileOpen={mobileOpen}
         onClose={() => setMobileOpen(false)}
         onLogout={handleLogout}
-        onToggleCollapse={() => setCollapsed((prev) => !prev)}
+        onToggleCollapse={toggleSidebarCollapse}
       />
 
-      <div className={collapsed ? "svx-shell-content md:pl-[94px]" : "svx-shell-content md:pl-[230px]"}>
+      <div className={collapsed ? "svx-shell-content md:pl-[80px]" : "svx-shell-content md:pl-[264px]"}>
         <AppHeader
           isDark={isDark}
           onToggleTheme={toggleTheme}
@@ -564,6 +619,20 @@ export default function AppShell({ children }) {
         >
           {children}
         </main>
+        <nav className="svx-mobile-bottom-nav" aria-label="Mobile quick navigation">
+          <Link to="/app" aria-current={location.pathname === "/app" ? "page" : undefined} onClick={() => setMobileOpen(false)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V21h-6v-7H9v7H3z"/></svg><span>Home</span>
+          </Link>
+          {canSeeProducts && <Link to="/app/inventory" aria-current={location.pathname.startsWith("/app/inventory") ? "page" : undefined} onClick={() => setMobileOpen(false)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 7 9-4 9 4-9 4-9-4Zm0 0v10l9 4 9-4V7M12 11v10"/></svg><span>Products</span>
+          </Link>}
+          {canSeeSales && <Link to="/app/pos" aria-current={location.pathname.startsWith("/app/pos") ? "page" : undefined} onClick={() => setMobileOpen(false)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h14v18H5zM9 8h6M9 12h6M9 16h4"/></svg><span>Sales</span>
+          </Link>}
+          <button type="button" aria-label="Open all navigation" aria-expanded={mobileOpen} onClick={() => setMobileOpen(true)}>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg><span>More</span>
+          </button>
+        </nav>
       </div>
     </div>
   );

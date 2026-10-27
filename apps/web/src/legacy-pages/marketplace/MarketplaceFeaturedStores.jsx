@@ -63,8 +63,14 @@ function storeLocation(store) {
   }
 
   return [
-    cleanString(store?.location?.sector),
-    cleanString(store?.location?.district),
+    cleanString(
+      store?.location?.locality ||
+        store?.location?.sector,
+    ),
+    cleanString(
+      store?.location?.area ||
+        store?.location?.district,
+    ),
   ]
     .filter(Boolean)
     .filter(

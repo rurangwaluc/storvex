@@ -1,0 +1,115 @@
+/* STORVEX STEP 59 — approved compact four-benefit section. */
+/* Isolated from legacy problem-card and global feature-card styles. */
+.storvex-landing section.svx-why-section {
+  background: #fff;
+  color: #101420;
+  padding: 44px 0 54px;
+}
+
+.svx-why-shell {
+  width: min(1280px, 89%);
+  margin-inline: auto;
+}
+
+.storvex-landing .svx-why-shell h2 {
+  margin: 0 0 24px;
+  color: #101420;
+  font-family: var(--landing-heading-font, inherit);
+  font-size: clamp(27px, 2.75vw, 38px);
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+  font-weight: 800;
+}
+
+.svx-why-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: clamp(16px, 2.1vw, 34px);
+  row-gap: 24px;
+}
+
+.svx-why-benefit {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.svx-why-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: #10151c;
+}
+
+.svx-why-icon--lime { background: #e4f449; }
+.svx-why-icon--blue { background: #c4e4fa; color: #08285f; }
+.svx-why-icon--coral { background: #ff5961; color: #151519; }
+
+.svx-why-copy { min-width: 0; padding-top: 3px; }
+
+.storvex-landing .svx-why-copy h3 {
+  margin: 0;
+  color: #12151b;
+  font-family: var(--landing-heading-font, inherit);
+  font-size: clamp(15px, 1.23vw, 17px);
+  line-height: 1.24;
+  letter-spacing: -0.025em;
+  font-weight: 800;
+}
+
+.storvex-landing .svx-why-copy p {
+  margin: 7px 0 0;
+  max-width: 235px;
+  color: #555d69;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+:root[data-theme="dark"] .storvex-landing section.svx-why-section {
+  background: #111213;
+  color: #f8fafc;
+}
+
+:root[data-theme="dark"] .storvex-landing .svx-why-shell h2,
+:root[data-theme="dark"] .storvex-landing .svx-why-copy h3 {
+  color: #f9fafb;
+}
+
+:root[data-theme="dark"] .storvex-landing .svx-why-copy p {
+  color: #bec3cb;
+}
+
+@media (max-width: 1100px) {
+  .svx-why-shell { width: auto; margin-inline: 24px; }
+  .svx-why-grid { column-gap: 16px; }
+  .svx-why-benefit { grid-template-columns: 52px minmax(0, 1fr); gap: 10px; }
+  .svx-why-icon { width: 52px; height: 52px; }
+}
+
+@media (max-width: 860px) {
+  .svx-why-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 27px; }
+  .storvex-landing section.svx-why-section { padding: 42px 0 52px; }
+}
+
+@media (max-width: 560px) {
+  .svx-why-shell { margin-inline: 16px; }
+  .storvex-landing section.svx-why-section { padding: 36px 0 44px; }
+  .storvex-landing .svx-why-shell h2 { font-size: clamp(25px, 6.8vw, 31px); margin-bottom: 22px; }
+  .svx-why-grid { grid-template-columns: 1fr; row-gap: 20px; }
+  .svx-why-benefit { grid-template-columns: 52px minmax(0, 1fr); gap: 14px; }
+  .storvex-landing .svx-why-copy h3 { font-size: 16px; }
+  .storvex-landing .svx-why-copy p { max-width: 360px; font-size: 13.5px; margin-top: 5px; }
+}
+
+@media (max-width: 359px) {
+  .svx-why-shell { margin-inline: 12px; }
+  .svx-why-benefit { grid-template-columns: 46px minmax(0, 1fr); gap: 12px; }
+  .svx-why-icon { width: 46px; height: 46px; }
+  .svx-why-icon svg { width: 24px; height: 24px; }
+  .storvex-landing .svx-why-copy h3 { font-size: 15px; }
+}

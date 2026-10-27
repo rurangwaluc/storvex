@@ -36,7 +36,10 @@ import "./MarketplacePublic.css";
 import "./MarketplaceCustomerPanel.css";
 import "./MarketplaceOrderTracking.css";
 
-function formatDateTime(value) {
+function formatDateTime(
+  value,
+  market,
+) {
   if (!value) return "";
 
   const date = new Date(value);
@@ -49,13 +52,33 @@ function formatDateTime(value) {
     return "";
   }
 
-  return new Intl.DateTimeFormat(
-    "en-RW",
-    {
-      dateStyle: "medium",
-      timeStyle: "short",
-    },
-  ).format(date);
+  const timezone =
+    String(
+      market?.timezone || "",
+    ).trim() || undefined;
+
+  try {
+    return new Intl.DateTimeFormat(
+      "en",
+      {
+        dateStyle: "medium",
+        timeStyle: "short",
+        ...(timezone
+          ? {
+              timeZone: timezone,
+            }
+          : {}),
+      },
+    ).format(date);
+  } catch {
+    return new Intl.DateTimeFormat(
+      "en",
+      {
+        dateStyle: "medium",
+        timeStyle: "short",
+      },
+    ).format(date);
+  }
 }
 
 function fulfilmentLabel(order) {
@@ -504,6 +527,7 @@ export default function MarketplaceOrderTracking() {
                             <small>
                               {formatDateTime(
                                 step.at,
+                                order.market,
                               )}
                             </small>
                           ) : (
@@ -550,10 +574,16 @@ export default function MarketplaceOrderTracking() {
                           .address,
                         order
                           .pickupLocation
-                          .sector,
+                          .locality ||
+                          order
+                            .pickupLocation
+                            .sector,
                         order
                           .pickupLocation
-                          .district,
+                          .area ||
+                          order
+                            .pickupLocation
+                            .district,
                       ]
                         .filter(Boolean)
                         .join(", ")}
@@ -578,10 +608,16 @@ export default function MarketplaceOrderTracking() {
                       {[
                         order
                           .deliveryLocation
-                          .sector,
+                          .locality ||
+                          order
+                            .deliveryLocation
+                            .sector,
                         order
                           .deliveryLocation
-                          .district,
+                          .area ||
+                          order
+                            .deliveryLocation
+                            .district,
                       ]
                         .filter(Boolean)
                         .join(", ") ||

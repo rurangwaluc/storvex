@@ -513,6 +513,14 @@ async function createPaymentFromPlan(intentId, planKey, phone) {
     let finalPayment = payment;
 
     if (providerResult?.mock) {
+      // Never convert simulated collection responses into paid access.
+      const error = new Error(
+        "Simulated payments cannot activate subscriptions."
+      );
+      error.status = 503;
+      error.code = "MOCK_PAYMENT_ACTIVATION_DISABLED";
+      throw error;
+
       const [updatedPayment] = await prisma.$transaction([
         prisma.payment.update({
           where: { reference: payment.reference },
@@ -622,6 +630,14 @@ async function createRenewalPaymentFromPlan(tenantId, planKey, phone) {
     let finalPayment = payment;
 
     if (providerResult?.mock) {
+      // Never convert simulated collection responses into paid access.
+      const error = new Error(
+        "Simulated payments cannot activate subscriptions."
+      );
+      error.status = 503;
+      error.code = "MOCK_PAYMENT_ACTIVATION_DISABLED";
+      throw error;
+
       finalPayment = await prisma.payment.update({
         where: { reference: payment.reference },
         data: {

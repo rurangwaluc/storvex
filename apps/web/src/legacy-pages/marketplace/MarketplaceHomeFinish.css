@@ -950,3 +950,1136 @@
   }
 }
 
+/* STORVEX STEP 121 — LOCKED MARKETPLACE HERO
+   Scoped to MarketplaceHome. Do not change shared header or shop pages.
+   Uses existing, real marketplace category data, images, and destination URLs.
+*/
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero {
+  padding: 14px 28px 0;
+  color: #111318;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__shell {
+  width: min(100%, 1240px);
+  margin-inline: auto;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__panel {
+  overflow: hidden;
+  border: 0;
+  border-radius: 18px;
+  background: #e4fa45;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__main {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  min-height: 420px;
+  position: relative;
+  isolation: isolate;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  padding: 34px 10px 26px 40px;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__eyebrow {
+  color: #24310b;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.065em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 {
+  margin: 14px 0 0;
+  color: #10120d;
+  font-size: clamp(37px, 3.6vw, 59px);
+  font-weight: 900;
+  letter-spacing: -0.055em;
+  line-height: 0.99;
+  max-width: 575px;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 span {
+  display: inline;
+  color: #0f110c;
+  font-size: 0.74em;
+  white-space: nowrap;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy p {
+  max-width: 440px;
+  margin: 15px 0 0;
+  color: #26301c;
+  font-size: 14px;
+  font-weight: 560;
+  line-height: 1.55;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 19px;
+  margin-top: 21px;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  min-height: 46px;
+  padding: 0 19px;
+  border: 1px solid #ff5961;
+  border-radius: 9px;
+  background: #ff5961;
+  box-shadow: 0 4px 10px rgba(39, 26, 12, 0.10);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__action:hover {
+  background: #ec4651;
+  border-color: #ec4651;
+  transform: translateY(-1px);
+  color: #fff;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__how {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: #11180d;
+  font-size: 12px;
+  font-weight: 780;
+  text-decoration: none;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__how:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual {
+  position: relative;
+  min-width: 0;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual img {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 76% 52%;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__categories {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 7px;
+  padding: 0 12px 12px;
+  scroll-margin-top: 120px;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category {
+  min-width: 0;
+  min-height: 103px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  position: relative;
+  padding: 8px 11px 9px;
+  border: 1px solid rgba(21, 29, 23, 0.10);
+  border-radius: 12px;
+  background: #fff;
+  color: #12151b;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 3px 8px rgba(20, 30, 0, 0.055);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category:hover {
+  border-color: #ff5961;
+  box-shadow: 0 7px 18px rgba(25, 30, 16, 0.14);
+  transform: translateY(-3px);
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-image {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 63px;
+  overflow: hidden;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-label {
+  max-width: 100%;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-arrow {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+  color: #ff5961;
+  transition: transform 160ms ease;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category:hover .svx-locked-hero__category-arrow {
+  transform: translateX(2px);
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__selection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 2px 12px 13px;
+  color: #141b0d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__selection button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  border: 1px solid rgba(15, 20, 10, 0.24);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 10px;
+  color: #15191c;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero a:focus-visible,
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero button:focus-visible {
+  outline: 3px solid #168df7;
+  outline-offset: 3px;
+}
+
+/* Dark mode keeps a recognizable lime/olive hero and charcoal category tiles. */
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__panel {
+  border-color: rgba(228, 250, 69, 0.18);
+  background: #293b0b;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__eyebrow {
+  color: #e4fa45;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 {
+  color: #f6ffc9;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 span {
+  color: #e4fa45;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy p,
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__how {
+  color: #eef4da;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category {
+  border-color: #353a32;
+  background: #1c1d1f;
+  box-shadow: none;
+  color: #fff;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category:hover {
+  border-color: #e4fa45;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-arrow {
+  color: #e4fa45;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__selection {
+  color: #edf4d5;
+}
+
+@media (max-width: 1100px) {
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    min-height: 350px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy {
+    padding-left: 26px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 {
+    font-size: clamp(33px, 3.8vw, 47px);
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual {
+    min-height: 350px;
+  }
+}
+
+@media (max-width: 760px) {
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero {
+    padding: 14px 16px 0;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__panel {
+    border-radius: 17px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy {
+    padding: 29px 22px 14px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 {
+    font-size: clamp(32px, 8.8vw, 46px);
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy p {
+    font-size: 13px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual {
+    min-height: 240px;
+    height: 240px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual img {
+    object-position: 77% 50%;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    padding: 0 11px 11px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category {
+    min-height: 101px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 390px) {
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy {
+    padding: 25px 16px 12px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 {
+    font-size: clamp(30px, 9vw, 37px);
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual {
+    min-height: 210px;
+    height: 210px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-image {
+    width: 65px;
+    height: 58px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category,
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-arrow,
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__action {
+    transition: none;
+  }
+}
+
+/* STORVEX STEP 121R — LOCKED REFERENCE MARKETPLACE HERO
+   Scoped to MarketplaceHome. Do not change shared header or shop pages.
+   Uses existing, real marketplace category data, images, and destination URLs.
+*/
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero {
+  padding: 14px 28px 0;
+  color: #111318;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__shell {
+  width: min(100%, 1240px);
+  margin-inline: auto;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__panel {
+  overflow: hidden;
+  border: 0;
+  border-radius: 18px;
+  background: #e4fa45;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__main {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  min-height: 420px;
+  position: relative;
+  isolation: isolate;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  padding: 34px 10px 26px 40px;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__eyebrow {
+  color: #24310b;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.065em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 {
+  margin: 14px 0 0;
+  color: #10120d;
+  font-size: clamp(37px, 3.6vw, 59px);
+  font-weight: 900;
+  letter-spacing: -0.055em;
+  line-height: 0.99;
+  max-width: 575px;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 span {
+  display: inline;
+  color: #0f110c;
+  font-size: 0.74em;
+  white-space: nowrap;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy p {
+  max-width: 440px;
+  margin: 15px 0 0;
+  color: #26301c;
+  font-size: 14px;
+  font-weight: 560;
+  line-height: 1.55;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 19px;
+  margin-top: 21px;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  min-height: 46px;
+  padding: 0 19px;
+  border: 1px solid #ff5961;
+  border-radius: 9px;
+  background: #ff5961;
+  box-shadow: 0 4px 10px rgba(39, 26, 12, 0.10);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  text-decoration: none;
+  transition: background-color 160ms ease, transform 160ms ease;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__action:hover {
+  background: #ec4651;
+  border-color: #ec4651;
+  transform: translateY(-1px);
+  color: #fff;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__how {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  color: #11180d;
+  font-size: 12px;
+  font-weight: 780;
+  text-decoration: none;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__how:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual {
+  position: relative;
+  min-width: 0;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual img {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 76% 52%;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__categories {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 7px;
+  padding: 0 12px 12px;
+  scroll-margin-top: 120px;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category {
+  min-width: 0;
+  min-height: 103px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  position: relative;
+  padding: 8px 11px 9px;
+  border: 1px solid rgba(21, 29, 23, 0.10);
+  border-radius: 12px;
+  background: #fff;
+  color: #12151b;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 3px 8px rgba(20, 30, 0, 0.055);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category:hover {
+  border-color: #ff5961;
+  box-shadow: 0 7px 18px rgba(25, 30, 16, 0.14);
+  transform: translateY(-3px);
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-image {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  height: 63px;
+  overflow: hidden;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-label {
+  max-width: 100%;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-arrow {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+  color: #ff5961;
+  transition: transform 160ms ease;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category:hover .svx-locked-hero__category-arrow {
+  transform: translateX(2px);
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__selection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 2px 12px 13px;
+  color: #141b0d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__selection button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  border: 1px solid rgba(15, 20, 10, 0.24);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 10px;
+  color: #15191c;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero a:focus-visible,
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero button:focus-visible {
+  outline: 3px solid #168df7;
+  outline-offset: 3px;
+}
+
+/* Dark mode keeps a recognizable lime/olive hero and charcoal category tiles. */
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__panel {
+  border-color: rgba(228, 250, 69, 0.18);
+  background: #293b0b;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__eyebrow {
+  color: #e4fa45;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 {
+  color: #f6ffc9;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 span {
+  color: #e4fa45;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy p,
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__how {
+  color: #eef4da;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category {
+  border-color: #353a32;
+  background: #1c1d1f;
+  box-shadow: none;
+  color: #fff;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category:hover {
+  border-color: #e4fa45;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-arrow {
+  color: #e4fa45;
+}
+
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__selection {
+  color: #edf4d5;
+}
+
+@media (max-width: 1100px) {
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__main {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    min-height: 350px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy {
+    padding-left: 26px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 {
+    font-size: clamp(33px, 3.8vw, 47px);
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual {
+    min-height: 350px;
+  }
+}
+
+@media (max-width: 760px) {
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero {
+    padding: 14px 16px 0;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__panel {
+    border-radius: 17px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy {
+    padding: 29px 22px 14px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 {
+    font-size: clamp(32px, 8.8vw, 46px);
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy p {
+    font-size: 13px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual {
+    min-height: 240px;
+    height: 240px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual img {
+    object-position: 77% 50%;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__categories {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    padding: 0 11px 11px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category {
+    min-height: 101px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 390px) {
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy {
+    padding: 25px 16px 12px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy h1 {
+    font-size: clamp(30px, 9vw, 37px);
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual {
+    min-height: 210px;
+    height: 210px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-image {
+    width: 65px;
+    height: 58px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category,
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-arrow,
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__action {
+    transition: none;
+  }
+}
+
+
+/* Exact light/dark collage artwork cropped from the approved UI reference. */
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual {
+  background: transparent;
+}
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual img {
+  object-fit: contain;
+  object-position: right bottom;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__art--light,
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-art--light {
+  display: block;
+}
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__art--dark,
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-art--dark {
+  display: none;
+}
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual {
+  background: transparent;
+}
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__art--light,
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-art--light {
+  display: none;
+}
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__art--dark,
+:root[data-theme="dark"] .storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-art--dark {
+  display: block;
+}
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-image {
+  width: min(104px, 94%);
+  height: 66px;
+}
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__category-image img {
+  max-width: 100%;
+  width: auto;
+  max-height: 100%;
+  height: auto;
+  object-fit: contain;
+}
+@media (max-width: 760px) {
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual img {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+/* STORVEX STEP 128 — UNIFIED HERO SURFACE */
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__shell {
+  background: transparent;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__panel,
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__main,
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy,
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__categories {
+  background: #e4fa45;
+  background-image: none;
+  box-shadow: none;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__panel {
+  border: 0;
+  border-radius: 18px;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual {
+  background: transparent;
+  background-image: none;
+}
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual img {
+  background: transparent;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* Dark mode: the entire hero uses the same olive surface. */
+
+:root[data-theme="dark"]
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__panel,
+:root[data-theme="dark"]
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__main,
+:root[data-theme="dark"]
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__copy,
+:root[data-theme="dark"]
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__categories {
+  background: #293b0b;
+  background-image: none;
+  box-shadow: none;
+}
+
+:root[data-theme="dark"]
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero__visual {
+  background: transparent;
+  background-image: none;
+}
+
+/* STORVEX STEP 130A — OUTER FRAME CORRECTION */
+/* The hero section must not render a second lime surface. */
+
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero {
+  background: transparent;
+  background-image: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+:root[data-theme="dark"]
+.storvex-marketplace.svx-marketplace-home .svx-locked-hero {
+  background: transparent;
+  background-image: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* STORVEX STEP 143 — CONSOLIDATED MOBILE HERO */
+/* Desktop hero and marketplace functionality are unchanged. */
+
+@media (max-width: 760px) {
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 12px 5px 0;
+    box-sizing: border-box;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__panel {
+    border-radius: 15px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__copy {
+    padding: 16px 13px 3px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__eyebrow {
+    font-size: 10px;
+    line-height: 1.45;
+    letter-spacing: 0.045em;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__copy h1 {
+    font-size: clamp(31px, 8.5vw, 46px);
+    line-height: 1.02;
+    letter-spacing: -0.049em;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__copy p {
+    font-size: 13.5px;
+    line-height: 1.52;
+    margin-top: 12px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__actions {
+    margin-top: 14px;
+    gap: 8px 12px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__visual {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: clamp(160px, 46vw, 210px);
+    overflow: hidden;
+    background: transparent;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__visual img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+    object-position: center bottom;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__categories {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 3px 6px 8px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__category {
+    min-width: 0;
+    min-height: 89px;
+    padding: 7px 9px;
+    gap: 3px;
+    border-radius: 10px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__category-label {
+    font-size: 12.5px;
+    line-height: 1.25;
+    font-weight: 800;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__category-image {
+    display: grid;
+    place-items: center;
+    width: min(100px, 95%);
+    height: 53px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__category-image img {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  /* Full-width fifth category: intentional horizontal card. */
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__category:nth-child(5) {
+    grid-column: 1 / -1;
+    min-height: 77px;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    padding-right: 34px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__category:nth-child(5)
+  .svx-locked-hero__category-image {
+    width: 74px;
+    height: 56px;
+    flex: 0 0 74px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__category:nth-child(5)
+  .svx-locked-hero__category-label {
+    text-align: left;
+  }
+}
+
+@media (max-width: 390px) {
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__copy {
+    padding: 15px 12px 3px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__visual {
+    height: 160px;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__copy h1 {
+    font-size: clamp(30px, 8.5vw, 37px);
+  }
+}
+
+/* STORVEX STEP 145 — DESKTOP HERO WIDTH */
+/* Correct external margin + padding stacking. */
+
+@media (min-width: 761px) {
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 20px;
+    padding-right: 20px;
+    box-sizing: border-box;
+  }
+
+  .storvex-marketplace.svx-marketplace-home .svx-locked-hero__shell {
+    width: min(100%, 1240px);
+    margin-inline: auto;
+  }
+}
+
+/* STORVEX STEP 155 — CONTAINED CATEGORY CARDS */
+/* Desktop/tablet only. Mobile hero remains unchanged. */
+
+@media (min-width: 761px) {
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__category {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 78px auto;
+    align-content: center;
+    justify-items: center;
+    row-gap: 5px;
+    min-height: 128px;
+    padding: 9px 10px 12px;
+    overflow: hidden;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__category-image {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    max-width: 145px;
+    height: 78px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__category-image img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    object-position: center;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__category-label {
+    position: relative;
+    z-index: 1;
+    display: block;
+    align-self: center;
+    max-width: 100%;
+    font-size: 12px;
+    line-height: 1.3;
+    text-align: center;
+  }
+
+  .storvex-marketplace.svx-marketplace-home
+  .svx-locked-hero__category-arrow {
+    z-index: 2;
+  }
+}

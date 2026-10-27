@@ -1,3 +1,4 @@
+import PasswordlessBusinessVerification from "./PasswordlessBusinessVerification";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   LockKeyhole,
@@ -17,6 +18,7 @@ import {
   readOnboardingState,
   saveOnboardingState,
 } from "../../components/onboarding/onboardingStorage";
+import "./VerifyOtpBrand.css";
 import AsyncButton from "../../components/ui/AsyncButton";
 import apiClient from "../../services/apiClient";
 
@@ -662,7 +664,7 @@ function PasswordPanel({
   );
 }
 
-export default function VerifyOtp() {
+function LegacyVerifyOtp() {
   const nav = useNavigate();
   const onboarding = useMemo(() => readOnboardingState(), []);
 
@@ -1150,8 +1152,8 @@ export default function VerifyOtp() {
   return (
     <OnboardingShell
       activeStep={2}
-      title="Secure your owner account."
-      subtitle="Verify the owner email and phone, then create the owner password."
+      title="Secure your Storvex account."
+      subtitle="Verify your email and phone, then create a secure password."
       footer={
         <p className="svx-onboard-login-note">
           Your progress is saved while you review earlier steps.
@@ -1163,7 +1165,7 @@ export default function VerifyOtp() {
           <div>
             <span className="svx-onboard-step-pill">Step 2 of 3</span>
 
-            <h2>Secure your account.</h2>
+            <h2>Verify your contact details.</h2>
 
             <p>
               Confirm the owner email and phone, then create the password used to access the store.
@@ -1275,4 +1277,70 @@ export default function VerifyOtp() {
       </form>
     </OnboardingShell>
   );
+}
+
+
+export default function VerifyOtp() {
+  const [account, setAccount] = useState(undefined);
+  const onboarding = useMemo(() => readOnboardingState(), []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch("/api/auth/account/me", {
+      credentials: "same-origin",
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) return null;
+        const data = await response.json();
+        return data?.account || null;
+      })
+      .then((result) => {
+        if (!cancelled) setAccount(result);
+      })
+      .catch(() => {
+        if (!cancelled) setAccount(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (account === undefined) {
+    return (
+      <div
+        role="status"
+        style={{ padding: 32, textAlign: "center" }}
+      >
+        Checking your secure setup…
+      </div>
+    );
+  }
+
+  const ownerEmail = String(onboarding?.email || "")
+    .trim()
+    .toLowerCase();
+
+  const accountEmail = String(account?.email || "")
+    .trim()
+    .toLowerCase();
+
+  const matchingAccount = Boolean(
+    account?.accountId &&
+    account?.emailVerified === true &&
+    ownerEmail &&
+    accountEmail === ownerEmail
+  );
+
+  if (onboarding?.accountBusinessIntent || matchingAccount) {
+    return (
+      <PasswordlessBusinessVerification
+        account={matchingAccount ? account : null}
+      />
+    );
+  }
+
+  return <LegacyVerifyOtp />;
 }

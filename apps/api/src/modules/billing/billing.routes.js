@@ -41,12 +41,13 @@ router.post(
   billing.initiateRenewalPayment
 );
 
+
+
 router.post(
-  "/renew/dev-success",
-  express.json(),
+  "/payments/:reference/complete-sandbox",
   authenticate,
   requireTenant,
-  billing.devMarkRenewalPaymentSuccessful
+  billing.completeSandboxRenewalPayment
 );
 
 router.get(

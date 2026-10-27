@@ -40,31 +40,32 @@ function cleanString(value) {
   return String(value || "").trim();
 }
 
-function formatMoney(value, currency = "RWF") {
+function formatMoney(value, currency) {
   const amount = Math.max(
     0,
     Number(value || 0),
   );
 
   const code =
-    cleanString(currency).toUpperCase() ||
-    "RWF";
+    cleanString(currency).toUpperCase();
 
-  if (code === "RWF") {
-    return `Rwf ${new Intl.NumberFormat(
-      "en-US",
+  if (!code) {
+    return new Intl.NumberFormat(
+      "en",
       {
-        maximumFractionDigits: 0,
+        maximumFractionDigits: 2,
       },
-    ).format(amount)}`;
+    ).format(amount);
   }
 
   try {
     return new Intl.NumberFormat("en", {
       style: "currency",
       currency: code,
-      maximumFractionDigits: 2,
-    }).format(amount);
+      currencyDisplay: "code",
+    })
+      .format(amount)
+      .replace(/\u00a0/g, " ");
   } catch {
     return `${code} ${amount.toLocaleString()}`;
   }
@@ -135,10 +136,10 @@ function saveCustomerDetails(value) {
         cleanString(value.customerPhone),
       customerEmail:
         cleanString(value.customerEmail),
-      deliveryDistrict:
-        cleanString(value.deliveryDistrict),
-      deliverySector:
-        cleanString(value.deliverySector),
+      deliveryArea:
+        cleanString(value.deliveryArea),
+      deliveryLocality:
+        cleanString(value.deliveryLocality),
     }),
   );
 }
@@ -171,8 +172,7 @@ function groupCartBySeller(cart) {
       items: [],
       subtotal: 0,
       currency:
-        cleanString(item?.currency) ||
-        "RWF",
+        cleanString(item?.currency),
     };
 
     current.items.push(item);
@@ -278,14 +278,19 @@ export default function MarketplaceRequestPanel({
         .customerEmail || "",
     preferredContact: "WHATSAPP",
     fulfilmentMethod: "",
-    deliveryCoverage: "KIGALI",
     deliveryAddress: "",
-    deliveryDistrict:
+    deliveryArea:
       savedCustomerRef.current
-        .deliveryDistrict || "",
-    deliverySector:
+        .deliveryArea ||
       savedCustomerRef.current
-        .deliverySector || "",
+        .deliveryDistrict ||
+      "",
+    deliveryLocality:
+      savedCustomerRef.current
+        .deliveryLocality ||
+      savedCustomerRef.current
+        .deliverySector ||
+      "",
     customerNote: "",
   }));
 
@@ -300,6 +305,47 @@ export default function MarketplaceRequestPanel({
 
   const [success, setSuccess] =
     useState(null);
+
+  const sellerCurrency =
+    cleanString(
+      store?.market?.currencyCode,
+    ) ||
+    cleanString(
+      selectedGroup?.currency,
+    );
+
+  const usesDistrictSector =
+    store?.market?.locationSchema ===
+    "DISTRICT_SECTOR";
+
+  const deliveryAreaLabel =
+    usesDistrictSector
+      ? "District"
+      : "Area / city";
+
+  const deliveryLocalityLabel =
+    usesDistrictSector
+      ? "Sector"
+      : "Locality";
+
+  const deliveryFee =
+    form.fulfilmentMethod === "DELIVERY"
+      ? Math.max(
+          0,
+          Number(
+            store?.deliveryPolicy
+              ?.defaultFee || 0,
+          ),
+        )
+      : 0;
+
+  const estimatedTotal =
+    Math.max(
+      0,
+      Number(
+        selectedGroup?.subtotal || 0,
+      ),
+    ) + deliveryFee;
 
   useEffect(() => {
     const customer =
@@ -399,8 +445,6 @@ export default function MarketplaceRequestPanel({
               : current.preferredContact,
           fulfilmentMethod:
             fulfilment,
-          deliveryCoverage:
-            current.deliveryCoverage || "KIGALI",
         }));
       })
       .catch((error) => {
@@ -464,27 +508,18 @@ export default function MarketplaceRequestPanel({
 
     if (
       form.fulfilmentMethod === "DELIVERY" &&
-      !["KIGALI", "OUTSIDE_KIGALI"].includes(
-        form.deliveryCoverage,
-      )
+      usesDistrictSector &&
+      !cleanString(form.deliveryArea)
     ) {
-      return "Choose Kigali City or outside Kigali.";
+      return `Enter the delivery ${deliveryAreaLabel.toLowerCase()}.`;
     }
 
     if (
       form.fulfilmentMethod ===
         "DELIVERY" &&
-      !cleanString(form.deliveryDistrict)
+      !cleanString(form.deliveryLocality)
     ) {
-      return "Enter the delivery district.";
-    }
-
-    if (
-      form.fulfilmentMethod ===
-        "DELIVERY" &&
-      !cleanString(form.deliverySector)
-    ) {
-      return "Enter the delivery sector.";
+      return `Enter the delivery ${deliveryLocalityLabel.toLowerCase()}.`;
     }
 
     if (
@@ -526,10 +561,7 @@ export default function MarketplaceRequestPanel({
             form.preferredContact,
           fulfilmentMethod:
             form.fulfilmentMethod,
-          deliveryCoverage:
-            form.fulfilmentMethod === "DELIVERY"
-              ? form.deliveryCoverage
-              : null,
+          deliveryCoverage: null,
           paymentMethod:
             "SELLER_APPROVED_OTHER",
           customerName:
@@ -551,20 +583,25 @@ export default function MarketplaceRequestPanel({
                   form.deliveryAddress,
                 )
               : null,
-          deliveryDistrict:
+          deliveryArea:
             form.fulfilmentMethod ===
             "DELIVERY"
               ? cleanString(
-                  form.deliveryDistrict,
+                  form.deliveryArea,
                 ) || null
               : null,
-          deliverySector:
+          deliveryLocality:
             form.fulfilmentMethod ===
             "DELIVERY"
               ? cleanString(
-                  form.deliverySector,
+                  form.deliveryLocality,
                 ) || null
               : null,
+
+          // Legacy Rwanda aliases are no longer sent by
+          // the current Marketplace web client.
+          deliveryDistrict: null,
+          deliverySector: null,
           customerNote:
             cleanString(
               form.customerNote,
@@ -1027,7 +1064,7 @@ export default function MarketplaceRequestPanel({
                           event.target.value,
                         )
                       }
-                      placeholder="07..."
+                      placeholder="Phone number"
                       disabled={submitting}
                     />
                   </label>
@@ -1240,70 +1277,6 @@ export default function MarketplaceRequestPanel({
                 {form.fulfilmentMethod ===
                 "DELIVERY" ? (
                   <div className="svx-marketplace-request-delivery">
-                    <div className="svx-marketplace-request-options">
-                      <label>
-                        <input
-                          type="radio"
-                          name="deliveryCoverage"
-                          value="KIGALI"
-                          checked={
-                            form.deliveryCoverage ===
-                            "KIGALI"
-                          }
-                          onChange={() =>
-                            updateField(
-                              "deliveryCoverage",
-                              "KIGALI",
-                            )
-                          }
-                          disabled={submitting}
-                        />
-
-                        <span>
-                          <MapPin size={17} />
-
-                          <strong>
-                            Kigali City
-                          </strong>
-
-                          <small>
-                            Free delivery
-                          </small>
-                        </span>
-                      </label>
-
-                      <label>
-                        <input
-                          type="radio"
-                          name="deliveryCoverage"
-                          value="OUTSIDE_KIGALI"
-                          checked={
-                            form.deliveryCoverage ===
-                            "OUTSIDE_KIGALI"
-                          }
-                          onChange={() =>
-                            updateField(
-                              "deliveryCoverage",
-                              "OUTSIDE_KIGALI",
-                            )
-                          }
-                          disabled={submitting}
-                        />
-
-                        <span>
-                          <Truck size={17} />
-
-                          <strong>
-                            Outside Kigali
-                          </strong>
-
-                          <small>
-                            Cost confirmed by the store
-                          </small>
-                        </span>
-                      </label>
-                    </div>
-
                     <label>
                       <span>
                         Delivery address
@@ -1319,7 +1292,7 @@ export default function MarketplaceRequestPanel({
                             event.target.value,
                           )
                         }
-                        placeholder="Area, road, building or nearby landmark"
+                        placeholder="Road, building, address or nearby landmark"
                         required
                         autoComplete="street-address"
                         rows={3}
@@ -1329,46 +1302,61 @@ export default function MarketplaceRequestPanel({
 
                     <div>
                       <label>
-                        <span>District</span>
+                        <span>
+                          {deliveryAreaLabel}
+                          {!usesDistrictSector ? (
+                            <small>
+                              Optional
+                            </small>
+                          ) : null}
+                        </span>
 
                         <input
                           type="text"
                           value={
-                            form.deliveryDistrict
+                            form.deliveryArea
                           }
                           required={
-                            form.fulfilmentMethod ===
-                            "DELIVERY"
+                            usesDistrictSector
                           }
                           autoComplete="address-level2"
                           onChange={(event) =>
                             updateField(
-                              "deliveryDistrict",
+                              "deliveryArea",
                               event.target.value,
                             )
+                          }
+                          placeholder={
+                            usesDistrictSector
+                              ? "Enter district"
+                              : "Enter area or city"
                           }
                           disabled={submitting}
                         />
                       </label>
 
                       <label>
-                        <span>Sector</span>
+                        <span>
+                          {deliveryLocalityLabel}
+                        </span>
 
                         <input
                           type="text"
                           value={
-                            form.deliverySector
+                            form.deliveryLocality
                           }
-                          required={
-                            form.fulfilmentMethod ===
-                            "DELIVERY"
-                          }
+                          required
                           autoComplete="address-level3"
                           onChange={(event) =>
                             updateField(
-                              "deliverySector",
+                              "deliveryLocality",
                               event.target.value,
                             )
+                          }
+                          placeholder={
+                            usesDistrictSector
+                              ? "Enter sector"
+                              : "Enter locality"
                           }
                           disabled={submitting}
                         />
@@ -1378,13 +1366,15 @@ export default function MarketplaceRequestPanel({
                     <p>
                       <MapPin size={14} />
 
-                      {form.deliveryCoverage ===
-                      "OUTSIDE_KIGALI"
-                        ? `Delivery cost will be confirmed by ${
+                      {deliveryFee > 0
+                        ? `Standard delivery fee: ${formatMoney(
+                            deliveryFee,
+                            sellerCurrency,
+                          )}. The store will confirm the delivery details.`
+                        : `${
                             selectedGroup?.sellerName ||
-                            "the store"
-                          } before accepting your request.`
-                        : "Free delivery within Kigali City."}
+                            "The store"
+                          } will confirm the delivery arrangements.`}
                     </p>
                   </div>
                 ) : null}
@@ -1421,20 +1411,42 @@ export default function MarketplaceRequestPanel({
                   <strong>
                     {formatMoney(
                       selectedGroup?.subtotal,
-                      selectedGroup?.currency,
+                      sellerCurrency,
+                    )}
+                  </strong>
+                </span>
+
+                {form.fulfilmentMethod ===
+                "DELIVERY" ? (
+                  <span>
+                    <small>
+                      Delivery
+                    </small>
+
+                    <strong>
+                      {formatMoney(
+                        deliveryFee,
+                        sellerCurrency,
+                      )}
+                    </strong>
+                  </span>
+                ) : null}
+
+                <span>
+                  <small>
+                    Estimated total
+                  </small>
+
+                  <strong>
+                    {formatMoney(
+                      estimatedTotal,
+                      sellerCurrency,
                     )}
                   </strong>
                 </span>
 
                 <p>
-                  {form.fulfilmentMethod === "DELIVERY" &&
-                  form.deliveryCoverage ===
-                    "OUTSIDE_KIGALI"
-                    ? `Delivery cost is not included. ${
-                        selectedGroup?.sellerName ||
-                        "The store"
-                      } will confirm it with you.`
-                    : "The server checks current stock and price again before saving."}
+                  The server checks current stock, price and delivery fee again before saving.
                 </p>
               </section>
 

@@ -29,6 +29,10 @@ export function getMarketplaceCatalogue() {
   return apiFetch("/marketplace/catalogue");
 }
 
+export function getMarketplaceMarkets() {
+  return apiFetch("/marketplace/markets");
+}
+
 export function listMarketplaceStores(params = {}) {
   return apiFetch(`/marketplace/stores${buildQuery(params)}`);
 }

@@ -278,6 +278,8 @@ export default function ConfirmSignup() {
   const [trialDays, setTrialDays] = useState(30);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordless, setPasswordless] = useState(false);
+  const [checkingAccount, setCheckingAccount] = useState(true);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -361,13 +363,33 @@ export default function ConfirmSignup() {
     });
   }, [resolvedMode]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkAccount() {
+      try {
+        await apiClient.get("/auth/account/me", {
+          withCredentials: true,
+        });
+        if (!cancelled) setPasswordless(true);
+      } catch {
+        if (!cancelled) setPasswordless(false);
+      } finally {
+        if (!cancelled) setCheckingAccount(false);
+      }
+    }
+
+    checkAccount();
+    return () => { cancelled = true; };
+  }, []);
+
   function validate() {
-    if (!passwordLongEnough) {
+    if (!passwordless && !passwordLongEnough) {
       toast.error("Password must be at least 6 characters.");
       return false;
     }
 
-    if (password !== confirmPassword) {
+    if (!passwordless && password !== confirmPassword) {
       toast.error("Passwords do not match.");
       return false;
     }
@@ -396,7 +418,7 @@ export default function ConfirmSignup() {
     try {
       const payload = {
         intentId: String(intentId || "").trim(),
-        password,
+        ...(passwordless ? {} : { password }),
         mode: resolvedMode,
       };
 
@@ -404,13 +426,26 @@ export default function ConfirmSignup() {
         payload.planKey = planKeyStored;
       }
 
-      await apiClient.post("/auth/confirm-signup", payload);
+      const { data } = await apiClient.post(
+        passwordless
+          ? "/auth/account/business/confirm"
+          : "/auth/confirm-signup",
+        payload,
+        passwordless ? { withCredentials: true } : {},
+      );
+
+      if (passwordless) saveAuthSession(data);
 
       markSignupCompleted();
       clearOnboardingState();
 
-      toast.success(resolvedMode === "TRIAL" ? "Trial account created. Please log in." : "Store activated. Please log in.");
-      nav("/login", { replace: true });
+      if (passwordless) {
+        toast.success("Your business is ready.");
+        nav("/app", { replace: true });
+      } else {
+        toast.success("Store activated. Please log in.");
+        nav("/login", { replace: true });
+      }
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to finish signup");
     } finally {
@@ -454,12 +489,13 @@ export default function ConfirmSignup() {
                 </div>
 
                 <h1 className="mt-5 text-3xl font-black tracking-[-0.05em] text-[var(--color-text)] sm:text-4xl lg:text-5xl">
-                  Create your owner password.
+                  {passwordless ? "Your business is almost ready." : "Create your owner password."}
                 </h1>
 
                 <p className="mt-4 max-w-2xl text-base font-semibold leading-8 text-[var(--color-text-muted)]">
-                  This is the final security step before Storvex creates the store,
-                  owner account, subscription, and first branch.
+                  {passwordless
+                    ? "Confirm your business details to create your store, subscription, and first branch."
+                    : "This is the final security step before Storvex creates the store, owner account, subscription, and first branch."}
                 </p>
               </div>
 
@@ -481,7 +517,7 @@ export default function ConfirmSignup() {
               <ProgressStep number="1" label="Create store account" done />
               <ProgressStep number="2" label="Verify email and phone" done />
               <ProgressStep number="3" label="Choose activation" done />
-              <ProgressStep number="4" label="Create password" active />
+              <ProgressStep number="4" label={passwordless ? "Confirm business" : "Create password"} active />
               <ProgressStep number="5" label="Open workspace" />
             </div>
           </section>
@@ -495,16 +531,17 @@ export default function ConfirmSignup() {
                   </p>
 
                   <h2 className="mt-2 text-2xl font-black tracking-[-0.04em] text-[var(--color-text)] sm:text-3xl">
-                    Secure the owner account
+                    {passwordless ? "Ready to create your business" : "Secure the owner account"}
                   </h2>
 
                   <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-[var(--color-text-muted)]">
-                    Use a password the owner can remember but staff cannot guess.
+                    {passwordless ? "Your verified Storvex account will own this business. No password is required." : "Use a password the owner can remember but staff cannot guess."}
                   </p>
                 </div>
 
                 <form onSubmit={submit} className="space-y-4">
-                  <PasswordField
+                  {!passwordless && (<>
+<PasswordField
                     id="signup-password"
                     label="Password"
                     value={password}
@@ -530,6 +567,7 @@ export default function ConfirmSignup() {
                     <PasswordRule ok={passwordHasNumber}>Has numbers</PasswordRule>
                   </div>
 
+                  </>)}
                   <div className="rounded-[28px] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
@@ -550,7 +588,7 @@ export default function ConfirmSignup() {
                             : "Finishing setup..."
                         }
                         className="w-full sm:w-auto"
-                        disabled={loadingPlans}
+                        disabled={loadingPlans || checkingAccount}
                       >
                         {resolvedMode === "TRIAL"
                           ? "Start trial and open store"

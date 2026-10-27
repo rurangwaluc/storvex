@@ -1,4 +1,27 @@
 const crypto = require("crypto");
+const {
+  requireFlutterwaveSandboxRuntime,
+} = require("../payments/flutterwaveSandboxRuntimeGate");
+const {
+  reserveSandboxRenewalCheckout,
+} = require("../payments/flutterwaveCheckoutReservation");
+const {
+  createSandboxRenewalCheckout,
+} = require("../payments/flutterwaveSandboxCheckoutAdapter");
+const {
+  requireSandboxInlineRuntime,
+  createSandboxInlineConfig,
+} = require("../payments/flutterwaveSandboxInlineConfig");
+
+const {
+  completeSandboxRenewal,
+} = require("../payments/flutterwaveSandboxRenewalCompletion");
+
+const {
+  createRenewalPaymentQuote,
+  requireSandboxRenewalDuration,
+} = require("./renewalPaymentQuote");
+
 const prisma = require("../../config/database");
 
 const {
@@ -32,13 +55,9 @@ function cleanString(value) {
 }
 
 function normalizeTenantId(req) {
-  return (
-    cleanString(req.user?.tenantId) ||
-    cleanString(req.params?.tenantId) ||
-    cleanString(req.body?.tenantId) ||
-    cleanString(req.query?.tenantId) ||
-    null
-  );
+  // Customer billing is always scoped to the authenticated tenant.
+  // Never accept tenant identity from URL, query, or request body.
+  return cleanString(req.user?.tenantId);
 }
 
 function resolveProvider(value) {
@@ -499,8 +518,30 @@ async function initiateRenewalPayment(req, res) {
   try {
     const tenantId = normalizeTenantId(req);
     const requestedPlanKey = cleanString(req.body.planKey);
-    const provider = resolveProvider(req.body.provider);
-    const externalReference = cleanString(req.body.reference);
+    const inlineRequested =
+      req.body?.checkoutMethod === "FLUTTERWAVE_SANDBOX_INLINE";
+    const sandboxRequested =
+      req.body?.checkoutMethod === "FLUTTERWAVE_SANDBOX" ||
+      inlineRequested;
+
+    if (sandboxRequested) {
+      requireFlutterwaveSandboxRuntime();
+
+      // Reject disabled Inline requests before any payment is created.
+      if (inlineRequested) {
+        requireSandboxInlineRuntime();
+      }
+
+      if (String(req.user?.role || "").toUpperCase() !== "OWNER") {
+        return res.status(403).json({
+          message: "Only the business owner can start checkout.",
+        });
+      }
+    }
+
+    const provider = sandboxRequested
+      ? "FLUTTERWAVE"
+      : resolveProvider(req.body.provider);
 
     if (!tenantId) {
       return res.status(400).json({ message: "tenantId is required" });
@@ -537,28 +578,84 @@ async function initiateRenewalPayment(req, res) {
       market.countryCode,
     );
 
-    const reference = externalReference || makeReference("RENEW");
+    // STEP 342CN-K2 / TRUSTED CHECKOUT QUOTE
+    // Reject unsupported durations before payment creation.
+    const requestedDurationMonths =
+      req.body?.durationMonths === undefined
+        ? 1
+        : req.body.durationMonths;
 
-    const payment = await prisma.payment.upsert({
-      where: { reference },
-      update: {
-        tenantId,
-        amount: snap.price,
-        currency: snap.currency,
-        provider,
-        status: "PENDING",
-        purpose: "SUBSCRIPTION_RENEWAL",
+    let renewalQuote = null;
+
+    if (sandboxRequested) {
+      // STEP 342CN-BD / MULTI-MONTH SANDBOX GATE
+      // Backend multi-month checkout is explicitly opt-in.
+      // Runtime verification above must pass before this gate.
+      requireSandboxRenewalDuration(requestedDurationMonths);
+
+      renewalQuote = createRenewalPaymentQuote({
+        countryCode: market.countryCode,
         planKey: snap.planKey,
-        tierKey: snap.tierKey,
-        cycleKey: snap.cycleKey,
-        staffLimit: snap.staffLimit,
-        branchLimit: getBranchLimitFromPlan(plan),
-        priceAmount: snap.price,
-        entitlementSnapshot: snap.entitlements || {},
-      },
-      create: {
+        durationMonths: requestedDurationMonths,
+      });
+
+      if (
+        renewalQuote.currency !== snap.currency ||
+        renewalQuote.monthlyAmount !== snap.price
+      ) {
+        throw new Error(
+          "Server renewal quote does not match the plan snapshot."
+        );
+      }
+    }
+
+    let sandboxCustomer = null;
+    let sandboxIdentity = null;
+
+    if (sandboxRequested) {
+      const userId = cleanString(
+        req.user?.id || req.user?.userId
+      );
+
+      if (!userId) {
+        return res.status(403).json({
+          message: "Authenticated business owner required.",
+        });
+      }
+
+      const user = await prisma.user.findFirst({
+        where: { id: userId, tenantId },
+        select: { email: true },
+      });
+
+      if (
+        !user?.email ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)
+      ) {
+        return res.status(403).json({
+          message: "A valid account email is required.",
+        });
+      }
+
+      sandboxIdentity = { userId, tenantId };
+      sandboxCustomer = {
+        email: user.email,
+        name: "Storvex Customer",
+      };
+    }
+
+    const reference = makeReference("RENEW");
+
+    const payment = await prisma.payment.create({
+      data: {
         tenantId,
         amount: snap.price,
+        ...(sandboxRequested
+          ? {
+              amount: renewalQuote.totalAmount,
+              renewalQuote,
+            }
+          : {}),
         currency: snap.currency,
         reference,
         provider,
@@ -589,8 +686,115 @@ async function initiateRenewalPayment(req, res) {
         staffLimit: true,
         branchLimit: true,
         priceAmount: true,
+        renewalQuote: true,
       },
     });
+
+    if (sandboxRequested) {
+      // Do not create a provider session before reservation.
+      // The verified transaction will be handled separately.
+      const returnUrl =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3000/billing/return"
+          : "https://storvex.rw/billing/return";
+
+      const checkoutArgs = {
+        identity: sandboxIdentity,
+        plan: {
+          planKey: snap.planKey,
+          amount: payment.amount,
+          currency: payment.currency,
+        },
+        customer: sandboxCustomer,
+        returnUrl,
+      };
+
+      const reservation = await reserveSandboxRenewalCheckout({
+        prisma,
+        reference: payment.reference,
+        ...checkoutArgs,
+        checkoutMethod: inlineRequested
+          ? "FLUTTERWAVE_SANDBOX_INLINE"
+          : "FLUTTERWAVE_SANDBOX",
+      });
+
+      if (inlineRequested) {
+        // Reservation is persisted before the browser receives the
+        // public Inline payload. No hosted checkout is created.
+        const inlineConfig = createSandboxInlineConfig({
+          payment,
+          reservation,
+          identity: {
+            ...sandboxIdentity,
+            role: "OWNER",
+          },
+          customer: sandboxCustomer,
+        });
+
+        return res.status(201).json({
+          message: "Sandbox Inline checkout reserved",
+          paymentReference: payment.reference,
+          checkoutMethod: "FLUTTERWAVE_SANDBOX_INLINE",
+          inlineConfig,
+          provider: "FLUTTERWAVE",
+          paymentStatus: "PENDING",
+          merchantName: "RURAXIS LTD",
+          sandbox: true,
+          durationMonths: renewalQuote.durationMonths,
+          monthlyAmount: renewalQuote.monthlyAmount,
+          discountPercent: renewalQuote.discountPercent,
+          totalAmount: payment.amount,
+          currency: payment.currency,
+        });
+      }
+
+      const checkout = await createSandboxRenewalCheckout({
+        payment,
+        ...checkoutArgs,
+        fetchImpl: fetch,
+      });
+
+      const saved = await prisma.paymentAttempt.updateMany({
+        where: {
+          id: reservation.attemptId,
+          paymentId: payment.id,
+          checkoutReference: payment.reference,
+          provider: "FLUTTERWAVE",
+          status: "CREATED",
+          checkoutUrl: null,
+          verifiedAt: null,
+          appliedAt: null,
+        },
+        data: {
+          checkoutUrl: checkout.checkoutUrl,
+        },
+      });
+
+      if (saved.count !== 1) {
+        const error = new Error(
+          "Checkout could not be safely recorded."
+        );
+        error.status = 409;
+        throw error;
+      }
+
+      return res.status(201).json({
+        message: "Sandbox checkout created",
+        paymentReference: payment.reference,
+        checkoutUrl: checkout.checkoutUrl,
+        provider: "FLUTTERWAVE",
+        paymentStatus: "PENDING",
+        merchantName: "RURAXIS LTD",
+        sandbox: true,
+        // STEP 342CN-BF / AUTHORITATIVE CHECKOUT RESPONSE
+        // Quoted totals come from the persisted server-created quote.
+        durationMonths: renewalQuote.durationMonths,
+        monthlyAmount: renewalQuote.monthlyAmount,
+        discountPercent: renewalQuote.discountPercent,
+        totalAmount: payment.amount,
+        currency: payment.currency,
+      });
+    }
 
     return res.status(201).json({
       message: "Renewal payment initiated",
@@ -611,6 +815,12 @@ async function initiateRenewalPayment(req, res) {
 }
 
 async function devMarkRenewalPaymentSuccessful(req, res) {
+  // Retired handler: never trust a legacy payment-success signal.
+  return res.status(503).json({
+    code: "RETIRED_PAYMENT_SUCCESS_DISABLED",
+    message: "This payment method is unavailable.",
+  });
+
   try {
     const reference = cleanString(req.body.reference);
     const provider = resolveProvider(req.body.provider || "MOMO");
@@ -821,7 +1031,18 @@ async function devMarkRenewalPaymentSuccessful(req, res) {
 
 async function getRenewalPaymentStatus(req, res) {
   try {
-    const reference = cleanString(req.params.reference || req.query.reference || req.body.reference);
+    const tenantId = normalizeTenantId(req);
+    if (!tenantId) {
+      return res.status(403).json({
+        message: "Business access required",
+      });
+    }
+
+    const reference = cleanString(
+      req.params.reference ||
+      req.query.reference ||
+      req.body?.reference
+    );
 
     if (!reference) {
       return res.status(400).json({ message: "reference is required" });
@@ -849,8 +1070,14 @@ async function getRenewalPaymentStatus(req, res) {
       },
     });
 
-    if (!payment) {
-      return res.status(404).json({ message: "Payment not found" });
+    if (
+      !payment ||
+      payment.tenantId !== tenantId ||
+      payment.purpose !== "SUBSCRIPTION_RENEWAL"
+    ) {
+      return res.status(404).json({
+        message: "Payment not found",
+      });
     }
 
     return res.json({
@@ -931,12 +1158,109 @@ async function getBillingUsage(req, res) {
   }
 }
 
+
+async function completeSandboxRenewalPayment(req, res) {
+  try {
+    // Production and non-opted-in development environments fail closed.
+    requireFlutterwaveSandboxRuntime();
+
+    const tenantId = normalizeTenantId(req);
+    const role = String(req.user?.role || "").toUpperCase();
+    const reference = String(req.params.reference || "").trim();
+
+    if (!tenantId || role !== "OWNER") {
+      return res.status(403).json({
+        message: "Business owner access required",
+      });
+    }
+
+    if (!/^[A-Za-z0-9_-]{8,100}$/.test(reference)) {
+      return res.status(400).json({
+        message: "Invalid payment reference",
+      });
+    }
+
+    const tenant = await getTenantOrThrow(tenantId);
+    const market = requireMarket(tenant.countryCode || "RW");
+
+    const result = await completeSandboxRenewal({
+      prisma,
+      reference,
+      tenantId,
+      fetchImpl: fetch,
+      loadTrustedPlan: async storedPayment => {
+        // Reprice from server-side configuration, never from the browser.
+        const plan = assertRenewalPlanOrThrow(
+          storedPayment.planKey,
+          market.countryCode
+        );
+
+        const snapshot = getPlanSnapshotForMarket(
+          plan.key,
+          market.countryCode
+        );
+
+        return {
+          planKey: snapshot.planKey,
+          tierKey: snapshot.tierKey,
+          cycleKey: snapshot.cycleKey,
+          staffLimit: snapshot.staffLimit,
+          branchLimit: getBranchLimitFromPlan(plan),
+          price: snapshot.price,
+          currency: snapshot.currency,
+          entitlements: snapshot.entitlements || {},
+          days: plan.days,
+          graceDays: getGraceDays(),
+        };
+      },
+    });
+
+    return res.json({
+      reference: result.reference,
+      paymentStatus: result.status,
+      alreadyCompleted: Boolean(result.alreadyCompleted),
+      verified: result.verified === false ? false : undefined,
+      queuedAfterTrial:
+        result.activation?.queuedAfterTrial ?? null,
+    });
+  } catch (error) {
+    const status =
+      Number.isInteger(error.status) &&
+      error.status >= 400 &&
+      error.status < 600
+        ? error.status
+        : error.code === "SANDBOX_RENEWAL_COMPLETION_REJECTED"
+          ? 409
+          : error.code === "SANDBOX_RENEWAL_VERIFICATION_REJECTED"
+            ? 409
+            : 500;
+
+    if (status >= 500 && status !== 503) {
+      console.error("Sandbox renewal completion failed:", error);
+    }
+
+    return res.status(status).json({
+      message:
+        status === 503
+          ? "Sandbox payments are unavailable."
+          : status === 403
+            ? "Business access denied."
+            : status === 409
+              ? "Payment could not be completed in its current state."
+              : status === 400
+                ? "Invalid payment request."
+                : "Payment confirmation is temporarily unavailable.",
+    });
+  }
+}
+
 module.exports = {
   listBillingPlans,
   getBillingOverview,
   initiateRenewalPayment,
   devMarkRenewalPaymentSuccessful,
   getRenewalPaymentStatus,
+  completeSandboxRenewalPayment,
   getBillingUsage,
 
   // aliases to reduce mismatch with existing route names

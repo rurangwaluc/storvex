@@ -70,14 +70,14 @@ model UserPermission {
 /// /////////////////////////
 /// /////////////////////////
 model OwnerIntent {
-  id        String            @id @default(dbgenerated("(gen_random_uuid())::text")) @db.Text
-  email     String            @db.Text
-  phone     String            @db.Text
-  storeName String            @db.Text
-  countryCode String          @default("RW") @db.Text
-  status    OwnerIntentStatus @default(PENDING)
-  expiresAt DateTime
-  createdAt DateTime          @default(now())
+  id          String            @id @default(dbgenerated("(gen_random_uuid())::text")) @db.Text
+  email       String            @db.Text
+  phone       String            @db.Text
+  storeName   String            @db.Text
+  countryCode String            @default("RW") @db.Text
+  status      OwnerIntentStatus @default(PENDING)
+  expiresAt   DateTime
+  createdAt   DateTime          @default(now())
 
   address     String?   @db.Text
   convertedAt DateTime?
@@ -137,9 +137,12 @@ model Payment {
   staffLimit          Int?
   branchLimit         Int?
   priceAmount         Float?
+  renewalQuote        Json?
   entitlementSnapshot Json?
   purpose             String
   updatedAt           DateTime      @default(now()) @updatedAt
+
+  attempts PaymentAttempt[]
 
   intent OwnerIntent? @relation(fields: [intentId], references: [id])
   tenant Tenant?      @relation(fields: [tenantId], references: [id])
@@ -151,6 +154,31 @@ model Payment {
   @@index([planKey])
   @@index([tierKey])
   @@index([cycleKey])
+}
+
+
+model PaymentAttempt {
+  id                    String   @id @default(uuid())
+  paymentId             String
+  provider              String
+  providerTransactionId String?
+  checkoutReference     String   @unique
+  status                String   @default("CREATED")
+  amount                Float
+  currency              String
+  checkoutUrl           String?  @db.Text
+  failureCode           String?
+  verificationDetails   Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @default(now()) @updatedAt
+  verifiedAt            DateTime?
+  appliedAt             DateTime?
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerTransactionId])
+  @@index([paymentId, status])
+  @@index([provider, status])
 }
 
 model Tenant {
@@ -222,6 +250,7 @@ model Tenant {
   SupplierSupply           SupplierSupply[]
   SupplierSupplyItem       SupplierSupplyItem[]
   users                    User[]
+  storvexMemberships StorvexBusinessMembership[]
   whatsAppAccounts         WhatsAppAccount[]
   whatsAppBroadcasts       WhatsAppBroadcast[]
   whatsAppConversations    WhatsAppConversation[]
@@ -329,6 +358,7 @@ model MarketplaceCustomer {
   name         String                    @db.Text
   email        String                    @unique @db.Text
   phone        String?                   @unique @db.Text
+  countryCode  String                    @db.Text
   passwordHash String                    @db.Text
   status       MarketplaceCustomerStatus @default(ACTIVE)
 
@@ -346,6 +376,7 @@ model MarketplaceCustomer {
   businessCustomers Customer[]
 
   @@index([status])
+  @@index([countryCode])
   @@index([createdAt])
   @@map("MarketplaceCustomer")
 }
@@ -453,16 +484,22 @@ model MarketplaceRequest {
   fulfilmentBranchId String?                         @db.Text
   saleId             String?                         @unique
 
-  customerName  String  @db.Text
-  customerPhone String? @db.Text
-  customerEmail String? @db.Text
+  customerName        String  @db.Text
+  customerPhone       String? @db.Text
+  customerEmail       String? @db.Text
+  customerCountryCode String? @db.Text
+
+  sellerCountryCode String? @db.Text
+  sellerTimezone    String? @db.Text
 
   deliveryAddress  String? @db.Text
+  deliveryArea     String? @db.Text
+  deliveryLocality String? @db.Text
   deliveryDistrict String? @db.Text
   deliverySector   String? @db.Text
   customerNote     String? @db.Text
 
-  currency    String @default("RWF") @db.Text
+  currency    String @db.Text
   subtotal    Float  @default(0)
   deliveryFee Float  @default(0)
   total       Float  @default(0)
@@ -720,10 +757,11 @@ model User {
   userPermissions  UserPermission[]
   createdProformas Proforma[]       @relation("ProformaCreatedBy")
 
-  sessions            UserSession[]
-  loginEvents         LoginEvent[]
-  passwordChanges     PasswordChangeEvent[] @relation("PasswordChangedUser")
-  passwordChangesMade PasswordChangeEvent[] @relation("PasswordChangedBy")
+  sessions                   UserSession[]
+  retailEmailLoginChallenges RetailEmailLoginChallenge[]
+  loginEvents                LoginEvent[]
+  passwordChanges            PasswordChangeEvent[]       @relation("PasswordChangedUser")
+  passwordChangesMade        PasswordChangeEvent[]       @relation("PasswordChangedBy")
 
   auditLogs                  AuditLog[]
   createdDeliveryNotes       DeliveryNote[]
@@ -748,12 +786,14 @@ model User {
   whatsAppMessages           WhatsAppMessage[]
   saleWarranties             SaleWarranty[]
   branchAssignments          UserBranchAssignment[]
+  storvexMemberships          StorvexBusinessMembership[]
 
   createdSupportTickets SupportTicket[]  @relation("TenantUserSupportTickets")
   supportMessages       SupportMessage[] @relation("TenantUserSupportMessages")
 
   @@index([tenantId])
   @@index([tenantId, id])
+  @@unique([id, tenantId], map: "User_id_tenantId_storvex_membership_key")
   @@map("User")
 }
 
@@ -786,6 +826,7 @@ model Subscription {
   trialConsumed       Boolean @default(false)
   trialSourceIntentId String? @db.Text
   nextPlanKey         String? @db.Text
+  queuedRenewalReference String? @db.Text
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
@@ -1579,6 +1620,7 @@ model TrialGuard {
   fingerprintHash String? @db.Text
   ipHash          String? @db.Text
 
+  accountId  String?  @unique
   intentId   String?  @db.Text
   tenantId   String?  @db.Text
   ip         String?  @db.Text
@@ -2540,6 +2582,12 @@ enum AuditAction {
   BRANCH_STAFF_ASSIGNED
   BRANCH_STAFF_REMOVED
   MARKETPLACE_DELIVERY_FAILED
+
+  EMPLOYEE_CREATED
+  EMPLOYEE_UPDATED
+  EMPLOYEE_STATUS_CHANGED
+  EMPLOYEE_PASSWORD_RESET
+  EMPLOYEE_DEACTIVATED
 }
 
 enum AuditEntity {
@@ -2787,4 +2835,108 @@ model MarketplaceRequestDailySequence {
   @@id([tenantId, dateKey])
   @@index([dateKey])
   @@map("MarketplaceRequestDailySequence")
+}
+
+model RetailEmailLoginChallenge {
+  id         String    @id @default(uuid())
+  userId     String
+  email      String
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, consumedAt])
+  @@index([email, createdAt])
+  @@index([expiresAt])
+}
+
+// Storvex account identity independent of retail-business tenancy.
+// Account creation and email verification precede business onboarding.
+
+model StorvexAccount {
+  id              String    @id @default(uuid())
+  fullName        String    @db.Text
+  email           String    @unique @db.Text
+  emailVerifiedAt DateTime?
+  status          String    @default("PENDING") @db.Text
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  otpChallenges StorvexAccountOtpChallenge[]
+  sessions      StorvexAccountSession[]
+  businessMemberships StorvexBusinessMembership[]
+
+  @@index([status])
+}
+
+enum StorvexMembershipStatus {
+  ACTIVE
+  SUSPENDED
+  REVOKED
+}
+
+enum StorvexBusinessRole {
+  OWNER
+  MANAGER
+  CASHIER
+  SELLER
+  STOREKEEPER
+  TECHNICIAN
+}
+
+model StorvexBusinessMembership {
+  id        String @id @default(uuid())
+  accountId    String
+  tenantId     String @db.Text
+  retailUserId String? @unique
+
+  role      StorvexBusinessRole
+  status    StorvexMembershipStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  account StorvexAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  retailUser User? @relation(fields: [retailUserId, tenantId], references: [id, tenantId], onDelete: Restrict, map: "StorvexBusinessMembership_retailUser_tenant_fkey")
+
+  @@unique([accountId, tenantId])
+  @@index([tenantId, status])
+  @@index([accountId, status])
+}
+
+model StorvexAccountOtpChallenge {
+  id         String    @id @default(uuid())
+  accountId  String
+  codeHash   String    @db.Text
+  purpose    String    @default("SIGNUP") @db.Text
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  account StorvexAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, createdAt])
+  @@index([expiresAt])
+}
+
+model StorvexAccountSession {
+  id        String    @id @default(uuid())
+  accountId String
+  tokenId   String    @unique
+  expiresAt DateTime
+  isRevoked Boolean   @default(false)
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  account StorvexAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, isRevoked])
+  @@index([expiresAt])
 }

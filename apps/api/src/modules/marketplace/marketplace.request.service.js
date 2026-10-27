@@ -1,6 +1,10 @@
 const crypto = require("crypto");
 
 const prisma = require("../../config/database");
+const { requireMarket } = require("../../config/markets");
+const {
+  normalizePhone: normalizeMarketPhone,
+} = require("../../lib/phone/marketPhone");
 const {
   calculateAvailableQuantity,
   activeMarketplacePricing,
@@ -68,21 +72,28 @@ function normalizeEmail(value) {
     : null;
 }
 
-function normalizePhone(value) {
-  let phone = String(value || "")
-    .trim()
-    .replace(/[^\d]/g, "");
+function marketHasReviewedPhonePolicy(market) {
+  return Boolean(
+    Number.isInteger(market?.phone?.nationalLength) &&
+      market.phone.nationalLength > 0 &&
+      Array.isArray(market?.phone?.nationalPrefixes) &&
+      market.phone.nationalPrefixes.length > 0,
+  );
+}
+
+function normalizePhone(value, market) {
+  const phone = cleanString(value, 40);
 
   if (!phone) return null;
 
-  if (
-    phone.startsWith("07") &&
-    phone.length === 10
-  ) {
-    phone = `250${phone.slice(1)}`;
+  if (!market || !marketHasReviewedPhonePolicy(market)) {
+    return phone;
   }
 
-  return phone;
+  return normalizeMarketPhone({
+    countryCode: market.countryCode,
+    input: phone,
+  });
 }
 
 function validEmail(value) {
@@ -118,11 +129,22 @@ function normalizeList(value) {
 
 function marketplaceRequestDateKey(
   now = new Date(),
+  timezone,
 ) {
+  const timeZone = cleanString(timezone, 100);
+
+  if (!timeZone) {
+    throw appError(
+      500,
+      "MARKETPLACE_TIMEZONE_REQUIRED",
+      "The seller timezone is not configured.",
+    );
+  }
+
   const parts = new Intl.DateTimeFormat(
     "en-CA",
     {
-      timeZone: "Africa/Kigali",
+      timeZone,
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -170,6 +192,7 @@ function marketplaceRequestNumber(
 async function nextMarketplaceRequestNumber(
   tenantId,
   marketplaceCode,
+  timezone,
   now = new Date(),
   database = prisma,
 ) {
@@ -187,7 +210,10 @@ async function nextMarketplaceRequestNumber(
   }
 
   const dateKey =
-    marketplaceRequestDateKey(now);
+    marketplaceRequestDateKey(
+      now,
+      timezone,
+    );
 
   const rows = await database.$queryRaw`
     INSERT INTO "MarketplaceRequestDailySequence"
@@ -292,27 +318,32 @@ function money(value) {
   );
 }
 
-function formatMoney(value, currency = "RWF") {
+function formatMoney(value, currency) {
   const amount = money(value);
+  const currencyCode = cleanString(
+    currency,
+    16,
+  )?.toUpperCase();
 
-  if (
-    String(currency || "")
-      .toUpperCase() === "RWF"
-  ) {
-    return `Rwf ${new Intl.NumberFormat(
-      "en-US",
+  if (!currencyCode) {
+    return new Intl.NumberFormat(
+      "en",
       {
-        maximumFractionDigits: 0,
+        maximumFractionDigits: 2,
       },
-    ).format(amount)}`;
+    ).format(amount);
   }
 
-  return `${currency} ${new Intl.NumberFormat(
-    "en-US",
+  return new Intl.NumberFormat(
+    "en",
     {
-      maximumFractionDigits: 2,
+      style: "currency",
+      currency: currencyCode,
+      currencyDisplay: "code",
     },
-  ).format(amount)}`;
+  )
+    .format(amount)
+    .replace(/\u00a0/g, " ");
 }
 
 function validateRequestInput(body = {}) {
@@ -347,8 +378,9 @@ function validateRequestInput(body = {}) {
     160,
   );
 
-  const customerPhone = normalizePhone(
+  const customerPhone = cleanString(
     body.customerPhone,
+    40,
   );
 
   const customerEmail = normalizeEmail(
@@ -358,6 +390,16 @@ function validateRequestInput(body = {}) {
   const deliveryAddress = cleanString(
     body.deliveryAddress,
     500,
+  );
+
+  const deliveryArea = cleanString(
+    body.deliveryArea,
+    120,
+  );
+
+  const deliveryLocality = cleanString(
+    body.deliveryLocality,
+    120,
   );
 
   const deliveryDistrict = cleanString(
@@ -461,8 +503,15 @@ function validateRequestInput(body = {}) {
     );
   }
 
+  const usesGenericDeliveryLocation =
+    Boolean(
+      deliveryArea ||
+      deliveryLocality,
+    );
+
   if (
     fulfilmentMethod === "DELIVERY" &&
+    !usesGenericDeliveryLocation &&
     !["KIGALI", "OUTSIDE_KIGALI"].includes(
       deliveryCoverage,
     )
@@ -476,6 +525,7 @@ function validateRequestInput(body = {}) {
 
   if (
     fulfilmentMethod === "DELIVERY" &&
+    !usesGenericDeliveryLocation &&
     !deliveryDistrict
   ) {
     throw appError(
@@ -487,6 +537,7 @@ function validateRequestInput(body = {}) {
 
   if (
     fulfilmentMethod === "DELIVERY" &&
+    !usesGenericDeliveryLocation &&
     !deliverySector
   ) {
     throw appError(
@@ -574,7 +625,10 @@ function validateRequestInput(body = {}) {
     preferredContact,
     fulfilmentMethod,
     deliveryCoverage:
-      fulfilmentMethod === "DELIVERY"
+      fulfilmentMethod === "DELIVERY" &&
+      ["KIGALI", "OUTSIDE_KIGALI"].includes(
+        deliveryCoverage,
+      )
         ? deliveryCoverage
         : null,
     paymentMethod,
@@ -582,6 +636,8 @@ function validateRequestInput(body = {}) {
     customerPhone,
     customerEmail,
     deliveryAddress,
+    deliveryArea,
+    deliveryLocality,
     deliveryDistrict,
     deliverySector,
     customerNote,
@@ -589,24 +645,73 @@ function validateRequestInput(body = {}) {
   };
 }
 
-function formatCustomerPhone(value) {
-  const digits = normalizePhone(value);
-
-  if (!digits) return null;
-
+function resolveDeliveryLocation(
+  input,
+  market,
+) {
   if (
-    digits.startsWith("250") &&
-    digits.length === 12
+    input.fulfilmentMethod !== "DELIVERY"
   ) {
-    return [
-      `+${digits.slice(0, 3)}`,
-      digits.slice(3, 6),
-      digits.slice(6, 9),
-      digits.slice(9),
-    ].join(" ");
+    return {
+      area: null,
+      locality: null,
+    };
   }
 
-  return value;
+  const area =
+    cleanString(
+      input.deliveryArea ||
+        input.deliveryDistrict,
+      120,
+    );
+
+  const locality =
+    cleanString(
+      input.deliveryLocality ||
+        input.deliverySector,
+      120,
+    );
+
+  if (
+    market?.location?.schema ===
+      "DISTRICT_SECTOR" &&
+    !area
+  ) {
+    throw appError(
+      400,
+      "DELIVERY_AREA_REQUIRED",
+      "Enter the delivery area.",
+    );
+  }
+
+  if (!locality) {
+    throw appError(
+      400,
+      "DELIVERY_LOCALITY_REQUIRED",
+      "Enter the delivery locality.",
+    );
+  }
+
+  return {
+    area,
+    locality,
+  };
+}
+
+function formatCustomerPhone(value) {
+  const phone = cleanString(value, 80);
+
+  if (!phone) return null;
+
+  if (phone.startsWith("+")) {
+    return phone;
+  }
+
+  if (/^\d+$/.test(phone)) {
+    return `+${phone}`;
+  }
+
+  return phone;
 }
 
 function requestProductWording(items) {
@@ -647,8 +752,9 @@ function buildSellerRequestNextStep({
   }
 
   if (
+    !request.deliveryArea &&
     request.deliveryCoverage ===
-    "OUTSIDE_KIGALI"
+      "OUTSIDE_KIGALI"
   ) {
     return `Please confirm availability for ${thisProduct} and the delivery cost before processing the order.`;
   }
@@ -680,8 +786,9 @@ function buildCustomerRequestNextStep({
   }
 
   if (
+    !request.deliveryArea &&
     request.deliveryCoverage ===
-    "OUTSIDE_KIGALI"
+      "OUTSIDE_KIGALI"
   ) {
     return `${businessName} will confirm availability and the delivery cost for ${thisProduct}.`;
   }
@@ -752,14 +859,26 @@ function buildWhatsappMessage({
   if (
     request.fulfilmentMethod === "DELIVERY"
   ) {
-    lines.push(
-      "*Delivery area*",
-      request.deliveryCoverage ===
+    const deliveryArea =
+      request.deliveryArea ||
+      request.deliveryDistrict ||
+      (
+        request.deliveryCoverage ===
         "OUTSIDE_KIGALI"
-        ? "Outside Kigali"
-        : "Kigali City",
-      "",
-    );
+          ? "Outside Kigali"
+          : request.deliveryCoverage ===
+              "KIGALI"
+            ? "Kigali City"
+            : null
+      );
+
+    if (deliveryArea) {
+      lines.push(
+        "*Delivery area*",
+        deliveryArea,
+        "",
+      );
+    }
 
     if (request.deliveryAddress) {
       lines.push(
@@ -770,8 +889,11 @@ function buildWhatsappMessage({
     }
 
     const location = [
-      request.deliverySector,
-      request.deliveryDistrict,
+      request.deliveryLocality ||
+        request.deliverySector,
+      request.deliveryArea
+        ? null
+        : request.deliveryDistrict,
     ]
       .filter(Boolean)
       .join(", ");
@@ -828,7 +950,9 @@ function buildWhatsappMessage({
 }
 
 function buildWhatsappUrl(phone, message) {
-  const destination = normalizePhone(phone);
+  const destination = String(phone || "")
+    .trim()
+    .replace(/[^\d]/g, "");
 
   if (!destination) return null;
 
@@ -1277,7 +1401,9 @@ async function submitMarketplaceRequest(
           select: {
             id: true,
             name: true,
+            countryCode: true,
             currencyCode: true,
+            timezone: true,
             status: true,
           },
         },
@@ -1291,6 +1417,63 @@ async function submitMarketplaceRequest(
       "This Marketplace store is not available.",
     );
   }
+
+  const sellerMarket = requireMarket(
+    seller.tenant.countryCode,
+  );
+
+  const sellerCurrency = cleanString(
+    seller.tenant.currencyCode,
+    16,
+  );
+
+  const sellerTimezone = cleanString(
+    seller.tenant.timezone,
+    100,
+  );
+
+  if (!sellerCurrency) {
+    throw appError(
+      500,
+      "MARKETPLACE_CURRENCY_REQUIRED",
+      "The seller currency is not configured.",
+    );
+  }
+
+  if (!sellerTimezone) {
+    throw appError(
+      500,
+      "MARKETPLACE_TIMEZONE_REQUIRED",
+      "The seller timezone is not configured.",
+    );
+  }
+
+  const normalizedCustomerPhone =
+    input.customerPhone
+      ? normalizePhone(
+          input.customerPhone,
+          sellerMarket,
+        )
+      : null;
+
+  if (
+    input.preferredContact === "WHATSAPP" &&
+    !normalizedCustomerPhone
+  ) {
+    throw appError(
+      400,
+      "CUSTOMER_PHONE_INVALID",
+      `Enter a valid WhatsApp phone number for ${sellerMarket.countryName}.`,
+    );
+  }
+
+  const {
+    area: deliveryArea,
+    locality: deliveryLocality,
+  } = resolveDeliveryLocation(
+    input,
+    sellerMarket,
+  );
 
   if (seller.temporarilyClosed) {
     throw appError(
@@ -1324,7 +1507,10 @@ async function submitMarketplaceRequest(
 
   if (
     input.preferredContact === "WHATSAPP" &&
-    !normalizePhone(seller.whatsappPhone)
+    !normalizePhone(
+      seller.whatsappPhone,
+      sellerMarket,
+    )
   ) {
     throw appError(
       409,
@@ -1475,8 +1661,13 @@ async function submitMarketplaceRequest(
     });
   }
 
-  const deliveryFee = 0;
-  const total = subtotal;
+  const deliveryFee =
+    input.fulfilmentMethod === "DELIVERY"
+      ? money(seller.defaultDeliveryFee)
+      : 0;
+
+  const total =
+    subtotal + deliveryFee;
 
   let created;
 
@@ -1490,6 +1681,7 @@ async function submitMarketplaceRequest(
             await nextMarketplaceRequestNumber(
               seller.tenantId,
               seller.marketplaceCode,
+              sellerTimezone,
             ),
           trackingToken:
             trackingToken(),
@@ -1506,20 +1698,28 @@ async function submitMarketplaceRequest(
           customerName:
             input.customerName,
           customerPhone:
-            input.customerPhone,
+            normalizedCustomerPhone,
           customerEmail:
             input.customerEmail,
+          customerCountryCode:
+            sellerMarket.countryCode,
+          sellerCountryCode:
+            sellerMarket.countryCode,
+          sellerTimezone,
           deliveryAddress:
             input.deliveryAddress,
+          deliveryArea,
+          deliveryLocality,
           deliveryDistrict:
-            input.deliveryDistrict,
+            input.deliveryDistrict ||
+            deliveryArea,
           deliverySector:
-            input.deliverySector,
+            input.deliverySector ||
+            deliveryLocality,
           customerNote:
             input.customerNote,
           currency:
-            seller.tenant.currencyCode ||
-            "RWF",
+            sellerCurrency,
           subtotal,
           deliveryFee,
           total,
@@ -1530,6 +1730,7 @@ async function submitMarketplaceRequest(
             normalizePhone(
               seller.customerPhone ||
                 seller.whatsappPhone,
+              sellerMarket,
             ),
           sellerEmailSnapshot: null,
           items: {
@@ -1630,6 +1831,7 @@ module.exports.__private = {
   normalizePhone,
   normalizeList,
   validateRequestInput,
+  resolveDeliveryLocation,
   marketplaceRequestDateKey,
   marketplaceRequestNumber,
   nextMarketplaceRequestNumber,

@@ -252,6 +252,18 @@ function listPublicOnboardingMarkets() {
     );
 }
 
+function listPublicMarketplaceMarkets() {
+  return Object.values(MARKET_REGISTRY)
+    .filter(
+      (market) =>
+        market.capabilities.marketplaceEnabled,
+    )
+    .map(publicMarket)
+    .sort((a, b) =>
+      a.countryName.localeCompare(b.countryName),
+    );
+}
+
 module.exports = {
   MARKET_REGISTRY,
   getMarket,
@@ -272,5 +284,6 @@ module.exports = {
 
   listPublicMarkets,
   listPublicOnboardingMarkets,
+  listPublicMarketplaceMarkets,
   publicMarket,
 };

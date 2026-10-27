@@ -4,6 +4,7 @@ import {
 } from "@tanstack/react-query";
 import {
   AlertCircle,
+  ArrowLeft,
   ArrowRight,
   Building2,
   Check,
@@ -15,6 +16,9 @@ import {
   Heart,
   Home,
   LampCeiling,
+  ShieldCheck,
+  Tag,
+  MessageCircle,
   MapPin,
   Menu,
   Moon,
@@ -146,22 +150,35 @@ function marketplaceImageSource(value) {
   );
 }
 
-export function formatMoney(value, currency = "RWF") {
-  const amount = Math.max(0, Number(value || 0));
-  const currencyCode = cleanString(currency).toUpperCase() || "RWF";
+export function formatMoney(value, currency) {
+  const amount = Math.max(
+    0,
+    Number(value || 0),
+  );
 
-  if (currencyCode === "RWF") {
-    return `Rwf ${new Intl.NumberFormat("en-US", {
-      maximumFractionDigits: 0,
-    }).format(amount)}`;
+  const currencyCode =
+    cleanString(currency).toUpperCase();
+
+  if (!currencyCode) {
+    return new Intl.NumberFormat(
+      "en",
+      {
+        maximumFractionDigits: 2,
+      },
+    ).format(amount);
   }
 
   try {
-    return new Intl.NumberFormat("en", {
-      style: "currency",
-      currency: currencyCode,
-      maximumFractionDigits: 0,
-    }).format(amount);
+    return new Intl.NumberFormat(
+      "en",
+      {
+        style: "currency",
+        currency: currencyCode,
+        currencyDisplay: "code",
+      },
+    )
+      .format(amount)
+      .replace(/\u00a0/g, " ");
   } catch {
     return `${currencyCode} ${amount.toLocaleString()}`;
   }
@@ -198,6 +215,252 @@ function marketplaceCardDescription(
     .replace(/[.,;:!?]+$/, "");
 
   return `${preview}...`;
+}
+
+/* STORVEX STEP 230 — FOUR PRODUCT CARD FIXES */
+
+/* STORVEX STEP 255 — INFINITE NEW ARRIVALS
+   Reuses the existing universal ProductCard.
+*/
+function InfiniteProductCarousel({
+  products,
+  loading,
+  error,
+  onRetry,
+  sectionId = "marketplace-products",
+  eyebrow = "Recently added",
+  title = "New Arrivals",
+  viewAllTo = "/marketplace/shop",
+}) {
+  const trackRef = useRef(null);
+  const pausedRef = useRef(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  const count = products.length;
+  const canLoop = count > 1;
+
+  // Three identical sequences provide seamless wraparound.
+  const repeated = canLoop
+    ? [0, 1, 2].flatMap((cycle) =>
+        products.map((product, index) => ({
+          product,
+          key: `${cycle}-${index}-${product.slug}`,
+        })),
+      )
+    : products.map((product, index) => ({
+        product,
+        key: `single-${index}-${product.slug}`,
+      }));
+
+  useEffect(() => {
+    const preference = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    );
+
+    const update = () => setReducedMotion(preference.matches);
+    update();
+
+    preference.addEventListener("change", update);
+    return () => preference.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track || !canLoop) return undefined;
+
+    const positionAtMiddle = () => {
+      const previous = track.style.scrollBehavior;
+      track.style.scrollBehavior = "auto";
+      track.scrollLeft = track.scrollWidth / 3;
+      track.style.scrollBehavior = previous;
+    };
+
+    // Wait until layout widths are available.
+    const frame = window.requestAnimationFrame(positionAtMiddle);
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [canLoop, count]);
+
+  const normalizePosition = () => {
+    const track = trackRef.current;
+    if (!track || !canLoop) return;
+
+    const sequenceWidth = track.scrollWidth / 3;
+    if (sequenceWidth <= 0) return;
+
+    const left = track.scrollLeft;
+    let corrected = left;
+
+    if (left < sequenceWidth * 0.5) {
+      corrected = left + sequenceWidth;
+    } else if (left > sequenceWidth * 1.5) {
+      corrected = left - sequenceWidth;
+    }
+
+    if (corrected !== left) {
+      const previous = track.style.scrollBehavior;
+      track.style.scrollBehavior = "auto";
+      track.scrollLeft = corrected;
+      track.style.scrollBehavior = previous;
+    }
+  };
+
+  const move = (direction) => {
+    const track = trackRef.current;
+    if (!track || !canLoop) return;
+
+    const first = track.querySelector(
+      ".svx-marketplace-product-card",
+    );
+
+    if (!first) return;
+
+    const gap = parseFloat(
+      window.getComputedStyle(track).columnGap,
+    ) || 0;
+
+    const distance =
+      first.getBoundingClientRect().width + gap;
+
+    track.scrollBy({
+      left: direction * distance,
+      behavior: reducedMotion ? "instant" : "smooth",
+    });
+  };
+
+  useEffect(() => {
+    if (!canLoop || reducedMotion) return undefined;
+
+    const interval = window.setInterval(() => {
+      if (
+        pausedRef.current ||
+        document.hidden ||
+        !trackRef.current
+      ) {
+        return;
+      }
+
+      const track = trackRef.current;
+      const first = track.querySelector(
+        ".svx-marketplace-product-card",
+      );
+
+      if (!first) return;
+
+      const gap = parseFloat(
+        window.getComputedStyle(track).columnGap,
+      ) || 0;
+
+      track.scrollBy({
+        left: first.getBoundingClientRect().width + gap,
+        behavior: "smooth",
+      });
+    }, 4000);
+
+    return () => window.clearInterval(interval);
+  }, [canLoop, reducedMotion, count]);
+
+  return (
+    <section
+      id={sectionId}
+      className="svx-commerce-section svx-new-arrivals-section"
+      aria-labelledby={`${sectionId}-title`}
+      onMouseEnter={() => {
+        pausedRef.current = true;
+      }}
+      onMouseLeave={() => {
+        pausedRef.current = false;
+      }}
+      onFocusCapture={() => {
+        pausedRef.current = true;
+      }}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          pausedRef.current = false;
+        }
+      }}
+      onTouchStart={() => {
+        pausedRef.current = true;
+      }}
+      onTouchEnd={() => {
+        pausedRef.current = false;
+      }}
+      onTouchCancel={() => {
+        pausedRef.current = false;
+      }}
+    >
+      <div className="svx-commerce-section-heading svx-new-arrivals-heading">
+        <div>
+          <span>{eyebrow}</span>
+          <h2 id={`${sectionId}-title`}>{title}</h2>
+        </div>
+
+        <div className="svx-new-arrivals-actions">
+          {canLoop && (
+            <div className="svx-new-arrivals-navigation">
+              <button
+                type="button"
+                aria-label={`Previous ${title} product`}
+                onClick={() => move(-1)}
+              >
+                <ArrowLeft size={18} />
+              </button>
+
+              <button
+                type="button"
+                aria-label={`Next ${title} product`}
+                onClick={() => move(1)}
+              >
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          )}
+
+          <Link
+            to={viewAllTo}
+            className="svx-commerce-view-all-products svx-new-arrivals-view-all"
+          >
+            <span>View all</span>
+            <ArrowRight size={15} />
+          </Link>
+        </div>
+      </div>
+
+      {loading ? <LoadingProducts /> : null}
+
+      {!loading && error ? (
+        <div className="svx-commerce-state">
+          <p>{error}</p>
+          <button type="button" onClick={onRetry}>
+            Try again
+          </button>
+        </div>
+      ) : null}
+
+      {!loading && !error && count === 0 ? (
+        <div className="svx-commerce-state">
+          <p>More new products are coming soon.</p>
+        </div>
+      ) : null}
+
+      {!loading && !error && count > 0 ? (
+        <div className="svx-new-arrivals-viewport">
+          <div
+          ref={trackRef}
+          className="svx-commerce-product-grid svx-new-arrivals-track"
+          role="region"
+          aria-label={`${title} products`}
+          tabIndex={0}
+          onScroll={normalizePosition}
+        >
+          {repeated.map(({ product, key }) => (
+            <ProductCard key={key} product={product} />
+          ))}
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
 }
 
 export function ProductCard({ product }) {
@@ -446,33 +709,7 @@ export function ProductCard({ product }) {
       onClick={openProductCard}
       onKeyDown={handleProductCardKeyDown}
     >
-      <div className="svx-marketplace-product-card__visual">
-        <Link
-          to={productUrl}
-          className="svx-marketplace-product-card__image"
-          aria-label={`View ${product.title}`}
-          onClick={trackProductCardOpen}
-        >
-          {activeImageSrc ? (
-            <img
-              src={activeImageSrc}
-              alt={
-                activeImage?.altText ||
-                primaryImage?.altText ||
-                product.title
-              }
-              loading="lazy"
-              decoding="async"
-            />
-          ) : (
-            <ShoppingBag
-              size={44}
-              aria-hidden="true"
-            />
-          )}
-        </Link>
-
-        <div className="svx-marketplace-product-card__badges">
+        <div className="svx-marketplace-product-card__badges svx-marketplace-product-card__topline">
           {product.onSale ? (
             <span className="is-sale">
               Sale {discountPercent}% off
@@ -493,6 +730,100 @@ export function ProductCard({ product }) {
             </span>
           )}
         </div>
+
+      <div className="svx-marketplace-product-card__visual">
+        <Link
+          to={productUrl}
+          className="svx-marketplace-product-card__image"
+          aria-label={`View ${product.title}`}
+          onClick={(event) => {
+            if (event.currentTarget.dataset.svxSwiped === "1") {
+              event.preventDefault();
+              event.stopPropagation();
+              event.currentTarget.dataset.svxSwiped = "";
+              return;
+            }
+            trackProductCardOpen();
+          }}
+          onMouseMove={(event) => {
+            const count = Math.min(images.length, 4);
+            if (count <= 1) return;
+
+            const rect = event.currentTarget.getBoundingClientRect();
+            if (rect.width <= 0) return;
+
+            const x = Math.max(
+              0,
+              Math.min(rect.width - 0.001, event.clientX - rect.left),
+            );
+
+            const next = Math.min(
+              count - 1,
+              Math.floor((x / rect.width) * count),
+            );
+
+            setActiveImageIndex((current) =>
+              current === next ? current : next
+            );
+          }}
+          onTouchStart={(event) => {
+            const touch = event.touches[0];
+            if (!touch) return;
+
+            event.currentTarget.dataset.svxStartX =
+              String(touch.clientX);
+            event.currentTarget.dataset.svxSwiped = "";
+          }}
+          onTouchEnd={(event) => {
+            const touch = event.changedTouches[0];
+            const startX = Number(
+              event.currentTarget.dataset.svxStartX
+            );
+
+            if (!touch || !Number.isFinite(startX)) return;
+
+            const difference = touch.clientX - startX;
+            const count = Math.min(images.length, 4);
+
+            if (count > 1 && Math.abs(difference) >= 35) {
+              event.currentTarget.dataset.svxSwiped = "1";
+              event.preventDefault();
+              event.stopPropagation();
+
+              setActiveImageIndex((current) =>
+                Math.max(
+                  0,
+                  Math.min(
+                    count - 1,
+                    current + (difference < 0 ? 1 : -1),
+                  ),
+                ),
+              );
+            }
+
+            delete event.currentTarget.dataset.svxStartX;
+          }}
+        >
+          {activeImageSrc ? (
+            <img
+              src={activeImageSrc}
+              alt={
+                activeImage?.altText ||
+                primaryImage?.altText ||
+                product.title
+              }
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <ShoppingBag
+              size={44}
+              aria-hidden="true"
+            />
+          )}
+        </Link>
+
+
 
         <div className="svx-marketplace-product-card__visual-actions">
           <button
@@ -522,31 +853,12 @@ export function ProductCard({ product }) {
               }
             />
           </button>
-
-          <button
-            type="button"
-            className={cx(
-              inCompare && "is-active",
-            )}
-            onClick={toggleCompare}
-            aria-label={
-              inCompare
-                ? `Remove ${product.title} from comparison`
-                : `Compare ${product.title}`
-            }
-            aria-pressed={inCompare}
-            title={
-              inCompare
-                ? "Remove from comparison"
-                : "Compare product"
-            }
-          >
-            <GitCompareArrows size={20} />
-          </button>
-
         </div>
 
-        {images.length > 1 ? (
+      </div>
+
+      <div className="svx-marketplace-product-card__gallery-rail">
+        {images.length > 0 ? (
           <div
             className="svx-marketplace-product-card__image-switcher"
             aria-label="Choose product image"
@@ -565,6 +877,12 @@ export function ProductCard({ product }) {
                   }
                   onClick={(event) => {
                     event.stopPropagation();
+                    setActiveImageIndex(index);
+                  }}
+                  onMouseEnter={() => {
+                    setActiveImageIndex(index);
+                  }}
+                  onFocus={() => {
                     setActiveImageIndex(index);
                   }}
                   aria-label={`Show product image ${
@@ -589,6 +907,7 @@ export function ProductCard({ product }) {
 
         <h3>{product.title}</h3>
 
+        <div className="svx-marketplace-product-card__meta-row">
         <div
           className="svx-marketplace-product-card__rating"
           aria-label={
@@ -597,7 +916,8 @@ export function ProductCard({ product }) {
               : "No product reviews yet"
           }
         >
-          <span
+          {hasRatings ? (
+<span
             className="svx-marketplace-product-card__stars"
             aria-hidden="true"
           >
@@ -617,6 +937,7 @@ export function ProductCard({ product }) {
               ),
             )}
           </span>
+          ) : null}
 
           <span>
             {hasRatings
@@ -625,7 +946,42 @@ export function ProductCard({ product }) {
           </span>
         </div>
 
-        <div className="svx-marketplace-product-card__pricing">
+        <div className="svx-marketplace-product-card__secondary-actions" aria-label="More product actions">
+          <button
+            type="button"
+            className={cx(
+              inCompare && "is-active",
+            )}
+            onClick={toggleCompare}
+            aria-label={
+              inCompare
+                ? `Remove ${product.title} from comparison`
+                : `Compare ${product.title}`
+            }
+            aria-pressed={inCompare}
+            title={
+              inCompare
+                ? "Remove from comparison"
+                : "Compare product"
+            }
+          >
+            <GitCompareArrows size={20} />
+          </button>
+          <button
+            type="button"
+            className="svx-marketplace-product-card__open"
+            onClick={viewProduct}
+            aria-label={`View ${product.title}`}
+            title="View product"
+          >
+            <Eye size={23} />
+          </button>
+        </div>
+
+        </div>
+
+        <div className="svx-marketplace-product-card__checkout-row">
+          <div className="svx-marketplace-product-card__pricing">
           <div className="svx-marketplace-product-card__price-line">
             <strong>
               {formatMoney(
@@ -677,15 +1033,9 @@ export function ProductCard({ product }) {
             </span>
           </button>
 
-          <button
-            type="button"
-            className="svx-marketplace-product-card__open"
-            onClick={viewProduct}
-            aria-label={`View ${product.title}`}
-            title="View product"
-          >
-            <Eye size={23} />
-          </button>
+
+        </div>
+
         </div>
 
         <span
@@ -700,10 +1050,98 @@ export function ProductCard({ product }) {
   );
 }
 
+/* STORVEX STEP 280 — REFERENCE FEATURED STORES
+   Compact card based on the user-approved screenshot.
+   Store directory cards are not changed.
+*/
+function FeaturedMarketplaceStoreCard({
+  store,
+  previewProducts = [],
+}) {
+  const location = [
+    store.location?.locality || store.location?.sector,
+    store.location?.area || store.location?.district,
+  ].filter(Boolean).join(", ");
+
+  const previews = previewProducts
+    .filter((product) => product.seller?.slug === store.slug)
+    .map((product) => {
+      const images = Array.isArray(product.images)
+        ? product.images
+        : [];
+
+      const selected = images[0] || product.primaryImage;
+
+      return {
+        slug: product.slug,
+        title: product.title,
+        src: marketplaceImageSource(selected),
+      };
+    })
+    .filter((item) => Boolean(item.src))
+    .slice(0, 4);
+
+  return (
+    <Link
+      to={`/marketplace/stores/${encodeURIComponent(store.slug)}`}
+      className="svx-reference-store-card"
+      aria-label={`Explore ${store.name}`}
+    >
+      <div className="svx-reference-store-card__identity">
+        <span className="svx-reference-store-card__logo">
+          {store.logoUrl ? (
+            <img
+              src={store.logoUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+          ) : (
+            <Store size={22} aria-hidden="true" />
+          )}
+        </span>
+
+        <span className="svx-reference-store-card__details">
+          <strong>{store.name}</strong>
+          {location ? (
+            <small title={location}>{location}</small>
+          ) : null}
+          <small>
+            {store.availableProductCount} products
+          </small>
+        </span>
+      </div>
+
+      <div className="svx-reference-store-card__bottom">
+        <span className="svx-reference-store-card__previews">
+          {previews.map((preview) => (
+            <img
+              key={preview.slug}
+              src={preview.src}
+              alt={preview.title}
+              loading="lazy"
+              decoding="async"
+            />
+          ))}
+        </span>
+
+        <span
+          className="svx-reference-store-card__arrow"
+          aria-hidden="true"
+        >
+          <ArrowRight size={15} />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
 export function StoreCard({ store }) {
   const place = [
-    store.location?.sector,
-    store.location?.district,
+    store.location?.locality ||
+      store.location?.sector,
+    store.location?.area ||
+      store.location?.district,
   ]
     .filter(Boolean)
     .join(", ");
@@ -788,6 +1226,7 @@ export function LoadingProducts() {
 
 export function MarketplaceFooter({
   showCta = true,
+  homepageVariant = false,
 } = {}) {
   const year = new Date().getFullYear();
 
@@ -852,7 +1291,11 @@ export function MarketplaceFooter({
                 aria-label="Storvex Marketplace home"
               >
                 <img
-                  src={whiteLogoSrc}
+                  src={
+                    homepageVariant
+                      ? "/storvex-header-tricolor.png"
+                      : whiteLogoSrc
+                  }
                   alt="Storvex"
                   draggable="false"
                 />
@@ -1024,7 +1467,7 @@ export default function MarketplaceHome() {
       category,
       sort: "newest",
       page: 1,
-      limit: 8,
+      limit: 12,
     }),
     [
       search,
@@ -1035,7 +1478,7 @@ export default function MarketplaceHome() {
   const homeStoreParams = useMemo(
     () => ({
       search,
-      limit: 4,
+      limit: 5,
     }),
     [
       search,
@@ -1051,6 +1494,28 @@ export default function MarketplaceHome() {
       listMarketplaceProducts(
         homeProductParams,
       ),
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    retry: 1,
+    refetchOnWindowFocus: false,
+  });
+
+  /* STORVEX STEP 273 — ON SALE
+     Request genuine active discounts independently.
+  */
+  const onSaleParams = useMemo(
+    () => ({
+      sort: "newest",
+      page: 1,
+      limit: 8,
+      onSale: true,
+    }),
+    [],
+  );
+
+  const onSaleQuery = useQuery({
+    queryKey: marketplaceQueryKeys.products(onSaleParams),
+    queryFn: () => listMarketplaceProducts(onSaleParams),
     staleTime: 60_000,
     gcTime: 10 * 60_000,
     retry: 1,
@@ -1298,226 +1763,157 @@ export default function MarketplaceHome() {
 
       <main>
 
-        <section className="svx-home-hero">
-          <div className="svx-home-shell">
-            <div className="svx-home-hero-layout">
-              <div className="svx-home-hero-copy">
-                <span className="svx-home-eyebrow">
-                  Local products. Current availability.
-                </span>
+        <section className="svx-locked-hero" aria-labelledby="svx-locked-hero-title">
+          <div className="svx-locked-hero__shell">
+            <div className="svx-locked-hero__panel">
+              <div className="svx-locked-hero__main">
+                <div className="svx-locked-hero__copy">
+                  <span className="svx-locked-hero__eyebrow">
+                    Local stores. Real products. Your way.
+                  </span>
 
-                <h1>
-                  Find what local stores have ready.
-                  <strong>Compare it. Request it. Get it your way.</strong>
-                </h1>
+                  <h1 id="svx-locked-hero-title">
+                    Shop Trusted<br />
+                    Products From<br />
+                    Real Retail Stores <span aria-hidden="true">✦</span>
+                  </h1>
 
-                <p>
-                  Browse products from local businesses using Storvex.
-                  Compare price, stock and fulfilment, then send your
-                  request directly to the seller.
-                </p>
+                  <p>
+                    Discover quality products from independent retail
+                    businesses on Storvex. Compare options, request directly,
+                    and get what you need — all in one place.
+                  </p>
 
-                <div className="svx-home-hero-actions">
-                  <a
-                    href="#marketplace-categories"
-                    className="svx-home-primary-action"
-                  >
-                    Browse available products
-                    <ArrowRight
-                      size={18}
-                      strokeWidth={2}
-                    />
-                  </a>
+                  <div className="svx-locked-hero__actions">
+                    <Link
+                      to="/marketplace/shop"
+                      className="svx-locked-hero__action"
+                    >
+                      Browse Products
+                      <ArrowRight size={18} strokeWidth={2.2} aria-hidden="true" />
+                    </Link>
 
-                  <a
-                    href="#marketplace-how-it-works"
-                    className="svx-home-how-action"
-                  >
-                    <span>
-                      <ArrowRight
-                        size={17}
-                        strokeWidth={2}
-                      />
-                    </span>
-
-                    How it works
-                  </a>
+                    <a
+                      className="svx-locked-hero__how"
+                      href="#marketplace-how-it-works"
+                    >
+                      How it works
+                      <ArrowRight size={15} aria-hidden="true" />
+                    </a>
+                  </div>
                 </div>
-              </div>
 
-              <div className="svx-home-hero-visual">
-                <div className="svx-home-hero-image-wrap">
+                <div className="svx-locked-hero__visual" aria-hidden="true">
                   <img
-                    src="/marketplace-hero.png"
-                    alt="Products and business essentials available through Storvex Marketplace"
-                    className="svx-home-hero-image"
+                    className="svx-locked-hero__art--light"
+                    src="/marketplace/storvex-marketplace-hero-products.png"
+                    alt=""
                     loading="eager"
                     decoding="async"
                   />
+                  <img
+                    className="svx-locked-hero__art--dark"
+                    src="/marketplace/storvex-marketplace-hero-products.png"
+                    alt=""
+                    loading="eager"
+                    decoding="async"
+                  />
+                </div>
+              </div>
 
-                  <div className="svx-home-hero-image-label">
-                    <img
-                      src={iconSrc}
-                      alt=""
+              <nav
+                id="marketplace-categories"
+                className="svx-locked-hero__categories"
+                aria-label="Shop by business category"
+              >
+                {marketplaceCategories.map((item) => (
+                  <Link
+                    key={item.slug}
+                    to={`/marketplace/category/${item.slug}`}
+                    className="svx-locked-hero__category"
+                    aria-label={`Browse ${item.shortName}`}
+                  >
+                    <span className="svx-locked-hero__category-image">
+                      <img
+                        className="svx-locked-hero__category-art--light"
+                        src={`/marketplace/category-art/${item.slug}.png`}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        aria-hidden="true"
+                      />
+                      <img
+                        className="svx-locked-hero__category-art--dark"
+                        src={`/marketplace/category-art/${item.slug}.png`}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        aria-hidden="true"
+                      />
+                    </span>
+                    <span className="svx-locked-hero__category-label">
+                      {item.shortName}
+                    </span>
+                    <ArrowRight
+                      className="svx-locked-hero__category-arrow"
+                      size={15}
                       aria-hidden="true"
                     />
+                  </Link>
+                ))}
+              </nav>
 
-                    <span>
-                      <strong>Storvex Marketplace</strong>
-                      <small>
-                        Local stores. Current inventory.
-                      </small>
-                    </span>
-                  </div>
+              {category ? (
+                <div className="svx-locked-hero__selection">
+                  <span>Category filter: {category}</span>
+                  <button
+                    type="button"
+                    onClick={() => chooseCategory("")}
+                  >
+                    Clear selection
+                    <X size={15} aria-hidden="true" />
+                  </button>
                 </div>
-              </div>
-
-              <div className="svx-home-hero-benefits">
-                <div>
-                  <PackageSearch size={21} />
-
-                  <span>
-                    <strong>Available products</strong>
-                    <small>
-                      See products local stores have published
-                    </small>
-                  </span>
-                </div>
-
-                <div>
-                  <Store size={21} />
-
-                  <span>
-                    <strong>Request directly</strong>
-                    <small>
-                      The seller confirms before it becomes a sale
-                    </small>
-                  </span>
-                </div>
-
-                <div>
-                  <GitCompareArrows size={21} />
-
-                  <span>
-                    <strong>Compare clearly</strong>
-                    <small>
-                      Review price, stock and fulfilment
-                    </small>
-                  </span>
-                </div>
-
-                <div>
-                  <Truck size={21} />
-
-                  <span>
-                    <strong>Pickup or delivery</strong>
-                    <small>
-                      Arrange fulfilment with the store
-                    </small>
-                  </span>
-                </div>
-              </div>
+              ) : null}
             </div>
           </div>
         </section>
 
         <section className="svx-commerce-page-shell">
-          <section
-            id="marketplace-categories"
-            className="svx-commerce-section svx-category-showcase"
-          >
-            <div className="svx-category-showcase__header">
-              <div>
-                <span>Browse categories</span>
-                <h2>Shop by business category</h2>
-              </div>
-
-              <div className="svx-category-showcase__actions">
-                {category ? (
-                  <button
-                    type="button"
-                    className="svx-category-showcase__clear"
-                    onClick={() => chooseCategory("")}
-                  >
-                    Clear selection
-                    <X size={15} strokeWidth={2} />
-                  </button>
-                ) : null}
-
-                <Link
-                  to="/marketplace/shop"
-                  className="svx-category-showcase__all"
-                >
-                  Browse all products
-                  <ArrowRight size={16} strokeWidth={2} />
-                </Link>
-              </div>
-            </div>
-
-            <div className="svx-category-showcase__grid">
-              {marketplaceCategories.map((item) => (
-                <Link
-                  key={item.slug}
-                  to={`/marketplace/category/${item.slug}`}
-                  className="svx-category-showcase__card"
-                  aria-label={`Browse ${item.shortName}`}
-                >
-                  <span className="svx-category-showcase__media">
-                    <img
-                      src={item.image}
-                      alt=""
-                      aria-hidden="true"
-                      loading="lazy"
-                      decoding="async"
-                    />
-                  </span>
-
-                  <span className="svx-category-showcase__body">
-                    <span className="svx-category-showcase__copy">
-                      <strong>{item.shortName}</strong>
-                      <small>{item.description}</small>
-                    </span>
-
-                    <span
-                      className="svx-category-showcase__open"
-                      aria-hidden="true"
-                    >
-                      <ArrowRight
-                        size={16}
-                        strokeWidth={2}
-                      />
-                    </span>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </section>
-
-          {!loading && !error && stores.length > 0 ? (
-            <div className="svx-commerce-section">
+          {/* STORVEX STEP 158 — FEATURED PRODUCTS */}
+          {!search && !category && !loading && !error && products.length > 0 ? (
+            <section
+              className="svx-commerce-section svx-featured-products"
+              aria-labelledby="svx-featured-products-title"
+            >
               <div className="svx-commerce-section-heading">
                 <div>
-                  <span>Featured on Storvex</span>
-                  <h2>Featured stores</h2>
+                  <span>Discover on Storvex</span>
+                  <h2 id="svx-featured-products-title">
+                    Featured Products
+                  </h2>
                 </div>
-
                 <Link
-                  to="/marketplace/stores"
-                  className="svx-commerce-view-all-stores"
+                  to="/marketplace/shop"
+                  className="svx-commerce-view-all-products"
                 >
-                  <span>View all stores</span>
+                  <span>View all products</span>
                   <ArrowRight size={15} />
                 </Link>
               </div>
 
-              <div className="svx-commerce-store-grid">
-                {stores.slice(0, 4).map((store) => (
-                  <StoreCard key={store.slug} store={store} />
+              <div className="svx-commerce-product-grid">
+                {products.slice(0, 4).map((product) => (
+                  <ProductCard
+                    key={`${product.seller.slug}-${product.slug}`}
+                    product={product}
+                  />
                 ))}
               </div>
-            </div>
+            </section>
           ) : null}
 
+          {search || category ? (
           <div
             id="marketplace-products"
             className="svx-commerce-section"
@@ -1538,6 +1934,45 @@ export default function MarketplaceHome() {
                       : "New arrivals"}
                 </h2>
               </div>
+
+              {/* STORVEX STEP 250 — NEW ARRIVALS CAROUSEL */}
+              {!search && !category && (
+                <div className="svx-new-arrivals-navigation">
+                  <button
+                    type="button"
+                    aria-label="Scroll New Arrivals left"
+                    onClick={() => {
+                      const track = document.getElementById(
+                        "svx-new-arrivals-track"
+                      );
+                      if (!track) return;
+                      track.scrollBy({
+                        left: -track.clientWidth * 0.85,
+                        behavior: "smooth",
+                      });
+                    }}
+                  >
+                    <ArrowLeft size={18} />
+                  </button>
+
+                  <button
+                    type="button"
+                    aria-label="Scroll New Arrivals right"
+                    onClick={() => {
+                      const track = document.getElementById(
+                        "svx-new-arrivals-track"
+                      );
+                      if (!track) return;
+                      track.scrollBy({
+                        left: track.clientWidth * 0.85,
+                        behavior: "smooth",
+                      });
+                    }}
+                  >
+                    <ArrowRight size={18} />
+                  </button>
+                </div>
+              )}
 
               <Link
                 to="/marketplace/shop"
@@ -1588,8 +2023,22 @@ export default function MarketplaceHome() {
             {!loading &&
             !error &&
             products.length > 0 ? (
-              <div className="svx-commerce-product-grid">
-                {products.slice(0, 8).map(
+              <div
+                id="svx-new-arrivals-track"
+                className={
+                  search || category
+                    ? "svx-commerce-product-grid"
+                    : "svx-commerce-product-grid svx-new-arrivals-track"
+                }
+                role="region"
+                aria-label="New Arrivals products"
+                tabIndex={0}
+              >
+                {/* STORVEX STEP 246 — DISTINCT NEW ARRIVALS */}
+                {(search || category
+                  ? products.slice(0, 8)
+                  : products.slice(4, 12)
+                ).map(
                   (product) => (
                     <ProductCard
                       key={`${product.seller.slug}-${product.slug}`}
@@ -1601,35 +2050,177 @@ export default function MarketplaceHome() {
             ) : null}
           </div>
 
-          <section className="svx-commerce-trust">
-            <div>
-              <Settings2 size={24} />
-              <span>
-                <strong>Managed through Storvex</strong>
-                Sellers control what becomes public.
-              </span>
-            </div>
+          ) : (
+            <InfiniteProductCarousel
+              products={products.slice(4, 12)}
+              loading={loading}
+              error={error}
+              onRetry={loadMarketplace}
+            />
+          )}
 
-            <div>
-              <Check size={24} />
-              <span>
-                <strong>Confirmed before handover</strong>
-                A request is not automatically recorded as a sale.
-              </span>
-            </div>
+          {/* STORVEX STEP 273 — ON SALE */}
+          {!search &&
+          !category &&
+          onSaleQuery.isSuccess &&
+          Array.isArray(onSaleQuery.data?.products) &&
+          onSaleQuery.data.products.some(
+            (product) =>
+              product.onSale === true &&
+              Number(product.regularPrice) >
+                Number(product.price),
+          ) ? (
+            <InfiniteProductCarousel
+              sectionId="marketplace-on-sale"
+              eyebrow="Limited-time offers"
+              title="On Sale"
+              viewAllTo="/marketplace/shop?onSale=true"
+              products={onSaleQuery.data.products.filter(
+                (product) =>
+                  product.onSale === true &&
+                  Number(product.regularPrice) >
+                    Number(product.price),
+              )}
+              loading={false}
+              error={null}
+              onRetry={() => onSaleQuery.refetch()}
+            />
+          ) : null}
 
-            <div>
-              <Truck size={24} />
-              <span>
-                <strong>Pickup or seller delivery</strong>
-                Final arrangements are confirmed by the store.
-              </span>
+          {!loading && !error && stores.length > 0 ? (
+            <section className="svx-commerce-section svx-reference-stores">
+              <div className="svx-commerce-section-heading">
+                <div>
+                  <span>Shop from local retail businesses</span>
+                  <h2>Featured Stores</h2>
+                  <p className="svx-reference-stores__intro">
+                    Explore products from local retail businesses.
+                  </p>
+                </div>
+
+                <Link
+                  to="/marketplace/stores"
+                  className="svx-commerce-view-all-stores"
+                >
+                  <span>View all stores</span>
+                  <ArrowRight size={15} />
+                </Link>
+              </div>
+
+              <div className="svx-reference-stores__grid">
+                {stores.slice(0, 5).map((store) => (
+                  <FeaturedMarketplaceStoreCard
+                    key={store.slug}
+                    store={store}
+                    previewProducts={products}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {/* STORVEX STEP 282 — FOUR BENEFIT REFERENCE */}
+          <section
+            className="svx-commerce-section svx-why-shop"
+            aria-labelledby="svx-why-shop-title"
+          >
+            <h2 id="svx-why-shop-title">
+              Why Shop on Storvex?
+            </h2>
+
+            <div className="svx-why-shop__benefits">
+              <div className="svx-why-shop__benefit">
+                <span className="svx-why-shop__icon is-green">
+                  <ShieldCheck size={23} aria-hidden="true" />
+                </span>
+                <span>
+                  <strong>Real Retail Stores</strong>
+                  <small>Discover products from independent businesses.</small>
+                </span>
+              </div>
+
+              <div className="svx-why-shop__benefit">
+                <span className="svx-why-shop__icon is-blue">
+                  <Tag size={23} aria-hidden="true" />
+                </span>
+                <span>
+                  <strong>Clear Prices</strong>
+                  <small>See prices and compare product options.</small>
+                </span>
+              </div>
+
+              <div className="svx-why-shop__benefit">
+                <span className="svx-why-shop__icon is-lime">
+                  <Truck size={23} aria-hidden="true" />
+                </span>
+                <span>
+                  <strong>Pickup or Delivery</strong>
+                  <small>Arrange fulfilment with participating sellers.</small>
+                </span>
+              </div>
+
+              <div className="svx-why-shop__benefit">
+                <span className="svx-why-shop__icon is-whatsapp">
+                  <MessageCircle size={23} aria-hidden="true" />
+                </span>
+                <span>
+                  <strong>Contact Sellers</strong>
+                  <small>Ask questions or send purchase requests directly.</small>
+                </span>
+              </div>
             </div>
           </section>
         </section>
       </main>
 
-      <MarketplaceFooter />
+      {/* STORVEX STEP 286 — SHOPPING CTA */}
+      <section
+        className="svx-shopping-cta"
+        aria-labelledby="svx-shopping-cta-title"
+      >
+        <div className="svx-shopping-cta__copy">
+          <h2 id="svx-shopping-cta-title">
+            Ready to Start Shopping?
+          </h2>
+
+          <p>
+            Discover products from local retail stores on Storvex.
+          </p>
+
+          <div className="svx-shopping-cta__actions">
+            <Link
+              to="/marketplace/shop"
+              className="svx-shopping-cta__primary"
+            >
+              Explore Products
+              <ArrowRight size={17} aria-hidden="true" />
+            </Link>
+
+            <Link
+              to="/marketplace/stores"
+              className="svx-shopping-cta__secondary"
+            >
+              Browse Stores
+            </Link>
+          </div>
+        </div>
+
+        {/* STORVEX STEP 289 SHOPPING ARTWORK */}
+        <div
+          className="svx-shopping-cta__visual"
+          aria-hidden="true"
+        >
+          <img
+            className="svx-shopping-cta__artwork"
+            src="/marketplace/storvex-shopping-collection.webp"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </section>
+
+      <MarketplaceFooter showCta={false} homepageVariant />
     </div>
   );
 }

@@ -1,24 +1,27 @@
 import {
-  BarChart3,
   Building2,
   Check,
   ClipboardList,
   FileText,
   LockKeyhole,
-  PackageCheck,
   ReceiptText,
   ShieldCheck,
   ShoppingCart,
   Store,
   UserCog,
-  UsersRound,
-  WalletCards,
   Warehouse,
 } from "lucide-react";
 import Link from "next/link";
 
 import PublicHeader from "../../components/layout/PublicHeader";
+import StorvexLockedHero from "../../components/layout/StorvexLockedHero";
 import LandingRevealAnimations from "../../app/landing-reveal-animations";
+import StorvexAllInOne from "../../components/layout/StorvexAllInOne";
+import StorvexIndustries from "../../components/layout/StorvexIndustries";
+import StorvexConnectEverywhere from "../../components/layout/StorvexConnectEverywhere";
+import StorvexWhyRetailers from "../../components/layout/StorvexWhyRetailers";
+import StorvexFinalCTA from "../../components/layout/StorvexFinalCTA";
+import StorvexLockedFooter from "../../components/layout/StorvexLockedFooter";
 import "./LandingPage.css";
 
 const logoSrc = "/storvex_dark.webp";
@@ -71,29 +74,6 @@ const platformCards = [
     icon: UserCog,
     title: "Staff Access",
     text: "Give each worker only what they need while owners keep full visibility and control.",
-  },
-];
-
-const problemCards = [
-  {
-    icon: PackageCheck,
-    title: "Missed Stock",
-    text: "Spot low stock early so staff can reorder before customers walk away.",
-  },
-  {
-    icon: BarChart3,
-    title: "Unclear Performance",
-    text: "Understand branch performance, daily sales, and cash movement without waiting for manual updates.",
-  },
-  {
-    icon: UsersRound,
-    title: "Staff Mistakes",
-    text: "Limit mistakes with clear staff roles, recorded actions, and safer owner approval flows.",
-  },
-  {
-    icon: WalletCards,
-    title: "Cost Leaks",
-    text: "Catch expenses, cash gaps, and uncontrolled costs before they quietly reduce profit.",
   },
 ];
 
@@ -212,18 +192,6 @@ function FeatureIcon({ icon: Icon }) {
 function PlatformCard({ icon, title, text }) {
   return (
     <WhiteCard className="svx-feature-card svx-platform-card svx-reveal">
-      <div className="svx-card-topline">
-        <FeatureIcon icon={icon} />
-        <h3>{title}</h3>
-      </div>
-      <p>{text}</p>
-    </WhiteCard>
-  );
-}
-
-function ProblemCard({ icon, title, text }) {
-  return (
-    <WhiteCard className="svx-feature-card svx-problem-card svx-reveal">
       <div className="svx-card-topline">
         <FeatureIcon icon={icon} />
         <h3>{title}</h3>
@@ -398,6 +366,7 @@ function StoreAvatar({ className, children }) {
   );
 }
 
+// eslint-disable-next-line no-unused-vars -- retained temporarily for safe rollback
 function MobileReadySection() {
   return (
     <section id="trust" className="svx-mobile-ready-section">
@@ -528,21 +497,6 @@ function Footer() {
   return (
     <section id="resources" className="svx-footer-section">
       <div className="svx-footer-shell">
-        <div className="svx-footer-cta">
-          <div>
-            <span className="svx-footer-kicker">Built for store owners</span>
-            <h2>Ready to run your store with clarity?</h2>
-            <p>Create your owner account and open your first store workspace in minutes.</p>
-          </div>
-
-          <div className="svx-footer-cta-actions">
-            <Link href="/signup" className="svx-footer-primary">
-              Get started
-            </Link>
-
-          </div>
-        </div>
-
         <footer className="svx-footer-main">
           <div className="svx-footer-grid">
             <div className="svx-footer-brand">
@@ -605,100 +559,30 @@ function Footer() {
 }
 
 function HeroSection() {
-  return (
-    <section className="svx-hero">
-      <div className="svx-hero-shape" />
-
-      <div className="svx-hero-inner">
-        <div className="svx-hero-copy">
-          <Badge>For store owners</Badge>
-
-          <h1>Know what happened in your store.</h1>
-
-          <p>
-            Track sales, stock, cash, staff activity, and branch performance from one clear
-            workspace.
-          </p>
-
-          <div className="svx-hero-actions">
-            <PrimaryLink>Get started</PrimaryLink>
-            
-          </div>
-
-          <div className="svx-trust-row">
-            <div className="svx-trust-avatars" aria-hidden="true">
-              {[Store, Building2, Warehouse].map((Icon, index) => (
-                <span key={index}>
-                  <Icon size={14} strokeWidth={2.4} />
-                </span>
-              ))}
-            </div>
-
-            <p>Built for owner-run stores and growing retail teams.</p>
-          </div>
-        </div>
-
-        <div className="svx-hero-visual">
-          <DashboardMockup />
-        </div>
-      </div>
-    </section>
-  );
+  return <StorvexLockedHero />;
 }
 
 export default function LandingPage() {
   return (
     <div className="storvex-landing min-h-screen">
       <LandingRevealAnimations />
-      <PublicHeader />
+      <PublicHeader variant="homepage" />
 
       <main>
         <HeroSection />
 
-        <section id="how-it-works" className="svx-platform-showcase">
-          <div className="svx-platform-showcase-shell">
-            <div className="svx-platform-showcase-head svx-reveal">
-              <span>Store operating system</span>
+        <StorvexAllInOne />
 
-              <h2>One platform. Complete store control.</h2>
+        <StorvexIndustries />
 
-              <p>
-                Sales, stock, cash, documents, staff access, and branch visibility stay connected in
-                one owner-first workspace.
-              </p>
-            </div>
+        <StorvexConnectEverywhere />
 
-            <div className="svx-platform-showcase-grid">
-              {platformCards.map((item) => (
-                <PlatformCard key={item.title} {...item} />
-              ))}
-            </div>
-          </div>
-        </section>
+        <StorvexWhyRetailers />
 
-        <MobileReadySection />
-
-        <section id="features" className="svx-section svx-problem-section">
-          <div className="svx-section-shell">
-            <div className="svx-section-heading svx-reveal">
-              <span>Profit protection</span>
-              <h2>Built for the moments where stores lose money.</h2>
-              <p>
-                Storvex focuses on the weak points that quietly damage stores: missed sales, blind
-                spots, staff mistakes, and uncontrolled costs.
-              </p>
-            </div>
-
-            <div className="svx-card-grid svx-problem-grid">
-              {problemCards.map((item) => (
-                <ProblemCard key={item.title} {...item} />
-              ))}
-            </div>
-          </div>
-        </section>
+        <StorvexFinalCTA />
       </main>
 
-      <Footer />
+      <StorvexLockedFooter />
     </div>
   );
 }

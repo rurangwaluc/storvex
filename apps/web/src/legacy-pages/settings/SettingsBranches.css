@@ -421,12 +421,9 @@
 /* FINAL Branches dark correction.
    The big red-marked sections must be #1F1F20, same as signup cards. */
 :root[data-theme="dark"] .svx-settings-page:has(.svx-branch-summary-card) > section,
-:root[data-theme="dark"] .svx-settings-page:has(.svx-branch-list-rows) > section,
 :root[data-theme="dark"] .svx-settings-page section:has(.svx-branch-summary-card),
-:root[data-theme="dark"] .svx-settings-page section:has(.svx-branch-list-rows),
 :root[data-theme="dark"] .svx-settings-page section:has(.svx-branch-page-actions),
 :root[data-theme="dark"] .svx-settings-branches .svx-settings-card,
-:root[data-theme="dark"] .svx-settings-branches section,
 :root[data-theme="dark"] .svx-branch-overview-card,
 :root[data-theme="dark"] .svx-branch-list-card,
 :root[data-theme="dark"] .svx-branch-form {
@@ -460,9 +457,9 @@
 :root[data-theme="dark"] .svx-branch-row-mark,
 :root[data-theme="dark"] .svx-branch-row-actions button,
 :root[data-theme="dark"] .svx-branch-drawer-close {
-  background: #0d1d32 !important;
-  background-color: #0d1d32 !important;
-  border-color: rgba(21, 156, 255, 0.22) !important;
+  background: #242424 !important;
+  background-color: #242424 !important;
+  border-color: #383838 !important;
   color: #ffffff !important;
 }
 
@@ -584,4 +581,556 @@
   .svx-branch-drawer-panel {
     animation: none !important;
   }
+}
+
+
+/* STORVEX STEP 342C — COMPACT BRANCH SETTINGS */
+
+.svx-settings-shell .svx-branches-compact {
+  display: block;
+  gap: 0;
+  width: 100%;
+  background: transparent;
+}
+
+.svx-settings-shell .svx-branches-compact-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0;
+  padding: 0 0 20px;
+}
+
+.svx-settings-shell .svx-branches-compact-heading h1 {
+  margin: 0;
+  color: var(--settings-text);
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.25;
+}
+
+.svx-settings-shell .svx-branches-compact-heading p,
+.svx-settings-shell .svx-branches-compact-section-title p {
+  margin: 5px 0 0;
+  color: var(--settings-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.svx-settings-shell .svx-branches-compact-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.svx-settings-shell .svx-branches-compact-actions > button {
+  min-height: 38px;
+  border-radius: 7px;
+  padding: 0 14px;
+  box-shadow: none !important;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.svx-settings-shell .svx-branches-compact-actions
+.svx-branch-primary-action:not(:disabled) {
+  background: #FF5961 !important;
+  border: 1px solid #FF5961 !important;
+  color: #171717 !important;
+}
+
+.svx-settings-shell .svx-branches-compact-actions
+.svx-branch-primary-action:not(:disabled):hover {
+  background: #F34E57 !important;
+  border-color: #F34E57 !important;
+}
+
+.svx-settings-shell .svx-branches-compact-usage {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  min-height: 42px;
+  padding: 0 0 18px;
+  border-bottom: 1px solid var(--settings-border);
+  color: var(--settings-muted);
+  font-size: 13px;
+}
+
+.svx-settings-shell .svx-branches-compact-usage strong {
+  color: var(--settings-text);
+  font-weight: 750;
+}
+
+.svx-settings-shell .svx-branches-compact-limit {
+  color: var(--settings-warning);
+  font-weight: 650;
+}
+
+.svx-settings-shell .svx-branches-compact-list-section {
+  display: block;
+  flex: none;
+  height: auto;
+  min-height: 0;
+  padding: 22px 0 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.svx-settings-shell .svx-branches-compact-section-title {
+  margin-bottom: 17px;
+}
+
+.svx-settings-shell .svx-branches-compact-section-title h2 {
+  margin: 0;
+  color: var(--settings-text);
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.svx-settings-shell .svx-branches-compact-list-section
+.svx-branch-list-rows {
+  display: block;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--settings-border);
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.svx-settings-shell .svx-branches-compact-list-section
+.svx-branch-list-head {
+  background: transparent;
+}
+
+.svx-settings-shell .svx-branches-compact-list-section
+.svx-branch-row {
+  height: auto;
+  min-height: 0;
+  align-content: center;
+  background: transparent;
+}
+
+.svx-settings-shell .svx-branches-compact-list-section
+.svx-branch-row-actions button {
+  min-height: 34px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+:root[data-theme="dark"] .svx-settings-shell
+.svx-branches-compact-list-section {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-settings-shell
+.svx-branches-compact-list-section
+.svx-branch-list-rows,
+:root[data-theme="dark"] .svx-settings-shell
+.svx-branches-compact-list-section
+.svx-branch-list-head,
+:root[data-theme="dark"] .svx-settings-shell
+.svx-branches-compact-list-section
+.svx-branch-row {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="dark"] .svx-settings-shell
+.svx-branches-compact-list-section
+.svx-branch-row-mark,
+:root[data-theme="dark"] .svx-settings-shell
+.svx-branches-compact-list-section
+.svx-branch-row-actions button {
+  background: #242424 !important;
+  border-color: #383838 !important;
+  color: #FFFFFF !important;
+}
+
+@media (max-width: 720px) {
+  .svx-settings-shell .svx-branches-compact-heading {
+    align-items: stretch;
+  }
+
+  .svx-settings-shell .svx-branches-compact-actions {
+    width: 100%;
+  }
+
+  .svx-settings-shell .svx-branches-compact-actions > button {
+    flex: 1;
+  }
+
+  .svx-settings-shell .svx-branches-compact-list-section
+  .svx-branch-list-head {
+    display: none;
+  }
+
+  .svx-settings-shell .svx-branches-compact-list-section
+  .svx-branch-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .svx-settings-shell .svx-branches-compact-list-section
+  .svx-branch-row-location strong {
+    white-space: normal;
+  }
+
+  .svx-settings-shell .svx-branches-compact-list-section
+  .svx-branch-row-actions {
+    justify-content: flex-start;
+  }
+}
+
+
+/* STORVEX STEP 342M — COMPACT LIST STABILITY */
+.svx-settings-shell
+.svx-branches-compact > .svx-branches-compact-list-section {
+  animation: none !important;
+}
+
+
+/* STORVEX STEP 342N — CLICKABLE BRANCH ROWS */
+
+.svx-settings-shell .svx-branch-row-clickable {
+  cursor: pointer;
+  transition: background-color 150ms ease;
+}
+
+.svx-settings-shell .svx-branch-row-clickable:hover {
+  background: #F5F6F7 !important;
+}
+
+.svx-settings-shell .svx-branch-row-clickable:focus-visible {
+  outline: 2px solid #A5BD24;
+  outline-offset: -3px;
+}
+
+.svx-settings-shell .svx-branch-main-label {
+  background: #EEF0F2 !important;
+  color: #4B5563 !important;
+  border-color: #E0E3E7 !important;
+}
+
+.svx-settings-shell .svx-branch-open-hint {
+  color: var(--settings-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.svx-settings-shell .svx-branches-compact-list-section {
+  padding-top: 18px;
+}
+
+.svx-settings-shell .svx-branch-row-clickable
+.svx-branch-row-location strong {
+  font-weight: 600;
+}
+
+:root[data-theme="dark"] .svx-settings-shell
+.svx-branch-row-clickable:hover {
+  background: #242424 !important;
+}
+
+:root[data-theme="dark"] .svx-settings-shell
+.svx-branch-main-label {
+  background: #303030 !important;
+  color: #D4D4D4 !important;
+  border-color: #404040 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-settings-shell .svx-branch-row-clickable {
+    transition: none;
+  }
+}
+
+
+/* STORVEX STEP 342P — REFINED BRANCH DRAWERS */
+
+/* The drawer is portalled to document.body, outside Settings. */
+.svx-branch-drawer-layer {
+  --branch-drawer-bg: #ffffff;
+  --branch-drawer-text: #172033;
+  --branch-drawer-muted: #667085;
+  --branch-drawer-line: #e5e7eb;
+  --branch-drawer-input: #ffffff;
+}
+
+:root[data-theme="dark"] .svx-branch-drawer-layer {
+  --branch-drawer-bg: #1f1f20;
+  --branch-drawer-text: #f5f5f5;
+  --branch-drawer-muted: #aaaeb4;
+  --branch-drawer-line: #383838;
+  --branch-drawer-input: #242424;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-panel {
+  background: var(--branch-drawer-bg) !important;
+  color: var(--branch-drawer-text);
+  border-left: 1px solid var(--branch-drawer-line);
+  box-shadow: -12px 0 48px rgba(0,0,0,.14);
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-header,
+.svx-branch-drawer-layer .svx-branch-drawer-footer {
+  background: var(--branch-drawer-bg) !important;
+  border-color: var(--branch-drawer-line) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-header {
+  padding: 22px 24px 19px;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-header h3 {
+  color: var(--branch-drawer-text);
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -.035em;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-header p {
+  max-width: 410px;
+  color: var(--branch-drawer-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-header span,
+.svx-branch-drawer-layer .svx-branch-drawer-section h4 {
+  color: var(--branch-drawer-muted);
+  letter-spacing: .11em;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-body {
+  display: block;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 22px 24px 30px;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-footer {
+  padding: 14px 24px;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-close,
+.svx-branch-drawer-layer .svx-branch-secondary-action {
+  background: transparent !important;
+  border: 1px solid var(--branch-drawer-line) !important;
+  color: var(--branch-drawer-text) !important;
+  box-shadow: none !important;
+  border-radius: 7px;
+  font-weight: 650;
+}
+
+.svx-branch-drawer-layer .svx-branch-primary-action,
+.svx-branch-drawer-layer button.svx-branch-primary-action {
+  background: #ff5961 !important;
+  background-color: #ff5961 !important;
+  border: 1px solid #ff5961 !important;
+  color: #171717 !important;
+  box-shadow: none !important;
+  border-radius: 7px !important;
+  font-weight: 700 !important;
+}
+
+.svx-branch-drawer-layer .svx-branch-primary-action:hover:not(:disabled) {
+  background: #f34e57 !important;
+  border-color: #f34e57 !important;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-form {
+  width: 100%;
+}
+
+.svx-branch-drawer-layer .svx-branch-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 14px;
+  row-gap: 17px;
+}
+
+.svx-branch-drawer-layer .svx-branch-form-group-title {
+  grid-column: 1 / -1;
+  margin: 8px 0 -6px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--branch-drawer-line);
+  color: var(--branch-drawer-text);
+  font-size: 13px;
+  font-weight: 750;
+  letter-spacing: -.01em;
+}
+
+.svx-branch-drawer-layer .svx-branch-form-group-title:first-child {
+  margin-top: 0;
+}
+
+.svx-branch-drawer-layer .svx-branch-form-grid > div:last-child {
+  grid-column: 1 / -1;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-form input {
+  display: block;
+  width: 100%;
+  min-height: 43px;
+  padding: 10px 12px;
+  border: 1px solid var(--branch-drawer-line) !important;
+  border-radius: 8px !important;
+  background: var(--branch-drawer-input) !important;
+  background-color: var(--branch-drawer-input) !important;
+  color: var(--branch-drawer-text) !important;
+  box-shadow: none !important;
+  font-size: 13px;
+  font-weight: 550;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-form input::placeholder {
+  color: var(--branch-drawer-muted);
+  opacity: .8;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-form input:focus {
+  border-color: #a5bd24 !important;
+  outline: 2px solid rgba(165,189,36,.19);
+  outline-offset: 0;
+  box-shadow: none !important;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-form input:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* The branch name is already displayed in the header. */
+.svx-branch-drawer-layer .svx-branch-drawer-profile {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 0 18px;
+  border: 0 !important;
+  border-bottom: 1px solid var(--branch-drawer-line) !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-profile .svx-branch-code-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  background: var(--branch-drawer-input) !important;
+  border-color: var(--branch-drawer-line) !important;
+  font-weight: 750;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-profile span {
+  color: var(--branch-drawer-muted);
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-pills {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.svx-branch-drawer-layer .svx-branch-main-label {
+  background: #eef0f2 !important;
+  border-color: #e0e3e7 !important;
+  color: #4b5563 !important;
+}
+
+:root[data-theme="dark"] .svx-branch-drawer-layer .svx-branch-main-label {
+  background: #303030 !important;
+  border-color: #404040 !important;
+  color: #d4d4d4 !important;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-section {
+  padding: 16px 0;
+  margin: 0;
+  border: 0 !important;
+  border-bottom: 1px solid var(--branch-drawer-line) !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-section h4 {
+  margin-bottom: 12px;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-profile +
+.svx-branch-drawer-section {
+  margin-top: 4px;
+}
+
+.svx-branch-drawer-layer .svx-branch-archive-confirm h4 {
+  color: #dc2626;
+}
+
+@media (max-width: 560px) {
+  .svx-branch-drawer-layer .svx-branch-drawer-panel {
+    width: 100vw;
+  }
+
+  .svx-branch-drawer-layer .svx-branch-drawer-header,
+  .svx-branch-drawer-layer .svx-branch-drawer-body,
+  .svx-branch-drawer-layer .svx-branch-drawer-footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .svx-branch-drawer-layer .svx-branch-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* STORVEX STEP 342AC — COMPLETE ADDRESS DISPLAY */
+
+/* Allow complete addresses to wrap within the branch table. */
+.svx-branches-compact .svx-branch-row-location {
+  min-width: 0;
+}
+
+.svx-branches-compact .svx-branch-row-location strong {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.5;
+}
+
+/* Allow long address values to wrap inside the details drawer. */
+.svx-branch-drawer-layer .svx-branch-drawer-section {
+  min-width: 0;
+}
+
+.svx-branch-drawer-layer .svx-branch-drawer-section strong,
+.svx-branch-drawer-layer .svx-branch-drawer-section dd {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.5;
 }

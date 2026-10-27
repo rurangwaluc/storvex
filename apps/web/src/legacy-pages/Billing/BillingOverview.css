@@ -1,0 +1,697 @@
+/* STEP 342CM-G / SINGLE BILLING DESIGN */
+/* One authoritative Billing stylesheet. Neutral charcoal; no navy. */
+
+.svx-billing-premium {
+  --billing-card: #ffffff;
+  --billing-panel: #f7f8f7;
+  --billing-border: #e5e7e5;
+  --billing-text: #202322;
+  --billing-muted: #65706b;
+  --billing-track: #e5e8e6;
+  --billing-accent: #27bd8d;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  width: 100%;
+  color: var(--billing-text);
+}
+
+:root[data-theme="dark"] .svx-billing-premium,
+:root.dark .svx-billing-premium {
+  --billing-card: #1d1d1d;
+  --billing-panel: #222222;
+  --billing-border: #353535;
+  --billing-text: #f5f5f5;
+  --billing-muted: #b6b6b6;
+  --billing-track: #393939;
+  --billing-accent: #c8e83b;
+}
+
+.svx-billing-premium *,
+.svx-billing-premium *::before,
+.svx-billing-premium *::after {
+  box-sizing: border-box;
+}
+
+.svx-billing-premium .svx-bp-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 2px 0 15px;
+  border-bottom: 1px solid var(--billing-border);
+}
+
+.svx-billing-premium .svx-bp-titlebar h2 {
+  margin: 0;
+  color: var(--billing-text);
+  font-size: clamp(21px, 2.2vw, 26px);
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -.045em;
+}
+
+.svx-billing-premium .svx-bp-titlebar p {
+  margin: 7px 0 0;
+  color: var(--billing-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.svx-billing-premium button.svx-bp-refresh {
+  flex-shrink: 0;
+  min-height: 39px;
+  padding: 8px 15px;
+  border: 1px solid var(--billing-border);
+  border-radius: 9px;
+  background: var(--billing-card);
+  color: var(--billing-text);
+  font-size: 12px;
+  font-weight: 750;
+  box-shadow: none;
+  filter: none;
+}
+
+.svx-billing-premium button.svx-bp-refresh:hover {
+  background: var(--billing-panel);
+  border-color: var(--billing-border);
+  color: var(--billing-text);
+  box-shadow: none;
+}
+
+.svx-billing-premium .svx-bp-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, .86fr);
+  min-width: 0;
+  background: var(--billing-card);
+  border: 1px solid var(--billing-border);
+  border-radius: 17px;
+  overflow: hidden;
+}
+
+.svx-billing-premium .svx-bp-primary {
+  min-width: 0;
+  padding: 20px 23px;
+}
+
+.svx-billing-premium .svx-bp-kicker {
+  display: block;
+  color: var(--billing-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.svx-billing-premium .svx-bp-planline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.svx-billing-premium .svx-bp-planline h3 {
+  margin: 0;
+  color: var(--billing-text);
+  font-size: clamp(24px, 2.5vw, 30px);
+  font-weight: 850;
+  line-height: 1.15;
+  letter-spacing: -.05em;
+}
+
+.svx-billing-premium .svx-bp-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 25px;
+  padding: 4px 10px;
+  border-radius: 100px;
+  background: #e9ece9;
+  color: #37423c;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.svx-billing-premium .svx-bp-status.is-success,
+.svx-billing-premium .svx-bp-status.is-info {
+  background: #daf6e7;
+  color: #156741;
+}
+
+.svx-billing-premium .svx-bp-status.is-warning {
+  background: #fff0d0;
+  color: #895a00;
+}
+
+.svx-billing-premium .svx-bp-status.is-danger {
+  background: #ffe2e5;
+  color: #a52439;
+}
+
+.svx-billing-premium .svx-bp-price {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 11px;
+}
+
+.svx-billing-premium .svx-bp-price strong {
+  color: var(--billing-text);
+  font-size: clamp(28px, 3vw, 35px);
+  font-weight: 850;
+  line-height: 1.1;
+  letter-spacing: -.055em;
+}
+
+.svx-billing-premium .svx-bp-price > span,
+.svx-billing-premium .svx-bp-description,
+.svx-billing-premium .svx-bp-next {
+  color: var(--billing-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.svx-billing-premium .svx-bp-description,
+.svx-billing-premium .svx-bp-next {
+  margin: 10px 0 0;
+}
+
+.svx-billing-premium .svx-bp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 17px;
+}
+
+.svx-billing-premium a.svx-bp-action-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 43px;
+  padding: 10px 17px;
+  border: 1px solid #ff5961;
+  border-radius: 9px;
+  background: #ff5961;
+  color: #171717;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.svx-billing-premium a.svx-bp-action-primary:hover {
+  background: #ff777d;
+  border-color: #ff777d;
+  color: #171717;
+}
+
+.svx-billing-premium a.svx-bp-action-primary:focus-visible,
+.svx-billing-premium button.svx-bp-refresh:focus-visible {
+  outline: 3px solid #c8e83b;
+  outline-offset: 3px;
+}
+
+.svx-billing-premium .svx-bp-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  min-width: 0;
+  padding: 21px 24px;
+  border-left: 1px solid var(--billing-border);
+  background: var(--billing-panel);
+}
+
+.svx-billing-premium .svx-bp-usage .svx-billing-capacity-line {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.svx-billing-premium .svx-bp-usage .svx-billing-capacity-copy {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+}
+
+.svx-billing-premium .svx-bp-usage .svx-billing-capacity-copy strong {
+  color: var(--billing-text);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.svx-billing-premium .svx-bp-usage .svx-billing-capacity-copy small {
+  color: var(--billing-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.svx-billing-premium .svx-bp-usage .svx-billing-capacity-copy small.is-success {
+  color: #159b6a;
+}
+
+:root[data-theme="dark"] .svx-billing-premium .svx-bp-usage .svx-billing-capacity-copy small.is-success,
+:root.dark .svx-billing-premium .svx-bp-usage .svx-billing-capacity-copy small.is-success {
+  color: #bde685;
+}
+
+.svx-billing-premium .svx-bp-usage .svx-billing-progress {
+  width: 100%;
+  height: 7px;
+  margin: 1px 0 0;
+  border-radius: 100px;
+  background: var(--billing-track);
+  overflow: hidden;
+}
+
+.svx-billing-premium .svx-bp-usage .svx-billing-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--billing-accent);
+}
+
+.svx-billing-premium .svx-bp-facts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.svx-billing-premium .svx-bp-fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 13px;
+  background: var(--billing-card);
+  border: 1px solid var(--billing-border);
+  border-radius: 12px;
+}
+
+.svx-billing-premium .svx-bp-fact-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--billing-panel);
+  color: var(--billing-text);
+  font-size: 16px;
+  font-weight: 750;
+}
+
+.svx-billing-premium .svx-bp-fact:nth-child(3) .svx-bp-fact-icon {
+  background: #e1f5dc;
+  color: #287d35;
+}
+
+:root[data-theme="dark"] .svx-billing-premium .svx-bp-fact:nth-child(3) .svx-bp-fact-icon,
+:root.dark .svx-billing-premium .svx-bp-fact:nth-child(3) .svx-bp-fact-icon {
+  background: #2c3c28;
+  color: #c7e69f;
+}
+
+.svx-billing-premium .svx-bp-fact > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.svx-billing-premium .svx-bp-fact small {
+  color: var(--billing-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.svx-billing-premium .svx-bp-fact strong {
+  color: var(--billing-text);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.svx-billing-premium .svx-bp-fact em {
+  color: var(--billing-muted);
+  font-size: 10px;
+  line-height: 1.4;
+  font-style: normal;
+}
+
+.svx-billing-premium .svx-bp-history {
+  min-width: 0;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-card {
+  padding: 19px 21px;
+  background: var(--billing-card);
+  border: 1px solid var(--billing-border);
+  border-radius: 15px;
+  box-shadow: none;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-card-head span {
+  color: var(--billing-muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-card-head h3 {
+  margin: 5px 0 0;
+  color: var(--billing-text);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-record-count {
+  color: var(--billing-muted);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-history-table {
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-history-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, .8fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--billing-border);
+  background: var(--billing-card);
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-history-row:last-child {
+  border-bottom: 0;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-history-row.is-head {
+  padding-top: 11px;
+  padding-bottom: 11px;
+  background: var(--billing-panel);
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-history-row.is-head span {
+  color: var(--billing-muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-history-row > div {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--billing-text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-history-row strong {
+  display: block;
+  color: var(--billing-text);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-history-row small {
+  display: block;
+  margin-top: 4px;
+  color: var(--billing-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-status-text {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 100px;
+  padding: 5px 9px;
+  color: var(--billing-text);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: capitalize;
+  background: var(--billing-panel);
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-status-text.is-warning {
+  color: #855500;
+  background: #fff0cd;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-status-text.is-success {
+  color: #176c46;
+  background: #dff7e7;
+}
+
+.svx-billing-premium .svx-bp-history .svx-billing-status-text.is-danger {
+  color: #9f233a;
+  background: #ffe2e6;
+}
+
+.svx-billing-premium .svx-bp-notice {
+  padding: 12px 14px;
+  color: var(--billing-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  border: 1px solid var(--billing-border);
+  border-radius: 10px;
+}
+
+.svx-billing-premium .svx-bp-footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 5px 0 12px;
+  color: var(--billing-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.svx-billing-premium .svx-bp-footer strong {
+  color: var(--billing-text);
+}
+
+@media (max-width: 1000px) {
+  .svx-billing-premium .svx-bp-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .svx-billing-premium .svx-bp-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .svx-billing-premium .svx-bp-usage {
+    border-left: 0;
+    border-top: 1px solid var(--billing-border);
+  }
+  .svx-billing-premium .svx-bp-primary,
+  .svx-billing-premium .svx-bp-usage {
+    padding: 20px 17px;
+  }
+  .svx-billing-premium .svx-bp-history .svx-billing-history-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
+  }
+  .svx-billing-premium .svx-bp-history .svx-billing-history-row.is-head {
+    display: none;
+  }
+  .svx-billing-premium .svx-bp-history .svx-billing-history-row > div::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--billing-muted);
+    font-size: 10px;
+    font-weight: 700;
+    margin-bottom: 5px;
+  }
+}
+
+@media (max-width: 450px) {
+  .svx-billing-premium .svx-bp-titlebar {
+    flex-wrap: wrap;
+  }
+  .svx-billing-premium .svx-bp-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .svx-billing-premium .svx-bp-actions,
+  .svx-billing-premium a.svx-bp-action-primary {
+    width: 100%;
+  }
+  .svx-billing-premium .svx-bp-history .svx-billing-card {
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-billing-premium *,
+  .svx-billing-premium *::before,
+  .svx-billing-premium *::after {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* STEP 342CM-H / BILLING USAGE REFINEMENT */
+
+.svx-billing-premium .svx-bp-usage {
+  gap: 0;
+}
+
+.svx-billing-premium .svx-bp-usage-item {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin-top: 18px;
+}
+
+.svx-billing-premium .svx-bp-usage-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.svx-billing-premium .svx-bp-usage-top strong {
+  color: var(--billing-text);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.svx-billing-premium .svx-bp-usage-top span {
+  color: #16885d;
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.svx-billing-premium .svx-bp-usage-top .is-warning {
+  color: #a66a00;
+}
+
+.svx-billing-premium .svx-bp-usage-top .is-danger {
+  color: #cf4653;
+}
+
+.svx-billing-premium .svx-bp-usage-count {
+  margin: 0;
+  color: var(--billing-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.svx-billing-premium .svx-bp-usage-track {
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 100px;
+  background: var(--billing-track);
+}
+
+.svx-billing-premium .svx-bp-usage-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--billing-accent);
+}
+
+.svx-billing-premium .svx-bp-usage-track > span.is-warning {
+  background: #e0ac36;
+}
+
+.svx-billing-premium .svx-bp-usage-track > span.is-danger {
+  background: #e76a70;
+}
+
+:root[data-theme="dark"] .svx-billing-premium .svx-bp-usage-top .is-success,
+:root.dark .svx-billing-premium .svx-bp-usage-top .is-success {
+  color: #c8e83b;
+}
+
+/* Neutral Refresh action in both themes. */
+.svx-billing-premium button.svx-bp-refresh,
+.svx-billing-premium button.svx-bp-refresh:hover,
+.svx-billing-premium button.svx-bp-refresh:active {
+  background: var(--billing-card) !important;
+  border: 1px solid var(--billing-border) !important;
+  color: var(--billing-text) !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.svx-billing-premium button.svx-bp-refresh:hover {
+  background: var(--billing-panel) !important;
+}
+
+.svx-billing-premium button.svx-bp-refresh:focus-visible {
+  outline: 3px solid #c8e83b;
+  outline-offset: 3px;
+}
+
+
+/* STEP 342CM-I / NATIVE NEUTRAL REFRESH */
+.svx-billing-premium .svx-bp-refresh {
+  appearance: none;
+  background: var(--billing-card);
+  color: var(--billing-text);
+  border: 1px solid var(--billing-border);
+  box-shadow: none;
+  filter: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.svx-billing-premium .svx-bp-refresh:hover {
+  background: var(--billing-panel);
+  border-color: var(--billing-border);
+  color: var(--billing-text);
+  box-shadow: none;
+}
+
+.svx-billing-premium .svx-bp-refresh:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.svx-billing-premium .svx-bp-refresh:focus-visible {
+  outline: 3px solid #c8e83b;
+  outline-offset: 3px;
+}

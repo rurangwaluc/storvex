@@ -2,19 +2,9 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { jwtDecode } from "jwt-decode";
-import {
-  BadgeCheck,
-  LockKeyhole,
-  Store,
-  UserRoundCheck,
-} from "lucide-react";
-
 import PublicLayout from "../../components/layout/PublicLayout";
-import {
-  OnboardingCard,
-  OnboardingIconBadge,
-} from "../../components/onboarding/OnboardingShell";
-import PasswordField from "../../components/auth/PasswordField";
+import "../../components/onboarding/Onboarding.css";
+import "./LoginBrand.css";
 import AsyncButton from "../../components/ui/AsyncButton";
 import apiClient, {
   setActiveBranchId,
@@ -49,7 +39,7 @@ function clearOldWorkspaceCache() {
   ]);
 }
 
-function clearOnboardingState() {
+export function clearOnboardingState() {
   removeStorageKeys([
     "storvex_owner_intent_id",
     "storvex_ownerIntentId",
@@ -94,7 +84,7 @@ function saveBranchSession(activeBranch) {
 
 }
 
-function persistAuthSession(data) {
+export function persistAuthSession(data) {
   const token = data?.token || "";
 
   if (!token) {
@@ -148,54 +138,32 @@ function persistAuthSession(data) {
   };
 }
 
-function LoginActionCard({ loading }) {
-  return (
-    <OnboardingCard className="svx-onboard-next-card">
-      <div className="svx-onboard-next-copy">
-        <div className="svx-onboard-lock-icon svx-onboard-lock-icon--neutral">
-          <LockKeyhole size={31} strokeWidth={2.3} />
-        </div>
-
-        <div>
-          <strong>Next: open your workspace</strong>
-          <p>Your store workspace will open after login.</p>
-        </div>
-      </div>
-
-      <AsyncButton type="submit" loading={loading} loadingText="Logging in...">
-        Log in
-        <span aria-hidden="true">→</span>
-      </AsyncButton>
-    </OnboardingCard>
-  );
-}
-
 export default function Login() {
   const nav = useNavigate();
 
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState("email");
+  const [challengeId, setChallengeId] = useState("");
+  const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
 
   const trimmedEmail = useMemo(() => normalizeEmail(email), [email]);
 
-  async function submit(event) {
-    event.preventDefault();
+  function finishLogin(data) {
+    queryClient.clear();
+    persistAuthSession(data);
+    clearOnboardingState();
+    toast.success("Welcome back");
+    nav("/app", { replace: true });
+  }
 
+  async function requestCode(event) {
+    event.preventDefault();
     setLoginError("");
 
     if (!trimmedEmail) {
-      const message = "Enter your email address.";
-      setLoginError(message);
-      toast.error(message);
-      return;
-    }
-
-    if (!password) {
-      const message = "Enter your password.";
-      setLoginError(message);
-      toast.error(message);
+      setLoginError("Enter your email address.");
       return;
     }
 
@@ -203,230 +171,175 @@ export default function Login() {
 
     try {
       const response = await apiClient.post(
-        "/auth/login",
-        {
-          email: trimmedEmail,
-          password,
-        },
-        {
-          timeout: 15000,
-        },
+        "/auth/retail/email-login/request",
+        { email: trimmedEmail },
+        { timeout: 15000 }
       );
 
-      /*
-       * A successful internal login starts a new private server-state
-       * session. Remove anything cached by the previous account first.
-       */
-      queryClient.clear();
+      const nextId = response?.data?.challengeId;
 
-      persistAuthSession(response?.data || {});
-      clearOnboardingState();
-
-      toast.success("Welcome back");
-      nav("/app", { replace: true });
-    } catch (error) {
-      const status = Number(error?.response?.status || 0);
-      const providerMessage = String(
-        error?.response?.data?.message || "",
-      ).trim();
-
-      let message = "Login failed. Please try again.";
-
-      if (status === 400 || status === 401) {
-        message =
-          providerMessage ||
-          "The email or password is incorrect.";
-      } else if (status === 403) {
-        message =
-          providerMessage ||
-          "This account cannot access Storvex right now.";
-      } else if (status >= 500) {
-        message =
-          "Storvex could not complete the login. Please try again shortly.";
-      } else if (
-        error?.code === "ECONNABORTED" ||
-        String(error?.message || "")
-          .toLowerCase()
-          .includes("timeout")
-      ) {
-        message =
-          "Login took too long. Check your connection and try again.";
-      } else if (!error?.response) {
-        message =
-          "Could not connect to Storvex. Check your internet connection and try again.";
-      } else if (providerMessage) {
-        message = providerMessage;
+      if (!nextId) {
+        throw new Error("Unable to start email verification.");
       }
 
-      setLoginError(message);
-      toast.error(message, {
-        id: "login-error",
-      });
+      setChallengeId(nextId);
+      setCode("");
+      setMode("verify");
+    } catch {
+      setLoginError(
+        "We could not start email sign-in. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function verifyCode(event) {
+    event.preventDefault();
+    setLoginError("");
+
+    if (!/^\\d{6}$/.test(code)) {
+      setLoginError("Enter the six-digit verification code.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await apiClient.post(
+        "/auth/retail/email-login/verify",
+        { challengeId, code },
+        { timeout: 15000 }
+      );
+
+      finishLogin(response.data);
+    } catch {
+      setLoginError(
+        "Invalid or expired code. Check the code or request another."
+      );
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <PublicLayout>
-      <div className="storvex-onboarding">
-        <section className="svx-onboard-top">
-          <div className="svx-onboard-shell">
-            <div className="svx-onboard-title-wrap">
-              <h1>Log in to your store workspace.</h1>
-
-              <p>
-                Use your owner or staff account to continue. Storvex opens the correct
-                workspace, access level, and selling location after login.
-              </p>
-            </div>
+    <PublicLayout variant="onboarding">
+      <div className="storvex-onboarding svx-login-page">
+        <section className="svx-login-focused" aria-labelledby="svx-login-title">
+          <div className="svx-login-focused__intro">
+            <h1 id="svx-login-title">Welcome back.</h1>
+            <p>Log in to your Storvex workspace.</p>
           </div>
-        </section>
 
-        <section className="svx-onboard-content">
-          <div className="svx-onboard-shell">
-            <form onSubmit={submit} className="svx-onboard-form">
-              <div className="svx-onboard-form-heading">
-                <div>
-                  <h2>Welcome back.</h2>
-
-                  <p>
-                    Continue with the account connected to your store. Owner and staff access
-                    open the workspace allowed for that person.
-                  </p>
-                </div>
-
+          <form
+            onSubmit={
+              mode === "verify"
+                ? verifyCode
+                : requestCode
+            }
+            className="svx-login-focused__card"
+          >
+            {loginError && (
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="svx-login-focused__error"
+              >
+                <strong>We could not continue</strong>
+                <span>{loginError}</span>
               </div>
+            )}
 
-              {loginError ? (
-                <div
-                  role="alert"
-                  aria-live="assertive"
-                  className="mb-5 rounded-[14px] border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm font-bold leading-6 text-red-700 dark:text-red-300"
+            {mode !== "verify" ? (
+              <div className="svx-login-focused__field">
+                <label htmlFor="storvex-login-email">
+                  Email address
+                </label>
+                <input
+                  id="storvex-login-email"
+                  type="email"
+                  className="svx-onboard-input"
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    setLoginError("");
+                  }}
+                  autoComplete="email"
+                  placeholder="you@store.com"
+                  autoFocus
+                  required
+                  disabled={loading}
+                />
+              </div>
+            ) : (
+              <>
+                <p>
+                  Enter the six-digit code sent to your email,
+                  if your account is eligible.
+                </p>
+                <div className="svx-login-focused__field">
+                  <label htmlFor="storvex-login-code">
+                    Verification code
+                  </label>
+                  <input
+                    id="storvex-login-code"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    pattern="[0-9]{6}"
+                    className="svx-onboard-input"
+                    value={code}
+                    onChange={(event) => {
+                      setCode(
+                        event.target.value.replace(/\\D/g, "").slice(0, 6)
+                      );
+                      setLoginError("");
+                    }}
+                    autoFocus
+                    required
+                    disabled={loading}
+                    placeholder="000000"
+                  />
+                </div>
+              </>
+            )}
+
+            <AsyncButton
+              type="submit"
+              loading={loading}
+              loadingText={
+                mode === "verify" ? "Verifying..." : "Sending code..."
+              }
+              className="svx-login-focused__submit"
+            >
+              {mode === "verify"
+                ? "Verify and log in"
+                : "Continue with email"}
+              <span aria-hidden="true"> →</span>
+            </AsyncButton>
+
+            {mode === "verify" && (
+              <div className="svx-login-focused__recovery">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    setMode("email");
+                    setChallengeId("");
+                    setCode("");
+                    setLoginError("");
+                  }}
                 >
-                  <strong className="block font-black">
-                    We could not log you in
-                  </strong>
-                  <span className="mt-1 block">
-                    {loginError}
-                  </span>
-                </div>
-              ) : null}
-
-              <div className="svx-onboard-form-grid">
-                <OnboardingCard className="order-2 lg:order-1">
-                  <div className="svx-onboard-card-title-row">
-                    <OnboardingIconBadge tone="warning">
-                      <Store size={23} strokeWidth={2.2} />
-                    </OnboardingIconBadge>
-
-                    <div>
-                      <h3>Store access</h3>
-                      <p>Open the right store workspace after login.</p>
-                    </div>
-                  </div>
-
-                  <div className="svx-onboard-field-group">
-                    <div className="svx-onboard-card-title-row">
-                      <OnboardingIconBadge tone="neutral">
-                        <UserRoundCheck size={23} strokeWidth={2.2} />
-                      </OnboardingIconBadge>
-
-                      <div>
-                        <h3>Owner and staff access</h3>
-                        <p>
-                          Each person continues with the access allowed for their
-                          responsibility.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="svx-onboard-card-title-row">
-                      <OnboardingIconBadge tone="neutral">
-                        <LockKeyhole size={23} strokeWidth={2.2} />
-                      </OnboardingIconBadge>
-
-                      <div>
-                        <h3>Protected records</h3>
-                        <p>
-                          Sales, stock, cash activity, and store records stay behind account
-                          access.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </OnboardingCard>
-
-                <OnboardingCard className="order-1 lg:order-2">
-                  <div className="svx-onboard-card-title-row">
-                    <OnboardingIconBadge>
-                      <BadgeCheck size={23} strokeWidth={2.2} />
-                    </OnboardingIconBadge>
-
-                    <div>
-                      <h3>Account details</h3>
-                      <p>Use the email and password connected to your Storvex account.</p>
-                    </div>
-                  </div>
-
-                  <div className="svx-onboard-field-group">
-                    <div className="svx-onboard-field">
-                      <label>Email</label>
-
-                      <input
-                        type="email"
-                        className="svx-onboard-input"
-                        value={email}
-                        onChange={(event) => {
-                          setEmail(event.target.value);
-                          if (loginError) setLoginError("");
-                        }}
-                        autoComplete="email"
-                        placeholder="you@store.com"
-                        autoFocus
-                        required
-                        disabled={loading}
-                      />
-                    </div>
-
-                    <PasswordField
-                      id="login-password"
-                      label="Password"
-                      value={password}
-                      onChange={(event) => {
-                          setPassword(event.target.value);
-                          if (loginError) setLoginError("");
-                        }}
-                      autoComplete="current-password"
-                      placeholder="Enter your password"
-                      disabled={loading}
-                    />
-
-                    <div className="flex justify-end">
-                      <Link
-                        to="/forgot-password"
-                        className="text-sm font-black text-[var(--onboard-primary)] hover:underline"
-                      >
-                        Forgot password?
-                      </Link>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 lg:hidden">
-                    <LoginActionCard loading={loading} />
-                  </div>
-                </OnboardingCard>
+                  Use another email or request a new code
+                </button>
               </div>
+            )}
+          </form>
 
-              <div className="hidden lg:block">
-                <LoginActionCard loading={loading} />
-              </div>
-            </form>
-
-            <p className="svx-onboard-login-note">
-              New store? <Link to="/signup">Create account</Link>
-            </p>
-          </div>
+          <p className="svx-login-focused__signup">
+            New to Storvex? <Link to="/signup">Create an account</Link>
+          </p>
         </section>
       </div>
     </PublicLayout>

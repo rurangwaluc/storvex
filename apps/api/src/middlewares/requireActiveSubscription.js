@@ -94,43 +94,89 @@ async function activatePaidPlanAfterTrialIfDue(subscription, now) {
     return subscription;
   }
 
-  const successfulRenewal = await prisma.payment.findFirst({
-    where: {
-      tenantId: subscription.tenantId,
-      purpose: "SUBSCRIPTION_RENEWAL",
-      status: "SUCCESS",
-      planKey: nextPlanKey,
-    },
-    orderBy: {
-      updatedAt: "desc",
-    },
-    select: {
-      planKey: true,
-      tierKey: true,
-      cycleKey: true,
-      staffLimit: true,
-      branchLimit: true,
-      priceAmount: true,
-      currency: true,
-      entitlementSnapshot: true,
-    },
-  });
+  // STEP 342CN-Y / ATOMIC TRIAL ACTIVATION
+  // Serialize concurrent activations with payment finalization.
+  // Re-read the subscription after acquiring its row lock.
+  return prisma.$transaction(async tx => {
+    const rows = await tx.$queryRaw`
+      SELECT "id"
+      FROM "Subscription"
+      WHERE "tenantId" = ${subscription.tenantId}
+      FOR UPDATE
+    `;
 
-  const activationUpdate = buildQueuedPlanActivationUpdate({
-    subscription,
-    successfulRenewal,
-    now,
-  });
+    if (rows.length !== 1) {
+      throw new Error("Queued subscription no longer exists");
+    }
 
-  if (!activationUpdate) {
-    return subscription;
-  }
+    const current = await tx.subscription.findUnique({
+      where: { tenantId: subscription.tenantId },
+    });
 
-  return prisma.subscription.update({
-    where: {
-      tenantId: subscription.tenantId,
-    },
-    data: activationUpdate,
+    if (!current || current.id !== rows[0].id) {
+      throw new Error("Queued subscription changed unexpectedly");
+    }
+
+    // Another request may have completed the transition already.
+    if (
+      current.accessMode !== "TRIAL" ||
+      current.status === "SUSPENDED" ||
+      !current.nextPlanKey ||
+      current.nextPlanKey !== nextPlanKey
+    ) {
+      return current;
+    }
+
+    // STEP 342CN-AF / EXACT PAYMENT TRIAL ACTIVATION
+    // New queues are pinned to one payment. Never fall back to
+    // another successful payment when a reference is present.
+    // Legacy queues without a reference retain prior behavior.
+    const queuedReference = String(
+      current.queuedRenewalReference || ""
+    ).trim();
+
+    const successfulRenewal = await tx.payment.findFirst({
+      where: {
+        tenantId: current.tenantId,
+        purpose: "SUBSCRIPTION_RENEWAL",
+        status: "SUCCESS",
+        planKey: current.nextPlanKey,
+        ...(queuedReference
+          ? { reference: queuedReference }
+          : {}),
+      },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        planKey: true,
+        tierKey: true,
+        cycleKey: true,
+        staffLimit: true,
+        branchLimit: true,
+        priceAmount: true,
+        currency: true,
+        entitlementSnapshot: true,
+      },
+    });
+
+    const activationUpdate = buildQueuedPlanActivationUpdate({
+      subscription: current,
+      successfulRenewal,
+      now,
+    });
+
+    if (!activationUpdate) {
+      return current;
+    }
+
+    // Keep the purchased endDate and graceEndDate untouched.
+    // Clear both queue identifiers in the same transaction.
+    return tx.subscription.update({
+      where: { tenantId: current.tenantId },
+      data: {
+        ...activationUpdate,
+        queuedRenewalReference: null,
+      },
+    });
   });
 }
 
@@ -181,6 +227,22 @@ async function updateSubscriptionAccessModeIfNeeded(subscription) {
 
   const resolvedSubscription =
     await activatePaidPlanAfterTrialIfDue(subscription, now);
+
+  // STEP 342CN-AF / EXPIRED TRIAL FAIL-CLOSED GUARD
+  // A future paid endDate alone does not prove activation.
+  // Deny access without mutating the stored queue, allowing
+  // a valid payment to be recovered and activated later.
+  if (
+    String(resolvedSubscription.accessMode).toUpperCase() === "TRIAL" &&
+    !isTrialStillActive(resolvedSubscription, now)
+  ) {
+    return {
+      ...resolvedSubscription,
+      status: "EXPIRED",
+      accessMode: "READ_ONLY",
+      readOnlySince: resolvedSubscription.readOnlySince || now,
+    };
+  }
 
   if (resolvedSubscription !== subscription) {
     return resolvedSubscription;

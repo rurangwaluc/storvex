@@ -193,7 +193,7 @@ function DetailLine({ label, value }) {
   return (
     <div className="svx-branch-detail-line flex items-center justify-between gap-4 border-b border-[var(--color-border)] pb-3 last:border-b-0 last:pb-0">
       <span className="text-sm font-semibold text-[var(--color-text-muted)]">{label}</span>
-      <span className="svx-branch-detail-value max-w-[58%] truncate text-right text-sm font-black text-[var(--color-text)]">
+      <span className="svx-branch-detail-value min-w-0 max-w-[65%] whitespace-normal break-words text-right text-sm font-black leading-relaxed text-[var(--color-text)]">
         {value || "—"}
       </span>
     </div>
@@ -244,7 +244,22 @@ function BranchRow({
     canManage && status !== "ARCHIVED";
 
   return (
-    <article className="svx-branch-row">
+    <article
+      className="svx-branch-row svx-branch-row-clickable"
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${branch?.name || "Branch"}`}
+      onClick={() => onView(branch)}
+      onKeyDown={(event) => {
+        if (
+          event.target === event.currentTarget &&
+          (event.key === "Enter" || event.key === " ")
+        ) {
+          event.preventDefault();
+          onView(branch);
+        }
+      }}
+    >
       <div className="svx-branch-row-main">
         <div className="svx-branch-code-mark svx-branch-row-mark">
           {String(branch?.code || "BR").slice(0, 2)}
@@ -254,7 +269,7 @@ function BranchRow({
           <div className="svx-branch-row-title">
             <strong>{branch?.name || "Branch"}</strong>
             {branch?.isMain ? (
-              <Pill className="bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+              <Pill className="svx-branch-main-label">
                 Main
               </Pill>
             ) : null}
@@ -264,7 +279,7 @@ function BranchRow({
 
       <div className="svx-branch-row-location">
         <span>Location</span>
-        <strong>{location || "Not set"}</strong>
+        <strong>{location || "Location not added"}</strong>
       </div>
 
       <div className="svx-branch-row-status">
@@ -272,17 +287,25 @@ function BranchRow({
       </div>
 
       <div className="svx-branch-row-actions">
-        <button type="button" onClick={() => onView(branch)}>
-          View
-        </button>
         {canEdit ? (
           <button
             type="button"
-            onClick={() => onEdit(branch)}
+            onClick={(event) => {
+              event.stopPropagation();
+              onEdit(branch);
+            }}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+            }}
+            aria-label={`Edit ${branch?.name || "Branch"}`}
           >
             Edit
           </button>
-        ) : null}
+        ) : (
+          <span className="svx-branch-open-hint" aria-hidden="true">
+            Details →
+          </span>
+        )}
       </div>
     </article>
   );
@@ -509,14 +532,14 @@ function BranchDetailsDrawer({
         <div className="svx-branch-code-mark">{String(branch?.code || "BR").slice(0, 2)}</div>
 
         <div className="min-w-0">
-          <strong>{branch?.name || "Branch"}</strong>
-          <span>{branch?.code || "NO_CODE"}</span>
+
+          <span>{String(branch?.code || "No code").replaceAll("_", " ")}</span>
         </div>
 
         <div className="svx-branch-drawer-pills">
           <Pill className={statusTone(branch?.status)}>{branch?.status || "UNKNOWN"}</Pill>
           {branch?.isMain ? (
-            <Pill className="bg-[var(--color-primary-soft)] text-[var(--color-primary)]">
+            <Pill className="svx-branch-main-label">
               Main branch
             </Pill>
           ) : null}
@@ -538,7 +561,7 @@ function BranchDetailsDrawer({
         <DetailLine label="District" value={branch?.district} />
         <DetailLine label="Sector" value={branch?.sector} />
         <DetailLine label="Address" value={branch?.address} />
-        <DetailLine label="Full location" value={location || "Not set"} />
+        <DetailLine label="Full location" value={location || "Location not added"} />
       </section>
 
       <section className="svx-branch-drawer-section">
@@ -635,6 +658,7 @@ function BranchCreateDrawer({ open, form, setForm, saving, canCreate, usage, onC
 
       <form id="svx-branch-create-form" onSubmit={onSubmit} className="svx-branch-drawer-form">
         <div className="svx-branch-form-grid grid gap-4 sm:grid-cols-2">
+          <h4 className="svx-branch-form-group-title">Branch information</h4>
           <div>
             <label className={fieldLabel()}>Branch name</label>
             <input className={inputClass()} value={form.name} disabled={disabled} onChange={(event) => setField("name", event.target.value)} placeholder="Example: Downtown branch" required />
@@ -646,6 +670,7 @@ function BranchCreateDrawer({ open, form, setForm, saving, canCreate, usage, onC
             <p className={fieldHelp()}>Use a short owner-friendly code. Example: MAIN, CBD, WEST.</p>
           </div>
 
+          <h4 className="svx-branch-form-group-title">Contact details</h4>
           <div>
             <label className={fieldLabel()}>Phone</label>
             <input className={inputClass()} value={form.phone} disabled={disabled} onChange={(event) => setField("phone", event.target.value)} placeholder="Phone number" />
@@ -656,6 +681,7 @@ function BranchCreateDrawer({ open, form, setForm, saving, canCreate, usage, onC
             <input type="email" className={inputClass()} value={form.email} disabled={disabled} onChange={(event) => setField("email", event.target.value)} placeholder="branch@store.com" />
           </div>
 
+          <h4 className="svx-branch-form-group-title">Location</h4>
           <div>
             <label className={fieldLabel()}>District</label>
             <input className={inputClass()} value={form.district} disabled={disabled} onChange={(event) => setField("district", event.target.value)} placeholder="Example: Central" />
@@ -710,6 +736,7 @@ function BranchEditDrawer({ branch, open, form, setForm, saving, onClose, onSubm
     >
       <form id="svx-branch-edit-form" onSubmit={onSubmit} className="svx-branch-drawer-form">
         <div className="svx-branch-form-grid grid gap-4 sm:grid-cols-2">
+          <h4 className="svx-branch-form-group-title">Branch information</h4>
           <div>
             <label className={fieldLabel()}>Branch name</label>
             <input className={inputClass()} value={form.name} disabled={saving} onChange={(event) => setField("name", event.target.value)} required />
@@ -717,10 +744,15 @@ function BranchEditDrawer({ branch, open, form, setForm, saving, onClose, onSubm
 
           <div>
             <label className={fieldLabel()}>Branch code</label>
-            <input className={inputClass()} value={form.code} disabled={saving || branch?.isMain} onChange={(event) => setField("code", normalizeBranchCode(event.target.value))} required />
+            <input className={inputClass()} value={
+              branch?.isMain
+                ? String(form.code || "").replaceAll("_", " ")
+                : form.code
+            } disabled={saving || branch?.isMain} onChange={(event) => setField("code", normalizeBranchCode(event.target.value))} required />
             <p className={fieldHelp()}>{branch?.isMain ? "Main branch code is protected." : "Use a short owner-friendly code."}</p>
           </div>
 
+          <h4 className="svx-branch-form-group-title">Contact details</h4>
           <div>
             <label className={fieldLabel()}>Phone</label>
             <input className={inputClass()} value={form.phone} disabled={saving} onChange={(event) => setField("phone", event.target.value)} placeholder="Phone number" />
@@ -731,6 +763,7 @@ function BranchEditDrawer({ branch, open, form, setForm, saving, onClose, onSubm
             <input type="email" className={inputClass()} value={form.email} disabled={saving} onChange={(event) => setField("email", event.target.value)} placeholder="branch@store.com" />
           </div>
 
+          <h4 className="svx-branch-form-group-title">Location</h4>
           <div>
             <label className={fieldLabel()}>District</label>
             <input className={inputClass()} value={form.district} disabled={saving} onChange={(event) => setField("district", event.target.value)} placeholder="Example: Central" />
@@ -1152,121 +1185,87 @@ export default function SettingsBranches() {
   }
 
   return (
-    <div className="svx-settings-page svx-settings-branches space-y-6">
-      <section className={cx(pageCard(), "svx-branch-overview-card p-5 sm:p-6")}>
-        <SectionHeader
-          eyebrow="Branches"
-          title="Branch control"
-          text="Manage the physical locations used by your business. Sales, stock, reports, documents and staff access depend on the correct branch."
-          action={
-            <div className="svx-branch-page-actions">
-              <AsyncButton
-                type="button"
-                variant="secondary"
-                loading={refreshing}
-                loadingText="Refreshing..."
-                onClick={() => load({ quiet: true })}
-              >
-                Refresh
-              </AsyncButton>
-
-              {canManage ? (
-                <button
-                  type="button"
-                  className="svx-branch-primary-action"
-                  disabled={!hasBranchCapacity}
-                  onClick={openCreate}
-                >
-                  Add branch
-                </button>
-              ) : null}
-            </div>
-          }
-        />
-
-        <div className="svx-branch-summary-grid mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard
-            label="Active branches"
-            value={usage?.activeBranches ?? activeBranches.length}
-            note="Branches currently counted against the plan."
-            tone="success"
-          />
-
-          <SummaryCard
-            label="Branch limit"
-            value={limitLabel}
-            note={
-              subscription?.planKey
-                ? `${planLabel(subscription.planKey)} plan capacity.`
-                : "Current plan capacity."
-            }
-            tone={usage?.atLimit ? "warning" : "neutral"}
-          />
-
-          <SummaryCard
-            label="Main branch"
-            value={mainBranch?.name || "—"}
-            note={
-              mainBranch?.code
-                ? `Code ${mainBranch.code}`
-                : tenant?.name || "Main branch not found."
-            }
-            tone={mainBranch ? "success" : "warning"}
-          />
-
-          <SummaryCard
-            label="Branch capacity"
-            value={
-              hasBranchCapacity ? "Available" : "Full"
-            }
-            note={
-              hasBranchCapacity
-                ? "Plan still has room for another active branch."
-                : "Plan branch limit is reached."
-            }
-            tone={
-              hasBranchCapacity
-                ? "success"
-                : "warning"
-            }
-          />
+    <div className="svx-settings-page svx-settings-branches svx-branches-compact">
+      <header className="svx-branches-compact-heading">
+        <div>
+          <h1>Branches</h1>
+          <p>Manage your business locations and their details.</p>
         </div>
-      </section>
 
-      <section className={cx(pageCard(), "svx-branch-list-card p-5 sm:p-6")}>
-        <SectionHeader
-          eyebrow="Current branches"
-          title="Store branch list"
-          text="This is the branch structure currently attached to the store."
-        />
+        <div className="svx-branches-compact-actions">
+          <AsyncButton
+            type="button"
+            variant="secondary"
+            loading={refreshing}
+            loadingText="Refreshing..."
+            onClick={() => load({ quiet: true })}
+          >
+            Refresh
+          </AsyncButton>
 
-        <div className="mt-6">
-          {sortedBranches.length ? (
-            <div className="svx-branch-list-rows">
-              <div className="svx-branch-list-head">
-                <span>Branch</span>
-                <span>Location</span>
-                <span>Status</span>
-                <span>Actions</span>
-              </div>
-
-              {sortedBranches.map((branch) => (
-                <BranchRow
-                  key={branch.id}
-                  branch={branch}
-                  onView={openView}
-                  onEdit={openEdit}
-                  canManage={canManage}
-                />
-              ))}
-            </div>
-          ) : (
-            <EmptyState
-              title="No branches found"
-              text="The store should have at least one main branch. Refresh first, then check backend branch creation if this remains empty."
-            />
-          )}
+          {canManage ? (
+            <button
+              type="button"
+              className="svx-branch-primary-action"
+              disabled={!hasBranchCapacity}
+              onClick={openCreate}
+            >
+              Add branch
+            </button>
+          ) : null}
         </div>
+      </header>
+
+      <div className="svx-branches-compact-usage">
+        <strong>
+          {usage?.activeBranches ?? activeBranches.length}
+          {" active "}
+          {(usage?.activeBranches ?? activeBranches.length) === 1
+            ? "branch"
+            : "branches"}
+        </strong>
+
+        <span aria-hidden="true">/</span>
+
+        <span>
+          {limitLabel === "Unlimited"
+            ? "No branch limit"
+            : `${limitLabel} allowed on your plan`}
+        </span>
+
+        {!hasBranchCapacity ? (
+          <span className="svx-branches-compact-limit">
+            Branch limit reached
+          </span>
+        ) : null}
+      </div>
+
+      <section className="svx-branches-compact-list-section">
+        {sortedBranches.length ? (
+          <div className="svx-branch-list-rows">
+            <div className="svx-branch-list-head">
+              <span>Branch</span>
+              <span>Location</span>
+              <span>Status</span>
+              <span>Actions</span>
+            </div>
+
+            {sortedBranches.map((branch) => (
+              <BranchRow
+                key={branch.id}
+                branch={branch}
+                onView={openView}
+                onEdit={openEdit}
+                canManage={canManage}
+              />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="No branches found"
+            text="We couldn't find your business locations. Refresh the list or contact support if your main branch is missing."
+          />
+        )}
       </section>
 
       <BranchCreateDrawer

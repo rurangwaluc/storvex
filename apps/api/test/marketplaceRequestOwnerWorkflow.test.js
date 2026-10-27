@@ -109,6 +109,28 @@ test(
 );
 
 test(
+  "uses the seller-derived delivery fee for a generic delivery",
+  () => {
+    assert.equal(
+      __private.resolveDeliveryFee(
+        {
+          fulfilmentMethod:
+            "DELIVERY",
+          deliveryCoverage:
+            null,
+          deliveryArea:
+            "Gasabo",
+          deliveryFee:
+            2500,
+        },
+        {},
+      ),
+      2500,
+    );
+  },
+);
+
+test(
   "requires an outside Kigali delivery cost",
   () => {
     assert.throws(

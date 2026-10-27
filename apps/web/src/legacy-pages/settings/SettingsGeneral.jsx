@@ -21,6 +21,7 @@ import { getUserRole } from "../../utils/role";
 
 import "./Settings.css";
 import "./SettingsGeneral.css";
+import "./SettingsReference324.css";
 
 function cleanString(value) {
   return String(value || "").trim();
@@ -502,11 +503,7 @@ export default function SettingsGeneral() {
     <div className="svx-settings-page svx-general-page">
       <div className="svx-general-page-heading">
         <div>
-          <h1>General</h1>
-          <p>
-            Business identity, contact
-            details and location.
-          </p>
+          <h1 className="svx-general-visually-hidden">General</h1>
         </div>
 
         <div className="svx-general-page-actions">
@@ -515,52 +512,25 @@ export default function SettingsGeneral() {
               View only
             </span>
           ) : (
-            <button
-              type="button"
-              className="svx-general-save-button"
-              disabled={!dirty || saving}
-              onClick={onSave}
-            >
-              {saving
-                ? "Saving..."
-                : dirty
-                  ? "Save changes"
-                  : "Saved"}
-            </button>
+            dirty || saving ? (
+              <button
+                type="button"
+                className="svx-general-save-button"
+                disabled={saving}
+                onClick={onSave}
+              >
+                {saving ? "Saving..." : "Save changes"}
+              </button>
+            ) : (
+              <span className="svx-general-saved-indicator" role="status">✓ Saved</span>
+            )
           )}
         </div>
       </div>
 
-      {missingRequired.length ? (
-        <div
-          className="svx-general-notice"
-          role="status"
-        >
-          <strong>
-            Complete your business details
-          </strong>
-          <p>
-            {missingRequired
-              .slice(0, 2)
-              .map(
-                (item) =>
-                  item?.label ||
-                  "Required information",
-              )
-              .join(", ")}
-            {missingRequired.length > 2
-              ? ` and ${
-                  missingRequired.length - 2
-                } more`
-              : ""}
-            .
-          </p>
-        </div>
-      ) : null}
-
       <section className="svx-general-section">
         <SectionHeading
-          title="Business identity"
+          title="Business profile"
           description="The name and logo shown across Storvex."
         />
 
@@ -683,7 +653,7 @@ export default function SettingsGeneral() {
 
       <section className="svx-general-section">
         <SectionHeading
-          title="Business location"
+          title="Business address"
           description="The address used in business records."
         />
 
@@ -750,10 +720,13 @@ export default function SettingsGeneral() {
           />
         </div>
 
-        <p className="svx-general-regional-note">
-          These are set from your business country so
-          money and dates stay consistent.
-        </p>
+        <div className="svx-general-regional-note" role="note">
+          <span className="svx-general-regional-note-symbol" aria-hidden="true">i</span>
+          <span>
+            <strong>These settings are linked to your business country.</strong>
+            <span>Contact support if your country, currency, or time zone is incorrect.</span>
+          </span>
+        </div>
       </section>
 
       {dirty && !isReadOnly ? (

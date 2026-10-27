@@ -12,11 +12,31 @@ import "./PublicHeader.css";
 
 const DARK_LOGO = "/storvex_dark.webp";
 const LIGHT_LOGO = "/storvex_white.webp";
+const HOMEPAGE_LOGO = "/storvex-header-tricolor.png";
 
 const NAVIGATION = [
   {
     label: "Solutions",
     href: "/solutions/inventory-management",
+  },
+  {
+    label: "Pricing",
+    href: "/pricing",
+  },
+  {
+    label: "Marketplace",
+    href: "/marketplace",
+  },
+];
+
+const HOMEPAGE_NAVIGATION = [
+  {
+    label: "Solutions",
+    href: "/solutions/inventory-management",
+  },
+  {
+    label: "Industries",
+    href: "/industries/electronics",
   },
   {
     label: "Pricing",
@@ -82,9 +102,14 @@ function NavigationLink({
   );
 }
 
-export default function PublicHeader() {
+export default function PublicHeader({ variant = "default" }) {
   const { isDark, toggleTheme } = useTheme();
   const pathname = usePathname() || "/";
+  const isSignupPage = pathname === "/signup";
+  const isHomepageHeader = variant === "homepage";
+  const navigation = isHomepageHeader
+    ? HOMEPAGE_NAVIGATION
+    : NAVIGATION;
 
   const [menuOpen, setMenuOpen] = useState(false);
   const headerRef = useRef(null);
@@ -152,6 +177,7 @@ export default function PublicHeader() {
       ref={headerRef}
       className={cx(
         "sp-header",
+        isHomepageHeader && "sp-header--homepage",
         menuOpen && "is-open",
       )}
     >
@@ -162,26 +188,37 @@ export default function PublicHeader() {
           aria-label="Storvex home"
           onClick={closeMenu}
         >
-          <img
-            className="sp-header__logo sp-header__logo--light"
-            src={DARK_LOGO}
-            alt="Storvex"
-            draggable="false"
-          />
-          <img
-            className="sp-header__logo sp-header__logo--dark"
-            src={LIGHT_LOGO}
-            alt=""
-            aria-hidden="true"
-            draggable="false"
-          />
+          {isHomepageHeader ? (
+            <img
+              className="sp-header__logo--homepage"
+              src={HOMEPAGE_LOGO}
+              alt="Storvex"
+              draggable="false"
+            />
+          ) : (
+            <>
+              <img
+                className="sp-header__logo sp-header__logo--light"
+                src={DARK_LOGO}
+                alt="Storvex"
+                draggable="false"
+              />
+              <img
+                className="sp-header__logo sp-header__logo--dark"
+                src={LIGHT_LOGO}
+                alt=""
+                aria-hidden="true"
+                draggable="false"
+              />
+            </>
+          )}
         </Link>
 
         <nav
           className="sp-header__nav"
           aria-label="Main navigation"
         >
-          {NAVIGATION.map((item) => (
+          {navigation.map((item) => (
             <NavigationLink
               key={item.label}
               item={item}
@@ -213,12 +250,14 @@ export default function PublicHeader() {
             Log in
           </a>
 
+{!isSignupPage ? (
           <a
             href="/signup"
             className="sp-header__trial"
           >
-            Start free trial
+            {isHomepageHeader ? "Get Started Free" : "Start free trial"}
           </a>
+          ) : null}
 
           <button
             type="button"
@@ -259,7 +298,7 @@ export default function PublicHeader() {
           aria-label="Mobile navigation"
         >
           <div className="sp-header__mobile-links">
-            {NAVIGATION.map((item) => (
+            {navigation.map((item) => (
               <NavigationLink
                 key={item.label}
                 item={item}
@@ -279,13 +318,15 @@ export default function PublicHeader() {
               Log in
             </a>
 
-            <a
+            {!isSignupPage ? (
+<a
               href="/signup"
               className="sp-header__mobile-trial"
               onClick={closeMenu}
             >
-              Start free trial
+              {isHomepageHeader ? "Get Started Free" : "Start free trial"}
             </a>
+              ) : null}
           </div>
 
           <div className="sp-header__mobile-footer">

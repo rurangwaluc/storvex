@@ -1,6 +1,9 @@
 const express = require("express");
 
 const controller = require("./marketplace.public.controller");
+const {
+  listPublicMarketplaceMarkets,
+} = require("../../config/markets");
 
 const customerAuth = require("./marketplace.customer.auth");
 const customerPasswordReset = require("./marketplace.customer.passwordReset");
@@ -8,6 +11,12 @@ const authenticateMarketplaceCustomer = require("./marketplace.customer.authenti
 const optionallyAuthenticateMarketplaceCustomer = require("./marketplace.customer.optional");
 
 const router = express.Router();
+
+router.get("/markets", (req, res) => {
+  return res.json({
+    markets: listPublicMarketplaceMarkets(),
+  });
+});
 
 router.post(
   "/customer/register",

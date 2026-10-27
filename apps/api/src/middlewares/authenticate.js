@@ -204,6 +204,7 @@ module.exports = async function authenticate(req, res, next) {
         select: {
           id: true,
           mainBranchId: true,
+          status: true,
         },
       }),
       prisma.userBranchAssignment.findMany({
@@ -242,6 +243,13 @@ module.exports = async function authenticate(req, res, next) {
       return res.status(401).json({
         message: "Tenant not found",
         code: "AUTH_TENANT_NOT_FOUND",
+      });
+    }
+
+    if (tenant.status !== "ACTIVE") {
+      return res.status(403).json({
+        message: "Retail account is unavailable",
+        code: "AUTH_TENANT_INACTIVE",
       });
     }
 

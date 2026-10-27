@@ -950,3 +950,465 @@
     background: rgba(3, 13, 26, 0.32);
   }
 }
+
+
+/* STEP 342CL-C / SIMPLE BUSINESS ACTIVITY
+   Approved Storvex Settings foundation.
+   Original audit drawer styling and behavior are retained. */
+
+.svx-settings-page.svx-activity-simple {
+  --activity-coral: #ff5961;
+  --activity-coral-hover: #ec4853;
+  --activity-text: var(--settings-text);
+  --activity-muted: var(--settings-muted);
+  --activity-border: var(--settings-border);
+  --activity-surface: var(--settings-card);
+  color: var(--activity-text);
+  width: 100%;
+  min-width: 0;
+  padding: 0 0 30px;
+}
+
+.svx-activity-heading,
+.svx-activity-filter-footer,
+.svx-activity-results-head,
+.svx-activity-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.svx-activity-heading {
+  align-items: flex-start;
+  padding: 2px 0 20px;
+  border-bottom: 1px solid var(--activity-border);
+}
+
+.svx-activity-heading h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+
+.svx-activity-heading p,
+.svx-activity-simple .svx-activity-empty p {
+  margin: 5px 0 0;
+  color: var(--activity-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.svx-activity-filters {
+  padding: 20px 0 17px;
+  border-bottom: 1px solid var(--activity-border);
+}
+
+.svx-activity-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.6fr) minmax(190px, 1fr) minmax(160px, .85fr);
+  gap: 12px;
+}
+
+.svx-activity-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 7px;
+}
+
+.svx-activity-field > span {
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.svx-activity-simple .svx-activity-field input,
+.svx-activity-simple .svx-activity-field select,
+.svx-activity-simple .svx-activity-field .app-input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  margin: 0 !important;
+  padding: 8px 12px;
+  border: 1px solid var(--activity-border);
+  border-radius: 8px;
+  background: var(--settings-input);
+  color: var(--activity-text);
+  font-size: 12px;
+  outline: none;
+}
+
+.svx-activity-simple .svx-activity-field input:focus,
+.svx-activity-simple .svx-activity-field select:focus {
+  border-color: var(--activity-coral) !important;
+  box-shadow: 0 0 0 2px rgba(255,89,97,.12) !important;
+}
+
+.svx-activity-simple .svx-activity-field input::placeholder {
+  color: var(--activity-muted);
+}
+
+.svx-activity-advanced {
+  margin-top: 14px;
+}
+
+.svx-activity-advanced summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--activity-muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.svx-activity-advanced summary span {
+  display: inline-block;
+  margin-left: 4px;
+  transition: transform .15s ease;
+}
+
+.svx-activity-advanced[open] summary span {
+  transform: rotate(180deg);
+}
+
+.svx-activity-advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 0 2px;
+}
+
+.svx-activity-filter-footer {
+  margin-top: 14px;
+}
+
+.svx-activity-count {
+  color: var(--activity-muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.svx-activity-filter-buttons,
+.svx-activity-pagination > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.svx-activity-simple button.svx-activity-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px !important;
+  width: auto !important;
+  padding: 8px 13px !important;
+  border: 1px solid var(--activity-border) !important;
+  border-radius: 8px !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: var(--activity-text) !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  text-transform: none !important;
+  transform: none !important;
+}
+
+.svx-activity-simple button.svx-activity-primary,
+:root[data-theme="dark"] .svx-activity-simple button.svx-activity-primary,
+:root[data-theme="light"] .svx-activity-simple button.svx-activity-primary {
+  background: var(--activity-coral) !important;
+  border-color: var(--activity-coral) !important;
+  color: #151515 !important;
+  -webkit-text-fill-color: #151515 !important;
+}
+
+.svx-activity-simple button.svx-activity-primary:hover:not(:disabled) {
+  background: var(--activity-coral-hover) !important;
+  border-color: var(--activity-coral-hover) !important;
+}
+
+.svx-activity-simple button.svx-activity-neutral,
+:root[data-theme="dark"] .svx-activity-simple button.svx-activity-neutral {
+  background: var(--activity-surface) !important;
+  border-color: var(--activity-border) !important;
+  color: var(--activity-text) !important;
+  -webkit-text-fill-color: var(--activity-text) !important;
+}
+
+.svx-activity-simple button.svx-activity-neutral:hover:not(:disabled) {
+  border-color: var(--activity-coral) !important;
+}
+
+.svx-activity-simple button.svx-activity-button > span,
+.svx-activity-simple button.svx-activity-button > span > span {
+  color: inherit !important;
+}
+
+.svx-activity-simple button.svx-activity-button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+.svx-activity-results {
+  padding-top: 19px;
+}
+
+.svx-activity-results-head {
+  padding: 0 0 15px;
+}
+
+.svx-activity-results-head strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.svx-activity-results-head > span {
+  color: var(--activity-muted);
+  font-size: 11px;
+}
+
+.svx-activity-column-head,
+.svx-activity-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, .9fr) minmax(0, .85fr) 18px;
+  align-items: center;
+  column-gap: 18px;
+}
+
+.svx-activity-column-head {
+  padding: 12px 13px;
+  border: 1px solid var(--activity-border);
+  border-radius: 8px 8px 0 0;
+  background: var(--activity-surface);
+  color: var(--activity-muted);
+  font-size: 10px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.svx-activity-simple button.svx-activity-item {
+  width: 100%;
+  min-width: 0;
+  padding: 15px 13px;
+  border: 1px solid var(--activity-border);
+  border-top: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--activity-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.svx-activity-simple button.svx-activity-item:hover {
+  background: var(--activity-surface);
+  transform: none;
+}
+
+.svx-activity-item-main,
+.svx-activity-item-person,
+.svx-activity-item-time {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 4px;
+}
+
+.svx-activity-item strong {
+  font-size: 12px;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.svx-activity-item small {
+  color: var(--activity-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.svx-activity-item-chevron {
+  color: var(--activity-muted);
+  text-align: right;
+  font-size: 22px;
+}
+
+.svx-activity-empty {
+  padding: 32px 16px;
+  border-top: 1px solid var(--activity-border);
+  text-align: center;
+}
+
+.svx-activity-empty strong {
+  font-size: 13px;
+}
+
+.svx-activity-pagination {
+  padding: 17px 0 4px;
+  color: var(--activity-muted);
+  font-size: 12px;
+}
+
+.svx-activity-simple button:focus-visible,
+.svx-activity-simple summary:focus-visible {
+  outline: 2px solid var(--activity-coral) !important;
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .svx-activity-filter-grid {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  }
+
+  .svx-activity-filter-grid .svx-activity-field:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .svx-activity-advanced-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .svx-activity-heading h2 { font-size: 19px; }
+
+  .svx-activity-filter-grid,
+  .svx-activity-advanced-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .svx-activity-filter-grid .svx-activity-field:last-child {
+    grid-column: auto;
+  }
+
+  .svx-activity-column-head { display: none; }
+
+  .svx-activity-simple button.svx-activity-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 8px;
+    border-top: 1px solid var(--activity-border);
+    margin-top: -1px;
+    border-radius: 0;
+  }
+
+  .svx-activity-item-main {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .svx-activity-item-chevron {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .svx-activity-item-person,
+  .svx-activity-item-time {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .svx-activity-item-person::before {
+    content: "By";
+    color: var(--activity-muted);
+    font-size: 11px;
+  }
+
+  .svx-activity-item-time::before {
+    content: "When";
+    color: var(--activity-muted);
+    font-size: 11px;
+  }
+
+  .svx-activity-results-head > span { display: none; }
+}
+
+@media (max-width: 390px) {
+  .svx-activity-filter-footer,
+  .svx-activity-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .svx-activity-filter-buttons,
+  .svx-activity-pagination > div {
+    justify-content: stretch;
+  }
+
+  .svx-activity-filter-buttons > *,
+  .svx-activity-pagination > div > * {
+    flex: 1 1 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-activity-advanced summary span { transition: none; }
+}
+
+
+/* STEP 342CL-F / REMOVE PRIMARY BLUE GLOW
+   Settings > Activity primary action only.
+   Preserve the approved coral surface and AsyncButton states. */
+
+.svx-settings-page.svx-activity-simple
+button.svx-activity-button.svx-activity-primary,
+:root[data-theme="dark"] .svx-settings-page.svx-activity-simple
+button.svx-activity-button.svx-activity-primary,
+:root[data-theme="light"] .svx-settings-page.svx-activity-simple
+button.svx-activity-button.svx-activity-primary {
+  background: #ff5961 !important;
+  background-image: none !important;
+  border-color: #ff5961 !important;
+  color: #151515 !important;
+  -webkit-text-fill-color: #151515 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
+.svx-settings-page.svx-activity-simple
+button.svx-activity-button.svx-activity-primary:hover:not(:disabled) {
+  background: #ec4853 !important;
+  border-color: #ec4853 !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.svx-settings-page.svx-activity-simple
+button.svx-activity-button.svx-activity-primary:focus-visible {
+  outline: 2px solid #ff5961 !important;
+  outline-offset: 3px !important;
+  box-shadow: none !important;
+}
+
+.svx-settings-page.svx-activity-simple
+button.svx-activity-button.svx-activity-primary:disabled {
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* STEP 342CL-G2 / ACTIVITY LOAD STATES */
+
+/* Closed advanced filters must not display their grid. */
+.svx-activity-simple
+.svx-activity-advanced:not([open]) > .svx-activity-advanced-grid {
+  display: none !important;
+}
+
+/* Hide native summary marker; keep one custom chevron. */
+.svx-activity-simple .svx-activity-advanced > summary {
+  display: list-item;
+  list-style: none;
+}
+
+.svx-activity-simple
+.svx-activity-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.svx-activity-simple
+.svx-activity-empty button.svx-activity-neutral {
+  margin-top: 16px;
+}

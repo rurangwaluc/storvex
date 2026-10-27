@@ -416,6 +416,18 @@ export default function SettingsDocuments() {
   const [docForm, setDocForm] =
     useState(documentSnapshot(null));
 
+  const [hexDraft, setHexDraft] = useState(null);
+
+  const hexValue =
+    hexDraft ?? docForm.documentPrimaryColor;
+
+  const normalizedHex = hexValue.trim().startsWith("#")
+    ? hexValue.trim()
+    : `#${hexValue.trim()}`;
+
+  const hexError =
+    !/^#[0-9a-fA-F]{6}$/.test(normalizedHex);
+
   const [copyForm, setCopyForm] =
     useState(profileSnapshot(null));
 
@@ -569,6 +581,11 @@ export default function SettingsDocuments() {
   }
 
   async function onSave() {
+    if (hexError) {
+      toast.error("Enter a valid document color before saving.");
+      return;
+    }
+
     if (isReadOnly) {
       toast.error(
         "Only the owner can update document settings",
@@ -689,30 +706,35 @@ export default function SettingsDocuments() {
               View only
             </span>
           ) : (
-            <AsyncButton
-              className="svx-docs-save-button"
-              loading={saving}
-              loadingText="Saving..."
-              disabled={!dirty || saving}
-              onClick={onSave}
-            >
-              {dirty
-                ? "Save changes"
-                : "Saved"}
-            </AsyncButton>
+            dirty || saving ? (
+              <AsyncButton
+                className="svx-docs-save-button"
+                variant="secondary"
+                loading={saving}
+                loadingText="Saving..."
+                disabled={saving || hexError}
+                onClick={onSave}
+              >
+                Save changes
+              </AsyncButton>
+            ) : (
+              <span className="svx-docs-saved-indicator" role="status">
+                ✓ Saved
+              </span>
+            )
           )}
         </div>
       </div>
 
       <section className="svx-docs-section">
         <SectionHeading
-          title="Appearance"
-          description="Choose what customers see at the top of a document."
+          title="Document appearance"
+          description="Choose the business details shown on your documents."
         />
 
         <div className="svx-docs-grid is-two">
           <SelectField
-            label="Document header"
+            label="Show at the top"
             value={
               docForm.documentHeaderDisplay
             }
@@ -726,20 +748,7 @@ export default function SettingsDocuments() {
             }
           />
 
-          <SelectField
-            label="Document spacing"
-            value={
-              docForm.documentSizeMode
-            }
-            disabled={isReadOnly}
-            options={SIZE_OPTIONS}
-            onChange={(value) =>
-              updateDocField(
-                "documentSizeMode",
-                value,
-              )
-            }
-          />
+
         </div>
 
         <div className="svx-docs-toggle-list">
@@ -772,7 +781,7 @@ export default function SettingsDocuments() {
           />
 
           <Toggle
-            label="Show printed date"
+            label="Show document date"
             checked={
               docForm.showPrintedDate
             }
@@ -787,10 +796,110 @@ export default function SettingsDocuments() {
         </div>
       </section>
 
+      <section className="svx-docs-section svx-docs-color-section">
+        <SectionHeading
+          title="Document color"
+          description="Choose your business's document accent color. The existing document layouts stay the same."
+        />
+
+        <div className="svx-docs-color-controls">
+          <label className="svx-docs-color-picker">
+            <span>Choose a color</span>
+            <input
+              type="color"
+              value={docForm.documentPrimaryColor}
+              disabled={isReadOnly}
+              aria-label="Document accent color"
+              onChange={(event) => {
+                setHexDraft(null);
+                updateDocField(
+                  "documentPrimaryColor",
+                  event.target.value.toUpperCase(),
+                );
+              }}
+            />
+          </label>
+
+          <label className="svx-docs-color-hex">
+            <span>HEX color</span>
+            <input
+              type="text"
+              value={hexValue}
+              disabled={isReadOnly}
+              maxLength={7}
+              spellCheck={false}
+              autoComplete="off"
+              aria-label="Document color HEX code"
+              aria-invalid={hexError}
+              aria-describedby={
+                hexError ? "svx-docs-color-error" : undefined
+              }
+              onChange={(event) => {
+                const next = event.target.value;
+                setHexDraft(next);
+
+                const candidate = next.trim().startsWith("#")
+                  ? next.trim()
+                  : `#${next.trim()}`;
+
+                if (/^#[0-9a-fA-F]{6}$/.test(candidate)) {
+                  updateDocField(
+                    "documentPrimaryColor",
+                    candidate.toUpperCase(),
+                  );
+                }
+              }}
+              onBlur={() => {
+                if (!hexError) {
+                  setHexDraft(null);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  event.currentTarget.blur();
+                }
+              }}
+            />
+            {hexError ? (
+              <span
+                id="svx-docs-color-error"
+                className="svx-docs-color-error"
+                role="alert"
+              >
+                Enter a valid color, for example #168DF7.
+              </span>
+            ) : null}
+          </label>
+
+          {!isReadOnly ? (
+            <button
+              type="button"
+              className="svx-docs-color-reset"
+              disabled={docForm.documentPrimaryColor === "#0F4C81"}
+              onClick={() => {
+                setHexDraft(null);
+                updateDocField(
+                  "documentPrimaryColor",
+                  "#0F4C81",
+                );
+              }}
+            >
+              Restore default
+            </button>
+          ) : null}
+        </div>
+
+        <p className="svx-docs-color-note">
+          Applies to supported document accents for this business.
+          Text and document layout remain unchanged.
+        </p>
+      </section>
+
       <section className="svx-docs-section">
         <SectionHeading
-          title="Document numbers"
-          description="Short codes used before each document number."
+          title="Document numbering"
+          description="Choose the short code used at the start of each document number."
         />
 
         <div className="svx-docs-grid is-three">
@@ -863,13 +972,13 @@ export default function SettingsDocuments() {
 
       <section className="svx-docs-section">
         <SectionHeading
-          title="Receipt message"
-          description="Short text printed on receipts."
+          title="Receipt messages"
+          description="Add an optional message at the top or bottom of receipts."
         />
 
         <div className="svx-docs-grid is-two">
           <TextareaField
-            label="Receipt header"
+            label="Message at the top"
             value={copyForm.receiptHeader}
             disabled={isReadOnly}
             placeholder="Example: Thank you for shopping with us."
@@ -882,7 +991,7 @@ export default function SettingsDocuments() {
           />
 
           <TextareaField
-            label="Receipt footer"
+            label="Message at the bottom"
             value={copyForm.receiptFooter}
             disabled={isReadOnly}
             placeholder="Example: Keep this receipt for support."
@@ -898,7 +1007,7 @@ export default function SettingsDocuments() {
 
       <section className="svx-docs-section svx-docs-section--tax">
         <SectionHeading
-          title="Tax"
+          title="Tax settings"
           description="Only show tax when the business is allowed to charge it."
         />
 
@@ -1005,13 +1114,16 @@ export default function SettingsDocuments() {
 
       <section className="svx-docs-section">
         <SectionHeading
-          title="Delivery proof"
-          description="Choose what staff must record when goods are handed over."
+          title="Delivery confirmation"
+          description="Choose the details staff must collect when handing over goods."
         />
 
         <div className="svx-docs-toggle-list is-two">
+          <div className="svx-docs-delivery-group-label">
+            Customer confirmation
+          </div>
           <Toggle
-            label="Receiver name"
+            label="Customer or receiver name"
             checked={
               docForm
                 .deliveryRequireReceiverName
@@ -1026,7 +1138,7 @@ export default function SettingsDocuments() {
           />
 
           <Toggle
-            label="Receiver phone"
+            label="Receiver phone number"
             checked={
               docForm
                 .deliveryRequireReceiverPhone
@@ -1055,6 +1167,9 @@ export default function SettingsDocuments() {
             }
           />
 
+          <div className="svx-docs-delivery-group-label">
+            Delivery details
+          </div>
           <Toggle
             label="Delivered by"
             checked={
@@ -1100,9 +1215,12 @@ export default function SettingsDocuments() {
             }
           />
 
+          <div className="svx-docs-delivery-group-label">
+            Partial delivery
+          </div>
           <Toggle
-            label="Allow partial delivery"
-            description="Use when part of an order can be delivered separately."
+            label="Allow delivery in parts"
+            description="Allow items from the same order to be delivered at different times."
             checked={
               docForm
                 .deliveryAllowPartialDelivery
@@ -1121,7 +1239,7 @@ export default function SettingsDocuments() {
       <section className="svx-docs-section">
         <details className="svx-docs-more">
           <summary>
-            Additional document notes
+            Document terms & notes
           </summary>
 
           <div className="svx-docs-more-body">
@@ -1182,13 +1300,20 @@ export default function SettingsDocuments() {
         </details>
       </section>
 
+
+
       <section className="svx-docs-section">
         <SectionHeading
-          title="Receipt preview"
-          description="A simple preview of the current setup."
+          title="Preview your receipt"
+          description="See how your receipt settings look before saving."
         />
 
-        <div className="svx-docs-preview">
+        <div
+          className="svx-docs-preview"
+          style={{
+            "--svx-document-accent": docForm.documentPrimaryColor,
+          }}
+        >
           <div className="svx-docs-preview-brand">
             {docForm.showDocumentLogo &&
             docForm.documentHeaderDisplay !==

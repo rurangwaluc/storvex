@@ -104,7 +104,12 @@ function securityHeaders() {
     "'self'",
     "'unsafe-inline'",
     "https://connect.facebook.net",
-    ...(isDevelopment ? ["'unsafe-eval'"] : []),
+    ...(isDevelopment
+      ? [
+          "'unsafe-eval'",
+          "https://checkout.flutterwave.com",
+        ]
+      : []),
   ].join(" ");
 
   const connectSources = [
@@ -131,6 +136,9 @@ function securityHeaders() {
       ? [
           "http://localhost:5000",
           "http://127.0.0.1:5000",
+          "https://checkout.flutterwave.com",
+          "https://checkout-v2.dev-flutterwave.com",
+          "https://checkout-v3.flutterwave.com",
         ]
       : []),
   ]
@@ -146,7 +154,7 @@ function securityHeaders() {
     `script-src ${scriptSources}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "img-src 'self' data: blob: https:",
+    `img-src 'self' data: blob: https:${isDevelopment ? " http://127.0.0.1:4569 http://localhost:4569" : ""}`,
     `connect-src ${connectSources}`,
     "worker-src 'self' blob:",
     "manifest-src 'self'",

@@ -1,0 +1,31 @@
+
+/* Account login uses the approved signup design foundation. */
+.svx-account-login .svx-account-login-help,
+.svx-account-login .svx-account-login-bottom {
+  color: var(--signup-muted);
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.svx-account-login .svx-account-login-help {
+  margin: 22px 0 0;
+}
+
+.svx-account-login .svx-account-login-bottom {
+  margin: 18px 0 0;
+}
+
+.svx-account-login .svx-account-login-help a,
+.svx-account-login .svx-account-login-bottom a {
+  font-weight: 700;
+  text-underline-offset: 3px;
+}
+
+.svx-account-login .svx-signup-main {
+  flex-direction: column;
+}
+
+.svx-account-login .svx-signup-card {
+  width: 100%;
+}

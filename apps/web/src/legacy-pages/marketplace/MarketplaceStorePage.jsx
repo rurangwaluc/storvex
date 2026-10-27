@@ -268,6 +268,11 @@ export default function MarketplaceStorePage() {
   const storeDetails =
     storeData?.store || null;
 
+  const storeCurrency =
+    cleanString(
+      storeDetails?.market?.currencyCode,
+    ).toUpperCase();
+
   const categories =
     Array.isArray(storeData?.categories)
       ? storeData.categories
@@ -615,8 +620,10 @@ export default function MarketplaceStorePage() {
   ]);
 
   const location = [
-    storeDetails?.location?.sector,
-    storeDetails?.location?.district,
+    storeDetails?.location?.locality ||
+      storeDetails?.location?.sector,
+    storeDetails?.location?.area ||
+      storeDetails?.location?.district,
   ]
     .filter(Boolean)
     .join(", ");
@@ -1058,7 +1065,9 @@ export default function MarketplaceStorePage() {
                         <span>Minimum</span>
 
                         <div>
-                          <b>Rwf</b>
+                          <b>
+                            {storeCurrency}
+                          </b>
                           <input
                             inputMode="numeric"
                             value={minimumPrice}
@@ -1079,7 +1088,9 @@ export default function MarketplaceStorePage() {
                         <span>Maximum</span>
 
                         <div>
-                          <b>Rwf</b>
+                          <b>
+                            {storeCurrency}
+                          </b>
                           <input
                             inputMode="numeric"
                             value={maximumPrice}

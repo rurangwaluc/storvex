@@ -19,7 +19,10 @@ import {
   formatMoney,
 } from "./MarketplaceHome";
 
-function formatDate(value) {
+function formatDate(
+  value,
+  market,
+) {
   if (!value) return "";
 
   const date = new Date(value);
@@ -28,12 +31,36 @@ function formatDate(value) {
     return "";
   }
 
-  return new Intl.DateTimeFormat(
-    "en-RW",
-    {
-      dateStyle: "medium",
-    },
-  ).format(date);
+  const locale =
+    String(
+      market?.locale || "en",
+    ).trim() || "en";
+
+  const timezone =
+    String(
+      market?.timezone || "",
+    ).trim() || undefined;
+
+  try {
+    return new Intl.DateTimeFormat(
+      locale,
+      {
+        dateStyle: "medium",
+        ...(timezone
+          ? {
+              timeZone: timezone,
+            }
+          : {}),
+      },
+    ).format(date);
+  } catch {
+    return new Intl.DateTimeFormat(
+      "en",
+      {
+        dateStyle: "medium",
+      },
+    ).format(date);
+  }
 }
 
 function receiveByLabel(value) {
@@ -349,7 +376,12 @@ export default function MarketplaceCustomerOrders() {
                 <dl className="svx-customer-order-details">
                   <div>
                     <dt>Placed</dt>
-                    <dd>{formatDate(order.placedAt)}</dd>
+                    <dd>
+                      {formatDate(
+                        order.placedAt,
+                        order.market,
+                      )}
+                    </dd>
                   </div>
 
                   <div>

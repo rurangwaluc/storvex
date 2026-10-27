@@ -1,722 +1,508 @@
-.svx-settings-security {
-  --security-card: var(--settings-card);
-  --security-panel: var(--settings-panel);
-  --security-panel-soft: color-mix(in srgb, var(--settings-panel) 68%, transparent);
-  --security-line: color-mix(in srgb, var(--settings-border) 88%, transparent);
-  --security-success: #10b981;
-  --security-warning: #f59e0b;
-  --security-danger: #ef4444;
-  --security-info: #2f8fff;
-  gap: 18px;
+/* STEP 342CK-C / SIMPLE SECURITY */
+.svx-settings-security.svx-sec-simple {
+  --sec-text: var(--color-text);
+  --sec-muted: var(--color-text-muted);
+  --sec-border: var(--color-border);
+  --sec-surface: var(--color-card);
+  max-width: 1100px;
+  min-width: 0;
+  padding: 0 0 32px;
+  color: var(--sec-text);
 }
 
-.svx-security-card {
-  overflow: hidden;
-  border: 1px solid var(--security-line);
-  border-radius: 24px;
-  background: var(--security-card);
-  box-shadow: var(--settings-shadow-soft, 0 14px 34px rgba(15, 45, 90, 0.045));
-}
-
-.svx-security-section-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
-  align-items: start;
-  padding: 22px;
-  border-bottom: 1px solid var(--security-line);
-}
-
-.svx-security-section-head.is-compact {
-  border-bottom: 0;
-  padding-bottom: 8px;
-}
-
-.svx-security-section-head h2 {
-  margin: 7px 0 0;
-  color: var(--settings-text);
-  font-family: var(--settings-heading-font);
-  font-size: clamp(24px, 2.1vw, 34px);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 1.05;
-}
-
-.svx-security-section-text {
-  max-width: 760px;
-  margin: 10px 0 0;
-  color: var(--settings-muted);
-  font-size: 14px;
-  font-weight: 650;
-  line-height: 1.6;
-}
-
-.svx-security-eyebrow {
-  margin: 0;
-  color: var(--settings-primary);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.svx-security-section-action,
-.svx-security-hero-actions,
-.svx-security-device-actions {
+.svx-sec-header,
+.svx-sec-section-heading,
+.svx-sec-device-tools,
+.svx-sec-activity-link {
   display: flex;
-  flex-wrap: wrap;
-  gap: 9px;
-  justify-content: flex-end;
-}
-
-.svx-security-button {
-  display: inline-flex;
-  min-height: 42px;
   align-items: center;
-  justify-content: center;
-  border-radius: 14px;
-  padding: 0 16px;
-  font-size: 13px;
-  font-weight: 900;
-  line-height: 1;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: transform 180ms var(--svx-ease-out), border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
-}
-
-.svx-security-button:hover {
-  transform: translateY(-1px);
-}
-
-.svx-security-button.is-primary {
-  border: 1px solid color-mix(in srgb, var(--settings-primary) 46%, var(--settings-border));
-  background: var(--settings-primary);
-  color: #ffffff !important;
-  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.16);
-}
-
-.svx-security-button.is-secondary {
-  border: 1px solid var(--security-line);
-  background: var(--security-card);
-  color: var(--settings-text) !important;
-  box-shadow: 0 10px 24px rgba(15, 45, 90, 0.035);
-}
-
-.svx-security-button.is-danger {
-  border: 1px solid color-mix(in srgb, var(--security-danger) 38%, var(--settings-border));
-  background: rgba(239, 68, 68, 0.12);
-  color: #dc2626 !important;
-  box-shadow: none;
-}
-
-:root[data-theme="dark"] .svx-security-button.is-danger {
-  color: #fca5a5 !important;
-}
-
-.svx-security-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.58;
-  transform: none;
-}
-
-.svx-security-pill {
-  display: inline-flex;
-  min-height: 28px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  padding: 0 12px;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  line-height: 1;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.svx-security-pill.is-success {
-  background: rgba(16, 185, 129, 0.13);
-  color: #059669;
-}
-
-.svx-security-pill.is-warning {
-  background: rgba(245, 158, 11, 0.13);
-  color: #d97706;
-}
-
-.svx-security-pill.is-danger {
-  background: rgba(239, 68, 68, 0.12);
-  color: #dc2626;
-}
-
-.svx-security-pill.is-process {
-  background: var(--settings-warning-soft);
-  color: var(--settings-warning);
-}
-
-.svx-security-pill.is-info {
-  background: rgba(21, 156, 255, 0.12);
-  color: var(--settings-primary);
-}
-
-.svx-security-pill.is-neutral {
-  background: var(--security-panel);
-  color: var(--settings-muted);
-}
-
-:root[data-theme="dark"] .svx-security-pill.is-success {
-  color: #34d399;
-}
-
-:root[data-theme="dark"] .svx-security-pill.is-warning {
-  color: #fbbf24;
-}
-
-:root[data-theme="dark"] .svx-security-pill.is-danger {
-  color: #fca5a5;
-}
-
-:root[data-theme="dark"] .svx-security-pill.is-process {
-  color: var(--settings-warning);
-}
-
-.svx-security-metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  padding: 18px 22px 22px;
-}
-
-.svx-security-metric {
-  position: relative;
-  min-height: 112px;
-  overflow: hidden;
-  border: 1px solid var(--security-line);
-  border-radius: 18px;
-  background: var(--security-panel);
-  padding: 16px;
-}
-
-.svx-security-metric::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: var(--settings-muted-2);
-}
-
-.svx-security-metric.is-success::before {
-  background: var(--security-success);
-}
-
-.svx-security-metric.is-warning::before,
-.svx-security-metric.is-process::before {
-  background: var(--security-warning);
-}
-
-.svx-security-metric.is-info::before {
-  background: var(--security-info);
-}
-
-.svx-security-metric span,
-.svx-security-info-item span,
-.svx-security-note-list span {
-  display: block;
-  color: var(--settings-muted-2);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.svx-security-metric strong {
-  display: block;
-  margin-top: 9px;
-  color: var(--settings-text);
-  font-family: var(--settings-heading-font);
-  font-size: clamp(22px, 2vw, 32px);
-  font-weight: 800;
-  letter-spacing: -0.045em;
-  line-height: 1;
-}
-
-.svx-security-metric p {
-  margin: 8px 0 0;
-  color: var(--settings-muted);
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.45;
-}
-
-.svx-security-grid-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
-  gap: 18px;
-}
-
-.svx-security-password-form {
-  display: grid;
-  gap: 14px;
-  padding: 0 22px 22px;
-}
-
-.svx-security-label {
-  display: block;
-  margin-bottom: 7px;
-  color: var(--settings-text);
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.svx-security-input {
-  width: 100%;
-  min-height: 46px;
-  border: 1px solid var(--security-line);
-  border-radius: 14px;
-  background: var(--security-panel);
-  color: var(--settings-text);
-  padding: 0 14px;
-  font-size: 13.5px;
-  font-weight: 800;
-  outline: none;
-  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
-}
-
-.svx-security-input:focus {
-  border-color: var(--settings-primary);
-  box-shadow: 0 0 0 4px var(--settings-ring, var(--settings-primary-ring));
-}
-
-.svx-security-check-row {
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  gap: 12px;
-  align-items: start;
-  border: 1px solid var(--security-line);
-  border-radius: 16px;
-  background: var(--security-panel);
-  padding: 14px;
-  cursor: pointer;
-}
-
-.svx-security-check-row input {
-  width: 17px;
-  height: 17px;
-  margin-top: 2px;
-  accent-color: var(--settings-primary);
-}
-
-.svx-security-check-row strong,
-.svx-security-note-card h3 {
-  display: block;
-  color: var(--settings-text);
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.svx-security-check-row small {
-  display: block;
-  margin-top: 4px;
-  color: var(--settings-muted);
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.45;
-}
-
-.svx-security-note-card {
-  padding: 22px;
-}
-
-.svx-security-note-card h3 {
-  margin-top: 8px;
-  font-family: var(--settings-heading-font);
-  font-size: 22px;
-  letter-spacing: -0.04em;
-}
-
-.svx-security-note-list {
-  display: grid;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.svx-security-note-list > div {
-  border: 1px solid var(--security-line);
-  border-radius: 16px;
-  background: var(--security-panel);
-  padding: 14px;
-}
-
-.svx-security-note-list strong {
-  display: block;
-  margin-top: 7px;
-  color: var(--settings-text);
-  font-size: 13px;
-  font-weight: 850;
-  line-height: 1.35;
-}
-
-.svx-security-session-list,
-.svx-security-event-list {
-  display: grid;
-  gap: 12px;
-  padding: 0 22px 22px;
-}
-
-.svx-security-session-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 1fr) auto;
+  justify-content: space-between;
   gap: 16px;
-  align-items: center;
-  border: 1px solid var(--security-line);
-  border-radius: 18px;
-  background: var(--security-panel);
-  padding: 16px;
 }
 
-.svx-security-row-pills {
-  display: flex;
-  flex-wrap: wrap;
+.svx-sec-header {
+  align-items: flex-start;
+  padding: 2px 0 20px;
+  border-bottom: 1px solid var(--sec-border);
+}
+
+.svx-sec-header h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+
+.svx-sec-simple p {
+  color: var(--sec-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.svx-sec-header p {
+  margin: 5px 0 0;
+  font-size: 13px;
+}
+
+/* STEP 342CK-E2 / SECURITY BUTTON FOUNDATION */
+
+.svx-settings-security.svx-sec-simple {
+  --sec-accent: #ff5961;
+  --sec-accent-hover: #ec4853;
+  --sec-accent-contrast: #151515;
+}
+
+.svx-settings-security.svx-sec-simple button.svx-sec-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 38px !important;
+  height: auto !important;
+  width: auto !important;
+  padding: 9px 14px !important;
+  border: 1px solid var(--sec-border) !important;
+  border-radius: 8px !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  font-size: 12px !important;
+  font-weight: 750 !important;
+  line-height: 1.4 !important;
+  text-transform: none !important;
+  transform: none !important;
+}
+
+.svx-settings-security.svx-sec-simple button.svx-sec-btn-primary,
+:root[data-theme="dark"] .svx-settings-security.svx-sec-simple button.svx-sec-btn-primary,
+:root[data-theme="light"] .svx-settings-security.svx-sec-simple button.svx-sec-btn-primary {
+  background: #ff5961 !important;
+  border-color: #ff5961 !important;
+  color: #151515 !important;
+  -webkit-text-fill-color: #151515 !important;
+}
+
+.svx-settings-security.svx-sec-simple button.svx-sec-btn-primary:hover:not(:disabled) {
+  background: #ec4853 !important;
+  border-color: #ec4853 !important;
+}
+
+.svx-settings-security.svx-sec-simple button.svx-sec-btn-secondary,
+:root[data-theme="dark"] .svx-settings-security.svx-sec-simple button.svx-sec-btn-secondary,
+:root[data-theme="light"] .svx-settings-security.svx-sec-simple button.svx-sec-btn-secondary {
+  background: var(--sec-surface) !important;
+  border-color: var(--sec-border) !important;
+  color: var(--sec-text) !important;
+  -webkit-text-fill-color: var(--sec-text) !important;
+}
+
+.svx-settings-security.svx-sec-simple button.svx-sec-btn-secondary:hover:not(:disabled) {
+  border-color: #ff5961 !important;
+}
+
+.svx-settings-security.svx-sec-simple button.svx-sec-btn-danger,
+:root[data-theme="dark"] .svx-settings-security.svx-sec-simple button.svx-sec-btn-danger,
+:root[data-theme="light"] .svx-settings-security.svx-sec-simple button.svx-sec-btn-danger {
+  background: transparent !important;
+  border-color: var(--sec-border) !important;
+  color: #ff5961 !important;
+  -webkit-text-fill-color: #ff5961 !important;
+}
+
+.svx-settings-security.svx-sec-simple button.svx-sec-btn-danger:hover:not(:disabled) {
+  background: rgba(255,89,97,.08) !important;
+  border-color: rgba(255,89,97,.45) !important;
+}
+
+.svx-settings-security.svx-sec-simple button.svx-sec-btn > span,
+.svx-settings-security.svx-sec-simple button.svx-sec-btn > span > span {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
+.svx-settings-security.svx-sec-simple button.svx-sec-btn:disabled {
+  opacity: .65 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+.svx-settings-security.svx-sec-simple button.svx-sec-btn:focus-visible {
+  outline: 2px solid #ff5961 !important;
+  outline-offset: 3px !important;
+}
+
+:root[data-theme="dark"] .svx-settings-security.svx-sec-simple {
+  --sec-surface: #1f1f20;
+  --sec-border: rgba(255,255,255,.11);
+}
+
+:root[data-theme="light"] .svx-settings-security.svx-sec-simple {
+  --sec-surface: #ffffff;
+  --sec-border: rgba(13,27,62,.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-settings-security.svx-sec-simple button.svx-sec-btn {
+    transition: none !important;
+  }
+}
+
+.svx-sec-section {
+  padding: 23px 0;
+  border-bottom: 1px solid var(--sec-border);
+}
+
+.svx-sec-section-heading {
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.svx-sec-section-heading h3,
+.svx-sec-activity-link strong {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.svx-sec-section-heading p,
+.svx-sec-activity-link p {
+  margin: 5px 0 0;
+}
+
+/* STEP 342CK-F / RESPONSIVE PASSWORD GRID */
+.svx-settings-security.svx-sec-simple .svx-sec-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 16px;
+  row-gap: 16px;
+  width: 100%;
+  max-width: none;
+  align-items: start;
+}
+
+.svx-settings-security.svx-sec-simple
+.svx-sec-form > label:not(.svx-sec-checkbox) {
+  min-width: 0;
+}
+
+.svx-settings-security.svx-sec-simple
+.svx-sec-form > .svx-sec-checkbox,
+.svx-settings-security.svx-sec-simple
+.svx-sec-form > .svx-sec-form-footer {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 621px) and (max-width: 900px) {
+  .svx-settings-security.svx-sec-simple .svx-sec-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .svx-settings-security.svx-sec-simple .svx-sec-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.svx-sec-form > label:not(.svx-sec-checkbox) {
+  display: grid;
   gap: 7px;
 }
 
-.svx-security-session-main h3 {
-  margin: 12px 0 0;
-  color: var(--settings-text);
-  font-size: 15px;
-  font-weight: 900;
+.svx-sec-form > label > span {
+  font-size: 12px;
+  font-weight: 750;
 }
 
-.svx-security-session-main p {
-  margin: 6px 0 0;
-  color: var(--settings-muted);
-  font-size: 12.5px;
-  font-weight: 650;
-  line-height: 1.45;
-  overflow-wrap: anywhere;
+.svx-sec-form input[type="password"] {
+  width: 100%;
+  min-height: 43px;
+  padding: 10px 13px;
+  border: 1px solid var(--sec-border);
+  border-radius: 8px;
+  background: var(--sec-surface);
+  color: var(--sec-text);
+  font-size: 13px;
+  outline: none;
 }
 
-.svx-security-info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.svx-sec-form input[type="password"]:focus {
+  border-color: #ff5961;
+  box-shadow: 0 0 0 2px rgba(255,89,97,.12);
+}
+
+.svx-sec-form input::placeholder {
+  color: var(--sec-muted);
+}
+
+.svx-sec-checkbox {
+  display: flex;
+  align-items: center;
   gap: 10px;
+  padding: 3px 0;
+  cursor: pointer;
 }
 
-.svx-security-info-item {
-  border: 1px solid var(--security-line);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--settings-card) 65%, var(--security-panel));
-  padding: 12px;
+.svx-sec-checkbox input {
+  width: 16px;
+  height: 16px;
+  accent-color: #ff5961;
+  flex: 0 0 auto;
 }
 
-.svx-security-info-item strong {
-  display: block;
-  margin-top: 7px;
-  color: var(--settings-text);
-  font-size: 12.5px;
-  font-weight: 900;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
+.svx-sec-checkbox span {
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.svx-security-row-action {
+.svx-sec-form-footer {
   display: flex;
   justify-content: flex-end;
 }
 
-.svx-security-current-device {
-  display: inline-flex;
-  min-height: 38px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--security-line);
-  border-radius: 14px;
-  background: var(--security-card);
-  color: var(--settings-muted);
-  padding: 0 14px;
+.svx-sec-device-tools {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.svx-sec-device-count {
+  color: var(--sec-muted);
   font-size: 12px;
-  font-weight: 900;
   white-space: nowrap;
 }
 
-.svx-security-event-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.72fr);
-  gap: 14px;
+.svx-sec-session {
+  display: flex;
   align-items: center;
-  border: 1px solid var(--security-line);
-  border-radius: 18px;
-  background: var(--security-panel);
-  padding: 16px;
+  gap: 14px;
+  min-height: 75px;
+  padding: 13px 0;
+  border-top: 1px solid var(--sec-border);
 }
 
-.svx-security-event-main strong {
-  display: block;
-  margin-top: 12px;
-  color: var(--settings-text);
-  font-size: 14px;
-  font-weight: 900;
+.svx-sec-device-icon {
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--sec-border);
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--sec-muted);
 }
 
-.svx-security-event-main p,
-.svx-security-event-main small {
-  display: block;
-  margin-top: 5px;
-  color: var(--settings-muted);
-  font-size: 12px;
-  font-weight: 650;
-  line-height: 1.45;
+.svx-sec-device-info {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.svx-sec-device-info strong {
+  font-size: 13px;
+  font-weight: 750;
   overflow-wrap: anywhere;
 }
 
-.svx-security-event-side {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+.svx-sec-device-info span,
+.svx-sec-device-info small {
+  font-size: 11px;
+  color: var(--sec-muted);
+  line-height: 1.4;
 }
 
-.svx-security-load-more,
-.svx-security-empty {
-  border: 1px solid var(--security-line);
-  border-radius: 16px;
-  background: var(--security-panel);
-  margin: 0 22px 22px;
-  padding: 14px;
+.svx-sec-device-info small {
+  overflow-wrap: anywhere;
 }
 
-.svx-security-load-more {
+.svx-sec-current,
+.svx-sec-muted-status {
+  font-size: 11px;
+  color: var(--sec-muted);
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.svx-sec-more {
+  width: 100%;
+  padding: 13px;
+  border-top: 1px solid var(--sec-border);
+  background: transparent;
+  color: var(--sec-text);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.svx-sec-warning {
   display: flex;
-  gap: 12px;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
+  padding: 13px 15px;
+  margin-top: 20px;
+  border: 1px solid rgba(255, 89, 97, .3);
+  border-radius: 8px;
 }
 
-.svx-security-load-more strong,
-.svx-security-empty strong {
-  color: var(--settings-text);
+.svx-sec-warning strong {
   font-size: 13px;
-  font-weight: 900;
 }
 
-.svx-security-load-more p,
-.svx-security-empty p {
+.svx-sec-warning p {
   margin: 4px 0 0;
-  color: var(--settings-muted);
+}
+
+.svx-sec-warning a,
+.svx-sec-activity-link a {
+  color: var(--sec-text);
+  white-space: nowrap;
   font-size: 12px;
-  font-weight: 650;
-  line-height: 1.45;
+  font-weight: 750;
+  text-decoration: none;
 }
 
-.svx-security-empty {
-  margin-top: 0;
-  text-align: center;
+.svx-sec-warning a:hover,
+.svx-sec-activity-link a:hover {
+  color: #ff5961;
 }
 
-/* FINAL Security dark correction.
-   Every red-marked Security section/card uses signup black/charcoal: #1F1F20. */
-:root[data-theme="dark"] .svx-settings-security {
-  --settings-bg: #0a0e17;
-  --settings-card: #1f1f20;
-  --settings-panel: #1f1f20;
-  --settings-panel-strong: #0d1d32;
-  --settings-input: #1c1c1d;
-  --settings-text: #ffffff;
-  --settings-muted: rgba(255, 255, 255, 0.72);
-  --settings-muted-2: rgba(255, 255, 255, 0.56);
-  --settings-border: rgba(255, 255, 255, 0.11);
-  --settings-input-border: rgba(255, 255, 255, 0.12);
-  --settings-primary: #159cff;
-  --settings-primary-soft: rgba(21, 156, 255, 0.14);
-  --settings-ring: rgba(21, 156, 255, 0.18);
-
-  --security-card: #1f1f20;
-  --security-panel: #1f1f20;
-  --security-panel-soft: #1f1f20;
-  --security-line: rgba(255, 255, 255, 0.11);
-
-  --color-card: #1f1f20;
-  --color-surface: #1f1f20;
-  --color-surface-2: #1f1f20;
-  --color-surface-3: #0d1d32;
-  --color-text: #ffffff;
-  --color-text-muted: rgba(255, 255, 255, 0.72);
-  --color-border: rgba(255, 255, 255, 0.11);
-  --color-primary: #159cff;
-  --color-primary-soft: rgba(21, 156, 255, 0.14);
+.svx-sec-activity-link {
+  padding: 22px 0;
 }
 
-/* Main page sections/cards marked in red. */
-:root[data-theme="dark"] .svx-settings-page:has(.svx-settings-security) > section,
-:root[data-theme="dark"] .svx-settings-page:has(.svx-security-card) > section,
-:root[data-theme="dark"] .svx-settings-page section:has(.svx-security-card),
-:root[data-theme="dark"] .svx-settings-page section:has(.svx-security-metrics-grid),
-:root[data-theme="dark"] .svx-settings-page section:has(.svx-security-password-form),
-:root[data-theme="dark"] .svx-settings-page section:has(.svx-security-session-list),
-:root[data-theme="dark"] .svx-settings-page section:has(.svx-security-event-list),
-:root[data-theme="dark"] .svx-settings-security .svx-security-card,
-:root[data-theme="dark"] .svx-settings-security .svx-settings-card {
-  background: #1f1f20 !important;
-  background-color: #1f1f20 !important;
-  border-color: rgba(255, 255, 255, 0.11) !important;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24) !important;
+.svx-sec-empty {
+  padding: 15px 0;
 }
 
-/* Inner cards/rows also stay charcoal, not navy. */
-:root[data-theme="dark"] .svx-settings-security .svx-security-metric,
-:root[data-theme="dark"] .svx-settings-security .svx-security-note-list > div,
-:root[data-theme="dark"] .svx-settings-security .svx-security-check-row,
-:root[data-theme="dark"] .svx-settings-security .svx-security-session-row,
-:root[data-theme="dark"] .svx-settings-security .svx-security-event-row,
-:root[data-theme="dark"] .svx-settings-security .svx-security-info-item,
-:root[data-theme="dark"] .svx-settings-security .svx-security-load-more,
-:root[data-theme="dark"] .svx-settings-security .svx-security-empty,
-:root[data-theme="dark"] .svx-settings-security [class*="rounded-[22px]"],
-:root[data-theme="dark"] .svx-settings-security [class*="rounded-[24px]"],
-:root[data-theme="dark"] .svx-settings-security [class*="bg-[var(--color-card)]"],
-:root[data-theme="dark"] .svx-settings-security [class*="bg-[var(--color-surface)]"],
-:root[data-theme="dark"] .svx-settings-security [class*="bg-[var(--color-surface-2)]"] {
-  background: #1f1f20 !important;
-  background-color: #1f1f20 !important;
-  border-color: rgba(255, 255, 255, 0.11) !important;
-  box-shadow: none !important;
+.svx-sec-simple button:focus-visible,
+.svx-sec-simple a:focus-visible {
+  outline: 2px solid #ff5961;
+  outline-offset: 2px;
 }
 
-/* Inputs use signup charcoal. */
-:root[data-theme="dark"] .svx-settings-security input,
-:root[data-theme="dark"] .svx-settings-security select,
-:root[data-theme="dark"] .svx-settings-security textarea,
-:root[data-theme="dark"] .svx-settings-security .app-input,
-:root[data-theme="dark"] .svx-settings-security .svx-security-input {
-  background: #1c1c1d !important;
-  background-color: #1c1c1d !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  color: #ffffff !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="dark"] .svx-settings-security input::placeholder,
-:root[data-theme="dark"] .svx-settings-security textarea::placeholder {
-  color: rgba(255, 255, 255, 0.56) !important;
-}
-
-:root[data-theme="dark"] .svx-settings-security input:focus,
-:root[data-theme="dark"] .svx-settings-security select:focus,
-:root[data-theme="dark"] .svx-settings-security textarea:focus,
-:root[data-theme="dark"] .svx-settings-security .app-input:focus,
-:root[data-theme="dark"] .svx-settings-security .svx-security-input:focus {
-  border-color: #159cff !important;
-  box-shadow: 0 0 0 4px rgba(21, 156, 255, 0.18) !important;
-}
-
-/* Buttons keep their intended hierarchy. */
-:root[data-theme="dark"] .svx-settings-security .svx-security-button.is-secondary,
-:root[data-theme="dark"] .svx-settings-security .svx-security-current-device {
-  background: #1c1c1d !important;
-  background-color: #1c1c1d !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  color: #ffffff !important;
-}
-
-@media (max-width: 1180px) {
-  .svx-security-grid-main,
-  .svx-security-session-row,
-  .svx-security-event-row {
-    grid-template-columns: minmax(0, 1fr);
+@media (max-width: 620px) {
+  .svx-sec-header h2 { font-size: 19px; }
+  .svx-sec-device-heading,
+  .svx-sec-warning {
+    align-items: flex-start;
+    flex-wrap: wrap;
   }
+  .svx-sec-device-tools { justify-content: flex-start; }
+  .svx-sec-session { gap: 10px; }
+  .svx-sec-device-icon { width: 34px; height: 34px; }
+  .svx-sec-session .svx-sec-btn { padding: 8px 10px; }
+}
 
-  .svx-security-row-action,
-  .svx-security-section-action,
-  .svx-security-hero-actions,
-  .svx-security-device-actions {
-    justify-content: flex-start;
+@media (max-width: 389px) {
+  .svx-sec-session { flex-wrap: wrap; }
+  .svx-sec-session > .svx-sec-btn {
+    margin-left: 44px;
   }
 }
 
-@media (max-width: 720px) {
-  .svx-settings-security {
-    gap: 14px;
+
+/* STEP 342CK-G2 / FINAL SECURITY UX */
+
+/* Desktop: 3 fields above, checkbox left and submit right. */
+.svx-settings-security.svx-sec-simple
+.svx-sec-form > .svx-sec-checkbox {
+  grid-column: 1 / 3 !important;
+  grid-row: 2;
+  align-self: center;
+  margin: 0 !important;
+}
+
+.svx-settings-security.svx-sec-simple
+.svx-sec-form > .svx-sec-form-footer {
+  grid-column: 3 / 4 !important;
+  grid-row: 2;
+  align-self: center;
+  justify-content: flex-end;
+  margin: 0 !important;
+}
+
+/* Make confirmation a clear, accessible inline decision. */
+.svx-settings-security.svx-sec-simple .svx-sec-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 2px 0 15px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255,89,97,.35);
+  border-radius: 9px;
+  background: var(--sec-surface);
+}
+
+.svx-settings-security.svx-sec-simple .svx-sec-confirm strong {
+  font-size: 13px;
+  color: var(--sec-text);
+}
+
+.svx-settings-security.svx-sec-simple .svx-sec-confirm p {
+  margin: 4px 0 0;
+}
+
+.svx-settings-security.svx-sec-simple .svx-sec-confirm-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.svx-settings-security.svx-sec-simple .svx-sec-confirm-cancel {
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid var(--sec-border);
+  border-radius: 8px;
+  background: var(--sec-surface);
+  color: var(--sec-text);
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.svx-settings-security.svx-sec-simple
+.svx-sec-confirm-cancel:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.svx-settings-security.svx-sec-simple
+.svx-sec-confirm-cancel:focus-visible {
+  outline: 2px solid #ff5961;
+  outline-offset: 2px;
+}
+
+@media (min-width: 621px) and (max-width: 900px) {
+  .svx-settings-security.svx-sec-simple
+  .svx-sec-form > .svx-sec-checkbox {
+    grid-column: 1 / 2 !important;
+    grid-row: auto;
   }
 
-  .svx-security-card {
-    border-radius: 18px;
+  .svx-settings-security.svx-sec-simple
+  .svx-sec-form > .svx-sec-form-footer {
+    grid-column: 2 / 3 !important;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .svx-settings-security.svx-sec-simple
+  .svx-sec-form > .svx-sec-checkbox,
+  .svx-settings-security.svx-sec-simple
+  .svx-sec-form > .svx-sec-form-footer {
+    grid-column: 1 / -1 !important;
+    grid-row: auto;
   }
 
-  .svx-security-section-head {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 12px;
-    padding: 16px;
-  }
-
-  .svx-security-section-head h2 {
-    font-size: clamp(22px, 6vw, 30px);
-  }
-
-  .svx-security-section-text {
-    font-size: 12.5px;
-    line-height: 1.5;
-  }
-
-  .svx-security-metrics-grid,
-  .svx-security-info-grid,
-  .svx-security-event-side {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .svx-security-metrics-grid {
-    gap: 10px;
-    padding: 14px 16px 16px;
-  }
-
-  .svx-security-metric {
-    min-height: auto;
-    padding: 13px;
-  }
-
-  .svx-security-metric strong {
-    font-size: clamp(20px, 6vw, 28px);
-  }
-
-  .svx-security-password-form,
-  .svx-security-session-list,
-  .svx-security-event-list {
-    padding: 0 16px 16px;
-  }
-
-  .svx-security-note-card {
-    padding: 16px;
-  }
-
-  .svx-security-session-row,
-  .svx-security-event-row {
-    padding: 13px;
-    border-radius: 16px;
-  }
-
-  .svx-security-load-more,
-  .svx-security-empty {
-    margin: 0 16px 16px;
-  }
-
-  .svx-security-load-more {
+  .svx-settings-security.svx-sec-simple .svx-sec-confirm {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .svx-security-button,
-  .svx-security-device-actions,
-  .svx-security-hero-actions {
-    width: 100%;
-  }
-
-  .svx-security-button {
-    min-height: 42px;
-  }
-}
-
-@media (max-width: 389px) {
-  .svx-security-metrics-grid,
-  .svx-security-info-grid,
-  .svx-security-event-side {
-    grid-template-columns: minmax(0, 1fr);
+  .svx-settings-security.svx-sec-simple .svx-sec-confirm-actions {
+    flex-wrap: wrap;
   }
 }

@@ -30,13 +30,22 @@ export function useTheme() {
     if (!initialized.current) return;
 
     document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.classList.toggle("dark", theme === DARK);
     document.documentElement.style.colorScheme = theme;
     storage.setTheme(theme);
   }, [theme]);
 
   useEffect(() => {
     initialized.current = true;
-    setTheme(getInitialTheme());
+    const initialTheme = getInitialTheme();
+    document.documentElement.setAttribute("data-theme", initialTheme);
+    document.documentElement.classList.toggle(
+      "dark",
+      initialTheme === DARK,
+    );
+    document.documentElement.style.colorScheme = initialTheme;
+    storage.setTheme(initialTheme);
+    setTheme(initialTheme);
   }, []);
 
   return useMemo(

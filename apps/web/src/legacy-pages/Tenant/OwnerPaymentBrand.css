@@ -1,0 +1,418 @@
+/* STORVEX STEP 97B — PREMIUM LAUNCH PLAN */
+/* Presentation only; API data and selection logic preserved. */
+
+/* Brand foundation */
+.storvex-onboarding:has(.svx-launch-plan-selector),
+.storvex-onboarding:has(.svx-launch-plan-panel) {
+  --onboard-primary: #168df7;
+  --onboard-text: #11151c;
+  --onboard-muted: #617084;
+  --onboard-border: #e3e7eb;
+  --onboard-card: #ffffff;
+  --onboard-card-soft: #f7f9fc;
+  background: #ffffff;
+}
+
+:root[data-theme="dark"]
+.storvex-onboarding:has(.svx-launch-plan-selector),
+:root[data-theme="dark"]
+.storvex-onboarding:has(.svx-launch-plan-panel) {
+  --onboard-primary: #42a5ff;
+  --onboard-text: #f7f8fa;
+  --onboard-muted: #b5bdc9;
+  --onboard-border: #343638;
+  --onboard-card: #1b1c1e;
+  --onboard-card-soft: #171819;
+  background: #111213;
+}
+
+/* Completed steps retain green; active Step 3 becomes lime. */
+.storvex-onboarding:has(.svx-launch-plan-selector)
+.svx-onboard-progress .is-active .svx-onboard-progress-number,
+.storvex-onboarding:has(.svx-launch-plan-panel)
+.svx-onboard-progress .is-active .svx-onboard-progress-number {
+  background: #dff448;
+  border-color: #dff448;
+  color: #111213;
+}
+
+.storvex-onboarding:has(.svx-launch-plan-selector)
+.svx-onboard-progress .is-active .svx-onboard-progress-label,
+.storvex-onboarding:has(.svx-launch-plan-panel)
+.svx-onboard-progress .is-active .svx-onboard-progress-label {
+  color: var(--onboard-text);
+}
+
+/* Remove the heavy enclosing pricing panel entirely. */
+.storvex-onboarding .svx-launch-plan-selector--premium {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  overflow: visible;
+  margin-top: 38px;
+}
+
+/* Selection introduction: separate from the cards. */
+.storvex-onboarding .svx-launch-plan-selector--premium
+> div:first-child {
+  padding: 0 0 26px !important;
+  border: 0 !important;
+  gap: 24px;
+}
+
+.storvex-onboarding .svx-launch-plan-selector--premium
+> div:first-child h2 {
+  font-size: clamp(27px, 2.6vw, 37px);
+  font-weight: 800;
+  line-height: 1.13;
+  letter-spacing: -.05em;
+}
+
+.storvex-onboarding .svx-launch-plan-selector--premium
+> div:first-child p:last-child {
+  max-width: 630px;
+  line-height: 1.65;
+  color: var(--onboard-muted);
+}
+
+/* Independent cards */
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--onboard-card) !important;
+  border: 1px solid var(--onboard-border) !important;
+  border-radius: 22px !important;
+  padding: 30px 25px !important;
+  box-shadow: 0 12px 35px rgba(13, 30, 52, .045);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+:root[data-theme="dark"]
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice {
+  box-shadow: none;
+}
+
+@media (hover: hover) {
+  .storvex-onboarding .svx-launch-plan-selector--premium
+  .svx-launch-choice:hover {
+    transform: translateY(-3px);
+    border-color: #8aafcf !important;
+    box-shadow: 0 15px 40px rgba(13, 30, 52, .09);
+  }
+}
+
+/* Recommended is distinct but not selected. */
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice.is-recommended:not(.is-active) {
+  border-color: #69adf5 !important;
+  box-shadow: 0 0 0 1px rgba(22, 141, 247, .16);
+}
+
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice.is-recommended:not(.is-active)::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 24px;
+  right: 24px;
+  height: 3px;
+  background: #168df7;
+  border-radius: 0 0 5px 5px;
+}
+
+/* Only explicitly selected plans use lime. */
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice.is-active {
+  border: 2px solid #dff448 !important;
+  padding: 29px 24px !important;
+  box-shadow: 0 0 0 3px rgba(223, 244, 72, .12);
+}
+
+/* Clear plan typography */
+.storvex-onboarding .svx-launch-choice h3 {
+  font-family: var(--onboard-heading-font);
+  font-size: clamp(27px, 2.4vw, 33px);
+  line-height: 1.12;
+  font-weight: 800;
+  letter-spacing: -.055em;
+  color: var(--onboard-text);
+}
+
+.storvex-onboarding .svx-launch-choice
+p.text-\[9px\].uppercase {
+  font-size: 10px;
+  letter-spacing: .12em;
+  color: var(--onboard-muted);
+}
+
+.storvex-onboarding .svx-launch-choice > p {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.65;
+  color: var(--onboard-muted);
+}
+
+/* Pricing is the strongest element in each card after the name. */
+.storvex-onboarding .svx-launch-choice > div.border-y {
+  margin-top: 25px;
+  padding: 25px 0;
+  border-color: var(--onboard-border);
+}
+
+.storvex-onboarding .svx-launch-choice
+> div.border-y > p:first-child {
+  font-family: var(--onboard-heading-font);
+  font-size: clamp(31px, 2.9vw, 40px);
+  line-height: 1.12;
+  font-weight: 800;
+  letter-spacing: -.06em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  color: var(--onboard-text);
+}
+
+.storvex-onboarding .svx-launch-choice
+> div.border-y > p:last-child {
+  margin-top: 10px;
+  color: var(--onboard-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* Plan capacities */
+.storvex-onboarding .svx-launch-choice
+> div.grid {
+  gap: 14px;
+}
+
+.storvex-onboarding .svx-launch-choice
+> div.grid > p {
+  font-size: 13px;
+  line-height: 1.55;
+  font-weight: 650;
+  color: var(--onboard-text);
+}
+
+/* Feature details */
+.storvex-onboarding .svx-launch-choice ul {
+  gap: 12px;
+}
+
+.storvex-onboarding .svx-launch-choice li {
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.storvex-onboarding .svx-launch-choice li > span:first-child {
+  color: #168df7;
+}
+
+/* Unselected action is quiet. */
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice > button {
+  min-height: 50px;
+  width: 100%;
+  margin-top: auto;
+  border-radius: 12px;
+  border: 1px solid var(--onboard-border);
+  background: var(--onboard-card-soft);
+  color: var(--onboard-text);
+  font-weight: 800;
+  font-size: 13px;
+  transition: background 180ms ease, color 180ms ease;
+}
+
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice > button:hover:not(:disabled) {
+  background: #ff5961;
+  border-color: #ff5961;
+  color: #fff;
+}
+
+/* Strong primary action on recommended plan. */
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice.is-recommended:not(.is-active) > button {
+  background: #ff5961;
+  border-color: #ff5961;
+  color: #fff;
+}
+
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice.is-recommended:not(.is-active)
+> button:hover {
+  background: #eb4852;
+}
+
+/* Already selected is distinct from recommended. */
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice.is-active > button:disabled {
+  background: #dff448;
+  border-color: #dff448;
+  color: #111213;
+  opacity: 1;
+}
+
+/* Trial reassurance stays readable. */
+.storvex-onboarding .svx-launch-choice > p:last-child {
+  margin-top: 14px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--onboard-muted);
+}
+
+/* Clear visual finish below cards. */
+.storvex-onboarding .svx-launch-plan-selector--premium
+> p:last-child {
+  text-align: center;
+  max-width: 760px;
+  margin: 25px auto 0;
+  color: var(--onboard-muted);
+  line-height: 1.65;
+}
+
+/* Selected-plan confirmation also matches the new system. */
+.storvex-onboarding .svx-launch-plan-panel {
+  border: 1px solid var(--onboard-border);
+  border-radius: 23px;
+  background: var(--onboard-card);
+  box-shadow: 0 12px 35px rgba(13, 30, 52, .045);
+}
+
+.storvex-onboarding .svx-launch-plan-detail {
+  background: var(--onboard-card-soft);
+  border-color: var(--onboard-border);
+  border-radius: 16px;
+}
+
+.storvex-onboarding .svx-launch-plan-panel h2,
+.storvex-onboarding .svx-launch-plan-panel h3 {
+  font-family: var(--onboard-heading-font);
+  letter-spacing: -.05em;
+}
+
+.storvex-onboarding .svx-launch-plan-panel
+button[aria-busy] {
+  background: #ff5961;
+  border-color: #ff5961;
+  color: #fff;
+  border-radius: 12px;
+}
+
+.storvex-onboarding .svx-launch-plan-panel
+button[aria-busy]:hover:not(:disabled) {
+  background: #eb4852;
+}
+
+/* Keyboard focus */
+.storvex-onboarding .svx-launch-choice button:focus-visible,
+.storvex-onboarding .svx-launch-plan-panel button:focus-visible {
+  outline: 3px solid #168df7;
+  outline-offset: 3px;
+}
+
+/* Responsive presentation */
+@media (max-width: 1050px) {
+  .storvex-onboarding .svx-launch-plan-selector--premium
+  .svx-launch-choice {
+    padding: 23px 19px !important;
+  }
+
+  .storvex-onboarding .svx-launch-plan-selector--premium
+  .svx-launch-choice.is-active {
+    padding: 22px 18px !important;
+  }
+
+  .storvex-onboarding .svx-launch-choice
+  > div.border-y > p:first-child {
+    font-size: 30px;
+  }
+}
+
+@media (max-width: 760px) {
+  .storvex-onboarding .svx-launch-plan-selector--premium {
+    margin-top: 24px;
+  }
+
+  .storvex-onboarding .svx-launch-plan-selector--premium
+  > div:first-child {
+    gap: 15px;
+  }
+
+  .storvex-onboarding .svx-launch-plan-selector--premium
+  .svx-launch-choice {
+    padding: 25px 20px !important;
+    border-radius: 18px !important;
+  }
+
+  .storvex-onboarding .svx-launch-plan-selector--premium
+  .svx-launch-choice.is-active {
+    padding: 24px 19px !important;
+  }
+
+  .storvex-onboarding .svx-launch-choice
+  > div.border-y > p:first-child {
+    font-size: 33px;
+  }
+}
+
+@media (max-width: 360px) {
+  .storvex-onboarding .svx-launch-plan-selector--premium
+  .svx-launch-choice {
+    padding: 20px 15px !important;
+  }
+
+  .storvex-onboarding .svx-launch-plan-selector--premium
+  .svx-launch-choice.is-active {
+    padding: 19px 14px !important;
+  }
+
+  .storvex-onboarding .svx-launch-choice
+  > div.border-y > p:first-child {
+    font-size: 28px;
+  }
+}
+
+/* STORVEX STEP 98 — LIME RECOMMENDATION */
+/* Recommended is not selected. Status and behavior unchanged. */
+
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice.is-recommended:not(.is-active) {
+  border-color: #dff448 !important;
+  box-shadow: 0 0 0 1px rgba(223, 244, 72, .22);
+}
+
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice.is-recommended:not(.is-active)::before {
+  background: #dff448;
+}
+
+/* Preserve coral as the primary action. */
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice.is-recommended:not(.is-active) > button {
+  background: #ff5961;
+  border-color: #ff5961;
+  color: #ffffff;
+}
+
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice.is-recommended:not(.is-active)
+> button:hover:not(:disabled) {
+  background: #eb4852;
+  border-color: #eb4852;
+}
+
+/* Selected remains a separate state. */
+.storvex-onboarding .svx-launch-plan-selector--premium
+.svx-launch-choice.is-active {
+  border-color: #dff448 !important;
+}

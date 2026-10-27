@@ -369,43 +369,28 @@ function AuditSkeleton() {
   );
 }
 
+/* STEP 342CL-C / SIMPLE BUSINESS ACTIVITY */
 function AuditRowCard({ item, onOpen }) {
-  const value = auditValue(item);
-
   return (
-    <button type="button" className="svx-audit-row" onClick={() => onOpen(item.id)}>
-      <div className="svx-audit-row-cell svx-audit-row-main" data-label="Activity">
-        <div className="svx-audit-row-badges">
-          <AuditBadge value={item.action} tone="action" />
-          <AuditBadge value={item.entity} tone="entity" />
-        </div>
+    <button
+      type="button"
+      className="svx-activity-item"
+      onClick={() => onOpen(item.id)}
+      aria-label={`View details: ${activityTitle(item)}`}
+    >
+      <span className="svx-activity-item-main">
         <strong>{activityTitle(item)}</strong>
-        <span>{scopeNote(item)}</span>
-      </div>
-
-      <div className="svx-audit-row-cell" data-label="Branch">
-        <strong>{scopeLabel(item)}</strong>
-        <span>{item.branch ? "Branch record" : "Store-wide"}</span>
-      </div>
-
-      <div className="svx-audit-row-cell" data-label="Done by">
+        <small>{scopeLabel(item)}</small>
+      </span>
+      <span className="svx-activity-item-person">
         <strong>{item.user?.name || "System"}</strong>
-        <span>{item.user?.role ? prettifyEnum(item.user.role) : "Automatic action"}</span>
-      </div>
-
-      <div className="svx-audit-row-cell" data-label="Time">
+        <small>{item.user?.role ? prettifyEnum(item.user.role) : "Automatic action"}</small>
+      </span>
+      <span className="svx-activity-item-time">
         <strong>{formatDate(item.createdAt)}</strong>
-        <span>{formatDateTime(item.createdAt)}</span>
-      </div>
-
-      <div className="svx-audit-row-cell" data-label="Summary">
-        <strong>{value}</strong>
-        <span>Saved</span>
-      </div>
-
-      <div className="svx-audit-row-cell svx-audit-row-action" data-label="Action">
-        <span>View</span>
-      </div>
+        <small>{formatDateTime(item.createdAt)}</small>
+      </span>
+      <span className="svx-activity-item-chevron" aria-hidden="true">›</span>
     </button>
   );
 }
@@ -531,6 +516,8 @@ function BranchSelect({ branches, value, onChange, viewerAccess }) {
 export default function SettingsAudit() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // STEP 342CL-G2 / ACTIVITY LOAD STATES
+  const [loadError, setLoadError] = useState(false);
 
   const [stats, setStats] = useState(null);
   const [branches, setBranches] = useState([]);
@@ -583,6 +570,7 @@ export default function SettingsAudit() {
         }),
       ]);
 
+      setLoadError(false);
       setBranches(Array.isArray(branchRes?.branches) ? branchRes.branches : []);
       setViewerAccess(logsRes?.viewerAccess || statsRes?.stats?.viewerAccess || branchRes?.viewerAccess || null);
       setStats(statsRes?.stats || null);
@@ -593,8 +581,10 @@ export default function SettingsAudit() {
     } catch (err) {
       console.error(err);
       toast.error(err?.message || "Failed to load activity history");
+      setLoadError(true);
       setList([]);
       setStats(null);
+      setTotal(0);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -683,162 +673,211 @@ export default function SettingsAudit() {
         }}
       />
 
-      <div className="svx-settings-page svx-settings-audit-page">
-        <section className={cx(pageCard(), "svx-audit-filter-card")}>
-          <div className="svx-audit-filter-head">
-            <div>
-              <div className={sectionEyebrow()}>Activity filters</div>
-              <h2>Find activity</h2>
-              <p>Filter business activity by person, branch, type, or date.</p>
-            </div>
-
-            <div className="svx-audit-visible-count">
-              <span>Visible results</span>
-              <strong>{total}</strong>
-            </div>
+      <div className="svx-settings-page svx-activity-simple">
+        <header className="svx-activity-heading">
+          <div>
+            <h2>Business activity</h2>
+            <p>See what happened, who did it, and when.</p>
           </div>
+          <AsyncButton
+            type="button"
+            variant="secondary"
+            loading={refreshing}
+            loadingText="Refreshing..."
+            onClick={() => loadAll({ nextPage: page })}
+            className="svx-activity-button svx-activity-neutral"
+          >
+            Refresh
+          </AsyncButton>
+        </header>
 
-          <div className="svx-audit-filter-grid">
-            <div className="svx-audit-field is-search">
-              <label className={cx("text-sm font-black", strongText())}>Search</label>
+        <form
+          className="svx-activity-filters"
+          onSubmit={(event) => {
+            event.preventDefault();
+            applyFilters();
+          }}
+        >
+          <div className="svx-activity-filter-grid">
+            <label className="svx-activity-field svx-activity-search">
+              <span>Search</span>
               <input
-                className={cx(inputClass(), "mt-2")}
-                placeholder="Search user, branch, or activity..."
+                type="search"
+                placeholder="Search people, branches or activity..."
                 value={filters.q}
                 onChange={(event) => updateFilter("q", event.target.value)}
               />
-            </div>
+            </label>
 
-            <div className="svx-audit-field">
-              <label className={cx("text-sm font-black", strongText())}>Branch</label>
+            <label className="svx-activity-field">
+              <span>Branch</span>
               <BranchSelect
                 branches={branches}
                 value={filters.branchId}
                 viewerAccess={viewerAccess}
                 onChange={(value) => updateFilter("branchId", value)}
               />
-            </div>
+            </label>
 
-            <div className="svx-audit-field">
-              <label className={cx("text-sm font-black", strongText())}>Action</label>
+            <label className="svx-activity-field">
+              <span>Action</span>
               <input
-                className={cx(inputClass(), "mt-2")}
-                placeholder="Created, updated, deleted..."
+                type="text"
+                list="svx-activity-action-options"
+                placeholder="All actions"
                 value={filters.action}
                 onChange={(event) => updateFilter("action", event.target.value)}
               />
-            </div>
+              <datalist id="svx-activity-action-options">
+                <option value="CREATE" />
+                <option value="UPDATE" />
+                <option value="DELETE" />
+                <option value="LOGIN" />
+              </datalist>
+            </label>
+          </div>
 
-            <div className="svx-audit-field">
-              <label className={cx("text-sm font-black", strongText())}>Area</label>
-              <input
-                className={cx(inputClass(), "mt-2")}
-                placeholder="Sales, products, branches..."
-                value={filters.entity}
-                onChange={(event) => updateFilter("entity", event.target.value)}
-              />
+          <details className="svx-activity-advanced">
+            <summary>More filters <span aria-hidden="true">⌄</span></summary>
+            <div className="svx-activity-advanced-grid">
+              <label className="svx-activity-field">
+                <span>Business area</span>
+                <input
+                  type="text"
+                  placeholder="Sales, staff, inventory..."
+                  value={filters.entity}
+                  onChange={(event) => updateFilter("entity", event.target.value)}
+                />
+              </label>
+              <label className="svx-activity-field">
+                <span>From date</span>
+                <input
+                  type="date"
+                  value={filters.from}
+                  onChange={(event) => updateFilter("from", event.target.value)}
+                />
+              </label>
+              <label className="svx-activity-field">
+                <span>To date</span>
+                <input
+                  type="date"
+                  value={filters.to}
+                  onChange={(event) => updateFilter("to", event.target.value)}
+                />
+              </label>
+              <label className="svx-activity-field">
+                <span>Record scope</span>
+                <select
+                  value={filters.includeWorkspaceWide ? "YES" : "NO"}
+                  onChange={(event) =>
+                    updateFilter("includeWorkspaceWide", event.target.value === "YES")
+                  }
+                >
+                  <option value="YES">Include store-wide records</option>
+                  <option value="NO">Only branch records</option>
+                </select>
+              </label>
             </div>
+          </details>
 
-            <div className="svx-audit-field">
-              <label className={cx("text-sm font-black", strongText())}>From</label>
-              <input
-                type="date"
-                className={cx(inputClass(), "mt-2")}
-                value={filters.from}
-                onChange={(event) => updateFilter("from", event.target.value)}
-              />
-            </div>
-
-            <div className="svx-audit-field">
-              <label className={cx("text-sm font-black", strongText())}>To</label>
-              <input
-                type="date"
-                className={cx(inputClass(), "mt-2")}
-                value={filters.to}
-                onChange={(event) => updateFilter("to", event.target.value)}
-              />
-            </div>
-
-            <div className="svx-audit-field is-wide">
-              <label className={cx("text-sm font-black", strongText())}>Store-wide records</label>
-              <select
-                className={cx(inputClass(), "mt-2")}
-                value={filters.includeWorkspaceWide ? "YES" : "NO"}
-                onChange={(event) => updateFilter("includeWorkspaceWide", event.target.value === "YES")}
+          <div className="svx-activity-filter-footer">
+            <span className="svx-activity-count">
+              {loadError
+                ? "Activity unavailable"
+                : `${total} ${total === 1 ? "record" : "records"}`}
+            </span>
+            <div className="svx-activity-filter-buttons">
+              <button
+                type="button"
+                onClick={clearFilters}
+                disabled={refreshing}
+                className="svx-activity-button svx-activity-neutral"
               >
-                <option value="YES">Include store-wide records</option>
-                <option value="NO">Only branch records</option>
-              </select>
+                Clear
+              </button>
+              <AsyncButton
+                type="submit"
+                variant="primary"
+                loading={refreshing}
+                loadingText="Applying..."
+                className="svx-activity-button svx-activity-primary"
+              >
+                Apply filters
+              </AsyncButton>
             </div>
           </div>
+        </form>
 
-          <div className="svx-audit-filter-chips">
-            <FilterChip active={!filters.action} onClick={() => updateFilter("action", "")}>All</FilterChip>
-            <FilterChip active={filters.action === "CREATE"} onClick={() => updateFilter("action", "CREATE")}>Create</FilterChip>
-            <FilterChip active={filters.action === "UPDATE"} onClick={() => updateFilter("action", "UPDATE")}>Update</FilterChip>
-            <FilterChip active={filters.action === "DELETE"} onClick={() => updateFilter("action", "DELETE")}>Delete</FilterChip>
-            <FilterChip active={filters.action === "LOGIN"} onClick={() => updateFilter("action", "LOGIN")}>Login</FilterChip>
+        <section className="svx-activity-results" aria-label="Activity records">
+          <div className="svx-activity-results-head">
+            <strong>Recent activity</strong>
+            <span>Click a record to view details</span>
           </div>
 
-          <div className="svx-audit-filter-actions">
-            <AsyncButton type="button" loading={refreshing} onClick={applyFilters} className={primaryBtn()}>
-              Apply filters
-            </AsyncButton>
-
-            <button type="button" onClick={clearFilters} className={secondaryBtn()}>
-              Clear filters
-            </button>
-          </div>
-        </section>
-
-        <section className={cx(pageCard(), "svx-audit-list-card")}>
-          <div className="svx-audit-list-head">
-            <div>
-              <div className={sectionEyebrow()}>Activity list</div>
-              <h2>Business activity</h2>
-              <p>See what happened, where it happened, who did it, and when.</p>
+          {loadError ? (
+            <div className="svx-activity-empty" role="alert">
+              <strong>Could not load activity</strong>
+              <p>Activity records are unavailable. Your records have not been changed.</p>
+              <button
+                type="button"
+                className="svx-activity-button svx-activity-neutral"
+                disabled={refreshing}
+                onClick={() => loadAll({ nextPage: 1 })}
+              >
+                Try again
+              </button>
             </div>
-
-            <Badge tone="primary">{total} visible</Badge>
-          </div>
-
-          {list.length === 0 ? (
-            <EmptyState title="No activity found" text="No activity records match the current filters." />
+          ) : list.length === 0 ? (
+            <div className="svx-activity-empty">
+              <strong>
+                {filters.q || filters.action || filters.entity ||
+                 filters.from || filters.to ||
+                 filters.branchId !== "ALL" ||
+                 !filters.includeWorkspaceWide
+                  ? "No matching activity"
+                  : "No activity recorded yet"}
+              </strong>
+              <p>
+                {filters.q || filters.action || filters.entity ||
+                 filters.from || filters.to ||
+                 filters.branchId !== "ALL" ||
+                 !filters.includeWorkspaceWide
+                  ? "Try different filters or clear your search."
+                  : "Business actions will appear here when audit records are available."}
+              </p>
+            </div>
           ) : (
-            <div className="svx-audit-table">
-              <div className="svx-audit-table-head">
-                <div>Activity</div>
-                <div>Branch</div>
-                <div>Done by</div>
-                <div>Time</div>
-                <div>Summary</div>
-                <div>Action</div>
+            <>
+              <div className="svx-activity-column-head" aria-hidden="true">
+                <span>Activity</span>
+                <span>Done by</span>
+                <span>When</span>
+                <span />
               </div>
-
-              {list.map((item) => (
-                <AuditRowCard key={item.id} item={item} onOpen={openDetail} />
-              ))}
-            </div>
+              <div className="svx-activity-list">
+                {list.map((item) => (
+                  <AuditRowCard key={item.id} item={item} onOpen={openDetail} />
+                ))}
+              </div>
+            </>
           )}
 
-          <div className="svx-audit-pagination">
-            <div className={cx("text-sm font-semibold", mutedText())}>Page {page} of {totalPages}</div>
-
-            <div className="grid grid-cols-2 gap-2 sm:flex">
+          <div className="svx-activity-pagination">
+            <span>Page {page} of {totalPages}</span>
+            <div>
               <button
                 type="button"
                 onClick={() => goToPage(page - 1)}
                 disabled={page <= 1 || refreshing}
-                className={secondaryBtn()}
+                className="svx-activity-button svx-activity-neutral"
               >
                 Previous
               </button>
-
               <button
                 type="button"
                 onClick={() => goToPage(page + 1)}
                 disabled={page >= totalPages || refreshing}
-                className={secondaryBtn()}
+                className="svx-activity-button svx-activity-neutral"
               >
                 Next
               </button>

@@ -1,0 +1,432 @@
+/* STORVEX STEP 16 — locked desktop hero refinement; scoped to this hero only. */
+.storvex-landing .svx-locked-hero {
+  --svx-lime: #e4f449;
+  --svx-coral: #ff5961;
+  --svx-blue: #168df7;
+  width: min(1280px, calc(100% - 64px));
+  max-width: none;
+  margin: 12px auto 38px;
+  padding: 28px 22px 28px 44px;
+  border-radius: 22px;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--svx-lime);
+  color: #101112;
+}
+.svx-locked-hero-inner {
+  display: grid;
+  grid-template-columns: minmax(0, .43fr) minmax(0, .57fr);
+  gap: 2px;
+  align-items: center;
+  min-height: 526px;
+}
+.svx-locked-hero-copy {
+  position: relative;
+  z-index: 3;
+  min-width: 0;
+  align-self: center;
+  padding-bottom: 5px;
+}
+.storvex-landing .svx-locked-hero-copy h1 {
+  margin: 0;
+  font-family: var(--landing-heading-font), sans-serif;
+  font-size: clamp(42px, 4.15vw, 65px);
+  font-weight: 800;
+  line-height: .99;
+  letter-spacing: -.055em;
+  color: #101112;
+}
+.svx-locked-sparkle { font-size: .8em; vertical-align: .04em; white-space: nowrap; }
+.storvex-landing .svx-locked-hero-subtitle {
+  margin: 9px 0 0;
+  font-family: var(--landing-heading-font), sans-serif;
+  font-size: clamp(27px, 2.9vw, 42px);
+  font-weight: 800;
+  line-height: 1.09;
+  letter-spacing: -.045em;
+  color: #101112;
+}
+.storvex-landing .svx-locked-hero-description {
+  max-width: 385px;
+  margin: 22px 0 0;
+  font-size: clamp(14px, 1.11vw, 16px);
+  font-weight: 500;
+  line-height: 1.52;
+  color: #212522;
+}
+.svx-locked-hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 17px;
+  margin-top: 29px;
+}
+.storvex-landing .svx-locked-hero-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 17px;
+  min-width: 218px;
+  min-height: 55px;
+  padding: 0 27px;
+  border-radius: 9px;
+  background: var(--svx-coral);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 6px 10px rgba(49, 14, 14, .09);
+  transition: background .18s ease, transform .18s ease;
+}
+.storvex-landing .svx-locked-hero-button:hover { background: #ea4853; transform: translateY(-2px); }
+.storvex-landing .svx-locked-hero-button:focus-visible,
+.storvex-landing .svx-locked-hero-secondary:focus-visible { outline: 3px solid #101112; outline-offset: 4px; }
+.storvex-landing .svx-locked-hero-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+  color: #101112;
+}
+.svx-locked-hero-secondary span { font-size: 20px; line-height: 1; }
+.svx-locked-hero-arrow {
+  position: absolute;
+  z-index: -1;
+  width: 163px;
+  height: 117px;
+  left: clamp(205px, 56%, 290px);
+  bottom: 17px;
+  color: var(--svx-coral);
+  pointer-events: none;
+}
+/* A desktop and a phone composed as visual product previews, not live account data. */
+.svx-locked-hero-device-area {
+  position: relative;
+  min-width: 0;
+  height: 520px;
+  isolation: isolate;
+}
+.svx-locked-screen {
+  position: absolute;
+  z-index: 1;
+  top: 6%;
+  right: -2%;
+  width: 87%;
+  height: 85%;
+  padding: 10px;
+  border-radius: 20px;
+  background: #0d1013;
+  box-shadow: 0 26px 35px rgba(16, 21, 10, .2), 0 3px 8px rgba(0, 0, 0, .16);
+  transform: rotate(.45deg);
+}
+.svx-locked-screen-inner {
+  display: grid;
+  grid-template-columns: 18% minmax(0, 82%);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 11px;
+  background: #ffffff;
+  color: #171d29;
+  font-family: Arial, sans-serif;
+}
+.svx-locked-screen-sidebar { min-width: 0; overflow: hidden; padding: 15px 8px; border-right: 1px solid #e9edf3; background: #fbfcfe; }
+.svx-locked-screen-brand { height: 29px; margin: 0 0 22px; display: flex; align-items: center; }
+.svx-locked-screen-brand img { width: 90%; max-height: 25px; object-fit: contain; object-position: left center; }
+.svx-locked-screen-nav { display: grid; gap: 4px; }
+.svx-locked-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 27px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+  color: #718096;
+  font-size: clamp(7px, .67vw, 10px);
+}
+.svx-locked-nav-item svg { flex: 0 0 auto; width: 12px; height: 12px; }
+.svx-locked-nav-item.is-selected { color: #ffffff; background: var(--svx-blue); font-weight: 700; }
+.svx-locked-screen-content { display: flex; flex-direction: column; min-width: 0; overflow: hidden; padding: 10px 13px; }
+.svx-locked-screen-toolbar { display: flex; align-items: center; gap: 9px; min-height: 28px; }
+.svx-locked-search {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  flex: 1;
+  max-width: 78%;
+  padding: 7px 11px;
+  border-radius: 18px;
+  background: #f5f7fa;
+  color: #9ba5b4;
+  font-size: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.svx-locked-screen-toolbar-icon { margin-left: auto; color: #667085; line-height: 0; }
+.svx-locked-avatar { display: grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; background: #191a1d; color: #ffffff; font-size: 9px; }
+.svx-locked-report-title { display: flex; align-items: center; justify-content: space-between; gap: 5px; margin: 19px 0 9px; }
+.svx-locked-report-title strong { color: #14181f; font-size: clamp(11px, .9vw, 15px); font-weight: 800; letter-spacing: -.035em; }
+.svx-locked-report-title > span { display: flex; align-items: center; gap: 3px; color: #757f90; font-size: 8px; white-space: nowrap; }
+.svx-locked-chart-and-total { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; height: 27%; min-height: 90px; align-items: end; padding-bottom: 5px; }
+.svx-locked-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4.2%;
+  height: 100%;
+  padding: 3px 2px 2px;
+  border-bottom: 1px solid #e7edf5;
+  background: repeating-linear-gradient(to top, #edf1f7 0 1px, transparent 1px 25%);
+}
+.svx-locked-chart span { flex: 1; min-width: 2px; max-width: 19px; border-radius: 2px 2px 0 0; background: var(--svx-blue); }
+.svx-locked-total { display: flex; flex-direction: column; gap: 6px; align-self: center; padding-bottom: 8px; text-align: right; white-space: nowrap; }
+.svx-locked-total b { font-size: clamp(10px, 1vw, 16px); letter-spacing: -.025em; color: #171a21; }
+.svx-locked-total > span { font-size: 11px; font-weight: 800; color: #13b65b; }
+.svx-locked-summary-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; margin: 9px 0 15px; }
+.svx-locked-summary-row > div { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: 4px; padding: 6px 4px; border-radius: 6px; background: #f7f9fc; }
+.svx-locked-summary-icon { grid-row: span 2; display: grid; place-items: center; width: 21px; height: 21px; border-radius: 6px; }
+.svx-locked-summary-icon svg { width: 12px; height: 12px; }
+.svx-locked-summary-icon.is-blue { background: #e9f2ff; color: #1679ed; }
+.svx-locked-summary-icon.is-orange { background: #fff0e1; color: #f88a24; }
+.svx-locked-summary-icon.is-green { background: #e8f9ef; color: #14ad58; }
+.svx-locked-summary-icon.is-red { background: #ffeded; color: #f04452; }
+.svx-locked-summary-row small { overflow: hidden; color: #8794a5; font-size: 7px; }
+.svx-locked-summary-row b { color: #171d2a; font-size: clamp(8px, .86vw, 13px); line-height: 1; }
+.svx-locked-transactions { flex: 1; min-height: 0; overflow: hidden; }
+.svx-locked-transactions-title { display: flex; justify-content: space-between; align-items: center; margin: 0 0 5px; }
+.svx-locked-transactions-title strong { font-size: clamp(10px, .8vw, 13px); color: #16191f; }
+.svx-locked-transactions-title small { font-size: 7px; color: #9aa5b6; }
+.svx-locked-transactions-labels,
+.svx-locked-transaction { display: grid; grid-template-columns: 1.2fr .6fr 1.05fr .65fr; align-items: center; column-gap: 3px; }
+.svx-locked-transactions-labels { padding: 7px 4px; border-radius: 4px; background: #f6f8fb; color: #8793a4; font-size: 8px; }
+.svx-locked-transaction { padding: 7px 4px; border-bottom: 1px solid #f0f2f6; color: #4e6080; font-size: 8px; }
+.svx-locked-transaction > span:nth-child(3) { color: #293b6c; }
+.svx-locked-transaction > span:last-child { justify-self: end; padding: 3px 4px; border-radius: 4px; font-weight: 700; }
+.svx-locked-transaction .is-paid { background: #e6f8ea; color: #18a453; }
+.svx-locked-transaction .is-pending { background: #fff0de; color: #eb9b20; }
+/* Foreground phone */
+.svx-locked-phone {
+  position: absolute;
+  z-index: 2;
+  top: 14%;
+  left: 1%;
+  width: 30%;
+  height: 79%;
+  border: 8px solid #0c0f12;
+  border-radius: 29px;
+  background: #ffffff;
+  box-shadow: 0 21px 28px rgba(0, 0, 0, .28), 2px 4px 8px rgba(0,0,0,.17);
+  transform: rotate(-5deg);
+}
+.svx-locked-phone-notch { position: absolute; z-index: 5; top: 7px; left: 30%; width: 40%; height: 13px; border-radius: 9px; background: #0c0f12; }
+.svx-locked-phone-screen { display: flex; flex-direction: column; gap: 11px; width: 100%; height: 100%; padding: 24px 10px 8px; overflow: hidden; border-radius: 20px; background: #ffffff; color: #151a20; font-family: Arial,sans-serif; }
+.svx-locked-phone-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; height: 19px; }
+.svx-locked-phone-head img { max-width: 70%; max-height: 19px; object-fit: contain; object-position: left center; }
+.svx-locked-phone-head > span { color: #111827; font-size: 16px; font-weight: 600; }
+.svx-locked-phone-greeting { display: flex; flex-direction: column; gap: 2px; font-size: clamp(9px, .78vw, 12px); }
+.svx-locked-phone-greeting > span { font-size: .87em; color: #7b8796; }
+.svx-locked-phone-sales { position: relative; display: flex; flex-direction: column; gap: 6px; min-height: 26%; padding: 10px 9px; border-radius: 9px; overflow: hidden; background: var(--svx-blue); color: #ffffff; }
+.svx-locked-phone-sales small { font-size: clamp(7px, .64vw, 9px); }
+.svx-locked-phone-sales b { position: relative; z-index: 1; white-space: nowrap; font-size: clamp(10px, 1vw, 15px); letter-spacing: -.03em; }
+.svx-locked-phone-growth { position: relative; z-index: 1; align-self: flex-start; padding: 1px 4px; border-radius: 3px; background: var(--svx-lime); color: #3b5206; font-size: 8px; font-weight: 700; }
+.svx-locked-mini-bars { position: absolute; right: 9px; bottom: 10px; display: flex; align-items: flex-end; gap: 3px; width: 34%; height: 51%; }
+.svx-locked-mini-bars i { flex: 1; border-radius: 1px 1px 0 0; background: #eef8ff; }
+.svx-locked-phone-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 15px 6px; }
+.svx-locked-phone-metrics > span { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
+.svx-locked-phone-metrics i { display: grid; place-items: center; width: 23px; height: 23px; border-radius: 6px; font-style: normal; }
+.svx-locked-phone-metrics i.is-green { color: #18ab52; background: #e7f8ed; }
+.svx-locked-phone-metrics i.is-orange { color: #f88d27; background: #fff1e4; }
+.svx-locked-phone-metrics i.is-red { color: #ff4f61; background: #ffedf0; }
+.svx-locked-phone-metrics small { font-size: clamp(7px, .63vw, 9px); color: #768292; }
+.svx-locked-phone-metrics b { font-size: clamp(10px, .89vw, 13px); line-height: 1.05; }
+.svx-locked-phone-bottom { display: flex; justify-content: space-between; gap: 3px; margin-top: auto; padding-top: 7px; border-top: 1px solid #edf0f5; }
+.svx-locked-phone-bottom span { display: flex; flex-direction: column; align-items: center; gap: 3px; color: #9aa4b4; }
+.svx-locked-phone-bottom span.is-active { color: var(--svx-blue); }
+.svx-locked-phone-bottom small { font-size: 7px; }
+/* Tablet: keep breathing room and place the product preview under the copy. */
+@media (max-width: 1000px) {
+  .storvex-landing .svx-locked-hero { width: calc(100% - 48px); padding: 30px 24px 26px 32px; }
+  .svx-locked-hero-inner { min-height: 465px; grid-template-columns: minmax(0, .45fr) minmax(0, .55fr); }
+  .storvex-landing .svx-locked-hero-copy h1 { font-size: clamp(39px, 4.7vw, 48px); }
+  .storvex-landing .svx-locked-hero-subtitle { font-size: clamp(27px, 2.9vw, 35px); }
+  .svx-locked-hero-device-area { height: 465px; }
+  .svx-locked-screen-sidebar { padding: 11px 4px; }
+  .svx-locked-screen-content { padding: 8px; }
+  .svx-locked-summary-icon { width: 17px; height: 17px; }
+  .svx-locked-summary-row > div { gap: 2px; padding: 3px; }
+  .svx-locked-transactions-labels, .svx-locked-transaction { padding: 5px 3px; }
+}
+@media (max-width: 840px) {
+  .storvex-landing .svx-locked-hero { width: calc(100% - 48px); padding: 34px 32px 20px; }
+  .svx-locked-hero-inner { grid-template-columns: minmax(0, 1fr); min-height: 0; gap: 8px; }
+  .storvex-landing .svx-locked-hero-copy h1 { font-size: clamp(44px, 6vw, 56px); }
+  .storvex-landing .svx-locked-hero-subtitle { font-size: clamp(29px, 3.7vw, 38px); }
+  .svx-locked-hero-device-area { width: min(100%, 660px); height: 490px; margin: 10px auto 0; }
+  .svx-locked-hero-arrow { left: min(290px, 58%); bottom: 10px; }
+}
+@media (max-width: 620px) {
+  .storvex-landing .svx-locked-hero { width: calc(100% - 40px); padding: 28px 23px 15px; border-radius: 18px; }
+  .storvex-landing .svx-locked-hero-copy h1 { font-size: clamp(34px, 7.6vw, 46px); }
+  .storvex-landing .svx-locked-hero-subtitle { font-size: clamp(25px, 5.45vw, 32px); }
+  .storvex-landing .svx-locked-hero-description { font-size: 14px; margin-top: 16px; }
+  .svx-locked-hero-actions { margin-top: 22px; gap: 13px; }
+  .storvex-landing .svx-locked-hero-button { min-height: 49px; min-width: 185px; font-size: 13px; }
+  .svx-locked-hero-arrow { display: none; }
+  .svx-locked-hero-device-area { height: clamp(260px, 72vw, 405px); margin-top: 19px; }
+  .svx-locked-screen { padding: 6px; border-radius: 13px; }
+  .svx-locked-screen-inner { border-radius: 7px; }
+  .svx-locked-screen-sidebar { padding: 5px 3px; }
+  .svx-locked-screen-brand { height: 13px; margin-bottom: 8px; }
+  .svx-locked-screen-brand img { max-height: 12px; }
+  .svx-locked-nav-item { min-height: 15px; gap: 2px; padding: 2px 3px; font-size: 6px; }
+  .svx-locked-nav-item svg { width: 8px; height: 8px; }
+  .svx-locked-screen-content { padding: 5px 6px; }
+  .svx-locked-screen-toolbar { min-height: 14px; }
+  .svx-locked-search { padding: 3px 4px; font-size: 5px; }
+  .svx-locked-report-title { margin: 9px 0 4px; }
+  .svx-locked-report-title strong { font-size: 8px; }
+  .svx-locked-report-title > span { font-size: 6px; }
+  .svx-locked-chart-and-total { min-height: 45px; gap: 4px; }
+  .svx-locked-total b { font-size: 8px; }
+  .svx-locked-total > span { font-size: 7px; }
+  .svx-locked-summary-row { gap: 2px; margin: 4px 0 7px; }
+  .svx-locked-summary-row > div { padding: 2px; }
+  .svx-locked-summary-icon { width: 12px; height: 12px; }
+  .svx-locked-summary-icon svg { width: 8px; height: 8px; }
+  .svx-locked-summary-row small { font-size: 5px; }
+  .svx-locked-summary-row b { font-size: 6px; }
+  .svx-locked-transactions-title strong { font-size: 7px; }
+  .svx-locked-transactions-labels, .svx-locked-transaction { font-size: 5px; padding: 3px 1px; }
+  .svx-locked-phone { border-width: 5px; border-radius: 19px; }
+  .svx-locked-phone-notch { top: 4px; height: 7px; }
+  .svx-locked-phone-screen { gap: 5px; padding: 12px 5px 4px; border-radius: 12px; }
+  .svx-locked-phone-head { height: 10px; }
+  .svx-locked-phone-head img { max-height: 10px; }
+  .svx-locked-phone-head > span { font-size: 9px; }
+  .svx-locked-phone-greeting { font-size: 7px; }
+  .svx-locked-phone-sales { min-height: 25%; gap: 3px; padding: 5px 4px; border-radius: 5px; }
+  .svx-locked-phone-sales small { font-size: 6px; }
+  .svx-locked-phone-sales b { font-size: 8px; }
+  .svx-locked-phone-growth { font-size: 5px; }
+  .svx-locked-mini-bars { gap: 1px; right: 3px; bottom: 5px; }
+  .svx-locked-phone-metrics { gap: 6px 3px; }
+  .svx-locked-phone-metrics i { width: 14px; height: 14px; }
+  .svx-locked-phone-metrics i svg { width: 9px; height: 9px; }
+  .svx-locked-phone-metrics small { font-size: 6px; }
+  .svx-locked-phone-metrics b { font-size: 7px; }
+  .svx-locked-phone-bottom { padding-top: 3px; }
+  .svx-locked-phone-bottom svg { width: 9px; height: 9px; }
+  .svx-locked-phone-bottom small { font-size: 5px; }
+}
+@media (max-width: 380px) {
+  .storvex-landing .svx-locked-hero { width: calc(100% - 32px); padding: 25px 18px 12px; border-radius: 16px; }
+  .svx-locked-hero-device-area { height: 245px; }
+  .svx-locked-phone { width: 32%; }
+  .storvex-landing .svx-locked-hero-copy h1 { font-size: clamp(30px, 8vw, 34px); }
+  .storvex-landing .svx-locked-hero-subtitle { font-size: 23px; }
+}
+/* Preserve existing fixed-header clearance, including iPhone safe areas. */
+/* STORVEX LOCKED HERO FIXED HEADER CLEARANCE */
+.storvex-landing > main:has(> .svx-locked-hero) { padding-top: 76px; }
+@media (max-width: 860px) {
+  .storvex-landing > main:has(> .svx-locked-hero) { padding-top: calc(68px + env(safe-area-inset-top, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .storvex-landing .svx-locked-hero-button { transition: none; }
+}
+
+
+/* STORVEX STEP 17 DESKTOP ALIGNMENT *//* STORVEX STEP 21 FINAL ALIGNMENT APPLIED */
+
+/* Desktop only. Existing tablet/mobile CSS is preserved. */
+
+@media (min-width: 1001px) {
+  .storvex-landing .svx-locked-hero {
+    width: min(1280px, 89%);
+    padding: 24px 22px 24px 44px;
+  }
+
+  .svx-locked-hero-inner {
+    grid-template-columns:
+      minmax(0, 0.46fr)
+      minmax(0, 0.54fr);
+    min-height: 470px;
+  }
+
+  .storvex-landing .svx-locked-hero-copy h1 {
+    font-size: clamp(43px, 4.5vw, 66px);
+  }
+
+  .storvex-landing .svx-locked-hero-subtitle {
+    font-size: clamp(30px, 3.35vw, 46px);
+  }
+
+  .svx-locked-hero-device-area {
+    height: 470px;
+  }
+
+  .svx-locked-screen {
+    top: 4%;
+    right: -2%;
+    width: 94%;
+    height: 94%;
+  }
+
+  .svx-locked-phone {
+    top: 12%;
+    left: -3%;
+    width: 32%;
+    height: 85%;
+  }
+}
+
+
+/* STORVEX STEP 20 DARK HERO BACKGROUND */
+
+/* Match the dark header without recoloring the lime panel. */
+:root[data-theme="dark"]
+.storvex-landing > main:has(> .svx-locked-hero) {
+  background: #111213;
+}
+
+/* STORVEX STEP 150 — BUSINESS HERO DARK MODE */
+/* Business landing only. Marketplace and light mode unchanged. */
+
+:root[data-theme="dark"]
+.storvex-landing:not(.storvex-marketplace) .svx-locked-hero {
+  background: #293b0b;
+  color: #f6f9ed;
+}
+
+:root[data-theme="dark"]
+.storvex-landing:not(.storvex-marketplace)
+.svx-locked-hero-copy h1,
+:root[data-theme="dark"]
+.storvex-landing:not(.storvex-marketplace)
+.svx-locked-hero-subtitle {
+  color: #f6f9ed;
+}
+
+:root[data-theme="dark"]
+.storvex-landing:not(.storvex-marketplace)
+.svx-locked-hero-description {
+  color: #d7e4c0;
+}
+
+:root[data-theme="dark"]
+.storvex-landing:not(.storvex-marketplace)
+.svx-locked-hero-secondary {
+  color: #f6f9ed;
+}
+
+:root[data-theme="dark"]
+.storvex-landing:not(.storvex-marketplace)
+.svx-locked-hero-button:focus-visible,
+:root[data-theme="dark"]
+.storvex-landing:not(.storvex-marketplace)
+.svx-locked-hero-secondary:focus-visible {
+  outline-color: #e4f449;
+}

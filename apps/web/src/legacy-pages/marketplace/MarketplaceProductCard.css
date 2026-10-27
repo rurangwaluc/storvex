@@ -383,3 +383,1039 @@
   .svx-marketplace-product-card__content {
   background: #1f1f1f;
 }
+
+/* STORVEX STEP 158 — FEATURED PRODUCTS */
+/* Marketplace homepage styling; no shared logic changes. */
+
+:root:not([data-theme="dark"])
+.storvex-marketplace.svx-marketplace-home {
+  --svx-pcard-bg: #ffffff;
+  --svx-pcard-media: #f5f6f7;
+  --svx-pcard-border: #dfe3e8;
+}
+
+:root[data-theme="dark"]
+.storvex-marketplace.svx-marketplace-home {
+  --svx-pcard-bg: #1f1f20;
+  --svx-pcard-media: #262628;
+  --svx-pcard-border: #37383c;
+  --svx-pcard-action-bg: #28292b;
+  --svx-pcard-action-border: #45474b;
+}
+
+/* Re-enable the existing interactive gallery controls.
+   These only render when a product has multiple images. */
+
+.storvex-marketplace.svx-marketplace-home
+.svx-marketplace-product-card__image-switcher {
+  position: absolute;
+  z-index: 6;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 7px;
+  border-radius: 100px;
+  background: rgba(17, 19, 24, 0.24);
+}
+
+.storvex-marketplace.svx-marketplace-home
+.svx-marketplace-product-card__image-switcher button {
+  display: block;
+  flex: 0 0 auto;
+  width: 17px;
+  height: 3px;
+  min-height: 3px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.55);
+  cursor: pointer;
+}
+
+.storvex-marketplace.svx-marketplace-home
+.svx-marketplace-product-card__image-switcher button.is-active {
+  width: 27px;
+  background: #ffffff;
+}
+
+.storvex-marketplace.svx-marketplace-home
+.svx-marketplace-product-card__image-switcher button:focus-visible {
+  outline: 2px solid #ff5961;
+  outline-offset: 3px;
+}
+
+
+/* ==========================================================
+   STORVEX STEP 224 — UNIVERSAL RETAIL PRODUCT CARD
+   Single consolidated design layer.
+   ========================================================== */
+
+:root:not([data-theme="dark"]) {
+  --svx-pcard-bg: #ffffff;
+  --svx-pcard-media: #f5f5f4;
+  --svx-pcard-text: #17191e;
+  --svx-pcard-muted: #69717c;
+  --svx-pcard-soft: #8d949d;
+  --svx-pcard-border: #e4e7eb;
+  --svx-pcard-action-bg: #ffffff;
+  --svx-pcard-action-border: #e0e4e8;
+}
+
+:root[data-theme="dark"] {
+  --svx-pcard-bg: #1f1f20;
+  --svx-pcard-media: #29292b;
+  --svx-pcard-text: #f5f5f5;
+  --svx-pcard-muted: #a8adb6;
+  --svx-pcard-soft: #9297a0;
+  --svx-pcard-border: #37383d;
+  --svx-pcard-action-bg: #2d2e31;
+  --svx-pcard-action-border: #4a4d53;
+}
+
+:root {
+  --svx-pcard-coral: #ff5961;
+}
+
+/* CARD */
+
+:root .svx-commerce-product-card.svx-marketplace-product-card {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid var(--svx-pcard-border) !important;
+  border-radius: 22px !important;
+  background: var(--svx-pcard-bg) !important;
+  color: var(--svx-pcard-text) !important;
+  box-shadow: none !important;
+  transform: none;
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+
+/* Sale information remains in normal document flow.
+   Standard in-stock products do not need a badge. */
+
+:root .svx-marketplace-product-card__topline {
+  position: relative;
+  inset: auto;
+  display: flex;
+  min-height: 0;
+  max-width: none;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 11px 0;
+  gap: 6px;
+  background: var(--svx-pcard-bg);
+}
+
+:root .svx-marketplace-product-card__topline
+.is-available {
+  display: none;
+}
+
+:root .svx-marketplace-product-card__topline:not(:has(
+  .is-sale, .is-closed, .is-low-stock
+)) {
+  display: none;
+}
+
+:root .svx-marketplace-product-card__topline span {
+  min-height: 22px;
+  border-radius: 7px;
+  padding: 0 9px;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:root .svx-marketplace-product-card__topline .is-sale {
+  background: #ffeaec;
+  color: #b32e3a;
+}
+
+:root[data-theme="dark"]
+.svx-marketplace-product-card__topline .is-sale {
+  background: #462a2f;
+  color: #ffacb0;
+}
+
+/* IMAGE */
+
+:root .svx-marketplace-product-card__visual {
+  position: relative;
+  display: block;
+  width: calc(100% - 16px);
+  margin: 8px 8px 0;
+  aspect-ratio: 1 / 1;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 17px;
+  background: var(--svx-pcard-media);
+}
+
+:root .svx-marketplace-product-card__image,
+:root .svx-marketplace-product-card__image img {
+  width: 100%;
+  height: 100%;
+}
+
+:root .svx-marketplace-product-card__image {
+  display: block;
+  background: var(--svx-pcard-media);
+}
+
+:root .svx-marketplace-product-card__image img {
+  display: block;
+  max-width: none;
+  padding: 0;
+  margin: 0;
+  object-fit: contain;
+  object-position: center;
+  transition: transform 240ms ease;
+}
+
+/* IMAGE ACTIONS */
+
+:root .svx-marketplace-product-card__visual-actions {
+  position: absolute;
+  z-index: 5;
+  top: 9px;
+  right: 9px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+:root .svx-marketplace-product-card__visual-actions button,
+:root .svx-marketplace-product-card__visual-actions
+.svx-marketplace-product-card__open {
+  position: static;
+  inset: auto;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  margin: 0 !important;
+  border: 1px solid var(--svx-pcard-action-border);
+  border-radius: 50%;
+  background: var(--svx-pcard-action-bg);
+  color: var(--svx-pcard-text);
+  box-shadow: 0 1px 5px rgb(0 0 0 / 5%);
+  cursor: pointer;
+}
+
+:root .svx-marketplace-product-card__visual-actions svg {
+  width: 17px;
+  height: 17px;
+}
+
+:root .svx-marketplace-product-card__visual-actions
+button.is-active {
+  background: var(--svx-pcard-coral);
+  border-color: var(--svx-pcard-coral);
+  color: #ffffff;
+}
+
+/* GALLERY
+   No dark capsule. A line represents each real product image. */
+
+:root .svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__image-switcher {
+  position: absolute;
+  z-index: 6;
+  display: flex !important;
+  width: auto;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  bottom: 12px;
+  left: 50%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: translateX(-50%);
+}
+
+:root .svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__image-switcher button {
+  display: block;
+  flex: 0 0 auto;
+  width: 17px;
+  height: 3px;
+  min-height: 3px;
+  padding: 0;
+  border: 0;
+  border-radius: 100px;
+  background: #aeb5bc;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 70%);
+  cursor: pointer;
+  transition: width 160ms ease, background 160ms ease;
+}
+
+:root .svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__image-switcher button.is-active {
+  width: 27px;
+  background: var(--svx-pcard-coral);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 80%);
+}
+
+/* PRODUCT INFORMATION */
+
+:root .svx-marketplace-product-card__content {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  padding: 16px 15px 16px;
+  background: var(--svx-pcard-bg) !important;
+}
+
+:root .svx-marketplace-product-card__seller {
+  margin-bottom: 9px;
+}
+
+:root .svx-marketplace-product-card__seller-name {
+  color: var(--svx-pcard-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.035em;
+}
+
+:root .svx-marketplace-product-card__content h3 {
+  display: -webkit-box;
+  min-height: 43px;
+  margin: 0;
+  overflow: hidden;
+  color: var(--svx-pcard-text);
+  font-size: 17px;
+  font-weight: 720;
+  line-height: 1.36;
+  letter-spacing: -0.025em;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+:root .svx-marketplace-product-card__rating {
+  display: flex;
+  min-height: 19px;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  margin-bottom: 13px;
+  color: var(--svx-pcard-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+:root .svx-marketplace-product-card__stars {
+  color: #e8a33e;
+}
+
+/* PRICE + CART */
+
+:root .svx-marketplace-product-card__checkout-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: end;
+  min-width: 0;
+  margin-top: auto;
+  padding-top: 15px;
+  border-top: 1px solid var(--svx-pcard-border);
+}
+
+:root .svx-marketplace-product-card__checkout-row
+.svx-marketplace-product-card__pricing {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+}
+
+:root .svx-marketplace-product-card__checkout-row
+.svx-marketplace-product-card__price-line {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+:root .svx-marketplace-product-card__checkout-row
+.svx-marketplace-product-card__price-line strong {
+  color: var(--svx-pcard-text);
+  font-size: clamp(16px, 1.45vw, 21px);
+  line-height: 1.15;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  white-space: nowrap;
+}
+
+:root .svx-marketplace-product-card__checkout-row
+.svx-marketplace-product-card__price-line del {
+  color: var(--svx-pcard-soft);
+  font-size: 11px;
+  font-weight: 450;
+}
+
+:root .svx-marketplace-product-card__pricing small {
+  display: block;
+  margin-top: 5px;
+  color: #308357;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+:root[data-theme="dark"]
+.svx-marketplace-product-card__pricing small {
+  color: #92d1a7;
+}
+
+:root .svx-marketplace-product-card__checkout-row
+.svx-marketplace-product-card__purchase-actions {
+  display: block;
+  min-width: 0;
+  margin: 0;
+}
+
+:root .svx-marketplace-product-card__checkout-row
+.svx-marketplace-product-card__cart,
+:root[data-theme="dark"]
+.svx-marketplace-product-card__checkout-row
+.svx-marketplace-product-card__cart {
+  display: inline-flex;
+  min-height: 44px;
+  width: auto;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0 13px;
+  border: 1px solid var(--svx-pcard-coral);
+  border-radius: 100px;
+  background: var(--svx-pcard-coral);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: none;
+}
+
+:root .svx-marketplace-product-card__cart svg {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+}
+
+:root .svx-marketplace-product-card__message {
+  min-height: 0;
+  margin-top: 5px;
+  font-size: 10px;
+  line-height: 1.3;
+}
+
+/* DESKTOP INTERACTION */
+
+@media (hover: hover) and (pointer: fine) {
+  :root .svx-commerce-product-card.svx-marketplace-product-card:hover {
+    transform: translateY(-2px);
+    border-color: #bdc3cb !important;
+    box-shadow: 0 10px 25px rgb(0 0 0 / 6%) !important;
+  }
+
+  :root .svx-marketplace-product-card__visual:hover img {
+    transform: scale(1.02);
+  }
+
+  :root .svx-marketplace-product-card__visual-actions
+  button:hover {
+    border-color: var(--svx-pcard-coral);
+    color: var(--svx-pcard-coral);
+  }
+
+  :root .svx-marketplace-product-card__checkout-row
+  .svx-marketplace-product-card__cart:hover {
+    background: #eb4750;
+    border-color: #eb4750;
+  }
+}
+
+/* RESPONSIVENESS */
+
+@media (max-width: 1100px) {
+  :root .svx-marketplace-product-card__checkout-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  :root .svx-marketplace-product-card__checkout-row
+  .svx-marketplace-product-card__cart {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  :root .svx-commerce-product-card.svx-marketplace-product-card {
+    border-radius: 18px !important;
+  }
+
+  :root .svx-marketplace-product-card__visual {
+    width: calc(100% - 12px);
+    margin: 6px 6px 0;
+    border-radius: 15px;
+  }
+
+  :root .svx-marketplace-product-card__content {
+    padding: 15px 13px 16px;
+  }
+
+  :root .svx-marketplace-product-card__content h3 {
+    min-height: 40px;
+    font-size: 15px;
+  }
+
+  :root .svx-marketplace-product-card__visual-actions {
+    top: 8px;
+    right: 8px;
+  }
+
+  :root .svx-marketplace-product-card__visual-actions button {
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+  }
+
+  :root .svx-marketplace-product-card__checkout-row
+  .svx-marketplace-product-card__price-line strong {
+    font-size: 19px;
+  }
+
+  :root .svx-marketplace-product-card__checkout-row
+  .svx-marketplace-product-card__cart {
+    min-height: 46px;
+  }
+}
+
+/* ACCESSIBILITY */
+
+:root .svx-marketplace-product-card__cart:focus-visible,
+:root .svx-marketplace-product-card__visual-actions button:focus-visible,
+:root .svx-marketplace-product-card__image-switcher button:focus-visible {
+  outline: 2px solid var(--svx-pcard-coral);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root .svx-commerce-product-card.svx-marketplace-product-card,
+  :root .svx-marketplace-product-card__image img,
+  :root .svx-marketplace-product-card__image-switcher button {
+    transition: none;
+  }
+}
+
+
+/* ==========================================================
+   STORVEX STEP 226 — CARD ALIGNMENT POLISH
+   Scoped to the shared Marketplace product card.
+   ========================================================== */
+
+/* Keep sale labels from pushing photographs out of alignment. */
+
+:root .svx-commerce-product-card.svx-marketplace-product-card {
+  position: relative !important;
+  isolation: isolate;
+}
+
+:root .svx-marketplace-product-card__topline {
+  position: absolute;
+  z-index: 8;
+  top: 14px;
+  left: 14px;
+  right: 54px;
+  inset-block-end: auto;
+  display: flex;
+  width: auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  pointer-events: none;
+}
+
+:root .svx-marketplace-product-card__topline
+.is-sale,
+:root .svx-marketplace-product-card__topline
+.is-closed,
+:root .svx-marketplace-product-card__topline
+.is-low-stock {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border-radius: 7px;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+/* Uniform product-photo stage. */
+
+:root .svx-marketplace-product-card__visual {
+  margin-top: 8px;
+  aspect-ratio: 1 / 1;
+}
+
+/* Product image remains the visual priority. */
+
+:root .svx-marketplace-product-card__visual-actions {
+  top: 9px;
+  right: 9px;
+  gap: 5px;
+}
+
+:root .svx-marketplace-product-card__visual-actions button,
+:root .svx-marketplace-product-card__visual-actions
+.svx-marketplace-product-card__open {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border-color: rgb(100 106 113 / 20%);
+  box-shadow: none;
+}
+
+:root .svx-marketplace-product-card__visual-actions svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Preserve the lines; avoid a pill or floating capsule. */
+
+:root .svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__image-switcher,
+.storvex-marketplace.svx-marketplace-home
+.svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__image-switcher {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  bottom: 10px;
+  gap: 5px;
+}
+
+:root .svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__image-switcher button {
+  height: 3px;
+  min-height: 3px;
+  box-shadow: none;
+}
+
+/* More legible information at real marketplace grid widths. */
+
+:root .svx-marketplace-product-card__content {
+  padding: 16px 15px 17px;
+}
+
+:root .svx-marketplace-product-card__content h3 {
+  font-size: 16px;
+  font-weight: 720;
+  line-height: 1.38;
+}
+
+:root .svx-marketplace-product-card__rating {
+  font-size: 11px;
+  margin-top: 9px;
+  margin-bottom: 12px;
+}
+
+:root .svx-marketplace-product-card__checkout-row {
+  gap: 9px;
+  padding-top: 14px;
+}
+
+:root .svx-marketplace-product-card__checkout-row
+.svx-marketplace-product-card__cart {
+  min-height: 44px;
+  background: #ff5961;
+  border-color: #ff5961;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* Small screens: preserve comfortable actions and readable prices. */
+
+@media (max-width: 640px) {
+  :root .svx-marketplace-product-card__topline {
+    top: 12px;
+    left: 12px;
+    right: 48px;
+  }
+
+  :root .svx-marketplace-product-card__content {
+    padding: 15px 13px 17px;
+  }
+
+  :root .svx-marketplace-product-card__content h3 {
+    font-size: 16px;
+  }
+
+  :root .svx-marketplace-product-card__visual-actions button,
+  :root .svx-marketplace-product-card__visual-actions
+  .svx-marketplace-product-card__open {
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+  }
+}
+
+
+/* ==========================================================
+   STORVEX STEP 228 — CARD COMPOSITION
+   Shared Marketplace cards: separate gallery and utility row.
+   ========================================================== */
+
+/* Keep just the wishlist over the product photograph. */
+:root .svx-marketplace-product-card__visual-actions {
+  top: 11px;
+  right: 11px;
+}
+
+:root .svx-marketplace-product-card__visual-actions button {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+}
+
+/* The gallery rail is now below the image, in normal flow. */
+:root .svx-marketplace-product-card__gallery-rail {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 8px 12px 3px;
+  background: var(--svx-pcard-bg);
+}
+
+:root .svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__gallery-rail
+.svx-marketplace-product-card__image-switcher,
+:root .storvex-marketplace.svx-marketplace-home
+.svx-marketplace-product-card__gallery-rail
+.svx-marketplace-product-card__image-switcher {
+  position: static;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+:root .svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__gallery-rail
+.svx-marketplace-product-card__image-switcher button {
+  display: block;
+  width: 17px;
+  height: 3px;
+  min-height: 3px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: #a9afb6;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+:root .svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__gallery-rail
+.svx-marketplace-product-card__image-switcher button.is-active {
+  width: 27px;
+  background: #ff5961;
+  box-shadow: none;
+}
+
+/* Quiet secondary controls, outside the product photo. */
+:root .svx-marketplace-product-card__secondary-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 37px;
+  padding: 0 0 10px;
+}
+
+:root .svx-marketplace-product-card__secondary-actions button,
+:root .svx-marketplace-product-card__secondary-actions
+.svx-marketplace-product-card__open {
+  position: static;
+  display: grid;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--svx-pcard-action-border);
+  border-radius: 50%;
+  background: var(--svx-pcard-action-bg);
+  color: var(--svx-pcard-muted);
+  box-shadow: none;
+}
+
+:root .svx-marketplace-product-card__secondary-actions svg {
+  width: 16px;
+  height: 16px;
+}
+
+:root .svx-marketplace-product-card__secondary-actions button.is-active {
+  background: #ff5961;
+  border-color: #ff5961;
+  color: #ffffff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :root .svx-marketplace-product-card__secondary-actions
+  button:hover {
+    color: #ff5961;
+    border-color: #ff5961;
+  }
+}
+
+/* Spacing for the new compact lower layout. */
+:root .svx-marketplace-product-card__content {
+  padding-top: 10px;
+}
+
+:root .svx-marketplace-product-card__rating {
+  margin-bottom: 6px;
+}
+
+:root .svx-marketplace-product-card__checkout-row {
+  margin-top: auto;
+  padding-top: 13px;
+}
+
+:root .svx-marketplace-product-card__checkout-row
+.svx-marketplace-product-card__cart {
+  background: #ff5961;
+  border-color: #ff5961;
+  color: #ffffff;
+}
+
+/* Maintain useful touch targets on phones. */
+@media (max-width: 640px) {
+  :root .svx-marketplace-product-card__secondary-actions button,
+  :root .svx-marketplace-product-card__secondary-actions
+  .svx-marketplace-product-card__open {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+
+  :root .svx-marketplace-product-card__visual-actions button {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+}
+
+
+/* ==========================================================
+   STORVEX STEP 230 — FOUR PRODUCT CARD FIXES
+   Universal Storvex Marketplace product card.
+   ========================================================== */
+
+/* 1. Genuine reviews and secondary actions share one row. */
+
+:root .svx-marketplace-product-card__meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px 0 17px;
+  min-width: 0;
+}
+
+:root .svx-marketplace-product-card__meta-row
+.svx-marketplace-product-card__rating {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  line-height: 1.4;
+}
+
+:root .svx-marketplace-product-card__meta-row
+.svx-marketplace-product-card__secondary-actions {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+}
+
+:root .svx-marketplace-product-card__meta-row
+.svx-marketplace-product-card__secondary-actions button {
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  border-radius: 50%;
+}
+
+/* 2. Stronger price / purchase hierarchy. */
+
+:root .svx-marketplace-product-card__checkout-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 9px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--svx-pcard-border);
+}
+
+:root .svx-marketplace-product-card__checkout-row
+.svx-marketplace-product-card__price-line strong {
+  font-size: clamp(18px, 1.6vw, 23px);
+  font-weight: 780;
+  line-height: 1.18;
+  letter-spacing: -0.04em;
+}
+
+:root .svx-marketplace-product-card__checkout-row
+.svx-marketplace-product-card__cart {
+  min-height: 46px;
+  padding: 0 17px;
+  border-color: #ff5961;
+  background: #ff5961;
+  color: #ffffff;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+:root[data-theme="dark"]
+.svx-marketplace-product-card__checkout-row
+.svx-marketplace-product-card__cart {
+  background: #ff5961;
+  border-color: #ff5961;
+  color: #ffffff;
+}
+
+/* 3. Thin horizontal image indicators in their own rail.
+   A single real image gets a subtle neutral line. */
+
+:root .svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__gallery-rail {
+  min-height: 22px;
+  padding: 8px 12px 4px;
+}
+
+:root .svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__gallery-rail
+.svx-marketplace-product-card__image-switcher button {
+  width: 19px;
+  height: 3px;
+  min-height: 3px;
+  background: #a9b0b9;
+  border-radius: 100px;
+}
+
+:root .svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__gallery-rail
+.svx-marketplace-product-card__image-switcher button.is-active {
+  width: 29px;
+  background: #ff5961;
+}
+
+:root .svx-commerce-product-card.svx-marketplace-product-card
+.svx-marketplace-product-card__gallery-rail
+.svx-marketplace-product-card__image-switcher button:only-child {
+  width: 23px;
+  background: #a9b0b9;
+}
+
+/* 4. Cursor position selects a genuine image.
+   Prevent unwanted image zoom during gallery navigation. */
+
+:root .svx-marketplace-product-card__image img,
+:root .svx-marketplace-product-card__visual:hover
+.svx-marketplace-product-card__image img {
+  transform: none;
+}
+
+:root .svx-marketplace-product-card__image {
+  cursor: pointer;
+}
+
+/* Adapt price and actions when four-column cards become narrow. */
+
+@media (max-width: 1100px) {
+  :root .svx-marketplace-product-card__checkout-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 11px;
+  }
+
+  :root .svx-marketplace-product-card__checkout-row
+  .svx-marketplace-product-card__cart {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  :root .svx-marketplace-product-card__meta-row {
+    gap: 6px;
+  }
+
+  :root .svx-marketplace-product-card__meta-row
+  .svx-marketplace-product-card__secondary-actions button {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+
+  :root .svx-marketplace-product-card__checkout-row
+  .svx-marketplace-product-card__price-line strong {
+    font-size: 21px;
+  }
+
+  :root .svx-marketplace-product-card__checkout-row
+  .svx-marketplace-product-card__cart {
+    min-height: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root .svx-marketplace-product-card__image img,
+  :root .svx-marketplace-product-card__gallery-rail button {
+    transition: none;
+  }
+}
+
+/* STORVEX STEP 232 — FINAL CARD POLISH */

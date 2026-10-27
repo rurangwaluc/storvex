@@ -1,0 +1,569 @@
+/* Storvex — locked account signup design.
+   Single layout authority. Dark mode follows ThemeProvider's .dark class. */
+
+.svx-signup {
+  --signup-background: #fff;
+  --signup-surface: #fff;
+  --signup-text: #0b1120;
+  --signup-muted: #5c6c84;
+  --signup-border: #e0e7f0;
+  --signup-field: #fff;
+  --signup-lime: #E7FF3B;
+  --signup-hero: #E7FF3B;
+  --signup-coral: #ff5c55;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  padding: 22px;
+  background: var(--signup-background);
+  color: var(--signup-text);
+  font-family: "Archivo", "Source Sans 3", system-ui, sans-serif;
+}
+
+:root.dark .svx-signup {
+  --signup-background: #111111;
+  --signup-surface: #1c1c1c;
+  --signup-text: #ffffff;
+  --signup-muted: #aeb4b9;
+  --signup-border: #343434;
+  --signup-field: #242424;
+  --signup-hero: #293b0b;
+}
+
+.svx-signup,
+.svx-signup *,
+.svx-signup *::before,
+.svx-signup *::after {
+  box-sizing: border-box;
+}
+
+.svx-signup-shell {
+  position: relative;
+  width: min(100%, 1230px);
+  min-height: 615px;
+  margin: auto;
+  overflow: hidden;
+  border: 1px solid var(--signup-border);
+  border-radius: 15px;
+  background: var(--signup-background);
+}
+
+.svx-signup-header {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  height: 85px;
+  padding: 17px 34px;
+}
+
+.svx-signup-logo img {
+  display: block;
+  width: 163px;
+  height: auto;
+}
+
+.svx-signup-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.svx-signup-theme-toggle,
+.svx-signup-header__login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border: 1px solid var(--signup-border);
+  border-radius: 9px;
+  background: var(--signup-surface);
+  color: var(--signup-text);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.svx-signup-theme-toggle {
+  width: 40px;
+  padding: 0;
+}
+
+.svx-signup-header__login {
+  padding: 0 18px;
+}
+
+.svx-signup-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 46%) minmax(0, 54%);
+  min-height: 530px;
+}
+
+.svx-signup-brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 18px 20px 0 34px;
+  isolation: isolate;
+}
+
+.svx-signup-brand::before {
+content: "";
+  position: absolute;
+  z-index: -1;
+  top: -85px;
+  bottom: 0;
+  left: 0;
+  width: 108%;
+  background: var(--signup-hero);
+  border-radius: 0 54% 54% 0 / 0 64% 64% 0;
+}
+
+
+
+.svx-signup-brand__copy {
+  position: relative;
+  z-index: 2;
+  max-width: 360px;
+}
+
+.svx-signup-brand h1 {
+  margin: 0;
+  font-size: clamp(30px, 3.1vw, 42px);
+  line-height: 1.07;
+  letter-spacing: -0.05em;
+  font-weight: 800;
+}
+
+.svx-signup-brand__copy > p {
+  max-width: 310px;
+  margin: 16px 0 18px;
+  font-size: 12.5px;
+  line-height: 1.62;
+}
+
+.svx-signup-benefits {
+  display: grid;
+  gap: 11px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.svx-signup-benefits li {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.svx-signup-benefit-icon {
+  display: grid;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: #eeff37;
+  color: #0b1120;
+  font-size: 15px;
+}
+
+.svx-signup-benefit-icon--2 { background: #ff5c55; }
+.svx-signup-benefit-icon--3 { background: #168afb; color: #fff; }
+.svx-signup-benefit-icon--4 { background: #eeff37; }
+
+.svx-signup-art {
+position: relative;
+  flex: 1 1 0;
+  min-height: 215px;
+  width: 100%;
+  margin-top: 30px;
+}
+
+.svx-signup-art__accent {
+position: absolute;
+  z-index: 0;
+  left: -20px;
+  bottom: 0;
+  width: min(400px, 90%);
+  height: 100px;
+  background: #E7FF3B;
+  border-radius: 150px 150px 0 0;
+}
+
+.svx-signup-art__devices {
+position: absolute;
+  z-index: 2;
+  left: -9px;
+  bottom: 4px;
+  width: 600px;
+  height: 410px;
+  transform: scale(0.64);
+  transform-origin: left bottom;
+}
+
+.svx-signup-art__devices .svx-locked-screen {
+position: absolute;
+  z-index: 1;
+  top: 7%;
+  left: 0;
+  right: auto;
+  bottom: auto;
+  width: 82%;
+  height: 83%;
+  transform: rotate(-1deg);
+}
+
+.svx-signup-art__devices .svx-locked-phone {
+position: absolute;
+  z-index: 2;
+  top: 10%;
+  right: 2%;
+  bottom: auto;
+  left: auto;
+  width: 28%;
+  height: 81%;
+  transform: rotate(5deg);
+}
+
+.svx-signup-art__arrow {
+  position: absolute;
+  z-index: 3;
+  top: -7px;
+  left: min(330px, 74%);
+  width: 94px;
+  height: 86px;
+  pointer-events: none;
+}
+
+.svx-signup-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 24px 36px 24px 58px;
+}
+
+.svx-signup-card {
+  width: min(100%, 420px);
+  padding: 30px;
+  border: 1px solid var(--signup-border);
+  border-radius: 14px;
+  background: var(--signup-surface);
+}
+
+.svx-signup-kicker {
+  display: block;
+  margin-bottom: 11px;
+  color: var(--signup-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.svx-signup-card h2 {
+  margin: 0 0 12px;
+  font-size: clamp(24px, 2.4vw, 29px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+}
+
+.svx-signup-description {
+  margin: 0 0 26px;
+  color: var(--signup-muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.svx-signup-card label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.svx-signup-card input:not(.svx-signup-codeboxes input) {
+  display: block;
+  width: 100%;
+  height: 46px;
+  min-width: 0;
+  margin: 0 0 21px;
+  padding: 11px 13px;
+  border: 1px solid var(--signup-border);
+  border-radius: 8px;
+  outline: none;
+  background: var(--signup-field);
+  color: var(--signup-text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.svx-signup input:focus-visible,
+.svx-signup button:focus-visible,
+.svx-signup a:focus-visible {
+  outline: 3px solid #168afb;
+  outline-offset: 3px;
+}
+
+.svx-signup-primary {
+  display: flex;
+  width: 100%;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 5px;
+  padding: 11px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--signup-coral);
+  color: #101015 !important;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.svx-signup-primary:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.svx-signup-legal,
+.svx-signup-bottom-login,
+.svx-signup-otp-help {
+  color: var(--signup-muted);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.svx-signup-legal { margin: 19px 0 0; }
+.svx-signup-bottom-login { display: none; }
+
+.svx-signup a:not(.svx-signup-primary):not(.svx-signup-header__login):not(.svx-signup-logo),
+.svx-signup-text-action,
+.svx-signup-otp-help button {
+  color: #198cfa;
+}
+
+.svx-signup-error,
+.svx-signup-notice {
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.svx-signup-error { color: #f15b60; }
+.svx-signup-notice { color: var(--signup-muted); }
+
+.svx-signup-back,
+.svx-signup-text-action,
+.svx-signup-otp-help button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.svx-signup-back {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 22px;
+  color: var(--signup-muted);
+  font-size: 12px;
+}
+
+.svx-signup-otp,
+.svx-signup-success {
+  text-align: center;
+}
+
+.svx-signup-state-icon {
+  display: grid;
+  width: 65px;
+  height: 65px;
+  margin: 0 auto 23px;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.svx-signup-state-icon--mail {
+  background: #e6f2ff;
+  color: #168afb;
+}
+
+.svx-signup-state-icon--success {
+  background: #ddf9e9;
+  color: #08894b;
+}
+
+.svx-signup-codeboxes {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 19px;
+}
+
+.svx-signup-codeboxes input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 46px;
+  padding: 0;
+  border: 1px solid var(--signup-border);
+  border-radius: 7px;
+  background: var(--signup-field);
+  color: var(--signup-text);
+  font: inherit;
+  font-size: 21px;
+  text-align: center;
+}
+
+.svx-signup-otp-help { margin: 20px 0 14px; }
+.svx-signup-text-action { font-size: 12px; text-decoration: underline; }
+.svx-signup-success .svx-signup-description { margin-bottom: 30px; }
+
+@media (min-width: 1100px) {
+  .svx-signup-shell {
+    min-height: 615px;
+  }
+}
+
+@media (max-width: 970px) and (min-width: 701px) {
+  .svx-signup-layout {
+    grid-template-columns: minmax(0, 44%) minmax(0, 56%);
+  }
+
+  .svx-signup-brand {
+    padding-left: 24px;
+  }
+
+  .svx-signup-brand h1 {
+    font-size: clamp(29px, 3.4vw, 35px);
+  }
+
+  .svx-signup-main {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .svx-signup-art__devices {
+    width: 600px;
+    height: 410px;
+    transform: scale(0.48);
+    transform-origin: left bottom;
+  }
+
+  .svx-signup-art__arrow {
+    left: 65%;
+  }
+}
+
+@media (max-width: 700px) {
+  .svx-signup {
+    display: block;
+    padding: 0;
+  }
+
+  .svx-signup-shell {
+    min-height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .svx-signup-header {
+    height: 80px;
+    padding: 17px 24px;
+  }
+
+  .svx-signup-logo img {
+    width: 145px;
+  }
+
+  .svx-signup-layout {
+    display: block;
+    min-height: 0;
+  }
+
+  .svx-signup-brand {
+    display: none;
+  }
+
+  .svx-signup-main {
+    display: block;
+    padding: 35px 22px 48px;
+  }
+
+  .svx-signup-card {
+    margin: 0 auto;
+    padding: 30px 24px;
+  }
+
+  .svx-signup-bottom-login {
+    display: block;
+    margin: 26px 0 0;
+    text-align: center;
+  }
+}
+
+@media (max-width: 370px) {
+  .svx-signup-header {
+    padding: 15px 17px;
+  }
+
+  .svx-signup-logo img {
+    width: 125px;
+  }
+
+  .svx-signup-main {
+    padding: 25px 16px 45px;
+  }
+
+  .svx-signup-card {
+    padding: 24px 18px;
+  }
+
+  .svx-signup-codeboxes {
+    gap: 4px;
+  }
+}
+
+/* Dark theme retains the light layout and curved panel geometry. */
+:root.dark .svx-signup-brand {
+  color: #f6f9ed;
+}
+
+:root.dark .svx-signup-brand__copy > p,
+:root.dark .svx-signup-benefits li {
+  color: #f6f9ed;
+}
+
+/* Secure account switching from the verified state. */
+.svx-signup-switch-account {
+  display: block;
+  margin: 24px auto 0;
+  padding: 7px 5px;
+  border: 0;
+  background: transparent;
+  color: #168afb;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.svx-signup-switch-account:disabled {
+  opacity: .55;
+  cursor: wait;
+}

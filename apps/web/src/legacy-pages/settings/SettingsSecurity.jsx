@@ -1,8 +1,9 @@
-// frontend-stores/src/pages/settings/SettingsSecurity.jsx
+/* STEP 342CK-C / SIMPLE SECURITY */
+/* STEP 342CK-G2 / FINAL SECURITY UX */
+/* STEP 342CK-E2 / SECURITY BUTTON FOUNDATION */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
-
 import AsyncButton from "../../components/ui/AsyncButton";
 import PageSkeleton from "../../components/ui/PageSkeleton";
 import {
@@ -16,298 +17,82 @@ import {
 import "./Settings.css";
 import "./SettingsSecurity.css";
 
-const INITIAL_SESSIONS_VISIBLE = 3;
-const INITIAL_LOGIN_EVENTS_VISIBLE = 5;
-const LOAD_MORE_STEP = 5;
+const INITIAL_VISIBLE = 3;
+const LOAD_STEP = 5;
 
-function cx(...xs) {
-  return xs.filter(Boolean).join(" ");
+function timeAgo(value) {
+  if (!value) return "Activity time unavailable";
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return "Activity time unavailable";
+  const minutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  return `${Math.floor(hours / 24)} day(s) ago`;
 }
 
-function cleanString(value) {
-  return String(value || "").trim();
-}
-
-function pageCard() {
-  return "svx-security-card";
-}
-
-function inputClass() {
-  return "svx-security-input";
-}
-
-function fieldLabel() {
-  return "svx-security-label";
-}
-
-function formatDateTime(value) {
-  if (!value) return "—";
-
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-
-  return d.toLocaleString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatTimeAgo(value) {
-  if (!value) return "—";
-
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return "—";
-
-  const diff = Date.now() - d.getTime();
-
-  if (diff < 60 * 1000) return "Just now";
-
-  const mins = Math.floor(diff / (60 * 1000));
-  if (mins < 60) return `${mins} min ago`;
-
-  const hours = Math.floor(diff / (60 * 60 * 1000));
-  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
-
-  const days = Math.floor(diff / (24 * 60 * 60 * 1000));
-  return `${days} day${days > 1 ? "s" : ""} ago`;
-}
-
-function securityButton(tone = "secondary") {
-  if (tone === "primary") return "svx-security-button is-primary";
-  if (tone === "danger") return "svx-security-button is-danger";
-  return "svx-security-button is-secondary";
-}
-
-function securityTone(tone = "neutral") {
-  if (tone === "success") return "is-success";
-  if (tone === "warning") return "is-warning";
-  if (tone === "danger") return "is-danger";
-  if (tone === "process") return "is-process";
-  if (tone === "info") return "is-info";
-  return "is-neutral";
-}
-
-function Pill({ tone = "neutral", children }) {
-  return <span className={cx("svx-security-pill", securityTone(tone))}>{children}</span>;
-}
-
-function SectionHeader({ eyebrow, title, subtitle, action = null, compact = false }) {
+function SessionRow({ session, currentId, busyId, onSignOut }) {
+  const current = session.id === currentId;
+  const revoked = Boolean(session.isRevoked);
+  const rawLabel = String(session.deviceLabel || "").trim();
+  const label = !rawLabel || rawLabel.toLowerCase() === "unknown device"
+    ? "Unrecognized session"
+    : rawLabel;
+  const rawAgent = String(session.userAgent || "").trim();
+  const agentTechnical = /^(node(?:\.js)?(?:\/|\s|$)|axios(?:\/|\s|$))/i.test(rawAgent);
+  const detail = !rawAgent || agentTechnical
+    ? "Device details unavailable"
+    : rawAgent;
   return (
-    <div className={cx("svx-security-section-head", compact && "is-compact")}> 
-      <div>
-        {eyebrow ? <p className="svx-security-eyebrow">{eyebrow}</p> : null}
-        <h2>{title}</h2>
-        {subtitle ? <p className="svx-security-section-text">{subtitle}</p> : null}
+    <div className="svx-sec-session">
+      <div className="svx-sec-device-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="19" height="19" fill="none"
+          stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+          <rect x="3" y="4" width="18" height="13" rx="2"/>
+          <path d="M8 21h8M12 17v4"/>
+        </svg>
       </div>
-      {action ? <div className="svx-security-section-action">{action}</div> : null}
+      <div className="svx-sec-device-info">
+        <strong>{label}</strong>
+        <span>
+          {revoked ? "Signed out" : current ? "Current device" : "Signed in"}
+          {" · "}
+          {timeAgo(session.lastSeenAt || session.createdAt)}
+        </span>
+        <small title={detail}>{detail}</small>
+      </div>
+      {current ? (
+        <span className="svx-sec-current">Current</span>
+      ) : revoked ? (
+        <span className="svx-sec-muted-status">Signed out</span>
+      ) : (
+        <AsyncButton
+          type="button"
+          loading={busyId === session.id}
+          loadingText="Signing out..."
+          onClick={() => onSignOut(session.id)}
+          variant="secondary"
+          className="svx-sec-btn svx-sec-btn-danger"
+        >
+          Sign out
+        </AsyncButton>
+      )}
     </div>
-  );
-}
-
-function MetricCard({ label, value, note, tone = "neutral" }) {
-  return (
-    <article className={cx("svx-security-metric", securityTone(tone))}>
-      <span>{label}</span>
-      <strong>{value}</strong>
-      {note ? <p>{note}</p> : null}
-    </article>
-  );
-}
-
-function InfoItem({ label, value }) {
-  return (
-    <div className="svx-security-info-item">
-      <span>{label}</span>
-      <strong>{value || "—"}</strong>
-    </div>
-  );
-}
-
-function sessionTone(session, currentSessionId) {
-  if (session?.id === currentSessionId) return "success";
-  if (session?.isRevoked) return "warning";
-  return "info";
-}
-
-function loginEventTone(event) {
-  const status = String(event?.status || "").toUpperCase();
-
-  if (status === "SUCCESS") return "success";
-  if (status === "FAILED") return "warning";
-  if (status === "BLOCKED") return "danger";
-
-  return "neutral";
-}
-
-function EmptyState({ title, text }) {
-  return (
-    <div className="svx-security-empty">
-      <strong>{title}</strong>
-      <p>{text}</p>
-    </div>
-  );
-}
-
-function LoadMorePanel({ visible, total, onLoadMore, label }) {
-  if (total <= visible) return null;
-
-  const remaining = total - visible;
-  const nextCount = Math.min(LOAD_MORE_STEP, remaining);
-
-  return (
-    <div className="svx-security-load-more">
-      <div>
-        <strong>
-          Showing {visible} of {total}
-        </strong>
-        <p>Show more only when you need older records.</p>
-      </div>
-      <button type="button" onClick={onLoadMore} className={securityButton("secondary")}>
-        Load {nextCount} more {label}
-      </button>
-    </div>
-  );
-}
-
-function SessionCard({ session, currentSessionId, busyId, onRevoke }) {
-  const isCurrent = session?.id === currentSessionId;
-  const busy = busyId === session?.id;
-  const tone = sessionTone(session, currentSessionId);
-  const lastActive = formatTimeAgo(session?.lastSeenAt || session?.createdAt);
-  const signedIn = formatDateTime(session?.createdAt);
-  const accessEnds = formatDateTime(session?.expiresAt);
-
-  return (
-    <article className="svx-security-session-row">
-      <div className="svx-security-session-main">
-        <div className="svx-security-row-pills">
-          <Pill tone={tone}>{isCurrent ? "Current device" : session?.isRevoked ? "Signed out" : "Signed in"}</Pill>
-          {session?.deviceLabel ? <Pill tone="info">{session.deviceLabel}</Pill> : null}
-        </div>
-
-        <h3>{session?.deviceLabel || "Unknown device"}</h3>
-        <p>{session?.userAgent || "No device details available"}</p>
-      </div>
-
-      <div className="svx-security-info-grid">
-        <InfoItem label="Last active" value={lastActive} />
-        <InfoItem label="Signed in" value={signedIn} />
-        <InfoItem label="Address" value={session?.ipAddress || "—"} />
-        <InfoItem label="Access ends" value={accessEnds} />
-      </div>
-
-      <div className="svx-security-row-action">
-        {isCurrent ? (
-          <span className="svx-security-current-device">This device</span>
-        ) : (
-          <AsyncButton
-            type="button"
-            loading={busy}
-            loadingText="Signing out..."
-            onClick={() => onRevoke(session.id)}
-            className={securityButton("danger")}
-          >
-            Sign out
-          </AsyncButton>
-        )}
-      </div>
-    </article>
-  );
-}
-
-function LoginEventRow({ event }) {
-  const tone = loginEventTone(event);
-  const status = String(event?.status || "").toUpperCase();
-
-  const title =
-    status === "SUCCESS"
-      ? "Successful sign-in"
-      : status === "FAILED"
-        ? "Failed sign-in"
-        : status === "BLOCKED"
-          ? "Blocked sign-in"
-          : "Sign-in event";
-
-  return (
-    <article className="svx-security-event-row">
-      <div className="svx-security-event-main">
-        <div className="svx-security-row-pills">
-          <Pill tone={tone}>{title}</Pill>
-          {event?.role ? <Pill tone="info">{event.role}</Pill> : null}
-        </div>
-
-        <strong>{event?.deviceLabel || "Unknown device"}</strong>
-        <p>{event?.email || "No email recorded"}</p>
-        {event?.reason ? <small>Note: {event.reason}</small> : null}
-      </div>
-
-      <div className="svx-security-event-side">
-        <InfoItem label="Time" value={formatDateTime(event?.createdAt)} />
-        <InfoItem label="Address" value={event?.ipAddress || "—"} />
-      </div>
-    </article>
-  );
-}
-
-function SecurityNote({ activeSessionsCount, failedAttemptsCount, activeOtherSessionsCount }) {
-  const items = [
-    {
-      label: "Device access",
-      value:
-        activeOtherSessionsCount > 0
-          ? `${activeOtherSessionsCount} other active device${activeOtherSessionsCount === 1 ? "" : "s"}`
-          : "Only this device matters now",
-    },
-    {
-      label: "Sign-in health",
-      value:
-        failedAttemptsCount > 0
-          ? `${failedAttemptsCount} failed or blocked attempt${failedAttemptsCount === 1 ? "" : "s"}`
-          : "No failed attempts found",
-    },
-    {
-      label: "Protection action",
-      value:
-        activeSessionsCount > 1
-          ? "Use sign out other devices if access looks suspicious."
-          : "Change password only when needed.",
-    },
-  ];
-
-  return (
-    <section className={cx(pageCard(), "svx-security-note-card")}>
-      <p className="svx-security-eyebrow">Security note</p>
-      <h3>What matters most</h3>
-      <div className="svx-security-note-list">
-        {items.map((item) => (
-          <div key={item.label}>
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
 
 export default function SettingsSecurity() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [revokingOther, setRevokingOther] = useState(false);
-  const [revokeBusyId, setRevokeBusyId] = useState("");
-
   const [overview, setOverview] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [loginEvents, setLoginEvents] = useState([]);
-
-  const [visibleSessionsCount, setVisibleSessionsCount] = useState(INITIAL_SESSIONS_VISIBLE);
-  const [visibleLoginEventsCount, setVisibleLoginEventsCount] = useState(
-    INITIAL_LOGIN_EVENTS_VISIBLE,
-  );
-
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  const [revokeBusyId, setRevokeBusyId] = useState("");
+  const [revokingOther, setRevokingOther] = useState(false);
+  const [confirmBulkSignOut, setConfirmBulkSignOut] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
   const [form, setForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -315,48 +100,26 @@ export default function SettingsSecurity() {
     revokeOtherSessions: true,
   });
 
-  const [savingPassword, setSavingPassword] = useState(false);
-
   useEffect(() => {
     document.title = "Login & security • Storvex";
   }, []);
 
   async function loadAll(showToast = false) {
     try {
-      if (!overview && !sessions.length && !loginEvents.length) {
-        setLoading(true);
-      } else {
-        setRefreshing(true);
-      }
-
+      setRefreshing(true);
       const [overviewData, sessionsData, eventsData] = await Promise.all([
         getSecurityOverview(),
         getSecuritySessions(),
         getSecurityLoginEvents(),
       ]);
 
-      const nextSessions = Array.isArray(sessionsData) ? sessionsData : [];
-      const nextEvents = Array.isArray(eventsData) ? eventsData : [];
-
       setOverview(overviewData || null);
-      setSessions(nextSessions);
-      setLoginEvents(nextEvents);
-
-      setVisibleSessionsCount((current) =>
-        Math.min(Math.max(current, INITIAL_SESSIONS_VISIBLE), Math.max(nextSessions.length, INITIAL_SESSIONS_VISIBLE)),
-      );
-
-      setVisibleLoginEventsCount((current) =>
-        Math.min(
-          Math.max(current, INITIAL_LOGIN_EVENTS_VISIBLE),
-          Math.max(nextEvents.length, INITIAL_LOGIN_EVENTS_VISIBLE),
-        ),
-      );
-
+      setSessions(Array.isArray(sessionsData) ? sessionsData : []);
+      setLoginEvents(Array.isArray(eventsData) ? eventsData : []);
       if (showToast) toast.success("Security details refreshed");
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.message || "Failed to load security details");
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.message || "Failed to load security details");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -368,71 +131,63 @@ export default function SettingsSecurity() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const currentSessionId = overview?.currentSessionId || null;
-  const activeSessionsCount = Number(overview?.summary?.activeSessions || 0);
-  const recentLoginsCount = Number(overview?.summary?.recentLogins || 0);
-  const failedAttemptsCount = Number(overview?.summary?.failedAttempts || 0);
-  const lastPasswordChange = overview?.summary?.lastPasswordChangeAt || null;
-
-  const visibleSessions = useMemo(
-    () => sessions.slice(0, visibleSessionsCount),
-    [sessions, visibleSessionsCount],
-  );
-
-  const visibleLoginEvents = useMemo(
-    () => loginEvents.slice(0, visibleLoginEventsCount),
-    [loginEvents, visibleLoginEventsCount],
-  );
-
-  const posture = useMemo(() => {
-    if (activeSessionsCount <= 0) {
-      return {
-        label: "Needs review",
-        tone: "warning",
-        note: "We could not confirm an active device session.",
-      };
-    }
-
-    if (failedAttemptsCount > 0) {
-      return {
-        label: "Attention needed",
-        tone: "process",
-        note: "Recent failed or blocked sign-ins were found.",
-      };
-    }
-
-    return {
-      label: "Protected",
-      tone: "success",
-      note: "No urgent account security issue found.",
-    };
-  }, [activeSessionsCount, failedAttemptsCount]);
-
-  function updateField(key, value) {
-    setForm((curr) => ({ ...curr, [key]: value }));
+  function changeField(field, value) {
+    setForm((previous) => ({ ...previous, [field]: value }));
   }
 
-  function loadMoreSessions() {
-    setVisibleSessionsCount((current) => Math.min(current + LOAD_MORE_STEP, sessions.length));
-  }
+  async function onChangePassword(event) {
+    event.preventDefault();
 
-  function loadMoreLoginEvents() {
-    setVisibleLoginEventsCount((current) =>
-      Math.min(current + LOAD_MORE_STEP, loginEvents.length),
-    );
+    if (!form.currentPassword.trim()) {
+      toast.error("Enter your current password");
+      return;
+    }
+    if (!form.newPassword.trim()) {
+      toast.error("Enter your new password");
+      return;
+    }
+    if (form.newPassword.length < 6) {
+      toast.error("New password must be at least 6 characters");
+      return;
+    }
+    if (form.newPassword !== form.confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    try {
+      setSavingPassword(true);
+      await changeMyPassword({
+        currentPassword: form.currentPassword,
+        newPassword: form.newPassword,
+        revokeOtherSessions: Boolean(form.revokeOtherSessions),
+      });
+      toast.success("Password updated");
+      setForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+        revokeOtherSessions: true,
+      });
+      await loadAll();
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.message || "Failed to update password");
+    } finally {
+      setSavingPassword(false);
+    }
   }
 
   async function onRevokeSession(sessionId) {
     if (!sessionId) return;
-
     try {
       setRevokeBusyId(sessionId);
       await revokeSecuritySession(sessionId);
       toast.success("Device signed out");
       await loadAll();
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.message || "Failed to sign out device");
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.message || "Failed to sign out device");
     } finally {
       setRevokeBusyId("");
     }
@@ -443,280 +198,221 @@ export default function SettingsSecurity() {
       setRevokingOther(true);
       await revokeOtherSecuritySessions();
       toast.success("Other devices signed out");
+      setConfirmBulkSignOut(false);
       await loadAll();
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.message || "Failed to sign out other devices");
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.message || "Failed to sign out other devices");
     } finally {
       setRevokingOther(false);
     }
   }
 
-  async function onChangePassword(e) {
-    e.preventDefault();
-
-    if (!form.currentPassword.trim()) {
-      toast.error("Enter your current password");
-      return;
-    }
-
-    if (!form.newPassword.trim()) {
-      toast.error("Enter your new password");
-      return;
-    }
-
-    if (form.newPassword.length < 6) {
-      toast.error("New password must be at least 6 characters");
-      return;
-    }
-
-    if (form.newPassword !== form.confirmPassword) {
-      toast.error("New passwords do not match");
-      return;
-    }
-
-    try {
-      setSavingPassword(true);
-
-      await changeMyPassword({
-        currentPassword: form.currentPassword,
-        newPassword: form.newPassword,
-        revokeOtherSessions: Boolean(form.revokeOtherSessions),
-      });
-
-      toast.success("Password updated");
-
-      setForm({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-        revokeOtherSessions: true,
-      });
-
-      await loadAll();
-    } catch (err) {
-      console.error(err);
-      toast.error(err?.message || "Failed to update password");
-    } finally {
-      setSavingPassword(false);
-    }
-  }
+  const currentId = overview?.currentSessionId || null;
+  const activeSessions = useMemo(
+    () => sessions.filter((session) => !session.isRevoked),
+    [sessions],
+  );
+  const orderedSessions = useMemo(
+    () => [...activeSessions].sort((a, b) => {
+      if (a.id === currentId) return -1;
+      if (b.id === currentId) return 1;
+      return new Date(b.lastSeenAt || b.createdAt || 0)
+        - new Date(a.lastSeenAt || a.createdAt || 0);
+    }),
+    [activeSessions, currentId],
+  );
+  const otherDevices = activeSessions.filter((s) => s.id !== currentId).length;
+  const failedAttempts = Number(overview?.summary?.failedAttempts || 0);
+  const recentFailures = loginEvents.filter((event) =>
+    ["FAILED", "BLOCKED"].includes(String(event?.status || "").toUpperCase())
+  ).length;
+  const needsAttention = failedAttempts > 0 || recentFailures > 0;
+  const displayed = orderedSessions.slice(0, visibleCount);
 
   if (loading) {
     return <PageSkeleton titleWidth="w-48" lines={4} variant="default" />;
   }
 
-  const activeOtherSessionsCount = sessions.filter(
-    (session) => session.id !== currentSessionId && !session.isRevoked,
-  ).length;
-
   return (
-    <div className="svx-settings-page svx-settings-security">
-      <section className={cx(pageCard(), "svx-security-hero")}>
-        <SectionHeader
-          eyebrow="Security"
-          title="Login & security"
-          subtitle="Protect account access, review signed-in devices, and update your password."
-          action={
-            <div className="svx-security-hero-actions">
-              <Pill tone={posture.tone}>{posture.label}</Pill>
-              <AsyncButton
-                type="button"
-                loading={refreshing}
-                loadingText="Refreshing..."
-                onClick={() => loadAll(true)}
-                className={securityButton("secondary")}
-              >
-                Refresh
-              </AsyncButton>
-            </div>
-          }
-        />
-
-        <div className="svx-security-metrics-grid">
-          <MetricCard
-            label="Active devices"
-            value={String(activeSessionsCount)}
-            note="Devices signed into this owner account"
-            tone="success"
-          />
-          <MetricCard
-            label="Recent sign-ins"
-            value={String(recentLoginsCount)}
-            note="Recent successful and unsuccessful sign-ins"
-            tone="info"
-          />
-          <MetricCard
-            label="Failed attempts"
-            value={String(failedAttemptsCount)}
-            note="Blocked or unsuccessful access attempts"
-            tone={failedAttemptsCount > 0 ? "warning" : "success"}
-          />
-          <MetricCard
-            label="Password updated"
-            value={lastPasswordChange ? formatTimeAgo(lastPasswordChange) : "—"}
-            note={lastPasswordChange ? formatDateTime(lastPasswordChange) : "No update history yet"}
-            tone="neutral"
-          />
+    <div className="svx-settings-page svx-settings-security svx-sec-simple">
+      <header className="svx-sec-header">
+        <div>
+          <h2>Login & security</h2>
+          <p>Manage your password and signed-in devices.</p>
         </div>
-      </section>
+        <AsyncButton
+          type="button"
+          loading={refreshing}
+          loadingText="Refreshing..."
+          onClick={() => loadAll(true)}
+          variant="secondary"
+          className="svx-sec-btn svx-sec-btn-secondary"
+        >
+          Refresh
+        </AsyncButton>
+      </header>
 
-      <section className="svx-security-grid-main">
-        <section className={cx(pageCard(), "svx-security-password-card")}>
-          <SectionHeader
-            eyebrow="Password"
-            title="Change password"
-            subtitle="Change your password if it may be known by someone else or a device has been lost."
-            compact
-          />
+      {needsAttention ? (
+        <div className="svx-sec-warning" role="status">
+          <div>
+            <strong>Review recent sign-in attempts</strong>
+            <p>Failed or blocked sign-ins have been recorded on this account.</p>
+          </div>
+          <Link to="/app/settings/audit">View activity</Link>
+        </div>
+      ) : null}
 
-          <form onSubmit={onChangePassword} className="svx-security-password-form">
-            <div>
-              <label className={fieldLabel()}>Current password</label>
-              <input
-                type="password"
-                className={inputClass()}
-                value={form.currentPassword}
-                onChange={(e) => updateField("currentPassword", e.target.value)}
-                placeholder="Enter current password"
-              />
-            </div>
-            <div>
-              <label className={fieldLabel()}>New password</label>
-              <input
-                type="password"
-                className={inputClass()}
-                value={form.newPassword}
-                onChange={(e) => updateField("newPassword", e.target.value)}
-                placeholder="At least 6 characters"
-              />
-            </div>
-            <div>
-              <label className={fieldLabel()}>Confirm new password</label>
-              <input
-                type="password"
-                className={inputClass()}
-                value={form.confirmPassword}
-                onChange={(e) => updateField("confirmPassword", e.target.value)}
-                placeholder="Re-enter new password"
-              />
-            </div>
+      <section className="svx-sec-section">
+        <div className="svx-sec-section-heading">
+          <div>
+            <h3>Change password</h3>
+            <p>Use a strong password that you don't use elsewhere.</p>
+          </div>
+        </div>
 
-            <label className="svx-security-check-row">
-              <input
-                type="checkbox"
-                checked={Boolean(form.revokeOtherSessions)}
-                onChange={(e) => updateField("revokeOtherSessions", e.target.checked)}
-              />
-              <span>
-                <strong>Sign out other devices after password change</strong>
-                <small>Recommended when you want the new password to apply everywhere immediately.</small>
-              </span>
-            </label>
-
+        <form onSubmit={onChangePassword} className="svx-sec-form">
+          <label>
+            <span>Current password</span>
+            <input type="password" autoComplete="current-password"
+              value={form.currentPassword}
+              onChange={(e) => changeField("currentPassword", e.target.value)}
+              placeholder="Enter current password" />
+          </label>
+          <label>
+            <span>New password</span>
+            <input type="password" autoComplete="new-password"
+              value={form.newPassword}
+              onChange={(e) => changeField("newPassword", e.target.value)}
+              placeholder="At least 6 characters" />
+          </label>
+          <label>
+            <span>Confirm new password</span>
+            <input type="password" autoComplete="new-password"
+              value={form.confirmPassword}
+              onChange={(e) => changeField("confirmPassword", e.target.value)}
+              placeholder="Re-enter new password" />
+          </label>
+          <label className="svx-sec-checkbox">
+            <input type="checkbox"
+              checked={form.revokeOtherSessions}
+              onChange={(e) => changeField("revokeOtherSessions", e.target.checked)}
+            />
+            <span>Sign out other devices after changing password</span>
+          </label>
+          <div className="svx-sec-form-footer">
             <AsyncButton
               type="submit"
               loading={savingPassword}
               loadingText="Updating..."
-              className={securityButton("primary")}
+              variant="primary"
+              className="svx-sec-btn svx-sec-btn-primary"
             >
               Update password
             </AsyncButton>
-          </form>
-        </section>
-
-        <SecurityNote
-          activeSessionsCount={activeSessionsCount}
-          failedAttemptsCount={failedAttemptsCount}
-          activeOtherSessionsCount={activeOtherSessionsCount}
-        />
+          </div>
+        </form>
       </section>
 
-      <section className={cx(pageCard(), "svx-security-devices-card")}>
-        <SectionHeader
-          eyebrow="Devices"
-          title="Signed-in devices"
-          subtitle="Review the devices currently signed in to this account."
-          action={
-            <div className="svx-security-device-actions">
+      <section className="svx-sec-section">
+        <div className="svx-sec-section-heading svx-sec-device-heading">
+          <div>
+            <h3>Signed-in devices</h3>
+            <p>Review where your account is currently signed in.</p>
+          </div>
+          <div className="svx-sec-device-tools">
+            <span className="svx-sec-device-count">
+              {activeSessions.length} active
+            </span>
+            {otherDevices > 0 ? (
               <AsyncButton
                 type="button"
                 loading={revokingOther}
                 loadingText="Signing out..."
-                onClick={onRevokeOtherSessions}
-                disabled={activeOtherSessionsCount === 0}
-                className={securityButton("secondary")}
+                onClick={() => setConfirmBulkSignOut(true)}
+                variant="secondary"
+          className="svx-sec-btn svx-sec-btn-secondary"
               >
                 Sign out other devices
               </AsyncButton>
-              <Link to="/app/settings/audit" className={securityButton("primary")}>
-                View activity
-              </Link>
-            </div>
-          }
-        />
+            ) : null}
+          </div>
+        </div>
 
-        {sessions.length === 0 ? (
-          <EmptyState
-            title="No device sessions found"
-            text="We could not find any saved device sessions for this account."
-          />
-        ) : (
-          <>
-            <div className="svx-security-session-list">
-              {visibleSessions.map((session) => (
-                <SessionCard
-                  key={session.id}
-                  session={session}
-                  currentSessionId={currentSessionId}
-                  busyId={revokeBusyId}
-                  onRevoke={onRevokeSession}
-                />
-              ))}
+        {confirmBulkSignOut && otherDevices > 0 ? (
+          <div
+            className="svx-sec-confirm"
+            role="group"
+            aria-label="Confirm other device sign-out"
+          >
+            <div>
+              <strong>
+                Sign out {otherDevices} other {otherDevices === 1 ? "device" : "devices"}?
+              </strong>
+              <p>
+                These sessions will be signed out. Your current session
+                will remain active.
+              </p>
             </div>
-            <LoadMorePanel
-              visible={visibleSessions.length}
-              total={sessions.length}
-              label="devices"
-              onLoadMore={loadMoreSessions}
-            />
-          </>
+            <div className="svx-sec-confirm-actions">
+              <button
+                type="button"
+                className="svx-sec-confirm-cancel"
+                disabled={revokingOther}
+                onClick={() => setConfirmBulkSignOut(false)}
+              >
+                Cancel
+              </button>
+              <AsyncButton
+                type="button"
+                variant="secondary"
+                loading={revokingOther}
+                loadingText="Signing out..."
+                onClick={onRevokeOtherSessions}
+                className="svx-sec-btn svx-sec-btn-danger"
+              >
+                Confirm sign out
+              </AsyncButton>
+            </div>
+          </div>
+        ) : null}
+
+        {activeSessions.length ? (
+          <div className="svx-sec-device-list">
+            {displayed.map((session) => (
+              <SessionRow
+                key={session.id}
+                session={session}
+                currentId={currentId}
+                busyId={revokeBusyId}
+                onSignOut={onRevokeSession}
+              />
+            ))}
+            {visibleCount < orderedSessions.length ? (
+              <button type="button" className="svx-sec-more"
+                onClick={() => setVisibleCount((n) =>
+                  Math.min(n + LOAD_STEP, orderedSessions.length)
+                )}>
+                Show more devices
+              </button>
+            ) : null}
+          </div>
+        ) : (
+          <p className="svx-sec-empty">
+            No active device sessions were returned. Refresh to check again.
+          </p>
         )}
       </section>
 
-      <section className={cx(pageCard(), "svx-security-events-card")}>
-        <SectionHeader
-          eyebrow="Recent access"
-          title="Sign-in activity"
-          subtitle="Recent successful, failed, and blocked sign-in attempts."
-          action={
-            <Link to="/app/settings/audit" className={securityButton("secondary")}>
-              View all activity
-            </Link>
-          }
-        />
-
-        {loginEvents.length === 0 ? (
-          <EmptyState
-            title="No sign-in activity found"
-            text="Recent account access records will appear here once they are available."
-          />
-        ) : (
-          <>
-            <div className="svx-security-event-list">
-              {visibleLoginEvents.map((event) => (
-                <LoginEventRow key={event.id} event={event} />
-              ))}
-            </div>
-            <LoadMorePanel
-              visible={visibleLoginEvents.length}
-              total={loginEvents.length}
-              label="events"
-              onLoadMore={loadMoreLoginEvents}
-            />
-          </>
-        )}
-      </section>
+      <div className="svx-sec-activity-link">
+        <div>
+          <strong>Sign-in history</strong>
+          <p>Review successful, failed and blocked sign-ins.</p>
+        </div>
+        <Link to="/app/settings/audit">
+          View activity <span aria-hidden="true">→</span>
+        </Link>
+      </div>
     </div>
   );
 }

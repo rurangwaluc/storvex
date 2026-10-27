@@ -1,0 +1,170 @@
+/* STORVEX STEP 54 — LOCKED CONNECT YOUR BUSINESS EVERYWHERE */
+/* Isolated from the legacy mobile-ready section and other homepage sections. */
+.storvex-landing .svx-connect-section {
+  background: #fff;
+  padding: 0 0 42px;
+}
+.svx-connect-shell {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 39%) minmax(0, 18%) minmax(0, 43%);
+  align-items: center;
+  width: min(1280px, 89%);
+  box-sizing: border-box;
+  min-height: 340px;
+  margin-inline: auto;
+  padding: 25px 24px 25px 42px;
+  overflow: hidden;
+  border: 1px solid #dcebf6;
+  border-radius: 24px;
+  background: #eef7ff;
+}
+.svx-connect-copy { position: relative; z-index: 3; min-width: 0; padding-right: 10px; }
+.storvex-landing .svx-connect-copy h2 {
+  margin: 0; color: #111827; font-family: var(--landing-heading-font);
+  font-size: clamp(31px, 2.95vw, 43px); font-weight: 800;
+  line-height: 1.06; letter-spacing: -.048em;
+}
+.storvex-landing .svx-connect-copy h2 span { color: #168df7; }
+.storvex-landing .svx-connect-copy p {
+  max-width: 360px; margin: 13px 0 0; color: #3c4a5c;
+  font-size: clamp(13px, 1.15vw, 15px); line-height: 1.55;
+}
+.svx-connect-cta {
+  display: inline-flex; align-items: center; justify-content: center; gap: 17px;
+  margin-top: 16px; min-height: 44px; padding: 10px 20px;
+  border-radius: 11px; background: #fff; color: #151923;
+  box-shadow: 0 6px 20px rgba(25, 55, 90, .09);
+  font-size: 14px; font-weight: 800; text-decoration: none;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.svx-connect-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(25,55,90,.14); }
+.svx-connect-cta:focus-visible { outline: 3px solid #168df7; outline-offset: 3px; }
+.svx-connect-middle { position: relative; z-index: 1; width: 100%; min-width: 0; }
+.svx-connect-wires {
+  position: absolute; z-index: 0; left: -41%; top: -28%; width: 225%; height: 155%;
+  overflow: visible; pointer-events: none;
+}
+.svx-connect-wires path { stroke: #ff5961; stroke-width: 1.7; stroke-linecap: round; }
+.svx-connect-channel-list { position: relative; z-index: 2; display: grid; gap: 10px; width: min(100%, 216px); margin: auto; }
+.svx-connect-channel {
+  display: flex; gap: 11px; align-items: center; min-width: 0; min-height: 62px;
+  padding: 10px 12px; background: #fff; border: 1px solid #edf1f5;
+  border-radius: 12px; box-shadow: 0 10px 23px rgba(27,53,82,.11);
+  transform: rotate(-1deg);
+}
+.svx-connect-channel:nth-child(2) { transform: translateX(5px) rotate(.8deg); }
+.svx-connect-channel-icon { display: grid; place-items: center; flex: 0 0 39px; width: 39px; height: 39px; border-radius: 10px; color: #fff; background: #168df7; }
+.svx-connect-channel-icon.is-whatsapp { background: #08c45a; border-radius: 50%; }
+.svx-connect-channel-icon.is-marketplace { background: #2768f0; }
+.svx-connect-channel-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.svx-connect-channel-text strong { color: #172238; font-size: 13px; line-height: 1.1; white-space: nowrap; }
+.svx-connect-channel-text small { color: #6d7788; font-size: 11px; line-height: 1.2; white-space: nowrap; }
+.svx-connect-right { position: relative; z-index: 2; align-self: center; min-width: 0; margin-left: 0; padding: 0; }
+.svx-connect-device {
+  width: 100%; max-width: none; box-sizing: border-box; padding: 7px; border: 4px solid #111821;
+  border-radius: 23px; background: #111821;
+  transform: rotate(1deg); transform-origin: center;
+  box-shadow: 0 24px 34px rgba(10,24,43,.21);
+}
+.svx-connect-dashboard {
+  display: grid; grid-template-columns: 88px minmax(0,1fr);
+  min-height: 268px; overflow: hidden; border-radius: 13px;
+  background: #fff; color: #14203a; font-family: Arial, sans-serif;
+}
+.svx-connect-dashboard-side { min-width: 0; padding: 15px 6px; border-right: 1px solid #e4eaf0; background: #f7f9fc; }
+.svx-connect-dashboard-brand { display: flex; align-items: center; gap: 3px; margin: 0 0 25px 4px; font-size: 9px; font-weight: 900; }
+.svx-connect-dashboard-brand span { color:#168df7; font-size: 17px; font-weight: 1000; font-style: italic; }
+.svx-connect-side-entry { display:flex; align-items:center; gap:6px; min-height:25px; padding: 5px 5px; color:#84909f; font-size: 9px; white-space: nowrap; }
+.svx-connect-side-entry.is-selected { border-radius: 5px; background:#168df7; color:#fff; font-weight:800; }
+.svx-connect-dashboard-main { min-width: 0; padding: 15px 16px 13px; }
+.svx-connect-dashboard-top { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:25px; border-bottom:1px solid #eff2f5; }
+.svx-connect-search { width:65%; max-width: 205px; padding:5px 9px; border-radius:20px; color:#a0aabb; background:#f3f6fa; font-size:8px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.svx-connect-profile { display:grid; place-items:center; flex:0 0 16px; width:16px; height:16px; border-radius:50%; background:#111b2c; color:white; font-size:7px; }
+.svx-connect-dashboard-heading { display:flex; justify-content:space-between; align-items:start; gap:8px; margin-top:20px; }
+.svx-connect-dashboard-heading>div { display:flex; flex-direction:column; gap:4px; }
+.svx-connect-dashboard-heading strong { font-size:13px; line-height:1.1; }
+.svx-connect-dashboard-heading small { color:#8a96a7; font-size:9px; }
+.svx-connect-sales-total { text-align:right; }
+.svx-connect-sales-total strong { font-size:clamp(9px, .96vw, 12px); }
+.svx-connect-sales-total small { color:#11b95f; font-weight:800; }
+.svx-connect-chart { display:flex; align-items:flex-end; justify-content:space-between; gap:4px; width:100%; height:100px; margin-top:16px; padding:7px 1px 0; border-bottom:1px solid #dfe7ee; }
+.svx-connect-chart-bar { display:block; flex:1 1 0; min-width:0; max-width:17px; border-radius:2px 2px 0 0; background:#168df7; }
+.svx-connect-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin-top:15px; padding-top:11px; border-top:1px solid #eef2f5; }
+.svx-connect-summary>div { min-width:0; color:#7c8799; font-size:9px; }
+.svx-connect-summary strong { display:block; margin-top:4px; color:#14203a; font-size:14px; }
+.svx-connect-summary-dot { display:inline-block; width:6px; height:6px; margin-right:4px; border-radius:50%; vertical-align:middle; background:#168df7; }
+.svx-connect-summary-dot.is-green { background:#00c85b; }
+.svx-connect-summary-dot.is-coral { background:#ff5961; }
+:root[data-theme="dark"] .storvex-landing .svx-connect-section { background:#111213; }
+:root[data-theme="dark"] .svx-connect-shell { background:#191b1e; border-color:#34373c; }
+:root[data-theme="dark"] .storvex-landing .svx-connect-copy h2 { color:#f6f7fa; }
+:root[data-theme="dark"] .storvex-landing .svx-connect-copy p { color:#bec3ca; }
+:root[data-theme="dark"] .svx-connect-cta { background:#fff; color:#111827; }
+@media(max-width:1150px){
+  .svx-connect-shell { min-height:325px; padding-left:28px; }
+  .storvex-landing .svx-connect-copy h2 { font-size:clamp(28px,3.05vw,39px); }
+  .svx-connect-channel-list { gap:9px; }
+  .svx-connect-channel { min-height:58px; padding:8px 9px; gap:8px; }
+  .svx-connect-channel-icon { width:33px; height:33px; flex-basis:33px; }
+  .svx-connect-channel-text strong { font-size:12px; }
+  .svx-connect-dashboard { min-height:252px; grid-template-columns:73px minmax(0,1fr); }
+  .svx-connect-dashboard-main { padding:12px 11px; }
+}
+@media(max-width:900px){
+  .svx-connect-shell { width:auto; margin-inline:24px; min-height:0; grid-template-columns: minmax(0,38%) minmax(0,62%); grid-template-areas:'copy copy' 'channels dashboard'; gap:14px 16px; padding:27px 28px 26px; }
+  .svx-connect-copy { grid-area:copy; padding:0; }
+  .storvex-landing .svx-connect-copy h2 { font-size:clamp(31px,4.5vw,40px); }
+  .storvex-landing .svx-connect-copy p { margin-top:10px; }
+  .svx-connect-cta { margin-top:14px; }
+  .svx-connect-middle { grid-area:channels; }
+  .svx-connect-channel-list { width:min(100%,230px); margin-left:0; }
+  .svx-connect-wires { left:5%; top:-12%; width:140%; height:130%; }
+  .svx-connect-right { grid-area:dashboard; margin:0; }
+  .svx-connect-device { width:100%; transform:none; }
+}
+@media(max-width:620px){
+ .storvex-landing .svx-connect-section { padding-bottom:50px; }
+  .svx-connect-shell { margin-inline:16px; display:flex; flex-direction:column; align-items:stretch; gap:20px; padding:26px 20px 23px; border-radius:20px; }
+  .storvex-landing .svx-connect-copy h2 { font-size:clamp(29px,7vw,37px); }
+  .storvex-landing .svx-connect-copy p { max-width:410px; font-size:13.5px; }
+  .svx-connect-middle { width:100%; }
+  .svx-connect-channel-list { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); width:100%; max-width:none; gap:7px; }
+  .svx-connect-channel, .svx-connect-channel:nth-child(2) { flex-direction:column; justify-content:center; min-height:92px; gap:7px; padding:8px 4px; transform:none; }
+  .svx-connect-channel-icon { flex:0 0 31px; width:31px; height:31px; }
+  .svx-connect-channel-text { align-items:center; }
+  .svx-connect-channel-text strong { font-size:11px; }
+  .svx-connect-channel-text small { font-size:9px; }
+  .svx-connect-wires { display:none; }
+  .svx-connect-right { width:100%; }
+  .svx-connect-device { width:100%; max-width:520px; margin-inline:auto; padding:5px; border-width:3px; border-radius:17px; }
+  .svx-connect-dashboard { min-height:222px; grid-template-columns:64px minmax(0,1fr); }
+  .svx-connect-dashboard-side { padding:10px 3px; }
+  .svx-connect-dashboard-brand { font-size:7px; margin-bottom:17px; }
+  .svx-connect-side-entry { gap:3px; font-size:7px; padding:3px; }
+  .svx-connect-dashboard-main { padding:9px; }
+  .svx-connect-dashboard-heading { margin-top:12px; }
+  .svx-connect-dashboard-heading strong { font-size:10px; }
+  .svx-connect-sales-total strong { font-size:10px; }
+  .svx-connect-chart { height:76px; margin-top:11px; }
+  .svx-connect-summary { margin-top:9px; padding-top:8px; }
+  .svx-connect-summary>div { font-size:7px; }
+  .svx-connect-summary strong { font-size:11px; }
+}
+@media(max-width:390px){
+  .svx-connect-shell { padding-inline:14px; }
+  .svx-connect-channel-text strong { font-size:10px; }
+  .svx-connect-channel-text small { font-size:8px; }
+  .svx-connect-dashboard { grid-template-columns:45px minmax(0,1fr); }
+  .svx-connect-dashboard-brand { font-size:0; }
+  .svx-connect-dashboard-brand span { font-size:15px; }
+  .svx-connect-side-entry { font-size:0; justify-content:center; }
+  .svx-connect-side-entry svg { width:13px; height:13px; }
+  .svx-connect-dashboard-top { min-height:19px; }
+  .svx-connect-search { font-size:7px; }
+  .svx-connect-dashboard-heading strong { font-size:9px; }
+  .svx-connect-sales-total strong { font-size:9px; }
+  .svx-connect-chart { gap:2px; }
+}
+@media(prefers-reduced-motion:reduce){ .svx-connect-cta { transition:none; } }

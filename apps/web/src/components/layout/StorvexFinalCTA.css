@@ -1,0 +1,167 @@
+/* STORVEX / APPROVED RETAIL HOMEPAGE / FINAL CONVERSION BANNER */
+.storvex-landing .svx-grow {
+  background: #ffffff;
+  color: #101522;
+  padding: 16px 0 38px;
+}
+.storvex-landing .svx-grow-shell {
+  width: min(1280px, 89%);
+  margin-inline: auto;
+}
+.storvex-landing .svx-grow-panel {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  align-items: center;
+  min-width: 0;
+  min-height: 306px;
+  overflow: hidden;
+  border: 1px solid #eceef1;
+  border-radius: 23px;
+  background: #fcfcfd;
+  box-shadow: 0 16px 52px rgba(27, 40, 65, 0.035);
+  padding: 34px 34px 34px clamp(28px, 3.3vw, 48px);
+}
+.storvex-landing .svx-grow-copy {
+  position: relative;
+  z-index: 3;
+  min-width: 0;
+}
+.storvex-landing .svx-grow-copy h2 {
+  max-width: 620px;
+  margin: 0;
+  color: #111827;
+  font-family: var(--landing-heading-font, inherit);
+  font-size: clamp(27px, 2.8vw, 43px);
+  font-weight: 800;
+  line-height: 1.07;
+  letter-spacing: -0.049em;
+}
+.storvex-landing .svx-grow-copy p {
+  max-width: 510px;
+  margin: 13px 0 0;
+  color: #606775;
+  font-size: clamp(13px, 1.2vw, 16px);
+  line-height: 1.55;
+}
+.storvex-landing .svx-grow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 25px;
+  margin-top: 23px;
+}
+.storvex-landing .svx-grow-primary,
+.storvex-landing .svx-grow-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  min-height: 48px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform 180ms ease;
+}
+.storvex-landing .svx-grow-primary {
+  padding: 0 22px;
+  background: #FF5961;
+  color: #ffffff;
+}
+.storvex-landing .svx-grow-secondary {
+  color: #168DF7;
+}
+.storvex-landing .svx-grow-primary:hover,
+.storvex-landing .svx-grow-secondary:hover {
+  transform: translateY(-2px);
+}
+.storvex-landing .svx-grow-primary:focus-visible,
+.storvex-landing .svx-grow-secondary:focus-visible {
+  outline: 3px solid #168DF7;
+  outline-offset: 4px;
+}
+.storvex-landing .svx-grow-swoosh {
+  position: absolute;
+  z-index: 1;
+  left: 44%;
+  top: 42%;
+  width: 28%;
+  height: auto;
+  pointer-events: none;
+}
+.storvex-landing .svx-grow-visual {
+  position: relative;
+  z-index: 2;
+  min-width: 0;
+  width: 100%;
+  align-self: center;
+}
+.storvex-landing .svx-grow-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.storvex-landing .svx-grow-sales-art,
+.storvex-landing .svx-grow-products-art {
+  filter: drop-shadow(0px 13px 12px rgba(23, 40, 65, 0.15));
+}
+:root[data-theme="dark"] .storvex-landing .svx-grow {
+  background: #111213;
+  color: #f8fafc;
+}
+:root[data-theme="dark"] .storvex-landing .svx-grow-panel {
+  background: #1b1c1d;
+  border-color: #323438;
+  box-shadow: none;
+}
+:root[data-theme="dark"] .storvex-landing .svx-grow-copy h2 {
+  color: #f8fafc;
+}
+:root[data-theme="dark"] .storvex-landing .svx-grow-copy p {
+  color: #b9bdc4;
+}
+:root[data-theme="dark"] .storvex-landing .svx-grow-secondary {
+  color: #FF7077;
+}
+@media (max-width: 1100px) {
+  .storvex-landing .svx-grow-shell { width: auto; margin-inline: 24px; }
+  .storvex-landing .svx-grow-panel { padding: 27px; min-height: 270px; }
+  .storvex-landing .svx-grow-copy h2 { font-size: clamp(25px, 2.7vw, 36px); }
+  .storvex-landing .svx-grow-actions { gap: 8px 16px; }
+}
+@media (max-width: 760px) {
+  .storvex-landing .svx-grow { padding: 12px 0 32px; }
+  .storvex-landing .svx-grow-panel {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 13px;
+    padding: 28px 24px 8px;
+  }
+  .storvex-landing .svx-grow-copy h2 { max-width: 570px; font-size: clamp(27px, 5.2vw, 37px); }
+  .storvex-landing .svx-grow-visual { width: min(100%, 450px); justify-self: center; }
+  .storvex-landing .svx-grow-swoosh { left: 40%; top: 40%; width: 40%; }
+}
+@media (max-width: 560px) {
+  .storvex-landing .svx-grow-shell { margin-inline: 16px; }
+  .storvex-landing .svx-grow-panel { border-radius: 18px; padding: 23px 18px 10px; gap: 12px; }
+  .storvex-landing .svx-grow-copy h2 { font-size: clamp(25px, 6.5vw, 32px); }
+  .storvex-landing .svx-grow-copy p { margin-top: 11px; font-size: 13px; }
+  .storvex-landing .svx-grow-actions { margin-top: 17px; gap: 8px 17px; }
+  .storvex-landing .svx-grow-primary,
+  .storvex-landing .svx-grow-secondary { min-height: 43px; font-size: 12px; gap: 7px; }
+  .storvex-landing .svx-grow-primary { padding: 0 13px; }
+  .storvex-landing .svx-grow-visual { width: min(100%, 360px); }
+  .storvex-landing .svx-grow-swoosh { display: none; }
+}
+@media (max-width: 359px) {
+  .storvex-landing .svx-grow-shell { margin-inline: 12px; }
+  .storvex-landing .svx-grow-panel { padding: 20px 13px 9px; }
+  .storvex-landing .svx-grow-actions { gap: 6px 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .storvex-landing .svx-grow-primary,
+  .storvex-landing .svx-grow-secondary { transition: none; }
+}

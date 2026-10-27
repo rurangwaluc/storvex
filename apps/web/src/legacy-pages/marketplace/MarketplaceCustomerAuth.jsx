@@ -31,6 +31,9 @@ import {
 import AsyncButton from "../../components/ui/AsyncButton";
 import marketplaceQueryKeys from "../../lib/marketplaceQueryKeys";
 import {
+  getMarketplaceMarkets,
+} from "../../services/marketplaceApi";
+import {
   loginMarketplaceCustomer,
   logoutMarketplaceCustomer,
   registerMarketplaceCustomer,
@@ -63,30 +66,19 @@ function safeReturnPath(value) {
 }
 
 function formatCustomerPhone(value) {
-  const digits = String(value || "")
-    .replace(/\D/g, "");
+  const phone = cleanString(value);
 
-  let local = digits;
+  if (!phone) return "";
 
-  if (
-    digits.startsWith("2507") &&
-    digits.length === 12
-  ) {
-    local = `0${digits.slice(3)}`;
+  if (phone.startsWith("+")) {
+    return phone;
   }
 
-  if (
-    local.startsWith("07") &&
-    local.length === 10
-  ) {
-    return [
-      local.slice(0, 4),
-      local.slice(4, 7),
-      local.slice(7),
-    ].join(" ");
+  if (/^\d+$/.test(phone)) {
+    return `+${phone}`;
   }
 
-  return value || "";
+  return phone;
 }
 
 function CustomerPasswordField({
@@ -281,8 +273,33 @@ export default function MarketplaceCustomerAuth({
       name: "",
       email: "",
       phone: "",
+      countryCode: "",
       password: "",
     });
+
+  const [markets, setMarkets] =
+    useState([]);
+
+  const [marketsLoading, setMarketsLoading] =
+    useState(false);
+
+  const [marketLoadError, setMarketLoadError] =
+    useState("");
+
+  const selectedMarket = useMemo(
+    () =>
+      markets.find(
+        (market) =>
+          market.countryCode ===
+          cleanString(
+            form.countryCode,
+          ).toUpperCase(),
+      ) || null,
+    [
+      form.countryCode,
+      markets,
+    ],
+  );
 
   const [submitting, setSubmitting] =
     useState(false);
@@ -301,6 +318,7 @@ export default function MarketplaceCustomerAuth({
           location.state?.email,
         ),
       phone: "",
+      countryCode: "",
       password: "",
     });
 
@@ -310,6 +328,76 @@ export default function MarketplaceCustomerAuth({
     creating,
     location.state?.email,
   ]);
+
+  useEffect(() => {
+    if (!creating) {
+      setMarkets([]);
+      setMarketLoadError("");
+      setMarketsLoading(false);
+      return undefined;
+    }
+
+    let active = true;
+
+    setMarketsLoading(true);
+    setMarketLoadError("");
+
+    getMarketplaceMarkets()
+      .then((result) => {
+        if (!active) return;
+
+        const available =
+          Array.isArray(result?.markets)
+            ? result.markets
+            : [];
+
+        setMarkets(available);
+
+        setForm((current) => {
+          const currentCode =
+            cleanString(
+              current.countryCode,
+            ).toUpperCase();
+
+          const currentExists =
+            available.some(
+              (market) =>
+                market.countryCode ===
+                currentCode,
+            );
+
+          if (currentExists) {
+            return current;
+          }
+
+          return {
+            ...current,
+            countryCode:
+              available.length === 1
+                ? available[0].countryCode
+                : "",
+          };
+        });
+      })
+      .catch((requestError) => {
+        if (!active) return;
+
+        setMarkets([]);
+        setMarketLoadError(
+          requestError?.message ||
+            "Countries could not be loaded.",
+        );
+      })
+      .finally(() => {
+        if (active) {
+          setMarketsLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [creating]);
 
   useEffect(() => {
     if (session.checking) {
@@ -368,6 +456,13 @@ export default function MarketplaceCustomerAuth({
       return "Enter your full name.";
     }
 
+    if (
+      creating &&
+      !cleanString(form.countryCode)
+    ) {
+      return "Choose your country.";
+    }
+
     if (!cleanString(form.email)) {
       return "Enter your email address.";
     }
@@ -406,6 +501,10 @@ export default function MarketplaceCustomerAuth({
           phone:
             cleanString(form.phone) ||
             null,
+          countryCode:
+            cleanString(
+              form.countryCode,
+            ).toUpperCase(),
           password:
             String(form.password || ""),
         });
@@ -640,6 +739,65 @@ export default function MarketplaceCustomerAuth({
                     </div>
                   ) : null}
 
+                  {creating ? (
+                    <div className="svx-onboard-field">
+                      <label>Country</label>
+
+                      <select
+                        name="marketplace-customer-country"
+                        className="svx-onboard-input"
+                        value={form.countryCode}
+                        onChange={(event) =>
+                          updateField(
+                            "countryCode",
+                            event.target.value,
+                          )
+                        }
+                        disabled={
+                          submitting ||
+                          marketsLoading ||
+                          Boolean(marketLoadError)
+                        }
+                        required
+                      >
+                        {marketsLoading ? (
+                          <option value="">
+                            Loading countries...
+                          </option>
+                        ) : null}
+
+                        {!marketsLoading &&
+                        !markets.length ? (
+                          <option value="">
+                            Countries unavailable
+                          </option>
+                        ) : null}
+
+                        {!marketsLoading &&
+                        markets.length > 1 ? (
+                          <option value="">
+                            Choose your country
+                          </option>
+                        ) : null}
+
+                        {markets.map((market) => (
+                          <option
+                            key={market.countryCode}
+                            value={market.countryCode}
+                          >
+                            {market.countryName}
+                          </option>
+                        ))}
+                      </select>
+
+                      {marketLoadError ? (
+                        <small className="svx-marketplace-auth-error">
+                          {marketLoadError}
+                        </small>
+                      ) : null}
+                    </div>
+                  ) : null}
+
                   <div className="svx-onboard-field">
                     <label>Email</label>
 
@@ -691,8 +849,19 @@ export default function MarketplaceCustomerAuth({
                         data-1p-ignore="true"
                         data-bwignore="true"
                         spellCheck="false"
+                        placeholder={
+                          selectedMarket?.callingCode
+                            ? `${selectedMarket.callingCode} mobile number`
+                            : "Mobile number"
+                        }
                         disabled={submitting}
                       />
+
+                      {selectedMarket ? (
+                        <small className="svx-onboard-help">
+                          Use a {selectedMarket.countryName} phone number.
+                        </small>
+                      ) : null}
                     </div>
                   ) : null}
 

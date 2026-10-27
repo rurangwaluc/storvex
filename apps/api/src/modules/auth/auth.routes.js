@@ -9,6 +9,17 @@ const {
 const router = express.Router();
 
 const authController = require("./auth.controller");
+const {
+  createAccountBusinessCompletionGuard,
+} = require("./accountBusinessCompletion.guard");
+const { createRetailEmailLoginApiHandlers } =
+  require("./retailEmailLoginApi.handlers");
+const { createAccountSignupApiHandlers } =
+  require("./accountSignupApi.handlers");
+const { createUnifiedLoginApiHandlers } =
+  require("./unifiedLoginApi.handlers");
+const { createAccountWorkspaceSessionHandler } =
+  require("./accountWorkspaceSession.handler");
 const logoutController = require("./logout.controller");
 const momoService = require("./momo.service");
 const paymentController = require("./payment.controller");
@@ -250,6 +261,12 @@ async function createOwnerPayment(req, res) {
 router.post("/owner-intent", authController.ownerIntent);
 router.post("/signup/owner-intent", authController.ownerIntent);
 
+router.post(
+  "/account/business/intent",
+  createAccountBusinessCompletionGuard({ prisma }),
+  authController.ownerIntent
+);
+
 router.get(
   "/signup/owner-intent/:intentId/status",
   authController.getOwnerIntentStatus
@@ -351,10 +368,58 @@ router.post("/signup/initiate", authController.initiateSignup);
 
 router.post("/login", authController.login);
 
+// Retail passwordless email login; password login is preserved.
+const retailEmailLogin = createRetailEmailLoginApiHandlers({
+  prisma,
+  signAuthToken: authController.signAuthToken,
+  getClientIp: authController.getClientIp,
+  getUserAgent: authController.getUserAgent
+});
+
+router.post("/retail/email-login/request",
+  retailEmailLogin.request);
+router.post("/retail/email-login/verify",
+  retailEmailLogin.verify);
+
 router.post(
   "/logout",
   authenticate,
   logoutController.logout,
+);
+
+// Account identity before retail-business onboarding.
+const accountSignup = createAccountSignupApiHandlers({
+  prisma,
+  getClientIp: authController.getClientIp
+});
+
+const unifiedLogin = createUnifiedLoginApiHandlers({
+  prisma,
+  retail: retailEmailLogin,
+  account: accountSignup,
+  getClientIp: authController.getClientIp
+});
+
+router.post("/login/unified/request", unifiedLogin.request);
+router.post("/login/unified/verify", unifiedLogin.verify);
+
+router.post("/account/login/request", accountSignup.loginRequest);
+router.post("/account/login/verify", accountSignup.loginVerify);
+router.post("/account/signup", accountSignup.request);
+router.post("/account/signup/verify", accountSignup.verify);
+router.get("/account/me", accountSignup.me);
+router.post("/account/workspace/session", createAccountWorkspaceSessionHandler({
+  prisma,
+  signAuthToken: authController.signAuthToken,
+  getClientIp: authController.getClientIp,
+  getUserAgent: authController.getUserAgent,
+}));
+router.post("/account/logout", accountSignup.logout);
+
+router.post(
+  "/account/business/confirm",
+  createAccountBusinessCompletionGuard({ prisma }),
+  authController.confirmSignup
 );
 
 router.post("/password/forgot", passwordResetController.forgotPassword);
@@ -370,16 +435,17 @@ router.get("/me", authenticate, meController.me);
 // Payment callbacks
 // -----------------------------------------------------------------------------
 
+// Fail closed until provider-authenticated payment verification is installed.
+// Return 503 so providers may retry; never trust a callback status alone.
 router.post(
   "/payments/momo/callback",
   express.json(),
-  paymentController.momoCallback
+  (_req, res) =>
+    res.status(503).json({
+      message: "Payment verification is temporarily unavailable",
+    })
 );
 
-router.post(
-  "/payments/momo/callback/dev",
-  express.json(),
-  paymentController.momoCallbackDev
-);
+
 
 module.exports = router;

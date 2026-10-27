@@ -936,3 +936,237 @@
     pointer-events: auto !important;
   }
 }
+
+
+/* ============================================
+   STORVEX APPROVED HOMEPAGE HEADER
+   Only applies when variant="homepage"
+   ============================================ */
+
+.sp-header--homepage {
+  height: 76px;
+  border-bottom: 0;
+  background: #ffffff;
+  color: #17191f;
+}
+
+.sp-header--homepage .sp-header__inner {
+  width: min(100%, 1240px);
+  height: 76px;
+  padding: 0 28px;
+}
+
+.sp-header--homepage .sp-header__brand .sp-header__logo--homepage {
+  display: block;
+  width: 164px;
+  height: auto;
+  max-height: 48px;
+  object-fit: contain;
+}
+
+.sp-header--homepage .sp-header__nav {
+  gap: 4px;
+  margin-left: 54px;
+}
+
+.sp-header--homepage .sp-header__nav-link {
+  padding: 0 12px;
+  color: #282b32;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.sp-header--homepage .sp-header__nav-link:hover,
+.sp-header--homepage .sp-header__nav-link.is-active {
+  color: #111318;
+  background: transparent;
+}
+
+.sp-header--homepage .sp-header__nav-link::after {
+  display: none;
+}
+
+.sp-header--homepage .sp-header__theme {
+  width: 38px;
+  height: 38px;
+  border-color: #e7e8ed;
+  background: transparent;
+  color: #202328;
+}
+
+.sp-header--homepage .sp-header__login {
+  min-height: 38px;
+  border: 1px solid #ecedf0;
+  border-radius: 9px;
+  background: #f7f7f8;
+  padding: 0 17px;
+  color: #14161a;
+  font-size: 13px;
+}
+
+.sp-header--homepage .sp-header__trial,
+.sp-header--homepage .sp-header__mobile-trial {
+  min-height: 40px;
+  border: 1px solid #ff5961;
+  border-radius: 9px;
+  background: #ff5961;
+  padding: 0 17px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.sp-header--homepage .sp-header__trial:hover,
+.sp-header--homepage .sp-header__mobile-trial:hover {
+  border-color: #e64c55;
+  background: #e64c55;
+  color: #ffffff;
+}
+
+/* Dark mode */
+
+:root[data-theme="dark"] .sp-header--homepage {
+  background: #111213;
+  color: #f7f7f8;
+}
+
+:root[data-theme="dark"] .sp-header--homepage .sp-header__nav-link {
+  color: #f4f4f4;
+}
+
+:root[data-theme="dark"] .sp-header--homepage .sp-header__nav-link:hover {
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .sp-header--homepage .sp-header__login,
+:root[data-theme="dark"] .sp-header--homepage .sp-header__theme {
+  border-color: #36373a;
+  background: #1b1c1f;
+  color: #ffffff;
+}
+
+/* Smaller desktop and tablets */
+
+@media (min-width: 861px) and (max-width: 1080px) {
+  .sp-header--homepage .sp-header__inner {
+    padding: 0 24px;
+  }
+
+  .sp-header--homepage .sp-header__nav {
+    margin-left: 22px;
+    gap: 0;
+  }
+
+  .sp-header--homepage .sp-header__nav-link {
+    padding: 0 10px;
+  }
+
+  .sp-header--homepage .sp-header__brand .sp-header__logo--homepage {
+    width: 146px;
+  }
+}
+
+/* Mobile navigation and safe areas */
+
+@media (max-width: 860px) {
+  .sp-header--homepage,
+  .sp-header--homepage .sp-header__inner {
+    height: calc(68px + env(safe-area-inset-top, 0px));
+  }
+
+  .sp-header--homepage .sp-header__inner {
+    background: #ffffff;
+  }
+
+  :root[data-theme="dark"] .sp-header--homepage .sp-header__inner {
+    background: #111213;
+  }
+
+  .sp-header--homepage .sp-header__brand .sp-header__logo--homepage {
+    width: clamp(118px, 39vw, 153px);
+    height: auto;
+    max-height: 42px;
+  }
+
+  .sp-header--homepage .sp-header__mobile,
+  .sp-header--homepage .sp-header__mobile-panel {
+    background: #ffffff;
+  }
+
+  :root[data-theme="dark"] .sp-header--homepage .sp-header__mobile,
+  :root[data-theme="dark"] .sp-header--homepage .sp-header__mobile-panel {
+    background: #111213;
+  }
+
+  .sp-header--homepage .sp-header__mobile-link {
+    color: #17191f;
+  }
+
+  :root[data-theme="dark"] .sp-header--homepage .sp-header__mobile-link {
+    color: #f7f7f8;
+  }
+
+  .sp-header--homepage .sp-header__mobile-trial {
+    min-height: 52px;
+  }
+
+  .sp-header--homepage .sp-header__mobile-login {
+    color: #17191f;
+  }
+
+  :root[data-theme="dark"] .sp-header--homepage .sp-header__mobile-login {
+    color: #ffffff;
+  }
+}
+
+
+/* STORVEX HOMEPAGE MOBILE ACCOUNT BUTTONS */
+
+@media (max-width: 860px) {
+  .sp-header--homepage .sp-header__mobile-actions {
+    display: grid;
+    grid-template-columns:
+      minmax(0, 0.85fr)
+      minmax(0, 1.15fr);
+    gap: 10px;
+    width: 100%;
+  }
+
+  .sp-header--homepage .sp-header__mobile-login,
+  .sp-header--homepage .sp-header__mobile-trial {
+    box-sizing: border-box;
+    min-width: 0;
+    min-height: 52px;
+    padding: 10px 8px;
+    text-align: center;
+    line-height: 1.25;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 359px) {
+  .sp-header--homepage .sp-header__mobile-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+
+/* STORVEX HOMEPAGE COMPACT MOBILE MENU */
+
+@media (max-width: 860px) {
+  .sp-header--homepage .sp-header__mobile-footer {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 0;
+  }
+
+  .sp-header--homepage .sp-header__mobile-footer > span {
+    display: none;
+  }
+
+  .sp-header--homepage .sp-header__mobile-footer button {
+    width: 100%;
+    min-height: 46px;
+    justify-content: center;
+  }
+}

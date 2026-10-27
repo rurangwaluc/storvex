@@ -50,6 +50,12 @@ async function requestMoMoPayment(req, res) {
  * This is where MTN MoMo will call us
  */
 async function momoWebhook(req, res) {
+  // Retired handler: never trust a legacy payment-success signal.
+  return res.status(503).json({
+    code: "RETIRED_PAYMENT_SUCCESS_DISABLED",
+    message: "This payment method is unavailable.",
+  });
+
   try {
     const { reference, status } = req.body;
 

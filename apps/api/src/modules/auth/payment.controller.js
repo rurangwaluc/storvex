@@ -157,6 +157,14 @@ function getGraceDaysSafe() {
 }
 
 async function markSignupPaymentSuccessful({ payment, provider }) {
+  // Retired: activation requires independently verified provider evidence.
+  const error = new Error(
+    "Legacy payment success processing is disabled"
+  );
+  error.status = 503;
+  error.code = "LEGACY_PAYMENT_SUCCESS_DISABLED";
+  throw error;
+
   const purposeKind = getPaymentPurposeKind(payment.purpose);
   if (purposeKind !== "SIGNUP") {
     const err = new Error("This payment is not a signup payment");
@@ -282,6 +290,14 @@ async function markSignupPaymentSuccessful({ payment, provider }) {
 }
 
 async function markRenewalPaymentSuccessful({ payment, provider }) {
+  // Retired: activation requires independently verified provider evidence.
+  const error = new Error(
+    "Legacy payment success processing is disabled"
+  );
+  error.status = 503;
+  error.code = "LEGACY_PAYMENT_SUCCESS_DISABLED";
+  throw error;
+
   const purposeKind = getPaymentPurposeKind(payment.purpose);
   if (purposeKind !== "RENEWAL") {
     const err = new Error("This payment is not a renewal payment");
@@ -436,6 +452,14 @@ async function markRenewalPaymentSuccessful({ payment, provider }) {
 }
 
 async function markPaymentSuccessfulByReference({ reference, provider }) {
+  // Retired: activation requires independently verified provider evidence.
+  const error = new Error(
+    "Legacy payment success processing is disabled"
+  );
+  error.status = 503;
+  error.code = "LEGACY_PAYMENT_SUCCESS_DISABLED";
+  throw error;
+
   const payment = await prisma.payment.findUnique({
     where: { reference },
     select: {

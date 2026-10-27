@@ -1,7 +1,11 @@
+const { verifiedEmailForOwnerIntent } = require("./ownerIntentAccountHandoff");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const prisma = require("../../config/database");
+const {
+  createBusinessOwnerMembership,
+} = require("./businessOwnership.service");
 
 const {
   assertOnboardingAccess,
@@ -405,6 +409,7 @@ async function enforceTrialGuardOrThrowTx(
   tx,
   {
     intentId,
+    accountId,
     email,
     phone,
     countryCode,
@@ -414,6 +419,7 @@ async function enforceTrialGuardOrThrowTx(
     userAgent,
   }
 ) {
+  const verifiedAccountId = cleanString(accountId);
   const normalizedEmail = normalizeEmail(email);
   const normalizedPhone = normalizePhone(phone, countryCode);
   const cleanDeviceId = cleanString(deviceId);
@@ -441,6 +447,7 @@ async function enforceTrialGuardOrThrowTx(
   const dup = await tx.trialGuard.findFirst({
     where: {
       OR: [
+        ...(verifiedAccountId ? [{ accountId: verifiedAccountId }] : []),
         { email: normalizedEmail },
         { normalizedEmail },
         { phone: normalizedPhone },
@@ -450,6 +457,7 @@ async function enforceTrialGuardOrThrowTx(
       ],
     },
     select: {
+      accountId: true,
       email: true,
       phone: true,
       normalizedEmail: true,
@@ -463,6 +471,11 @@ async function enforceTrialGuardOrThrowTx(
     let blockedReason = "TRIAL_ALREADY_USED_BY_DEVICE";
 
     if (
+      verifiedAccountId &&
+      dup.accountId === verifiedAccountId
+    ) {
+      blockedReason = "TRIAL_ALREADY_USED_BY_ACCOUNT";
+    } else if (
       dup.email === normalizedEmail ||
       dup.normalizedEmail === normalizedEmail
     ) {
@@ -505,6 +518,7 @@ async function enforceTrialGuardOrThrowTx(
 
   await tx.trialGuard.create({
     data: {
+      accountId: verifiedAccountId || null,
       email: normalizedEmail,
       phone: normalizedPhone,
       deviceId: cleanDeviceId,
@@ -549,6 +563,13 @@ async function ownerIntent(req, res) {
 
     const selectedMarket = requireOnboardingMarket(countryCode || "RW");
     const emailNorm = normalizeEmail(email);
+    const accountEmailVerified = req.storvexOnboardingAccount
+      ? verifiedEmailForOwnerIntent(
+          req.storvexOnboardingAccount,
+          emailNorm
+        )
+      : false;
+
     const phoneNorm = normalizePhone(phone, selectedMarket.countryCode);
 
     if (!emailNorm) {
@@ -597,6 +618,8 @@ async function ownerIntent(req, res) {
         storeName: String(storeName).trim(),
         ownerName: String(ownerName).trim(),
         email: emailNorm,
+        emailVerified: accountEmailVerified,
+        emailVerifiedAt: accountEmailVerified ? new Date() : null,
         phone: phoneNorm,
         countryCode: selectedMarket.countryCode,
         shopType: normalizedShopType,
@@ -907,7 +930,11 @@ async function confirmSignup(req, res) {
   try {
     assertJwtSecret();
 
-    const { intentId, password, mode, planKey, planDays } = req.body;
+    const { intentId, mode, planKey, planDays } = req.body || {};
+    const verifiedAccount = req.storvexOnboardingAccount || null;
+    const password = verifiedAccount
+      ? crypto.randomBytes(48).toString("base64url") + "aA1!"
+      : req.body?.password;
 
     if (!intentId || !password) {
       return res.status(400).json({ message: "intentId and password are required" });
@@ -993,6 +1020,18 @@ async function confirmSignup(req, res) {
     const tenantName = String(intent.storeName || "").trim();
     const ownerName = String(intent.ownerName || "").trim();
     const ownerEmail = normalizeEmail(intent.email);
+    if (
+      verifiedAccount &&
+      (
+        verifiedAccount.emailVerified !== true ||
+        normalizeEmail(verifiedAccount.email) !== ownerEmail
+      )
+    ) {
+      return res.status(403).json({
+        message: "This business setup does not belong to your account.",
+      });
+    }
+
     const selectedMarket = requireMarket(intent.countryCode || "RW");
     const ownerPhone = normalizePhone(intent.phone, selectedMarket.countryCode);
 
@@ -1191,6 +1230,8 @@ async function confirmSignup(req, res) {
       async (tx) => {
         if (signupMode === "TRIAL") {
           await enforceTrialGuardOrThrowTx(tx, {
+            accountId:
+              req.storvexOnboardingAccount?.accountId || null,
             intentId: intent.id,
             email: ownerEmail,
             phone: ownerPhone,
@@ -1226,6 +1267,18 @@ async function confirmSignup(req, res) {
           },
         });
 
+        // Only a server-authenticated onboarding route may supply
+        // this account identity. Legacy signup remains unchanged.
+        if (req.storvexOnboardingAccount?.accountId) {
+          await createBusinessOwnerMembership({
+            tx,
+            authenticatedAccountId:
+              req.storvexOnboardingAccount.accountId,
+            newlyCreatedTenantId: tenant.id,
+            newlyCreatedRetailUserId: owner.id,
+          });
+        }
+
         const mainBranch = await tx.branch.create({
           data: {
             tenantId: tenant.id,
@@ -1234,7 +1287,11 @@ async function confirmSignup(req, res) {
             type: "MAIN",
             status: "ACTIVE",
             phone: ownerPhone,
+            email: ownerEmail,
             countryCode: selectedMarket.countryCode,
+            district: tenant.district || null,
+            sector: tenant.sector || null,
+            address: tenant.address || null,
             isMain: true,
           },
           select: {
@@ -1466,9 +1523,13 @@ async function resetPassword(req, res) {
 module.exports = {
   ownerIntent,
   getOwnerIntentStatus,
+  enforceTrialGuardOrThrowTx,
   login,
   initiateSignup,
   confirmSignup,
   forgotPassword,
   resetPassword,
+  signAuthToken,
+  getClientIp,
+  getUserAgent,
 };

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import {
   useEffect,
+  useMemo,
   useState,
 } from "react";
 import {
@@ -17,6 +18,12 @@ import {
 } from "@tanstack/react-query";
 
 import marketplaceQueryKeys from "../../lib/marketplaceQueryKeys";
+import {
+  displayMarketPhone,
+} from "../../lib/marketPhone";
+import {
+  getMarketplaceMarkets,
+} from "../../services/marketplaceApi";
 import {
   changeMarketplaceCustomerPassword,
   updateMarketplaceCustomerDetails,
@@ -26,44 +33,21 @@ function cleanString(value) {
   return String(value || "").trim();
 }
 
-function phoneInputValue(value) {
-  const digits =
-    String(value || "")
-      .replace(/\D/g, "");
-
-  if (
-    digits.startsWith("2507") &&
-    digits.length === 12
-  ) {
-    return `0${digits.slice(3)}`;
+function formatCustomerPhone(
+  value,
+  market,
+) {
+  if (!value) {
+    return "Not added";
   }
 
-  return value || "";
-}
-
-function formatCustomerPhone(value) {
-  const digits =
-    String(value || "")
-      .replace(/\D/g, "");
-
-  const local =
-    digits.startsWith("2507") &&
-    digits.length === 12
-      ? `0${digits.slice(3)}`
-      : digits;
-
-  if (
-    local.startsWith("07") &&
-    local.length === 10
-  ) {
-    return [
-      local.slice(0, 4),
-      local.slice(4, 7),
-      local.slice(7),
-    ].join(" ");
-  }
-
-  return value || "Not added";
+  return (
+    displayMarketPhone(
+      value,
+      market,
+    ) ||
+    value
+  );
 }
 
 function PasswordInput({
@@ -138,11 +122,43 @@ export default function MarketplaceCustomerAccountDetails({
   const [details, setDetails] =
     useState({
       name: customer?.name || "",
-      phone:
-        phoneInputValue(
-          customer?.phone,
-        ),
+      phone: customer?.phone || "",
+      countryCode:
+        customer?.countryCode || "",
     });
+
+  const [markets, setMarkets] =
+    useState([]);
+
+  const selectedMarket = useMemo(
+    () =>
+      markets.find(
+        (market) =>
+          market.countryCode ===
+          cleanString(
+            details.countryCode,
+          ).toUpperCase(),
+      ) || null,
+    [
+      details.countryCode,
+      markets,
+    ],
+  );
+
+  const customerMarket = useMemo(
+    () =>
+      markets.find(
+        (market) =>
+          market.countryCode ===
+          cleanString(
+            customer?.countryCode,
+          ).toUpperCase(),
+      ) || null,
+    [
+      customer?.countryCode,
+      markets,
+    ],
+  );
 
   const [passwords, setPasswords] =
     useState({
@@ -158,16 +174,40 @@ export default function MarketplaceCustomerAccountDetails({
     useState(null);
 
   useEffect(() => {
+    let active = true;
+
+    getMarketplaceMarkets()
+      .then((result) => {
+        if (!active) return;
+
+        setMarkets(
+          Array.isArray(result?.markets)
+            ? result.markets
+            : [],
+        );
+      })
+      .catch(() => {
+        if (active) {
+          setMarkets([]);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     setDetails({
       name: customer?.name || "",
-      phone:
-        phoneInputValue(
-          customer?.phone,
-        ),
+      phone: customer?.phone || "",
+      countryCode:
+        customer?.countryCode || "",
     });
   }, [
     customer?.name,
     customer?.phone,
+    customer?.countryCode,
   ]);
 
   function closeForm() {
@@ -176,10 +216,9 @@ export default function MarketplaceCustomerAccountDetails({
 
     setDetails({
       name: customer?.name || "",
-      phone:
-        phoneInputValue(
-          customer?.phone,
-        ),
+      phone: customer?.phone || "",
+      countryCode:
+        customer?.countryCode || "",
     });
 
     setPasswords({
@@ -213,6 +252,10 @@ export default function MarketplaceCustomerAccountDetails({
           name,
           phone:
             cleanString(details.phone),
+          countryCode:
+            cleanString(
+              details.countryCode,
+            ).toUpperCase(),
         });
 
       if (result?.customer?.id) {
@@ -417,6 +460,43 @@ export default function MarketplaceCustomerAccountDetails({
             </label>
 
             <label className="svx-customer-account-form-field">
+              <span>Country</span>
+
+              <select
+                value={details.countryCode}
+                onChange={(event) =>
+                  setDetails(
+                    (current) => ({
+                      ...current,
+                      countryCode:
+                        event.target.value,
+                    }),
+                  )
+                }
+                disabled={saving}
+                required
+              >
+                {!markets.length &&
+                details.countryCode ? (
+                  <option
+                    value={details.countryCode}
+                  >
+                    {details.countryCode}
+                  </option>
+                ) : null}
+
+                {markets.map((market) => (
+                  <option
+                    key={market.countryCode}
+                    value={market.countryCode}
+                  >
+                    {market.countryName}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="svx-customer-account-form-field">
               <span>Phone</span>
 
               <input
@@ -434,8 +514,18 @@ export default function MarketplaceCustomerAccountDetails({
                 }
                 disabled={saving}
                 autoComplete="tel"
-                placeholder="0785 587 833"
+                placeholder={
+                  selectedMarket?.callingCode
+                    ? `${selectedMarket.callingCode} mobile number`
+                    : "Mobile number"
+                }
               />
+
+              {selectedMarket ? (
+                <small>
+                  Use a {selectedMarket.countryName} phone number.
+                </small>
+              ) : null}
             </label>
 
             <button
@@ -529,10 +619,20 @@ export default function MarketplaceCustomerAccountDetails({
           <>
             <dl className="svx-customer-profile-details is-compact">
               <div>
+                <dt>Country</dt>
+                <dd>
+                  {customerMarket?.countryName ||
+                    customer?.countryCode ||
+                    "Not added"}
+                </dd>
+              </div>
+
+              <div>
                 <dt>Phone</dt>
                 <dd>
                   {formatCustomerPhone(
                     customer?.phone,
+                    customerMarket,
                   )}
                 </dd>
               </div>

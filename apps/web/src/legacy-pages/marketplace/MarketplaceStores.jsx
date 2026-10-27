@@ -139,10 +139,11 @@ export default function MarketplaceStores() {
       ),
     );
 
-  const [district, setDistrict] =
+  const [area, setArea] =
     useState(
       cleanString(
-        searchParams.get("district"),
+        searchParams.get("area") ||
+          searchParams.get("district"),
       ),
     );
 
@@ -183,11 +184,11 @@ export default function MarketplaceStores() {
     useState(false);
 
   const sortRef = useRef(null);
-  const districtRef = useRef(null);
+  const areaRef = useRef(null);
 
   const [
-    districtOpen,
-    setDistrictOpen,
+    areaOpen,
+    setAreaOpen,
   ] = useState(false);
 
   const selectedSort =
@@ -198,7 +199,7 @@ export default function MarketplaceStores() {
   const storeParams = useMemo(
     () => ({
       search,
-      district,
+      area,
       fulfilment,
       openOnly:
         openOnly ? true : "",
@@ -208,7 +209,7 @@ export default function MarketplaceStores() {
     }),
     [
       search,
-      district,
+      area,
       fulfilment,
       openOnly,
       sort,
@@ -239,10 +240,14 @@ export default function MarketplaceStores() {
       ? storesData.stores
       : [];
 
-  const districts =
-    Array.isArray(storesData?.districts)
-      ? storesData.districts
-      : [];
+  const areas =
+    Array.isArray(storesData?.areas)
+      ? storesData.areas
+      : Array.isArray(
+            storesData?.districts,
+          )
+        ? storesData.districts
+        : [];
 
   const pagination = {
     page: Number(
@@ -293,10 +298,10 @@ export default function MarketplaceStores() {
       next.set("search", search);
     }
 
-    if (district) {
+    if (area) {
       next.set(
-        "district",
-        district,
+        "area",
+        area,
       );
     }
 
@@ -329,7 +334,7 @@ export default function MarketplaceStores() {
       replace: true,
     });
   }, [
-    district,
+    area,
     fulfilment,
     openOnly,
     page,
@@ -384,49 +389,49 @@ export default function MarketplaceStores() {
   }, [sortOpen]);
 
   useEffect(() => {
-    if (!districtOpen) {
+    if (!areaOpen) {
       return undefined;
     }
 
-    function closeDistrictDropdown(event) {
+    function closeAreaDropdown(event) {
       if (
-        districtRef.current &&
-        !districtRef.current.contains(
+        areaRef.current &&
+        !areaRef.current.contains(
           event.target,
         )
       ) {
-        setDistrictOpen(false);
+        setAreaOpen(false);
       }
     }
 
-    function closeDistrictOnEscape(event) {
+    function closeAreaOnEscape(event) {
       if (event.key === "Escape") {
-        setDistrictOpen(false);
+        setAreaOpen(false);
       }
     }
 
     document.addEventListener(
       "pointerdown",
-      closeDistrictDropdown,
+      closeAreaDropdown,
     );
 
     document.addEventListener(
       "keydown",
-      closeDistrictOnEscape,
+      closeAreaOnEscape,
     );
 
     return () => {
       document.removeEventListener(
         "pointerdown",
-        closeDistrictDropdown,
+        closeAreaDropdown,
       );
 
       document.removeEventListener(
         "keydown",
-        closeDistrictOnEscape,
+        closeAreaOnEscape,
       );
     };
-  }, [districtOpen]);
+  }, [areaOpen]);
 
   useEffect(() => {
     if (!filtersOpen) {
@@ -446,7 +451,7 @@ export default function MarketplaceStores() {
       : `${pagination.total.toLocaleString()} stores`;
 
   const activeFilterCount = [
-    district,
+    area,
     fulfilment,
     openOnly ? "open" : "",
   ].filter(Boolean).length;
@@ -488,7 +493,7 @@ export default function MarketplaceStores() {
 
   function resetFilters() {
     setPage(1);
-    setDistrict("");
+    setArea("");
     setFulfilment("");
     setOpenOnly(false);
   }
@@ -714,9 +719,9 @@ export default function MarketplaceStores() {
                 <h3>Location</h3>
 
                 <div
-                  ref={districtRef}
+                  ref={areaRef}
                   className={
-                    districtOpen
+                    areaOpen
                       ? "svx-store-district-dropdown is-open"
                       : "svx-store-district-dropdown"
                   }
@@ -725,13 +730,13 @@ export default function MarketplaceStores() {
                     type="button"
                     className="svx-store-district-trigger"
                     onClick={() =>
-                      setDistrictOpen(
+                      setAreaOpen(
                         (current) =>
                           !current,
                       )
                     }
                     aria-haspopup="listbox"
-                    aria-expanded={districtOpen}
+                    aria-expanded={areaOpen}
                   >
                     <MapPin
                       size={15}
@@ -739,8 +744,8 @@ export default function MarketplaceStores() {
                     />
 
                     <span>
-                      {district ||
-                        "All districts"}
+                      {area ||
+                        "All areas"}
                     </span>
 
                     <ChevronDown
@@ -749,38 +754,38 @@ export default function MarketplaceStores() {
                     />
                   </button>
 
-                  {districtOpen ? (
+                  {areaOpen ? (
                     <div
                       className="svx-store-district-menu"
                       role="listbox"
-                      aria-label="Choose district"
+                      aria-label="Choose area"
                     >
                       <button
                         type="button"
                         className={
-                          !district
+                          !area
                             ? "is-selected"
                             : ""
                         }
                         role="option"
-                        aria-selected={!district}
+                        aria-selected={!area}
                         onClick={() => {
                           setPage(1);
-                          setDistrict("");
-                          setDistrictOpen(false);
+                          setArea("");
+                          setAreaOpen(false);
                         }}
                       >
-                        <span>All districts</span>
+                        <span>All areas</span>
 
-                        {!district ? (
+                        {!area ? (
                           <Check size={15} />
                         ) : null}
                       </button>
 
-                      {districts.map(
+                      {areas.map(
                         (item) => {
                           const selected =
-                            item === district;
+                            item === area;
 
                           return (
                             <button
@@ -797,10 +802,10 @@ export default function MarketplaceStores() {
                               }
                               onClick={() => {
                                 setPage(1);
-                                setDistrict(
+                                setArea(
                                   item,
                                 );
-                                setDistrictOpen(
+                                setAreaOpen(
                                   false,
                                 );
                               }}

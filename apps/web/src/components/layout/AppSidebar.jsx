@@ -1,12 +1,12 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch, clearActiveBranchId } from "../../services/apiClient";
 import "./AppSidebar.css";
 
-const LOGO_FOR_LIGHT_THEME_SRC = "/storvex_dark.webp";
-const LOGO_FOR_DARK_THEME_SRC = "/storvex_white.webp";
-const LOGO_ICON_SRC = "/storvex_icon.webp";
+const LOGO_FOR_LIGHT_THEME_SRC = "/storvex-header-tricolor.png";
+const LOGO_FOR_DARK_THEME_SRC = "/storvex-header-tricolor.png";
+const LOGO_ICON_SRC = "/storvex-menu-tricolor-v319.png";
 
 function cn(...xs) {
   return xs.filter(Boolean).join(" ");
@@ -418,12 +418,6 @@ const NAV_ITEMS = [
         icon: "expenses",
         roles: ["OWNER"],
       },
-      {
-        to: "/app/employees",
-        label: "Team",
-        icon: "employees",
-        roles: ["OWNER", "MANAGER"],
-      },
     ],
   },
 ];
@@ -539,39 +533,9 @@ function clearAuthStorage() {
 }
 
 function LogoBlock({ collapsed, onClose, logoSrc }) {
-  if (collapsed) {
-    return (
-      <Link
-        to="/app"
-        onClick={onClose}
-        className="group mx-auto flex h-14 w-14 items-center justify-center overflow-hidden rounded-[22px] border border-[var(--color-border)] bg-[var(--color-card)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--color-primary)] hover:shadow-[var(--shadow-card)]"
-        aria-label="Go to dashboard"
-      >
-        <img
-          src={LOGO_ICON_SRC}
-          alt="Storvex"
-          className="h-10 w-10 object-contain transition duration-300 group-hover:scale-105"
-          draggable="false"
-        />
-      </Link>
-    );
-  }
-
   return (
-    <Link
-      to="/app"
-      onClick={onClose}
-      className="group flex min-w-0 items-center rounded-[26px] border border-transparent p-1 transition hover:border-[var(--color-border)] hover:bg-[var(--color-card)]"
-      aria-label="Go to dashboard"
-    >
-      <span className="flex h-[58px] w-[192px] shrink-0 items-center justify-start overflow-hidden rounded-[22px] px-2">
-        <img
-          src={logoSrc}
-          alt="Storvex"
-          className="h-12 max-w-[176px] object-contain transition duration-300 group-hover:scale-[1.02]"
-          draggable="false"
-        />
-      </span>
+    <Link to="/app" onClick={onClose} className={collapsed ? "svx-logo-link is-compact" : "svx-logo-link"} aria-label="Storvex dashboard">
+      <img src={collapsed ? LOGO_ICON_SRC : logoSrc} alt="Storvex" draggable="false" />
     </Link>
   );
 }
@@ -629,14 +593,14 @@ function WorkspaceCard({ collapsed, primaryRole }) {
 function GroupLabel({ label, collapsed }) {
   if (collapsed) {
     return (
-      <div className="mb-3 px-3" title={label}>
+      <div className="svx-nav-group-separator" title={label}>
         <div className="mx-auto h-px w-10 rounded-full bg-[var(--color-border)]" />
       </div>
     );
   }
 
   return (
-    <div className="px-3 pb-2 text-[10px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+    <div className="svx-nav-group-label">
       {label}
     </div>
   );
@@ -647,8 +611,9 @@ function NavItemButton({ item, active, collapsed, onClick }) {
     <button
       type="button"
       onClick={onClick}
+      aria-current={active ? "page" : undefined}
       className={cn(
-        "group relative flex w-full items-center gap-3 rounded-[20px] text-left transition duration-200",
+        "svx-nav-entry group relative flex w-full items-center gap-3 rounded-[20px] text-left transition duration-200",
         collapsed ? "justify-center px-0 py-3" : "px-3 py-2.5",
         active
           ? "border border-[var(--color-primary)]/25 bg-[var(--color-primary-soft)] text-[var(--color-text)] shadow-[var(--shadow-soft)]"
@@ -662,7 +627,7 @@ function NavItemButton({ item, active, collapsed, onClick }) {
 
       <span
         className={cn(
-          "flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl transition",
+          "svx-nav-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl transition",
           active
             ? "bg-[var(--color-primary)] text-[var(--color-primary-contrast)] shadow-sm"
             : "bg-transparent text-current group-hover:bg-[var(--color-card)]"
@@ -673,7 +638,7 @@ function NavItemButton({ item, active, collapsed, onClick }) {
 
       {!collapsed ? (
         <span className="min-w-0 flex flex-1 items-center gap-2 text-[14px] font-bold">
-          <span className="min-w-0 truncate">{item.label}</span>
+          <span className="svx-nav-label min-w-0 truncate">{item.label}</span>
           {item.badge ? (
             <span className="svx-sidebar-badge" aria-label={`${item.badge} support updates`}>
               {item.badge > 99 ? "99+" : item.badge}
@@ -693,10 +658,20 @@ export default function AppSidebar({
   onToggleCollapse,
 }) {
   const location = useLocation();
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [navSearch, setNavSearch] = useState("");
   const navigate = useNavigate();
   const [supportSummary, setSupportSummary] = useState(null);
   const supportBadgeCount = Number(supportSummary?.badgeCount || 0);
   const logoSrc = useThemeLogoSrc();
+  useEffect(() => {
+    const focusSearch = () => {
+      const input = document.querySelector('.svx-sidebar .svx-nav-search input');
+      input?.focus();
+    };
+    window.addEventListener('storvex:focus-nav-search', focusSearch);
+    return () => window.removeEventListener('storvex:focus-nav-search', focusSearch);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -721,7 +696,6 @@ export default function AppSidebar({
   }, []);
 
 
-  const [hoverOpen, setHoverOpen] = useState(false);
 
   const token =
     typeof window !== "undefined"
@@ -754,18 +728,108 @@ export default function AppSidebar({
     [roles, supportBadgeCount],
   );
 
-  const effectiveCollapsed = collapsed && !hoverOpen;
+  const visibleNav = useMemo(() => {
+    const term = navSearch.trim().toLowerCase();
+    if (!term) return filteredNav;
+    return filteredNav.map((group) => ({
+      ...group,
+      items: group.items.filter((item) => item.label.toLowerCase().includes(term)),
+    })).filter((group) => group.items.length);
+  }, [filteredNav, navSearch]);
+
+  const navigationRef = useRef(null);
+  const drawerWasOpen = useRef(false);
+
+  // svx-step302-nav-scroll: initial top + fresh mobile drawer, never on every render.
+  useEffect(() => {
+    const nav = navigationRef.current;
+    if (nav) nav.scrollTop = 0;
+  }, []);
+
+  useEffect(() => {
+    if (mobileOpen && !drawerWasOpen.current && navigationRef.current) {
+      navigationRef.current.scrollTop = 0;
+    }
+    drawerWasOpen.current = Boolean(mobileOpen);
+  }, [mobileOpen]);
+
+  const searchInputRef = useRef(null);
+  useEffect(() => {
+    function handleShortcut(event) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        window.dispatchEvent(new CustomEvent("storvex:open-navigation-search"));
+        requestAnimationFrame(() => searchInputRef.current?.focus());
+      }
+      if (event.key === "Escape" && document.activeElement === searchInputRef.current) {
+        setNavSearch("");
+        searchInputRef.current?.blur();
+      }
+    }
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, []);
+  const firstSearchItem = visibleNav.flatMap(group => group.items)[0] || null;
+  const allowedSearchItems = useMemo(() =>
+    visibleNav.flatMap((group) => group.items.map((item) => ({
+      to: item.to, label: item.label
+    }))), [visibleNav]);
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("storvex:navigation-search-results", { detail: allowedSearchItems }));
+  }, [allowedSearchItems]);
+  useEffect(() => {
+    const publish = () => window.dispatchEvent(new CustomEvent("storvex:navigation-search-results", { detail: allowedSearchItems }));
+    window.addEventListener("storvex:request-navigation-search-results", publish);
+    return () => window.removeEventListener("storvex:request-navigation-search-results", publish);
+  }, [allowedSearchItems]);
+  useEffect(() => {
+    const search = (event) => setNavSearch(String(event.detail || ""));
+    const navigateResult = (event) => {
+      const target = String(event.detail || "");
+      if (target && allowedSearchItems.some((item) => item.to === target)) handleNavigate(target);
+    };
+    window.addEventListener("storvex:header-search-query", search);
+    window.addEventListener("storvex:header-search-navigate", navigateResult);
+    return () => {
+      window.removeEventListener("storvex:header-search-query", search);
+      window.removeEventListener("storvex:header-search-navigate", navigateResult);
+    };
+  }, [allowedSearchItems]);
+
+
+  const effectiveCollapsed = collapsed && !mobileOpen;
 
   function handleNavigate(to) {
+    setNavSearch("");
     navigate(to);
     onClose?.();
   }
 
+  const dockBusinessName = (typeof window !== "undefined"
+    ? localStorage.getItem("activeTenantName") || localStorage.getItem("tenantName") || localStorage.getItem("businessName")
+    : null) || "Your business";
+  const dockRole = roles.includes("OWNER") ? "Owner" : (roles[0] || "Member");
+  // svx-step304-business-logo: use business Settings data, never the owner's avatar.
+  const [businessLogo, setBusinessLogo] = useState(() =>
+    readWorkspaceCache()?.tenant?.logoUrl || null
+  );
+  useEffect(() => {
+    const refresh = () => setBusinessLogo(readWorkspaceCache()?.tenant?.logoUrl || null);
+    refresh();
+    window.addEventListener("storvex:workspace-refreshed", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("storvex:workspace-refreshed", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+  const [logoFailed, setLogoFailed] = useState(false);
+  useEffect(() => setLogoFailed(false), [businessLogo]);
+
   function handleLogout() {
-    clearAuthStorage();
+    // AppShell owns revocation, browser cleanup and the final redirect.
     onLogout?.();
     onClose?.();
-    navigate("/login", { replace: true });
   }
 
   return (
@@ -780,19 +844,14 @@ export default function AppSidebar({
 
       <aside
         className={cn(
-          "svx-sidebar fixed left-0 top-0 z-50 flex h-[100dvh] flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)]/98 shadow-[var(--shadow-card)] backdrop-blur-2xl transition-all duration-300",
-          effectiveCollapsed ? "w-[96px]" : "w-[308px]",
+          "svx-sidebar fixed left-0 top-0 z-50 flex h-[100dvh] flex-col transition-all duration-300",
+          effectiveCollapsed && "is-collapsed",
+          effectiveCollapsed ? "w-[80px]" : "w-[264px]",
           mobileOpen ? "translate-x-0" : "-translate-x-full",
           "md:translate-x-0"
         )}
-        onMouseEnter={() => {
-          if (collapsed) setHoverOpen(true);
-        }}
-        onMouseLeave={() => {
-          if (collapsed) setHoverOpen(false);
-        }}
       >
-        <div className="relative flex min-h-[88px] items-center justify-between gap-3 px-4 py-3">
+        <div className="svx-sidebar-top">
           <LogoBlock collapsed={effectiveCollapsed} onClose={onClose} logoSrc={logoSrc} />
 
           {!effectiveCollapsed ? (
@@ -800,7 +859,7 @@ export default function AppSidebar({
               <button
                 type="button"
                 onClick={onToggleCollapse}
-                className="hidden h-10 w-10 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--color-primary)] md:inline-flex"
+                className="svx-nav-collapse hidden md:inline-grid"
                 aria-label="Collapse sidebar"
               >
                 <Icon type="collapse-left" />
@@ -809,7 +868,7 @@ export default function AppSidebar({
               <button
                 type="button"
                 onClick={onClose}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--color-primary)] md:hidden"
+                className="svx-mobile-close md:hidden"
                 aria-label="Close sidebar"
               >
                 <Icon type="close" />
@@ -819,7 +878,7 @@ export default function AppSidebar({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className="absolute -right-4 top-10 hidden h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-text)] shadow-[var(--shadow-soft)] transition hover:-translate-y-0.5 hover:border-[var(--color-primary)] md:inline-flex"
+              className="svx-nav-collapse hidden md:inline-grid"
               aria-label="Expand sidebar"
             >
               <Icon type="collapse-right" />
@@ -827,12 +886,28 @@ export default function AppSidebar({
           )}
         </div>
 
-        <div className="relative">
-          <WorkspaceCard collapsed={effectiveCollapsed} primaryRole={primaryRole} />
-        </div>
 
-        <nav className="relative min-h-0 flex-1 overflow-y-auto px-4 pb-4 [scrollbar-width:thin]">
-          {filteredNav.map((group) => (
+        <nav ref={navigationRef} className="svx-sidebar-navigation relative min-h-0 flex-1 overflow-y-auto px-4 pb-4 [scrollbar-width:thin]">
+          {!effectiveCollapsed && (
+            <label className="svx-nav-search">
+              <span aria-hidden="true">⌕</span>
+              <input type="search" placeholder="Find a page..." aria-label="Find a navigation page"
+                ref={searchInputRef}
+                value={navSearch}
+                onChange={(event) => setNavSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && firstSearchItem) {
+                    event.preventDefault();
+                    handleNavigate(firstSearchItem.to);
+                    setNavSearch("");
+                  }
+                }} />
+            </label>
+          )}
+          {navSearch.trim() && !visibleNav.length ? (
+            <p className="svx-nav-no-results" role="status">No matching pages. Try another search.</p>
+          ) : null}
+          {visibleNav.map((group) => (
             <div key={group.section} className="mb-4">
               <GroupLabel label={group.section} collapsed={effectiveCollapsed} />
 
@@ -872,26 +947,48 @@ export default function AppSidebar({
               );
             })}
           </div>
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            className={cn(
-              "svx-sidebar-signout group flex w-full items-center gap-3 rounded-[22px] border border-transparent bg-[var(--color-surface-2)] text-[var(--color-danger)] transition hover:-translate-y-0.5 hover:border-red-500/30 hover:bg-red-500/10",
-              effectiveCollapsed ? "justify-center px-0 py-3.5" : "px-4 py-3.5"
-            )}
-            title={effectiveCollapsed ? "Sign out" : undefined}
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-2xl transition group-hover:bg-red-500/10">
-              <Icon type="logout" />
-            </span>
-
-            {!effectiveCollapsed ? (
-              <span className="text-[14px] font-black">
-                Sign out
-              </span>
+          <div className="svx-account-dock">
+            {accountOpen && !effectiveCollapsed ? (
+              <div className="svx-account-dock-menu" role="group" aria-label="Business account">
+                <button type="button" onClick={() => { setAccountOpen(false); handleNavigate("/app/settings"); }}>
+                  <Icon type="settings" /> <span>Business settings</span>
+                </button>
+                <button type="button" onClick={() => { setAccountOpen(false); handleNavigate("/app/settings/security"); }}>
+                  <Icon type="settings" /> <span>Account &amp; security</span>
+                </button>
+                <button type="button" className="is-signout" onClick={() => { setAccountOpen(false); handleLogout(); }}>
+                  <Icon type="logout" /> <span>Sign out</span>
+                </button>
+              </div>
             ) : null}
-          </button>
+            <button
+              type="button"
+              className="svx-account-dock-trigger"
+              aria-label={effectiveCollapsed ? "Business account and sign out" : "Business account menu"}
+              title={effectiveCollapsed ? "Business account" : undefined}
+              aria-expanded={accountOpen}
+              onClick={() => setAccountOpen(value => !value)}
+            >
+              <span className="svx-account-avatar" aria-hidden="true">
+                {businessLogo && !logoFailed ? (
+                  <img className="svx-business-logo" src={businessLogo} alt="" onError={() => setLogoFailed(true)} />
+                ) : dockBusinessName.slice(0, 1).toUpperCase()}
+              </span>
+              {!effectiveCollapsed && (
+                <span className="svx-account-dock-copy">
+                  <strong>{dockBusinessName}</strong>
+                  <small>{dockRole}</small>
+                </span>
+              )}
+              {!effectiveCollapsed && <span className="svx-account-chevron" aria-hidden="true">⌄</span>}
+            </button>
+            {effectiveCollapsed && accountOpen && (
+              <div className="svx-account-dock-menu svx-account-dock-menu--compact" role="group" aria-label="Business account">
+                <button type="button" onClick={() => { setAccountOpen(false); handleNavigate("/app/settings"); }}>Settings</button>
+                <button type="button" className="is-signout" onClick={() => { setAccountOpen(false); handleLogout(); }}>Sign out</button>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
     </>

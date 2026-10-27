@@ -3,6 +3,13 @@ const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 
 const prisma = require("../../config/database");
+const {
+  MARKET_REGISTRY,
+  requireMarket,
+} = require("../../config/markets");
+const {
+  normalizePhone: normalizeMarketPhone,
+} = require("../../lib/phone/marketPhone");
 const { getClientIp } = require("../../lib/security/clientIp");
 const {
   loginProtection,
@@ -25,26 +32,83 @@ function normalizeEmail(value) {
   return email ? email.toLowerCase() : null;
 }
 
-function normalizePhone(value) {
-  const raw = String(value || "")
-    .trim()
-    .replace(/[^\d]/g, "");
+function normalizeCountryCode(value) {
+  return String(value || "").trim().toUpperCase();
+}
 
-  if (!raw) return null;
+function enabledMarketplaceMarkets() {
+  return Object.values(MARKET_REGISTRY).filter(
+    (market) => market.capabilities.marketplaceEnabled,
+  );
+}
 
-  if (raw.startsWith("07") && raw.length === 10) {
-    return `250${raw.slice(1)}`;
+function resolveCustomerMarket(countryCode) {
+  const requested = normalizeCountryCode(countryCode);
+
+  if (requested) {
+    const market = requireMarket(requested);
+
+    if (!market.capabilities.marketplaceEnabled) {
+      const error = new Error(
+        "Storvex Marketplace is not yet available in this country.",
+      );
+      error.status = 400;
+      error.code = "MARKETPLACE_CUSTOMER_COUNTRY_UNAVAILABLE";
+      throw error;
+    }
+
+    return market;
   }
 
-  return raw;
+  const enabled = enabledMarketplaceMarkets();
+
+  if (enabled.length === 1) {
+    return enabled[0];
+  }
+
+  const error = new Error("Choose your country.");
+  error.status = 400;
+  error.code = "MARKETPLACE_CUSTOMER_COUNTRY_REQUIRED";
+  throw error;
+}
+
+function marketHasReviewedPhonePolicy(market) {
+  return Boolean(
+    Number.isInteger(market?.phone?.nationalLength) &&
+      market.phone.nationalLength > 0 &&
+      Array.isArray(market?.phone?.nationalPrefixes) &&
+      market.phone.nationalPrefixes.length > 0,
+  );
+}
+
+function normalizeCustomerPhone(value, market) {
+  const phone = cleanString(value, 40);
+
+  if (!phone) return null;
+
+  if (!marketHasReviewedPhonePolicy(market)) {
+    return phone;
+  }
+
+  const normalized = normalizeMarketPhone({
+    countryCode: market.countryCode,
+    input: phone,
+  });
+
+  if (normalized) {
+    return normalized;
+  }
+
+  const error = new Error(
+    `Enter a valid phone number for ${market.countryName}.`,
+  );
+  error.status = 400;
+  error.code = "MARKETPLACE_CUSTOMER_PHONE_INVALID";
+  throw error;
 }
 
 function validEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || ""));
-}
-
-function validRwandaPhone(value) {
-  return /^2507\d{8}$/.test(String(value || ""));
 }
 
 function passwordProblems(value) {
@@ -130,6 +194,7 @@ function publicCustomer(customer) {
     name: customer.name,
     email: customer.email,
     phone: customer.phone,
+    countryCode: customer.countryCode,
     status: customer.status,
     emailVerified: Boolean(
       customer.emailVerifiedAt,
@@ -182,8 +247,12 @@ async function registerCustomer(req, res) {
       body.email,
     );
 
-    const phone = normalizePhone(
+    const customerMarket =
+      resolveCustomerMarket(body.countryCode);
+
+    const phone = normalizeCustomerPhone(
       body.phone,
+      customerMarket,
     );
 
     const password = String(
@@ -201,17 +270,6 @@ async function registerCustomer(req, res) {
       return res.status(400).json({
         message: "Enter a valid email address.",
         code: "MARKETPLACE_CUSTOMER_EMAIL_REQUIRED",
-      });
-    }
-
-    if (
-      phone &&
-      !validRwandaPhone(phone)
-    ) {
-      return res.status(400).json({
-        message:
-          "Enter a valid Rwanda phone number.",
-        code: "MARKETPLACE_CUSTOMER_PHONE_INVALID",
       });
     }
 
@@ -278,6 +336,7 @@ async function registerCustomer(req, res) {
           name,
           email,
           phone,
+          countryCode: customerMarket.countryCode,
           passwordHash,
           status: "ACTIVE",
         },
@@ -493,8 +552,15 @@ async function updateCustomerDetails(
       160,
     );
 
-    const phone = normalizePhone(
+    const customerMarket =
+      resolveCustomerMarket(
+        req.body?.countryCode ||
+          req.marketplaceCustomer.countryCode,
+      );
+
+    const phone = normalizeCustomerPhone(
       req.body?.phone,
+      customerMarket,
     );
 
     if (!name) {
@@ -502,18 +568,6 @@ async function updateCustomerDetails(
         message: "Enter your full name.",
         code:
           "MARKETPLACE_CUSTOMER_NAME_REQUIRED",
-      });
-    }
-
-    if (
-      phone &&
-      !validRwandaPhone(phone)
-    ) {
-      return res.status(400).json({
-        message:
-          "Enter a valid Rwanda phone number.",
-        code:
-          "MARKETPLACE_CUSTOMER_PHONE_INVALID",
       });
     }
 
@@ -551,6 +605,7 @@ async function updateCustomerDetails(
         data: {
           name,
           phone,
+          countryCode: customerMarket.countryCode,
         },
       });
 
@@ -744,6 +799,18 @@ const CUSTOMER_ORDER_STATUS_LABELS =
   });
 
 function publicCustomerOrder(order) {
+  const sellerCountryCode =
+    normalizeCountryCode(
+      order.sellerCountryCode,
+    );
+
+  const sellerMarket =
+    sellerCountryCode
+      ? MARKET_REGISTRY[
+          sellerCountryCode
+        ] || null
+      : null;
+
   return {
     id: order.id,
     orderNumber: order.requestNumber,
@@ -757,6 +824,21 @@ function publicCustomerOrder(order) {
       order.sellerNameSnapshot,
     fulfilmentMethod:
       order.fulfilmentMethod,
+
+    market: {
+      countryCode:
+        sellerCountryCode || null,
+      timezone:
+        cleanString(
+          order.sellerTimezone,
+          100,
+        ) ||
+        sellerMarket?.defaultTimezone ||
+        null,
+      locale:
+        sellerMarket?.locale || null,
+    },
+
     currency: order.currency,
     total: Math.max(
       0,

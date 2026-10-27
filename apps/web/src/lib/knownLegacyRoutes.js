@@ -3,6 +3,7 @@ const EXACT_LEGACY_ROUTES = new Set([
   "pricing",
   "login",
   "signup",
+  "business-setup",
   "verify-otp",
   "confirm-signup",
   "owner-payment",

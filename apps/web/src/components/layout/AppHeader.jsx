@@ -1,5 +1,6 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { jwtDecode } from "jwt-decode";
 
 import "./AppHeader.css";
@@ -263,12 +264,83 @@ export default function AppHeader({
   onLogout,
 }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const actionMenuRef = useRef(null);
   const accountMenuRef = useRef(null);
 
   const [user, setUser] = useState(() => getSessionUser());
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [workspaceSearch, setWorkspaceSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [activeSearchIndex, setActiveSearchIndex] = useState(0);
+  const [permittedPages, setPermittedPages] = useState([]);
+  const searchInputRef = useRef(null);
+  const searchWrapRef = useRef(null);
+  const [searchBounds, setSearchBounds] = useState(null);
+  // svx-step314-results-portal: avoid clipping by the sticky app shell.
+  useEffect(() => {
+    if (!searchFocused) return;
+    const update = () => {
+      const bounds = searchWrapRef.current?.getBoundingClientRect();
+      if (bounds) setSearchBounds({ left: bounds.left, top: bounds.bottom + 8, width: bounds.width });
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [searchFocused]);
+  // Search includes route-guarded Settings destinations that do not appear in
+  // the sidebar's top-level menu. Never expose owner-only routes to other roles.
+  const settingsSearchPages = String(user.role || "").toUpperCase() === "OWNER"
+    ? [{ to: "/app/settings/billing", label: "Billing" }]
+    : [];
+  const searchablePages = [...permittedPages, ...settingsSearchPages].filter(
+    (item, index, all) => all.findIndex((candidate) => candidate.to === item.to) === index
+  );
+  const matchingPages = searchablePages.filter((item) =>
+    item.label.toLowerCase().includes(workspaceSearch.trim().toLowerCase())
+  ).slice(0, 8);
+
+  useEffect(() => {
+    const updatePages = (event) => {
+      if (Array.isArray(event.detail)) setPermittedPages(event.detail);
+    };
+    window.addEventListener("storvex:navigation-search-results", updatePages);
+    window.dispatchEvent(new CustomEvent("storvex:request-navigation-search-results"));
+    return () => window.removeEventListener("storvex:navigation-search-results", updatePages);
+  }, []);
+
+  useEffect(() => {
+    const keyboard = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        if (window.matchMedia("(max-width: 767px)").matches) {
+          window.dispatchEvent(new CustomEvent("storvex:open-navigation-search"));
+        } else {
+          searchInputRef.current?.focus();
+        }
+      }
+      if (event.key === "Escape") {
+        setSearchFocused(false);
+        searchInputRef.current?.blur();
+      }
+    };
+    window.addEventListener("keydown", keyboard);
+    return () => window.removeEventListener("keydown", keyboard);
+  }, []);
+
+  function openSearchResult(item) {
+    if (!item?.to || !searchablePages.some((allowed) => allowed.to === item.to)) return;
+    navigate(item.to);
+    setWorkspaceSearch("");
+    setSearchFocused(false);
+    searchInputRef.current?.blur();
+  }
+
 
   useEffect(() => {
     const refresh = () => setUser(getSessionUser());
@@ -339,26 +411,65 @@ export default function AppHeader({
             <MenuIcon />
           </button>
 
+          <Link to="/app" className="svx-header-mobile-brand" aria-label="Storvex dashboard">
+            <img src="/storvex-header-tricolor.png" alt="Storvex" />
+          </Link>
           <h1>{activePage}</h1>
         </div>
 
+        <div className="svx-header-search-wrap" ref={searchWrapRef}>
+          <label className="svx-header-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></svg>
+            <input ref={searchInputRef} type="search" value={workspaceSearch}
+              placeholder="Search workspace..." aria-label="Search workspace pages"
+              onFocus={() => {
+                setSearchFocused(true);
+                window.dispatchEvent(new CustomEvent("storvex:request-navigation-search-results"));
+              }}
+              onChange={(event) => { setWorkspaceSearch(event.target.value); setActiveSearchIndex(0); }}
+              onBlur={(event) => {
+                if (!event.currentTarget.closest(".svx-header-search-wrap")?.contains(event.relatedTarget)) {
+                  window.setTimeout(() => setSearchFocused(false), 160);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  setSearchFocused(true);
+                  setActiveSearchIndex((index) => Math.min(index + 1, matchingPages.length - 1));
+                } else if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  setActiveSearchIndex((index) => Math.max(index - 1, 0));
+                } else if (event.key === "Enter") {
+                  event.preventDefault();
+                  if (matchingPages.length) openSearchResult(matchingPages[Math.min(activeSearchIndex, matchingPages.length - 1)]);
+                } else if (event.key === "Escape") {
+                  event.preventDefault();
+                  setSearchFocused(false);
+                }
+              }} />
+          </label>
+          {searchFocused && workspaceSearch.trim() && searchBounds && typeof document !== "undefined"
+            ? createPortal(
+                <div className="svx-header-search-results svx-header-search-portal"
+                  role="listbox" aria-label="Matching workspace pages"
+                  data-theme={isDark ? "dark" : "light"}
+                  style={{ left: searchBounds.left, top: searchBounds.top, width: searchBounds.width }}>
+                  {matchingPages.length ? matchingPages.map((item, index) => (
+                    <button key={item.to} type="button" role="option"
+                      aria-selected={index === activeSearchIndex}
+                      className={index === activeSearchIndex ? "is-keyboard-selected" : ""}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onMouseEnter={() => setActiveSearchIndex(index)}
+                      onClick={() => openSearchResult(item)}>
+                      <span>{item.label}</span><span aria-hidden="true">↗</span>
+                    </button>
+                  )) : <p>No matching accessible pages</p>}
+                </div>,
+                document.body
+              ) : null}
+        </div>
         <div className="svx-header-actions">
-          <div className="svx-header-add-wrap" ref={actionMenuRef}>
-            <button
-              type="button"
-              onClick={() => setActionMenuOpen((prev) => !prev)}
-              className="svx-header-add-button"
-              aria-haspopup="menu"
-              aria-expanded={actionMenuOpen}
-            >
-              <PlusIcon />
-              <span>Add New</span>
-              <ChevronDownIcon />
-            </button>
-
-            <ActionMenu open={actionMenuOpen} onClose={() => setActionMenuOpen(false)} />
-          </div>
-
           <button
             type="button"
             onClick={onToggleTheme}

@@ -1,595 +1,152 @@
-.svx-app-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  border-bottom: 1px solid var(--color-border);
-  background: color-mix(in srgb, var(--color-bg) 94%, transparent);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  font-family: var(--svx-body-font);
-}
+/* Storvex workspace header — same theme as workspace shell */
+.svx-app-header{position:relative;z-index:20;height:70px;min-height:70px;background:var(--nav-bg)!important;color:var(--nav-fg)!important;border-bottom:1px solid var(--nav-line)!important;box-shadow:none!important}
+.svx-header-inner{height:100%;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 clamp(16px,2.5vw,38px)!important}
+.svx-header-left,.svx-header-actions{display:flex;align-items:center;gap:14px;min-width:0}
+.svx-header-left h1{font-size:17px;line-height:1.2;font-weight:750;letter-spacing:-.02em;color:var(--nav-fg);margin:0}
+.svx-header-actions{margin-left:auto;gap:11px}
+.svx-header-add-wrap,.svx-header-account-wrap{position:relative}
+.svx-header-add-button{display:flex!important;align-items:center;justify-content:center;gap:9px;min-width:122px;height:41px;padding:0 15px!important;border:0!important;border-radius:11px;background:#ff5961!important;color:#fff!important;font-size:12px;font-weight:750;white-space:nowrap;box-shadow:none!important}
+.svx-header-theme-toggle{display:flex;align-items:center;gap:1px;padding:3px;height:40px;border:1px solid var(--nav-line);border-radius:24px;background:var(--nav-panel)!important;color:var(--nav-muted)!important;box-shadow:none!important}
+.svx-header-theme-toggle>span{display:grid;place-items:center;width:32px;height:32px;border-radius:50%}
+.svx-header-theme-toggle>span.is-active{background:var(--nav-lime)!important;color:#151515!important}
+.svx-header-profile{display:grid;place-items:center;width:39px;height:39px;border-radius:50%;border:1px solid var(--nav-line);background:var(--nav-panel)!important;color:var(--nav-fg)!important;font-size:12px;font-weight:750}
+.svx-header-menu-button,.svx-header-mobile-brand{display:none}
+.svx-header-account-menu,.svx-header-action-menu{z-index:110!important}
+.svx-header-search{display:flex;align-items:center;justify-content:flex-start;gap:10px;width:min(32vw,360px);height:40px;padding:0 13px;border:1px solid var(--nav-line);border-radius:11px;background:var(--nav-panel);color:var(--nav-muted);font-size:12px;text-align:left}
+.svx-header-search:hover{border-color:var(--nav-muted)}
+.svx-header-search svg{width:17px;height:17px;flex-shrink:0}
+.svx-header-mobile-brand img{height:33px;width:130px;object-fit:contain}
+.svx-app-header :is(button,a):focus-visible{outline:2px solid #168df7;outline-offset:2px}
+@media(max-width:1100px){.svx-header-search{width:min(24vw,250px)}}
+@media(max-width:920px){.svx-header-search{display:none}}
+@media(max-width:767px){.svx-app-header{height:64px;min-height:64px}.svx-header-inner{padding:0 13px!important;gap:8px}.svx-header-left{gap:9px}.svx-header-left h1{display:none}.svx-header-menu-button{display:grid;place-items:center;width:38px;height:38px;border:1px solid var(--nav-line);border-radius:10px;background:var(--nav-panel);color:var(--nav-fg)}.svx-header-mobile-brand{display:flex;align-items:center}.svx-header-actions{gap:8px}.svx-header-add-wrap{display:none}.svx-header-theme-toggle{height:36px}.svx-header-theme-toggle>span{width:27px;height:27px}.svx-header-profile{width:36px;height:36px}}
+@media(max-width:380px){.svx-header-mobile-brand img{width:105px}.svx-header-actions{gap:5px}}
 
-.svx-header-inner {
-  width: 100%;
-  max-width: 1760px;
-  min-height: 72px;
-  margin: 0 auto;
-  padding: 10px 48px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-}
+/* Step 304 — stable workspace header and search */
+.svx-app-header{position:sticky!important;top:0!important;z-index:30!important}
+.svx-header-inner{min-width:0!important}
+.svx-header-search{min-width:160px;max-width:360px}
+.svx-header-add-wrap{display:none!important}
+@media(max-width:767px){.svx-app-header{top:0!important}.svx-header-search{display:none!important}}
 
-.svx-header-left {
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
+/* svx-step309-header-sticky: remain visible during main-content scrolling */
+.svx-shell-content{min-width:0}
+.svx-shell-content>.svx-app-header,.svx-app-header{position:sticky!important;top:0!important;z-index:30!important}
+.svx-header-search:focus-visible{outline:2px solid #168df7;outline-offset:2px}
 
-.svx-header-left h1 {
-  margin: 0;
-  color: var(--color-text);
-  font-size: 23px;
-  font-weight: 900;
-  letter-spacing: -0.045em;
-  line-height: 1.05;
+/* svx-step310-fixed-header: fixed viewport header, independent of scrolling ancestors */
+@media (min-width:768px){
+ .svx-shell-frame .svx-app-header{position:fixed!important;top:0!important;left:264px!important;right:0!important;width:auto!important;z-index:45!important}
+ .svx-shell-frame:has(.svx-sidebar.is-collapsed) .svx-app-header{left:80px!important}
+ .svx-shell-content{padding-top:70px!important}
 }
-
-.svx-header-menu-button {
-  width: 44px;
-  height: 44px;
-  border: 1px solid var(--color-border);
-  border-radius: 16px;
-  background: var(--color-card);
-  color: var(--color-text);
-  display: none;
-  place-items: center;
-  box-shadow: var(--shadow-soft);
+@media (max-width:767px){
+ .svx-shell-frame .svx-app-header{position:fixed!important;top:0!important;left:0!important;right:0!important;width:auto!important;z-index:45!important}
+ .svx-shell-content{padding-top:64px!important}
 }
+.svx-header-search-wrap{position:relative;flex-shrink:1;min-width:140px}
+.svx-header-search-wrap .svx-header-search{cursor:text}
+.svx-header-search input{width:100%;min-width:0;outline:none;border:0;background:transparent;color:var(--nav-fg);font:inherit}
+.svx-header-search input::placeholder{color:var(--nav-muted)}
+.svx-header-search-results{position:absolute;top:calc(100% + 8px);left:0;right:0;min-width:230px;max-height:330px;overflow-y:auto;background:var(--nav-bg);border:1px solid var(--nav-line);box-shadow:0 14px 35px #0002;border-radius:12px;padding:6px;z-index:90}
+.svx-header-search-results button{display:block;width:100%;padding:11px 12px;border-radius:8px;text-align:left;font-size:13px;color:var(--nav-fg)}
+.svx-header-search-results button:hover,.svx-header-search-results button:focus-visible{background:var(--nav-selected)}
+.svx-header-search-results p{padding:10px 12px;color:var(--nav-muted);font-size:12px}
+@media(max-width:920px){.svx-header-search-wrap{display:none!important}}
 
-.svx-header-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
-  flex-shrink: 0;
-}
+/* Step 312: searchable, fixed workspace header */
+.svx-shell-frame .svx-app-header { position: fixed !important; top: 0 !important; z-index: 45 !important; }
+.svx-header-search-wrap { position: relative; width: min(32vw, 360px); min-width: 150px; }
+.svx-header-search-wrap .svx-header-search { width: 100%; min-width: 0; cursor: text; }
+.svx-header-search input { display: block; width: 100%; min-width: 0; outline: none; border: 0; background: transparent; color: var(--nav-fg); font: inherit; }
+.svx-header-search-results { z-index: 100; }
+@media (max-width: 920px) { .svx-header-search-wrap { display: none; } }
 
-.svx-header-date-display,
-.svx-header-add-button,
-.svx-header-theme-toggle,
-.svx-header-profile {
-  border: 1px solid var(--color-border);
-  font-family: inherit;
-  outline: none;
-}
+/* Step 313 — live navigation-search results */
+.svx-header-search-wrap { position: relative; isolation: isolate; }
+.svx-header-search-results { position: absolute; top: calc(100% + 10px); left: 0; width: max(100%, 290px); max-width: min(420px, calc(100vw - 32px)); z-index: 9999; padding: 7px; overflow-y: auto; border-radius: 14px; background: var(--nav-bg); color: var(--nav-fg); border: 1px solid var(--nav-line); box-shadow: 0 22px 50px rgba(0,0,0,.22); }
+.svx-header-search-results button { display: flex; justify-content: space-between; align-items: center; gap: 12px; width: 100%; padding: 11px 13px; border-radius: 9px; color: var(--nav-fg); text-align: left; }
+.svx-header-search-results button.is-keyboard-selected, .svx-header-search-results button:hover { background: var(--nav-selected); }
+.svx-header-search-results button span:last-child { color: var(--nav-muted); }
+.svx-header-search-results p { margin: 0; padding: 12px; color: var(--nav-muted); }
 
-.svx-header-date-display {
-  height: 48px;
-  min-width: 220px;
-  padding: 0 16px;
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--color-card) 96%, transparent);
-  color: var(--color-text);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 14px;
-  font-weight: 900;
-  box-shadow: var(--shadow-soft);
-  cursor: default;
-  user-select: none;
-}
+/* Step 314: escape the shell stacking contexts so live search remains visible. */
+.svx-header-search-portal { position: fixed !important; z-index: 2147483000 !important; min-width: 230px; max-width: calc(100vw - 20px); box-sizing: border-box; }
+.svx-header-search-portal { background: #fff !important; color: #101828 !important; border-color: #e4e8ef !important; }
+.svx-header-search-portal[data-theme="dark"] { background: #242424 !important; color: #f5f5f5 !important; border-color: #3a3a3a !important; }
+.svx-header-search-portal button { cursor: pointer; color: inherit !important; }
+.svx-header-search-portal button.is-keyboard-selected, .svx-header-search-portal button:hover { background: #ebf7d3 !important; color: #151515 !important; }
+.svx-header-search-portal[data-theme="dark"] button.is-keyboard-selected, .svx-header-search-portal[data-theme="dark"] button:hover { background: #354225 !important; color: #f5f5f5 !important; }
+.svx-header-search-portal p { color: inherit !important; }
+.svx-header-search-portal button:focus-visible { outline: 2px solid #168df7; outline-offset: -2px; }
 
-.svx-header-date-icon {
-  color: var(--color-primary);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
 
-.svx-header-add-wrap,
-.svx-header-account-wrap {
-  position: relative;
-}
-
-.svx-header-add-button {
-  height: 48px;
-  padding: 0 20px;
-  border-radius: 16px;
-  border-color: color-mix(in srgb, var(--color-primary) 70%, transparent);
-  background: var(--color-primary);
-  color: var(--color-primary-contrast);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-size: 14px;
-  font-weight: 900;
-  box-shadow: none;
-  transition:
-    transform 180ms ease,
-    filter 180ms ease;
-}
-
-.svx-header-add-button:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.04);
-  box-shadow: none;
-}
-
-.svx-header-action-menu,
-.svx-header-account-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 12px);
-  z-index: 40;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: 24px;
-  background: var(--color-card);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.2);
-}
-
-.svx-header-action-menu {
-  width: 240px;
-  padding: 8px;
-}
-
-.svx-header-action-item {
-  min-height: 48px;
-  padding: 0 14px;
-  border-radius: 17px;
-  color: var(--color-text);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 14px;
-  font-weight: 900;
-  transition:
-    background-color 160ms ease,
-    color 160ms ease;
-}
-
-.svx-header-action-item:hover {
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
-}
-
+/* svx-step319-theme: quieter light mode, soft lunar dark mode */
 .svx-header-theme-toggle {
-  height: 48px;
-  padding: 5px;
-  border-radius: 999px;
-  background: var(--color-card);
-  color: var(--color-text);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  box-shadow: var(--shadow-soft);
-}
-
-.svx-header-theme-toggle span {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  color: var(--color-text-muted);
-  display: grid;
-  place-items: center;
-  transition:
-    background-color 180ms ease,
-    color 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.svx-header-theme-toggle span.is-active {
-  background: var(--color-primary);
-  color: var(--color-primary-contrast);
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--color-primary) 24%, transparent);
-}
-
-.svx-header-profile {
-  width: 48px;
-  height: 48px;
-  border-radius: 999px;
-  background: var(--color-card);
-  color: var(--color-text);
-  display: grid;
-  place-items: center;
-  font-size: 13px;
-  font-weight: 900;
-  box-shadow: var(--shadow-soft);
-  transition:
-    transform 180ms ease,
-    border-color 180ms ease,
-    box-shadow 180ms ease;
-}
-
-.svx-header-profile:hover {
-  transform: translateY(-1px);
-  border-color: color-mix(in srgb, var(--color-primary) 44%, var(--color-border));
-  box-shadow: 0 18px 48px rgba(7, 125, 203, 0.12);
-}
-
-.svx-header-account-menu {
-  width: 310px;
-  padding: 10px;
-}
-
-.svx-header-account-head {
-  display: flex;
-  gap: 12px;
-  padding: 12px;
-  border-radius: 20px;
-  background: var(--color-surface-2);
-}
-
-.svx-header-account-avatar {
-  width: 46px;
-  height: 46px;
-  border-radius: 18px;
-  background: var(--color-primary);
-  color: var(--color-primary-contrast);
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  font-size: 13px;
-  font-weight: 900;
-  box-shadow: 0 16px 36px color-mix(in srgb, var(--color-primary) 22%, transparent);
-}
-
-.svx-header-account-copy {
-  min-width: 0;
-}
-
-.svx-header-account-copy p {
-  margin: 0;
-  color: var(--color-text);
-  font-size: 14px;
-  font-weight: 900;
-  line-height: 1.25;
-}
-
-.svx-header-account-copy span {
-  margin-top: 4px;
-  display: inline-flex;
-  width: max-content;
-  border-radius: 999px;
-  background: var(--color-primary-soft);
-  padding: 3px 8px;
-  color: var(--color-primary);
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.svx-header-account-copy small {
-  margin-top: 6px;
-  display: block;
-  max-width: 190px;
-  overflow: hidden;
-  color: var(--color-text-muted);
-  font-size: 12px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.svx-header-account-list {
-  margin-top: 8px;
-  display: grid;
-  gap: 2px;
-}
-
-.svx-header-account-item {
-  width: 100%;
-  min-height: 46px;
-  border: 0;
-  border-radius: 17px;
-  background: transparent;
-  color: var(--color-text);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 12px;
-  text-align: left;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 900;
-  transition:
-    background-color 160ms ease,
-    color 160ms ease;
-}
-
-.svx-header-account-item:hover {
-  background: var(--color-surface-2);
-  color: var(--color-primary);
-}
-
-.svx-header-account-item.is-danger {
-  color: var(--color-danger);
-}
-
-.svx-header-icon,
-.svx-header-icon-sm,
-.svx-header-chevron {
-  display: block;
-  flex-shrink: 0;
-}
-
-.svx-header-icon {
-  width: 20px;
-  height: 20px;
-}
-
-.svx-header-icon-sm {
-  width: 18px;
-  height: 18px;
-}
-
-.svx-header-chevron {
-  width: 16px;
-  height: 16px;
-}
-
-:root[data-theme="dark"] .svx-app-header {
-  background:
-    radial-gradient(circle at 80% 0%, color-mix(in srgb, var(--color-primary) 11%, transparent), transparent 34rem),
-    linear-gradient(180deg, rgba(28, 28, 29, 0.94), rgba(28, 28, 29, 0.86));
-}
-
-@media (max-width: 1024px) {
-  .svx-header-inner {
-    padding: 10px 24px;
-  }
-
-  .svx-header-date-display {
-    min-width: 190px;
-  }
-}
-
-@media (max-width: 767px) {
-  .svx-app-header {
-    border-bottom-color: color-mix(in srgb, var(--color-border) 70%, transparent);
-  }
-
-  .svx-header-inner {
-    min-height: 60px;
-    padding:
-      max(10px, env(safe-area-inset-top, 0px))
-      12px
-      10px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 10px;
-  }
-
-  .svx-header-left {
-    gap: 9px;
-    min-width: 0;
-  }
-
-  .svx-header-menu-button {
-    display: grid;
-    width: 38px;
-    height: 38px;
-    border-radius: 14px;
-    flex: 0 0 auto;
-  }
-
-  .svx-header-left h1 {
-    min-width: 0;
-    overflow: hidden;
-    font-size: 19px;
-    letter-spacing: -0.04em;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .svx-header-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .svx-header-date-display {
-    display: none;
-  }
-
-  .svx-header-add-button {
-    width: 38px;
-    height: 38px;
-    padding: 0;
-    border-radius: 14px;
-  }
-
-  .svx-header-add-button span,
-  .svx-header-add-button .svx-header-chevron {
-    display: none;
-  }
-
-  .svx-header-theme-toggle {
-    width: 38px;
-    height: 38px;
-    padding: 0;
-    border-radius: 14px;
-    display: grid;
-    place-items: center;
-  }
-
-  .svx-header-theme-toggle span {
-    display: none;
-  }
-
-  .svx-header-theme-toggle span.is-active {
-    display: grid;
-    width: 100%;
-    height: 100%;
-    border-radius: 14px;
-  }
-
-  .svx-header-profile {
-    width: 38px;
-    height: 38px;
-    font-size: 11px;
-  }
-
-  .svx-header-action-menu {
-    right: 0;
-    width: min(240px, calc(100vw - 24px));
-  }
-
-  .svx-header-account-menu {
-    right: 0;
-    width: min(310px, calc(100vw - 24px));
-  }
-}
-
-@media (max-width: 420px) {
-  .svx-header-inner {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-
-  .svx-header-left h1 {
-    font-size: 18px;
-  }
-
-  .svx-header-actions {
-    gap: 7px;
-  }
-
-  .svx-header-menu-button,
-  .svx-header-add-button,
-  .svx-header-theme-toggle,
-  .svx-header-profile {
-    width: 36px;
-    height: 36px;
-    border-radius: 13px;
-  }
-
-  .svx-header-theme-toggle span.is-active {
-    border-radius: 13px;
-  }
-}
-
-@media (display-mode: standalone) and (max-width: 767px) {
-  .svx-header-inner {
-    padding-top: max(12px, env(safe-area-inset-top, 0px));
-  }
-}
-
-/* Remove bulky workspace card from sidebar */
-.svx-sidebar > div:nth-of-type(2) {
-  display: none !important;
-}
-
-/* Tighten sidebar top after removing workspace card */
-.svx-sidebar > div:first-of-type {
-  min-height: 86px !important;
-  padding: 16px 18px 14px !important;
-}
-
-/* Bring navigation closer to the logo */
-.svx-sidebar nav {
-  padding-top: 6px !important;
-}
-
-/* Collapsed mode: remove unused workspace dot space too */
-.svx-sidebar.is-collapsed > div:nth-of-type(2),
-.svx-sidebar.w-\[96px\] > div:nth-of-type(2) {
-  display: none !important;
-}
-
-/* Mobile drawer also should not waste space */
-@media (max-width: 767px) {
-  .svx-sidebar > div:nth-of-type(2) {
-    display: none !important;
-  }
-
-  .svx-sidebar > div:first-of-type {
-    min-height: 82px !important;
-  }
-
-  .svx-sidebar nav {
-    padding-top: 8px !important;
-  }
-}
-
-/* INTERNAL APP HEADER NO-SHADOW AUTHORITY */
-
-/*
- * The internal app header uses borders and flat backgrounds only.
- * No button, active state, avatar, menu or dropdown may glow.
- */
-.svx-app-header,
-.svx-app-header *,
-.svx-app-header *::before,
-.svx-app-header *::after {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 82px !important;
+  min-width: 82px !important;
+  height: 39px !important;
+  padding: 3px !important;
+  gap: 3px !important;
+  border: 1px solid var(--nav-line) !important;
+  border-radius: 999px !important;
+  background: var(--nav-panel) !important;
   box-shadow: none !important;
-  text-shadow: none !important;
 }
 
-/*
- * Explicit controls are listed to protect against earlier rules,
- * Tailwind utilities and future component-level shadow additions.
- */
-.svx-header-menu-button,
-.svx-header-date-display,
-.svx-header-add-button,
-.svx-header-theme-toggle,
-.svx-header-theme-toggle span,
-.svx-header-theme-toggle span.is-active,
-.svx-header-profile,
-.svx-header-profile:hover,
-.svx-header-action-menu,
-.svx-header-account-menu,
-.svx-header-action-item,
-.svx-header-account-head,
-.svx-header-account-avatar,
-.svx-header-account-item {
-  box-shadow: none !important;
-  text-shadow: none !important;
-}
-
-/*
- * Preserve interaction through color and border changes, not elevation.
- */
-.svx-header-menu-button:hover,
-.svx-header-add-button:hover,
-.svx-header-theme-toggle:hover,
-.svx-header-profile:hover,
-.svx-header-action-item:hover,
-.svx-header-account-item:hover,
-.svx-header-menu-button:focus-visible,
-.svx-header-add-button:focus-visible,
-.svx-header-theme-toggle:focus-visible,
-.svx-header-profile:focus-visible {
-  box-shadow: none !important;
-  text-shadow: none !important;
-}
-
-/* INTERNAL APP HEADER FLAT BACKGROUND AUTHORITY */
-
-/*
- * Internal navigation must use a single flat surface.
- * No radial, linear or decorative background gradients.
- */
-.svx-app-header,
-:root[data-theme="dark"] .svx-app-header {
-  background: var(--color-card) !important;
-  background-color: var(--color-card) !important;
-  background-image: none !important;
-}
-
-/*
- * Keep the header contents transparent so they inherit the same
- * uninterrupted flat header surface.
- */
-.svx-header-inner {
+.svx-header-theme-toggle > span {
+  display: grid !important;
+  place-items: center !important;
+  width: 33px !important;
+  height: 31px !important;
+  border-radius: 50% !important;
   background: transparent !important;
-  background-image: none !important;
+  box-shadow: none !important;
+  transition: background-color 160ms ease, color 160ms ease !important;
+}
+
+.svx-header-theme-toggle > span svg {
+  width: 18px !important;
+  height: 18px !important;
+  stroke-width: 1.85 !important;
+}
+
+.svx-header-theme-toggle > span:first-child {
+  color: #A88D68 !important;
+}
+
+.svx-header-theme-toggle > span:last-child {
+  color: #8999AC !important;
+}
+
+.svx-header-theme-toggle > span:first-child.is-active {
+  background: #F4EEE3 !important;
+  color: #A36B27 !important;
+  box-shadow: none !important;
+}
+
+.svx-header-theme-toggle > span:last-child.is-active {
+  background: #354357 !important;
+  color: #D3E2F5 !important;
+  box-shadow: none !important;
+}
+
+.svx-header-theme-toggle:focus-visible {
+  outline: 2px solid #168DF7 !important;
+  outline-offset: 3px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svx-header-theme-toggle > span {
+    transition: none !important;
+  }
+}
+
+
+/* svx-step320-theme-border */
+.svx-header-theme-toggle {
+  border: 1px solid rgba(22, 141, 247, 0.25) !important;
 }

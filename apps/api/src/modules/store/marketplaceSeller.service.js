@@ -1,4 +1,8 @@
 const prisma = require("../../config/database");
+const { requireMarket } = require("../../config/markets");
+const {
+  normalizePhone: normalizeMarketPhone,
+} = require("../../lib/phone/marketPhone");
 const {
   invalidatePublicProductsCache,
 } = require("../marketplace/marketplace.public.cache");
@@ -26,20 +30,40 @@ function nonNegativeMoney(value, fallback = 0) {
   return Math.max(0, Math.round(number));
 }
 
-function normalizePhone(value) {
+function marketHasReviewedPhonePolicy(market) {
+  return Boolean(
+    Number.isInteger(market?.phone?.nationalLength) &&
+      market.phone.nationalLength > 0 &&
+      Array.isArray(market?.phone?.nationalPrefixes) &&
+      market.phone.nationalPrefixes.length > 0,
+  );
+}
+
+function normalizePhone(value, countryCode) {
   const phone = cleanString(value, 40);
   if (!phone) return null;
 
-  const digits = phone.replace(/[^\d]/g, "");
+  const market = requireMarket(countryCode);
 
-  if (digits.length < 10 || digits.length > 15) {
-    const error = new Error("Enter a valid customer phone number");
-    error.status = 400;
-    error.code = "MARKETPLACE_PHONE_INVALID";
-    throw error;
+  if (!marketHasReviewedPhonePolicy(market)) {
+    return phone;
   }
 
-  return phone;
+  const normalized = normalizeMarketPhone({
+    countryCode: market.countryCode,
+    input: phone,
+  });
+
+  if (normalized) {
+    return normalized;
+  }
+
+  const error = new Error(
+    `Enter a valid phone number for ${market.countryName}`,
+  );
+  error.status = 400;
+  error.code = "MARKETPLACE_PHONE_INVALID";
+  throw error;
 }
 
 function slugify(value) {
@@ -412,6 +436,7 @@ async function getMarketplaceSellerProfile(tenantId) {
       name: true,
       phone: true,
       email: true,
+      countryCode: true,
       district: true,
       sector: true,
       address: true,
@@ -513,11 +538,17 @@ async function updateMarketplaceSellerProfile(tenantId, payload = {}) {
   }
 
   if ("customerPhone" in body) {
-    data.customerPhone = normalizePhone(body.customerPhone);
+    data.customerPhone = normalizePhone(
+      body.customerPhone,
+      current.tenant.countryCode,
+    );
   }
 
   if ("whatsappPhone" in body) {
-    data.whatsappPhone = normalizePhone(body.whatsappPhone);
+    data.whatsappPhone = normalizePhone(
+      body.whatsappPhone,
+      current.tenant.countryCode,
+    );
   }
 
   if ("pickupEnabled" in body) {

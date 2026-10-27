@@ -1363,3 +1363,434 @@ select.svx-onboard-input {
   border-color: var(--onboard-border);
   color: var(--onboard-muted);
 }
+
+
+/* STORVEX STEP 83 — BUSINESS SETUP VISUAL REFINEMENT */
+/* Scope: Business Setup only. Preserve onboarding behavior. */
+
+.storvex-onboarding:has(.svx-onboard-form-grid) {
+  --onboard-page: #ffffff;
+  --onboard-card: #ffffff;
+  --onboard-card-soft: #fafbfc;
+  --onboard-text: #11151c;
+  --onboard-muted: #627083;
+  --onboard-border: #e3e7ec;
+  --onboard-primary: #168df7;
+  --onboard-primary-soft: #edf6ff;
+  --onboard-shadow: 0 8px 28px rgba(18, 30, 50, .035);
+  background: var(--onboard-page);
+}
+
+:root[data-theme="dark"]
+.storvex-onboarding:has(.svx-onboard-form-grid) {
+  --onboard-page: #111213;
+  --onboard-card: #1b1c1d;
+  --onboard-card-soft: #161819;
+  --onboard-text: #f8f9fa;
+  --onboard-muted: #aeb7c4;
+  --onboard-border: #323438;
+  --onboard-primary: #42a5ff;
+  --onboard-primary-soft: rgba(66, 165, 255, .11);
+  --onboard-shadow: none;
+}
+
+/* Headings and progress */
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-top {
+  padding-top: 46px;
+  padding-bottom: 20px;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-title-wrap h1 {
+  font-size: clamp(30px, 3.1vw, 43px);
+  line-height: 1.12;
+  letter-spacing: -.045em;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-progress-wrap {
+  margin-top: 26px;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-progress-number {
+  width: 32px;
+  height: 32px;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-progress .is-active .svx-onboard-progress-number {
+  background: #dff448;
+  border-color: #dff448;
+  color: #11151c;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-progress .is-active .svx-onboard-progress-label {
+  color: var(--onboard-text);
+}
+
+/* Page spacing and content headings */
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-content {
+  padding-top: 20px;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-form {
+  gap: 20px;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-form-heading {
+  margin-bottom: 12px;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-form-heading h2 {
+  font-size: clamp(31px, 3.1vw, 44px);
+  margin-top: 15px;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-form-heading p {
+  line-height: 1.55;
+}
+
+/* Cards */
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-card {
+  border-radius: 19px;
+  padding: 26px;
+  box-shadow: var(--onboard-shadow);
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-form-grid {
+  gap: 18px;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-card-title-row {
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-card-title-row h3 {
+  font-size: 19px;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-icon-badge {
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+}
+
+/* Inputs and category picker */
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-field-group {
+  gap: 19px;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-input,
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-business-category-button {
+  min-height: 52px;
+  height: 52px;
+  border-radius: 11px;
+  font-weight: 600;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-input:focus,
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-business-category-button:focus-visible {
+  border-color: var(--onboard-primary);
+  box-shadow: 0 0 0 3px
+    color-mix(in srgb, var(--onboard-primary) 14%, transparent);
+}
+
+/* Three existing location fields, no extra column */
+@media (min-width: 1101px) {
+  .storvex-onboarding:has(.svx-onboard-form-grid)
+  .svx-onboard-location-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+}
+
+/* Primary action styling only — submission logic is unchanged */
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-next-card button[type="submit"],
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-next-card .svx-async-button[type="submit"] {
+  background: #ff5961;
+  border-color: #ff5961;
+  color: #ffffff;
+  border-radius: 11px;
+  font-weight: 800;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-next-card button[type="submit"]:hover:not(:disabled),
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-next-card .svx-async-button[type="submit"]:hover:not(:disabled) {
+  background: #eb4852;
+  border-color: #eb4852;
+}
+
+/* Narrow screens */
+@media (max-width: 760px) {
+  .storvex-onboarding:has(.svx-onboard-form-grid)
+  .svx-onboard-top {
+    padding-top: 30px;
+    padding-bottom: 16px;
+  }
+
+  .storvex-onboarding:has(.svx-onboard-form-grid)
+  .svx-onboard-card {
+    padding: 20px;
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .storvex-onboarding:has(.svx-onboard-form-grid)
+  .svx-onboard-top,
+  .storvex-onboarding:has(.svx-onboard-form-grid)
+  .svx-onboard-content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .storvex-onboarding:has(.svx-onboard-form-grid)
+  .svx-onboard-card {
+    padding: 17px;
+  }
+
+  .storvex-onboarding:has(.svx-onboard-form-grid)
+  .svx-onboard-form-heading h2 {
+    font-size: 30px;
+  }
+
+  .storvex-onboarding:has(.svx-onboard-form-grid)
+  .svx-onboard-location-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+
+/* STORVEX STEP 84 — HOMEPAGE BRAND ALIGNMENT */
+/* Business Setup presentation only; no functionality changes. */
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-step-pill {
+  background: #e5f64b;
+  color: #11151c;
+  letter-spacing: .09em;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-form-heading h2 {
+  font-family: "Archivo", system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -.045em;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-title-wrap h1 {
+  font-family: "Archivo", system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -.045em;
+}
+
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-next-card button[type="submit"]:focus-visible {
+  outline: 3px solid #168df7;
+  outline-offset: 3px;
+}
+
+@media (max-width: 520px) {
+  .storvex-onboarding:has(.svx-onboard-form-grid)
+  .svx-onboard-title-wrap h1 {
+    font-size: clamp(27px, 8vw, 33px);
+  }
+}
+
+
+/* STORVEX STEP 85 — BUSINESS SETUP FINAL POLISH */
+/* Presentation only — scoped to signup Business Setup. */
+
+/* Store details — Storvex lime */
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-icon-badge--warning {
+  background: #f0f9bf;
+  border-color: #dceba0;
+  color: #283400;
+}
+
+/* Owner details — Storvex blue */
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-icon-badge--success {
+  background: #eaf5ff;
+  border-color: #c5e3ff;
+  color: #168df7;
+}
+
+/* Store location — Storvex coral */
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-icon-badge--money {
+  background: #fff0ef;
+  border-color: #ffd2d0;
+  color: #f04c55;
+}
+
+/* More readable supporting descriptions */
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-card-title-row p,
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-help,
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-form-heading p {
+  color: #596779;
+}
+
+/* Dark theme */
+:root[data-theme="dark"]
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-icon-badge--warning {
+  background: rgba(229, 246, 75, .12);
+  border-color: rgba(229, 246, 75, .25);
+  color: #e5f64b;
+}
+
+:root[data-theme="dark"]
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-icon-badge--success {
+  background: rgba(22, 141, 247, .13);
+  border-color: rgba(22, 141, 247, .3);
+  color: #55adff;
+}
+
+:root[data-theme="dark"]
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-icon-badge--money {
+  background: rgba(255, 89, 97, .12);
+  border-color: rgba(255, 89, 97, .28);
+  color: #ff747b;
+}
+
+:root[data-theme="dark"]
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-card-title-row p,
+:root[data-theme="dark"]
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-help,
+:root[data-theme="dark"]
+.storvex-onboarding:has(.svx-onboard-form-grid)
+.svx-onboard-form-heading p {
+  color: #b8c1cd;
+}
+
+/* STORVEX_SIGNUP_POLISH_V1 */
+/* Scoped refinements aligned with the approved Storvex landing page. */
+
+.storvex-onboarding {
+  --onboard-card-soft: #f7faff;
+  --onboard-muted: #5f6b84;
+  --onboard-shadow: 0 12px 36px rgba(15, 45, 90, 0.045);
+}
+
+:root[data-theme="dark"] .storvex-onboarding {
+  --onboard-card-soft: #0d1d32;
+  --onboard-muted: rgba(255, 255, 255, 0.72);
+  --onboard-border: rgba(255, 255, 255, 0.12);
+  --onboard-shadow: none;
+}
+
+.storvex-onboarding h1,
+.storvex-onboarding h2,
+.storvex-onboarding h3 {
+  font-family: var(--onboard-heading-font);
+  text-wrap: balance;
+}
+
+.storvex-onboarding .svx-onboard-form-heading p,
+.storvex-onboarding .svx-onboard-title-wrap > p {
+  text-wrap: pretty;
+}
+
+.storvex-onboarding .svx-onboard-location-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.storvex-onboarding .svx-onboard-card {
+  min-width: 0;
+}
+
+.storvex-onboarding .svx-onboard-card-title-row > div:last-child,
+.storvex-onboarding .svx-onboard-field {
+  min-width: 0;
+}
+
+.storvex-onboarding .svx-onboard-input {
+  font-weight: 600;
+}
+
+.storvex-onboarding .svx-onboard-input:focus-visible {
+  border-color: var(--onboard-primary);
+  box-shadow: 0 0 0 4px
+    color-mix(in srgb, var(--onboard-primary) 13%, transparent);
+}
+
+.storvex-onboarding .svx-onboard-primary-action:focus-visible,
+.storvex-onboarding .svx-onboard-secondary-action:focus-visible {
+  outline: 2px solid var(--onboard-primary);
+  outline-offset: 3px;
+}
+
+@media (max-width: 1100px) {
+  .storvex-onboarding .svx-onboard-location-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .storvex-onboarding .svx-onboard-title-wrap h1 {
+    line-height: 1.16;
+  }
+
+  .storvex-onboarding .svx-onboard-form-heading h2 {
+    line-height: 1.14;
+  }
+
+  .storvex-onboarding .svx-onboard-login-note {
+    flex-wrap: wrap;
+    white-space: normal;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 520px) {
+  .storvex-onboarding .svx-onboard-form-grid,
+  .storvex-onboarding .svx-onboard-form,
+  .storvex-onboarding .svx-onboard-card {
+    min-width: 0;
+  }
+
+  .storvex-onboarding .svx-onboard-form-heading h2 {
+    font-size: clamp(28px, 8vw, 34px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .storvex-onboarding .svx-onboard-primary-action,
+  .storvex-onboarding .svx-onboard-secondary-action {
+    transition: none;
+  }
+}

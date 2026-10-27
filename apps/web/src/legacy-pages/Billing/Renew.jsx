@@ -1,6 +1,38 @@
-import { useEffect, useMemo, useState } from "react";
+import "./BillingExperience.css";
+import "./RenewPremium.css";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { startFlutterwaveSandboxCheckout } from "./startFlutterwaveSandboxCheckout";
+import {
+  loadFlutterwaveInlineScript,
+  openSandboxInlinePopup,
+} from "./flutterwaveSandboxInline";
+import { runFlutterwaveInlinePaymentFlow } from "./flutterwaveInlinePaymentFlow";
+import { createFlutterwaveInlineReconciler } from "./flutterwaveInlineReconciliation";
+import { createSharedInlinePaymentVerifier } from "./flutterwaveInlineSharedVerification";
+import {
+  saveInlineRecoveryReference,
+  readInlineRecoveryReference,
+  clearInlineRecoveryReference,
+} from "./flutterwaveInlineRecovery";
+
+const STORVEX_FLUTTERWAVE_SANDBOX_UI_ENABLED =
+  process.env.NODE_ENV === "development" &&
+  process.env.NEXT_PUBLIC_FLUTTERWAVE_SANDBOX_UI_ENABLED === "true";
+
+// Separate opt-in; the hosted payment flow remains the default.
+const STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED =
+  STORVEX_FLUTTERWAVE_SANDBOX_UI_ENABLED &&
+  process.env.NEXT_PUBLIC_FLUTTERWAVE_SANDBOX_INLINE_ENABLED === "true";
+
+// Multi-month checkout requires a separate explicit development opt-in.
+// Neither frontend flag authorizes payment without the backend gate.
+const STORVEX_FLUTTERWAVE_SANDBOX_MULTI_MONTH_UI_ENABLED =
+  STORVEX_FLUTTERWAVE_SANDBOX_UI_ENABLED &&
+  process.env.NEXT_PUBLIC_FLUTTERWAVE_SANDBOX_MULTI_MONTH_UI_ENABLED === "true";
+
+
 
 import apiClient from "../../services/apiClient";
 import AsyncButton from "../../components/ui/AsyncButton";
@@ -28,7 +60,7 @@ function softText() {
 }
 
 function pageShell() {
-  return "min-h-screen overflow-x-hidden bg-[var(--color-bg)] text-[var(--color-text)]";
+  return "svx-renew-page min-h-screen overflow-x-hidden bg-[var(--color-bg)] text-[var(--color-text)]";
 }
 
 function pageCard() {
@@ -478,6 +510,36 @@ function EnterpriseRequiredPanel({
 
 function TopRecoveryBar({ storeName, sub, isDark, onToggleTheme }) {
   const meta = statusMeta(sub);
+  const navigate = useNavigate();
+
+  async function handleSignOut() {
+    // Revoke the passwordless account session when present.
+    try {
+      await fetch("/api/auth/account/logout", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+    } catch {
+      // An unavailable API must not trap users on this page.
+    }
+
+    // Clear retail authentication without removing business data.
+    try {
+      localStorage.removeItem("tenantToken");
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("tenantId");
+      localStorage.removeItem("activeTenantId");
+      localStorage.removeItem("activeTenantName");
+      localStorage.removeItem("activeBranchName");
+      localStorage.removeItem("activeBranchCode");
+      localStorage.removeItem("activeBranchIsMain");
+      sessionStorage.removeItem("storvex_me_cache_v2");
+    } finally {
+      navigate("/login", { replace: true });
+    }
+  }
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--color-border)] bg-[var(--color-bg)]/95 backdrop-blur-xl">
@@ -504,25 +566,291 @@ function TopRecoveryBar({ storeName, sub, isDark, onToggleTheme }) {
           <button type="button" onClick={() => window.history.back()} className={secondaryBtn()}>
             Back
           </button>
+
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className={secondaryBtn()}
+          >
+            Sign out
+          </button>
         </div>
       </div>
     </header>
   );
 }
 
-export default function Renew() {
-  const nav = useNavigate();
+// STEP 342CM-P / EMBEDDED SETTINGS RENEW
+// Embedded renewal inherits the existing workspace theme.
+// Only standalone renewal mounts an independent theme controller.
+export default function Renew({ embedded = false }) {
+  return embedded
+    ? <RenewContent embedded />
+    : <StandaloneRenew />;
+}
+
+function StandaloneRenew() {
   const { isDark, toggleTheme } = useTheme();
+
+  return (
+    <RenewContent
+      embedded={false}
+      isDark={isDark}
+      toggleTheme={toggleTheme}
+    />
+  );
+}
+
+function RenewContent({
+  embedded = false,
+  isDark = false,
+  toggleTheme = () => {},
+}) {
+  const nav = useNavigate();
+
+  // Embedded renewal follows the workspace's theme attribute.
+  // The standalone renewal page keeps its own theme controls.
+  const renewThemeClass = embedded
+    ? ""
+    : isDark
+      ? "is-dark"
+      : "";
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [inlinePaymentStatus, setInlinePaymentStatus] = useState("");
+
+  // Synchronous lock prevents rapid clicks before React updates.
+  const paymentAttemptLock = useRef(false);
+
+  // STEP 342CN-DU / PAYMENT LOCK OWNERSHIP
+  const paymentAttemptOwner = useRef(0);
+  const inlinePaymentToRecheck = useRef(null);
+
+  // One authoritative terminal result per Inline payment attempt.
+  const inlineTerminalResult = useRef(null);
+  const inlineCheckoutHandle = useRef(null);
+
+  // Never close Flutterwave based on its browser callback alone.
+  // A matching, authenticated STORVEX SUCCESS is required.
+  function closeVerifiedInlineCheckout(reference, owner) {
+    const current = inlineCheckoutHandle.current;
+
+    if (
+      !current ||
+      current.reference !== reference ||
+      current.owner !== owner ||
+      inlineTerminalResult.current?.owner !== owner ||
+      inlineTerminalResult.current?.status !== "SUCCESS"
+    ) return;
+
+    inlineCheckoutHandle.current = null;
+
+    try {
+      if (typeof current.modal?.close === "function") {
+        current.modal.close();
+      }
+    } catch {
+      // A provider UI error does not undo a verified payment.
+    }
+  }
+
+  // The popup callback and return-to-tab handler share one
+  // in-flight provider verification for a payment reference.
+  const inlineSharedVerifier = useRef(
+    createSharedInlinePaymentVerifier(reference =>
+      apiClient.post(
+        `/billing/payments/${encodeURIComponent(reference)}/complete-sandbox`
+      )
+    )
+  );
+
+  // STEP 342CN-DY / DEVELOPMENT-ONLY INLINE PRELOAD
+  // Prepare the provider library before a customer starts checkout.
+  // No reservation, payment or popup occurs in this effect.
+  useEffect(() => {
+    if (!STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED) return;
+
+    loadFlutterwaveInlineScript().catch(() => {
+      // Checkout still handles a failed load when explicitly selected.
+      // Do not interrupt the renewal page or create a payment.
+    });
+  }, []);
 
   const [me, setMe] = useState(null);
   const [plans, setPlans] = useState([]);
   const [planKey, setPlanKey] = useState("");
-  const [phone, setPhone] = useState(localStorage.getItem("storvex_ownerPhone") || "");
-  const [paymentRef, setPaymentRef] = useState("");
+  const [durationMonths, setDurationMonths] = useState(1);
+
+  // STEP 342CN-GF / AUTHENTICATED REFRESH RECOVERY
+  // The tab stores only a reference, never proof of payment.
+  // Recovery reads STORVEX's existing payment-status endpoint.
+  useEffect(() => {
+    if (!STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED) return;
+
+    const reference = readInlineRecoveryReference(
+      window.sessionStorage
+    );
+
+    if (!reference) return;
+
+    const owner = paymentAttemptOwner.current;
+    let cancelled = false;
+
+    inlinePaymentToRecheck.current = { reference, owner };
+
+    const recover = async () => {
+      try {
+        // STEP 342CN-GU / RESUME EXISTING PAYMENT VERIFICATION
+        // Reuse the same verifier as callback and return-to-tab.
+        // The authenticated status lookup remains authoritative.
+        try {
+          await inlineSharedVerifier.current.verify(reference);
+        } catch {
+          // Failed verification is not proof of failed payment.
+        }
+
+        if (cancelled) return;
+        if (paymentAttemptOwner.current !== owner) return;
+        if (inlinePaymentToRecheck.current?.reference !== reference) return;
+
+        const { data } = await apiClient.get(
+          `/billing/payments/${encodeURIComponent(reference)}`
+        );
+
+        if (cancelled) return;
+
+        const current = inlinePaymentToRecheck.current;
+
+        if (
+          !current ||
+          current.reference !== reference ||
+          current.owner !== owner ||
+          paymentAttemptOwner.current !== owner ||
+          inlineTerminalResult.current?.owner === owner
+        ) return;
+
+        const payment = data?.payment;
+
+        if (
+          payment?.reference !== reference ||
+          payment?.purpose !== "SUBSCRIPTION_RENEWAL"
+        ) {
+          clearInlineRecoveryReference(
+            window.sessionStorage,
+            reference
+          );
+          inlinePaymentToRecheck.current = null;
+          return;
+        }
+
+        const status = String(
+          payment.status || "PENDING"
+        ).toUpperCase();
+
+        if (status === "SUCCESS" || status === "FAILED") {
+          inlineTerminalResult.current = { owner, status };
+          inlinePaymentToRecheck.current = null;
+
+          if (status === "FAILED") {
+            clearInlineRecoveryReference(
+              window.sessionStorage,
+              reference
+            );
+          }
+        }
+
+        setInlinePaymentStatus(
+          status === "SUCCESS" || status === "FAILED"
+            ? status
+            : "PENDING"
+        );
+      } catch {
+        // A failed status lookup cannot establish payment success.
+        // Keep the reference for a later authenticated recheck.
+      }
+    };
+
+    void recover();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // STEP 342CN-FF / RETURN-TO-STORVEX RECONCILIATION
+  // Runs separately from provider-script preloading.
+  // Never creates a checkout or trusts provider callback data.
+  useEffect(() => {
+    if (!STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED) return;
+
+    const reconciler = createFlutterwaveInlineReconciler({
+      verifyPayment: reference =>
+        inlineSharedVerifier.current.verify(reference),
+      fetchStatus: async reference => {
+        const { data } = await apiClient.get(
+          `/billing/payments/${encodeURIComponent(reference)}`
+        );
+        return data;
+      },
+      onStatus: ({ reference, status }) => {
+        const current = inlinePaymentToRecheck.current;
+
+        if (
+          !current ||
+          current.reference !== reference ||
+          current.owner !== paymentAttemptOwner.current
+        ) return;
+
+        // A completed payment result cannot be overwritten by
+        // a late pending response or another verification path.
+        if (inlineTerminalResult.current?.owner === current.owner) {
+          return;
+        }
+
+        if (status === "SUCCESS" || status === "FAILED") {
+          inlineTerminalResult.current = {
+            owner: current.owner,
+            status,
+          };
+          inlinePaymentToRecheck.current = null;
+        }
+
+        setInlinePaymentStatus(status);
+
+        if (status === "SUCCESS" || status === "FAILED") {
+
+          if (status === "SUCCESS") {
+            closeVerifiedInlineCheckout(reference, current.owner);
+            toast.success("Payment verified by Storvex.");
+          } else {
+            toast.error("Payment was unsuccessful.");
+          }
+        }
+      },
+    });
+
+    const recheckOnReturn = () => {
+      if (document.visibilityState === "hidden") return;
+
+      const current = inlinePaymentToRecheck.current;
+      if (!current) return;
+      if (current.owner !== paymentAttemptOwner.current) return;
+
+      void reconciler.reconcile(current.reference).catch(() => {});
+    };
+
+    window.addEventListener("focus", recheckOnReturn);
+    document.addEventListener("visibilitychange", recheckOnReturn);
+
+    return () => {
+      window.removeEventListener("focus", recheckOnReturn);
+      document.removeEventListener("visibilitychange", recheckOnReturn);
+    };
+  }, []);
+
+
 
   const grouped = useMemo(() => groupPlans(plans), [plans]);
 
@@ -572,10 +900,6 @@ export default function Renew() {
 
         setMe(meData || null);
 
-        if (!phone && meData?.store?.phone) {
-          setPhone(meData.store.phone);
-        }
-
         const filtered = normalizeSubscriptionPlans(
           planData?.plans,
         ).filter((plan) => !plan.isEnterprise);
@@ -619,53 +943,205 @@ export default function Renew() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function startRenewal(event) {
-    event.preventDefault();
+  async function startFlutterwavePayment() {
+    if (paymentAttemptLock.current || submitting) return;
 
-    if (enterpriseRequired) {
-      toast.error("This store requires a custom Enterprise plan.");
-      return;
-    }
+    // A verified renewal cannot initiate a second checkout.
+    if (inlinePaymentStatus === "SUCCESS") return;
 
     if (!selectedPlan) {
-      toast.error("Select a plan.");
+      toast.error("Select a subscription plan.");
       return;
     }
 
-    if (selectedPlanInsufficient) {
-      toast.error("Selected plan does not cover current staff or branch usage.");
-      return;
-    }
-
-    const cleanPhone = cleanString(phone);
-    if (!cleanPhone) {
-      toast.error("Enter MoMo phone number.");
-      return;
-    }
-
+    paymentAttemptLock.current = true;
+    const attemptOwner = ++paymentAttemptOwner.current;
+    inlineCheckoutHandle.current = null;
+    inlinePaymentToRecheck.current = null;
+    inlineTerminalResult.current = null;
     setSubmitting(true);
+    setInlinePaymentStatus("");
+
+    let inlinePopupOpened = false;
 
     try {
-      const { data } = await apiClient.post("/billing/renew", {
+      if (STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED) {
+        await runFlutterwaveInlinePaymentFlow({
+          selection: {
+            planKey: selectedPlan.key,
+            durationMonths,
+            expectedTotal: total,
+            expectedCurrency: selectedPlan.currency,
+          },
+          reservePayment: async (selection) => {
+            const { data } = await apiClient.post("/billing/renew", {
+              planKey: selection.planKey,
+              durationMonths: selection.durationMonths,
+              checkoutMethod: "FLUTTERWAVE_SANDBOX_INLINE",
+            });
+            if (
+              typeof data?.paymentReference === "string" &&
+              /^[A-Za-z0-9_-]{8,100}$/.test(data.paymentReference) &&
+              paymentAttemptOwner.current === attemptOwner
+            ) {
+              inlinePaymentToRecheck.current = {
+                reference: data.paymentReference,
+                owner: attemptOwner,
+              };
+
+              saveInlineRecoveryReference(
+                window.sessionStorage,
+                data.paymentReference
+              );
+            }
+            return data;
+          },
+          loadCheckout: loadFlutterwaveInlineScript,
+          openPopup: options => {
+            const opened = openSandboxInlinePopup(options);
+
+            if (paymentAttemptOwner.current === attemptOwner) {
+              inlineCheckoutHandle.current = {
+                reference: opened.reference,
+                owner: attemptOwner,
+                modal: opened.modal,
+              };
+
+              // Protect against synchronous provider callbacks.
+              if (
+                inlineTerminalResult.current?.owner === attemptOwner &&
+                inlineTerminalResult.current?.status === "SUCCESS"
+              ) {
+                closeVerifiedInlineCheckout(
+                  opened.reference,
+                  attemptOwner
+                );
+              }
+            }
+
+            return opened;
+          },
+          verifyPayment: (reference) =>
+            inlineSharedVerifier.current.verify(reference),
+          fetchStatus: async (reference) => {
+            const { data } = await apiClient.get(
+              `/billing/payments/${encodeURIComponent(reference)}`
+            );
+            return data;
+          },
+          onFinished: () => {
+            if (paymentAttemptOwner.current !== attemptOwner) return;
+            paymentAttemptLock.current = false;
+            setSubmitting(false);
+          },
+          onStatus: ({ status }) => {
+            if (paymentAttemptOwner.current !== attemptOwner) return;
+
+            // Only the first authoritative terminal result can
+            // update this attempt's visible payment outcome.
+            if (inlineTerminalResult.current?.owner === attemptOwner) {
+              return;
+            }
+
+            if (status === "SUCCESS" || status === "FAILED") {
+              inlineTerminalResult.current = {
+                owner: attemptOwner,
+                status,
+              };
+              inlinePaymentToRecheck.current = null;
+            }
+
+            setInlinePaymentStatus(status);
+            if (status === "SUCCESS") {
+              const current = inlineCheckoutHandle.current;
+
+              if (current?.owner === attemptOwner) {
+                closeVerifiedInlineCheckout(
+                  current.reference,
+                  attemptOwner
+                );
+              }
+
+              toast.success("Payment verified by Storvex.");
+            } else if (status === "FAILED") {
+              toast.error("Payment was unsuccessful.");
+            } else if (status === "PENDING") {
+              toast("Payment is not yet confirmed.");
+            }
+          },
+        });
+
+        // Only the popup lifecycle callback may normally release
+        // a successfully opened Inline attempt.
+        inlinePopupOpened = true;
+      } else {
+      await startFlutterwaveSandboxCheckout({
         planKey: selectedPlan.key,
-        phone: cleanPhone,
+        durationMonths,
+        expectedTotal: total,
+        expectedCurrency: selectedPlan.currency,
       });
-
-      const ref =
-        data?.paymentReference ||
-        data?.reference ||
-        data?.payment?.reference ||
-        data?.payment?.id ||
-        "";
-
-      setPaymentRef(ref);
-      localStorage.setItem("storvex_ownerPhone", cleanPhone);
-
-      toast.success("MoMo request sent. Confirm on your phone.");
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Renewal request failed");
+      }
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Flutterwave checkout is unavailable."
+      );
     } finally {
-      setSubmitting(false);
+      // Hosted checkout retains its original completion behavior.
+      // Inline releases here only if reservation/opening failed.
+      if (
+        paymentAttemptOwner.current === attemptOwner &&
+        (
+          !STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED ||
+          !inlinePopupOpened
+        )
+      ) {
+        paymentAttemptLock.current = false;
+        setSubmitting(false);
+      }
+    }
+  }
+
+  // STEP 342CN-HK / VERIFIED DASHBOARD CONTINUATION
+  // A successful payment is necessary but does not itself
+  // authorize entry into the operational workspace.
+  async function continueAfterVerifiedRenewal() {
+    if (inlinePaymentStatus !== "SUCCESS" || refreshing) return;
+
+    setRefreshing(true);
+
+    try {
+      const { data } = await apiClient.get("/auth/me");
+      setMe(data || null);
+
+      if (!isAccessRecovered(data?.subscription)) {
+        toast(
+          "Payment confirmed. Your subscription access is still updating. Please check again."
+        );
+        return;
+      }
+
+      const reference = readInlineRecoveryReference(
+        window.sessionStorage
+      );
+
+      if (reference) {
+        clearInlineRecoveryReference(
+          window.sessionStorage,
+          reference
+        );
+      }
+
+      nav("/app", { replace: true });
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message ||
+          "Unable to confirm subscription access. Please try again."
+      );
+    } finally {
+      setRefreshing(false);
     }
   }
 
@@ -705,282 +1181,402 @@ export default function Renew() {
   const subMeta = statusMeta(sub);
 
   const daysLeft = daysUntil(sub?.endDate);
-  const graceDaysLeft = daysUntil(sub?.graceEndDate);
+
+
+  // STEP 342CM-Q / APPROVED REFERENCE
+  const durations = [
+    { months: 1, discount: 0 },
+    { months: 3, discount: 5 },
+    { months: 6, discount: 10 },
+    { months: 12, discount: 15 },
+  ];
+
+  const discount =
+    durations.find((entry) => entry.months === durationMonths)?.discount ?? 0;
+  const monthlyPrice = Number(selectedPlan?.price);
+  const hasPrice = Number.isFinite(monthlyPrice) && monthlyPrice > 0;
+  const fullPrice = hasPrice ? Math.round(monthlyPrice * durationMonths) : null;
+  const savings = fullPrice == null ? null : Math.round(fullPrice * discount / 100);
+  const total = fullPrice == null ? null : fullPrice - savings;
+
+  const isReadOnly =
+    sub?.canOperate === false ||
+    ["EXPIRED", "READ_ONLY"].includes(String(sub?.status || "").toUpperCase()) ||
+    String(sub?.accessMode || "").toUpperCase() === "READ_ONLY";
+
+  // Multi-month sandbox checkout is separately opted in.
+  // The backend remains responsible for authorizing the duration.
+  const checkoutDurationEnabled =
+    durationMonths === 1 ||
+    STORVEX_FLUTTERWAVE_SANDBOX_MULTI_MONTH_UI_ENABLED;
+
+  const checkoutEnabled =
+    STORVEX_FLUTTERWAVE_SANDBOX_UI_ENABLED &&
+    checkoutDurationEnabled &&
+    hasPrice &&
+    Boolean(selectedPlan) &&
+    !selectedPlanInsufficient &&
+    !enterpriseRequired &&
+    !submitting &&
+    inlinePaymentStatus !== "SUCCESS";
 
   return (
-    <div className={pageShell()}>
-      <TopRecoveryBar
-        storeName={storeName}
-        sub={sub}
-        isDark={isDark}
-        onToggleTheme={toggleTheme}
-      />
+    <div className={`svx-renew-premium ${renewThemeClass} ${embedded ? "is-embedded" : ""}`}>
+      <main className="svx-rq-wrap">
+        {/* STEP 342CM-S / RENEW NAVIGATION */}
+        <header className="svx-rq-heading">
+          <div className="svx-rq-heading-main">
+            <button
+              type="button"
+              className="svx-rq-back"
+              onClick={() => {
+                if (embedded || !isReadOnly) {
+                  nav("/app/settings/billing");
+                } else {
+                  nav("/login");
+                }
+              }}
+              aria-label={isReadOnly && !embedded ? "Back to login" : "Back to Billing"}
+              title="Back to Billing"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="17"
+                height="17"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <div className="svx-rq-heading-copy">
+              <nav className="svx-rq-breadcrumb" aria-label="Breadcrumb">
+                <button type="button" onClick={() => nav("/app/settings")}>Settings</button>
+                <span>/</span>
+                <button type="button" onClick={() => nav("/app/settings/billing")}>Billing</button>
+                <span>/</span>
+                <strong>Renew</strong>
+              </nav>
+              <h1>Renew your subscription</h1>
+              <p>Choose the right plan, duration and payment option for your business.</p>
+            </div>
+          </div>
+
+          {/* STEP 342CM-T / RECOVERY CONTROLS */}
+          {!embedded && (
+            <button
+              type="button"
+              className="svx-rq-theme-pill"
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              title="Toggle theme"
+              aria-pressed={isDark}
+            >
+              <span className={!isDark ? "is-active" : ""}>
+                <SunIcon />
+              </span>
+              <span className={isDark ? "is-active" : ""}>
+                <MoonIcon />
+              </span>
+            </button>
+          )}
+        </header>
+
+        <section className="svx-rq-strip" aria-label="Subscription overview">
+          <div className="svx-rq-strip-item">
+            <span className="svx-rq-strip-icon">✓</span>
+            <div>
+              <small>Current access</small>
+              <strong>{subMeta.label}</strong>
+              <span>{isReadOnly ? "Restricted until verified renewal" : "Your workspace remains available"}</span>
+            </div>
+          </div>
+          <div className="svx-rq-strip-item">
+            <span className="svx-rq-strip-icon">▦</span>
+            <div>
+              <small>Subscription ends</small>
+              <strong>{formatDate(sub?.endDate)}</strong>
+              <span>{daysLeft == null ? "Date not available" : `${daysLeft} days remaining`}</span>
+            </div>
+          </div>
+          <div className="svx-rq-strip-item">
+            <span className="svx-rq-strip-icon">✦</span>
+            <div>
+              <small>After verified renewal</small>
+              <strong>Continued access</strong>
+              <span>Subject to successful payment verification</span>
+            </div>
+          </div>
+        </section>
+
         {enterpriseRequired ? (
           <EnterpriseRequiredPanel
             storeName={storeName}
             activeStaff={activeStaff}
             activeBranches={activeBranches}
             maxStaffLimit={grouped.maxStaffLimit}
-            onBack={() => nav("/app/settings/billing", { replace: true })}
+            onBack={() => nav("/app/settings/billing")}
           />
         ) : (
-          <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.15fr)_360px]">
-            <section className={cx(pageCard(), "min-w-0 overflow-hidden")}>
-              <div className="border-b border-[var(--color-border)] px-5 py-5 sm:px-6">
-                <SectionHeading
-                  eyebrow="Subscription recovery"
-                  title="Renew access and restore full operations"
-                  subtitle="Choose a renewal plan, confirm payment, and recover the workspace with the same locked billing flow used across Storvex."
-                />
-              </div>
-
-              <div className="space-y-6 px-5 py-5 sm:px-6">
-                <div className="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-3">
-                  <InfoStat
-                    label="Store"
-                    value={storeName}
-                    sub={`Access mode: ${sub?.accessMode || "—"}`}
-                  />
-
-                  <InfoStat
-                    label="Subscription end"
-                    value={formatDate(sub?.endDate)}
-                    sub={
-                      daysLeft == null
-                        ? `Grace end: ${formatDate(sub?.graceEndDate)}`
-                        : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`
-                    }
-                  />
-
-                  <div className={cx(softPanel(), "min-w-0 p-4")}>
-                    <div className={cx("text-[10px] font-black uppercase tracking-[0.18em]", softText())}>
-                      Current state
-                    </div>
-
-                    <div className="mt-2">
-                      <Badge tone={subMeta.tone}>{subMeta.label}</Badge>
-                    </div>
-
-                    <div className={cx("mt-2 text-xs font-semibold leading-5", mutedText())}>
-                      {subMeta.note}
-                    </div>
-                  </div>
+          <div className="svx-rq-layout">
+            <div className="svx-rq-left">
+              <section className="svx-rq-plans-section">
+                <div className="svx-rq-section-title">
+                  <h2>1. Choose a plan</h2>
+                  <p>Select a plan that fits your business and current usage.</p>
                 </div>
 
-                <form onSubmit={startRenewal} className="space-y-6">
-                  <div className="min-w-0">
-                    <div className={cx("text-sm font-black", strongText())}>
-                      1. Choose your plan
-                    </div>
+                <div className="svx-rq-plans">
+                  {visiblePlans.map((plan) => {
+                    const staffTooHigh =
+                      plan.staffLimit != null &&
+                      Number.isFinite(Number(plan.staffLimit)) &&
+                      activeStaff > Number(plan.staffLimit);
+                    const branchesTooHigh =
+                      plan.branchLimit != null &&
+                      Number.isFinite(Number(plan.branchLimit)) &&
+                      activeBranches > Number(plan.branchLimit);
+                    const disabled = staffTooHigh || branchesTooHigh;
+                    const selected = selectedPlan?.key === plan.key;
 
-                    <div
-                      className={cx(
-                        "mt-1 text-xs font-semibold leading-5",
-                        mutedText(),
-                      )}
-                    >
-                      Plans come directly from Storvex billing and already
-                      include the correct price, staff capacity, locations,
-                      Marketplace access and business tools.
-                    </div>
-                  </div>
+                    return (
+                      <button
+                        key={plan.key}
+                        type="button"
+                        className={`svx-rq-plan ${selected ? "is-selected" : ""}`}
+                        aria-pressed={selected}
+                        disabled={disabled}
+                        onClick={() => setPlanKey(plan.key)}
+                      >
+                        <span className="svx-rq-plan-head">
+                          <strong>{plan.label}</strong>
+                          <span className="svx-rq-radio" />
+                        </span>
+                        {plan.recommended && (
+                          <span className="svx-rq-recommended">Recommended</span>
+                        )}
+                        <span className="svx-rq-price">
+                          {formatMoney(plan.price, plan.currency)}
+                          <small>/month</small>
+                        </span>
+                        <span className="svx-rq-limits">
+                          {plan.staffLimit ?? "Custom"} staff · {plan.branchLimit ?? "Custom"} locations
+                        </span>
+                        {/* STEP 342CM-V / RENEW REFINEMENT */}
+                        <span className="svx-rq-feature">
+                          {plan.audience || "Retail business operations"}
+                        </span>
+                        <span className={`svx-rq-plan-action ${selected ? "is-selected" : ""}`}>
+                          {disabled
+                            ? "Insufficient capacity"
+                            : selected
+                              ? "Selected plan"
+                              : "Select plan"}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedPlanInsufficient && (
+                  <p className="svx-rq-warning">
+                    The selected plan does not cover your current staff or locations.
+                  </p>
+                )}
+              </section>
 
-                  <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-2">
-                    {visiblePlans.map((plan) => {
-                      const staffTooHigh =
-                        Number.isFinite(Number(plan.staffLimit)) && activeStaff > Number(plan.staffLimit);
+              <section className="svx-rq-steps">
+                <h2>What happens next?</h2>
+                <div className="svx-rq-step-grid">
+                  <div><b>1</b><span><strong>Choose your plan</strong><small>Pick your plan and duration</small></span></div>
+                  <div><b>2</b><span><strong>Complete payment</strong><small>Pay securely with Flutterwave</small></span></div>
+                  <div><b>3</b><span><strong>Access confirmed</strong><small>After backend verification</small></span></div>
+                </div>
+              </section>
+            </div>
 
-                      const branchesTooHigh =
-                        Number.isFinite(Number(plan.branchLimit)) &&
-                        activeBranches > Number(plan.branchLimit);
+            <aside className="svx-rq-payment">
+              <section className="svx-rq-payment-card">
+                <h2>2. Payment details</h2>
 
-                      const disabled = staffTooHigh || branchesTooHigh;
+                <div className="svx-rq-details">
+                  <div><span>Selected plan</span><strong>{selectedPlan?.label || "—"}</strong></div>
+                  <div><span>Monthly price</span><strong>{hasPrice ? formatMoney(monthlyPrice, selectedPlan?.currency) : "—"}</strong></div>
+                  <div><span>Staff seats</span><strong>{selectedPlan?.staffLimit ?? "—"}</strong></div>
+                  <div><span>Store locations</span><strong>{selectedPlan?.branchLimit ?? "—"}</strong></div>
+                </div>
 
-                      let reason = "";
-                      if (staffTooHigh) reason = `Needs at least ${activeStaff} staff seats.`;
-                      else if (branchesTooHigh) reason = `Needs at least ${activeBranches} branch slots.`;
-
-                      return (
-                        <PlanCard
-                          key={plan.key}
-                          plan={plan}
-                          active={plan.key === selectedPlan?.key}
-                          disabled={disabled}
-                          reason={reason}
-                          onSelect={setPlanKey}
-                        />
-                      );
-                    })}
-                  </div>
-
-                  <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-                    <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
-                      <div className="min-w-0 md:col-span-2">
-                        <label className={cx("text-sm font-black", strongText())}>Plan</label>
-                        <select
-                          className={cx(inputClass(), "mt-2")}
-                          value={planKey}
-                          onChange={(event) => setPlanKey(event.target.value)}
-                          disabled={!visiblePlans.length}
-                        >
-                          {visiblePlans.map((plan) => (
-                            <option key={plan.key} value={plan.key}>
-                              {plan.label} — {formatMoney(plan.price, plan.currency)}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div className="min-w-0 md:col-span-2">
-                        <label className={cx("text-sm font-black", strongText())}>MoMo phone</label>
-                        <input
-                          className={cx(inputClass(), "mt-2")}
-                          value={phone}
-                          onChange={(event) => setPhone(event.target.value)}
-                          placeholder="07XXXXXXXX or 2507XXXXXXXX"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className={cx(softPanel(), "h-fit min-w-0 p-4")}>
-                      <div className={cx("text-sm font-black", strongText())}>Selected summary</div>
-
-                      {selectedPlan ? (
-                        <>
-                          <div
-                            className={cx(
-                              "mt-3 break-words text-2xl font-black tracking-[-0.05em]",
-                              strongText(),
-                            )}
-                          >
-                            {formatMoney(selectedPlan.price, selectedPlan.currency)}
-                          </div>
-
-                          <div className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>
-                            {selectedPlan.label}
-                          </div>
-
-                          <div className="mt-4 grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
-                            <InfoStat
-                              label="Billing"
-                              value={selectedPlan.cycleLabel || "Monthly"}
-                            />
-                            <InfoStat
-                              label="Best for"
-                              value={selectedPlan.audience}
-                            />
-                            <InfoStat label="Staff" value={selectedPlan.staffLimit ?? "Custom"} />
-                            <InfoStat label="Branches" value={selectedPlan.branchLimit ?? "Custom"} />
-                          </div>
-
-                          {selectedPlanInsufficient ? (
-                            <div className="mt-4 rounded-2xl bg-amber-500/10 px-4 py-3 text-xs font-bold leading-5 text-amber-600 dark:text-amber-300">
-                              This plan does not cover the current staff or branch usage.
-                            </div>
-                          ) : null}
-                        </>
-                      ) : (
-                        <div className={cx("mt-3 text-sm font-semibold leading-6", mutedText())}>
-                          No matching plan available for the current filters.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="grid min-w-0 gap-3 sm:grid-cols-2">
-                    <AsyncButton
-                      type="submit"
-                      loading={submitting}
-                      disabled={!selectedPlan || selectedPlanInsufficient}
-                      className={primaryBtn()}
-                    >
-                      Send MoMo request
-                    </AsyncButton>
-
-                    <AsyncButton
+                <div className="svx-rq-duration-heading">
+                  <strong>Subscription duration</strong>
+                  <small>Save on longer terms</small>
+                </div>
+                <div className="svx-rq-duration-grid">
+                  {durations.map((entry) => (
+                    <button
                       type="button"
-                      loading={refreshing}
-                      onClick={refreshStatus}
-                      className={secondaryBtn()}
+                      key={entry.months}
+                      className={`svx-rq-duration ${durationMonths === entry.months ? "is-selected" : ""}`}
+                      aria-pressed={durationMonths === entry.months}
+                      onClick={() => setDurationMonths(entry.months)}
                     >
-                      I paid → Refresh access
-                    </AsyncButton>
-                  </div>
-
-                  {paymentRef ? (
-                    <div className={cx(softPanel(), "min-w-0 p-4")}>
-                      <div className={cx("text-sm font-black", strongText())}>
-                        Payment request created
-                      </div>
-                      <div className={cx("mt-2 break-all text-sm font-semibold leading-6", mutedText())}>
-                        Reference: <span className={strongText()}>{paymentRef}</span>
-                      </div>
-                      <div className={cx("mt-2 text-sm font-semibold leading-6", mutedText())}>
-                        Confirm on your phone, then refresh access to re-check the subscription state.
-                      </div>
-                    </div>
-                  ) : null}
-                </form>
-              </div>
-            </section>
-
-            <aside className="min-w-0 space-y-4">
-              <div className={cx(pageCard(), "p-5 sm:p-6")}>
-                <div className={cx("text-lg font-black tracking-tight", strongText())}>
-                  What happens next
-                </div>
-
-                <div className="mt-4 space-y-3">
-                  {[
-                    "Choose the renewal plan that fits your store size.",
-                    "Approve the MoMo request on your phone.",
-                    "Refresh access to restore normal operations when payment is recorded.",
-                  ].map((step, index) => (
-                    <div key={step} className={cx(softPanel(), "p-4")}>
-                      <div className="flex gap-3">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl bg-[var(--color-primary)] text-sm font-black text-[var(--color-primary-contrast)]">
-                          {index + 1}
-                        </div>
-                        <div className={cx("text-sm font-semibold leading-6", mutedText())}>{step}</div>
-                      </div>
-                    </div>
+                      <strong>{entry.months} {entry.months === 1 ? "mo" : "mos"}</strong>
+                      <span>{entry.discount ? `${entry.discount}% off` : "Standard"}</span>
+                    </button>
                   ))}
                 </div>
-              </div>
 
-              <div className={cx(pageCard(), "p-5 sm:p-6")}>
-                <div className={cx("text-lg font-black tracking-tight", strongText())}>Access rule</div>
-                <p className={cx("mt-3 text-sm font-semibold leading-6", mutedText())}>
-                  In read-only mode, the store can still review historical data, but operational
-                  write actions remain blocked until renewal is completed.
-                </p>
-              </div>
-
-              <div className={cx(pageCard(), "p-5 sm:p-6")}>
-                <div className={cx("text-lg font-black tracking-tight", strongText())}>
-                  Need to return fast?
-                </div>
-                <div className={cx("mt-3 text-sm font-semibold leading-6", mutedText())}>
-                  After you approve payment, use refresh access. Once billing becomes active, the
-                  page automatically sends you back into the workspace.
+                <div className="svx-rq-totals">
+                  <div><span>Regular total</span><strong>{fullPrice == null ? "—" : formatMoney(fullPrice, selectedPlan?.currency)}</strong></div>
+                  <div className="is-saving"><span>Discount ({discount}%)</span><strong>{savings == null ? "—" : `− ${formatMoney(savings, selectedPlan?.currency)}`}</strong></div>
+                  <div className="svx-rq-grand-total"><span>Estimated total</span><strong>{total == null ? "—" : formatMoney(total, selectedPlan?.currency)}</strong></div>
                 </div>
 
-                <div className={cx("mt-4 rounded-2xl bg-[var(--color-surface-2)] p-4 text-xs font-semibold leading-5", mutedText())}>
-                  <span>Grace window: {formatDate(sub?.graceEndDate)}</span>
-                  {graceDaysLeft == null ? null : (
-                    <span className="mt-1 block">
-                      {graceDaysLeft} day{graceDaysLeft === 1 ? "" : "s"} left
-                    </span>
+                <div className="svx-rq-payment-method">
+                  <strong>Payment method</strong>
+                  <div className="svx-rq-provider">
+                    <span aria-hidden="true">●</span>
+                    <div>
+                      <strong>Pay securely with Flutterwave</strong>
+                      <small>
+                        {STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED
+                          ? "Secure popup checkout"
+                          : "Secure hosted checkout"}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="svx-rq-checkout"
+                  disabled={!checkoutEnabled}
+                  onClick={startFlutterwavePayment}
+                >
+                  {inlinePaymentStatus === "SUCCESS"
+                    ? "Payment completed"
+                    : submitting
+                      ? "Opening checkout..."
+                    : !STORVEX_FLUTTERWAVE_SANDBOX_UI_ENABLED
+                      ? "Checkout unavailable"
+                      : !checkoutDurationEnabled
+                        ? "Multi-month checkout not yet enabled"
+                        : "Proceed to Secure Payment"}
+                </button>
+
+                {durationMonths !== 1 && !checkoutDurationEnabled && (
+                  <p className="svx-rq-checkout-note">
+                    Multi-month pricing is a preview. Checkout requires
+                    explicit sandbox multi-month testing to be enabled.
+                  </p>
+                )}
+                {STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED &&
+                  inlinePaymentStatus === "SUCCESS" && (
+                    <section
+                      className="svx-rq-payment-success"
+                      role="status"
+                      aria-live="polite"
+                      aria-label="Payment successful"
+                    >
+                      <div className="svx-rq-payment-success-heading">
+                        <span
+                          className="svx-rq-payment-success-mark"
+                          aria-hidden="true"
+                        >
+                          ✓
+                        </span>
+                        <strong>Payment successful</strong>
+                      </div>
+
+                      <p>
+                        Your payment has been verified by Storvex and
+                        your subscription renewal has been applied.
+                      </p>
+
+                      {/* STEP 342CN-HK / PRIMARY DASHBOARD ACTION */}
+                      {!embedded && (
+                        <button
+                          type="button"
+                          className="svx-rq-payment-success-action"
+                          disabled={refreshing}
+                          onClick={continueAfterVerifiedRenewal}
+                        >
+                          {refreshing
+                            ? "Checking subscription..."
+                            : "Continue to dashboard"}
+                        </button>
+                      )}
+
+                      <button
+                        type="button"
+                        className="svx-rq-secondary"
+                        onClick={() => {
+                          const reference =
+                            readInlineRecoveryReference(
+                              window.sessionStorage
+                            );
+
+                          if (reference) {
+                            clearInlineRecoveryReference(
+                              window.sessionStorage,
+                              reference
+                            );
+                          }
+
+                          nav("/app/settings/billing");
+                        }}
+                      >
+                        View Billing
+                      </button>
+                    </section>
                   )}
-                </div>
-              </div>
+
+                {STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED &&
+                  inlinePaymentStatus &&
+                  inlinePaymentStatus !== "SUCCESS" && (
+                    <p className="svx-rq-checkout-note" role="status">
+                      {inlinePaymentStatus === "FAILED"
+                        ? "Payment was unsuccessful."
+                        : inlinePaymentStatus === "VERIFYING"
+                          ? "Verifying your payment securely..."
+                          : inlinePaymentStatus === "OPENING"
+                            ? "Opening secure payment popup..."
+                            : "Payment confirmation pending. Check Billing for updates."}
+                    </p>
+                  )}
+
+                {STORVEX_FLUTTERWAVE_SANDBOX_UI_ENABLED && (
+                  <p className="svx-rq-secure">
+                    Test mode — No real payment will be charged.
+                  </p>
+                )}
+                <p className="svx-rq-secure">
+                  Secure checkout powered by Flutterwave.
+                </p>
+
+                {isReadOnly && (
+                  <button
+                    type="button"
+                    className="svx-rq-secondary svx-rq-status-check"
+                    disabled={refreshing}
+                    onClick={refreshStatus}
+                  >
+                    {refreshing ? "Checking..." : "Check subscription status"}
+                  </button>
+                )}
+              </section>
             </aside>
           </div>
         )}
+
+        <footer className="svx-rq-footer">
+          Storvex is a product operated by <strong>RURAXIS LTD.</strong>
+        </footer>
       </main>
     </div>
   );
+
 }

@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
+import { startFlutterwaveSandboxCheckout } from "./startFlutterwaveSandboxCheckout";
+
+const STORVEX_FLUTTERWAVE_SANDBOX_UI_ENABLED =
+  process.env.NODE_ENV === "development" &&
+  process.env.NEXT_PUBLIC_FLUTTERWAVE_SANDBOX_UI_ENABLED === "true";
+
 
 import apiClient from "../../services/apiClient";
 import AsyncButton from "../../components/ui/AsyncButton";
@@ -10,7 +17,7 @@ import {
   pickRecommendedPlan,
   planCapacityLabel,
 } from "../../utils/subscriptionPlans";
-import "./Billing.css";
+import "./BillingOverview.css";
 
 function cx(...xs) {
   return xs.filter(Boolean).join(" ");
@@ -476,6 +483,29 @@ export default function Billing({ embedded = false } = {}) {
     }
   }
 
+  async function startFlutterwavePayment() {
+    if (!selectedPlan) {
+      toast.error("Select a subscription plan.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      await startFlutterwaveSandboxCheckout({
+        planKey: selectedPlan.key,
+      });
+    } catch (error) {
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Flutterwave checkout is unavailable."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function startRenewal(event) {
     event.preventDefault();
 
@@ -554,219 +584,172 @@ export default function Billing({ embedded = false } = {}) {
         ? "warning"
         : "success";
 
+  // STEP 342CM-E / APPROVED PREMIUM BILLING
   return (
-    <div className="svx-billing-page">
-      <section className="svx-billing-command">
-        <div className="svx-billing-command-main">
-          <span>Billing</span>
-          <h2>Your plan and renewal</h2>
-          <p>
-            {subscriptionPaymentsEnabled
-              ? "Manage your plan, usage, renewal date, and subscription payment."
-              : "Manage your plan, usage, and renewal readiness for your market."}
-          </p>
+    <div className="svx-billing-page svx-billing-v2 svx-billing-premium">
+      <header className="svx-bp-titlebar">
+        <div>
+          <h2>Billing &amp; subscription</h2>
+          <p>Your plan, usage and payment history in one place.</p>
         </div>
+        {/* STEP 342CM-J / REMOVE REFRESH */}
+      </header>
 
-        <div className="svx-billing-command-actions">
-          <span className={`svx-billing-plan-state is-${meta.tone}`}>
-            {meta.label}
-          </span>
-
-          <AsyncButton
-            type="button"
-            loading={refreshing}
-            onClick={refreshStatus}
-            className="svx-billing-secondary-btn svx-billing-refresh-soft"
-          >
-            Refresh
-          </AsyncButton>
-        </div>
-      </section>
-
-      <section className="svx-billing-grid">
-        <article className="svx-billing-card svx-billing-current">
-          <div className="svx-billing-card-head">
-            <div>
-              <span>Current plan</span>
-              <h3>{displayPlan?.name || "Storvex plan"}</h3>
-            </div>
+      <section className="svx-bp-hero" aria-label="Current subscription">
+        <div className="svx-bp-primary">
+          <span className="svx-bp-kicker">Current subscription</span>
+          <div className="svx-bp-planline">
+            <h3>{displayPlan?.name || "Storvex plan"}</h3>
+            <span className={`svx-bp-status is-${meta.tone}`}>
+              {meta.label}
+            </span>
           </div>
-
-          <div className="svx-billing-current-amount">
-            {displayPlan
-              ? formatMoney(displayPlan.price, displayPlan.currency)
-              : formatMoney(
-                  subscription?.priceAmount,
-                  subscription?.currency || marketCurrency,
-                )}
+          <div className="svx-bp-price">
+            <strong>
+              {displayPlan
+                ? formatMoney(displayPlan.price, displayPlan.currency)
+                : formatMoney(
+                    subscription?.priceAmount,
+                    subscription?.currency || marketCurrency
+                  )}
+            </strong>
             <span>/ month</span>
           </div>
-
+          <p className="svx-bp-description">
+            {meta.note}
+            {daysLeft != null && subscription?.endDate
+              ? ` Subscription ends ${formatDate(subscription.endDate)} (${daysLeft} days left).`
+              : ""}
+          </p>
           {confirmedNextPlan ? (
-            <div className="svx-billing-warning">
-              <strong>
-                Next paid plan: {confirmedNextPlan.name}
-              </strong>
-              <div>
-                Starts after your trial ends on{" "}
-                {formatDate(subscription?.trialEndDate)}.
+            <p className="svx-bp-next">
+              Next paid plan: {confirmedNextPlan.name}, after your trial ends
+              on {formatDate(subscription?.trialEndDate)}.
+            </p>
+          ) : null}
+          <div className="svx-bp-actions">
+            <Link to="/app/settings/billing/renew" className="svx-bp-action-primary">
+              Manage plan &amp; renew
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </div>
+        <aside className="svx-bp-usage" aria-label="Plan usage">
+          <span className="svx-bp-kicker">Usage</span>
+          {/* STEP 342CM-H / BILLING USAGE REFINEMENT */}
+          {[
+            {
+              label: "Staff seats",
+              count: activeStaff,
+              limit: staffLimit,
+              tone: staffTone,
+            },
+            {
+              label: "Store locations",
+              count: activeBranches,
+              limit: branchLimit,
+              tone: branchTone,
+            },
+          ].map((usage) => (
+            <div className="svx-bp-usage-item" key={usage.label}>
+              <div className="svx-bp-usage-top">
+                <strong>{usage.label}</strong>
+                <span className={`is-${usage.tone}`}>
+                  {usage.tone === "danger"
+                    ? "Over limit"
+                    : usage.tone === "warning"
+                      ? "At limit"
+                      : "Within plan"}
+                </span>
+              </div>
+              <p className="svx-bp-usage-count">
+                {usage.count} active
+                {usage.limit == null
+                  ? " / Unlimited"
+                  : ` / ${usage.limit} allowed`}
+              </p>
+              <div
+                className="svx-bp-usage-track"
+                role="progressbar"
+                aria-label={`${usage.label} usage`}
+                aria-valuemin={0}
+                aria-valuemax={usage.limit > 0 ? usage.limit : 100}
+                aria-valuenow={Math.max(
+                  0,
+                  Math.min(usage.count, usage.limit > 0 ? usage.limit : 100)
+                )}
+              >
+                <span
+                  className={`is-${usage.tone}`}
+                  style={{
+                    width: `${
+                      usage.limit == null
+                        ? 0
+                        : usage.limit > 0
+                          ? Math.min(100, Math.max(0, usage.count / usage.limit * 100))
+                          : 100
+                    }%`,
+                  }}
+                />
               </div>
             </div>
-          ) : null}
-
-          <div className="svx-billing-current-meta">
-            <div>
-              <span>Store</span>
-              <strong>{storeName}</strong>
-            </div>
-            <div>
-              <span>Ends</span>
-              <strong>{formatDate(subscription?.endDate)}</strong>
-              <small>{daysLeft == null ? "No end date found" : `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`}</small>
-            </div>
-            <div>
-              <span>Status</span>
-              <strong>{meta.label}</strong>
-              <small>{meta.note}</small>
-            </div>
-          </div>
-        </article>
-
-        <aside className="svx-billing-card svx-billing-capacity">
-          <div className="svx-billing-card-head">
-            <div>
-              <span>Store usage</span>
-              <h3>Staff and locations</h3>
-            </div>
-          </div>
-
-          <CapacityLine label="Staff seats" value={activeStaff} limit={staffLimit} tone={staffTone} />
-          <CapacityLine label="Store locations" value={activeBranches} limit={branchLimit} tone={branchTone} />
+          ))}
         </aside>
       </section>
 
-      <section className="svx-billing-card svx-billing-renewal">
-        <div className="svx-billing-card-head">
+      <section className="svx-bp-facts" aria-label="Subscription information">
+        <article className="svx-bp-fact">
+          <span className="svx-bp-fact-icon" aria-hidden="true">▣</span>
           <div>
-            <span>Next plan</span>
-            <h3>
-              {subscriptionPaymentsEnabled
-                ? "Choose and renew"
-                : "Choose your next plan"}
-            </h3>
-            <p>
-              {subscriptionPaymentsEnabled
-                ? "Choose the plan that fits your business, then complete renewal."
-                : "Compare plans and choose what you want to use when subscription payments become available in your market."}
-            </p>
+            <small>Store</small>
+            <strong>{storeName}</strong>
           </div>
-        </div>
-
-        <form onSubmit={startRenewal} className="svx-billing-renewal-layout">
-          <div className="svx-billing-plan-list">
-            {plans.map((plan) => {
-              const staffTooHigh =
-                plan.staffLimit != null &&
-                activeStaff > plan.staffLimit;
-
-              const branchesTooHigh =
-                plan.branchLimit != null &&
-                activeBranches > plan.branchLimit;
-
-              const disabled = staffTooHigh || branchesTooHigh;
-
-              const disabledReason = staffTooHigh
-                ? `This store needs at least ${activeStaff} active-user spaces.`
-                : branchesTooHigh
-                  ? `This store needs at least ${activeBranches} location spaces.`
-                  : "";
-
-              return (
-                <LaunchPlanRow
-                  key={plan.key}
-                  plan={plan}
-                  active={plan.key === selectedPlan?.key}
-                  disabled={disabled}
-                  disabledReason={disabledReason}
-                  onSelect={setPlanKey}
-                />
-              );
-            })}
+        </article>
+        <article className="svx-bp-fact">
+          <span className="svx-bp-fact-icon" aria-hidden="true">▦</span>
+          <div>
+            <small>Subscription ends</small>
+            <strong>{formatDate(subscription?.endDate)}</strong>
+            <em>{daysLeft == null ? "Date unavailable" : `${daysLeft} days left`}</em>
           </div>
-
-          <aside className="svx-billing-renewal-panel">
-            <div className="svx-billing-selected">
-              <span>Selected plan</span>
-              <strong>{selectedPlan?.name || "Choose a plan"}</strong>
-              <p>
-                {selectedPlan
-                  ? `${formatMoney(
-                      selectedPlan.price,
-                      selectedPlan.currency,
-                    )} / month`
-                  : "No plan available"}
-              </p>
-            </div>
-
-            {subscriptionPaymentsEnabled ? (
-              <label>
-                <span>Payment phone</span>
-                <input
-                  value={phone}
-                  onChange={(event) => setPhone(event.target.value)}
-                  placeholder="Enter payment phone number"
-                  inputMode="tel"
-                  required
-                />
-              </label>
-            ) : null}
-
-            {!subscriptionPaymentsEnabled ? (
-              <div className="svx-billing-availability">
-                <span>Payment availability</span>
-                <strong>Online renewal is not available in your market yet.</strong>
-                <p>Your current access is unchanged. You can still choose the plan you want next.</p>
-              </div>
-            ) : !hasPaymentPhone(phone) ? (
-              <div className="svx-billing-warning">
-                Enter a valid payment phone number before sending the payment request.
-              </div>
-            ) : null}
-
-            {subscriptionPaymentsEnabled ? (
-              <AsyncButton
-                type="submit"
-                loading={submitting}
-                disabled={!selectedPlan || !hasPaymentPhone(phone)}
-                className="svx-billing-primary-btn"
-              >
-                Send payment request
-              </AsyncButton>
-            ) : null}
-
-            {subscriptionPaymentsEnabled ? (
-              <AsyncButton
-                type="button"
-                loading={refreshing}
-                onClick={refreshStatus}
-                className="svx-billing-secondary-btn svx-billing-payment-status-btn"
-              >
-                Check payment status
-              </AsyncButton>
-            ) : null}
-
-            {paymentRef ? (
-              <div className="svx-billing-payment-ref">
-                <span>Payment request created</span>
-                <strong>{paymentRef}</strong>
-                <p>Confirm on your phone, then refresh billing.</p>
-              </div>
-            ) : null}
-          </aside>
-        </form>
+        </article>
+        <article className="svx-bp-fact">
+          <span className="svx-bp-fact-icon" aria-hidden="true">✓</span>
+          <div>
+            <small>Status</small>
+            <strong>{meta.label}</strong>
+            <em>{meta.note}</em>
+          </div>
+        </article>
+        <article className="svx-bp-fact">
+          <span className="svx-bp-fact-icon" aria-hidden="true">▤</span>
+          <div>
+            <small>Billing cycle</small>
+            <strong>Monthly</strong>
+            <em>
+              {displayPlan
+                ? formatMoney(displayPlan.price, displayPlan.currency)
+                : formatMoney(subscription?.priceAmount, subscription?.currency || marketCurrency)}
+            </em>
+          </div>
+        </article>
       </section>
 
-      <PaymentHistory payments={overview.payments || []} />
+      {!subscriptionPaymentsEnabled ? (
+        <p className="svx-bp-notice">
+          Online subscription payments are not enabled for this market.
+          Your existing access remains unchanged.
+        </p>
+      ) : null}
+
+      <div className="svx-bp-history">
+        <PaymentHistory payments={overview.payments || []} />
+      </div>
+
+      <footer className="svx-bp-footer">
+        <span>Storvex is a product operated by <strong>RURAXIS LTD</strong>.</span>
+        <span>Secure checkout powered by Flutterwave.</span>
+      </footer>
     </div>
   );
 }

@@ -1,0 +1,282 @@
+/* STORVEX / STEP 93 — ACCOUNT SETUP BRAND REFINEMENT
+ * Presentation-only changes, scoped to Step 2. No OTP, password or navigation logic.
+ */
+
+/* Share the approved homepage / Business Setup surface palette. */
+.storvex-onboarding:has(.svx-onboard-verification-panel) {
+  --onboard-page: #ffffff;
+  --onboard-card: #ffffff;
+  --onboard-card-soft: #fafbfc;
+  --onboard-text: #11151c;
+  --onboard-muted: #627083;
+  --onboard-border: #e3e7ec;
+  --onboard-primary: #168df7;
+  --onboard-primary-soft: #edf6ff;
+  --onboard-shadow: 0 8px 28px rgba(18, 30, 50, .035);
+  background: var(--onboard-page);
+}
+
+:root[data-theme="dark"] .storvex-onboarding:has(.svx-onboard-verification-panel) {
+  --onboard-page: #111213;
+  --onboard-card: #1b1c1d;
+  --onboard-card-soft: #161819;
+  --onboard-text: #f8f9fa;
+  --onboard-muted: #b8c1cd;
+  --onboard-border: #323438;
+  --onboard-primary: #42a5ff;
+  --onboard-primary-soft: rgba(66, 165, 255, .11);
+  --onboard-shadow: none;
+  background: var(--onboard-page);
+}
+
+/* A clear hierarchy: page title, progress, then the task heading. */
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-top {
+  padding-top: 44px;
+  padding-bottom: 16px;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-title-wrap h1 {
+  font-size: clamp(30px, 3.1vw, 42px);
+  line-height: 1.12;
+  letter-spacing: -.045em;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-title-wrap > p {
+  max-width: 620px;
+  line-height: 1.6;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-progress-wrap {
+  margin-top: 24px;
+}
+
+/* Lime = current step, green = a completed step, gray = upcoming. */
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-progress .is-active .svx-onboard-progress-number {
+  background: #dff448;
+  border-color: #dff448;
+  color: #111213;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-progress .is-active .svx-onboard-progress-label {
+  color: var(--onboard-text);
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-progress .is-done .svx-onboard-progress-number {
+  background: var(--onboard-success);
+  border-color: var(--onboard-success);
+  color: #09241c;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-progress .is-done .svx-onboard-progress-label {
+  color: var(--onboard-success);
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-content {
+  padding-top: 15px;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-form {
+  gap: 19px;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-form-heading {
+  margin-bottom: 6px;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-form-heading h2 {
+  margin-top: 15px;
+  font-size: clamp(28px, 3vw, 39px);
+  letter-spacing: -.045em;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-form-heading p {
+  max-width: 640px;
+  margin-top: 10px;
+  line-height: 1.55;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-step-pill {
+  background: #dff448;
+  color: #111213;
+  letter-spacing: .09em;
+}
+
+/* Keep verification panels side-by-side on desktop and stacked on mobile. */
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-form > .grid {
+  gap: 18px;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-verification-panel,
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-card {
+  border-radius: 19px;
+  background: var(--onboard-card);
+  box-shadow: var(--onboard-shadow);
+}
+
+/* Semantics stay intact: pending email is warm; verified contact is green. */
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-verification-panel.is-email-pending {
+  border-color: color-mix(in srgb, #f0b95f 35%, var(--onboard-border));
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-verification-panel.is-phone-pending {
+  border-color: color-mix(in srgb, var(--onboard-primary) 25%, var(--onboard-border));
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-verification-panel.is-verified {
+  border-color: color-mix(in srgb, var(--onboard-success) 43%, var(--onboard-border));
+}
+
+/* Provide visible keyboard focus without changing code entry or auto-verify. */
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-verification-panel input:not([type="hidden"]) {
+  border-radius: 10px;
+  background: var(--onboard-card-soft);
+  color: var(--onboard-text);
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-verification-panel input:not([type="hidden"]):focus-visible {
+  outline: 2px solid var(--onboard-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--onboard-primary) 14%, transparent);
+}
+
+/* Password area and footer use the same quiet card treatment as Step 1. */
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-card {
+  border-color: var(--onboard-border);
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-next-copy p,
+.storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-login-note {
+  color: var(--onboard-muted);
+}
+
+/* Use the homepage coral action when enabled, neutral when disabled. */
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-navigation-actions button:not(:disabled) {
+  background: #ff5961;
+  border-color: #ff5961;
+  color: #ffffff;
+  border-radius: 11px;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-navigation-actions button:not(:disabled):hover {
+  background: #eb4852;
+  border-color: #eb4852;
+}
+
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-navigation-actions button:disabled {
+  background: #e4e8ec;
+  border-color: #e4e8ec;
+  color: #596575;
+  border-radius: 11px;
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+:root[data-theme="dark"] .storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-navigation-actions button:disabled {
+  background: #34383e;
+  border-color: #34383e;
+  color: #adb6c2;
+}
+
+/* Match the approved responsive gutters and keep all six code cells visible. */
+@media (max-width: 760px) {
+  .storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-top {
+    padding-top: 30px;
+    padding-bottom: 12px;
+  }
+
+  .storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-content {
+    padding-top: 14px;
+    padding-bottom: 64px;
+  }
+
+  .storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-verification-panel,
+  .storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-card {
+    border-radius: 17px;
+  }
+}
+
+@media (max-width: 520px) {
+  .storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-top,
+  .storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-content {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-title-wrap h1 {
+    font-size: clamp(28px, 8vw, 34px);
+  }
+
+  .storvex-onboarding:has(.svx-onboard-verification-panel) .svx-onboard-form-heading h2 {
+    font-size: 29px;
+  }
+}
+
+/* STORVEX STEP 94 — FINAL ACCOUNT SETUP POLISH */
+/* Scoped to Step 2. No authentication or verification changes. */
+
+/* The primary page heading remains dominant. */
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-form-heading h2 {
+  font-size: clamp(25px, 2.2vw, 31px);
+  line-height: 1.18;
+  letter-spacing: -.04em;
+}
+
+/* Remove visual OTP inputs from completed verification panels.
+   The underlying verified state and input logic are untouched. */
+.storvex-onboarding
+.svx-onboard-verification-panel.is-verified
+:is(div, fieldset):has(> input:nth-of-type(6)) {
+  display: none !important;
+}
+
+.storvex-onboarding
+.svx-onboard-verification-panel.is-verified
+input:not([type="hidden"]) {
+  display: none !important;
+}
+
+/* Keep verified confirmations visually prominent. */
+.storvex-onboarding
+.svx-onboard-verification-panel.is-verified {
+  border-color: color-mix(
+    in srgb,
+    var(--onboard-success) 45%,
+    var(--onboard-border)
+  );
+}
+
+/* Improve password requirement-chip readability. */
+.storvex-onboarding:has(.svx-onboard-verification-panel)
+.svx-onboard-form > .svx-onboard-card:not(.svx-onboard-next-card)
+:is(span, div).rounded-full:has(> span) {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* More balanced narrow-screen hierarchy. */
+@media (max-width: 520px) {
+  .storvex-onboarding:has(.svx-onboard-verification-panel)
+  .svx-onboard-form-heading h2 {
+    font-size: 27px;
+  }
+
+  .storvex-onboarding:has(.svx-onboard-verification-panel)
+  .svx-onboard-form-heading p {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+}
