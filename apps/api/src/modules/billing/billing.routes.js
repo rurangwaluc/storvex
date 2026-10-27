@@ -50,6 +50,15 @@ router.post(
   billing.completeSandboxRenewalPayment
 );
 
+
+// Specific path must precede /payments/:reference.
+router.get(
+  "/payments/pending-renewal",
+  authenticate,
+  requireTenant,
+  billing.getPendingFlutterwaveRenewal
+);
+
 router.get(
   "/payments/:reference",
   authenticate,

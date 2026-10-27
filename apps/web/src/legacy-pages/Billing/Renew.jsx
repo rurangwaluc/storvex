@@ -5,6 +5,12 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { startFlutterwaveSandboxCheckout } from "./startFlutterwaveSandboxCheckout";
 import {
+  saveHostedRecoveryReference,
+  readHostedRecoveryReference,
+  clearHostedRecoveryReference,
+  trustedHostedRecoveryUrl,
+} from "./flutterwaveHostedRecovery";
+import {
   loadFlutterwaveInlineScript,
   openSandboxInlinePopup,
 } from "./flutterwaveSandboxInline";
@@ -620,6 +626,9 @@ function RenewContent({
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [inlinePaymentStatus, setInlinePaymentStatus] = useState("");
+  const [hostedRecovery, setHostedRecovery] = useState(null);
+  const [hostedRecoveryChecking, setHostedRecoveryChecking] =
+    useState(false);
 
   // Synchronous lock prevents rapid clicks before React updates.
   const paymentAttemptLock = useRef(false);
@@ -682,6 +691,146 @@ function RenewContent({
   const [plans, setPlans] = useState([]);
   const [planKey, setPlanKey] = useState("");
   const [durationMonths, setDurationMonths] = useState(1);
+
+  // Hosted checkout recovery is independent of Inline recovery.
+  // Never create a second payment during a recovery status check.
+  async function checkHostedRecovery(reference) {
+    if (!reference) return;
+
+    setHostedRecoveryChecking(true);
+
+    try {
+      const { data } = await apiClient.get(
+        `/billing/payments/${encodeURIComponent(reference)}`
+      );
+
+      // Release only the exact server-confirmed payment.
+      // Browser storage is never evidence of payment.
+      if (
+        data?.payment?.reference === reference &&
+        data?.payment?.purpose === "SUBSCRIPTION_RENEWAL" &&
+        data?.payment?.provider === "FLUTTERWAVE" &&
+        data?.payment?.status === "SUCCESS" &&
+        data?.checkoutRecovery?.method ===
+          "FLUTTERWAVE_SANDBOX" &&
+        data?.checkoutRecovery?.state === "COMPLETED"
+      ) {
+        clearHostedRecoveryReference(
+          window.sessionStorage,
+          reference
+        );
+      }
+
+      if (
+        data?.payment?.reference !== reference ||
+        data?.payment?.purpose !== "SUBSCRIPTION_RENEWAL" ||
+        data?.payment?.provider !== "FLUTTERWAVE" ||
+        data?.checkoutRecovery?.method !==
+          "FLUTTERWAVE_SANDBOX"
+      ) {
+        setHostedRecovery({
+          reference,
+          state: "RECONCILIATION_REQUIRED",
+          checkoutUrl: null,
+        });
+        return;
+      }
+
+      const recovery = data.checkoutRecovery;
+      const checkoutUrl =
+        recovery.state === "HOSTED_CHECKOUT_AVAILABLE" &&
+        trustedHostedRecoveryUrl(recovery.checkoutUrl)
+          ? recovery.checkoutUrl
+          : null;
+
+      setHostedRecovery({
+        reference,
+        state:
+          recovery.state === "COMPLETED"
+            ? "COMPLETED"
+            : checkoutUrl
+              ? "HOSTED_CHECKOUT_AVAILABLE"
+              : "RECONCILIATION_REQUIRED",
+        checkoutUrl,
+      });
+    } catch {
+      // A failed lookup never establishes a failed payment.
+      // Preserve the reference and block duplicate checkout.
+      setHostedRecovery({
+        reference,
+        state: "RECONCILIATION_REQUIRED",
+        checkoutUrl: null,
+      });
+    } finally {
+      setHostedRecoveryChecking(false);
+    }
+  }
+
+  // Find a recent server reservation even if the browser never
+  // received the reference. No checkout or payment is created.
+  async function discoverHostedRecovery() {
+    setHostedRecoveryChecking(true);
+
+    try {
+      const { data } = await apiClient.get(
+        "/billing/payments/pending-renewal"
+      );
+
+      const reference = data?.pendingRenewal?.reference;
+
+      if (!reference) {
+        setHostedRecovery(null);
+        return;
+      }
+
+      if (!/^[A-Za-z0-9_-]{8,100}$/.test(reference)) {
+        throw new Error("Invalid renewal reference.");
+      }
+
+      saveHostedRecoveryReference(
+        window.sessionStorage,
+        reference
+      );
+
+      await checkHostedRecovery(reference);
+    } catch {
+      // Fail closed when the server cannot establish whether
+      // another checkout is waiting. Never infer failure.
+      setHostedRecovery({
+        reference: null,
+        state: "LOOKUP_UNAVAILABLE",
+        checkoutUrl: null,
+      });
+    } finally {
+      setHostedRecoveryChecking(false);
+    }
+  }
+
+  useEffect(() => {
+    if (
+      !STORVEX_FLUTTERWAVE_SANDBOX_UI_ENABLED ||
+      STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED
+    ) return;
+
+    const reference = readHostedRecoveryReference(
+      window.sessionStorage
+    );
+
+    if (reference) {
+      setHostedRecovery({
+        reference,
+        state: "CHECKING",
+        checkoutUrl: null,
+      });
+
+      void checkHostedRecovery(reference);
+    } else {
+      void discoverHostedRecovery();
+    }
+    // The recovery hint is inspected once when the page mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
 
   // STEP 342CN-GF / AUTHENTICATED REFRESH RECOVERY
   // The tab stores only a reference, never proof of payment.
@@ -946,6 +1095,44 @@ function RenewContent({
   async function startFlutterwavePayment() {
     if (paymentAttemptLock.current || submitting) return;
 
+    if (
+      STORVEX_FLUTTERWAVE_SANDBOX_UI_ENABLED &&
+      !STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED &&
+      (
+        hostedRecoveryChecking ||
+        (hostedRecovery &&
+          hostedRecovery.state !== "COMPLETED")
+      )
+    ) {
+      toast(
+        "Check the previous payment before starting another checkout."
+      );
+
+      if (!hostedRecoveryChecking &&
+          hostedRecovery?.state === "LOOKUP_UNAVAILABLE") {
+        await discoverHostedRecovery();
+      }
+
+      return;
+    }
+
+    if (
+      STORVEX_FLUTTERWAVE_SANDBOX_UI_ENABLED &&
+      !STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED
+    ) {
+      const existing = readHostedRecoveryReference(
+        window.sessionStorage
+      );
+
+      if (existing) {
+        toast(
+          "An earlier payment needs confirmation. Check it before paying again."
+        );
+        await checkHostedRecovery(existing);
+        return;
+      }
+    }
+
     // A verified renewal cannot initiate a second checkout.
     if (inlinePaymentStatus === "SUCCESS") return;
 
@@ -1095,6 +1282,22 @@ function RenewContent({
         durationMonths,
         expectedTotal: total,
         expectedCurrency: selectedPlan.currency,
+        onCheckoutReady: reference => {
+          if (!saveHostedRecoveryReference(
+            window.sessionStorage,
+            reference
+          )) {
+            throw new Error(
+              "Could not preserve payment recovery. Please check browser storage."
+            );
+          }
+
+          setHostedRecovery({
+            reference,
+            state: "HOSTED_CHECKOUT_AVAILABLE",
+            checkoutUrl: null,
+          });
+        },
       });
       }
     } catch (error) {
@@ -1481,6 +1684,76 @@ function RenewContent({
                         ? "Multi-month checkout not yet enabled"
                         : "Proceed to Secure Payment"}
                 </button>
+
+                {STORVEX_FLUTTERWAVE_SANDBOX_UI_ENABLED &&
+                  !STORVEX_FLUTTERWAVE_SANDBOX_INLINE_UI_ENABLED &&
+                  hostedRecovery && (
+                    <section
+                      className="svx-rq-payment-success"
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <strong>
+                        {hostedRecovery.state === "COMPLETED"
+                          ? "Payment confirmed"
+                          : "Previous payment"}
+                      </strong>
+
+                      <p>
+                        {hostedRecovery.state === "COMPLETED"
+                          ? "Your payment is confirmed by Storvex."
+                          : hostedRecovery.state === "LOOKUP_UNAVAILABLE"
+                            ? "Payment status is temporarily unavailable. Check again before starting another payment."
+                          : hostedRecovery.state ===
+                              "HOSTED_CHECKOUT_AVAILABLE"
+                            ? "Your previous checkout is available. Continue it instead of creating another payment."
+                            : "Your previous payment needs confirmation. Do not pay again until its status is resolved."}
+                      </p>
+
+                      <button
+                        type="button"
+                        className="svx-rq-secondary"
+                        disabled={hostedRecoveryChecking}
+                        onClick={() =>
+                          hostedRecovery.reference
+                            ? checkHostedRecovery(hostedRecovery.reference)
+                            : discoverHostedRecovery()
+                        }
+                      >
+                        {hostedRecoveryChecking
+                          ? "Checking..."
+                          : "Check payment status"}
+                      </button>
+
+                      {hostedRecovery.state ===
+                        "HOSTED_CHECKOUT_AVAILABLE" &&
+                        trustedHostedRecoveryUrl(
+                          hostedRecovery.checkoutUrl
+                        ) && (
+                          <button
+                            type="button"
+                            className="svx-rq-secondary"
+                            onClick={() => {
+                              window.location.assign(
+                                hostedRecovery.checkoutUrl
+                              );
+                            }}
+                          >
+                            Continue existing checkout
+                          </button>
+                        )}
+
+                      {hostedRecovery.state === "COMPLETED" && (
+                        <button
+                          type="button"
+                          className="svx-rq-secondary"
+                          onClick={() => nav("/app/settings/billing")}
+                        >
+                          View Billing
+                        </button>
+                      )}
+                    </section>
+                  )}
 
                 {durationMonths !== 1 && !checkoutDurationEnabled && (
                   <p className="svx-rq-checkout-note">

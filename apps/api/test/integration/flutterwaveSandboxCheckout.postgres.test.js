@@ -34,6 +34,8 @@ const prisma = new PrismaClient({
 
 const {
   initiateRenewalPayment,
+  getRenewalPaymentStatus,
+  getPendingFlutterwaveRenewal,
 } = require("../../src/modules/billing/billing.controller");
 
 const {
@@ -215,6 +217,330 @@ test.after(async () => {
   }
 });
 
+
+async function recoveryStatus(reference, tenantId) {
+  const req = {
+    user: { tenantId, role: "OWNER" },
+    params: { reference },
+    query: {},
+  };
+  const res = responseRecorder();
+  await getRenewalPaymentStatus(req, res);
+  return res;
+}
+
+test("hosted recovery returns the saved checkout", async () => {
+  const f = await fixture();
+  const created = await checkout(f, 1);
+
+  assert.equal(created.statusCode, 201);
+
+  const status = await recoveryStatus(
+    created.body.paymentReference,
+    f.tenant.id
+  );
+
+  assert.equal(status.statusCode, 200);
+  assert.equal(status.body.payment.status, "PENDING");
+  assert.equal(
+    status.body.checkoutRecovery.state,
+    "HOSTED_CHECKOUT_AVAILABLE"
+  );
+  assert.equal(
+    status.body.checkoutRecovery.checkoutUrl,
+    created.body.checkoutUrl
+  );
+});
+
+test("hosted recovery preserves unresolved checkout", async () => {
+  const f = await fixture();
+
+  const original = global.fetch;
+  global.fetch = async () => ({ ok: false, status: 503 });
+
+  let reference;
+
+  try {
+    const failed = await checkout(f, 1);
+    assert.notEqual(failed.statusCode, 201);
+
+    const payment = await prisma.payment.findFirst({
+      where: {
+        tenantId: f.tenant.id,
+        purpose: "SUBSCRIPTION_RENEWAL",
+      },
+    });
+
+    assert.ok(payment);
+    reference = payment.reference;
+  } finally {
+    global.fetch = original;
+  }
+
+  const status = await recoveryStatus(reference, f.tenant.id);
+
+  assert.equal(status.statusCode, 200);
+  assert.equal(status.body.payment.status, "PENDING");
+  assert.equal(
+    status.body.checkoutRecovery.state,
+    "RECONCILIATION_REQUIRED"
+  );
+  assert.equal(status.body.checkoutRecovery.checkoutUrl, null);
+});
+
+test("hosted recovery denies another tenant", async () => {
+  const owner = await fixture();
+  const outsider = await fixture();
+
+  const created = await checkout(owner, 1);
+  assert.equal(created.statusCode, 201);
+
+  const status = await recoveryStatus(
+    created.body.paymentReference,
+    outsider.tenant.id
+  );
+
+  assert.equal(status.statusCode, 404);
+  assert.equal(status.body.checkoutRecovery, undefined);
+});
+
+test("completed renewal exposes no checkout redirect", async () => {
+  const f = await fixture();
+  const created = await checkout(f, 1);
+  assert.equal(created.statusCode, 201);
+
+  const payment = await prisma.payment.findUnique({
+    where: { reference: created.body.paymentReference },
+  });
+
+  await prisma.payment.update({
+    where: { id: payment.id },
+    data: { status: "SUCCESS" },
+  });
+
+  const status = await recoveryStatus(
+    created.body.paymentReference,
+    f.tenant.id
+  );
+
+  assert.equal(status.statusCode, 200);
+  assert.equal(
+    status.body.checkoutRecovery.state,
+    "COMPLETED"
+  );
+  assert.equal(status.body.checkoutRecovery.checkoutUrl, null);
+});
+
+
+test("hosted recovery rejects unsafe checkout URLs", async () => {
+  const f = await fixture();
+  const created = await checkout(f, 1);
+
+  assert.equal(created.statusCode, 201);
+
+  const reference = created.body.paymentReference;
+
+  const attempt = await prisma.paymentAttempt.findUnique({
+    where: { checkoutReference: reference },
+  });
+
+  assert.ok(attempt);
+
+  const unsafeUrls = [
+    "https://checkout-v2.dev-flutterwave.com.evil.example/checkout",
+    "https://evil.example/checkout",
+    "http://checkout-v2.dev-flutterwave.com/checkout",
+    "https://user:password@checkout-v2.dev-flutterwave.com/checkout",
+    "https://checkout-v2.dev-flutterwave.com/checkout#fragment",
+    "javascript:alert(1)",
+    "not-a-url",
+  ];
+
+  for (const unsafeUrl of unsafeUrls) {
+    await prisma.paymentAttempt.update({
+      where: { id: attempt.id },
+      data: { checkoutUrl: unsafeUrl },
+    });
+
+    const result = await recoveryStatus(
+      reference,
+      f.tenant.id
+    );
+
+    assert.equal(result.statusCode, 200);
+    assert.equal(result.body.payment.status, "PENDING");
+    assert.equal(
+      result.body.checkoutRecovery.state,
+      "RECONCILIATION_REQUIRED"
+    );
+    assert.equal(
+      result.body.checkoutRecovery.checkoutUrl,
+      null
+    );
+  }
+
+  await prisma.paymentAttempt.update({
+    where: { id: attempt.id },
+    data: {
+      checkoutUrl:
+        "https://checkout-v2.dev-flutterwave.com/valid-session",
+    },
+  });
+
+  const valid = await recoveryStatus(reference, f.tenant.id);
+
+  assert.equal(valid.statusCode, 200);
+  assert.equal(
+    valid.body.checkoutRecovery.state,
+    "HOSTED_CHECKOUT_AVAILABLE"
+  );
+  assert.equal(
+    valid.body.checkoutRecovery.checkoutUrl,
+    "https://checkout-v2.dev-flutterwave.com/valid-session"
+  );
+});
+
+
+async function pendingRenewalFor(tenantId) {
+  const req = {
+    user: { tenantId, role: "OWNER" },
+  };
+  const res = responseRecorder();
+
+  await getPendingFlutterwaveRenewal(req, res);
+
+  return res;
+}
+
+test("pending renewal lookup returns no payment when empty", async () => {
+  const f = await fixture();
+  const result = await pendingRenewalFor(f.tenant.id);
+
+  assert.equal(result.statusCode, 200);
+  assert.equal(result.body.pendingRenewal, null);
+});
+
+test("pending renewal lookup recovers hosted reference", async () => {
+  const f = await fixture();
+  const created = await checkout(f, 1);
+
+  assert.equal(created.statusCode, 201);
+
+  const result = await pendingRenewalFor(f.tenant.id);
+
+  assert.equal(result.statusCode, 200);
+  assert.equal(
+    result.body.pendingRenewal.reference,
+    created.body.paymentReference
+  );
+});
+
+test("pending renewal lookup recovers failed checkout request", async () => {
+  const f = await fixture();
+  const originalFetch = global.fetch;
+
+  try {
+    global.fetch = async () => {
+      throw new Error("SIMULATED_CHECKOUT_TIMEOUT");
+    };
+
+    const result = await checkout(f, 1);
+    assert.notEqual(result.statusCode, 201);
+  } finally {
+    global.fetch = originalFetch;
+  }
+
+  const lookup = await pendingRenewalFor(f.tenant.id);
+
+  assert.equal(lookup.statusCode, 200);
+  assert.ok(lookup.body.pendingRenewal?.reference);
+
+  const status = await recoveryStatus(
+    lookup.body.pendingRenewal.reference,
+    f.tenant.id
+  );
+
+  assert.equal(status.statusCode, 200);
+  assert.equal(
+    status.body.checkoutRecovery.state,
+    "RECONCILIATION_REQUIRED"
+  );
+});
+
+test("pending renewal lookup never exposes another tenant", async () => {
+  const owner = await fixture();
+  const outsider = await fixture();
+
+  const created = await checkout(owner, 1);
+  assert.equal(created.statusCode, 201);
+
+  const outsiderResult =
+    await pendingRenewalFor(outsider.tenant.id);
+
+  assert.equal(outsiderResult.statusCode, 200);
+  assert.equal(
+    outsiderResult.body.pendingRenewal,
+    null
+  );
+
+  const unauthenticated = responseRecorder();
+
+  await getPendingFlutterwaveRenewal(
+    { user: {} },
+    unauthenticated
+  );
+
+  assert.equal(unauthenticated.statusCode, 403);
+});
+
+test("completed renewal is excluded from pending lookup", async () => {
+  const f = await fixture();
+  const created = await checkout(f, 1);
+
+  assert.equal(created.statusCode, 201);
+
+  await prisma.payment.update({
+    where: {
+      reference: created.body.paymentReference,
+    },
+    data: {
+      status: "SUCCESS",
+    },
+  });
+
+  const result = await pendingRenewalFor(f.tenant.id);
+
+  assert.equal(result.statusCode, 200);
+  assert.equal(result.body.pendingRenewal, null);
+});
+
+test("old pending renewal remains verifiable but is not auto-discovered", async () => {
+  const f = await fixture();
+  const created = await checkout(f, 1);
+  assert.equal(created.statusCode, 201);
+
+  await prisma.payment.update({
+    where: { reference: created.body.paymentReference },
+    data: {
+      createdAt: new Date(Date.now() - 45 * 60 * 1000),
+    },
+  });
+
+  const lookup = await pendingRenewalFor(f.tenant.id);
+  assert.equal(lookup.statusCode, 200);
+  assert.equal(lookup.body.pendingRenewal, null);
+
+  const originalStatus = await recoveryStatus(
+    created.body.paymentReference,
+    f.tenant.id
+  );
+  assert.equal(originalStatus.statusCode, 200);
+  assert.equal(
+    originalStatus.body.payment.reference,
+    created.body.paymentReference
+  );
+});
+
 test("isolated PostgreSQL database is verified", async () => {
   const result = await prisma.$queryRaw`
     SELECT current_database() AS db,
@@ -243,8 +569,6 @@ test("multi-month checkout is blocked without opt-in", async () => {
 });
 
 test("all four durations create exact server-priced checkouts", async () => {
-  const f = await fixture();
-
   process.env.FLUTTERWAVE_SANDBOX_MULTI_MONTH_ENABLED = "true";
 
   const expectations = [
@@ -256,6 +580,8 @@ test("all four durations create exact server-priced checkouts", async () => {
 
   try {
     for (const [months, discount, total] of expectations) {
+      // Independent tenant: previous pending checkout must not be bypassed.
+      const f = await fixture();
       const callsBefore = providerCalls.length;
       const res = await checkout(f, months);
 
@@ -356,6 +682,371 @@ test("non-owner cannot initiate checkout", async () => {
   assert.equal(providerCalls.length, callsBefore);
 });
 
+
+
+test("provider HTTP rejection preserves unresolved renewal", async () => {
+  const f = await fixture();
+  const subscriptionBefore = await prisma.subscription.findUnique({
+    where: { tenantId: f.tenant.id },
+  });
+
+  const original = global.fetch;
+  global.fetch = async () => ({ ok: false, status: 503 });
+
+  try {
+    const res = await checkout(f, 1);
+    assert.notEqual(res.statusCode, 201);
+
+    const payments = await prisma.payment.findMany({
+      where: { tenantId: f.tenant.id, purpose: "SUBSCRIPTION_RENEWAL" },
+      include: { attempts: true },
+    });
+
+    assert.equal(payments.length, 1);
+    assert.equal(payments[0].status, "PENDING");
+    assert.equal(payments[0].attempts.length, 1);
+    assert.equal(payments[0].attempts[0].checkoutUrl, null);
+
+    const after = await prisma.subscription.findUnique({
+      where: { tenantId: f.tenant.id },
+    });
+    assert.equal(after.endDate.toISOString(), subscriptionBefore.endDate.toISOString());
+  } finally {
+    global.fetch = original;
+  }
+});
+
+test("uncertain hosted timeout preserves payment for reconciliation", async () => {
+  const f = await fixture();
+  const subscriptionBefore = await prisma.subscription.findUnique({
+    where: { tenantId: f.tenant.id },
+  });
+
+  const original = global.fetch;
+  global.fetch = async () => {
+    throw new Error("SIMULATED_PROVIDER_TIMEOUT");
+  };
+
+  try {
+    const res = await checkout(f, 1);
+    assert.notEqual(res.statusCode, 201);
+
+    const payments = await prisma.payment.findMany({
+      where: { tenantId: f.tenant.id, purpose: "SUBSCRIPTION_RENEWAL" },
+      include: { attempts: true },
+    });
+
+    assert.equal(payments.length, 1);
+    assert.equal(payments[0].status, "PENDING");
+    assert.equal(payments[0].attempts.length, 1);
+    assert.equal(payments[0].attempts[0].checkoutUrl, null);
+
+    const after = await prisma.subscription.findUnique({
+      where: { tenantId: f.tenant.id },
+    });
+    assert.equal(after.endDate.toISOString(), subscriptionBefore.endDate.toISOString());
+  } finally {
+    global.fetch = original;
+  }
+});
+
+
+test("Flutterwave webhook HTTP acceptance: authentication, verification and replay", async () => {
+  const secret =
+    "STORVEX-INTEGRATION-WEBHOOK-SECRET-0123456789";
+
+  const previousSecret =
+    process.env.FLUTTERWAVE_TEST_WEBHOOK_SECRET_HASH;
+
+  const checkoutFetch = global.fetch;
+  const httpFetch = originalFetch;
+
+  let server;
+
+  process.env.FLUTTERWAVE_TEST_WEBHOOK_SECRET_HASH = secret;
+
+  try {
+    const good = await fixture();
+    const wrong = await fixture();
+
+    const goodCheckout = await checkout(good, 1);
+    const wrongCheckout = await checkout(wrong, 1);
+
+    assert.equal(goodCheckout.statusCode, 201);
+    assert.equal(wrongCheckout.statusCode, 201);
+
+    const goodReference = goodCheckout.body.paymentReference;
+    const wrongReference = wrongCheckout.body.paymentReference;
+
+    const goodBefore = await prisma.subscription.findUnique({
+      where: { tenantId: good.tenant.id },
+    });
+
+    const wrongBefore = await prisma.subscription.findUnique({
+      where: { tenantId: wrong.tenant.id },
+    });
+
+    const app = require("../../src/app");
+
+    server = await new Promise((resolve, reject) => {
+      const instance = app.listen(
+        0,
+        "127.0.0.1",
+        () => resolve(instance)
+      );
+      instance.once("error", reject);
+    });
+
+    const port = server.address().port;
+    const url =
+      `http://127.0.0.1:${port}/api/billing/flutterwave/webhook`;
+
+    const event = reference => ({
+      event: "charge.completed",
+      data: {
+        status: "successful",
+        tx_ref: reference,
+
+        // Deliberately untrusted webhook values.
+        amount: 999999,
+        currency: "USD",
+      },
+    });
+
+    async function deliver(reference, signature = secret, payload) {
+      const response = await httpFetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(signature == null
+            ? {}
+            : { "verif-hash": signature }),
+        },
+        body: JSON.stringify(payload || event(reference)),
+      });
+
+      await response.arrayBuffer();
+      return response.status;
+    }
+
+    let verificationCalls = 0;
+
+    global.fetch = async (providerUrl, options) => {
+      verificationCalls++;
+
+      const parsed = new URL(providerUrl);
+
+      assert.equal(
+        parsed.origin + parsed.pathname,
+        "https://api.flutterwave.com/v3/transactions/verify_by_reference"
+      );
+
+      assert.equal(options.method, "GET");
+
+      assert.equal(
+        options.headers.Authorization,
+        "Bearer FLWSECK_TEST-INTEGRATION-FAKE"
+      );
+
+      const reference = parsed.searchParams.get("tx_ref");
+
+      return {
+        ok: true,
+        async json() {
+          return {
+            status: "success",
+            data: {
+              id: reference === goodReference
+                ? 913570001
+                : 913570002,
+              status: "successful",
+              tx_ref: reference,
+
+              // Only the first payment has a matching amount.
+              amount: reference === goodReference
+                ? goodCheckout.body.totalAmount
+                : 1,
+
+              currency: "RWF",
+            },
+          };
+        },
+      };
+    };
+
+    // Authentication must reject forged or missing headers
+    // before any provider lookup.
+    assert.equal(
+      await deliver(goodReference, null),
+      401
+    );
+
+    assert.equal(
+      await deliver(goodReference, "WRONG-WEBHOOK-SECRET"),
+      401
+    );
+
+    assert.equal(verificationCalls, 0);
+
+    const beforeAuthentication =
+      await prisma.subscription.findUnique({
+        where: { tenantId: good.tenant.id },
+      });
+
+    assert.equal(
+      beforeAuthentication.endDate.toISOString(),
+      goodBefore.endDate.toISOString()
+    );
+
+    // Unknown payment references cannot create payments.
+    assert.equal(
+      await deliver("RENEW_99999999999_UNKNOWN"),
+      200
+    );
+
+    assert.equal(verificationCalls, 0);
+
+    // Successful notification still requires an independent
+    // provider verification of amount, currency and reference.
+    assert.equal(
+      await deliver(wrongReference),
+      503
+    );
+
+    const wrongPayment = await prisma.payment.findUnique({
+      where: { reference: wrongReference },
+    });
+
+    const wrongAfter = await prisma.subscription.findUnique({
+      where: { tenantId: wrong.tenant.id },
+    });
+
+    assert.equal(wrongPayment.status, "PENDING");
+    assert.equal(
+      wrongAfter.endDate.toISOString(),
+      wrongBefore.endDate.toISOString()
+    );
+
+    // A temporary provider outage must not activate payment.
+    // Returning 503 allows a later webhook retry.
+    const successfulProviderFetch = global.fetch;
+
+    global.fetch = async () => ({
+      ok: false,
+      status: 503,
+    });
+
+    assert.equal(
+      await deliver(goodReference),
+      503
+    );
+
+    const pendingAfterOutage = await prisma.payment.findUnique({
+      where: { reference: goodReference },
+    });
+
+    const subscriptionAfterOutage =
+      await prisma.subscription.findUnique({
+        where: { tenantId: good.tenant.id },
+      });
+
+    assert.equal(pendingAfterOutage.status, "PENDING");
+    assert.equal(
+      subscriptionAfterOutage.endDate.toISOString(),
+      goodBefore.endDate.toISOString()
+    );
+
+    // Restore the verified provider and retry the same event.
+    global.fetch = successfulProviderFetch;
+
+    assert.equal(
+      await deliver(goodReference),
+      200
+    );
+
+    const goodPayment = await prisma.payment.findUnique({
+      where: { reference: goodReference },
+    });
+
+    const goodAttempt = await prisma.paymentAttempt.findUnique({
+      where: { checkoutReference: goodReference },
+    });
+
+    const goodAfter = await prisma.subscription.findUnique({
+      where: { tenantId: good.tenant.id },
+    });
+
+    assert.equal(goodPayment.status, "SUCCESS");
+    assert.equal(goodAttempt.status, "APPLIED");
+    assert.ok(goodAttempt.appliedAt instanceof Date);
+
+    assert.ok(
+      goodAfter.endDate.getTime() >
+      goodBefore.endDate.getTime()
+    );
+
+    const endDateAfterFirstDelivery =
+      goodAfter.endDate.toISOString();
+
+    const callsBeforeReplay = verificationCalls;
+
+    // Replayed notifications must not extend the subscription
+    // or verify and apply the payment a second time.
+    assert.equal(
+      await deliver(goodReference),
+      200
+    );
+
+    const goodAfterReplay =
+      await prisma.subscription.findUnique({
+        where: { tenantId: good.tenant.id },
+      });
+
+    assert.equal(
+      goodAfterReplay.endDate.toISOString(),
+      endDateAfterFirstDelivery
+    );
+
+    assert.equal(
+      verificationCalls,
+      callsBeforeReplay
+    );
+
+    console.log(
+      "PASS: HTTP webhook rejects forged authentication."
+    );
+    console.log(
+      "PASS: Unknown references cannot create payments."
+    );
+    console.log(
+      "PASS: Provider amount mismatch cannot activate a subscription."
+    );
+    console.log(
+      "PASS: Verified payment activates exactly once."
+    );
+    console.log(
+      "PASS: Replayed notification does not extend subscription."
+    );
+
+  } finally {
+    global.fetch = checkoutFetch;
+
+    if (server) {
+      await new Promise((resolve, reject) => {
+        server.close(error =>
+          error ? reject(error) : resolve()
+        );
+      });
+    }
+
+    if (previousSecret === undefined) {
+      delete process.env.FLUTTERWAVE_TEST_WEBHOOK_SECRET_HASH;
+    } else {
+      process.env.FLUTTERWAVE_TEST_WEBHOOK_SECRET_HASH =
+        previousSecret;
+    }
+  }
+});
 
 // STEP 342CN-BX / CONTINUOUS CHECKOUT-TO-ACTIVATION REGRESSION
 const {

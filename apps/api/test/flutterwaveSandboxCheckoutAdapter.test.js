@@ -193,3 +193,62 @@ test("7. Rejects production checkout", async () => {
 
   assert.equal(mock.calls.length, 0);
 });
+
+
+test("8. Rejects provider HTTP failure", async () => {
+  await assert.rejects(
+    createSandboxRenewalCheckout({
+      ...fixtures(),
+      fetchImpl: async () => ({
+        ok: false,
+        status: 503,
+      }),
+    }),
+    { code: "FLUTTERWAVE_CHECKOUT_REJECTED" }
+  );
+});
+
+test("9. Propagates uncertain network failure", async () => {
+  await assert.rejects(
+    createSandboxRenewalCheckout({
+      ...fixtures(),
+      fetchImpl: async () => {
+        throw new Error("SIMULATED_NETWORK_TIMEOUT");
+      },
+    }),
+    /SIMULATED_NETWORK_TIMEOUT/
+  );
+});
+
+test("10. Rejects malformed provider JSON", async () => {
+  await assert.rejects(
+    createSandboxRenewalCheckout({
+      ...fixtures(),
+      fetchImpl: async () => ({
+        ok: true,
+        async json() {
+          throw new SyntaxError("SIMULATED_INVALID_JSON");
+        },
+      }),
+    }),
+    /SIMULATED_INVALID_JSON/
+  );
+});
+
+test("11. Rejects provider success without a checkout URL", async () => {
+  await assert.rejects(
+    createSandboxRenewalCheckout({
+      ...fixtures(),
+      fetchImpl: async () => ({
+        ok: true,
+        async json() {
+          return {
+            status: "success",
+            data: {},
+          };
+        },
+      }),
+    }),
+    { code: "FLUTTERWAVE_CHECKOUT_REJECTED" }
+  );
+});

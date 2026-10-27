@@ -40,6 +40,7 @@ const supplierRoutes = require("./modules/suppliers/suppliers.routes");
 const expenseRoutes = require("./modules/expenses/expenses.routes");
 const moneyRoutes = require("./modules/money/money.routes");
 const billingRoutes = require("./modules/billing/billing.routes");
+const billingWebhook = require("./modules/billing/billing.controller");
 const auditRoutes = require("./modules/audit/audit.routes");
 const dashboardRoutes = require("./modules/dashboard/dashboard.routes");
 const employeeRoutes = require("./modules/employees/employee.routes");
@@ -93,6 +94,14 @@ app.use(requestMetrics);
  * This must run BEFORE global express.json().
  */
 app.use("/api/whatsapp/webhook", express.raw({ type: "*/*" }));
+
+// Flutterwave v3 sandbox webhook: raw body before JSON parsing.
+// Public route; authenticated by the dedicated provider secret.
+app.post(
+  "/api/billing/flutterwave/webhook",
+  express.raw({ type: "application/json", limit: "64kb" }),
+  billingWebhook.receiveFlutterwaveSandboxWebhook
+);
 
 app.use(express.json());
 

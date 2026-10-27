@@ -1093,6 +1093,60 @@ async function devMarkRenewalPaymentSuccessful(req, res) {
   }
 }
 
+
+// Recover an existing renewal when checkout creation failed
+// before the browser received its payment reference.
+// This lookup neither verifies nor modifies a payment.
+async function getPendingFlutterwaveRenewal(req, res) {
+  try {
+    const tenantId = normalizeTenantId(req);
+
+    if (!tenantId) {
+      return res.status(403).json({
+        message: "Business access required",
+      });
+    }
+
+    const payment = await prisma.payment.findFirst({
+      where: {
+        tenantId,
+        provider: "FLUTTERWAVE",
+        purpose: "SUBSCRIPTION_RENEWAL",
+        status: "PENDING",
+        createdAt: {
+          gte: new Date(Date.now() - 30 * 60 * 1000),
+        },
+      },
+      orderBy: [
+        { createdAt: "desc" },
+        { id: "desc" },
+      ],
+      select: {
+        reference: true,
+        createdAt: true,
+      },
+    });
+
+    return res.json({
+      pendingRenewal: payment
+        ? {
+            reference: payment.reference,
+            createdAt: toIsoDate(payment.createdAt),
+          }
+        : null,
+    });
+  } catch (error) {
+    console.error(
+      "getPendingFlutterwaveRenewal error:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Payment lookup is temporarily unavailable.",
+    });
+  }
+}
+
 async function getRenewalPaymentStatus(req, res) {
   try {
     const tenantId = normalizeTenantId(req);
@@ -1144,7 +1198,79 @@ async function getRenewalPaymentStatus(req, res) {
       });
     }
 
+    const attempt =
+      payment.provider === "FLUTTERWAVE"
+        ? await prisma.paymentAttempt.findUnique({
+            where: { checkoutReference: payment.reference },
+            select: {
+              paymentId: true,
+              provider: true,
+              status: true,
+              checkoutUrl: true,
+              verificationDetails: true,
+            },
+          })
+        : null;
+
+    const trustedAttempt =
+      attempt?.paymentId === payment.id &&
+      attempt?.provider === "FLUTTERWAVE"
+        ? attempt
+        : null;
+
+    const isHosted =
+      trustedAttempt &&
+      trustedAttempt.verificationDetails?.checkoutMethod !==
+        "FLUTTERWAVE_SANDBOX_INLINE";
+
+    let hostedCheckoutUrl = null;
+
+    if (
+      isHosted &&
+      typeof trustedAttempt.checkoutUrl === "string"
+    ) {
+      try {
+        const url = new URL(trustedAttempt.checkoutUrl);
+
+        if (
+          url.protocol === "https:" &&
+          url.hostname === "checkout-v2.dev-flutterwave.com" &&
+          !url.username &&
+          !url.password &&
+          !url.hash
+        ) {
+          hostedCheckoutUrl = url.href;
+        }
+      } catch {
+        // Invalid saved URLs must never become browser redirects.
+      }
+    }
+
+    const checkoutRecovery =
+      payment.provider !== "FLUTTERWAVE" || !trustedAttempt
+        ? null
+        : {
+            method: isHosted
+              ? "FLUTTERWAVE_SANDBOX"
+              : "FLUTTERWAVE_SANDBOX_INLINE",
+            paymentStatus: payment.status,
+            attemptStatus: trustedAttempt.status,
+            state:
+              payment.status === "SUCCESS"
+                ? "COMPLETED"
+                : payment.status !== "PENDING"
+                  ? "NOT_PENDING"
+                  : isHosted && hostedCheckoutUrl
+                    ? "HOSTED_CHECKOUT_AVAILABLE"
+                    : "RECONCILIATION_REQUIRED",
+            checkoutUrl:
+              payment.status === "PENDING"
+                ? hostedCheckoutUrl
+                : null,
+          };
+
     return res.json({
+      checkoutRecovery,
       payment: {
         id: payment.id,
         tenantId: payment.tenantId,
@@ -1318,13 +1444,125 @@ async function completeSandboxRenewalPayment(req, res) {
   }
 }
 
+
+async function receiveFlutterwaveSandboxWebhook(req, res) {
+  const {
+    authenticateWebhook,
+    parseWebhook,
+  } = require("../payments/flutterwaveSandboxWebhookSecurity");
+
+  let auth;
+
+  try {
+    auth = authenticateWebhook(req);
+  } catch {
+    return res.status(503).end();
+  }
+
+  if (!auth.ok) {
+    return res.status(auth.status).end();
+  }
+
+  const event = parseWebhook(req);
+
+  if (!event) {
+    return res.status(400).end();
+  }
+
+  if (!event.relevant) {
+    return res.status(200).end();
+  }
+
+  try {
+    // Webhook data is a lookup hint, never evidence of payment.
+    // The payment and tenant must already exist in our database.
+    const payment = await prisma.payment.findUnique({
+      where: { reference: event.reference },
+      select: {
+        tenantId: true,
+        provider: true,
+        purpose: true,
+        status: true,
+      },
+    });
+
+    if (
+      !payment ||
+      payment.provider !== "FLUTTERWAVE" ||
+      payment.purpose !== "SUBSCRIPTION_RENEWAL"
+    ) {
+      return res.status(200).end();
+    }
+
+    if (payment.status === "SUCCESS") {
+      // Idempotent acknowledgment: never activate twice.
+      return res.status(200).end();
+    }
+
+    if (payment.status !== "PENDING") {
+      return res.status(200).end();
+    }
+
+    const tenant = await getTenantOrThrow(payment.tenantId);
+    const market = requireMarket(tenant.countryCode || "RW");
+
+    const result = await completeSandboxRenewal({
+      prisma,
+      reference: event.reference,
+      tenantId: payment.tenantId,
+      fetchImpl: fetch,
+      loadTrustedPlan: async storedPayment => {
+        const plan = assertRenewalPlanOrThrow(
+          storedPayment.planKey,
+          market.countryCode
+        );
+
+        const snapshot = getPlanSnapshotForMarket(
+          plan.key,
+          market.countryCode
+        );
+
+        return {
+          planKey: snapshot.planKey,
+          tierKey: snapshot.tierKey,
+          cycleKey: snapshot.cycleKey,
+          staffLimit: snapshot.staffLimit,
+          branchLimit: getBranchLimitFromPlan(plan),
+          price: snapshot.price,
+          currency: snapshot.currency,
+          entitlements: snapshot.entitlements || {},
+          days: plan.days,
+          graceDays: getGraceDays(),
+        };
+      },
+    });
+
+    // Do not acknowledge an unresolved payment as completed.
+    // Flutterwave can retry after temporary verification failure.
+    if (result.status !== "SUCCESS") {
+      return res.status(503).end();
+    }
+
+    return res.status(200).end();
+  } catch (error) {
+    // Do not expose transaction or subscription data publicly.
+    console.error(
+      "Flutterwave sandbox webhook processing failed:",
+      error.code || error.message
+    );
+    return res.status(503).end();
+  }
+}
+
 module.exports = {
   listBillingPlans,
   getBillingOverview,
   initiateRenewalPayment,
   devMarkRenewalPaymentSuccessful,
   getRenewalPaymentStatus,
+  getPendingFlutterwaveRenewal,
   completeSandboxRenewalPayment,
+  receiveFlutterwaveSandboxWebhook,
   getBillingUsage,
 
   // aliases to reduce mismatch with existing route names

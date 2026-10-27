@@ -32,6 +32,7 @@ export async function startFlutterwaveSandboxCheckout({
   expectedTotal,
   expectedCurrency,
   navigateToCheckout = (url) => window.location.assign(url),
+  onCheckoutReady,
 }) {
   if (typeof planKey !== "string" || !planKey.trim()) {
     throw new Error("Select a subscription plan.");
@@ -71,6 +72,21 @@ export async function startFlutterwaveSandboxCheckout({
     throw new Error(
       "Storvex could not confirm a secure sandbox checkout."
     );
+  }
+
+  if (
+    typeof data.paymentReference !== "string" ||
+    !/^[A-Za-z0-9_-]{8,100}$/.test(data.paymentReference)
+  ) {
+    throw new Error(
+      "Storvex could not confirm the payment reference."
+    );
+  }
+
+  // Persist a recovery hint before leaving the current page.
+  // This does not verify or complete the payment.
+  if (typeof onCheckoutReady === "function") {
+    onCheckoutReady(data.paymentReference);
   }
 
   navigateToCheckout(data.checkoutUrl);
